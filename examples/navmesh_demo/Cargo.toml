@@ -1,0 +1,13 @@
+[package]
+name = "navmesh_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+winit = { workspace = true }
+wgpu  = { workspace = true }
+glam  = { workspace = true }
+pollster = { workspace = true }
+astraweave-render = { path = "../../astraweave-render" }
+astraweave-nav = { path = "../../astraweave-nav" }
