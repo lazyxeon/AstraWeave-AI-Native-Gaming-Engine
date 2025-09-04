@@ -90,3 +90,26 @@ pub enum EngineError {
     #[error("path not found")]
     NoPath,
 }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub struct Rect { pub x0:i32, pub y0:i32, pub x1:i32, pub y1:i32 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "op")]
+pub enum DirectorOp {
+    Fortify { rect: Rect },                         // add obstacles
+    SpawnWave { archetype: String, count: u32, origin: IVec2 },
+    Collapse { a: IVec2, b: IVec2 },               // line of obstacles ("bridge down")
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DirectorBudget {
+    pub traps: i32,
+    pub terrain_edits: i32,
+    pub spawns: i32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DirectorPlan {
+    pub ops: Vec<DirectorOp>,
+}
