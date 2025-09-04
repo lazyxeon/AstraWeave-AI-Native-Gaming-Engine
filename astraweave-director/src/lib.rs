@@ -5,6 +5,9 @@ use astraweave_core::{WorldSnapshot, DirectorPlan, DirectorOp, Rect, IVec2, Dire
 /// - Else: spawn a small wave behind player and collapse a nearby bridge line.
 pub struct BossDirector;
 
+mod phase;
+pub use phase::*;
+
 impl BossDirector {
     pub fn plan(&self, snap: &WorldSnapshot, budget: &DirectorBudget) -> DirectorPlan {
         let mut ops = vec![];
