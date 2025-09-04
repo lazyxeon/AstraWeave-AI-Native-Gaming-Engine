@@ -53,3 +53,21 @@ impl Inventory {
 pub fn infuse(item: &mut Item, echo: EchoMod) {
     item.echo = Some(echo);
 }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Rarity { Common, Uncommon, Rare, Epic, Legendary }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct EchoModDef {
+    pub name: String,
+    pub rarity: Rarity,
+    pub power_mult: f32,
+    pub dtype_override: Option<DamageType>,
+    pub special: Option<String>,
+}
+
+pub fn load_echo_defs(toml_txt: &str) -> anyhow::Result<Vec<EchoModDef>> {
+    #[derive(Deserialize)] struct File { echoes: Vec<EchoModDef> }
+    let f: File = toml::from_str(toml_txt)?;
+    Ok(f.echoes)
+}
