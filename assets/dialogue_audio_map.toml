@@ -1,0 +1,5 @@
+[map.intro]           # matches dialogue id = "intro" (assets/dialogue_intro.toml from earlier)
+# Node id -> path (examples; put real files if you have them)
+# n0 = "assets/voices/Companion/comp_line_001.ogg"
+# n1 = "assets/voices/Companion/comp_line_002.ogg"
+# n2 = "assets/voices/Companion/comp_line_003.ogg"
