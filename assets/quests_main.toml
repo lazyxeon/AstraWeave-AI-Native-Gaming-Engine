@@ -1,0 +1,13 @@
+id = "q_tutorial"
+title = "First Weave"
+reward_text = "Echo Blade recipe unlocked."
+
+[[tasks]]
+id = "t_gather"
+kind = { Gather = { kind = "Crystal", count = 3 } }
+done = false
+
+[[tasks]]
+id = "t_visit"
+kind = { Visit = { marker = "WeaveShrineA" } }
+done = false
