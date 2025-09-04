@@ -1,0 +1,10 @@
+[package]
+name = "llm_toolcall"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-llm = { path = "../../astraweave-llm" }
