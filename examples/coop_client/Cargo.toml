@@ -1,0 +1,14 @@
+[package]
+name = "coop_client"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+futures-util = { workspace = true }
+tokio-tungstenite = { workspace = true }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-net = { path = "../../astraweave-net" }
