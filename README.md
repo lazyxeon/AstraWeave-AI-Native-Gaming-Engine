@@ -19,7 +19,7 @@
 
 ## Quick links
 
-- Start with the **game**: [`veilweaver.md`](Game/veilweaver.md)  
+- Start with the **game**: [`veilweaver.md`](Game/Veilweaver.md)  
 - Deep dive the **engine**: [`astraweave.md`](AI_engine/astraweave.md)  
 - See the **console** vision: [`astracore.md`](Console/astracore.md)
 
