@@ -21,3 +21,8 @@ pub use dialogue::*;
 pub use quests::*;
 pub use cutscene::*;
 pub use biome::*;
+
+pub mod weave_portals;
+pub mod weave_telemetry;
+pub use weave_portals::*;
+pub use weave_telemetry::*;
