@@ -1,0 +1,23 @@
+[[recipes]]
+name = "Echo Blade"
+output_item = { Weapon = { base_damage = 14, dtype = "Physical" } }
+costs = [
+  { kind = "Ore", count = 3 },
+  { kind = "Crystal", count = 2 }
+]
+
+[[recipes]]
+name = "Crystal Mail"
+output_item = { Armor = { defense = 8 } }
+costs = [
+  { kind = "Crystal", count = 4 },
+  { kind = "Fiber", count = 3 }
+]
+
+[[recipes]]
+name = "Health Tonic"
+output_item = { Consumable = { heal = 30 } }
+costs = [
+  { kind = "Fiber", count = 2 },
+  { kind = "Essence", count = 1 }
+]
