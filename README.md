@@ -20,11 +20,13 @@
 ## Quick links
 
 - ### Start with the **game**: `veilweaver.md`
-  (:https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/f46c16d5f70cc7fa3ef48ce00b7552742e71d977/Game/Veilweaver.md)
+  :https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/f46c16d5f70cc7fa3ef48ce00b7552742e71d977/Game/Veilweaver.md
+
 - ### Deep dive the **engine**`astraweave.md`
-  (:https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/e61cb05624d60bb89157ede7b9d3699e7c3f134d/AI%20Engine/AstraWeave.md)
+  :https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/e61cb05624d60bb89157ede7b9d3699e7c3f134d/AI%20Engine/AstraWeave.md
+
 - ### See the **console** vision: `astracore.md`
-  (:https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/2e391db5c6017df720737db6453daab47fab38b8/Console/AstraCore.md))
+  :https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/2e391db5c6017df720737db6453daab47fab38b8/Console/AstraCore.md
 
 ---
 
