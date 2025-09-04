@@ -1,0 +1,8 @@
+[package]
+name = "persona_loader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+astraweave-persona = { path = "../../astraweave-persona" }
