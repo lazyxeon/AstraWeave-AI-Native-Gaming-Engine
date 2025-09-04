@@ -1,0 +1,9 @@
+[package]
+name = "coop_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+astraweave-net = { path = "../../astraweave-net" }
