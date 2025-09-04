@@ -3,12 +3,19 @@ members = [
   "astraweave-core",
   "astraweave-ai",
   "astraweave-sdk",
+  "astraweave-director",
+  "astraweave-memory",
+  "astraweave-ipc",
   "examples/hello_companion",
+  "examples/adaptive_boss",
+  "examples/companion_profile",
+  "examples/ipc_loopback",
+  "examples/debug_overlay",
 ]
 resolver = "2"
 
 [workspace.package]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 [workspace.dependencies]
@@ -17,3 +24,11 @@ thiserror = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+tungstenite = "0.21"
+tokio-tungstenite = "0.21"
+egui = "0.28"
+eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
