@@ -1,0 +1,20 @@
+id = "intro"
+start = "n0"
+
+[[nodes]]
+id = "n0"
+line = { speaker = "Companion", text = "The threads are restless tonight." }
+choices = [
+  { text = "What does that mean?", go_to = "n1" },
+  { text = "We weave anyway.", go_to = "n2" }
+]
+
+[[nodes]]
+id = "n1"
+line = { speaker = "Companion", text = "Storms, secrets—or both." }
+end = true
+
+[[nodes]]
+id = "n2"
+line = { speaker = "Companion", text = "Spoken like a true Veilweaver." }
+end = true
