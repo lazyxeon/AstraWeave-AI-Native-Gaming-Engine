@@ -6,13 +6,6 @@
 
 > High‑level concepts for Veilweaver were originally defined in a pitch that explored a quantum‑inspired archipelago, fate‑weaving mechanics, and 100+ hours of emergent RPG gameplay. We carry those pillars forward and make them AI‑native here. :contentReference[oaicite:0]{index=0} :contentReference[oaicite:1]{index=1}
 
----
-
-## What’s in this repo
-
-- `games/veilweaver.md` — **Game Design**: world, mechanics, AI companions, AI bosses, systems.
-- `AI engine/astraweave.md` — **Engine Design**: ECS, perception/planning/action loop, memory, APIs, determinism, editor tooling.
-- `Console/astracore.md` — **Console Design**: hardware targets, OS stack, security, companion service, dev kit.
 
 ---
 
