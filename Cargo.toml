@@ -31,6 +31,8 @@ members = [
   "examples/weaving_playground",
   "examples/crafting_combat_demo",
   "examples/quest_dialogue_demo",
+  "examples/combat_physics_demo",
+  "examples/cutscene_render_demo",
 ]
 resolver = "2"
 
