@@ -10,9 +10,9 @@
 
 ## What’s in this repo
 
-- `docs/veilweaver.md` — **Game Design**: world, mechanics, AI companions, AI bosses, systems.
-- `docs/astraweave.md` — **Engine Design**: ECS, perception/planning/action loop, memory, APIs, determinism, editor tooling.
-- `docs/astracore.md` — **Console Design**: hardware targets, OS stack, security, companion service, dev kit.
+- `games/veilweaver.md` — **Game Design**: world, mechanics, AI companions, AI bosses, systems.
+- `AI engine/astraweave.md` — **Engine Design**: ECS, perception/planning/action loop, memory, APIs, determinism, editor tooling.
+- `Console/astracore.md` — **Console Design**: hardware targets, OS stack, security, companion service, dev kit.
 
 ---
 
