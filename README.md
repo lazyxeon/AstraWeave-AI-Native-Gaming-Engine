@@ -20,7 +20,7 @@
 ## Quick links
 
 - Start with the **game**: [`veilweaver.md`](Game/Veilweaver.md)  
-- Deep dive the **engine**: [`astraweave.md`](AI_Engine/AstraWeave.md)
+- Deep dive the **engine**:https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/e61cb05624d60bb89157ede7b9d3699e7c3f134d/AI%20Engine/AstraWeave.md
 - See the **console** vision: [`astracore.md`](Console/astracore.md)
 
 ---
