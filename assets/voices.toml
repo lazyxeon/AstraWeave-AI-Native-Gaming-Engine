@@ -1,0 +1,8 @@
+[speakers.Companion]
+folder = "assets/voices/Companion"
+files = [ ]           # leave empty to pick any .ogg/.wav under the folder
+tts_voice = "comp_v1" # optional: id your TTS backend understands
+
+[speakers.Narrator]
+folder = "assets/voices/Narrator"
+files = [ ]
