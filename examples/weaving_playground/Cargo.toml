@@ -1,0 +1,17 @@
+[package]
+name = "weaving_playground"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+winit = { workspace = true }
+wgpu  = { workspace = true }
+glam  = { workspace = true }
+pollster = { workspace = true }
+
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-render = { path = "../../astraweave-render" }
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-nav = { path = "../../astraweave-nav" }
+astraweave-gameplay = { path = "../../astraweave-gameplay" }
