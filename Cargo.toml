@@ -6,21 +6,23 @@ members = [
   "astraweave-director",
   "astraweave-memory",
   "astraweave-ipc",
-  "astraweave-llm",        # NEW
-  "astraweave-persona",    # NEW
-  "astraweave-author",     # NEW
-  "astraweave-net",        # NEW
+  "astraweave-llm",       
+  "astraweave-persona",   
+  "astraweave-author",    
+  "astraweave-net",       
   "examples/hello_companion",
   "examples/adaptive_boss",
   "examples/companion_profile",
   "examples/ipc_loopback",
   "examples/debug_overlay",
-  "examples/llm_toolcall",    # NEW
-  "examples/phase_director",  # NEW
-  "examples/persona_loader",  # NEW
-  "examples/rhai_authoring",  # NEW
-  "examples/coop_server",     # NEW
-  "examples/coop_client",     # NEW
+  "examples/llm_toolcall",    
+  "examples/phase_director",  
+  "examples/persona_loader",  
+  "examples/rhai_authoring",  
+  "examples/coop_server",     
+  "examples/coop_client",    
+  "astraweave-render",
+  "examples/visual_3d",
 ]
 resolver = "2"
 
@@ -46,3 +48,12 @@ tokio-tungstenite = "0.21"
 egui = "0.28"
 eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] } # for optional Ollama client
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bytemuck = { version = "1", features = ["derive"] }
+glam = "0.27"
+wgpu = "0.19"
+winit = "0.29"
+pollster = "0.3"
