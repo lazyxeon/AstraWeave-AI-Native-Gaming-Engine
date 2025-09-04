@@ -1,0 +1,13 @@
+[[echoes]]
+name = "Wind-sung"
+rarity = "Rare"
+power_mult = 1.35
+dtype_override = "Echo"
+special = "wind_bonus"
+
+[[echoes]]
+name = "Glacier"
+rarity = "Epic"
+power_mult = 1.50
+dtype_override = "Frost"
+special = "slow_chance"
