@@ -33,6 +33,9 @@ members = [
   "examples/quest_dialogue_demo",
   "examples/combat_physics_demo",
   "examples/cutscene_render_demo",
+  "astraweave-audio",
+  "examples/audio_spatial_demo",
+  "examples/dialogue_voice_demo",
 ]
 resolver = "2"
 
@@ -90,3 +93,4 @@ winit = "0.29"
 pollster = "0.3"
 bytemuck = { version = "1", features = ["derive"] }
 bitflags = "2.4"
+rodio = "0.17"
