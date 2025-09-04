@@ -1,0 +1,10 @@
+[package]
+name = "astraweave-physics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+glam = { workspace = true }
+rapier3d = { workspace = true }
+rand = { workspace = true }
