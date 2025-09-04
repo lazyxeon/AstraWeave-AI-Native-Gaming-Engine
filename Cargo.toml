@@ -27,6 +27,10 @@ members = [
   "astraweave-nav",
   "examples/physics_demo3d",
   "examples/navmesh_demo",
+  "astraweave-gameplay",
+  "examples/weaving_playground",
+  "examples/crafting_combat_demo",
+  "examples/quest_dialogue_demo",
 ]
 resolver = "2"
 
