@@ -1,0 +1,9 @@
+[package]
+name = "hello_companion"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-ai = { path = "../../astraweave-ai" }
