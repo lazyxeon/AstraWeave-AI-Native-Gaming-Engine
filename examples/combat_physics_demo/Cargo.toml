@@ -1,0 +1,11 @@
+[package]
+name = "combat_physics_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+glam = { workspace = true }
+rapier3d = { workspace = true }
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-gameplay = { path = "../../astraweave-gameplay" }
