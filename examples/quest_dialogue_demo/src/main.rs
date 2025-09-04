@@ -51,3 +51,14 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+let banter = r#"
+[Companion] Threads hum in the fog.
+-> mood=curious
+? mood == curious : goto n1
+[Companion] Or maybe I'm just cold.
+"#;
+let dialog2 = dialogue::compile_banter_to_nodes("banter", banter);
+let mut ds2 = dialogue::DialogueState::new(&dialog2);
+println!("Banter start: {}", dialog2.current(&dialog2).line.as_ref().unwrap().text);
+ds2.choose(&dialog2, 0);
