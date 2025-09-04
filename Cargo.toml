@@ -23,6 +23,10 @@ members = [
   "examples/coop_client",    
   "astraweave-render",
   "examples/visual_3d",
+  "astraweave-physics",
+  "astraweave-nav",
+  "examples/physics_demo3d",
+  "examples/navmesh_demo",
 ]
 resolver = "2"
 
@@ -57,3 +61,14 @@ glam = "0.27"
 wgpu = "0.19"
 winit = "0.29"
 pollster = "0.3"
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+glam = "0.27"
+wgpu = "0.19"
+winit = "0.29"
+pollster = "0.3"
+bytemuck = { version = "1", features = ["derive"] }
+rapier3d = "0.22"   # adjust if your toolchain prefers a specific minor
+rand = "0.8"
