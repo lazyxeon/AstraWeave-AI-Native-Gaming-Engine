@@ -32,6 +32,22 @@
 
 ---
 
+## What’s Under the Hood (one-liners)
+
+- Deterministic simulation: fixed-tick rules so results are repeatable and fair.
+- Tool sandbox: AI can only use allowed verbs (e.g., MoveTo, Throw smoke); engine enforces cooldowns, line-of-sight, and pathing.
+- Pathfinding & cover: A* pathing and simple cover sampling are built in.
+- Portable memory: .cprof files store the companion’s persona, skills, and distilled memories.
+- Scriptable design: Encounter budgets/hints come from small scripts—no rebuild needed.
+- Local-first AI: Works with mock or local models now; you can add edge/cloud later—engine keeps it safe either way.
+
+## What’s Not Included (yet)
+
+- Full 3D rendering/gameplay or content for a shipping RPG.
+- The dedicated console hardware (AstraCore) is a spec target; today is the PC dev kit.
+
+---
+
 ## License & ethos
 
 - **No pay‑to‑win. No loot boxes.** Expansions must be meaty, optional, and never fragment core content.  
