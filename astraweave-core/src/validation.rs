@@ -15,17 +15,17 @@ pub fn validate_and_execute(
     for (i, step) in intent.steps.iter().enumerate() {
         match step {
             ActionStep::MoveTo { x, y } => {
-                let from = w.position_of(actor).unwrap();
-                let to = IVec2{x:*x, y:*y};
+                let from = w.pos_of(actor).unwrap();
+                let to = IVec2 { x: *x, y: *y };
                 if !path_exists(&w.obstacles, from, to, cfg.world_bounds) {
                     return Err(EngineError::NoPath);
                 }
-                w.pose_mut(actor).unwrap().position = to;
-                log(format!("  [{}] MOVE_TO -> ({},{})", i, x,y));
+                w.pose_mut(actor).unwrap().pos = to;
+                log(format!("  [{}] MOVE_TO -> ({},{})", i, x, y));
             }
             ActionStep::Throw { item, x, y } => {
-                let from = w.position_of(actor).unwrap();
-                let target = IVec2{x:*x, y:*y};
+                let from = w.pos_of(actor).unwrap();
+                let target = IVec2 { x: *x, y: *y };
                 if !los_clear(&w.obstacles, from, target) {
                     return Err(EngineError::LosBlocked);
                 }
@@ -38,8 +38,10 @@ pub fn validate_and_execute(
                 log(format!("  [{}] THROW {} -> ({},{})", i, item, x,y));
             }
             ActionStep::CoverFire { target_id, duration } => {
-                let my = w.position_of(actor).unwrap();
-                let tgt = w.position_of(*target_id).ok_or_else(|| EngineError::InvalidAction("target gone".into()))?;
+                let my = w.pos_of(actor).unwrap();
+                let tgt = w
+                    .pos_of(*target_id)
+                    .ok_or_else(|| EngineError::InvalidAction("target gone".into()))?;
                 if !los_clear(&w.obstacles, my, tgt) {
                     return Err(EngineError::LosBlocked);
                 }

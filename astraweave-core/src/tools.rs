@@ -1,11 +1,10 @@
-use crate::Entity;
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet};
 // Import glam::IVec2 with an alias to avoid name conflicts
 use glam::IVec2 as GlamIVec2;
 
 #[derive(Debug, Clone)]
-pub struct Poi {
+pub struct ToolPoi {
     /// Unique key or name for the POI
     pub key: String,
     /// Grid or world position of the POI
@@ -175,8 +174,6 @@ pub fn find_cover_positions(
 ) -> Vec<crate::IVec2> {
     // Convert schema::IVec2 to glam::IVec2
     let from_glam = schema_to_glam(from);
-    let player_glam = schema_to_glam(player);
-    let enemy_glam = schema_to_glam(enemy);
     
     let (minx,miny,maxx,maxy) = bounds;
     let mut out = vec![];

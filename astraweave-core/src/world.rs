@@ -58,7 +58,9 @@ impl World {
     pub fn health(&self, e: Entity) -> Option<Health> { self.health.get(&e).copied() }
     pub fn health_mut(&mut self, e: Entity) -> Option<&mut Health> { self.health.get_mut(&e) }
     pub fn team(&self, e: Entity) -> Option<Team> { self.team.get(&e).copied() }
+    pub fn ammo(&self, e: Entity) -> Option<Ammo> { self.ammo.get(&e).copied() }
     pub fn ammo_mut(&mut self, e: Entity) -> Option<&mut Ammo> { self.ammo.get_mut(&e) }
+    pub fn cooldowns(&self, e: Entity) -> Option<&Cooldowns> { self.cds.get(&e) }
     pub fn cooldowns_mut(&mut self, e: Entity) -> Option<&mut Cooldowns> { self.cds.get_mut(&e) }
     pub fn name(&self, e: Entity) -> Option<&str> { self.names.get(&e).map(|s| s.as_str()) }
 
