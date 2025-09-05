@@ -1,4 +1,5 @@
 use crate::{World, WorldSnapshot, PlayerState, CompanionState, EnemyState, IVec2, Entity};
+use crate::schema::Poi;
 use std::collections::BTreeMap;
 
 pub struct PerceptionConfig {
@@ -22,8 +23,14 @@ pub fn build_snapshot(
         orders: vec!["hold_east".into()],
     };
     let me = CompanionState {
-        ammo: w.ammo_mut(t_companion).unwrap().rounds,
-        cooldowns: w.cooldowns_mut(t_companion).unwrap().map.clone().into_iter().collect::<BTreeMap<_,_>>(),
+        ammo: w.ammo(t_companion).unwrap().rounds,
+        cooldowns: w
+            .cooldowns(t_companion)
+            .unwrap()
+            .map
+            .clone()
+            .into_iter()
+            .collect::<BTreeMap<_, _>>(),
         morale: 0.8,
         pos: cpos,
     };
@@ -37,10 +44,13 @@ pub fn build_snapshot(
 
     WorldSnapshot {
         t: w.t,
-        player, me, enemies, pois: vec![Poi{k:"breach_door".into(), pos: IVec2{x:15,y:8}}],
+        player,
+        me,
+        enemies,
+        pois: vec![Poi {
+            k: "breach_door".into(),
+            pos: IVec2 { x: 15, y: 8 },
+        }],
         objective,
     }
 }
-
-#[derive(Clone)]
-pub struct Poi { pub k: String, pub pos: IVec2 }
