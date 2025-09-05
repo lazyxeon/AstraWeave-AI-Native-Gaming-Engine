@@ -1,0 +1,57 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**/*.rs'
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - '**/*.rs'
+      - '**/*.md'
+      - 'docs/**'
+      - '.github/workflows/docs.yml'
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy Docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-doc-tools
+        run: cargo install cargo-doc-tools
+
+      - name: Install mdBook
+        run: cargo install mdbook
+
+      - name: Build API documentation
+        run: |
+          cargo doc --no-deps --all-features
+          echo "<meta http-equiv=&quot;refresh&quot; content=&quot;0; url=astraweave_core/index.html&quot;>" > target/doc/index.html
+
+      - name: Build mdBook documentation
+        run: |
+          mkdir -p docs/book
+          cp -r target/doc docs/book/api
+          cd docs && mdbook build
+
+      # Only deploy on push to main, not on pull requests
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs/book
+          branch: gh-pages

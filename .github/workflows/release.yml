@@ -1,0 +1,118 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build Release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: veilweaver-linux-amd64
+            asset_name: veilweaver-linux-amd64.tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: veilweaver-windows-amd64
+            asset_name: veilweaver-windows-amd64.zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: veilweaver-macos-amd64
+            asset_name: veilweaver-macos-amd64.tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Create artifact directory
+        run: mkdir -p artifacts/${{ matrix.artifact_name }}
+
+      - name: Copy binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cp target/${{ matrix.target }}/release/examples/weaving_playground artifacts/${{ matrix.artifact_name }}/
+          cp target/${{ matrix.target }}/release/examples/crafting_combat_demo artifacts/${{ matrix.artifact_name }}/
+          cp target/${{ matrix.target }}/release/examples/dialogue_voice_demo artifacts/${{ matrix.artifact_name }}/
+          cp target/${{ matrix.target }}/release/examples/physics_demo3d artifacts/${{ matrix.artifact_name }}/
+          cp target/${{ matrix.target }}/release/examples/phase_director artifacts/${{ matrix.artifact_name }}/
+          cp target/${{ matrix.target }}/release/examples/navmesh_demo artifacts/${{ matrix.artifact_name }}/
+          cp target/${{ matrix.target }}/release/examples/cutscene_render_demo artifacts/${{ matrix.artifact_name }}/
+          cp README.md LICENSE artifacts/${{ matrix.artifact_name }}/
+
+      - name: Copy binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          copy target\${{ matrix.target }}\release\examples\weaving_playground.exe artifacts\${{ matrix.artifact_name }}\
+          copy target\${{ matrix.target }}\release\examples\crafting_combat_demo.exe artifacts\${{ matrix.artifact_name }}\
+          copy target\${{ matrix.target }}\release\examples\dialogue_voice_demo.exe artifacts\${{ matrix.artifact_name }}\
+          copy target\${{ matrix.target }}\release\examples\physics_demo3d.exe artifacts\${{ matrix.artifact_name }}\
+          copy target\${{ matrix.target }}\release\examples\phase_director.exe artifacts\${{ matrix.artifact_name }}\
+          copy target\${{ matrix.target }}\release\examples\navmesh_demo.exe artifacts\${{ matrix.artifact_name }}\
+          copy target\${{ matrix.target }}\release\examples\cutscene_render_demo.exe artifacts\${{ matrix.artifact_name }}\
+          copy README.md artifacts\${{ matrix.artifact_name }}\
+          copy LICENSE artifacts\${{ matrix.artifact_name }}\
+
+      - name: Create archive (Unix)
+        if: runner.os != 'Windows'
+        run: tar -czf ${{ matrix.asset_name }} -C artifacts ${{ matrix.artifact_name }}
+
+      - name: Create archive (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path artifacts\${{ matrix.artifact_name }}\* -DestinationPath ${{ matrix.asset_name }}
+
+      - name: Generate SHA-256 checksums
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            certutil -hashfile ${{ matrix.asset_name }} SHA256 > ${{ matrix.asset_name }}.sha256
+            cat ${{ matrix.asset_name }}.sha256
+          else
+            shasum -a 256 ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
+            cat ${{ matrix.asset_name }}.sha256
+          fi
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.asset_name }}
+          retention-days: 7
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            veilweaver-linux-amd64/veilweaver-linux-amd64.tar.gz
+            veilweaver-linux-amd64/veilweaver-linux-amd64.tar.gz.sha256
+            veilweaver-windows-amd64/veilweaver-windows-amd64.zip
+            veilweaver-windows-amd64/veilweaver-windows-amd64.zip.sha256
+            veilweaver-macos-amd64/veilweaver-macos-amd64.tar.gz
+            veilweaver-macos-amd64/veilweaver-macos-amd64.tar.gz.sha256
+          draft: true
+          generate_release_notes: true

@@ -1,0 +1,38 @@
+version: 2
+updates:
+  # Enable version updates for Cargo
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Limit the number of open pull requests for dependencies
+    open-pull-requests-limit: 10
+    # Group all updates together
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    # Specify labels for pull requests
+    labels:
+      - "dependencies"
+      - "security"
+    # Raise pull requests for version updates against the default branch
+    target-branch: "main"
+    # Set a prefix for commit messages
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    # Ignore specific dependencies
+    ignore:
+      # Ignore patch updates for wgpu as they might break compatibility
+      - dependency-name: "wgpu"
+        update-types: ["version-update:semver-patch"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"

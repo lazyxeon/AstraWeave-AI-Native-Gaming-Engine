@@ -1,0 +1,82 @@
+name: Security Audit
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Run at midnight every Sunday
+  push:
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+      - '.github/workflows/security-audit.yml'
+  pull_request:
+    paths:
+      - '**/Cargo.toml'
+      - '**/Cargo.lock'
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run cargo-audit
+        run: cargo audit
+
+  cargo-deny:
+    name: Cargo Deny Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny
+
+      - name: Create cargo-deny config
+        run: |
+          mkdir -p .cargo-deny
+          cat > .cargo-deny/deny.toml << 'EOF'
+          [licenses]
+          unlicensed = "deny"
+          allow = [
+              "MIT",
+              "Apache-2.0",
+              "BSD-3-Clause",
+              "BSD-2-Clause",
+              "CC0-1.0",
+              "ISC",
+              "Zlib",
+              "MPL-2.0",
+          ]
+          copyleft = "warn"
+          allow-osi-fsf-free = "either"
+          default = "deny"
+
+          [bans]
+          multiple-versions = "warn"
+          highlight = "all"
+          
+          [sources]
+          unknown-registry = "warn"
+          unknown-git = "warn"
+          
+          [advisories]
+          vulnerability = "deny"
+          unmaintained = "warn"
+          yanked = "warn"
+          notice = "warn"
+          EOF
+
+      - name: Run cargo-deny
+        run: cargo deny check
