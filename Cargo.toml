@@ -36,6 +36,8 @@ members = [
   "astraweave-audio",
   "examples/audio_spatial_demo",
   "examples/dialogue_voice_demo",
+  "astraweave-npc",
+  "examples/npc_town_demo",
 ]
 resolver = "2"
 
