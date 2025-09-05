@@ -19,6 +19,8 @@ navmesh baking and A* pathfinding with funnel/string‑pull refinement.
 preferences. Boss director with multi‑phase behaviour, budgeted fortify/collapse/spawn operations,
 portal graphs and telegraphed phase shifts.
 
+## AI NPC system - all npc's have ai dialogue, actions, reactions.
+
 ## Gameplay Modules – Fate‑Weaving (terrain/weather manipulation with consequences), crafting and
 echo infusion, combo‑based combat, resource harvesting, procedurally generated biomes,
 branching dialogue with variables, quests and cutscenes.
