@@ -40,7 +40,7 @@ pub fn load_persona_zip(path: &str) -> Result<CompanionProfile> {
         p.skills = sk.into_iter().map(|s| Skill{ name:s.name, level:s.level, notes:s.notes }).collect();
     }
     if let Some(fs) = m.facts {
-        p.facts = fs.into_iter().map(|f| Fact{ k:f.k, v:f.v, t:f.t }).collect();
+        p.facts = fs.into_iter().map(|f| Fact{ k:f.key, v:f.v, t:f.t }).collect();
     }
     p.sign();
     Ok(p)
