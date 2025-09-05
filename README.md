@@ -39,7 +39,7 @@ validation. IPC layer for swapping local AI with edge/cloud models.
 ---
 
 ## Getting Started
-Clone the repository and install dependencies with Rust’s nightly toolchain. Examples can be run directly
+Clone the repository and install dependencies with Rust's nightly toolchain. Examples can be run directly
 with Cargo:
 # run a 3D world with basic companion planning and rendering
 cargo run -p weaving_playground
@@ -87,15 +87,43 @@ assets/ # sample data (dialogue, quests, recipes, voices)
 
 ---
 
+## 🔒 Security & Quality Assurance
+
+Veilweaver implements several security and quality assurance workflows to ensure code reliability and safety:
+
+### OpenSSF Scorecard
+We use the [OpenSSF Scorecard](https://securityscorecards.dev/) to continuously monitor our security posture and best practices compliance.
+
+### Security Auditing
+- **Dependency Scanning**: Automated checks for vulnerable dependencies using cargo-audit
+- **License Compliance**: Verification of dependency licenses using cargo-deny
+- **Vulnerability Reporting**: Clear process for reporting security issues (see [SECURITY.md](SECURITY.md))
+
+### Code Quality
+- **Static Analysis**: Rust's Clippy for code quality and potential bug detection
+- **Formatting Standards**: Enforced code style with rustfmt
+- **CodeQL Analysis**: Advanced static analysis for security vulnerabilities
+
+### Continuous Integration
+- **Cross-platform Testing**: Automated testing on Linux, Windows, and macOS
+- **Performance Benchmarking**: Tracking performance metrics over time
+- **Documentation Generation**: Automatic API documentation updates
+
+For more information on contributing securely to this project, please see our [Contributing Guidelines](CONTRIBUTING.md).
+
+---
+
 # LICENSE
 MIT License
 
 ---
 
 # Contributing
-Contributions are welcome! If you’d like to add new demos, improve performance, integrate a new AI
+Contributions are welcome! If you'd like to add new demos, improve performance, integrate a new AI
 backend or expand gameplay mechanics, please open an issue or pull request. When contributing code,
 please format with rustfmt and include unit tests or example scenes.
+
+For detailed contribution guidelines, please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 

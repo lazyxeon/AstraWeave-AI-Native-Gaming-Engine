@@ -1,0 +1,58 @@
+name: OpenSSF Scorecard
+
+on:
+  # For the best security, Scorecard should be run on a schedule
+  # and on any changes to the default branch
+  schedule:
+    - cron: '0 2 * * 0' # Run at 2 AM UTC every Sunday
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write # Required for requesting the JWT
+
+jobs:
+  scorecard:
+    name: OpenSSF Scorecard Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to upload the results to code-scanning dashboard
+      security-events: write
+      # Needed to publish results and get a badge
+      id-token: write
+      # Needed to checkout the repository
+      contents: read
+      # Needed for GitHub OIDC token
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard analysis
+        uses: ossf/scorecard-action@v2.3.1
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Publish the results for public repositories to enable scorecard badges
+          publish_results: true
+
+      # Upload the results as artifacts
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      # Upload the results to GitHub's code scanning dashboard
+      - name: Upload to code-scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
