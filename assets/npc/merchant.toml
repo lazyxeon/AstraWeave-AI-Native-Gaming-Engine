@@ -1,0 +1,19 @@
+id = "npc_merchant_01"
+role = "Merchant"
+
+[persona]
+display_name = "Tamsin"
+traits = ["friendly", "shrewd", "well-traveled"]
+backstory = "A trader who crossed the veil twice and lived to sell the story."
+voice_speaker = "Companion"   # reuse your voice bank key if you like
+
+[memory]
+facts = ["sells: potions, rope, echo_shards", "hates: thieves"]
+episodes = ["met: player at market"]
+
+home = [0.0, 1.0, 0.0]
+
+[[schedule]]
+hour = 9
+action = "work"
+target = [0.0, 1.0, 0.0]
