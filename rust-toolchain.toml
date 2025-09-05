@@ -1,0 +1,6 @@
+[toolchain]
+channel = "stable"
+# Optionally pin an exact stable, e.g.:
+# channel = "1.80.1"
+components = ["rustfmt", "clippy"]
+profile = "minimal"
