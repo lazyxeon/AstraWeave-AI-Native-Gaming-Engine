@@ -2,7 +2,7 @@ use crate::{IVec2, Entity};
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Tool {
     MoveTo,
     Throw,      // item: smoke|grenade
