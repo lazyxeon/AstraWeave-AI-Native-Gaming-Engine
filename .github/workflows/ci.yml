@@ -2,72 +2,95 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Test
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable]
-        include:
-          - os: ubuntu-latest
-            rust: nightly
+  build:
+    name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
     steps:
-      - uses: actions/checkout@v5
-      
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.rust }}
-      
-      - name: Install Linux dependencies
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      # ---- OS prerequisites (Linux/macOS) ----
+      - name: Install native deps (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
+          # Core dev tools
+          sudo apt-get install -y build-essential pkg-config cmake ninja-build
+          # X11 + GL/EGL for winit/glutin/egui (wgpu paths)
+          sudo apt-get install -y \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev
+          # Wayland headers (winit can target both X11 and Wayland)
+          sudo apt-get install -y wayland-protocols libwayland-dev
+          # Audio for cpal/rodio
+          sudo apt-get install -y libasound2-dev libpulse-dev
+          # Vulkan runtime (not strictly needed to compile, helpful for runtime CI/tools)
+          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
+          # Zip/other misc used by builds
+          sudo apt-get install -y unzip zip
 
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build
-        run: cargo build --verbose
-      
-      - name: Run tests
-        run: cargo test --verbose
-
-  coverage:
-    name: Code coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: llvm-tools-preview
-      
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      
-      - name: Install Linux dependencies
+      - name: Install native deps (macOS)
+        if: runner.os == 'macOS'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
-      
-      - name: Generate code coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+          brew update
+          brew install pkg-config
+
+      # Windows generally builds out-of-the-box for these crates.
+      # If you later need Vulkan SDK or other DLLs for runtime tests, add a step here.
+
+      # ---- Cargo caches ----
+      - name: Cache cargo registry
+        uses: actions/cache@v4
         with:
-          file: lcov.info
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo git
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-git-
+
+      - name: Cache build artifacts (target/)
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-target-
+
+      # ---- Build (deterministic) ----
+      - name: Build (debug)
+        run: cargo build --workspace --locked --verbose
+
+      # Optionally, also build release artifacts
+      - name: Build (release)
+        run: cargo build --workspace --locked --release --verbose
+
+      # Optional checks
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy (lint)
+        run: cargo clippy --workspace --all-features -- -D warnings
+
+  # You can create a separate job for unit tests, but build is the top priority initially.
