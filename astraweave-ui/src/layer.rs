@@ -1,7 +1,7 @@
 use anyhow::Result;
 use egui::{Context, FullOutput};
 use egui-wgpu::renderer::{Renderer as EguiRenderer, ScreenDescriptor};
-use egui_winit::State as EguiWinit;
+use egui-winit::State as EguiWinit;
 use winit::event::{WindowEvent};
 use winit::window::Window;
 
