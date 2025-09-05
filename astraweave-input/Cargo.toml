@@ -1,0 +1,13 @@
+[package]
+name = "astraweave-input"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+winit = { workspace = true }
+glam = { workspace = true }
+gilrs = { workspace = true }
