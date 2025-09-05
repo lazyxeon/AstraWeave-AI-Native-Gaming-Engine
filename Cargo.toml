@@ -38,6 +38,9 @@ members = [
   "examples/dialogue_voice_demo",
   "astraweave-npc",
   "examples/npc_town_demo",
+  "astraweave-input",
+  "astraweave-ui",
+  "examples/ui_controls_demo",
 ]
 resolver = "2"
 
@@ -96,3 +99,8 @@ pollster = "0.3"
 bytemuck = { version = "1", features = ["derive"] }
 bitflags = "2.4"
 rodio = "0.17"
+# UI + gamepad
+egui = "0.27"
+egui_winit = "0.27"
+egui_wgpu = "0.27"
+gilrs = "0.10"         # gamepad (Linux/Windows/macOS); optional on unsupported platforms
