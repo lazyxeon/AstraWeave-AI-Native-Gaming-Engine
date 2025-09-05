@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-ollama = []
+ollama = [] #IDK
 
 [dependencies]
 anyhow = { workspace = true }
