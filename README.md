@@ -1,3 +1,6 @@
+
+[![CodeQL Analysis](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/codeql-analysis.yml)
+
 # Veilweaver: Threads of Eternity
 Veilweaver: Threads of Eternity is a research platform and playable vertical slice for
 building AI‑native games. It delivers a complete engine and toolkit for creating rich,
