@@ -11,7 +11,7 @@ glam  = { workspace = true }
 pollster = { workspace = true }
 egui = { workspace = true }
 egui_winit = { workspace = true }
-egui_wgpu = { workspace = true }
+egui-wgpu = { workspace = true }
 
 astraweave-render   = { path = "../../astraweave-render" }
 astraweave-input    = { path = "../../astraweave-input" }
