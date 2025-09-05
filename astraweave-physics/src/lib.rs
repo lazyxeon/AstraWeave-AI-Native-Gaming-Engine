@@ -261,7 +261,7 @@ impl PhysicsWorld {
         let iso = rb.position();
         let (px,py,pz) = (iso.translation.x, iso.translation.y, iso.translation.z);
         let rot = iso.rotation;
-        let q = glam::Quat::from_xyzw(rot.i, rot.j, rot.k, rot.w);
+        let q = glam::Quat::from_xyzw(rot.i, rot.j, rot.key, rot.w);
         Some(Mat4::from_rotation_translation(q, vec3(px,py,pz)))
     }
 
