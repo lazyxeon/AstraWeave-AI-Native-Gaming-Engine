@@ -1,0 +1,17 @@
+[package]
+name = "astraweave-npc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+rand = { workspace = true }
+glam = { workspace = true }
+
+astraweave-physics = { path = "../astraweave-physics" }
+astraweave-audio   = { path = "../astraweave-audio" }
+astraweave-gameplay = { path = "../astraweave-gameplay" }   # for dialogue/quests types if needed
