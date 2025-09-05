@@ -1,6 +1,19 @@
 use crate::{IVec2, Entity};
 use serde::{Serialize, Deserialize};
 use std::collections::{HashMap, HashSet};
+use glam::IVec2;
+
+#[derive(Debug, Clone)]
+pub struct Poi {
+    /// Unique key or name for the POI
+    pub key: String,
+    /// Grid or world position of the POI
+    pub position: IVec2,
+    /// Description or lore for the POI
+    pub description: Option<String>,
+    /// Is the POI currently active or discoverable in the world?
+    pub active: bool,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Tool {
