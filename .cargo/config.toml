@@ -1,0 +1,10 @@
+[build]
+# Fail if Cargo.lock is out of date in CI (paired with --locked)
+rustflags = ["-C", "debuginfo=0"]
+
+[target.'cfg(all())']
+# You can enable sccache later by uncommenting these lines:
+# rustc-wrapper = "sccache"
+
+[term]
+color = "always"
