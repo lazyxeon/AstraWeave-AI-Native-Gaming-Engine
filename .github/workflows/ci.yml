@@ -41,7 +41,7 @@ jobs:
           # Wayland headers (winit can target both X11 and Wayland)
           sudo apt-get install -y wayland-protocols libwayland-dev
           # Audio for cpal/rodio
-          sudo apt-get install -y libasound2-dev libpulse-dev
+          sudo apt-get install -y libasound2-dev libpulse-dev libudev-dev
           # Vulkan runtime (not strictly needed to compile, helpful for runtime CI/tools)
           sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
           # Zip/other misc used by builds

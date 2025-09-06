@@ -74,18 +74,17 @@ impl OverlayFx {
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("overlay pipe"),
             layout: Some(&pl),
-            vertex: wgpu::VertexState { module: &shader, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+            vertex: wgpu::VertexState { module: &shader, entry_point: "vs_main", buffers: &[] },
             fragment: Some(wgpu::FragmentState {
                 module: &shader, entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format, blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL
                 })],
-                compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            multiview: None, cache: None,
+            multiview: None,
         });
         Self { buf, pipeline, bind }
     }

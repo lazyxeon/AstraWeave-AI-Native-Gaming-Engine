@@ -10,3 +10,4 @@ glam = { workspace = true }
 wgpu = { workspace = true }
 winit = { workspace = true }
 pollster = { workspace = true }
+rand = { workspace = true }
