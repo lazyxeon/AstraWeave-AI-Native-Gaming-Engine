@@ -5,7 +5,7 @@ use glam::{Vec3, vec3};
 use astraweave_physics::{PhysicsWorld, BodyId};
 use astraweave_audio::AudioEngine;
 
-use crate::{NpcMode, NpcAction, NpcPlan, NpcWorldView, profile::NpcProfile, llm::LlmAdapter};
+use crate::{NpcMode, NpcAction, NpcWorldView, profile::NpcProfile, llm::LlmAdapter};
 
 pub type NpcId = u64;
 
@@ -134,9 +134,9 @@ impl NpcManager {
             NpcAction::MoveTo { pos, speed } => {
                 // move in direct line toward pos (simple demo; pathfinding can be added)
                 // direction = (pos - current). normalized
-                if let Some(cur) = Self::body_pos(glue, body) {
+                if let Some(cur) = self.body_pos(glue, npc.body) {
                     let dir = *pos - cur;
-                    glue.move_character(body, dir, *speed);
+                    glue.move_character(npc.body, dir, *speed);
                 }
             }
             NpcAction::Emote { kind } => {
@@ -152,7 +152,8 @@ impl NpcManager {
         }
     }
 
-    fn body_pos(glue: &dyn CommandSink, _body: BodyId) -> Option<Vec3> {
+
+    fn body_pos(&self, _glue: &dyn CommandSink, _body: BodyId) -> Option<Vec3> {
         // For now, we cannot query position via CommandSink.
         // In your integration, pull from PhysicsWorld or World. For demo, return None to skip direction calc (handled by move_character).
         None
