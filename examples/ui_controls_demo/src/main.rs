@@ -43,7 +43,8 @@ fn main() -> anyhow::Result<()> {
         .with_title("UI & Controls Demo")
         .with_inner_size(PhysicalSize::new(1280, 720))
         .build(&event_loop)?;
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+    let window = std::sync::Arc::new(window);
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(0.0, 6.0, 14.0),
         yaw: -1.57, pitch: -0.35,
@@ -60,8 +61,8 @@ fn main() -> anyhow::Result<()> {
     let mut input = InputManager::new(InputContext::Gameplay, bindings);
 
     // UI layer
-    let surface_format = renderer.surface_size(); // we only need size; format is inside renderer
-    let mut ui = UiLayer::new(&window, unsafe { std::mem::transmute(&renderer) },  renderer.render_with(|_,_,d,_,_|{}); // placeholder to hint type
+
+    let mut ui = UiLayer::new(&window, renderer.device(), renderer.surface_format());
     // NOTE: Replace the above with actual format from renderer; if you kept it private, expose a getter for format.
     // For clarity in this snippet, we’ll assume you’ve added:
     //   pub fn surface_format(&self) -> wgpu::TextureFormat
@@ -159,7 +160,7 @@ fn main() -> anyhow::Result<()> {
                 // Render 3D + UI
                 let size = renderer.surface_size();
                 let _ = renderer.render_with(|view, enc, dev, queue, size| {
-                    ui.end_and_paint(view, enc, dev, queue, size);
+                    ui.end_and_paint(&window, view, enc, dev, queue, size);
                 });
 
                 window.request_redraw();
@@ -167,5 +168,5 @@ fn main() -> anyhow::Result<()> {
             _ => {}
         }
     })?;
-    // Ok(())
+    Ok(())
 }

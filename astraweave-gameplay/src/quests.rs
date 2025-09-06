@@ -25,7 +25,7 @@ pub struct Quest {
     pub completed: bool,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct QuestLog {
     pub quests: HashMap<String, Quest>,
 }

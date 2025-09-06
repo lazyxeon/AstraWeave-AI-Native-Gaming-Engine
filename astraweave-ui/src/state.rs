@@ -29,7 +29,7 @@ pub struct UiFlags {
     pub show_settings: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct UiData<'a> {
     pub player_stats: &'a Stats,
     pub player_pos: Vec3,

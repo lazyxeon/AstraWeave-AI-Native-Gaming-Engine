@@ -176,6 +176,7 @@ impl Renderer {
             vertex: wgpu::VertexState {
                 module: &shader, entry_point: "vs",
                 buffers: &[crate::types::Vertex::layout(), crate::types::InstanceRaw::layout()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader, entry_point: "fs",
@@ -184,6 +185,7 @@ impl Renderer {
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -353,4 +355,23 @@ impl Renderer {
     }
 
     pub fn surface_size(&self) -> (u32,u32) { (self.config.width, self.config.height) }
+    
+    pub fn device(&self) -> &wgpu::Device { &self.device }
+    
+    pub fn surface_format(&self) -> wgpu::TextureFormat { self.config.format }
+    
+    pub fn render_with<F>(&mut self, f: F) -> Result<()>
+    where
+        F: FnOnce(&wgpu::TextureView, &mut wgpu::CommandEncoder, &wgpu::Device, &wgpu::Queue, (u32, u32)),
+    {
+        let frame = self.surface.get_current_texture()?;
+        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("encoder") });
+        
+        f(&view, &mut enc, &self.device, &self.queue, self.surface_size());
+        
+        self.queue.submit(std::iter::once(enc.finish()));
+        frame.present();
+        Ok(())
+    }
 }

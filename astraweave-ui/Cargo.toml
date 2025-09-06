@@ -8,6 +8,7 @@ anyhow = { workspace = true }
 egui = { workspace = true }
 egui-winit = { workspace = true }
 egui-wgpu = { workspace = true }
+wgpu = { workspace = true }
 winit = { workspace = true }
 glam = { workspace = true }
 serde = { workspace = true }
