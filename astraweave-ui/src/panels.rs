@@ -84,7 +84,7 @@ pub fn draw_ui(
                         if ui.button("Craft").clicked() {
                             if let Some(it) = book.craft(&r.name, inventory) {
                                 // push crafted to inventory
-                                let mut new_it = it.clone();
+                                let new_it = it.clone();
                                 inventory.items.push(new_it);
                                 out.crafted = Some(r.name.clone());
                             }

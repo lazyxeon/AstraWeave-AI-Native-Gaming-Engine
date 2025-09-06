@@ -68,12 +68,12 @@ eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.27", features = ["serde"] }
-wgpu = "0.19"
+wgpu = "0.20"
 winit = { version = "0.29", features = ["serde"] }
 pollster = "0.3"
 rapier3d = "0.22"
 bitflags = "2.4"
 rodio = "0.17"
-egui-winit = "0.27"
-egui-wgpu = "0.27"
+egui-winit = "0.28"
+egui-wgpu = "0.28"
 gilrs = "0.10"
