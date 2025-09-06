@@ -53,7 +53,7 @@ pub fn string_pull(nav: &NavMesh, pg: &PortalGraph, tri_path: &[usize], start: V
         let t0 = w[0]; let t1 = w[1];
         // find portal shared by t0/t1
         if let Some(pid) = pg.tri_to_portals[t0].iter().find(|pid| {
-            let p = &pg.portals[***pid];
+            let p = &pg.portals[**pid];
             (p.left_tri == t0 && p.right_tri == t1) || (p.left_tri == t1 && p.right_tri == t0)
         }) {
             let p = &pg.portals[*pid];

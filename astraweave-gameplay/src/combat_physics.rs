@@ -37,10 +37,10 @@ pub fn perform_attack_sweep(
     let max_toi = len;
 
     let filter = QueryFilter::default();
-    if let Some((hcoll, toi)) = phys.narrow_phase.cast_shape(
+    if let Some((hcoll, toi)) = phys.query_pipeline.cast_shape(
         &phys.bodies, &phys.colliders,
         &Isometry::translation(from.x, from.y, from.z),
-        &shape, vector![dir.x, dir.y, dir.z], max_toi, filter
+        &shape, vector![dir.x, dir.y, dir.z], max_toi, filter, None
     ) {
         let hbody = phys.colliders.get(hcoll).and_then(|c| c.parent()).unwrap();
         if let Some(tgt_id) = phys.id_of(hbody) {
