@@ -234,7 +234,7 @@ impl PhysicsWorld {
         self.add_dynamic_box(pos, half, mass, Layers::DEFAULT)
     }
     pub fn break_destructible(&mut self, _id: BodyId) {}
-    
+
     #[allow(dead_code)]
     fn process_destructible_hits(&mut self) {}
 }
