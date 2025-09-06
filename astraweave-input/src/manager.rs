@@ -1,13 +1,12 @@
-use std::collections::{HashMap, HashSet};
-use anyhow::Result;
+use std::collections::HashSet;
 use glam::Vec2;
-use winit::event::{WindowEvent, ElementState, KeyEvent, MouseButton, Touch, TouchPhase};
-use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::event::{WindowEvent, ElementState, KeyEvent, Touch, TouchPhase};
+use winit::keyboard::{PhysicalKey};
 
 use gilrs::{Gilrs, Button, Axis};
 
 use crate::{Action, Axis2, InputContext};
-use crate::bindings::{BindingSet, GamepadButton, AxisKind};
+use crate::bindings::{BindingSet, GamepadButton};
 
 pub struct InputManager {
     pub context: InputContext,
@@ -26,7 +25,6 @@ pub struct InputManager {
 
     // gamepad
     gilrs: Option<Gilrs>,
-    gamepad_ids: Vec<gilrs::GamepadId>,
 
     // touch (virtual joystick)
     touch_active: bool,
@@ -38,13 +36,12 @@ pub struct InputManager {
 impl InputManager {
     pub fn new(context: InputContext, bindings: BindingSet) -> Self {
         let gilrs = Gilrs::new().ok();
-        let ids = gilrs.as_ref().map(|g| g.gamepads().map(|(id,_)| id).collect()).unwrap_or_else(|| vec![]);
         Self {
             context, bindings,
             pressed: HashSet::new(), just_pressed: HashSet::new(),
             move_axis: Axis2::default(), look_axis: Axis2::default(),
             look_sensitivity: 0.12,
-            gilrs, gamepad_ids: ids,
+            gilrs,
             touch_active:false, touch_id:None, touch_origin:None, touch_current:None,
         }
     }
@@ -59,17 +56,33 @@ impl InputManager {
     pub fn process_window_event(&mut self, ev: &WindowEvent) {
         match ev {
             WindowEvent::KeyboardInput { event: KeyEvent{ state, physical_key: PhysicalKey::Code(code), .. }, .. } => {
-                for (action, b) in &self.bindings.actions {
-                    if b.key == Some(*code) {
-                        self.set_action(*action, *state == ElementState::Pressed);
-                    }
+                let actions: Vec<_> = self.bindings.actions.iter()
+                    .filter_map(|(action, b)| {
+                        if b.key == Some(*code) {
+                            Some(*action)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                
+                for action in actions {
+                    self.set_action(action, *state == ElementState::Pressed);
                 }
             }
             WindowEvent::MouseInput { state, button, .. } => {
-                for (action, b) in &self.bindings.actions {
-                    if b.mouse == Some(*button) {
-                        self.set_action(*action, *state == ElementState::Pressed);
-                    }
+                let actions: Vec<_> = self.bindings.actions.iter()
+                    .filter_map(|(action, b)| {
+                        if b.mouse == Some(*button) {
+                            Some(*action)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                
+                for action in actions {
+                    self.set_action(action, *state == ElementState::Pressed);
                 }
             }
             WindowEvent::Touch(Touch { phase, id, location, .. }) => {
@@ -101,17 +114,25 @@ impl InputManager {
     }
 
     pub fn poll_gamepads(&mut self) {
+        // Collect events first to avoid borrowing conflicts
+        let mut events = Vec::new();
         if let Some(g) = self.gilrs.as_mut() {
             while let Some(ev) = g.next_event() {
-                use gilrs::EventType::*;
-                match ev.event {
-                    ButtonPressed(b, _) => self.handle_button(b, true),
-                    ButtonReleased(b, _) => self.handle_button(b, false),
-                    AxisChanged(a, v, _) => self.handle_axis(a, v),
-                    _ => {}
-                }
+                events.push(ev);
             }
         }
+        
+        // Process events after collecting them
+        for ev in events {
+            use gilrs::EventType::*;
+            match ev.event {
+                ButtonPressed(b, _) => self.handle_button(b, true),
+                ButtonReleased(b, _) => self.handle_button(b, false),
+                AxisChanged(a, v, _) => self.handle_axis(a, v),
+                _ => {}
+            }
+        }
+        
         // Virtual joystick from touch:
         if let (Some(o), Some(c)) = (self.touch_origin, self.touch_current) {
             let delta = (c - o) / 80.0; // pixels to normalized
@@ -144,10 +165,18 @@ impl InputManager {
             })
         };
         if let Some(gb) = map(b) {
-            for (action, bind) in &self.bindings.actions {
-                if bind.gamepad == Some(gb) {
-                    self.set_action(*action, down);
-                }
+            let actions: Vec<_> = self.bindings.actions.iter()
+                .filter_map(|(action, bind)| {
+                    if bind.gamepad == Some(gb) {
+                        Some(*action)
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+                
+            for action in actions {
+                self.set_action(action, down);
             }
         }
     }
