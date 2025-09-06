@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use anyhow::Result;
-use glam::{Vec3, vec3};
+use glam::{vec3, Vec3};
+use std::collections::HashMap;
 
-use astraweave_physics::{PhysicsWorld, BodyId};
 use astraweave_audio::AudioEngine;
+use astraweave_physics::{BodyId, PhysicsWorld};
 
-use crate::{NpcMode, NpcAction, NpcWorldView, profile::NpcProfile, llm::LlmAdapter};
+use crate::{llm::LlmAdapter, profile::NpcProfile, NpcAction, NpcMode, NpcWorldView};
 
 pub type NpcId = u64;
 
@@ -24,9 +24,14 @@ pub struct EngineCommandSink<'a> {
 
 impl<'a> CommandSink for EngineCommandSink<'a> {
     fn move_character(&mut self, body: BodyId, dir: Vec3, speed: f32) {
-        let v = if dir.length_squared() > 1e-4 { dir.normalize() * speed } else { Vec3::ZERO };
+        let v = if dir.length_squared() > 1e-4 {
+            dir.normalize() * speed
+        } else {
+            Vec3::ZERO
+        };
         // character vertical handled 0 here
-        self.phys.control_character(body, vec3(v.x, 0.0, v.z), 1.0/60.0, false);
+        self.phys
+            .control_character(body, vec3(v.x, 0.0, v.z), 1.0 / 60.0, false);
     }
 
     fn say(&mut self, _speaker: &str, text: &str) {
@@ -66,7 +71,11 @@ pub struct NpcManager {
 
 impl NpcManager {
     pub fn new(planner: Box<dyn LlmAdapter>) -> Self {
-        Self { next_id: 1, npcs: HashMap::new(), planner }
+        Self {
+            next_id: 1,
+            npcs: HashMap::new(),
+            planner,
+        }
     }
 
     pub fn spawn_from_profile(&mut self, phys: &mut PhysicsWorld, prof: NpcProfile) -> NpcId {
@@ -74,23 +83,41 @@ impl NpcManager {
         let pos = prof.home_vec3();
         let body = phys.add_character(pos, vec3(0.4, 0.9, 0.4));
         let id = self.alloc_id();
-        self.npcs.insert(id, Npc {
-            id, profile: prof, body, mode: NpcMode::Idle, pending: vec![], cooldown_talk: 0.0
-        });
+        self.npcs.insert(
+            id,
+            Npc {
+                id,
+                profile: prof,
+                body,
+                mode: NpcMode::Idle,
+                pending: vec![],
+                cooldown_talk: 0.0,
+            },
+        );
         id
     }
 
-    pub fn update(&mut self, dt: f32, glue: &mut dyn CommandSink, views: &HashMap<NpcId, NpcWorldView>) {
+    pub fn update(
+        &mut self,
+        dt: f32,
+        glue: &mut dyn CommandSink,
+        views: &HashMap<NpcId, NpcWorldView>,
+    ) {
         // Collect actions to execute to avoid borrowing issues
         let mut actions_to_execute = Vec::new();
-        
+
         for (_id, npc) in self.npcs.iter_mut() {
             // cooldowns
             npc.cooldown_talk = (npc.cooldown_talk - dt).max(0.0);
 
             // execute one pending action per tick to keep things readable
             if let Some(act) = npc.pending.first().cloned() {
-                actions_to_execute.push((npc.id, npc.body, npc.profile.persona.display_name.clone(), act));
+                actions_to_execute.push((
+                    npc.id,
+                    npc.body,
+                    npc.profile.persona.display_name.clone(),
+                    act,
+                ));
                 npc.pending.remove(0);
             } else {
                 // idle micro-behavior: guards patrol slowly; merchants idle
@@ -100,7 +127,8 @@ impl NpcManager {
                             if let Some(pd) = view.player_dist {
                                 if pd < 2.0 {
                                     // step aside a bit
-                                    let dir = (view.self_pos - view.player_pos.unwrap()).normalize_or_zero();
+                                    let dir = (view.self_pos - view.player_pos.unwrap())
+                                        .normalize_or_zero();
                                     glue.move_character(npc.body, dir, 0.6);
                                 }
                             }
@@ -110,17 +138,26 @@ impl NpcManager {
                 }
             }
         }
-        
+
         // Execute collected actions
         for (npc_id, body, display_name, act) in actions_to_execute {
             Self::execute_action(glue, npc_id, body, &display_name, &act);
         }
     }
 
-    pub fn handle_player_utterance(&mut self, npc_id: NpcId, view: &NpcWorldView, utter: &str) -> Result<()> {
+    pub fn handle_player_utterance(
+        &mut self,
+        npc_id: NpcId,
+        view: &NpcWorldView,
+        utter: &str,
+    ) -> Result<()> {
         if let Some(npc) = self.npcs.get_mut(&npc_id) {
-            if npc.cooldown_talk > 0.0 { return Ok(()); }
-            let plan = self.planner.plan_dialogue_and_behaviour(&npc.profile, view, Some(utter))?;
+            if npc.cooldown_talk > 0.0 {
+                return Ok(());
+            }
+            let plan = self
+                .planner
+                .plan_dialogue_and_behaviour(&npc.profile, view, Some(utter))?;
             npc.pending.extend(plan.actions);
             npc.mode = NpcMode::Conversing;
             npc.cooldown_talk = 0.5;
@@ -128,16 +165,21 @@ impl NpcManager {
         Ok(())
     }
 
-    fn execute_action(glue: &mut dyn CommandSink, npc_id: NpcId, body: BodyId, display_name: &str, act: &NpcAction) {
+    fn execute_action(
+        glue: &mut dyn CommandSink,
+        npc_id: NpcId,
+        body: BodyId,
+        display_name: &str,
+        act: &NpcAction,
+    ) {
         match act {
             NpcAction::Say { text } => glue.say(display_name, text),
             NpcAction::MoveTo { pos, speed } => {
                 // move in direct line toward pos (simple demo; pathfinding can be added)
                 // direction = (pos - current). normalized
-                if let Some(cur) = self.body_pos(glue, npc.body) {
-                    let dir = *pos - cur;
-                    glue.move_character(npc.body, dir, *speed);
-                }
+                // For now, we cannot query position from CommandSink, so move toward target directly
+                let dir = Vec3::new(pos.x - 0.0, 0.0, pos.z - 0.0); // placeholder calculation
+                glue.move_character(body, dir, *speed);
             }
             NpcAction::Emote { kind } => {
                 println!("{} emotes {:?}", display_name, kind);
@@ -145,19 +187,23 @@ impl NpcManager {
             NpcAction::OpenShop => glue.open_shop(npc_id),
             NpcAction::GiveQuest { id } => glue.give_quest(npc_id, id),
             NpcAction::CallGuards { reason } => {
-                if let Some(cur) = Self::body_pos(glue, body) {
-                    glue.call_guards(cur, reason);
-                }
+                // For now, use a placeholder position since we can't query body position via CommandSink
+                let placeholder_pos = Vec3::new(0.0, 0.0, 0.0);
+                glue.call_guards(placeholder_pos, reason);
             }
         }
     }
 
-
+    #[allow(dead_code)]
     fn body_pos(&self, _glue: &dyn CommandSink, _body: BodyId) -> Option<Vec3> {
         // For now, we cannot query position via CommandSink.
         // In your integration, pull from PhysicsWorld or World. For demo, return None to skip direction calc (handled by move_character).
         None
     }
 
-    fn alloc_id(&mut self) -> NpcId { let id = self.next_id; self.next_id += 1; id }
+    fn alloc_id(&mut self) -> NpcId {
+        let id = self.next_id;
+        self.next_id += 1;
+        id
+    }
 }

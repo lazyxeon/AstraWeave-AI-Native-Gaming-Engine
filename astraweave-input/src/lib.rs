@@ -12,8 +12,8 @@ pub use save::*;
 mod tests {
     use super::*;
     use serde_json;
-    use winit::keyboard::KeyCode;
     use winit::event::MouseButton;
+    use winit::keyboard::KeyCode;
 
     #[test]
     fn test_keycode_serde() {
@@ -38,10 +38,10 @@ mod tests {
             mouse: Some(MouseButton::Left),
             gamepad: Some(GamepadButton::South),
         };
-        
+
         let serialized = serde_json::to_string(&binding).unwrap();
         let deserialized: Binding = serde_json::from_str(&serialized).unwrap();
-        
+
         assert_eq!(binding.key, deserialized.key);
         assert_eq!(binding.mouse, deserialized.mouse);
         assert_eq!(binding.gamepad, deserialized.gamepad);

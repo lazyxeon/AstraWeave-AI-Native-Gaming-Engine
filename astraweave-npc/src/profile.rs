@@ -1,9 +1,14 @@
-use serde::{Serialize, Deserialize};
-use glam::Vec3;
 use anyhow::Result;
+use glam::Vec3;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub enum Role { Merchant, Guard, Civilian, QuestGiver }
+pub enum Role {
+    Merchant,
+    Guard,
+    Civilian,
+    QuestGiver,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Persona {
@@ -25,9 +30,9 @@ pub struct Memory {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScheduleEntry {
-    pub hour: u8,                   // 0..23
-    pub action: String,             // "work","patrol","rest","shop"
-    pub target: [f32;3],            // position to move to
+    pub hour: u8,         // 0..23
+    pub action: String,   // "work","patrol","rest","shop"
+    pub target: [f32; 3], // position to move to
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,7 +42,7 @@ pub struct NpcProfile {
     pub persona: Persona,
     pub memory: Memory,
     #[serde(default)]
-    pub home: [f32;3],
+    pub home: [f32; 3],
     #[serde(default)]
     pub schedule: Vec<ScheduleEntry>,
 }

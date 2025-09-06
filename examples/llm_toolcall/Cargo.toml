@@ -6,5 +6,6 @@ edition = "2021"
 [dependencies]
 anyhow = { workspace = true }
 tokio = { workspace = true }
+serde_json = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-llm = { path = "../../astraweave-llm" }

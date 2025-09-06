@@ -1,13 +1,21 @@
-use std::fs;
-use astraweave_audio::{AudioEngine, MusicTrack, load_voice_bank, load_dialogue_audio_map, DialoguePlayer};
+use astraweave_audio::{
+    load_dialogue_audio_map, load_voice_bank, AudioEngine, DialoguePlayer, MusicTrack,
+};
 use astraweave_gameplay::dialogue::{Dialogue, DialogueState};
+use std::fs;
 
 fn main() -> anyhow::Result<()> {
     let mut audio = AudioEngine::new()?;
     audio.set_master_volume(1.0);
 
     // soft bgm under VO (if present)
-    let _ = audio.play_music(MusicTrack{ path: "assets/audio/bgm.ogg".into(), looped:true }, 0.8);
+    let _ = audio.play_music(
+        MusicTrack {
+            path: "assets/audio/bgm.ogg".into(),
+            looped: true,
+        },
+        0.8,
+    );
 
     // Load dialogue (we used this earlier in your repo)
     let dlg_txt = fs::read_to_string("assets/dialogue_intro.toml")?;
@@ -23,13 +31,21 @@ fn main() -> anyhow::Result<()> {
         println!("{}: {}", speaker, text);
     };
 
-    let mut player = DialoguePlayer { audio: &mut audio, bank: &bank, tts: None, overrides: overrides.as_ref(), subtitle_out: Some(&mut subtitles) };
+    let mut player = DialoguePlayer {
+        audio: &mut audio,
+        bank: &bank,
+        tts: None,
+        overrides: overrides.as_ref(),
+        subtitle_out: Some(&mut subtitles),
+    };
 
     println!("-- Dialogue (voice) --");
     loop {
         let _ = player.speak_current(&dlg, &st)?; // plays node line (VO or beep)
         let node = st.current(&dlg);
-        if node.end { break; }
+        if node.end {
+            break;
+        }
         // For demo, always pick first choice (you can add input here)
         st.choose(&dlg, 0);
     }

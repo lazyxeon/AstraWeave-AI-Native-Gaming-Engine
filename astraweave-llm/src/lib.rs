@@ -1,6 +1,5 @@
-use anyhow::{Result, bail};
-use astraweave_core::{WorldSnapshot, PlanIntent, ToolRegistry, ActionStep};
-use serde::{Serialize, Deserialize};
+use anyhow::{bail, Result};
+use astraweave_core::{ActionStep, PlanIntent, ToolRegistry, WorldSnapshot};
 
 /// Trait for LLM clients (mock, Ollama, etc).
 #[async_trait::async_trait]
@@ -13,7 +12,7 @@ pub struct MockLlm;
 
 #[async_trait::async_trait]
 impl LlmClient for MockLlm {
-    async fn complete(&self, prompt: &str) -> Result<String> {
+    async fn complete(&self, _prompt: &str) -> Result<String> {
         // A minimal JSON that follows our schema
         let out = r#"{
           "plan_id":"llm-mock",
@@ -27,20 +26,36 @@ impl LlmClient for MockLlm {
     }
 }
 
-#[cfg(feature="ollama")]
-pub struct OllamaClient { pub url: String, pub model: String }
+#[cfg(feature = "ollama")]
+pub struct OllamaClient {
+    pub url: String,
+    pub model: String,
+}
 
-#[cfg(feature="ollama")]
+#[cfg(feature = "ollama")]
 #[async_trait::async_trait]
 impl LlmClient for OllamaClient {
     async fn complete(&self, prompt: &str) -> Result<String> {
-        #[derive(Serialize)] struct Req<'a> { model: &'a str, prompt: &'a str, stream: bool }
-        #[derive(Deserialize)] struct Resp { response: String }
-        let body = Req { model: &self.model, prompt, stream: false };
+        #[derive(Serialize)]
+        struct Req<'a> {
+            model: &'a str,
+            prompt: &'a str,
+            stream: bool,
+        }
+        #[derive(Deserialize)]
+        struct Resp {
+            response: String,
+        }
+        let body = Req {
+            model: &self.model,
+            prompt,
+            stream: false,
+        };
         let resp = reqwest::Client::new()
             .post(format!("{}/api/generate", self.url))
             .json(&body)
-            .send().await?;
+            .send()
+            .await?;
         let parsed: Resp = resp.json().await?;
         Ok(parsed.response)
     }
@@ -48,7 +63,9 @@ impl LlmClient for OllamaClient {
 
 /// Build an instruction that forces JSON output conforming to PlanIntent.
 pub fn build_prompt(snap: &WorldSnapshot, reg: &ToolRegistry) -> String {
-    let tool_list = reg.tools.iter()
+    let tool_list = reg
+        .tools
+        .iter()
         .map(|t| format!(" - {} {:?}", t.name, t.args))
         .collect::<Vec<_>>()
         .join("\n");
@@ -66,7 +83,7 @@ Strict JSON schema:
 Return ONLY JSON with no commentary.
 "#;
     format!(
-r#"You are an AI game companion planner. Convert the world snapshot into a legal action plan.
+        r#"You are an AI game companion planner. Convert the world snapshot into a legal action plan.
 Use ONLY allowed tools and arguments. Do not exceed cooldown or LOS checks (the engine will validate).
 Allowed tools:
 {tools}
@@ -113,7 +130,11 @@ pub fn parse_llm_plan(json_text: &str, reg: &ToolRegistry) -> Result<PlanIntent>
 }
 
 /// End-to-end: build prompt → LLM → parse → PlanIntent.
-pub async fn plan_from_llm(client: &dyn LlmClient, snap: &WorldSnapshot, reg: &ToolRegistry) -> Result<PlanIntent> {
+pub async fn plan_from_llm(
+    client: &dyn LlmClient,
+    snap: &WorldSnapshot,
+    reg: &ToolRegistry,
+) -> Result<PlanIntent> {
     let prompt = build_prompt(snap, reg);
     let text = client.complete(&prompt).await?;
     let plan = parse_llm_plan(&text, reg)?;

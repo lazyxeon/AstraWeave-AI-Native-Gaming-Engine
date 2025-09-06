@@ -1,11 +1,9 @@
-use wgpu::util::DeviceExt;
-
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct OverlayParams {
-    pub fade: f32,        // 0..1 black fade
-    pub letterbox: f32,   // 0..0.45 fraction of screen height for bars
-    pub _pad: [f32;2],
+    pub fade: f32,      // 0..1 black fade
+    pub letterbox: f32, // 0..0.45 fraction of screen height for bars
+    pub _pad: [f32; 2],
 }
 
 pub struct OverlayFx {
@@ -53,15 +51,23 @@ impl OverlayFx {
         let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("overlay bgl"),
             entries: &[wgpu::BindGroupLayoutEntry {
-                binding:0, visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
-                count: None
-            }]
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
         });
         let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("overlay bind"),
             layout: &bgl,
-            entries: &[wgpu::BindGroupEntry { binding:0, resource: buf.as_entire_binding() }]
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buf.as_entire_binding(),
+            }],
         });
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("overlay shader"),
@@ -69,21 +75,25 @@ impl OverlayFx {
         });
         let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("overlay pl"),
-            bind_group_layouts: &[&bgl], push_constant_ranges: &[],
+            bind_group_layouts: &[&bgl],
+            push_constant_ranges: &[],
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("overlay pipe"),
             layout: Some(&pl),
-            vertex: wgpu::VertexState { 
-                module: &shader, 
-                entry_point: "vs_main", 
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: "vs_main",
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: &shader, entry_point: "fs_main",
+                module: &shader,
+                entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
-                    format, blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL
+                    format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             }),
@@ -92,7 +102,11 @@ impl OverlayFx {
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
-        Self { buf, pipeline, bind }
+        Self {
+            buf,
+            pipeline,
+            bind,
+        }
     }
 
     pub fn update(&self, queue: &wgpu::Queue, p: &OverlayParams) {

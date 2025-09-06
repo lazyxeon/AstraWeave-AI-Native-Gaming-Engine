@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(thiserror::Error, Debug)]
 pub enum SdkError {
@@ -8,7 +8,11 @@ pub enum SdkError {
     Io(#[from] std::io::Error),
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Version { pub major: u16, pub minor: u16, pub patch: u16 }
+pub struct Version {
+    pub major: u16,
+    pub minor: u16,
+    pub patch: u16,
+}
 
 pub trait GameAdapter {
     fn version(&self) -> Version;

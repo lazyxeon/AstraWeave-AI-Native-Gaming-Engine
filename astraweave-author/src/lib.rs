@@ -1,6 +1,6 @@
 use anyhow::Result;
-use rhai::{Engine, Dynamic, Map};
 use astraweave_core::DirectorBudget;
+use rhai::{Dynamic, Engine, Map};
 
 #[derive(Clone)]
 pub struct MapMeta {
@@ -10,7 +10,10 @@ pub struct MapMeta {
     pub difficulty: i32, // 1..5
 }
 
-pub fn run_author_script(path: &str, meta: &MapMeta) -> Result<(DirectorBudget, serde_json::Value)> {
+pub fn run_author_script(
+    path: &str,
+    meta: &MapMeta,
+) -> Result<(DirectorBudget, serde_json::Value)> {
     let mut engine = Engine::new();
     // Provide meta as a map
     let mut m = Map::new();
@@ -24,15 +27,34 @@ pub fn run_author_script(path: &str, meta: &MapMeta) -> Result<(DirectorBudget, 
     let out: Dynamic = engine.call_fn(&rhai::Scope::new(), &ast, "configure", (m,))?;
     let o: rhai::Map = out.cast();
 
-    let traps = o.get("traps").and_then(|d| d.clone().try_cast::<i64>()).unwrap_or(1) as i32;
-    let terrain = o.get("terrain_edits").and_then(|d| d.clone().try_cast::<i64>()).unwrap_or(2) as i32;
-    let spawns = o.get("spawns").and_then(|d| d.clone().try_cast::<i64>()).unwrap_or(1) as i32;
+    let traps = o
+        .get("traps")
+        .and_then(|d| d.clone().try_cast::<i64>())
+        .unwrap_or(1) as i32;
+    let terrain = o
+        .get("terrain_edits")
+        .and_then(|d| d.clone().try_cast::<i64>())
+        .unwrap_or(2) as i32;
+    let spawns = o
+        .get("spawns")
+        .and_then(|d| d.clone().try_cast::<i64>())
+        .unwrap_or(1) as i32;
 
     // Hints map -> JSON
-    let hints_dyn = o.get("hints").cloned().unwrap_or(Dynamic::from(rhai::Map::new()));
+    let hints_dyn = o
+        .get("hints")
+        .cloned()
+        .unwrap_or(Dynamic::from(rhai::Map::new()));
     let hints_json = rhai_to_json(&hints_dyn)?;
 
-    Ok((DirectorBudget{traps, terrain_edits:terrain, spawns}, hints_json))
+    Ok((
+        DirectorBudget {
+            traps,
+            terrain_edits: terrain,
+            spawns,
+        },
+        hints_json,
+    ))
 }
 
 fn rhai_to_json(d: &rhai::Dynamic) -> Result<serde_json::Value> {
@@ -46,7 +68,9 @@ fn rhai_to_json(d: &rhai::Dynamic) -> Result<serde_json::Value> {
     } else if d.is::<rhai::Array>() {
         let arr: rhai::Array = d.clone().cast();
         let mut out = vec![];
-        for v in arr { out.push(rhai_to_json(&v)?); }
+        for v in arr {
+            out.push(rhai_to_json(&v)?);
+        }
         Ok(serde_json::Value::Array(out))
     } else if let Some(i) = d.clone().try_cast::<i64>() {
         Ok(serde_json::Value::from(i))

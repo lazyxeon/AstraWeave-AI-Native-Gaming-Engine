@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
+use crate::{Inventory, ResourceKind};
 use glam::Vec3;
-use crate::{ResourceKind, Inventory};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ResourceNode {

@@ -1,5 +1,5 @@
-use serde::{Serialize, Deserialize};
-use crate::{Inventory, Item, ItemKind, EchoMod, ResourceKind};
+use crate::{Inventory, Item, ItemKind, ResourceKind};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CraftCost {
@@ -24,12 +24,21 @@ impl RecipeBook {
         let r = self.recipes.iter().find(|r| r.name == name)?;
         // check costs
         for c in &r.costs {
-            let have = inv.resources.iter().find(|(k,_)| *k == c.kind).map(|(_,n)|*n).unwrap_or(0);
-            if have < c.count { return None; }
+            let have = inv
+                .resources
+                .iter()
+                .find(|(k, _)| *k == c.kind)
+                .map(|(_, n)| *n)
+                .unwrap_or(0);
+            if have < c.count {
+                return None;
+            }
         }
         // pay costs
         for c in &r.costs {
-            if !inv.remove_resource(c.kind, c.count) { return None; }
+            if !inv.remove_resource(c.kind, c.count) {
+                return None;
+            }
         }
         // create item
         let itm = Item {
@@ -43,7 +52,10 @@ impl RecipeBook {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct FactionStanding { pub name: String, pub reputation: i32 } // -100..100
+pub struct FactionStanding {
+    pub name: String,
+    pub reputation: i32,
+} // -100..100
 
 #[derive(Clone, Debug)]
 pub struct CraftBench {
@@ -51,9 +63,16 @@ pub struct CraftBench {
 }
 
 impl CraftBench {
-    pub fn success_chance(&self, player_power: i32, faction: Option<&FactionStanding>, rarity: Option<&crate::items::Rarity>) -> f32 {
+    pub fn success_chance(
+        &self,
+        player_power: i32,
+        faction: Option<&FactionStanding>,
+        rarity: Option<&crate::items::Rarity>,
+    ) -> f32 {
         let base = 0.75 + (self.quality as f32) * 0.05 + (player_power as f32) * 0.003;
-        let fac = faction.map(|f| (f.reputation as f32)*0.001).unwrap_or(0.0);
+        let fac = faction
+            .map(|f| (f.reputation as f32) * 0.001)
+            .unwrap_or(0.0);
         let rarity_penalty = match rarity {
             Some(crate::items::Rarity::Epic) => -0.15,
             Some(crate::items::Rarity::Legendary) => -0.30,

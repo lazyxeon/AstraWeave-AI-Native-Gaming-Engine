@@ -1,8 +1,13 @@
-use serde::{Serialize, Deserialize};
 use glam::Vec3;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum EmoteKind { Wave, Nod, Shrug, Point }
+pub enum EmoteKind {
+    Wave,
+    Nod,
+    Shrug,
+    Point,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum NpcAction {
@@ -20,4 +25,11 @@ pub struct NpcPlan {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum NpcMode { Idle, Patrolling, Working, Conversing, Flee, Combat }
+pub enum NpcMode {
+    Idle,
+    Patrolling,
+    Working,
+    Conversing,
+    Flee,
+    Combat,
+}

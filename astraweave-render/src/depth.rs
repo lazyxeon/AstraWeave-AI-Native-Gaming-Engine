@@ -7,7 +7,11 @@ pub struct Depth {
 impl Depth {
     pub fn create(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
         let format = wgpu::TextureFormat::Depth32Float;
-        let size = wgpu::Extent3d { width: config.width, height: config.height, depth_or_array_layers: 1 };
+        let size = wgpu::Extent3d {
+            width: config.width,
+            height: config.height,
+            depth_or_array_layers: 1,
+        };
         let desc = wgpu::TextureDescriptor {
             label: Some("depth"),
             size,
@@ -20,6 +24,10 @@ impl Depth {
         };
         let texture = device.create_texture(&desc);
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        Self { texture, view, format }
+        Self {
+            texture,
+            view,
+            format,
+        }
     }
 }

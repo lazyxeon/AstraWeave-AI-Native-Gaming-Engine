@@ -1,5 +1,5 @@
-use crate::{World, WorldSnapshot, PlayerState, CompanionState, EnemyState, IVec2, Entity};
 use crate::schema::Poi;
+use crate::{CompanionState, EnemyState, Entity, IVec2, PlayerState, World, WorldSnapshot};
 use std::collections::BTreeMap;
 
 pub struct PerceptionConfig {
@@ -12,7 +12,7 @@ pub fn build_snapshot(
     t_companion: Entity,
     enemies: &[Entity],
     objective: Option<String>,
-    cfg: &PerceptionConfig
+    cfg: &PerceptionConfig,
 ) -> WorldSnapshot {
     let ppos = w.pos_of(t_player).unwrap();
     let cpos = w.pos_of(t_companion).unwrap();
@@ -34,13 +34,26 @@ pub fn build_snapshot(
         morale: 0.8,
         pos: cpos,
     };
-    let enemies = enemies.iter().filter_map(|&e| {
-        let pos = w.pos_of(e)?;
-        let hp  = w.health(e)?.hp;
-        // LOS consider simple radius; real LOS in validator
-        let cover = if (pos.x - ppos.x).abs() + (pos.y - ppos.y).abs() > cfg.los_max { "unknown" } else { "low" };
-        Some(EnemyState { id: e, pos, hp, cover: cover.into(), last_seen: w.t })
-    }).collect::<Vec<_>>();
+    let enemies = enemies
+        .iter()
+        .filter_map(|&e| {
+            let pos = w.pos_of(e)?;
+            let hp = w.health(e)?.hp;
+            // LOS consider simple radius; real LOS in validator
+            let cover = if (pos.x - ppos.x).abs() + (pos.y - ppos.y).abs() > cfg.los_max {
+                "unknown"
+            } else {
+                "low"
+            };
+            Some(EnemyState {
+                id: e,
+                pos,
+                hp,
+                cover: cover.into(),
+                last_seen: w.t,
+            })
+        })
+        .collect::<Vec<_>>();
 
     WorldSnapshot {
         t: w.t,

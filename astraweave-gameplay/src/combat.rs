@@ -1,16 +1,19 @@
-use serde::{Serialize, Deserialize};
+use crate::{items::Item, DamageType, Stats};
 use glam::Vec3;
-use crate::{Stats, DamageType, items::Item};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum AttackKind { Light, Heavy }
+pub enum AttackKind {
+    Light,
+    Heavy,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ComboStep {
     pub kind: AttackKind,
     pub window: (f32, f32), // input window secs after previous impact
     pub damage: i32,
-    pub reach: f32, // meters
+    pub reach: f32,   // meters
     pub stagger: f32, // seconds if hit
 }
 
@@ -30,10 +33,19 @@ pub struct AttackState {
 
 impl AttackState {
     pub fn new(chain: ComboChain) -> Self {
-        Self { chain, idx: 0, t_since_last: 0.0, active: false }
+        Self {
+            chain,
+            idx: 0,
+            t_since_last: 0.0,
+            active: false,
+        }
     }
 
-    pub fn start(&mut self) { self.active = true; self.idx = 0; self.t_since_last = 0.0; }
+    pub fn start(&mut self) {
+        self.active = true;
+        self.idx = 0;
+        self.t_since_last = 0.0;
+    }
 
     /// call per-frame; returns (did_hit, applied_damage)
     pub fn tick(
@@ -45,9 +57,11 @@ impl AttackState {
         target_pos: Vec3,
         attacker_stats: &Stats,
         weapon: Option<&Item>,
-        target: &mut Stats
+        target: &mut Stats,
     ) -> (bool, i32) {
-        if !self.active { return (false, 0); }
+        if !self.active {
+            return (false, 0);
+        }
         self.t_since_last += dt;
         let step = &self.chain.steps[self.idx];
         let want = match step.kind {
@@ -67,19 +81,29 @@ impl AttackState {
                     match &w.kind {
                         crate::items::ItemKind::Weapon { base_damage, dtype } => {
                             let mult = w.echo.as_ref().map(|e| e.power_mult).unwrap_or(1.0);
-                            let dtype = w.echo.as_ref().and_then(|e| e.dtype_override).unwrap_or(*dtype);
+                            let dtype = w
+                                .echo
+                                .as_ref()
+                                .and_then(|e| e.dtype_override)
+                                .unwrap_or(*dtype);
                             let out = ((base + base_damage) as f32 * mult) as i32;
                             target.apply_damage(out, dtype);
                             dmg = out;
                         }
-                        _ => { let out = base; target.apply_damage(out, DamageType::Physical); dmg = out; }
+                        _ => {
+                            let out = base;
+                            target.apply_damage(out, DamageType::Physical);
+                            dmg = out;
+                        }
                     }
                 } else {
                     target.apply_damage(base, DamageType::Physical);
                     dmg = base;
                 }
                 // apply stagger
-                target.effects.push(crate::stats::StatusEffect::Stagger { time: step.stagger });
+                target
+                    .effects
+                    .push(crate::stats::StatusEffect::Stagger { time: step.stagger });
                 did_hit = true;
             }
             // next step
