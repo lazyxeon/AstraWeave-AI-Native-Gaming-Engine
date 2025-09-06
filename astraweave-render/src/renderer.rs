@@ -1,12 +1,12 @@
-use std::borrow::Cow;
 use anyhow::Result;
-use glam::{Mat4, vec3};
+use glam::{vec3, Mat4};
+use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
 use crate::camera::Camera;
 use crate::depth::Depth;
 use crate::primitives;
-use crate::types::{Mesh, Instance, InstanceRaw};
+use crate::types::{Instance, InstanceRaw, Mesh};
 
 const SHADER_SRC: &str = r#"
 struct VSIn {
@@ -66,17 +66,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct CameraUBO {
-    view_proj: [[f32;4];4],
-    light_dir_pad: [f32;4],
+    view_proj: [[f32; 4]; 4],
+    light_dir_pad: [f32; 4],
 }
 
 pub struct Renderer {
     surface: wgpu::Surface<'static>,
-    device:  wgpu::Device,
-    queue:   wgpu::Queue,
-    config:  wgpu::SurfaceConfiguration,
-    depth:   Depth,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    config: wgpu::SurfaceConfiguration,
+    depth: Depth,
 
+    #[allow(dead_code)]
     shader: wgpu::ShaderModule,
     pipeline: wgpu::RenderPipeline,
 
@@ -84,12 +85,13 @@ pub struct Renderer {
     camera_buf: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 
-    mesh_cube:  Mesh,
+    mesh_cube: Mesh,
     mesh_plane: Mesh,
 
     instances: Vec<Instance>,
     instance_buf: wgpu::Buffer,
-    
+
+    #[allow(dead_code)]
     overlay: crate::overlay::OverlayFx,
     pub overlay_params: crate::overlay::OverlayParams,
     pub weather: crate::effects::WeatherFx,
@@ -100,24 +102,34 @@ impl Renderer {
         // WGPU init
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
         let surface = instance.create_surface(window.clone())?;
-        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            compatible_surface: Some(&surface),
-            force_fallback_adapter: false,
-        }).await.ok_or_else(|| anyhow::anyhow!("No adapter"))?;
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            })
+            .await
+            .ok_or_else(|| anyhow::anyhow!("No adapter"))?;
 
-        let (device, queue) = adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
-            },
-            None
-        ).await?;
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("device"),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::default(),
+                },
+                None,
+            )
+            .await?;
 
         // Surface config
         let caps = surface.get_capabilities(&adapter);
-        let format = caps.formats.iter().copied().find(|f| f.is_srgb()).unwrap_or(caps.formats[0]);
+        let format = caps
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or(caps.formats[0]);
         let size = window.inner_size();
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -150,18 +162,24 @@ impl Renderer {
         let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("camera bgl"),
             entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0, visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
                 },
                 count: None,
-            }]
+            }],
         });
 
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("camera bg"),
             layout: &bind_layout,
-            entries: &[wgpu::BindGroupEntry { binding: 0, resource: camera_buf.as_entire_binding() }],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_buf.as_entire_binding(),
+            }],
         });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -174,12 +192,17 @@ impl Renderer {
             label: Some("pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &shader, entry_point: "vs",
-                buffers: &[crate::types::Vertex::layout(), crate::types::InstanceRaw::layout()],
+                module: &shader,
+                entry_point: "vs",
+                buffers: &[
+                    crate::types::Vertex::layout(),
+                    crate::types::InstanceRaw::layout(),
+                ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: &shader, entry_point: "fs",
+                module: &shader,
+                entry_point: "fs",
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -197,16 +220,23 @@ impl Renderer {
                 unclipped_depth: false,
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: depth.format, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less,
-                stencil: wgpu::StencilState::default(), bias: wgpu::DepthBiasState::default(),
+                format: depth.format,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
-        
-      let overlay = crate::overlay::OverlayFx::new(&device, format);
 
-      let overlay_params = crate::overlay::OverlayParams { fade: 0.0, letterbox: 0.0, _pad: [0.0;2] };
+        let overlay = crate::overlay::OverlayFx::new(&device, format);
+
+        let overlay_params = crate::overlay::OverlayParams {
+            fade: 0.0,
+            letterbox: 0.0,
+            _pad: [0.0; 2],
+        };
 
         // Meshes
         let (cube_v, cube_i) = primitives::cube();
@@ -246,15 +276,26 @@ impl Renderer {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-          
+
         // after instance_buf creation
         let weather = crate::effects::WeatherFx::new(&device, 800);
 
         Ok(Self {
-            surface, device, queue, config, depth, shader, pipeline,
-            camera_ubo: CameraUBO { view_proj: Mat4::IDENTITY.to_cols_array_2d(), light_dir_pad: [0.5,1.0,0.8,0.0] },
-            camera_buf, camera_bind_group,
-            mesh_cube, mesh_plane,
+            surface,
+            device,
+            queue,
+            config,
+            depth,
+            shader,
+            pipeline,
+            camera_ubo: CameraUBO {
+                view_proj: Mat4::IDENTITY.to_cols_array_2d(),
+                light_dir_pad: [0.5, 1.0, 0.8, 0.0],
+            },
+            camera_buf,
+            camera_bind_group,
+            mesh_cube,
+            mesh_plane,
             instances: Vec::new(),
             instance_buf,
             overlay,
@@ -264,7 +305,9 @@ impl Renderer {
     }
 
     pub fn resize(&mut self, new_w: u32, new_h: u32) {
-        if new_w == 0 || new_h == 0 { return; }
+        if new_w == 0 || new_h == 0 {
+            return;
+        }
         self.config.width = new_w;
         self.config.height = new_h;
         self.surface.configure(&self.device, &self.config);
@@ -273,7 +316,8 @@ impl Renderer {
 
     pub fn update_camera(&mut self, camera: &Camera) {
         self.camera_ubo.view_proj = camera.vp().to_cols_array_2d();
-        self.queue.write_buffer(&self.camera_buf, 0, bytemuck::bytes_of(&self.camera_ubo));
+        self.queue
+            .write_buffer(&self.camera_buf, 0, bytemuck::bytes_of(&self.camera_ubo));
     }
 
     pub fn update_instances(&mut self, instances: &[Instance]) {
@@ -290,28 +334,44 @@ impl Renderer {
                 mapped_at_creation: false,
             });
         }
-        self.queue.write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&raws));
+        self.queue
+            .write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&raws));
     }
 
-    pub fn set_weather(&mut self, kind: crate::effects::WeatherKind) { self.weather.set_kind(kind); }
+    pub fn set_weather(&mut self, kind: crate::effects::WeatherKind) {
+        self.weather.set_kind(kind);
+    }
 
-    pub fn tick_weather(&mut self, dt: f32) { self.weather.update(&self.queue, dt); }
-
+    pub fn tick_weather(&mut self, dt: f32) {
+        self.weather.update(&self.queue, dt);
+    }
 
     pub fn render(&mut self) -> Result<()> {
         let frame = self.surface.get_current_texture()?;
-        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("encoder") });
+        let mut enc = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("encoder"),
+            });
 
         // Create plane buffer before render pass
         let plane_scale = glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
-        let plane_inst = Instance { transform: plane_scale, color: [0.1,0.12,0.14,1.0] }.raw();
-        let plane_buf = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
-            label: Some("plane inst"),
-            contents: bytemuck::bytes_of(&plane_inst),
-            usage: wgpu::BufferUsages::VERTEX
-        });
+        let plane_inst = Instance {
+            transform: plane_scale,
+            color: [0.1, 0.12, 0.14, 1.0],
+        }
+        .raw();
+        let plane_buf = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("plane inst"),
+                contents: bytemuck::bytes_of(&plane_inst),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
 
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -319,11 +379,22 @@ impl Renderer {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color{ r:0.05, g:0.07, b:0.10, a:1.0 }), store: wgpu::StoreOp::Store }
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.05,
+                            g: 0.07,
+                            b: 0.10,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.depth.view,
-                    depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
                     stencil_ops: None,
                 }),
                 timestamp_writes: None,
@@ -335,15 +406,21 @@ impl Renderer {
 
             // Ground plane (scaled)
             rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
-            rp.set_index_buffer(self.mesh_plane.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+            rp.set_index_buffer(
+                self.mesh_plane.index_buf.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
             rp.set_vertex_buffer(1, plane_buf.slice(..));
             rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
 
             // Cubes (instances)
             rp.set_vertex_buffer(0, self.mesh_cube.vertex_buf.slice(..));
-            rp.set_index_buffer(self.mesh_cube.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+            rp.set_index_buffer(
+                self.mesh_cube.index_buf.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
             rp.set_vertex_buffer(1, self.instance_buf.slice(..));
-            let inst_count = (self.instances.len() as u32).max(0);
+            let inst_count = self.instances.len() as u32;
             if inst_count > 0 {
                 rp.draw_indexed(0..self.mesh_cube.index_count, 0, 0..inst_count);
             }
@@ -354,22 +431,46 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn surface_size(&self) -> (u32,u32) { (self.config.width, self.config.height) }
-    
-    pub fn device(&self) -> &wgpu::Device { &self.device }
-    
-    pub fn surface_format(&self) -> wgpu::TextureFormat { self.config.format }
-    
+    pub fn surface_size(&self) -> (u32, u32) {
+        (self.config.width, self.config.height)
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        &self.device
+    }
+
+    pub fn surface_format(&self) -> wgpu::TextureFormat {
+        self.config.format
+    }
+
     pub fn render_with<F>(&mut self, f: F) -> Result<()>
     where
-        F: FnOnce(&wgpu::TextureView, &mut wgpu::CommandEncoder, &wgpu::Device, &wgpu::Queue, (u32, u32)),
+        F: FnOnce(
+            &wgpu::TextureView,
+            &mut wgpu::CommandEncoder,
+            &wgpu::Device,
+            &wgpu::Queue,
+            (u32, u32),
+        ),
     {
         let frame = self.surface.get_current_texture()?;
-        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("encoder") });
-        
-        f(&view, &mut enc, &self.device, &self.queue, self.surface_size());
-        
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut enc = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("encoder"),
+            });
+
+        f(
+            &view,
+            &mut enc,
+            &self.device,
+            &self.queue,
+            self.surface_size(),
+        );
+
         self.queue.submit(std::iter::once(enc.finish()));
         frame.present();
         Ok(())

@@ -1,18 +1,22 @@
+use astraweave_ai::{Orchestrator, RuleOrchestrator};
 use astraweave_core::{
-    World, IVec2, Team, build_snapshot, PerceptionConfig,
-    validate_and_execute, ValidateCfg, SimConfig, step,
+    build_snapshot, step, validate_and_execute, IVec2, PerceptionConfig, SimConfig, Team,
+    ValidateCfg, World,
 };
-use astraweave_ai::{RuleOrchestrator, Orchestrator};
 
 fn main() -> anyhow::Result<()> {
     // Build a tiny grid arena 20x10 with some obstacles
     let mut w = World::new();
-    for x in 6..=6 { for y in 1..=8 { w.obstacles.insert((x,y)); } } // a vertical wall
+    for x in 6..=6 {
+        for y in 1..=8 {
+            w.obstacles.insert((x, y));
+        }
+    } // a vertical wall
 
     // Spawn entities
-    let player = w.spawn("Player",   IVec2{x:2, y:2}, Team{id:0}, 100, 0);
-    let comp   = w.spawn("Companion",IVec2{x:2, y:3}, Team{id:1}, 80,  30);
-    let enemy  = w.spawn("Rival",    IVec2{x:12,y:2}, Team{id:2}, 60,  0);
+    let player = w.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
+    let comp = w.spawn("Companion", IVec2 { x: 2, y: 3 }, Team { id: 1 }, 80, 30);
+    let enemy = w.spawn("Rival", IVec2 { x: 12, y: 2 }, Team { id: 2 }, 60, 0);
 
     // Prime companion cooldowns
     if let Some(cd) = w.cooldowns_mut(comp) {
@@ -21,7 +25,9 @@ fn main() -> anyhow::Result<()> {
 
     let orch = RuleOrchestrator;
     let p_cfg = PerceptionConfig { los_max: 12 };
-    let v_cfg = ValidateCfg { world_bounds: (0,0,19,9) };
+    let v_cfg = ValidateCfg {
+        world_bounds: (0, 0, 19, 9),
+    };
     let s_cfg = SimConfig { dt: 0.25 };
 
     // Build snapshot & propose plan
@@ -29,7 +35,9 @@ fn main() -> anyhow::Result<()> {
     let snap = build_snapshot(&w, player, comp, &enemies, Some("extract".into()), &p_cfg);
     let plan = orch.propose_plan(&snap);
 
-    let mut log = |line: String| { println!("{}", line); };
+    let mut log = |line: String| {
+        println!("{}", line);
+    };
 
     println!("--- TICK 0, world time {:.2}", w.t);
     validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log).unwrap();
@@ -40,8 +48,12 @@ fn main() -> anyhow::Result<()> {
     }
 
     println!("--- Post-plan world state @ t={:.2}", w.t);
-    println!("Companion @ {:?}, Enemy @ {:?}, Enemy HP = {:?}",
-        w.pos_of(comp).unwrap(), w.pos_of(enemy).unwrap(), w.health(enemy).unwrap().hp);
+    println!(
+        "Companion @ {:?}, Enemy @ {:?}, Enemy HP = {:?}",
+        w.pos_of(comp).unwrap(),
+        w.pos_of(enemy).unwrap(),
+        w.health(enemy).unwrap().hp
+    );
 
     Ok(())
 }

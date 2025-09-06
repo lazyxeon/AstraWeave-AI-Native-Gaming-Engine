@@ -1,12 +1,12 @@
 use anyhow::Result;
+use astraweave_core::*;
 use futures_util::{SinkExt, StreamExt};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use tokio::sync::{broadcast, Mutex};
 use tokio_tungstenite::tungstenite::Message;
-use astraweave_core::*;
 
 #[derive(Serialize, Deserialize, Debug)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum Msg {
     ClientHello { name: String },
     ServerWelcome { id: u32 },
@@ -26,12 +26,20 @@ pub struct GameServer {
 impl GameServer {
     pub fn new() -> Self {
         let mut w = World::new();
-        for y in 1..=8 { w.obstacles.insert((6,y)); }
-        let player = w.spawn("P", IVec2{x:2,y:2}, Team{ id:0 }, 100, 0);
-        let comp   = w.spawn("C", IVec2{x:2,y:3}, Team{ id:1 }, 80,  30);
-        let enemy  = w.spawn("E", IVec2{x:12,y:2},Team{ id:2 }, 60,  0);
+        for y in 1..=8 {
+            w.obstacles.insert((6, y));
+        }
+        let player = w.spawn("P", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
+        let comp = w.spawn("C", IVec2 { x: 2, y: 3 }, Team { id: 1 }, 80, 30);
+        let enemy = w.spawn("E", IVec2 { x: 12, y: 2 }, Team { id: 2 }, 60, 0);
         let (tx, _) = broadcast::channel(64);
-        Self { world: Mutex::new(w), player_id: player, companion_id: comp, enemy_id: enemy, tx }
+        Self {
+            world: Mutex::new(w),
+            player_id: player,
+            companion_id: comp,
+            enemy_id: enemy,
+            tx,
+        }
     }
 
     pub async fn run_ws(self: &std::sync::Arc<Self>, addr: &str) -> Result<()> {
@@ -55,10 +63,13 @@ impl GameServer {
         let mut rx_bcast = self.tx.subscribe();
 
         // send welcome
-        tx.send(Message::Text(serde_json::to_string(&Msg::ServerWelcome { id: 1 })?)).await?;
+        tx.send(Message::Text(serde_json::to_string(&Msg::ServerWelcome {
+            id: 1,
+        })?))
+        .await?;
 
         // spawn a task to push snapshots
-        let me = self.clone();
+        let _me = self.clone();
         tokio::spawn(async move {
             loop {
                 match rx_bcast.recv().await {
@@ -86,13 +97,18 @@ impl GameServer {
                             (self.companion_id, w.pos_of(self.companion_id).unwrap()),
                             (self.enemy_id, w.pos_of(self.enemy_id).unwrap()),
                         ];
-                        let snap = Msg::ServerSnapshot { t: w.t, entities: ents };
+                        let snap = Msg::ServerSnapshot {
+                            t: w.t,
+                            entities: ents,
+                        };
                         let _ = self.tx.send(serde_json::to_string(&snap).unwrap());
                     }
                     Msg::ClientProposePlan { actor_id, intent } => {
                         let mut w = self.world.lock().await;
-                        let mut log = |s:String| println!("{}", s);
-                        let vcfg = ValidateCfg { world_bounds: (0,0,19,9) };
+                        let mut log = |s: String| println!("{}", s);
+                        let vcfg = ValidateCfg {
+                            world_bounds: (0, 0, 19, 9),
+                        };
                         let res = validate_and_execute(&mut w, actor_id, &intent, &vcfg, &mut log);
                         let ok = res.is_ok();
                         let err = res.err().map(|e| e.to_string());
@@ -103,15 +119,22 @@ impl GameServer {
                             (self.companion_id, w.pos_of(self.companion_id).unwrap()),
                             (self.enemy_id, w.pos_of(self.enemy_id).unwrap()),
                         ];
-                        let snap = Msg::ServerSnapshot { t: w.t, entities: ents };
+                        let snap = Msg::ServerSnapshot {
+                            t: w.t,
+                            entities: ents,
+                        };
                         let _ = self.tx.send(serde_json::to_string(&snap).unwrap());
                         let _ = self.tx.send(serde_json::to_string(&reply).unwrap());
                     }
-                    Msg::ServerWelcome { .. } | Msg::ServerSnapshot { .. } | Msg::ServerApplyResult { .. } => {
+                    Msg::ServerWelcome { .. }
+                    | Msg::ServerSnapshot { .. }
+                    | Msg::ServerApplyResult { .. } => {
                         // ignore from clients
                     }
                 }
-            } else if msg.is_close() { break; }
+            } else if msg.is_close() {
+                break;
+            }
         }
         Ok(())
     }

@@ -1,17 +1,35 @@
-use serde::{Serialize, Deserialize};
-use sha2::{Sha256, Digest};
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Persona { pub tone:String, pub risk:String, pub humor:String, pub voice:String }
+pub struct Persona {
+    pub tone: String,
+    pub risk: String,
+    pub humor: String,
+    pub voice: String,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Fact { pub k:String, pub v:String, pub t:String }
+pub struct Fact {
+    pub k: String,
+    pub v: String,
+    pub t: String,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Episode { pub title:String, pub summary:String, pub tags:Vec<String>, pub ts:String }
+pub struct Episode {
+    pub title: String,
+    pub summary: String,
+    pub tags: Vec<String>,
+    pub ts: String,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Skill { pub name:String, pub level:u8, pub notes:String }
+pub struct Skill {
+    pub name: String,
+    pub level: u8,
+    pub notes: String,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CompanionProfile {
@@ -28,7 +46,12 @@ impl CompanionProfile {
     pub fn new_default() -> Self {
         Self {
             version: "1.0.0".into(),
-            persona: Persona{ tone:"dry".into(), risk:"medium".into(), humor:"light".into(), voice:"v01".into() },
+            persona: Persona {
+                tone: "dry".into(),
+                risk: "medium".into(),
+                humor: "light".into(),
+                voice: "v01".into(),
+            },
             player_prefs: serde_json::json!({"stealth_bias":0.5,"loot_greed":0.2}),
             facts: vec![],
             episodes: vec![],
@@ -41,7 +64,11 @@ impl CompanionProfile {
         // naive: convert older episodes into facts and truncate
         let mut new_facts = vec![];
         for e in self.episodes.drain(..).take(10) {
-            new_facts.push(Fact{ k: format!("ep:{}", e.title), v: e.summary, t: e.ts });
+            new_facts.push(Fact {
+                k: format!("ep:{}", e.title),
+                v: e.summary,
+                t: e.ts,
+            });
         }
         self.facts.extend(new_facts);
     }

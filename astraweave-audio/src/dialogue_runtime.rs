@@ -1,8 +1,11 @@
-use std::{collections::HashMap, fs, path::Path};
+use crate::{
+    engine::AudioEngine,
+    voice::{TtsAdapter, VoiceBank},
+};
 use anyhow::Result;
-use rand::seq::SliceRandom;
-use crate::{engine::AudioEngine, voice::{VoiceBank, TtsAdapter}};
 use astraweave_gameplay::dialogue::{Dialogue, DialogueState};
+use rand::seq::SliceRandom;
+use std::{collections::HashMap, fs, path::Path};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct DialogueAudioMap {
@@ -29,11 +32,15 @@ impl<'a> DialoguePlayer<'a> {
     /// Returns true if audio played or beeped.
     pub fn speak_current(&mut self, dlg: &Dialogue, st: &DialogueState) -> Result<bool> {
         let node = st.current(dlg);
-        let Some(line) = &node.line else { return Ok(false); };
+        let Some(line) = &node.line else {
+            return Ok(false);
+        };
         let spk = &line.speaker;
         let txt = &line.text;
 
-        if let Some(out) = &mut self.subtitle_out { out(spk.clone(), txt.clone()); }
+        if let Some(out) = &mut self.subtitle_out {
+            out(spk.clone(), txt.clone());
+        }
 
         // 1) explicit override? (dialogue id + node id)
         if let Some(over) = self.overrides {
@@ -65,7 +72,9 @@ impl<'a> DialoguePlayer<'a> {
                     let mut pool: Vec<String> = vec![];
                     for e in rd.flatten() {
                         if let Some(ext) = e.path().extension() {
-                            if ext == "ogg" || ext == "wav" { pool.push(e.path().to_string_lossy().to_string()); }
+                            if ext == "ogg" || ext == "wav" {
+                                pool.push(e.path().to_string_lossy().to_string());
+                            }
                         }
                     }
                     if !pool.is_empty() {

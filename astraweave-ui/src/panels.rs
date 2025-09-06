@@ -1,17 +1,21 @@
-use egui::{self, RichText, Color32};
+use egui::{self, Color32, RichText};
 use glam::Vec3;
 
-use astraweave_gameplay::{Inventory, RecipeBook};
 use astraweave_gameplay::quests::QuestLog;
 use astraweave_gameplay::stats::Stats;
+use astraweave_gameplay::{Inventory, RecipeBook};
 
-use crate::{UiFlags, Accessibility};
+use crate::{Accessibility, UiFlags};
 
 pub struct UiResult {
     pub crafted: Option<String>, // name
 }
 
-impl Default for UiResult { fn default() -> Self { Self { crafted: None } } }
+impl Default for UiResult {
+    fn default() -> Self {
+        Self { crafted: None }
+    }
+}
 
 pub fn draw_ui(
     ctx: &egui::Context,
@@ -28,16 +32,37 @@ pub fn draw_ui(
     // Top bar – Menu toggles
     egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
         ui.horizontal_wrapped(|ui| {
-            if ui.button("Menu").clicked() { flags.show_menu = !flags.show_menu; }
-            if ui.button("Inventory (I)").clicked() { flags.show_inventory = !flags.show_inventory; }
-            if ui.button("Crafting (C)").clicked() { flags.show_crafting = !flags.show_crafting; }
-            if ui.button("Map (M)").clicked() { flags.show_map = !flags.show_map; }
-            if ui.button("Quests (J)").clicked() { flags.show_quests = !flags.show_quests; }
-            if ui.button("Settings").clicked() { flags.show_settings = !flags.show_settings; }
+            if ui.button("Menu").clicked() {
+                flags.show_menu = !flags.show_menu;
+            }
+            if ui.button("Inventory (I)").clicked() {
+                flags.show_inventory = !flags.show_inventory;
+            }
+            if ui.button("Crafting (C)").clicked() {
+                flags.show_crafting = !flags.show_crafting;
+            }
+            if ui.button("Map (M)").clicked() {
+                flags.show_map = !flags.show_map;
+            }
+            if ui.button("Quests (J)").clicked() {
+                flags.show_quests = !flags.show_quests;
+            }
+            if ui.button("Settings").clicked() {
+                flags.show_settings = !flags.show_settings;
+            }
             ui.separator();
-            ui.label(RichText::new(format!("HP: {}", player_stats.hp)).color(Color32::from_rgb(220,80,80)));
-            ui.label(RichText::new(format!("STA: {}", player_stats.stamina)).color(Color32::from_rgb(80,180,220)));
-            ui.label(format!("Pos: {:.1}, {:.1}, {:.1}", player_pos.x, player_pos.y, player_pos.z));
+            ui.label(
+                RichText::new(format!("HP: {}", player_stats.hp))
+                    .color(Color32::from_rgb(220, 80, 80)),
+            );
+            ui.label(
+                RichText::new(format!("STA: {}", player_stats.stamina))
+                    .color(Color32::from_rgb(80, 180, 220)),
+            );
+            ui.label(format!(
+                "Pos: {:.1}, {:.1}, {:.1}",
+                player_pos.x, player_pos.y, player_pos.z
+            ));
         });
     });
 
@@ -55,69 +80,86 @@ pub fn draw_ui(
     });
 
     if flags.show_menu {
-        egui::Window::new("Main Menu").resizable(true).show(ctx, |ui| {
-            ui.label("Pause / Save / Exit – (placeholder)");
-            if ui.button("Close").clicked() { flags.show_menu = false; }
-        });
+        egui::Window::new("Main Menu")
+            .resizable(true)
+            .show(ctx, |ui| {
+                ui.label("Pause / Save / Exit – (placeholder)");
+                if ui.button("Close").clicked() {
+                    flags.show_menu = false;
+                }
+            });
     }
 
     if flags.show_inventory {
-        egui::Window::new("Inventory").resizable(true).show(ctx, |ui| {
-            ui.heading("Resources");
-            for (k,c) in &inventory.resources {
-                ui.label(format!("{:?}: {}", k, c));
-            }
-            ui.separator();
-            ui.heading("Items");
-            for it in &inventory.items {
-                ui.label(format!("{} {:?}", it.name, it.kind));
-            }
-        });
+        egui::Window::new("Inventory")
+            .resizable(true)
+            .show(ctx, |ui| {
+                ui.heading("Resources");
+                for (k, c) in &inventory.resources {
+                    ui.label(format!("{:?}: {}", k, c));
+                }
+                ui.separator();
+                ui.heading("Items");
+                for it in &inventory.items {
+                    ui.label(format!("{} {:?}", it.name, it.kind));
+                }
+            });
     }
 
     if flags.show_crafting {
-        egui::Window::new("Crafting").resizable(true).show(ctx, |ui| {
-            if let Some(book) = recipes {
-                for r in &book.recipes {
-                    ui.horizontal(|ui| {
-                        ui.label(format!("{} -> {:?}", r.name, r.output_item));
-                        if ui.button("Craft").clicked() {
-                            if let Some(it) = book.craft(&r.name, inventory) {
-                                // push crafted to inventory
-                                let new_it = it.clone();
-                                inventory.items.push(new_it);
-                                out.crafted = Some(r.name.clone());
+        egui::Window::new("Crafting")
+            .resizable(true)
+            .show(ctx, |ui| {
+                if let Some(book) = recipes {
+                    for r in &book.recipes {
+                        ui.horizontal(|ui| {
+                            ui.label(format!("{} -> {:?}", r.name, r.output_item));
+                            if ui.button("Craft").clicked() {
+                                if let Some(it) = book.craft(&r.name, inventory) {
+                                    // push crafted to inventory
+                                    let new_it = it.clone();
+                                    inventory.items.push(new_it);
+                                    out.crafted = Some(r.name.clone());
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
+                } else {
+                    ui.label("No recipes loaded.");
                 }
-            } else {
-                ui.label("No recipes loaded.");
-            }
-        });
+            });
     }
 
     if flags.show_map {
         egui::Window::new("Map").resizable(true).show(ctx, |ui| {
             ui.label("World Map (placeholder).");
-            ui.add(egui::widgets::Label::new("MiniMap: TODO: render navmesh texture or world quads"));
+            ui.add(egui::widgets::Label::new(
+                "MiniMap: TODO: render navmesh texture or world quads",
+            ));
         });
     }
 
     if flags.show_quests {
-        egui::Window::new("Quest Log").resizable(true).show(ctx, |ui| {
-            if let Some(q) = quests {
-                for (id, quest) in &q.quests {
-                    ui.heading(format!("{} - {}", id, quest.title));
-                    for t in &quest.tasks {
-                        ui.label(format!("{:?} {} {}", t.kind, if t.done {"[done]"} else {"[todo]"}, t.id));
+        egui::Window::new("Quest Log")
+            .resizable(true)
+            .show(ctx, |ui| {
+                if let Some(q) = quests {
+                    for (id, quest) in &q.quests {
+                        ui.heading(format!("{} - {}", id, quest.title));
+                        for t in &quest.tasks {
+                            ui.label(format!(
+                                "{:?} {} {}",
+                                t.kind,
+                                if t.done { "[done]" } else { "[todo]" },
+                                t.id
+                            ));
+                        }
+                        ui.separator();
                     }
-                    ui.separator();
+                } else {
+                    ui.label("No quests.");
                 }
-            } else {
-                ui.label("No quests.");
-            }
-        });
+            });
     }
 
     if flags.show_settings {

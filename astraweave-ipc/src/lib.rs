@@ -1,6 +1,6 @@
 use anyhow::Result;
-use astraweave_core::{WorldSnapshot, PlanIntent};
 use astraweave_ai::{Orchestrator, RuleOrchestrator};
+use astraweave_core::{PlanIntent, WorldSnapshot};
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
 

@@ -1,5 +1,5 @@
-use std::fs;
 use astraweave_gameplay::*;
+use std::fs;
 
 fn main() -> anyhow::Result<()> {
     // Load dialogue
@@ -13,8 +13,12 @@ fn main() -> anyhow::Result<()> {
         if let Some(line) = &node.line {
             println!("{}: {}", line.speaker, line.text);
         }
-        if node.end { break; }
-        for (i,c) in node.choices.iter().enumerate() { println!("  [{}] {}", i, c.text); }
+        if node.end {
+            break;
+        }
+        for (i, c) in node.choices.iter().enumerate() {
+            println!("  [{}] {}", i, c.text);
+        }
         // auto-pick first choice for demo:
         dlg_state.choose(&dialogue, 0);
     }
@@ -34,31 +38,52 @@ fn main() -> anyhow::Result<()> {
     // Tiny cutscene
     let tl = cutscene::Timeline {
         cues: vec![
-            cutscene::Cue::Title{ text: "Threads Awaken".into(), time: 1.5 },
+            cutscene::Cue::Title {
+                text: "Threads Awaken".into(),
+                time: 1.5,
+            },
             cutscene::Cue::Wait { time: 0.5 },
-            cutscene::Cue::CameraTo { pos: glam::vec3(2.0, 3.0, 6.0), yaw: -1.57, pitch:-0.4, time: 2.0 },
-        ]
+            cutscene::Cue::CameraTo {
+                pos: glam::vec3(2.0, 3.0, 6.0),
+                yaw: -1.57,
+                pitch: -0.4,
+                time: 2.0,
+            },
+        ],
     };
     let mut cs = cutscene::CutsceneState::new();
     let mut t = 0.0;
     while t < 4.0 {
         let (cam, title, done) = cs.tick(0.5, &tl);
-        if let Some(txt) = title { println!("[Cutscene Title] {}", txt); }
-        if let Some((pos,yaw,pitch)) = cam { println!("[Cutscene Camera] to {:?} yaw={:.2} pitch={:.2}", pos, yaw, pitch); }
-        if done { break; }
+        if let Some(txt) = title {
+            println!("[Cutscene Title] {}", txt);
+        }
+        if let Some((pos, yaw, pitch)) = cam {
+            println!(
+                "[Cutscene Camera] to {:?} yaw={:.2} pitch={:.2}",
+                pos, yaw, pitch
+            );
+        }
+        if done {
+            break;
+        }
         t += 0.5;
     }
 
-    Ok(())
-}
-
-let banter = r#"
+    // Banter test
+    let banter = r#"
 [Companion] Threads hum in the fog.
 -> mood=curious
 ? mood == curious : goto n1
 [Companion] Or maybe I'm just cold.
 "#;
-let dialog2 = dialogue::compile_banter_to_nodes("banter", banter);
-let mut ds2 = dialogue::DialogueState::new(&dialog2);
-println!("Banter start: {}", dialog2.current(&dialog2).line.as_ref().unwrap().text);
-ds2.choose(&dialog2, 0);
+    let dialog2 = dialogue::compile_banter_to_nodes("banter", banter);
+    let mut ds2 = dialogue::DialogueState::new(&dialog2);
+    println!(
+        "Banter start: {}",
+        dialog2.current(&dialog2).line.as_ref().unwrap().text
+    );
+    ds2.choose(&dialog2, 0);
+
+    Ok(())
+}

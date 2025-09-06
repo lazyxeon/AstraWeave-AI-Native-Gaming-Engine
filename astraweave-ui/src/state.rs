@@ -1,8 +1,8 @@
-use glam::Vec3;
-use serde::{Serialize, Deserialize};
-use astraweave_gameplay::{Inventory, RecipeBook};
 use astraweave_gameplay::quests::QuestLog;
 use astraweave_gameplay::stats::Stats;
+use astraweave_gameplay::{Inventory, RecipeBook};
+use glam::Vec3;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Accessibility {
@@ -15,7 +15,13 @@ pub struct Accessibility {
 
 impl Default for Accessibility {
     fn default() -> Self {
-        Self { high_contrast_ui:false, reduce_motion:false, subtitles:true, subtitle_scale:1.0, colorblind_mode: None }
+        Self {
+            high_contrast_ui: false,
+            reduce_motion: false,
+            subtitles: true,
+            subtitle_scale: 1.0,
+            colorblind_mode: None,
+        }
     }
 }
 

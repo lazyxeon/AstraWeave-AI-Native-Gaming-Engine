@@ -1,14 +1,13 @@
-
-use std::time::Instant;
+use astraweave_physics::{ActorKind, CharState, Layers, PhysicsWorld};
+use astraweave_render::{Camera, CameraController, Instance, Renderer};
 use glam::{vec3, Vec2, Vec3};
+use std::time::Instant;
 use winit::{
     dpi::PhysicalSize,
-    event::{Event, WindowEvent, ElementState, KeyEvent, MouseButton},
+    event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
 };
-use astraweave_render::{Renderer, Camera, CameraController, Instance};
-use astraweave_physics::{PhysicsWorld, Layers, ActorKind, CharState};
 
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
@@ -21,11 +20,12 @@ fn main() -> anyhow::Result<()> {
     let mut renderer = pollster::block_on(Renderer::new(&window))?;
     let mut camera = Camera {
         position: vec3(0.0, 8.0, 16.0),
-        yaw: -3.14/2.0,
+        yaw: -3.14 / 2.0,
         pitch: -0.45,
         fovy: 60f32.to_radians(),
-        aspect: 16.0/9.0,
-        znear: 0.1, zfar: 500.0,
+        aspect: 16.0 / 9.0,
+        znear: 0.1,
+        zfar: 500.0,
     };
     let mut cam_ctl = CameraController::new(10.0, 0.005);
 
@@ -36,11 +36,15 @@ fn main() -> anyhow::Result<()> {
     // A climbable wall (static)
     let _wall = phys.add_static_trimesh(
         &[
-            vec3(5.0, 0.0, 0.0), vec3(5.0, 3.0, 0.0), vec3(5.0, 0.0, 3.0),
-            vec3(5.0, 3.0, 3.0), vec3(5.0, 0.0, 3.0), vec3(5.0, 3.0, 0.0),
+            vec3(5.0, 0.0, 0.0),
+            vec3(5.0, 3.0, 0.0),
+            vec3(5.0, 0.0, 3.0),
+            vec3(5.0, 3.0, 3.0),
+            vec3(5.0, 0.0, 3.0),
+            vec3(5.0, 3.0, 0.0),
         ],
-        &[[0,1,2],[3,2,1]],
-        Layers::CLIMBABLE | Layers::DEFAULT
+        &[[0, 1, 2], [3, 2, 1]],
+        Layers::CLIMBABLE | Layers::DEFAULT,
     );
 
     // Character (kinematic)
@@ -48,7 +52,13 @@ fn main() -> anyhow::Result<()> {
 
     // Destructible demo crate
     let mut destruct_ids: Vec<u64> = vec![];
-    destruct_ids.push(phys.add_destructible_box(vec3(-1.0, 1.0, 2.0), vec3(0.4,0.4,0.4), 3.0, 50.0, 12.0));
+    destruct_ids.push(phys.add_destructible_box(
+        vec3(-1.0, 1.0, 2.0),
+        vec3(0.4, 0.4, 0.4),
+        3.0,
+        50.0,
+        12.0,
+    ));
 
     // Water pool toggle
     let mut water_on = true;

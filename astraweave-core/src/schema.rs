@@ -1,10 +1,13 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub type Entity = u32;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct IVec2 { pub x: i32, pub y: i32 }
+pub struct IVec2 {
+    pub x: i32,
+    pub y: i32,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorldSnapshot {
@@ -42,7 +45,10 @@ pub struct EnemyState {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Poi { pub k: String, pub pos: IVec2 }
+pub struct Poi {
+    pub k: String,
+    pub pos: IVec2,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PlanIntent {
@@ -92,14 +98,28 @@ pub enum EngineError {
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct Rect { pub x0:i32, pub y0:i32, pub x1:i32, pub y1:i32 }
+pub struct Rect {
+    pub x0: i32,
+    pub y0: i32,
+    pub x1: i32,
+    pub y1: i32,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "op")]
 pub enum DirectorOp {
-    Fortify { rect: Rect },                         // add obstacles
-    SpawnWave { archetype: String, count: u32, origin: IVec2 },
-    Collapse { a: IVec2, b: IVec2 },               // line of obstacles ("bridge down")
+    Fortify {
+        rect: Rect,
+    }, // add obstacles
+    SpawnWave {
+        archetype: String,
+        count: u32,
+        origin: IVec2,
+    },
+    Collapse {
+        a: IVec2,
+        b: IVec2,
+    }, // line of obstacles ("bridge down")
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

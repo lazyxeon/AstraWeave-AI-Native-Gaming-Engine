@@ -20,7 +20,9 @@ bitflags::bitflags! {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CharState { Grounded }
+pub enum CharState {
+    Grounded,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct CharacterController {
@@ -70,11 +72,13 @@ impl PhysicsWorld {
     }
 
     fn alloc_id(&mut self) -> BodyId {
-        let id = self.next_body_id; self.next_body_id += 1; id
+        let id = self.next_body_id;
+        self.next_body_id += 1;
+        id
     }
 
     pub fn step(&mut self) {
-        let mut events = ();
+        let events = ();
         self.pipeline.step(
             &self.gravity,
             &self.integration,
@@ -87,7 +91,7 @@ impl PhysicsWorld {
             &mut self.multibody_joints,
             &mut self.ccd,
             Some(&mut self.query_pipeline),
-            &mut events,
+            &events,
             &(),
         );
     }
@@ -102,15 +106,21 @@ impl PhysicsWorld {
                 Group::ALL,
             ))
             .build();
-        self.colliders.insert_with_parent(shape, h, &mut self.bodies);
+        self.colliders
+            .insert_with_parent(shape, h, &mut self.bodies);
         self.tag_body(h, ActorKind::Static)
     }
 
-    pub fn add_static_trimesh(&mut self, vertices: &[Vec3], indices: &[[u32;3]], groups: Layers) -> BodyId {
+    pub fn add_static_trimesh(
+        &mut self,
+        vertices: &[Vec3],
+        indices: &[[u32; 3]],
+        groups: Layers,
+    ) -> BodyId {
         let rb = RigidBodyBuilder::fixed().build();
         let h = self.bodies.insert(rb);
         let v: Vec<Point<Real>> = vertices.iter().map(|p| point![p.x, p.y, p.z]).collect();
-        let i: Vec<[u32;3]> = indices.to_vec();
+        let i: Vec<[u32; 3]> = indices.to_vec();
         let coll = ColliderBuilder::trimesh(v, i)
             .collision_groups(InteractionGroups::new(
                 Group::from_bits_truncate(groups.bits()),
@@ -153,7 +163,13 @@ impl PhysicsWorld {
             .build();
         self.colliders.insert_with_parent(coll, h, &mut self.bodies);
         let id = self.tag_body(h, ActorKind::Character);
-        self.char_map.insert(id, CharacterController { state: CharState::Grounded, max_climb_angle_deg: 70.0 });
+        self.char_map.insert(
+            id,
+            CharacterController {
+                state: CharState::Grounded,
+                max_climb_angle_deg: 70.0,
+            },
+        );
         id
     }
 
@@ -172,7 +188,9 @@ impl PhysicsWorld {
     }
 
     pub fn handle_of(&self, id: BodyId) -> Option<RigidBodyHandle> {
-        self.body_ids.iter().find_map(|(h, bid)| if *bid == id { Some(*h) } else { None })
+        self.body_ids
+            .iter()
+            .find_map(|(h, bid)| if *bid == id { Some(*h) } else { None })
     }
 
     pub fn id_of(&self, handle: RigidBodyHandle) -> Option<BodyId> {
@@ -183,8 +201,16 @@ impl PhysicsWorld {
         let h = self.handle_of(id)?;
         let rb = self.bodies.get(h)?;
         let iso = rb.position();
-        let rot = glam::Quat::from_xyzw(iso.rotation.i, iso.rotation.j, iso.rotation.k, iso.rotation.w);
-        Some(Mat4::from_rotation_translation(rot, vec3(iso.translation.x, iso.translation.y, iso.translation.z)))
+        let rot = glam::Quat::from_xyzw(
+            iso.rotation.i,
+            iso.rotation.j,
+            iso.rotation.k,
+            iso.rotation.w,
+        );
+        Some(Mat4::from_rotation_translation(
+            rot,
+            vec3(iso.translation.x, iso.translation.y, iso.translation.z),
+        ))
     }
 
     fn tag_body(&mut self, h: RigidBodyHandle, kind: ActorKind) -> BodyId {
@@ -197,9 +223,18 @@ impl PhysicsWorld {
     pub fn add_water_aabb(&mut self, _min: Vec3, _max: Vec3, _density: f32, _linear_damp: f32) {}
     pub fn set_wind(&mut self, _dir: Vec3, _strength: f32) {}
     pub fn clear_water(&mut self) {}
-    pub fn add_destructible_box(&mut self, pos: Vec3, half: Vec3, mass: f32, _health: f32, _break_impulse: f32) -> BodyId {
+    pub fn add_destructible_box(
+        &mut self,
+        pos: Vec3,
+        half: Vec3,
+        mass: f32,
+        _health: f32,
+        _break_impulse: f32,
+    ) -> BodyId {
         self.add_dynamic_box(pos, half, mass, Layers::DEFAULT)
     }
     pub fn break_destructible(&mut self, _id: BodyId) {}
+    
+    #[allow(dead_code)]
     fn process_destructible_hits(&mut self) {}
 }

@@ -1,10 +1,10 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum TaskKind {
     Gather { kind: String, count: u32 },
-    Visit  { marker: String },
+    Visit { marker: String },
     Defeat { enemy: String, count: u32 },
 }
 
@@ -31,19 +31,30 @@ pub struct QuestLog {
 }
 
 impl QuestLog {
-    pub fn add(&mut self, q: Quest) { self.quests.insert(q.id.clone(), q); }
-    pub fn is_done(&self, id: &str) -> bool { self.quests.get(id).map(|q| q.completed).unwrap_or(false) }
+    pub fn add(&mut self, q: Quest) {
+        self.quests.insert(q.id.clone(), q);
+    }
+    pub fn is_done(&self, id: &str) -> bool {
+        self.quests.get(id).map(|q| q.completed).unwrap_or(false)
+    }
 
     pub fn progress_gather(&mut self, id: &str, kind: &str, n: u32) {
         if let Some(q) = self.quests.get_mut(id) {
             for t in q.tasks.iter_mut() {
                 if let TaskKind::Gather { kind: tk, count } = &mut t.kind {
                     if tk == kind && !t.done {
-                        if *count > n { *count -= n; } else { *count = 0; t.done = true; }
+                        if *count > n {
+                            *count -= n;
+                        } else {
+                            *count = 0;
+                            t.done = true;
+                        }
                     }
                 }
             }
-            if q.tasks.iter().all(|t| t.done) { q.completed = true; }
+            if q.tasks.iter().all(|t| t.done) {
+                q.completed = true;
+            }
         }
     }
 }

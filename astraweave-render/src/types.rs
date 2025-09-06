@@ -5,7 +5,7 @@ use glam::{Mat4, Vec3};
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub normal:   [f32; 3],
+    pub normal: [f32; 3],
 }
 
 impl Vertex {
@@ -39,16 +39,48 @@ impl InstanceRaw {
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 // model matrix (4x vec4)
-                wgpu::VertexAttribute { offset: 0,  shader_location: 2,  format: wgpu::VertexFormat::Float32x4 },
-                wgpu::VertexAttribute { offset: 16, shader_location: 3,  format: wgpu::VertexFormat::Float32x4 },
-                wgpu::VertexAttribute { offset: 32, shader_location: 4,  format: wgpu::VertexFormat::Float32x4 },
-                wgpu::VertexAttribute { offset: 48, shader_location: 5,  format: wgpu::VertexFormat::Float32x4 },
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: 16,
+                    shader_location: 3,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: 32,
+                    shader_location: 4,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: 48,
+                    shader_location: 5,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
                 // normal matrix (3x vec3 packed as Float32x3)
-                wgpu::VertexAttribute { offset: 64, shader_location: 6,  format: wgpu::VertexFormat::Float32x3 },
-                wgpu::VertexAttribute { offset: 76, shader_location: 7,  format: wgpu::VertexFormat::Float32x3 },
-                wgpu::VertexAttribute { offset: 88, shader_location: 8,  format: wgpu::VertexFormat::Float32x3 },
+                wgpu::VertexAttribute {
+                    offset: 64,
+                    shader_location: 6,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 76,
+                    shader_location: 7,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
+                wgpu::VertexAttribute {
+                    offset: 88,
+                    shader_location: 8,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
                 // color
-                wgpu::VertexAttribute { offset: 100, shader_location: 9, format: wgpu::VertexFormat::Float32x4 },
+                wgpu::VertexAttribute {
+                    offset: 100,
+                    shader_location: 9,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
             ],
         }
     }
@@ -57,7 +89,7 @@ impl InstanceRaw {
 #[derive(Debug)]
 pub struct Mesh {
     pub vertex_buf: wgpu::Buffer,
-    pub index_buf:  wgpu::Buffer,
+    pub index_buf: wgpu::Buffer,
     pub index_count: u32,
 }
 
