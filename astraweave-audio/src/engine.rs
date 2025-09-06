@@ -80,7 +80,7 @@ impl MusicChannel {
         if self.crossfade_left > 0.0 {
             self.crossfade_left = (self.crossfade_left - dt).max(0.0);
             let k = 1.0 - (self.crossfade_left / self.crossfade_time).clamp(0.0, 1.0);
-            let (mut vol_new, mut vol_old) = (k * self.target_vol, (1.0 - k) * self.target_vol);
+            let (vol_new, vol_old) = (k * self.target_vol, (1.0 - k) * self.target_vol);
             // apply
             if self.using_a {
                 self.a.set_volume(self.target_vol);

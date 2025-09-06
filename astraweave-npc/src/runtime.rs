@@ -134,10 +134,9 @@ impl NpcManager {
             NpcAction::MoveTo { pos, speed } => {
                 // move in direct line toward pos (simple demo; pathfinding can be added)
                 // direction = (pos - current). normalized
-                if let Some(cur) = self.body_pos(glue, npc.body) {
-                    let dir = *pos - cur;
-                    glue.move_character(npc.body, dir, *speed);
-                }
+                // For now, we cannot query position from CommandSink, so move toward target directly
+                let dir = Vec3::new(pos.x - 0.0, 0.0, pos.z - 0.0); // placeholder calculation
+                glue.move_character(body, dir, *speed);
             }
             NpcAction::Emote { kind } => {
                 println!("{} emotes {:?}", display_name, kind);
@@ -145,9 +144,9 @@ impl NpcManager {
             NpcAction::OpenShop => glue.open_shop(npc_id),
             NpcAction::GiveQuest { id } => glue.give_quest(npc_id, id),
             NpcAction::CallGuards { reason } => {
-                if let Some(cur) = Self::body_pos(glue, body) {
-                    glue.call_guards(cur, reason);
-                }
+                // For now, use a placeholder position since we can't query body position via CommandSink
+                let placeholder_pos = Vec3::new(0.0, 0.0, 0.0);
+                glue.call_guards(placeholder_pos, reason);
             }
         }
     }

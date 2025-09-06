@@ -1,6 +1,5 @@
 use anyhow::{Result, bail};
 use astraweave_core::{WorldSnapshot, PlanIntent, ToolRegistry, ActionStep};
-use serde::{Serialize, Deserialize};
 
 /// Trait for LLM clients (mock, Ollama, etc).
 #[async_trait::async_trait]

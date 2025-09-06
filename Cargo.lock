@@ -96,6 +96,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "astraweave-director",
+ "serde_json",
 ]
 
 [[package]]
@@ -2848,6 +2849,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "astraweave-llm",
+ "serde_json",
  "tokio",
 ]
 
@@ -3631,6 +3633,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "astraweave-director",
+ "serde_json",
 ]
 
 [[package]]

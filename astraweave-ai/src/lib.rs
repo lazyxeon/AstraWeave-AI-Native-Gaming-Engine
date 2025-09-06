@@ -1,4 +1,4 @@
-use astraweave_core::{WorldSnapshot, PlanIntent, ActionStep, IVec2, Entity};
+use astraweave_core::{WorldSnapshot, PlanIntent, ActionStep, IVec2};
 
 pub trait Orchestrator {
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent;

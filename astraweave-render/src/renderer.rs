@@ -1,12 +1,12 @@
 use std::borrow::Cow;
 use anyhow::Result;
-use glam::{Mat4, Vec3, vec3};
+use glam::{Mat4, vec3};
 use wgpu::util::DeviceExt;
 
 use crate::camera::Camera;
 use crate::depth::Depth;
 use crate::primitives;
-use crate::types::{Vertex, Mesh, Instance, InstanceRaw, Material};
+use crate::types::{Mesh, Instance, InstanceRaw};
 
 const SHADER_SRC: &str = r#"
 struct VSIn {

@@ -73,7 +73,7 @@ fn main() -> anyhow::Result<()> {
     let mut flags = UiFlags::default();
     let mut acc = Accessibility::default();
 
-    let mut player_stats = Stats::new(120);
+    let player_stats = Stats::new(120);
     let mut inventory = Inventory::default();
     inventory.add_resource(ResourceKind::Ore, 3);
     inventory.add_resource(ResourceKind::Crystal, 2);

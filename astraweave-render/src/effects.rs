@@ -1,5 +1,4 @@
 use glam::{vec3, Mat4, Vec3};
-use wgpu::util::DeviceExt;
 use crate::types::{InstanceRaw};
 use rand::Rng;
 
