@@ -2647,6 +2647,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "astraweave-ipc",
+ "serde_json",
  "tokio",
 ]
 
