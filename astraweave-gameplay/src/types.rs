@@ -4,7 +4,7 @@ use glam::Vec3;
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum DamageType { Physical, Echo, Fire, Frost, Shock, Poison }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub enum ResourceKind { Wood, Crystal, Ore, Fiber, Essence }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

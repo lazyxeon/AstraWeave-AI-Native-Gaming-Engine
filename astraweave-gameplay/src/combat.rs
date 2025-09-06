@@ -63,7 +63,7 @@ impl AttackState {
             let d = attacker_pos.distance(target_pos);
             if d <= step.reach {
                 let base = step.damage + attacker_stats.power;
-                let modified = if let Some(w) = weapon {
+                if let Some(w) = weapon {
                     match &w.kind {
                         crate::items::ItemKind::Weapon { base_damage, dtype } => {
                             let mult = w.echo.as_ref().map(|e| e.power_mult).unwrap_or(1.0);

@@ -46,7 +46,7 @@ pub fn apply_weave_op(
         WeaveOpKind::LowerWater => {
             if budget.weather_ops <= 0 { anyhow::bail!("No weather budget"); }
             // crude: clear water volumes entirely (demo)
-            phys.water.clear();
+            phys.clear_water();
             budget.weather_ops -= 1;
             log("Weave: Waters receded".into());
         }

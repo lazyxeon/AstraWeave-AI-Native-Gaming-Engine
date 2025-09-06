@@ -7,7 +7,7 @@ pub mod harvesting;
 pub mod weaving;
 pub mod dialogue;
 pub mod quests;
-pub mod cutscene;
+pub mod cutscenes;
 pub mod biome;
 
 pub use types::*;
@@ -19,7 +19,7 @@ pub use harvesting::*;
 pub use weaving::*;
 pub use dialogue::*;
 pub use quests::*;
-pub use cutscene::*;
+pub use cutscenes::*;
 pub use biome::*;
 
 pub mod weave_portals;

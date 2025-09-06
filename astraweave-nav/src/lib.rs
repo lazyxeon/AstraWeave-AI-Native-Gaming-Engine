@@ -1,5 +1,4 @@
-use anyhow::Result;
-use glam::{vec3, Vec3};
+use glam::Vec3;
 
 #[derive(Clone, Debug)]
 pub struct Triangle {
@@ -94,12 +93,12 @@ fn astar_tri(tris: &[NavTri], start: usize, goal: usize) -> Vec<usize> {
     use std::cmp::Ordering;
     use std::collections::{BinaryHeap, HashMap};
 
-    #[derive(Copy, Clone, Eq, PartialEq)]
+    #[derive(Copy, Clone, PartialEq)]
     struct Node { f: f32, i: usize }
+    impl Eq for Node {}
     impl Ord for Node { fn cmp(&self, o:&Self) -> Ordering { o.f.partial_cmp(&self.f).unwrap_or(Ordering::Equal) } }
     impl PartialOrd for Node { fn partial_cmp(&self, o:&Self) -> Option<Ordering> { Some(self.cmp(o)) } }
 
-    let h = |i| tris[i].center.length();
     let mut open = BinaryHeap::new();
     let mut came: HashMap<usize,usize> = HashMap::new();
     let mut gscore: HashMap<usize,f32> = HashMap::new();
@@ -140,7 +139,7 @@ fn smooth(pts: &mut Vec<Vec3>, _tris: &[NavTri]) {
     for _ in 0..2 {
         for i in 1..pts.len()-1 {
             let a = pts[i-1]; let b = pts[i+1];
-            pts[i] = (a*0.25 + pts[i]*0.5 + b*0.25);
+            pts[i] = a*0.25 + pts[i]*0.5 + b*0.25;
         }
     }
 }

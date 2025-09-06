@@ -8,3 +8,4 @@ anyhow = { workspace = true }
 glam = { workspace = true }
 rapier3d = { workspace = true }
 rand = { workspace = true }
+bitflags = "2"
