@@ -81,13 +81,16 @@ impl NpcManager {
     }
 
     pub fn update(&mut self, dt: f32, glue: &mut dyn CommandSink, views: &HashMap<NpcId, NpcWorldView>) {
+        // Collect actions to execute to avoid borrowing issues
+        let mut actions_to_execute = Vec::new();
+        
         for (_id, npc) in self.npcs.iter_mut() {
             // cooldowns
             npc.cooldown_talk = (npc.cooldown_talk - dt).max(0.0);
 
             // execute one pending action per tick to keep things readable
             if let Some(act) = npc.pending.first().cloned() {
-                self.apply_action(glue, npc, &act);
+                actions_to_execute.push((npc.id, npc.body, npc.profile.persona.display_name.clone(), act));
                 npc.pending.remove(0);
             } else {
                 // idle micro-behavior: guards patrol slowly; merchants idle
@@ -107,6 +110,11 @@ impl NpcManager {
                 }
             }
         }
+        
+        // Execute collected actions
+        for (npc_id, body, display_name, act) in actions_to_execute {
+            Self::execute_action(glue, npc_id, body, &display_name, &act);
+        }
     }
 
     pub fn handle_player_utterance(&mut self, npc_id: NpcId, view: &NpcWorldView, utter: &str) -> Result<()> {
@@ -120,9 +128,9 @@ impl NpcManager {
         Ok(())
     }
 
-    fn apply_action(&self, glue: &mut dyn CommandSink, npc: &Npc, act: &NpcAction) {
+    fn execute_action(glue: &mut dyn CommandSink, npc_id: NpcId, body: BodyId, display_name: &str, act: &NpcAction) {
         match act {
-            NpcAction::Say { text } => glue.say(&npc.profile.persona.display_name, text),
+            NpcAction::Say { text } => glue.say(display_name, text),
             NpcAction::MoveTo { pos, speed } => {
                 // move in direct line toward pos (simple demo; pathfinding can be added)
                 // direction = (pos - current). normalized
@@ -132,17 +140,18 @@ impl NpcManager {
                 }
             }
             NpcAction::Emote { kind } => {
-                println!("{} emotes {:?}", npc.profile.persona.display_name, kind);
+                println!("{} emotes {:?}", display_name, kind);
             }
-            NpcAction::OpenShop => glue.open_shop(npc.id),
-            NpcAction::GiveQuest { id } => glue.give_quest(npc.id, id),
+            NpcAction::OpenShop => glue.open_shop(npc_id),
+            NpcAction::GiveQuest { id } => glue.give_quest(npc_id, id),
             NpcAction::CallGuards { reason } => {
-                if let Some(cur) = self.body_pos(glue, npc.body) {
+                if let Some(cur) = Self::body_pos(glue, body) {
                     glue.call_guards(cur, reason);
                 }
             }
         }
     }
+
 
     fn body_pos(&self, _glue: &dyn CommandSink, _body: BodyId) -> Option<Vec3> {
         // For now, we cannot query position via CommandSink.
