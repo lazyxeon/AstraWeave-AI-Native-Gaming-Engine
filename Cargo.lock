@@ -285,6 +285,7 @@ name = "astraweave-audio"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-gameplay",
  "glam",
  "rand 0.8.5",
  "rodio",
@@ -463,6 +464,7 @@ dependencies = [
  "bytemuck",
  "glam",
  "pollster",
+ "rand 0.8.5",
  "wgpu 0.19.4",
  "winit",
 ]

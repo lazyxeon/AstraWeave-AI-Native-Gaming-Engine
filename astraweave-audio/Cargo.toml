@@ -12,3 +12,4 @@ toml = { workspace = true }
 rand = { workspace = true }
 glam = { workspace = true }
 rodio = { workspace = true }
+astraweave-gameplay = { path = "../astraweave-gameplay" }
