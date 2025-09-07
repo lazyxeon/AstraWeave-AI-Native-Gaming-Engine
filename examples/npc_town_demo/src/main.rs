@@ -19,11 +19,14 @@ use astraweave_render::{Camera, CameraController, Instance, Renderer};
 fn main() -> anyhow::Result<()> {
     // Window + renderer
     let event_loop = EventLoop::new()?;
-    let window = winit::window::WindowBuilder::new()
+let window = std::sync::Arc::new(
+    winit::window::WindowBuilder::new()
         .with_title("NPC Town Demo")
         .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?;
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+        .build(&event_loop)?
+);
+// Pass Arc
+let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(0.0, 6.0, 14.0),
         yaw: -1.57,
