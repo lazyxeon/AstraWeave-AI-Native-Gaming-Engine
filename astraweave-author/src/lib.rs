@@ -22,9 +22,13 @@ pub fn run_author_script(
     m.insert("enemy_count".into(), Dynamic::from(meta.enemy_count));
     m.insert("difficulty".into(), Dynamic::from(meta.difficulty));
 
-    let ast = engine.compile_file(path.into())?;
+    let ast = engine
+        .compile_file(path.into())
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
     // `configure(meta)` returns object `{ traps, terrain_edits, spawns, hints: #{...} }`
-    let out: Dynamic = engine.call_fn(&rhai::Scope::new(), &ast, "configure", (m,))?;
+    let out: Dynamic = engine
+        .call_fn(&rhai::Scope::new(), &ast, "configure", (m,))
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
     let o: rhai::Map = out.cast();
 
     let traps = o
