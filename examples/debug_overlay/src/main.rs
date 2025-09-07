@@ -117,13 +117,11 @@ impl eframe::App for App {
                     match step {
                         ActionStep::MoveTo { x, y } => {
                             let nxt = IVec2 { x: *x, y: *y };
-                            shapes.push(egui::Shape::convex_polygon(arrow_points, fill, stroke)
-{
-                                points: [to_screen(cur), to_screen(nxt)],
-                                stroke: egui::Stroke::new(2.0, egui::Color32::YELLOW),
-                                head_length: 8.0,
-                                head_width: 6.0,
-                            }));
+                            shapes.push(egui::Shape::line_segment(
+                            [to_screen(cur), to_screen(nxt)],
+                             egui::Stroke::new(2.0, egui::Color32::YELLOW),
+                        ));
+
                             cur = nxt;
                         }
                         ActionStep::Throw { item: _, x, y } => {
