@@ -23,3 +23,23 @@ Desktop.ini
 # Temporary files
 *.tmp
 *.temp
+
+# Security and secrets (prevent accidental commit)
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+private/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Runtime directories
+/tmp/
+*.pid
