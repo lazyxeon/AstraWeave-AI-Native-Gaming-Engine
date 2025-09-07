@@ -1,7 +1,7 @@
 use std::fs;
 use std::time::Instant;
 
-use glam::{vec3, Vec2,};
+use glam::{vec3, Vec2};
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
@@ -19,14 +19,14 @@ use astraweave_render::{Camera, CameraController, Instance, Renderer};
 fn main() -> anyhow::Result<()> {
     // Window + renderer
     let event_loop = EventLoop::new()?;
-let window = std::sync::Arc::new(
-    winit::window::WindowBuilder::new()
-        .with_title("NPC Town Demo")
-        .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?
-);
-// Pass Arc
-let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
+    let window = std::sync::Arc::new(
+        winit::window::WindowBuilder::new()
+            .with_title("NPC Town Demo")
+            .with_inner_size(PhysicalSize::new(1280, 720))
+            .build(&event_loop)?,
+    );
+    // Pass Arc
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(0.0, 6.0, 14.0),
         yaw: -1.57,
@@ -225,5 +225,5 @@ let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
             _ => {}
         }
     })?;
-     Ok(())
+    Ok(())
 }

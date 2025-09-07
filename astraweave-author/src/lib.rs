@@ -14,7 +14,7 @@ pub fn run_author_script(
     path: &str,
     meta: &MapMeta,
 ) -> Result<(DirectorBudget, serde_json::Value)> {
-    let mut engine = Engine::new();
+    let engine = Engine::new();
     // Provide meta as a map
     let mut m = Map::new();
     m.insert("width".into(), Dynamic::from(meta.width));
@@ -26,8 +26,9 @@ pub fn run_author_script(
         .compile_file(path.into())
         .map_err(|e| anyhow::anyhow!("{}", e))?;
     // `configure(meta)` returns object `{ traps, terrain_edits, spawns, hints: #{...} }`
+    let mut scope = rhai::Scope::new();
     let out: Dynamic = engine
-        .call_fn(&rhai::Scope::new(), &ast, "configure", (m,))
+        .call_fn(&mut scope, &ast, "configure", (m,))
         .map_err(|e| anyhow::anyhow!("{}", e))?;
     let o: rhai::Map = out.cast();
 
