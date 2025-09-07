@@ -117,7 +117,8 @@ impl eframe::App for App {
                     match step {
                         ActionStep::MoveTo { x, y } => {
                             let nxt = IVec2 { x: *x, y: *y };
-                            shapes.push(egui::Shape::arrow(egui::epaint::ArrowShape {
+                            shapes.push(egui::Shape::convex_polygon(arrow_points, fill, stroke)
+{
                                 points: [to_screen(cur), to_screen(nxt)],
                                 stroke: egui::Stroke::new(2.0, egui::Color32::YELLOW),
                                 head_length: 8.0,
@@ -160,6 +161,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "AstraWeave Debug Overlay",
         native,
-        Box::new(|_| Box::new(App::new())),
+        Box::new(|_| ok(Box::new(App::new()))),
     )
 }
