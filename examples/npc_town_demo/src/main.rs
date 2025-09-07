@@ -1,7 +1,7 @@
 use std::fs;
 use std::time::Instant;
 
-use glam::{vec3, Vec2, Vec3};
+use glam::{vec3, Vec2,};
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
