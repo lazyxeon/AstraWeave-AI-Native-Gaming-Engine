@@ -11,3 +11,10 @@ serde_json = { workspace = true }
 winit = { workspace = true }
 glam = { workspace = true }
 gilrs = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "input_benchmarks"
+harness = false
