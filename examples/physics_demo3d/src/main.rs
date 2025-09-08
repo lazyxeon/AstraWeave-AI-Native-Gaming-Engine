@@ -11,10 +11,12 @@ use winit::{
 
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
-    let window = Arc::new(winit::window::WindowBuilder::new()
-        .with_title("AstraWeave Physics Demo")
-        .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?);
+    let window = Arc::new(
+        winit::window::WindowBuilder::new()
+            .with_title("AstraWeave Physics Demo")
+            .with_inner_size(PhysicalSize::new(1280, 720))
+            .build(&event_loop)?,
+    );
 
     // Renderer
     let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
@@ -84,7 +86,15 @@ fn main() -> anyhow::Result<()> {
                     camera.aspect = s.width as f32 / s.height.max(1) as f32;
                 }
                 WindowEvent::CloseRequested => elwt.exit(),
-                WindowEvent::KeyboardInput { event: KeyEvent{ state, physical_key: PhysicalKey::Code(code), .. }, .. } => {
+                WindowEvent::KeyboardInput {
+                    event:
+                        KeyEvent {
+                            state,
+                            physical_key: PhysicalKey::Code(code),
+                            ..
+                        },
+                    ..
+                } => {
                     let down = state == ElementState::Pressed;
                     match code {
                         KeyCode::KeyW => cam_ctl.process_keyboard(code, down),
@@ -92,20 +102,51 @@ fn main() -> anyhow::Result<()> {
                         KeyCode::KeyA => cam_ctl.process_keyboard(code, down),
                         KeyCode::KeyD => cam_ctl.process_keyboard(code, down),
                         KeyCode::Space => cam_ctl.process_keyboard(code, down),
-                        KeyCode::ShiftLeft | KeyCode::ShiftRight => cam_ctl.process_keyboard(code, down),
+                        KeyCode::ShiftLeft | KeyCode::ShiftRight => {
+                            cam_ctl.process_keyboard(code, down)
+                        }
 
                         // Character control (J/K/L/I)
-                        KeyCode::KeyJ => { if down { move_dir.x = -2.5; } else { move_dir.x = 0.0; } }
-                        KeyCode::KeyL => { if down { move_dir.x =  2.5; } else { move_dir.x = 0.0; } }
-                        KeyCode::KeyI => { if down { move_dir.z = -2.5; } else { move_dir.z = 0.0; } }
-                        KeyCode::KeyK => { if down { move_dir.z =  2.5; } else { move_dir.z = 0.0; } }
-                        KeyCode::KeyC => { climb_try = down; }
+                        KeyCode::KeyJ => {
+                            if down {
+                                move_dir.x = -2.5;
+                            } else {
+                                move_dir.x = 0.0;
+                            }
+                        }
+                        KeyCode::KeyL => {
+                            if down {
+                                move_dir.x = 2.5;
+                            } else {
+                                move_dir.x = 0.0;
+                            }
+                        }
+                        KeyCode::KeyI => {
+                            if down {
+                                move_dir.z = -2.5;
+                            } else {
+                                move_dir.z = 0.0;
+                            }
+                        }
+                        KeyCode::KeyK => {
+                            if down {
+                                move_dir.z = 2.5;
+                            } else {
+                                move_dir.z = 0.0;
+                            }
+                        }
+                        KeyCode::KeyC => {
+                            climb_try = down;
+                        }
 
                         // Wind toggle
                         KeyCode::KeyT if down => {
                             wind_on = !wind_on;
-                            if wind_on { phys.set_wind(vec3(1.0, 0.0, 0.2).normalize(), 8.0); }
-                            else { phys.set_wind(vec3(0.0,0.0,0.0), 0.0); }
+                            if wind_on {
+                                phys.set_wind(vec3(1.0, 0.0, 0.2).normalize(), 8.0);
+                            } else {
+                                phys.set_wind(vec3(0.0, 0.0, 0.0), 0.0);
+                            }
                             println!("Wind: {}", if wind_on { "ON" } else { "OFF" });
                         }
 
@@ -113,7 +154,12 @@ fn main() -> anyhow::Result<()> {
                         KeyCode::KeyG if down => {
                             water_on = !water_on;
                             if water_on {
-                                phys.add_water_aabb(vec3(-2.0, 0.0, -2.0), vec3(2.0, 1.2, 2.0), 1000.0, 0.8);
+                                phys.add_water_aabb(
+                                    vec3(-2.0, 0.0, -2.0),
+                                    vec3(2.0, 1.2, 2.0),
+                                    1000.0,
+                                    0.8,
+                                );
                             } else {
                                 phys.clear_water();
                             }
@@ -122,18 +168,34 @@ fn main() -> anyhow::Result<()> {
 
                         // Drop dynamic box
                         KeyCode::KeyF if down => {
-                            phys.add_dynamic_box(vec3(0.0, 4.0, 0.0), vec3(0.3,0.3,0.3), 1.0, Layers::DEFAULT);
+                            phys.add_dynamic_box(
+                                vec3(0.0, 4.0, 0.0),
+                                vec3(0.3, 0.3, 0.3),
+                                1.0,
+                                Layers::DEFAULT,
+                            );
                         }
 
                         // Spawn ragdoll (using dynamic box as placeholder)
                         KeyCode::KeyB if down => {
-                            let _rag = phys.add_dynamic_box(vec3(0.0, 1.2, -1.5), vec3(0.2, 0.5, 0.2), 70.0, Layers::DEFAULT);
+                            let _rag = phys.add_dynamic_box(
+                                vec3(0.0, 1.2, -1.5),
+                                vec3(0.2, 0.5, 0.2),
+                                70.0,
+                                Layers::DEFAULT,
+                            );
                             println!("Spawned ragdoll (box placeholder)");
                         }
 
                         // Spawn destructible
                         KeyCode::KeyN if down => {
-                            let id = phys.add_destructible_box(vec3(-0.5, 1.0, -1.0), vec3(0.4,0.4,0.4), 3.0, 60.0, 14.0);
+                            let id = phys.add_destructible_box(
+                                vec3(-0.5, 1.0, -1.0),
+                                vec3(0.4, 0.4, 0.4),
+                                3.0,
+                                60.0,
+                                14.0,
+                            );
                             destruct_ids.push(id);
                             println!("Spawned destructible");
                         }
@@ -151,11 +213,17 @@ fn main() -> anyhow::Result<()> {
                 }
                 WindowEvent::MouseInput { state, button, .. } => {
                     if button == MouseButton::Right {
-                        cam_ctl.process_mouse_button(MouseButton::Right, state == ElementState::Pressed);
+                        cam_ctl.process_mouse_button(
+                            MouseButton::Right,
+                            state == ElementState::Pressed,
+                        );
                     }
                 }
                 WindowEvent::CursorMoved { position, .. } => {
-                    cam_ctl.process_mouse_move(&mut camera, Vec2::new(position.x as f32, position.y as f32));
+                    cam_ctl.process_mouse_move(
+                        &mut camera,
+                        Vec2::new(position.x as f32, position.y as f32),
+                    );
                 }
                 _ => {}
             },
@@ -185,14 +253,19 @@ fn main() -> anyhow::Result<()> {
                             } else {
                                 [0.8, 0.8, 0.85, 1.0]
                             };
-                            instances.push(astraweave_render::Instance { transform: m, color });
+                            instances.push(astraweave_render::Instance {
+                                transform: m,
+                                color,
+                            });
                         }
                     }
                 }
 
                 renderer.update_camera(&camera);
                 renderer.update_instances(&instances);
-                if let Err(e) = renderer.render() { eprintln!("render error: {e:?}"); }
+                if let Err(e) = renderer.render() {
+                    eprintln!("render error: {e:?}");
+                }
 
                 window.request_redraw();
             }

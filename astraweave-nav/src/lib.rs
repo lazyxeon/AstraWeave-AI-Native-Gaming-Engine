@@ -179,7 +179,7 @@ fn astar_tri(tris: &[NavTri], start: usize, goal: usize) -> Vec<usize> {
     path
 }
 
-fn smooth(pts: &mut Vec<Vec3>, _tris: &[NavTri]) {
+fn smooth(pts: &mut [Vec3], _tris: &[NavTri]) {
     if pts.len() < 3 {
         return;
     }
