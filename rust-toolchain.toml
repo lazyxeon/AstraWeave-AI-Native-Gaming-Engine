@@ -1,6 +1,11 @@
 [toolchain]
 # Pin specific Rust version for reproducible builds across environments
 channel = "1.89.0"
-components = ["rustfmt", "clippy", "rust-src", "rust-analyzer"]
+components = ["rustfmt", "clippy", "rust-src", "rust-analyzer", "llvm-tools-preview"]
 profile = "default"
-targets = ["x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc", "x86_64-apple-darwin"]
+targets = [
+  "x86_64-unknown-linux-gnu", 
+  "x86_64-pc-windows-msvc", 
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin"
+]

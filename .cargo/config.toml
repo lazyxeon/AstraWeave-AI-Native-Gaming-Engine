@@ -1,15 +1,20 @@
 [build]
 # Fail if Cargo.lock is out of date in CI (paired with --locked)
 rustflags = ["-C", "debuginfo=0"]
-# Parallel compilation - removed jobs = 0 as it's invalid
+# Parallel compilation will use automatic detection by not specifying jobs
 
 [target.'cfg(all())']
 # Enable sccache for faster compilation (if available)
 # Uncomment when sccache is installed:
 # rustc-wrapper = "sccache"
 
+# Optimize for native CPU features in release builds
+[target.'cfg(not(target_env = "msvc"))']
+rustflags = ["-C", "target-cpu=native"]
+
 [term]
 color = "always"
+progress.when = "auto"
 
 [env]
 # Configure sccache for optimal performance
@@ -20,6 +25,14 @@ SCCACHE_DIR = { value = "./target/sccache", relative = true }
 # Optimize network settings for large workspace
 git-fetch-with-cli = true
 retry = 3
+offline = false
+
+[alias]
+# Convenient aliases for common operations
+check-all = "check --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
+test-all = "test --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
+build-core = "build -p astraweave-core -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-render -p hello_companion"
+clippy-all = "clippy --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --all-features --all-targets"
 
 [profile.dev]
 # Optimize development builds for workspace

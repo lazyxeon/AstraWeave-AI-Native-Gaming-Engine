@@ -3,9 +3,6 @@ name = "astraweave-llm"
 version = "0.1.0"
 edition = "2021"
 
-[features]
-ollama = [] #IDK
-
 [dependencies]
 anyhow = { workspace = true }
 serde = { workspace = true }
@@ -13,3 +10,7 @@ serde_json = { workspace = true }
 reqwest = { workspace = true, optional = true }
 astraweave-core = { path = "../astraweave-core" }
 async-trait = "0.1"
+
+[features]
+default = []
+ollama = ["dep:reqwest"]

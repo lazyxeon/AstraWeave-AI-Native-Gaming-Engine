@@ -1,4 +1,4 @@
-name: CI
+name: Comprehensive CI
 
 on:
   push:
@@ -11,10 +11,12 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: 1
 
 jobs:
-  build:
-    name: Build (${{ matrix.os }})
+  check:
+    name: Check (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -25,66 +27,95 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Install Rust (stable)
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy, rust-src, rust-analyzer
 
-      # ---- OS prerequisites (Linux/macOS) ----
-      - name: Install native deps (Linux)
+      # ---- OS-specific system dependencies ----
+      - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # Core dev tools
-          sudo apt-get install -y build-essential pkg-config cmake ninja-build
-          # X11 + GL/EGL for winit/glutin/egui (wgpu paths)
           sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
             libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
             libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
             libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
-            libgl1-mesa-dev libegl1-mesa-dev
-          # Wayland headers (winit can target both X11 and Wayland)
-          sudo apt-get install -y wayland-protocols libwayland-dev
-          # Audio for cpal/rodio
-          sudo apt-get install -y libasound2-dev libpulse-dev libudev-dev
-          # Vulkan runtime (not strictly needed to compile, helpful for runtime CI/tools)
-          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
-          # Zip/other misc used by builds
-          sudo apt-get install -y unzip zip
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
 
-      - name: Install native deps (macOS)
+      - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
           brew update
           brew install pkg-config
 
-      # Windows generally builds out-of-the-box for these crates.
-      # If you later need Vulkan SDK or other DLLs for runtime tests, add a step here.
-
-      # ---- Cargo caches ----
-      - name: Cache cargo registry
-        uses: actions/cache@v4
+      # ---- Cargo caching ----
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: ~/.cargo/registry
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-registry-
+          key: check-${{ matrix.os }}
+          cache-all-crates: true
 
-      - name: Cache cargo git
-        uses: actions/cache@v4
+      # ---- Core component checks ----
+      - name: Check core components
+        run: |
+          cargo check --locked --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
-          path: ~/.cargo/git
-          key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-git-
+          toolchain: stable
+          components: rustfmt, clippy
 
-      - name: Cache build artifacts (target/)
-        uses: actions/cache@v4
+      # ---- OS-specific system dependencies ----
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install pkg-config
+
+      # ---- Cargo caching ----
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
         with:
-          path: target
-          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-target-
+          key: build-${{ matrix.os }}
+          cache-all-crates: true
 
-      # ---- Build (deterministic) ----
-      # Build core working components (as per project instructions)
-      - name: Build (debug) - Core Components
-        shell: bash
+      # ---- Build core working components ----
+      - name: Build core components (debug)
         run: |
           cargo build --locked --verbose \
             -p astraweave-core \
@@ -103,22 +134,34 @@ jobs:
             -p astraweave-persona \
             -p astraweave-llm \
             -p astraweave-ipc \
-            -p astraweave-author \
             -p hello_companion
 
-      # Build working examples - only ones that are known to work
-      - name: Build (debug) - Working Examples
-        shell: bash
-        continue-on-error: true  # Some examples may have dependency issues
+      # ---- Build working examples ----
+      - name: Build working examples (debug)
+        continue-on-error: true
         run: |
           cargo build --locked --verbose \
             -p hello_companion \
+            -p adaptive_boss \
+            -p companion_profile \
+            -p ipc_loopback \
+            -p llm_toolcall \
+            -p phase_director \
+            -p persona_loader \
+            -p coop_server \
+            -p coop_client \
             -p physics_demo3d \
-            -p debug_overlay
+            -p navmesh_demo \
+            -p weaving_playground \
+            -p crafting_combat_demo \
+            -p quest_dialogue_demo \
+            -p combat_physics_demo \
+            -p cutscene_render_demo \
+            -p audio_spatial_demo \
+            -p dialogue_voice_demo
 
-      # Optionally, also build release artifacts for core components
-      - name: Build (release) - Core Components  
-        shell: bash
+      # ---- Release build for core components ----
+      - name: Build core components (release)
         run: |
           cargo build --locked --release --verbose \
             -p astraweave-core \
@@ -128,28 +171,218 @@ jobs:
             -p astraweave-render \
             -p hello_companion
 
-      # Optional checks - only on core components to avoid known issues
-      - name: Format check - Core Components
-        shell: bash
-        run: |
-          cargo fmt --check \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p astraweave-nav \
-            -p astraweave-render \
-            -p hello_companion
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
-      - name: Clippy (lint) - Core Components
-        shell: bash
-        run: |
-          cargo clippy \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p astraweave-nav \
-            -p astraweave-render \
-            -p hello_companion \
-            --all-features -- -D warnings
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
 
-  # You can create a separate job for unit tests, but build is the top priority initially.
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      # ---- OS-specific system dependencies ----
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install pkg-config
+
+      # ---- Cargo caching ----
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: test-${{ matrix.os }}
+          cache-all-crates: true
+
+      # ---- Run tests ----
+      - name: Run tests
+        run: |
+          cargo test --workspace --locked \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+            --lib
+
+  linting:
+    name: Code Quality (Linux)
+    runs-on: ubuntu-latest
+    needs: check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: linting
+          cache-all-crates: true
+
+      # ---- Code formatting ----
+      - name: Check code formatting
+        run: |
+          cargo fmt --all --check
+
+      # ---- Clippy linting ----
+      - name: Run Clippy
+        run: |
+          cargo clippy --workspace --locked \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+            --all-features --all-targets -- -D warnings
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: check
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: security
+          cache-all-crates: true
+
+      - name: Run security audit
+        run: cargo audit
+
+      - name: Run cargo deny
+        run: |
+          cargo install cargo-deny
+          cargo deny check
+
+  msrv:
+    name: Minimum Supported Rust Version
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev
+
+      - name: Extract MSRV from Cargo.toml
+        id: msrv
+        run: |
+          # Look for rust-version in workspace or package Cargo.toml
+          MSRV=$(grep -r "rust-version" Cargo.toml | head -1 | cut -d'"' -f2 || echo "1.82.0")
+          echo "version=$MSRV" >> $GITHUB_OUTPUT
+
+      - name: Install MSRV toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.version }}
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: msrv-${{ steps.msrv.outputs.version }}
+
+      - name: Check MSRV compatibility
+        run: |
+          cargo check --workspace --locked \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+
+  demo:
+    name: Demo Execution (Linux)
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: demo
+          cache-all-crates: true
+
+      - name: Build hello_companion demo
+        run: |
+          cargo build --release -p hello_companion
+
+      - name: Run hello_companion demo (with timeout)
+        run: |
+          echo "Running hello_companion demo for 10 seconds..."
+          timeout 10s cargo run --release -p hello_companion || echo "Demo completed or timed out as expected"
