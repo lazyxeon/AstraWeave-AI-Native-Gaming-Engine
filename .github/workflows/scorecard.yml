@@ -1,6 +1,6 @@
 name: OpenSSF Scorecard
 
-on:
+"on":
   # For the best security, Scorecard should be run on a schedule
   # and on any changes to the default branch
   schedule:
@@ -12,8 +12,6 @@ on:
 
 permissions:
   contents: read
-  security-events: write
-  id-token: write # Required for requesting the JWT
 
 jobs:
   scorecard:
