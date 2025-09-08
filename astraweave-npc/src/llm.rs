@@ -28,7 +28,7 @@ impl LlmAdapter for MockLlm {
         view: &NpcWorldView,
         player_utterance: Option<&str>,
     ) -> Result<NpcPlan> {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut actions = vec![];
 
         match profile.role {
@@ -49,7 +49,7 @@ impl LlmAdapter for MockLlm {
                     }
                 } else {
                     // idle/working
-                    if rng.gen::<f32>() < 0.3 {
+                    if rng.random::<f32>() < 0.3 {
                         actions.push(NpcAction::Emote {
                             kind: EmoteKind::Wave,
                         });
@@ -78,10 +78,10 @@ impl LlmAdapter for MockLlm {
                         });
                     }
                 } else {
-                    if rng.gen::<f32>() < 0.5 {
+                    if rng.random::<f32>() < 0.5 {
                         // tiny patrol step
                         let step = view.self_pos
-                            + Vec3::new(rng.gen_range(-1.0..1.0), 0.0, rng.gen_range(-1.0..1.0));
+                            + Vec3::new(rng.random_range(-1.0..1.0), 0.0, rng.random_range(-1.0..1.0));
                         actions.push(NpcAction::MoveTo {
                             pos: step,
                             speed: 1.2,

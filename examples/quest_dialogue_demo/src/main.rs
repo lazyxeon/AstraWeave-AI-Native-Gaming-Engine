@@ -36,14 +36,14 @@ fn main() -> anyhow::Result<()> {
     println!("Quest completed? {}", log.is_done("q_tutorial"));
 
     // Tiny cutscene
-    let tl = cutscene::Timeline {
+    let tl = Timeline {
         cues: vec![
-            cutscene::Cue::Title {
+            Cue::Title {
                 text: "Threads Awaken".into(),
                 time: 1.5,
             },
-            cutscene::Cue::Wait { time: 0.5 },
-            cutscene::Cue::CameraTo {
+            Cue::Wait { time: 0.5 },
+            Cue::CameraTo {
                 pos: glam::vec3(2.0, 3.0, 6.0),
                 yaw: -1.57,
                 pitch: -0.4,
@@ -51,7 +51,7 @@ fn main() -> anyhow::Result<()> {
             },
         ],
     };
-    let mut cs = cutscene::CutsceneState::new();
+    let mut cs = CutsceneState::new();
     let mut t = 0.0;
     while t < 4.0 {
         let (cam, title, done) = cs.tick(0.5, &tl);
@@ -81,7 +81,7 @@ fn main() -> anyhow::Result<()> {
     let mut ds2 = dialogue::DialogueState::new(&dialog2);
     println!(
         "Banter start: {}",
-        dialog2.current(&dialog2).line.as_ref().unwrap().text
+        ds2.current(&dialog2).line.as_ref().unwrap().text
     );
     ds2.choose(&dialog2, 0);
 

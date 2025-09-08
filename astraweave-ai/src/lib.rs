@@ -49,8 +49,8 @@ impl Orchestrator for RuleOrchestrator {
                     plan_id,
                     steps: vec![
                         ActionStep::MoveTo {
-                            x: m.pos.x + (first.pos.x - m.pos.x).signum() * 1,
-                            y: m.pos.y + (first.pos.y - m.pos.y).signum() * 1,
+                            x: m.pos.x + (first.pos.x - m.pos.x).signum(),
+                            y: m.pos.y + (first.pos.y - m.pos.y).signum(),
                         },
                         ActionStep::CoverFire {
                             target_id: first.id,

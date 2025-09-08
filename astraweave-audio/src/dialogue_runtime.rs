@@ -4,7 +4,7 @@ use crate::{
 };
 use anyhow::Result;
 use astraweave_gameplay::dialogue::{Dialogue, DialogueState};
-use rand::seq::SliceRandom;
+use rand::prelude::*;
 use std::{collections::HashMap, fs, path::Path};
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -58,7 +58,7 @@ impl<'a> DialoguePlayer<'a> {
         if let Some(vspec) = self.bank.speakers.get(spk) {
             // try explicit files
             if !vspec.files.is_empty() {
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 if let Some(choice) = vspec.files.choose(&mut rng) {
                     let path = format!("{}/{}", vspec.folder, choice);
                     if Path::new(&path).exists() {
@@ -78,7 +78,7 @@ impl<'a> DialoguePlayer<'a> {
                         }
                     }
                     if !pool.is_empty() {
-                        let mut rng = rand::thread_rng();
+                        let mut rng = rand::rng();
                         let path = pool.choose(&mut rng).unwrap().clone();
                         self.audio.play_voice_file(&path, None)?;
                         return Ok(true);

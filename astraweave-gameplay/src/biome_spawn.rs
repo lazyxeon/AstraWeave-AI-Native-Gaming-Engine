@@ -24,23 +24,23 @@ pub fn spawn_resources(
     let sum: f32 = biome.weights.iter().map(|(_,w)| *w).sum::<f32>().max(1e-6);
     let mut out = vec![];
     for _ in 0..count {
-        let r = rng.gen::<f32>() * sum;
+        let r = rng.random::<f32>() * sum;
         let mut acc = 0.0;
         let mut chosen = biome.weights[0].0;
         for (k, w) in &biome.weights {
             acc += *w;
             if r <= acc { chosen = *k; break; }
         }
-        let amt_rng = rng.gen_range(biome.base_amount.0..=biome.base_amount.1);
+        let amt_rng = rng.random_range(biome.base_amount.0..=biome.base_amount.1);
         let mul = weave.map(|w| w.drop_multiplier).unwrap_or(1.0);
         let amount = ((amt_rng as f32) * mul).round() as u32;
 
         let pos = Vec3::new(
-            rng.gen_range(area_min.x..area_max.x),
+            rng.random_range(area_min.x..area_max.x),
             area_min.y,
-            rng.gen_range(area_min.z..area_max.z),
+            rng.random_range(area_min.z..area_max.z),
         );
-        let resp = rng.gen_range(biome.respawn.0..=biome.respawn.1);
+        let resp = rng.random_range(biome.respawn.0..=biome.respawn.1);
         out.push(ResourceNode { kind: chosen, pos, amount, respawn_time: resp, timer: 0.0 });
     }
     out

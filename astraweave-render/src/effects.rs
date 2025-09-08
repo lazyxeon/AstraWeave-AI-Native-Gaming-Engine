@@ -74,17 +74,17 @@ impl WeatherFx {
     }
 
     fn tick_rain(&mut self, dt: f32) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         // spawn up to max
         while self.particles.len() < self.max {
             self.particles.push(Particle {
                 pos: vec3(
-                    rng.gen_range(-25.0..25.0),
-                    rng.gen_range(8.0..18.0),
-                    rng.gen_range(-25.0..25.0),
+                    rng.random_range(-25.0..25.0),
+                    rng.random_range(8.0..18.0),
+                    rng.random_range(-25.0..25.0),
                 ),
                 vel: vec3(0.0, -20.0, 0.0),
-                life: rng.gen_range(0.5..1.5),
+                life: rng.random_range(0.5..1.5),
                 color: [0.7, 0.8, 1.0, 0.9],
                 scale: vec3(0.02, 0.5, 0.02),
             });
@@ -98,16 +98,16 @@ impl WeatherFx {
     }
 
     fn tick_wind(&mut self, dt: f32) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         while self.particles.len() < self.max {
             self.particles.push(Particle {
                 pos: vec3(
-                    rng.gen_range(-25.0..25.0),
-                    rng.gen_range(0.5..4.0),
-                    rng.gen_range(-25.0..25.0),
+                    rng.random_range(-25.0..25.0),
+                    rng.random_range(0.5..4.0),
+                    rng.random_range(-25.0..25.0),
                 ),
                 vel: vec3(5.0, 0.0, 1.0),
-                life: rng.gen_range(1.0..3.0),
+                life: rng.random_range(1.0..3.0),
                 color: [1.0, 1.0, 1.0, 0.3],
                 scale: vec3(0.05, 0.05, 0.8),
             });

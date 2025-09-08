@@ -1,23 +1,23 @@
-use astraweave_physics::{ActorKind, CharState, Layers, PhysicsWorld};
+use astraweave_physics::{Layers, PhysicsWorld};
 use astraweave_render::{Camera, CameraController, Instance, Renderer};
 use glam::{vec3, Vec2, Vec3};
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::EventLoop,
     keyboard::{KeyCode, PhysicalKey},
 };
 
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
-    let window = winit::window::WindowBuilder::new()
+    let window = Arc::new(winit::window::WindowBuilder::new()
         .with_title("AstraWeave Physics Demo")
         .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?;
+        .build(&event_loop)?);
 
     // Renderer
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(0.0, 8.0, 16.0),
         yaw: -3.14 / 2.0,
@@ -44,7 +44,7 @@ fn main() -> anyhow::Result<()> {
             vec3(5.0, 3.0, 0.0),
         ],
         &[[0, 1, 2], [3, 2, 1]],
-        Layers::CLIMBABLE | Layers::DEFAULT,
+        Layers::CHARACTER | Layers::DEFAULT,
     );
 
     // Character (kinematic)
@@ -99,7 +99,6 @@ fn main() -> anyhow::Result<()> {
                         KeyCode::KeyL => { if down { move_dir.x =  2.5; } else { move_dir.x = 0.0; } }
                         KeyCode::KeyI => { if down { move_dir.z = -2.5; } else { move_dir.z = 0.0; } }
                         KeyCode::KeyK => { if down { move_dir.z =  2.5; } else { move_dir.z = 0.0; } }
-                        KeyCode::ShiftLeft | KeyCode::ShiftRight => { /* already handled for camera; character vertical during climb below */ }
                         KeyCode::KeyC => { climb_try = down; }
 
                         // Wind toggle
@@ -116,7 +115,7 @@ fn main() -> anyhow::Result<()> {
                             if water_on {
                                 phys.add_water_aabb(vec3(-2.0, 0.0, -2.0), vec3(2.0, 1.2, 2.0), 1000.0, 0.8);
                             } else {
-                                phys.water.clear();
+                                phys.clear_water();
                             }
                             println!("Water: {}", if water_on { "ON" } else { "OFF" });
                         }
@@ -126,10 +125,10 @@ fn main() -> anyhow::Result<()> {
                             phys.add_dynamic_box(vec3(0.0, 4.0, 0.0), vec3(0.3,0.3,0.3), 1.0, Layers::DEFAULT);
                         }
 
-                        // Spawn ragdoll
+                        // Spawn ragdoll (using dynamic box as placeholder)
                         KeyCode::KeyB if down => {
-                            let _rag = phys.spawn_ragdoll_simple(vec3(0.0, 1.2, -1.5));
-                            println!("Spawned ragdoll");
+                            let _rag = phys.add_dynamic_box(vec3(0.0, 1.2, -1.5), vec3(0.2, 0.5, 0.2), 70.0, Layers::DEFAULT);
+                            println!("Spawned ragdoll (box placeholder)");
                         }
 
                         // Spawn destructible
@@ -167,28 +166,27 @@ fn main() -> anyhow::Result<()> {
 
                 cam_ctl.update_camera(&mut camera, dt);
 
-                // Character vertical (for climb/swim): Shift to go down
-                let vertical = if cam_ctl.down > 0.5 { -2.0 } else if cam_ctl.up > 0.5 { 2.0 } else { 0.0 };
-                let desired = vec3(move_dir.x, vertical, move_dir.z);
+                // Character movement (simplified - no vertical control)
+                let desired = vec3(move_dir.x, 0.0, move_dir.z);
                 phys.control_character(char_id, desired, dt, climb_try);
-                phys.step(dt);
+                phys.step();
 
                 // Build instances to render:
                 instances.clear();
 
                 // ground plane is drawn by renderer
                 // draws dynamic/kinematic cubes and capsules as cubes (for demo)
-                for (h, id) in phys.body_ids.clone() {
-                    if let Some(m) = phys.body_transform(id) {
-                        let p = m.w_axis.truncate(); // position
-                        let color = if phys.char_map.contains_key(&id) {
-                            [0.2, 1.0, 0.4, 1.0]
-                        } else if phys.destructibles.contains_key(&id) {
-                            [1.0, 0.6, 0.2, 1.0]
-                        } else {
-                            [0.8, 0.8, 0.85, 1.0]
-                        };
-                        instances.push(astraweave_render::Instance { transform: m, color });
+                // Note: simplified rendering since body_ids is private
+                for (handle, _body) in phys.bodies.iter() {
+                    if let Some(id) = phys.id_of(handle) {
+                        if let Some(m) = phys.body_transform(id) {
+                            let color = if phys.char_map.contains_key(&id) {
+                                [0.2, 1.0, 0.4, 1.0]
+                            } else {
+                                [0.8, 0.8, 0.85, 1.0]
+                            };
+                            instances.push(astraweave_render::Instance { transform: m, color });
+                        }
                     }
                 }
 
