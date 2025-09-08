@@ -55,7 +55,7 @@ impl DialogueState {
             .enumerate()
             .map(|(i, n)| (n.id.clone(), i))
             .collect();
-        let idx = *(&map).get(&d.start).expect("start");
+        let idx = *map.get(&d.start).expect("start");
         Self {
             idx,
             map,
@@ -103,7 +103,7 @@ pub fn compile_banter_to_nodes(id: &str, src: &str) -> Dialogue {
     let mut nodes = vec![];
     let mut i = 0usize;
     let mut _last_id = "n0".to_string();
-    for (_ln, line) in src.lines().enumerate() {
+    for line in src.lines() {
         let line = line.trim();
         if line.is_empty() {
             continue;

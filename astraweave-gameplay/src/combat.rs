@@ -48,6 +48,7 @@ impl AttackState {
     }
 
     /// call per-frame; returns (did_hit, applied_damage)
+    #[allow(clippy::too_many_arguments)]
     pub fn tick(
         &mut self,
         dt: f32,

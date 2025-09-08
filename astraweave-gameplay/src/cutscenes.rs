@@ -28,6 +28,12 @@ pub struct CutsceneState {
     pub t: f32,
 }
 
+impl Default for CutsceneState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CutsceneState {
     pub fn new() -> Self {
         Self { idx: 0, t: 0.0 }

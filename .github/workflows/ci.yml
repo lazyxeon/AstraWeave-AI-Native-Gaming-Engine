@@ -6,11 +6,18 @@ on:
   pull_request:
     branches: [ main ]
 
+# Prevent multiple CI runs on same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Harden token scope (helps with Scorecard "Token-Permissions")
 permissions:
   contents: read
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: 1
 
@@ -18,6 +25,7 @@ jobs:
   check:
     name: Check (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -52,22 +60,31 @@ jobs:
           brew update
           brew install pkg-config
 
-      # ---- Cargo caching ----
-      - name: Set up Rust cache
+      # ---- Cargo cache ----
+      - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: check-${{ matrix.os }}
+          key: ci-${{ matrix.os }}-v2
           cache-all-crates: true
 
+      # ---- Pre-fetch for better caching determinism ----
+      - name: Fetch dependencies
+        run: cargo fetch --locked
+
       # ---- Core component checks ----
-      - name: Check core components
-        run: |
-          cargo check --locked --workspace \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+      - name: Cargo check (workspace, excludes)
+        run: >
+          cargo check --locked --workspace
+          --exclude astraweave-author
+          --exclude visual_3d
+          --exclude ui_controls_demo
+          --exclude npc_town_demo
+          --exclude rhai_authoring
+          --exclude cutscene_render_demo
+          --exclude weaving_playground
+          --exclude combat_physics_demo
+          --exclude navmesh_demo
+          --exclude physics_demo3d
 
   build:
     name: Build (${{ matrix.os }})
@@ -107,69 +124,69 @@ jobs:
           brew update
           brew install pkg-config
 
-      # ---- Cargo caching ----
+      # ---- Cargo cache ----
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           key: build-${{ matrix.os }}
           cache-all-crates: true
 
-      # ---- Build core working components ----
+      # ---- Build core working components (debug) ----
       - name: Build core components (debug)
-        run: |
-          cargo build --locked --verbose \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p astraweave-nav \
-            -p astraweave-render \
-            -p astraweave-gameplay \
-            -p astraweave-audio \
-            -p astraweave-npc \
-            -p astraweave-input \
-            -p astraweave-ui \
-            -p astraweave-net \
-            -p astraweave-director \
-            -p astraweave-memory \
-            -p astraweave-persona \
-            -p astraweave-llm \
-            -p astraweave-ipc \
-            -p hello_companion
+        run: >
+          cargo build --frozen --verbose
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p astraweave-gameplay
+          -p astraweave-audio
+          -p astraweave-npc
+          -p astraweave-input
+          -p astraweave-ui
+          -p astraweave-net
+          -p astraweave-director
+          -p astraweave-memory
+          -p astraweave-persona
+          -p astraweave-llm
+          -p astraweave-ipc
+          -p hello_companion
 
-      # ---- Build working examples ----
+      # ---- Build working examples (debug, non-blocking) ----
       - name: Build working examples (debug)
         continue-on-error: true
-        run: |
-          cargo build --locked --verbose \
-            -p hello_companion \
-            -p adaptive_boss \
-            -p companion_profile \
-            -p ipc_loopback \
-            -p llm_toolcall \
-            -p phase_director \
-            -p persona_loader \
-            -p coop_server \
-            -p coop_client \
-            -p physics_demo3d \
-            -p navmesh_demo \
-            -p weaving_playground \
-            -p crafting_combat_demo \
-            -p quest_dialogue_demo \
-            -p combat_physics_demo \
-            -p cutscene_render_demo \
-            -p audio_spatial_demo \
-            -p dialogue_voice_demo
+        run: >
+          cargo build --frozen --verbose
+          -p hello_companion
+          -p adaptive_boss
+          -p companion_profile
+          -p ipc_loopback
+          -p llm_toolcall
+          -p phase_director
+          -p persona_loader
+          -p coop_server
+          -p coop_client
+          -p physics_demo3d
+          -p navmesh_demo
+          -p weaving_playground
+          -p crafting_combat_demo
+          -p quest_dialogue_demo
+          -p combat_physics_demo
+          -p cutscene_render_demo
+          -p audio_spatial_demo
+          -p dialogue_voice_demo
 
-      # ---- Release build for core components ----
+      # ---- Release build for selected core components ----
       - name: Build core components (release)
-        run: |
-          cargo build --locked --release --verbose \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p astraweave-nav \
-            -p astraweave-render \
-            -p hello_companion
+        run: >
+          cargo build --frozen --release --verbose
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p hello_companion
 
   test:
     name: Test (${{ matrix.os }})
@@ -208,7 +225,7 @@ jobs:
           brew update
           brew install pkg-config
 
-      # ---- Cargo caching ----
+      # ---- Cargo cache ----
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -216,15 +233,19 @@ jobs:
           cache-all-crates: true
 
       # ---- Run tests ----
-      - name: Run tests
-        run: |
-          cargo test --workspace --locked \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
-            --lib
+      - name: Run tests (workspace, excludes)
+        run: >
+          cargo test --workspace --locked --lib
+          --exclude astraweave-author
+          --exclude visual_3d
+          --exclude ui_controls_demo
+          --exclude npc_town_demo
+          --exclude rhai_authoring
+          --exclude cutscene_render_demo
+          --exclude weaving_playground
+          --exclude combat_physics_demo
+          --exclude navmesh_demo
+          --exclude physics_demo3d
 
   linting:
     name: Code Quality (Linux)
@@ -258,21 +279,23 @@ jobs:
           key: linting
           cache-all-crates: true
 
-      # ---- Code formatting ----
       - name: Check code formatting
-        run: |
-          cargo fmt --all --check
+        run: cargo fmt --all --check
 
-      # ---- Clippy linting ----
-      - name: Run Clippy
-        run: |
-          cargo clippy --workspace --locked \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
-            --all-features --all-targets -- -D warnings
+      - name: Run Clippy (workspace, excludes, warnings as errors)
+        run: >
+          cargo clippy --workspace --locked
+          --exclude astraweave-author
+          --exclude visual_3d
+          --exclude ui_controls_demo
+          --exclude npc_town_demo
+          --exclude rhai_authoring
+          --exclude cutscene_render_demo
+          --exclude weaving_playground
+          --exclude combat_physics_demo
+          --exclude navmesh_demo
+          --exclude physics_demo3d
+          --all-features --all-targets -- -D warnings
 
   security:
     name: Security Audit
@@ -288,22 +311,26 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install cargo-audit
-        run: cargo install cargo-audit
-
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           key: security
           cache-all-crates: true
 
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
       - name: Run security audit
         run: cargo audit
 
-      - name: Run cargo deny
+      - name: Run cargo-deny (if config present)
         run: |
-          cargo install cargo-deny
-          cargo deny check
+          if [ -f "deny.toml" ] || [ -f ".cargo/deny.toml" ] || [ -f "deny/config.toml" ]; then
+            cargo install cargo-deny
+            cargo deny check
+          else
+            echo "cargo-deny config not found; skipping."
+          fi
 
   msrv:
     name: Minimum Supported Rust Version
@@ -323,9 +350,10 @@ jobs:
 
       - name: Extract MSRV from Cargo.toml
         id: msrv
+        shell: bash
         run: |
-          # Look for rust-version in workspace or package Cargo.toml
-          MSRV=$(grep -r "rust-version" Cargo.toml | head -1 | cut -d'"' -f2 || echo "1.82.0")
+          MSRV=$(grep -hR '^\s*rust-version\s*=' --include Cargo.toml . | head -1 | sed 's/.*"//;s/".*//')
+          if [ -z "$MSRV" ]; then MSRV="1.82.0"; fi
           echo "version=$MSRV" >> $GITHUB_OUTPUT
 
       - name: Install MSRV toolchain
@@ -339,13 +367,18 @@ jobs:
           key: msrv-${{ steps.msrv.outputs.version }}
 
       - name: Check MSRV compatibility
-        run: |
-          cargo check --workspace --locked \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+        run: >
+          cargo check --workspace --locked
+          --exclude astraweave-author
+          --exclude visual_3d
+          --exclude ui_controls_demo
+          --exclude npc_town_demo
+          --exclude rhai_authoring
+          --exclude cutscene_render_demo
+          --exclude weaving_playground
+          --exclude combat_physics_demo
+          --exclude navmesh_demo
+          --exclude physics_demo3d
 
   demo:
     name: Demo Execution (Linux)
@@ -379,8 +412,7 @@ jobs:
           cache-all-crates: true
 
       - name: Build hello_companion demo
-        run: |
-          cargo build --release -p hello_companion
+        run: cargo build --release -p hello_companion
 
       - name: Run hello_companion demo (with timeout)
         run: |

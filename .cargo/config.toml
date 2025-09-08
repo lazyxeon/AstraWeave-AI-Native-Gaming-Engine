@@ -1,12 +1,10 @@
 [build]
-# Fail if Cargo.lock is out of date in CI (paired with --locked)
+# Optimize for CI environment - remove debuginfo in CI for faster builds
 rustflags = ["-C", "debuginfo=0"]
-# Parallel compilation will use automatic detection by not specifying jobs
 
 [target.'cfg(all())']
-# Enable sccache for faster compilation (if available)
-# Uncomment when sccache is installed:
-# rustc-wrapper = "sccache"
+# Enable sccache for faster compilation when available
+# rustc-wrapper = "sccache"  # Enabled via environment variable in CI
 
 # Optimize for native CPU features in release builds
 [target.'cfg(not(target_env = "msvc"))']
@@ -18,8 +16,9 @@ progress.when = "auto"
 
 [env]
 # Configure sccache for optimal performance
-SCCACHE_CACHE_SIZE = "10G"
+SCCACHE_CACHE_SIZE = { value = "10G" }
 SCCACHE_DIR = { value = "./target/sccache", relative = true }
+SCCACHE_IDLE_TIMEOUT = { value = "0" }
 
 [net]
 # Optimize network settings for large workspace
@@ -64,6 +63,12 @@ inherits = "release"
 debug = true
 
 [profile.test]
-# Optimize test builds
+# Optimize test builds for faster CI
 inherits = "dev"
 opt-level = 1
+debug-assertions = true
+
+[profile.dev.package."*"]
+# Optimize dependencies in dev builds for faster compilation
+opt-level = 1
+debug = false
