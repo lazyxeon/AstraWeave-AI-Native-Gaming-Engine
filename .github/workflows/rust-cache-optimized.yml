@@ -282,3 +282,4 @@ jobs:
             -p astraweave-ai \
             -p astraweave-physics \
             -p astraweave-nav || true  # Allow failures for experimental targets
+
