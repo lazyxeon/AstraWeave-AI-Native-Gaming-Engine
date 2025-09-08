@@ -1,0 +1,298 @@
+name: Rust Toolchain Management
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'rust-toolchain.toml'
+      - '.cargo/config.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'rust-toolchain.toml'
+      - '.cargo/config.toml'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+    inputs:
+      toolchain_version:
+        description: 'Rust toolchain version to test'
+        required: false
+        default: 'stable'
+        type: string
+      test_mode:
+        description: 'Testing mode'
+        required: true
+        default: 'compatibility'
+        type: choice
+        options:
+          - compatibility
+          - performance
+          - nightly-features
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: 1
+
+jobs:
+  toolchain-validation:
+    name: Toolchain Validation (${{ matrix.toolchain }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        toolchain: 
+          - stable
+          - "1.89.0"  # Pinned version
+          - "1.88.0"  # Previous stable for compatibility
+          - beta
+        include:
+          # Test nightly features if requested
+          - os: ubuntu-latest
+            toolchain: nightly
+            experimental: true
+        exclude:
+          # Skip some combinations to reduce CI time
+          - os: windows-latest
+            toolchain: beta
+          - os: macos-latest
+            toolchain: "1.88.0"
+
+    continue-on-error: ${{ matrix.experimental || false }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ github.event.inputs.toolchain_version || matrix.toolchain }}
+          components: rustfmt, clippy, rust-src, rust-analyzer
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install pkg-config
+
+      - name: Validate toolchain configuration
+        run: |
+          echo "=== Rust Toolchain Information ==="
+          rustc --version
+          cargo --version
+          rustup show
+          
+          echo "=== Cargo Configuration ==="
+          cat .cargo/config.toml
+          
+          echo "=== Toolchain Configuration ==="
+          cat rust-toolchain.toml
+
+      - name: Set up toolchain-specific cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: toolchain-${{ matrix.os }}-${{ matrix.toolchain }}
+          cache-all-crates: true
+
+      - name: Check workspace compatibility
+        run: |
+          # Test basic compilation with this toolchain
+          cargo check --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+
+      - name: Run minimal test suite
+        run: |
+          cargo test --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring \
+            --lib
+
+      - name: Check code formatting compatibility
+        if: matrix.toolchain != 'nightly'  # Nightly may have different formatting rules
+        run: cargo fmt --all --check
+
+      - name: Run clippy with toolchain
+        run: |
+          cargo clippy --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring \
+            --all-features --all-targets -- -D warnings
+
+      - name: Test nightly features (if nightly)
+        if: matrix.toolchain == 'nightly'
+        run: |
+          # Test unstable features that might be beneficial
+          echo 'Testing nightly-specific features...'
+          # Add any nightly feature tests here
+          cargo check --all-features || true
+
+  msrv-check:
+    name: Minimum Supported Rust Version Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install MSRV from Cargo.toml
+        run: |
+          # Extract MSRV if specified in Cargo.toml
+          MSRV=$(grep -r "rust-version" Cargo.toml | head -1 | cut -d'"' -f2 || echo "1.82.0")
+          echo "MSRV=$MSRV" >> $GITHUB_ENV
+
+      - name: Set up MSRV toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.MSRV }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev
+
+      - name: Set up MSRV cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: msrv-${{ env.MSRV }}
+
+      - name: Check MSRV compatibility
+        run: |
+          cargo check --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+
+  performance-benchmarking:
+    name: Toolchain Performance Comparison
+    runs-on: ubuntu-latest
+    if: github.event.inputs.test_mode == 'performance' || github.event_name == 'push'
+    
+    strategy:
+      matrix:
+        toolchain: [stable, "1.89.0", beta]
+        
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev time
+
+      - name: Set up performance cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: perf-${{ matrix.toolchain }}
+
+      - name: Benchmark compilation time
+        run: |
+          echo "=== Compilation Performance for ${{ matrix.toolchain }} ===" > perf-${{ matrix.toolchain }}.txt
+          echo "" >> perf-${{ matrix.toolchain }}.txt
+          
+          # Clean build timing
+          cargo clean
+          echo "Clean build:" >> perf-${{ matrix.toolchain }}.txt
+          /usr/bin/time -f "Real: %E, User: %U, System: %S, Memory: %M KB" \
+            cargo build --release \
+              -p astraweave-core \
+              -p astraweave-ai \
+              -p astraweave-physics \
+              -p hello_companion 2>&1 | tail -1 >> perf-${{ matrix.toolchain }}.txt
+          
+          # Incremental build timing
+          echo "Incremental build:" >> perf-${{ matrix.toolchain }}.txt
+          /usr/bin/time -f "Real: %E, User: %U, System: %S, Memory: %M KB" \
+            cargo build --release \
+              -p astraweave-core \
+              -p astraweave-ai \
+              -p astraweave-physics \
+              -p hello_companion 2>&1 | tail -1 >> perf-${{ matrix.toolchain }}.txt
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-${{ matrix.toolchain }}
+          path: perf-${{ matrix.toolchain }}.txt
+          retention-days: 30
+
+  toolchain-report:
+    name: Generate Toolchain Report
+    runs-on: ubuntu-latest
+    needs: [toolchain-validation, msrv-check]
+    if: always()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Generate toolchain compatibility report
+        run: |
+          echo "# Rust Toolchain Compatibility Report" > toolchain-report.md
+          echo "Generated on: $(date)" >> toolchain-report.md
+          echo "" >> toolchain-report.md
+          
+          echo "## Toolchain Configuration" >> toolchain-report.md
+          echo '```toml' >> toolchain-report.md
+          cat rust-toolchain.toml >> toolchain-report.md
+          echo '```' >> toolchain-report.md
+          echo "" >> toolchain-report.md
+          
+          echo "## Cargo Configuration" >> toolchain-report.md
+          echo '```toml' >> toolchain-report.md
+          cat .cargo/config.toml >> toolchain-report.md
+          echo '```' >> toolchain-report.md
+          echo "" >> toolchain-report.md
+          
+          echo "## Validation Results" >> toolchain-report.md
+          echo "Check the individual job results for detailed compatibility information." >> toolchain-report.md
+          
+          echo "## Recommendations" >> toolchain-report.md
+          echo "- Pin to Rust 1.89.0 for stable builds" >> toolchain-report.md
+          echo "- Test with beta channel regularly" >> toolchain-report.md
+          echo "- Monitor nightly for upcoming features" >> toolchain-report.md
+
+      - name: Upload toolchain report
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolchain-report
+          path: toolchain-report.md
+          retention-days: 30

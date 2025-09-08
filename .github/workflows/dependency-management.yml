@@ -1,0 +1,258 @@
+name: Dependency Management & Cache Optimization
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC to keep caches warm
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      cache_action:
+        description: 'Cache action to perform'
+        required: true
+        default: 'warm'
+        type: choice
+        options:
+          - warm
+          - clean
+          - rebuild
+      
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+
+jobs:
+  dependency-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+
+      - name: Run security audit
+        run: cargo audit
+
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked
+
+      - name: Run cargo-deny check
+        run: cargo deny check
+
+  dependency-update:
+    name: Dependency Update Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-outdated
+        run: cargo install cargo-outdated --locked
+
+      - name: Check for outdated dependencies
+        run: cargo outdated --workspace --format json > outdated.json || true
+
+      - name: Upload outdated dependencies report
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-report
+          path: outdated.json
+          retention-days: 30
+
+  cache-management:
+    name: Cache Management (${{ github.event.inputs.cache_action || 'warm' }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install pkg-config
+
+      - name: Cache cleanup (if requested)
+        if: github.event.inputs.cache_action == 'clean'
+        run: |
+          cargo clean
+          rm -rf ~/.cargo/registry/cache
+          rm -rf ~/.cargo/git/db
+
+      - name: Set up optimized cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: dependency-mgmt-${{ matrix.os }}
+          cache-all-crates: true
+          save-if: ${{ github.event.inputs.cache_action != 'clean' }}
+
+      - name: Warm dependency cache
+        if: github.event.inputs.cache_action == 'warm' || github.event_name == 'schedule'
+        run: |
+          # Fetch all dependencies
+          cargo fetch --locked
+          
+          # Pre-compile core dependencies
+          cargo check --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+          
+          # Pre-compile in release mode for commonly used crates
+          cargo check --release \
+            -p astraweave-core \
+            -p astraweave-ai \
+            -p astraweave-physics \
+            -p astraweave-render
+
+      - name: Rebuild cache (if requested)
+        if: github.event.inputs.cache_action == 'rebuild'
+        run: |
+          cargo clean
+          cargo build --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+
+  workspace-analysis:
+    name: Workspace Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install analysis tools
+        run: |
+          cargo install cargo-tree --locked
+          cargo install cargo-machete --locked
+
+      - name: Analyze dependency tree
+        run: |
+          cargo tree --workspace --format "{p} {f}" > dependency-tree.txt
+          echo "## Workspace Dependency Analysis" > analysis.md
+          echo "Generated on: $(date)" >> analysis.md
+          echo "" >> analysis.md
+          echo "### Dependency Tree Summary" >> analysis.md
+          echo '```' >> analysis.md
+          head -50 dependency-tree.txt >> analysis.md
+          echo '```' >> analysis.md
+
+      - name: Find unused dependencies
+        run: |
+          cargo machete --with-metadata > unused-deps.txt || true
+          echo "" >> analysis.md
+          echo "### Unused Dependencies" >> analysis.md
+          echo '```' >> analysis.md
+          cat unused-deps.txt >> analysis.md
+          echo '```' >> analysis.md
+
+      - name: Workspace statistics
+        run: |
+          echo "" >> analysis.md
+          echo "### Workspace Statistics" >> analysis.md
+          echo "- Total crates: $(find . -name 'Cargo.toml' | wc -l)" >> analysis.md
+          echo "- Total Rust files: $(find . -name '*.rs' | wc -l)" >> analysis.md
+          echo "- Total lines of code: $(find . -name '*.rs' -exec wc -l {} + | tail -1 | awk '{print $1}')" >> analysis.md
+
+      - name: Upload analysis report
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-analysis
+          path: |
+            analysis.md
+            dependency-tree.txt
+            unused-deps.txt
+          retention-days: 30
+
+  performance-profiling:
+    name: Build Performance Profiling
+    runs-on: ubuntu-latest
+    if: github.event.inputs.cache_action == 'rebuild' || github.event_name == 'schedule'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev time
+
+      - name: Install cargo-llvm-lines
+        run: cargo install cargo-llvm-lines --locked
+
+      - name: Profile build performance
+        run: |
+          echo "## Build Performance Profile" > performance.md
+          echo "Generated on: $(date)" >> performance.md
+          echo "" >> performance.md
+          
+          # Clean build timing
+          echo "### Clean Build Timing" >> performance.md
+          echo '```' >> performance.md
+          cargo clean
+          /usr/bin/time -v cargo build \
+            -p astraweave-core \
+            -p astraweave-ai \
+            -p astraweave-physics \
+            -p hello_companion 2>&1 | tee build-timing.txt
+          cat build-timing.txt >> performance.md
+          echo '```' >> performance.md
+          
+          # LLVM lines analysis for core crates
+          echo "" >> performance.md
+          echo "### LLVM Lines Analysis (Top Compile Time Consumers)" >> performance.md
+          echo '```' >> performance.md
+          cargo llvm-lines -p astraweave-core --release | head -20 >> performance.md
+          echo '```' >> performance.md
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-profile
+          path: |
+            performance.md
+            build-timing.txt
+          retention-days: 30

@@ -1,10 +1,56 @@
 [build]
 # Fail if Cargo.lock is out of date in CI (paired with --locked)
 rustflags = ["-C", "debuginfo=0"]
+# Parallel compilation - removed jobs = 0 as it's invalid
 
 [target.'cfg(all())']
-# You can enable sccache later by uncommenting these lines:
+# Enable sccache for faster compilation (if available)
+# Uncomment when sccache is installed:
 # rustc-wrapper = "sccache"
 
 [term]
 color = "always"
+
+[env]
+# Configure sccache for optimal performance
+SCCACHE_CACHE_SIZE = "10G"
+SCCACHE_DIR = { value = "./target/sccache", relative = true }
+
+[net]
+# Optimize network settings for large workspace
+git-fetch-with-cli = true
+retry = 3
+
+[profile.dev]
+# Optimize development builds for workspace
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = "unwind"
+incremental = true
+codegen-units = 256
+
+[profile.release]
+# Optimize release builds for game engine performance
+opt-level = 3
+debug = false
+split-debuginfo = "packed"
+debug-assertions = false
+overflow-checks = false
+lto = "thin"
+panic = "abort"
+codegen-units = 1
+strip = "symbols"
+
+[profile.bench]
+# Optimize benchmarks
+inherits = "release"
+debug = true
+
+[profile.test]
+# Optimize test builds
+inherits = "dev"
+opt-level = 1

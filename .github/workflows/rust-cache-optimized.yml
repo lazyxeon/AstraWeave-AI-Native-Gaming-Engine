@@ -1,0 +1,284 @@
+name: Optimized Rust Build with Advanced Caching
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-D warnings -W unreachable-pub -W bare-trait-objects"
+  RUSTDOCFLAGS: "-D warnings"
+
+jobs:
+  cache-strategy:
+    name: Cache Strategy Matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust: [stable, "1.89.0", beta]
+        build-type: [debug, release]
+        include:
+          # Specialized configurations
+          - os: ubuntu-latest
+            rust: stable
+            build-type: debug
+            primary: true
+          - os: ubuntu-latest
+            rust: "1.89.0"
+            build-type: release
+            artifacts: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          # Fetch full history for better cache keys
+          fetch-depth: 0
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy, rust-src
+          targets: ${{ matrix.os == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || 'x86_64-apple-darwin' }}
+
+      # ---- Platform-specific dependencies ----
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install pkg-config
+
+      - name: Install sccache (Ubuntu/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          SCCACHE_VERSION="v0.8.2"
+          SCCACHE_ARCH=${{ matrix.os == 'ubuntu-latest' && 'x86_64-unknown-linux-musl' || 'x86_64-apple-darwin' }}
+          curl -L "https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/sccache-${SCCACHE_VERSION}-${SCCACHE_ARCH}.tar.gz" | tar -xz
+          sudo mv sccache-*/sccache /usr/local/bin/
+          chmod +x /usr/local/bin/sccache
+
+      - name: Install sccache (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          $SCCACHE_VERSION = "v0.8.2"
+          Invoke-WebRequest -Uri "https://github.com/mozilla/sccache/releases/download/$SCCACHE_VERSION/sccache-$SCCACHE_VERSION-x86_64-pc-windows-msvc.tar.gz" -OutFile "sccache.tar.gz"
+          tar -xzf sccache.tar.gz
+          Move-Item "sccache-*/sccache.exe" "C:/Windows/System32/"
+
+      # ---- Advanced Rust caching ----
+      - name: Set up advanced Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Workspace-aware caching
+          workspaces: |
+            .
+            astraweave-core
+            astraweave-ai
+            astraweave-render
+            astraweave-physics
+            examples/hello_companion
+          # Custom cache key components
+          key: ${{ matrix.os }}-${{ matrix.rust }}-${{ matrix.build-type }}
+          # Include additional cache paths
+          cache-directories: |
+            ~/.cargo/bin/sccache
+            ./target/sccache
+          # Optimize for large workspace
+          cache-all-crates: true
+          # Save space by cleaning up old artifacts
+          cache-on-failure: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      # ---- sccache configuration ----
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_DIR=${{ github.workspace }}/target/sccache" >> $GITHUB_ENV
+          echo "SCCACHE_CACHE_SIZE=5G" >> $GITHUB_ENV
+          sccache --start-server
+
+      - name: Show sccache stats (before)
+        run: sccache --show-stats
+
+      # ---- Optimized build process ----
+      - name: Build workspace (debug)
+        if: matrix.build-type == 'debug'
+        run: |
+          cargo build --locked --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+
+      - name: Build workspace (release)
+        if: matrix.build-type == 'release'
+        run: |
+          cargo build --locked --release --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+
+      # ---- Core component testing ----
+      - name: Run core tests
+        if: matrix.primary
+        run: |
+          cargo test --locked --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring
+
+      # ---- Code quality checks (primary configuration only) ----
+      - name: Check formatting
+        if: matrix.primary
+        run: cargo fmt --all --check
+
+      - name: Run clippy
+        if: matrix.primary
+        run: |
+          cargo clippy --locked --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring \
+            --all-features --all-targets -- -D warnings
+
+      # ---- Documentation ----
+      - name: Check documentation
+        if: matrix.primary
+        run: |
+          cargo doc --locked --workspace \
+            --exclude astraweave-author \
+            --exclude visual_3d \
+            --exclude ui_controls_demo \
+            --exclude npc_town_demo \
+            --exclude rhai_authoring \
+            --no-deps
+
+      # ---- Benchmarks (release builds only) ----
+      - name: Run benchmarks
+        if: matrix.build-type == 'release' && matrix.primary
+        run: |
+          cargo bench --locked \
+            -p astraweave-core \
+            -p astraweave-physics \
+            -p astraweave-nav \
+            --all-features || true  # Continue on benchmark failure
+
+      # ---- Cache optimization stats ----
+      - name: Show sccache stats (after)
+        run: sccache --show-stats
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
+      # ---- Artifact collection ----
+      - name: Upload build artifacts
+        if: matrix.artifacts && matrix.build-type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: veilweaver-${{ matrix.os }}-${{ matrix.rust }}
+          path: |
+            target/release/hello_companion*
+            target/release/physics_demo3d*
+            target/release/navmesh_demo*
+          retention-days: 7
+
+  # ---- Cache warming job ----
+  cache-warming:
+    name: Cache Warming
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev
+
+      - name: Set up cache warming
+        uses: Swatinem/rust-cache@v2
+        with:
+          save-if: true
+          key: cache-warming
+
+      - name: Warm up dependency cache
+        run: |
+          cargo fetch --locked
+          cargo check --locked --workspace || true
+
+  # ---- Cross-compilation matrix ----
+  cross-compile:
+    name: Cross Compilation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        target: 
+          - x86_64-pc-windows-gnu
+          - aarch64-unknown-linux-gnu
+          # - wasm32-unknown-unknown  # For future web builds
+          
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross-compilation dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-mingw-w64-x86-64 gcc-aarch64-linux-gnu
+
+      - name: Set up cross-compilation cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: cross-${{ matrix.target }}
+
+      - name: Cross compile core components
+        run: |
+          cargo check --target ${{ matrix.target }} \
+            -p astraweave-core \
+            -p astraweave-ai \
+            -p astraweave-physics \
+            -p astraweave-nav || true  # Allow failures for experimental targets
