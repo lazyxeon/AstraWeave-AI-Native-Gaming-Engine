@@ -1,7 +1,42 @@
 
-[![CodeQL Analysis](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/codeql-analysis.yml)
-
 # Veilweaver: Threads of Eternity
+
+<div align="center">
+
+## Build & Platform Support
+[![CI](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
+[![Rust](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/rust.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/rust.yml)
+[![Cross Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
+[![Rust Version](https://img.shields.io/badge/rust-1.89.0-orange.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/rust-toolchain.toml)
+
+## Security & Quality Assurance
+[![Security Audit](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/security-audit.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/security-audit.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lazyxeon/Veilweaver-Threads-of-Eternity/badge)](https://scorecard.dev/viewer/?uri=github.com/lazyxeon/Veilweaver-Threads-of-Eternity)
+[![CodeQL Analysis](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/codeql-analysis.yml)
+[![Benchmarks](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/benchmark.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/benchmark.yml)
+
+## Project Information
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/LICENSE)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/Cargo.toml)
+[![Rust Edition](https://img.shields.io/badge/edition-2021-red.svg)](https://doc.rust-lang.org/edition-guide/rust-2021/index.html)
+
+## Documentation & Community  
+[![Documentation](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/docs.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/docs.yml)
+[![GitHub Issues](https://img.shields.io/github/issues/lazyxeon/Veilweaver-Threads-of-Eternity.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/lazyxeon/Veilweaver-Threads-of-Eternity.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/pulls)
+[![Last Commit](https://img.shields.io/github/last-commit/lazyxeon/Veilweaver-Threads-of-Eternity.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/commits/main)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/CONTRIBUTING.md)
+
+## Project Focus
+[![AI-Native](https://img.shields.io/badge/AI--Native-Game%20Engine-purple.svg)](#project-focus)
+[![Game Engine](https://img.shields.io/badge/Game%20Engine-3D%20RPG-darkgreen.svg)](#directory-structure)
+[![Research Platform](https://img.shields.io/badge/Research-Platform-orange.svg)](#veilweaver-threads-of-eternity)
+[![Rust Ecosystem](https://img.shields.io/badge/ecosystem-wgpu%20%7C%20rapier3d%20%7C%20rodio-brown.svg)](#development-environment)
+[![GitHub Stars](https://img.shields.io/github/stars/lazyxeon/Veilweaver-Threads-of-Eternity?style=social)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/stargazers)
+
+</div>
+
+---
 Veilweaver: Threads of Eternity is a research platform and playable vertical slice for
 building AI‑native games. It delivers a complete engine and toolkit for creating rich,
 emergent RPG experiences where companions learn, bosses adapt, and the world itself can
