@@ -9,7 +9,7 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 rand = { workspace = true }
-glam = "0.27"
+glam = "0.30"
 
 [dev-dependencies]
 criterion = { workspace = true }

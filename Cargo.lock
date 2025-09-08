@@ -300,11 +300,11 @@ dependencies = [
  "anyhow",
  "astraweave-gameplay",
  "glam",
- "rand 0.8.5",
+ "rand 0.9.2",
  "rodio",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.16",
  "toml",
 ]
 
@@ -326,10 +326,10 @@ dependencies = [
  "anyhow",
  "criterion",
  "glam",
- "rand 0.8.5",
+ "rand 0.9.2",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.16",
 ]
 
 [[package]]
@@ -351,10 +351,10 @@ dependencies = [
  "astraweave-nav",
  "astraweave-physics",
  "glam",
- "rand 0.8.5",
+ "rand 0.9.2",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.16",
  "toml",
 ]
 
@@ -368,7 +368,7 @@ dependencies = [
  "glam",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.16",
  "winit",
 ]
 
@@ -441,10 +441,10 @@ dependencies = [
  "astraweave-gameplay",
  "astraweave-physics",
  "glam",
- "rand 0.8.5",
+ "rand 0.9.2",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.16",
  "toml",
 ]
 
@@ -467,7 +467,7 @@ dependencies = [
  "anyhow",
  "bitflags 2.9.4",
  "glam",
- "rand 0.8.5",
+ "rand 0.9.2",
  "rapier3d",
 ]
 
@@ -479,7 +479,7 @@ dependencies = [
  "bytemuck",
  "glam",
  "pollster",
- "rand 0.8.5",
+ "rand 0.9.2",
  "wgpu",
  "winit",
 ]
@@ -491,7 +491,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
- "thiserror 1.0.69",
+ "thiserror 2.0.16",
 ]
 
 [[package]]
@@ -2201,9 +2201,9 @@ dependencies = [
 
 [[package]]
 name = "glam"
-version = "0.27.0"
+version = "0.30.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e05e7e6723e3455f4818c7b26e855439f7546cf617ef669d1adedb8669e5cb9"
+checksum = "f2d1aab06663bdce00d6ca5e5ed586ec8d18033a771906c993a1e3755b368d85"
 dependencies = [
  "serde",
 ]
