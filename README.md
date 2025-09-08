@@ -17,6 +17,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/LICENSE)
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/Cargo.toml)
 
+[![Copilot](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/copilot-swe-agent/copilot/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/copilot-swe-agent/copilot)
+
 </div>
 
 ---
