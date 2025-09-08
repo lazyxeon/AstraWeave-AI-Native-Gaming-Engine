@@ -8,7 +8,6 @@
 *Where agents are first-class citizens, not scripted afterthoughts*
 
 [![CI](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
-[![Rust](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/rust.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/rust.yml)
 [![Cross Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
 [![Rust Version](https://img.shields.io/badge/rust-1.89.0-orange.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/rust-toolchain.toml)
 
