@@ -34,22 +34,25 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install cargo-doc-tools
-        run: cargo install cargo-doc-tools
-
       - name: Install mdBook
         run: cargo install mdbook
 
       - name: Build API documentation
         run: |
-          cargo doc --no-deps --all-features
+          # Build docs for core working crates to avoid compilation errors
+          cargo doc --no-deps --package astraweave-core --package astraweave-ai --package astraweave-physics --package astraweave-nav --package astraweave-render
           echo "<meta http-equiv=&quot;refresh&quot; content=&quot;0; url=astraweave_core/index.html&quot;>" > target/doc/index.html
 
       - name: Build mdBook documentation
         run: |
-          mkdir -p docs/book
-          cp -r target/doc docs/book/api
-          cd docs && mdbook build
+          cd docs
+          # Build the mdBook first
+          mdbook build
+          # Create API docs directory and copy generated API docs
+          mkdir -p book/api
+          cp -r ../target/doc/* book/api/
+          # Recreate the redirect page for API docs
+          echo '<meta http-equiv="refresh" content="0; url=astraweave_core/index.html">' > book/api/index.html
 
       # Only deploy on push to main, not on pull requests
       - name: Deploy to GitHub Pages

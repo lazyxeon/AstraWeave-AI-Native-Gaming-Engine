@@ -2,6 +2,9 @@
 /target/
 target/
 
+# Documentation build outputs (mdBook)
+docs/book/
+
 # IDE and editor files
 .vscode/
 .idea/
