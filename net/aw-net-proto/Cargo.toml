@@ -1,0 +1,14 @@
+[package]
+name = "aw-net-proto"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+bincode = "1.3"
+postcard = { version = "1", features = ["alloc"] }
+lz4_flex = "0.11"
+thiserror = "1"
+time = { version = "0.3", features = ["macros"] }
+rand = "0.8"

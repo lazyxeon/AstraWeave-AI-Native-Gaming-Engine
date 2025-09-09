@@ -101,3 +101,6 @@ ehthumbs_vista.db
 # Output files
 output.txt
 result.txt
+
+# Networking persistence databases
+aw_net_server_db/
