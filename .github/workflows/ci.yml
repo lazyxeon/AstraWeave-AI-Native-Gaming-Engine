@@ -65,6 +65,12 @@ jobs:
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
+          brew update
+          brew install pkg-config
+          # Ensure we use system OpenSSL to avoid ring crate issues
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$(brew --prefix openssl)/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl)/include" >> $GITHUB_ENV
           brew install pkg-config cmake
 
       - name: Install system dependencies (Windows)
@@ -133,7 +139,9 @@ jobs:
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
+          brew update
           brew install pkg-config cmake
+
 
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.6
@@ -141,8 +149,81 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          key: build-${{ matrix.os }}-v5
+          cache-all-crates: true
+          cache-directories: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/cache/
+
+      # ---- Build core working components (debug) ----
+      - name: Build core components (debug)
+        run: >
+          cargo build --frozen --verbose
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p astraweave-gameplay
+          -p astraweave-audio
+          -p astraweave-npc
+          -p astraweave-input
+          -p astraweave-ui
+          -p astraweave-net
+          -p astraweave-director
+          -p astraweave-memory
+          -p astraweave-persona
+          -p astraweave-ipc
+          -p astraweave-sdk
+          -p hello_companion
+
+      # ---- Build working examples (debug, non-blocking) ----
+      - name: Build working examples (debug)
+        continue-on-error: true
+        run: >
+          cargo build --frozen --verbose
+          -p hello_companion
+          -p adaptive_boss
+          -p companion_profile
+          -p ipc_loopback
+          -p phase_director
+          -p persona_loader
+          -p coop_server
+          -p coop_client
+          -p audio_spatial_demo
+          -p dialogue_voice_demo
+
+      # ---- Release build for selected core components ----
+      - name: Build core components (release)
+        run: >
+          cargo build --frozen --release --verbose
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p hello_companion
+
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
           key: build-${{ matrix.os }}-${{ matrix.profile }}-v5
           cache-all-crates: true
+
 
       - name: Configure sccache
         run: |
@@ -150,6 +231,19 @@ jobs:
 
       - name: Build core components (${{ matrix.profile }})
         run: |
+          brew update
+          brew install pkg-config
+          # Ensure we use system OpenSSL to avoid ring crate issues
+          echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
+          echo "OPENSSL_LIB_DIR=$(brew --prefix openssl)/lib" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl)/include" >> $GITHUB_ENV
+
+      # ---- Cargo cache ----
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: test-${{ matrix.os }}-v5
+          cache-all-crates: true
           if [ "${{ matrix.profile }}" = "release" ]; then
             PROFILE_FLAG="--release"
           else
@@ -250,6 +344,12 @@ jobs:
       - name: Configure sccache
         run: |
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: security-v5
+          cache-all-crates: true
 
       - name: Check code formatting
         run: |

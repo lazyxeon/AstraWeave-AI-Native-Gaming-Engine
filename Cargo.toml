@@ -83,7 +83,7 @@ tungstenite = "0.21"
 tokio-tungstenite = "0.21"
 egui = "0.28"
 eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.30", features = ["serde"] }
 wgpu = "0.20"
