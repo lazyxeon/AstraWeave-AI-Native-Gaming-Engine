@@ -58,22 +58,42 @@
 
 ## Quick Start
 
-### Installation
+### Automated Setup (Recommended)
+
+Get up and running in seconds with our automated bootstrap script:
 
 ```bash
 # Clone the repository
-git clone https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity.git
-cd Veilweaver-Threads-of-Eternity
+git clone https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine.git
+cd AstraWeave-AI-Native-Gaming-Engine
 
-# Build core engine components
-cargo build -p astraweave-core -p astraweave-ai -p astraweave-render
+# One-command setup (installs dependencies + validates environment)
+./scripts/bootstrap.sh
+
+# Or use make for convenience
+make setup
 ```
+
+The bootstrap script will:
+- 🔍 **Detect your platform** (Linux distro, macOS, Windows/WSL)
+- 📦 **Install system dependencies** (graphics, audio, build tools)
+- 🦀 **Set up Rust toolchain** (pinned to 1.89.0)
+- 🔧 **Install dev tools** (cargo-audit, cargo-deny, sccache)
+- ✅ **Validate installation** (compile test + environment check)
+
+### Manual Setup
+
+For detailed manual setup or troubleshooting, see: **[DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md)**
 
 ### Hello World: Your First AI Companion
 
 ```bash
-# Run the basic companion demo  
+# Build and run the basic companion demo  
 cargo run -p hello_companion --release
+
+# Or use convenient helpers
+make example
+./scripts/dev.sh example
 
 # This demonstrates:
 # - AI agent perception and planning
@@ -82,12 +102,29 @@ cargo run -p hello_companion --release
 # Expected output: AI plan generation, then LOS error (expected behavior)
 ```
 
+### Development Workflow
+
+```bash
+# Validate environment
+make validate                    # or ./scripts/dev.sh validate
+
+# Quick development cycle
+make build                       # Build core components
+make test                        # Run tests
+make lint                        # Run clippy + format check
+make check                       # Run comprehensive checks
+
+# View project status
+make status                      # or ./scripts/dev.sh status
+```
+
 ### System Requirements
 
-- **Rust**: 1.89.0+ (managed via rust-toolchain.toml)
-- **Platform**: Linux, macOS, or Windows
-- **GPU**: Vulkan-compatible (via wgpu)
-- **Memory**: 4GB+ recommended for AI models
+- **Rust**: 1.89.0+ (automatically managed via rust-toolchain.toml)
+- **Platform**: Linux, macOS, or Windows (WSL recommended for Windows)
+- **GPU**: Vulkan-compatible graphics card (via wgpu)
+- **Memory**: 4GB+ RAM recommended for AI models
+- **Storage**: 2GB+ for dependencies and builds
 
 ---
 

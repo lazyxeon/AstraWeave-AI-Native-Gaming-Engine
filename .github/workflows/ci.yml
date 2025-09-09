@@ -53,14 +53,19 @@ jobs:
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q \
-            build-essential pkg-config cmake ninja-build \
-            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
-            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
-            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
-            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
-            libasound2-dev libpulse-dev libudev-dev
+          chmod +x scripts/bootstrap.sh
+          # Use bootstrap script for dependency installation (skip Rust as it's handled separately)
+          ./scripts/bootstrap.sh --skip-rust --skip-tools --quiet || {
+            # Fallback to manual installation if bootstrap fails
+            sudo apt-get update -q
+            sudo apt-get install -y -q \
+              build-essential pkg-config cmake ninja-build \
+              libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+              libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+              libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+              libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+              libasound2-dev libpulse-dev libudev-dev
+          }
 
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
