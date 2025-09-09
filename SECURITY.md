@@ -34,9 +34,17 @@ Veilweaver: Threads of Eternity implements several security measures:
 
 1. **Dependency Scanning**: We use Dependabot to scan for vulnerable dependencies
 2. **Static Analysis**: We use CodeQL and Clippy to identify potential security issues
-3. **Security Audits**: We regularly audit our codebase with cargo-audit
+3. **Security Audits**: We regularly audit our codebase with cargo-audit and cargo-deny
 4. **License Compliance**: We use cargo-deny to ensure all dependencies comply with our licensing requirements
 5. **OpenSSF Scorecard**: We monitor our project's security posture using the OpenSSF Scorecard
+
+**Security Audit Tools:**
+- **cargo-deny**: Comprehensive dependency auditing for bans, licenses, advisories, and sources
+- **cargo-audit**: RustSec vulnerability scanning for known security issues
+- **Automated Workflows**: Daily security audits and dependency monitoring
+- **License Management**: Workspace-wide license inheritance and compliance checking
+
+For detailed information on our security audit setup, see [docs/SECURITY_AUDIT_GUIDE.md](docs/SECURITY_AUDIT_GUIDE.md).
 
 ## Security Best Practices
 

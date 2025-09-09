@@ -17,22 +17,20 @@ allow = [
     "Unicode-3.0",  # Used by ICU4X crates
     "Unicode-DFS-2016",  # Used by Unicode normalization
     "OFL-1.1",  # SIL Open Font License (for fonts)
+    "CDLA-Permissive-2.0",  # Community Data License Agreement - used by webpki-roots
+    "BSL-1.0",  # Boost Software License 1.0 - used by clipboard-win and error-code
+    "NCSA",     # University of Illinois/NCSA Open Source License - used by libfuzzer-sys
+    "LicenseRef-UFL-1.0",  # Ubuntu Font License - used by epaint/egui fonts
 ]
 
 # The confidence threshold for detecting a license from a license text.
 # 0.8 should be high enough to remove false positives
 confidence-threshold = 0.8
 
-# Allow 1 or more licenses on a dependency
-# Some packages may have multiple licenses  
-copyleft = "allow"
-
 [licenses.private]
 # If true, ignores workspace crates that aren't published, or are only
 # published to private registries
 ignore = true
-# Ignore dev dependencies for license checking
-ignore-dev = true
 
 [bans]
 # Lint level for when multiple versions of the same crate are detected
@@ -43,15 +41,7 @@ wildcards = "allow"
 # with multiple versions
 highlight = "all"
 
-# List of crates that are allowed. Use with care!
-allow = [
-    # Allow multiple versions of these crates as they're often used in different contexts
-    { name = "syn", version = "*" },  # Common to have multiple syn versions
-    { name = "quote", version = "*" }, # Often paired with syn
-    { name = "proc-macro2", version = "*" }, # Core proc macro support
-]
-
-# List of crates to deny
+# List of crates to deny for security reasons
 deny = [
     # Prefer rustls over OpenSSL for better security and cross-platform support
     { name = "openssl", version = "*" },
@@ -75,7 +65,6 @@ skip-tree = [
 
 # Allow external tools and build dependencies to have different rules
 external-default-features = "allow"
-build-dependencies = true
 
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is
@@ -102,13 +91,15 @@ db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
 
 # The maximum number of days that can pass before failing CI due to stale advisory db
-stale-days = 90
+maximum-db-staleness = "P90D"
 
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # Known issues that we accept for now
-    # "RUSTSEC-2020-0071",  # Example: potential segfault in time crate
+    # Known issues that we accept for now - these are maintenance warnings, not security vulnerabilities
+    "RUSTSEC-2024-0388",  # derivative crate is unmaintained - used by transitive deps
+    "RUSTSEC-2024-0384",  # instant crate is unmaintained - used by transitive deps  
+    "RUSTSEC-2024-0436",  # paste crate is unmaintained - used by transitive deps
 ]
 
 # Threshold for security vulnerabilities, any vulnerability with a CVSS score
