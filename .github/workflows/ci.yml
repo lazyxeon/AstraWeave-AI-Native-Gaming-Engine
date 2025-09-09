@@ -11,9 +11,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Harden token scope (helps with Scorecard "Token-Permissions")  
+# Harden token scope (helps with Scorecard "Token-Permissions")
 permissions:
   contents: read
+
+# Use bash everywhere so inline scripts behave consistently
+defaults:
+  run:
+    shell: bash
 
 env:
   CARGO_TERM_COLOR: always
@@ -33,13 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        # Only run on other platforms for main branch pushes and PRs to main
-        include:
-          - os: macos-latest
-            if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-          - os: windows-latest
-            if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
       - name: Checkout
@@ -66,17 +65,15 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install pkg-config
-          # Ensure we use system OpenSSL to avoid ring crate issues
+          brew install pkg-config cmake
+          # Prefer brewed OpenSSL to avoid ring issues
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=$(brew --prefix openssl)/lib" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl)/include" >> $GITHUB_ENV
-          brew install pkg-config cmake
 
       - name: Install system dependencies (Windows)
         if: runner.os == 'Windows'
-        run: |
-          echo "Windows dependencies managed via vcpkg"
+        run: echo "Windows dependencies managed via vcpkg"
 
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.6
@@ -90,8 +87,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Configure sccache
-        run: |
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Fetch dependencies
         run: cargo fetch --locked
@@ -107,16 +103,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         profile: [debug, release]
-        # Extend matrix for main branch
-        include:
-          - os: macos-latest
-            profile: debug
-            if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
-          - os: windows-latest
-            profile: debug
-            if: github.ref == 'refs/heads/main' || github.base_ref == 'main'
 
     steps:
       - name: Checkout
@@ -143,7 +131,6 @@ jobs:
           brew update
           brew install pkg-config cmake
 
-
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.6
 
@@ -157,8 +144,9 @@ jobs:
             ~/.cargo/bin/
             ~/.cargo/registry/cache/
 
-      # ---- Build core working components (debug) ----
+      # ---- Build core working components (debug/release) ----
       - name: Build core components (debug)
+        if: matrix.profile == 'debug'
         run: >
           cargo build --frozen --verbose
           -p astraweave-core
@@ -179,8 +167,20 @@ jobs:
           -p astraweave-sdk
           -p hello_companion
 
+      - name: Build core components (release)
+        if: matrix.profile == 'release'
+        run: >
+          cargo build --frozen --release --verbose
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p hello_companion
+
       # ---- Build working examples (debug, non-blocking) ----
       - name: Build working examples (debug)
+        if: matrix.profile == 'debug'
         continue-on-error: true
         run: >
           cargo build --frozen --verbose
@@ -195,119 +195,152 @@ jobs:
           -p audio_spatial_demo
           -p dialogue_voice_demo
 
-      # ---- Release build for selected core components ----
-      - name: Build core components (release)
-        run: >
-          cargo build --frozen --release --verbose
-          -p astraweave-core
-          -p astraweave-ai
-          -p astraweave-physics
-          -p astraweave-nav
-          -p astraweave-render
-          -p hello_companion
-
   test:
-    name: Test (${{ matrix.os }})
+    name: Test (${{ matrix.os }}, ${{ matrix.profile }})
     runs-on: ${{ matrix.os }}
     needs: check
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        profile: [debug, release]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          key: build-${{ matrix.os }}-${{ matrix.profile }}-v5
-          cache-all-crates: true
+        uses: dtolnay/rust-toolchain@stable
 
-
-      - name: Configure sccache
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
         run: |
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          sudo apt-get update -q
+          sudo apt-get install -y -q \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
 
-      - name: Build core components (${{ matrix.profile }})
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
         run: |
           brew update
-          brew install pkg-config
-          # Ensure we use system OpenSSL to avoid ring crate issues
+          brew install pkg-config cmake
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=$(brew --prefix openssl)/lib" >> $GITHUB_ENV
           echo "OPENSSL_INCLUDE_DIR=$(brew --prefix openssl)/include" >> $GITHUB_ENV
 
-      # ---- Cargo cache ----
+      - name: Install system dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: echo "Windows dependencies managed via vcpkg"
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "."
           key: test-${{ matrix.os }}-v5
           cache-all-crates: true
-          if [ "${{ matrix.profile }}" = "release" ]; then
-            PROFILE_FLAG="--release"
-          else
-            PROFILE_FLAG=""
-          fi
-          
-          cargo build --locked $PROFILE_FLAG \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p astraweave-nav \
-            -p astraweave-render \
-            -p astraweave-gameplay \
-            -p astraweave-audio \
-            -p astraweave-input \
-            -p astraweave-ui \
-            -p astraweave-net \
-            -p astraweave-director \
-            -p astraweave-memory \
-            -p astraweave-persona \
-            -p astraweave-ipc \
-            -p astraweave-llm \
-            -p astraweave-sdk \
-            -p hello_companion
 
-      - name: Build working examples (${{ matrix.profile }})
+      - name: Configure sccache
+        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+
+      - name: Build core components (debug)
+        if: matrix.profile == 'debug'
+        run: >
+          cargo build --locked
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p astraweave-gameplay
+          -p astraweave-audio
+          -p astraweave-input
+          -p astraweave-ui
+          -p astraweave-net
+          -p astraweave-director
+          -p astraweave-memory
+          -p astraweave-persona
+          -p astraweave-ipc
+          -p astraweave-llm
+          -p astraweave-sdk
+          -p hello_companion
+
+      - name: Build core components (release)
+        if: matrix.profile == 'release'
+        run: >
+          cargo build --locked --release
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p astraweave-gameplay
+          -p astraweave-audio
+          -p astraweave-input
+          -p astraweave-ui
+          -p astraweave-net
+          -p astraweave-director
+          -p astraweave-memory
+          -p astraweave-persona
+          -p astraweave-ipc
+          -p astraweave-llm
+          -p astraweave-sdk
+          -p hello_companion
+
+      - name: Build working examples (debug)
+        if: matrix.profile == 'debug'
         continue-on-error: true
-        run: |
-          if [ "${{ matrix.profile }}" = "release" ]; then
-            PROFILE_FLAG="--release"
-          else
-            PROFILE_FLAG=""
-          fi
-          
-          cargo build --locked $PROFILE_FLAG \
-            -p adaptive_boss \
-            -p companion_profile \
-            -p ipc_loopback \
-            -p llm_toolcall \
-            -p llm_integration \
-            -p phase_director \
-            -p persona_loader \
-            -p coop_server \
-            -p coop_client \
-            -p audio_spatial_demo \
-            -p dialogue_voice_demo
+        run: >
+          cargo build --locked
+          -p adaptive_boss
+          -p companion_profile
+          -p ipc_loopback
+          -p llm_toolcall
+          -p llm_integration
+          -p phase_director
+          -p persona_loader
+          -p coop_server
+          -p coop_client
+          -p audio_spatial_demo
+          -p dialogue_voice_demo
 
-      - name: Run tests
+      - name: Build working examples (release)
+        if: matrix.profile == 'release'
+        continue-on-error: true
+        run: >
+          cargo build --locked --release
+          -p adaptive_boss
+          -p companion_profile
+          -p ipc_loopback
+          -p llm_toolcall
+          -p llm_integration
+          -p phase_director
+          -p persona_loader
+          -p coop_server
+          -p coop_client
+          -p audio_spatial_demo
+          -p dialogue_voice_demo
+
+      - name: Run tests (debug only)
         if: matrix.profile == 'debug'
         run: |
-          # Install cargo-nextest if available for faster test execution
           if cargo install --list | grep -q cargo-nextest; then
-            echo "Using cargo-nextest for faster test execution"
+            echo "Using cargo-nextest"
             cargo nextest run --locked --workspace ${{ env.EXCLUDED_PACKAGES }}
           else
-            echo "Using standard cargo test"
+            echo "Using cargo test"
             cargo test --locked --workspace --lib ${{ env.EXCLUDED_PACKAGES }}
           fi
 
       - name: Show sccache stats
-        run: sccache --show-stats
+        run: sccache --show-stats || true
 
   code-quality:
     name: Code Quality & Security
@@ -346,10 +379,9 @@ jobs:
           cache-all-crates: true
 
       - name: Configure sccache
-        run: |
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
-      - name: Set up Rust cache
+      - name: Set up Rust cache (security)
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: "."
@@ -358,7 +390,6 @@ jobs:
 
       - name: Check code formatting
         run: |
-          # Check formatting on core working crates only to avoid issues with problematic crates
           cargo fmt --check \
             -p astraweave-core \
             -p astraweave-ai \
@@ -375,11 +406,10 @@ jobs:
       - name: Install security audit tools
         run: |
           cargo install --locked cargo-audit || echo "cargo-audit already installed"
-          cargo install --locked cargo-deny || echo "cargo-deny already installed"
+          cargo install --locked cargo-deny  || echo "cargo-deny already installed"
 
       - name: Run security audit
-        run: |
-          cargo audit --ignore RUSTSEC-2020-0071 || echo "Audit completed with warnings"
+        run: cargo audit --ignore RUSTSEC-2020-0071 || echo "Audit completed with warnings"
 
       - name: Run cargo-deny
         run: |
@@ -429,8 +459,7 @@ jobs:
           key: msrv-${{ steps.msrv.outputs.version }}-v5
 
       - name: Check MSRV compatibility
-        run: |
-          cargo check --workspace --locked ${{ env.EXCLUDED_PACKAGES }}
+        run: cargo check --workspace --locked ${{ env.EXCLUDED_PACKAGES }}
 
   demo:
     name: Demo Validation
@@ -473,7 +502,7 @@ jobs:
           echo "Testing hello_companion demo..."
           timeout 10s cargo run --release -p hello_companion || echo "Demo completed or timed out as expected"
 
-      - name: Validate IPC loopback example  
+      - name: Validate IPC loopback example
         run: |
           echo "Testing IPC loopback example..."
           cargo run --release -p ipc_loopback --bin server &
