@@ -11,21 +11,23 @@ on:
         required: true
         default: 'warm'
         type: choice
-        options:
-          - warm
-          - clean
-          - rebuild
+        options: [warm, clean, rebuild]
       force_full_build:
         description: 'Force full workspace build (including problematic crates)'
         required: false
         default: false
         type: boolean
 
+# Ensure bash everywhere (Windows default is pwsh)
+defaults:
+  run:
+    shell: bash
+
 # Prevent multiple cache management runs
 concurrency:
   group: dependency-management-${{ github.ref }}
   cancel-in-progress: true
-      
+
 permissions:
   contents: read
 
@@ -42,7 +44,7 @@ jobs:
     name: Dependency Security Audit
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -61,7 +63,7 @@ jobs:
       - name: Install audit tools
         run: |
           cargo install --locked cargo-audit || echo "cargo-audit already installed"
-          cargo install --locked cargo-deny || echo "cargo-deny already installed"
+          cargo install --locked cargo-deny  || echo "cargo-deny already installed"
 
       - name: Run security audit
         run: |
@@ -93,7 +95,7 @@ jobs:
   dependency-update:
     name: Dependency Update Check
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -115,14 +117,14 @@ jobs:
           retention-days: 30
 
   cache-management:
-    name: Cache Management (${{ github.event.inputs.cache_action || 'warm' }})
+    name: "Cache Management (${{ github.event.inputs.cache_action || 'warm' }})"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -146,37 +148,45 @@ jobs:
 
       - name: Install system dependencies (macOS)
         if: matrix.os == 'macos-latest'
-        run: brew install pkg-config
+        run: brew install pkg-config cmake
 
       - name: Install system dependencies (Windows)
         if: matrix.os == 'windows-latest'
-        run: |
-          # Windows dependencies are usually handled by vcpkg or system libs
-          echo "Windows system dependencies installation completed"
+        run: echo "Windows system dependencies installation completed"
 
       - name: Install sccache
         run: |
+          # Select correct artifact per OS/arch
           if [[ "$RUNNER_OS" == "Linux" ]]; then
-            SCCACHE_ARCH="x86_64-unknown-linux-musl"
+            if [[ "$(uname -m)" == "aarch64" ]]; then
+              SCCACHE_ARCH="aarch64-unknown-linux-musl"
+            else
+              SCCACHE_ARCH="x86_64-unknown-linux-musl"
+            fi
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            SCCACHE_ARCH="x86_64-apple-darwin"
+            if [[ "$(uname -m)" == "arm64" ]]; then
+              SCCACHE_ARCH="aarch64-apple-darwin"
+            else
+              SCCACHE_ARCH="x86_64-apple-darwin"
+            fi
           elif [[ "$RUNNER_OS" == "Windows" ]]; then
             SCCACHE_ARCH="x86_64-pc-windows-msvc"
           fi
-          
-          SCCACHE_VERSION="v0.8.2"
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            curl -L "https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/sccache-${SCCACHE_VERSION}-${SCCACHE_ARCH}.tar.gz" -o sccache.tar.gz
-            tar -xzf sccache.tar.gz
-            mkdir -p ~/.cargo/bin
+
+          SCCACHE_VERSION="v0.10.0"
+          URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/sccache-${SCCACHE_VERSION}-${SCCACHE_ARCH}.tar.gz"
+
+          echo "Downloading $URL"
+          curl -L "$URL" -o sccache.tar.gz
+          tar -xzf sccache.tar.gz
+
+          mkdir -p ~/.cargo/bin
+          if compgen -G "sccache-*/sccache.exe" > /dev/null; then
             mv sccache-*/sccache.exe ~/.cargo/bin/
-            echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           else
-            curl -L "https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/sccache-${SCCACHE_VERSION}-${SCCACHE_ARCH}.tar.gz" | tar -xz
-            sudo mv sccache-*/sccache /usr/local/bin/
-            chmod +x /usr/local/bin/sccache
+            sudo mv sccache-*/sccache /usr/local/bin/ || mv sccache-*/sccache ~/.cargo/bin/
           fi
-        shell: bash
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Cache cleanup (if requested)
         if: github.event.inputs.cache_action == 'clean'
@@ -185,7 +195,6 @@ jobs:
           rm -rf ~/.cargo/registry/cache || true
           rm -rf ~/.cargo/git/db || true
           rm -rf target/sccache || true
-        shell: bash
 
       - name: Setup optimized cache
         uses: Swatinem/rust-cache@v2
@@ -203,20 +212,17 @@ jobs:
           echo "SCCACHE_DIR=${{ github.workspace }}/target/sccache" >> $GITHUB_ENV
           mkdir -p "${{ github.workspace }}/target/sccache"
           sccache --start-server
-        shell: bash
 
       - name: Show sccache stats (before)
-        run: sccache --show-stats
+        run: sccache --show-stats || true
 
       - name: Warm dependency cache
         if: github.event.inputs.cache_action == 'warm' || github.event_name == 'schedule'
         run: |
           # Fetch all dependencies first
           cargo fetch --locked
-          
-          # Pre-compile core dependencies
+          # Pre-compile most of the workspace (exclude problematic crates)
           cargo check --workspace ${{ env.EXCLUDED_PACKAGES }}
-          
           # Pre-compile in release mode for commonly used crates
           cargo check --release \
             -p astraweave-core \
@@ -224,13 +230,11 @@ jobs:
             -p astraweave-physics \
             -p astraweave-render \
             -p astraweave-nav
-        shell: bash
 
       - name: Rebuild cache (if requested)
         if: github.event.inputs.cache_action == 'rebuild'
         run: |
           cargo clean
-          
           if [[ "${{ github.event.inputs.force_full_build }}" == "true" ]]; then
             echo "Building full workspace including problematic crates..."
             cargo build --workspace || echo "Full build completed with some failures"
@@ -238,10 +242,9 @@ jobs:
             echo "Building working workspace crates only..."
             cargo build --workspace ${{ env.EXCLUDED_PACKAGES }}
           fi
-        shell: bash
 
       - name: Show sccache stats (after)
-        run: sccache --show-stats
+        run: sccache --show-stats || true
 
       - name: Stop sccache server
         run: sccache --stop-server || true
@@ -250,7 +253,7 @@ jobs:
     name: Workspace Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -266,8 +269,8 @@ jobs:
 
       - name: Install analysis tools
         run: |
-          cargo install --locked cargo-tree || echo "cargo-tree already installed"
-          cargo install --locked cargo-machete || echo "cargo-machete already installed"
+          cargo install --locked cargo-tree     || echo "cargo-tree already installed"
+          cargo install --locked cargo-machete  || echo "cargo-machete already installed"
           cargo install --locked cargo-outdated || echo "cargo-outdated already installed"
 
       - name: Analyze dependency tree
@@ -275,13 +278,11 @@ jobs:
           echo "## Workspace Dependency Analysis" > analysis.md
           echo "Generated on: $(date)" >> analysis.md
           echo "" >> analysis.md
-          
           echo "### Workspace Statistics" >> analysis.md
           echo "- Total crates: $(find . -name 'Cargo.toml' | wc -l)" >> analysis.md
           echo "- Total Rust files: $(find . -name '*.rs' | wc -l)" >> analysis.md
           echo "- Total lines of code: $(find . -name '*.rs' -exec wc -l {} + | tail -1 | awk '{print $1}')" >> analysis.md
           echo "" >> analysis.md
-          
           echo "### Dependency Tree Summary (Top 50)" >> analysis.md
           echo '```' >> analysis.md
           cargo tree --workspace --format "{p} {f}" ${{ env.EXCLUDED_PACKAGES }} | head -50 >> analysis.md
@@ -300,7 +301,7 @@ jobs:
           echo "" >> analysis.md
           echo "### Outdated Dependencies" >> analysis.md
           echo '```' >> analysis.md
-          cargo outdated --workspace --format json ${{ env.EXCLUDED_PACKAGES }} >> outdated.json 2>&1 || echo "Outdated check completed with warnings"
+          cargo outdated --workspace --format json >> outdated.json 2>&1 || echo "Outdated check completed with warnings"
           if [ -f outdated.json ]; then
             cat outdated.json >> analysis.md
           fi
@@ -328,7 +329,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     if: github.event.inputs.cache_action == 'rebuild' || github.event_name == 'schedule'
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -352,7 +353,7 @@ jobs:
       - name: Install profiling tools
         run: |
           cargo install --locked cargo-llvm-lines || echo "cargo-llvm-lines already installed"
-          cargo install --locked cargo-bloat || echo "cargo-bloat already installed"
+          cargo install --locked cargo-bloat      || echo "cargo-bloat already installed"
 
       - name: Setup cache for profiling
         uses: Swatinem/rust-cache@v2
@@ -365,8 +366,6 @@ jobs:
           echo "## Build Performance Profile" > performance.md
           echo "Generated on: $(date)" >> performance.md
           echo "" >> performance.md
-          
-          # Clean build timing
           echo "### Clean Build Timing (Core Components)" >> performance.md
           echo '```' >> performance.md
           cargo clean
@@ -377,7 +376,6 @@ jobs:
             -p hello_companion 2>&1 | tee build-timing.txt
           cat build-timing.txt >> performance.md
           echo '```' >> performance.md
-          
           echo "" >> performance.md
           echo "### Release Build Timing (Core Components)" >> performance.md
           echo '```' >> performance.md
@@ -411,9 +409,8 @@ jobs:
           echo "" >> performance.md
           echo "### Compilation Units Analysis" >> performance.md
           echo '```' >> performance.md
-          # Count compilation units by crate
           find target/release/deps -name "*.rlib" | wc -l >> performance.md
-          echo "Total .rlib files (compilation units): $(find target/release/deps -name "*.rlib" | wc -l)" >> performance.md
+          echo "Total .rlib files (compilation units): $(find target/release/deps -name '*.rlib' | wc -l)" >> performance.md
           echo "Total target directory size: $(du -sh target | cut -f1)" >> performance.md
           echo '```' >> performance.md
 

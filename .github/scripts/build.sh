@@ -165,22 +165,50 @@ done
 # Check system dependencies
 check_system_deps() {
     log "Checking system dependencies..."
+    local missing_deps=()
     
     case "$(uname -s)" in
         Linux*)
-            if ! pkg-config --exists libudev; then
-                warn "libudev-dev not found. Install with: sudo apt-get install libudev-dev"
-            fi
-            if ! pkg-config --exists x11; then
-                warn "X11 development libraries not found. Install graphics dependencies."
+            # Check for required development libraries
+            for dep in "libudev" "x11" "xi" "xcursor" "xrandr" "xinerama" "xkbcommon" "alsa"; do
+                if ! pkg-config --exists "$dep" 2>/dev/null; then
+                    missing_deps+=("$dep")
+                fi
+            done
+            
+            # Check for specific system tools
+            for tool in "cmake" "ninja" "pkg-config"; do
+                if ! command -v "$tool" &> /dev/null; then
+                    missing_deps+=("$tool")
+                fi
+            done
+            
+            if [ ${#missing_deps[@]} -ne 0 ]; then
+                warn "Missing dependencies: ${missing_deps[*]}"
+                warn "Run '$0 install-deps' to install them automatically"
+                return 1
             fi
             ;;
         Darwin*)
-            if ! command -v pkg-config &> /dev/null; then
-                warn "pkg-config not found. Install with: brew install pkg-config"
+            for tool in "pkg-config" "cmake"; do
+                if ! command -v "$tool" &> /dev/null; then
+                    missing_deps+=("$tool")
+                fi
+            done
+            
+            if [ ${#missing_deps[@]} -ne 0 ]; then
+                warn "Missing dependencies: ${missing_deps[*]}"
+                warn "Install with: brew install ${missing_deps[*]}"
+                return 1
             fi
             ;;
+        *)
+            warn "Unsupported platform for dependency checking: $(uname -s)"
+            ;;
     esac
+    
+    success "All system dependencies found"
+    return 0
 }
 
 # Install system dependencies

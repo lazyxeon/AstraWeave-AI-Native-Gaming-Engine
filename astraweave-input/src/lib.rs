@@ -11,7 +11,6 @@ pub use save::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     use winit::event::MouseButton;
     use winit::keyboard::KeyCode;
 

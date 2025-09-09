@@ -54,6 +54,11 @@ EXCLUDED_CRATES=(
     "ui_controls_demo"
     "npc_town_demo"
     "rhai_authoring"
+    "cutscene_render_demo"
+    "weaving_playground"
+    "combat_physics_demo"
+    "navmesh_demo"
+    "physics_demo3d"
 )
 
 # Platform-specific optimizations
@@ -76,11 +81,20 @@ init_sccache() {
     if command -v sccache > /dev/null 2>&1; then
         echo "Starting sccache server..."
         export RUSTC_WRAPPER=sccache
+        # Stop any existing server first
+        sccache --stop-server 2>/dev/null || true
+        # Start server
         sccache --start-server
+        # Show initial stats
         sccache --show-stats
     else
         echo "sccache not found, using standard rustc..."
         unset RUSTC_WRAPPER
+        # Try to install sccache if cargo is available
+        if command -v cargo > /dev/null 2>&1; then
+            echo "Attempting to install sccache..."
+            cargo install sccache --locked || echo "Failed to install sccache, continuing without it"
+        fi
     fi
 }
 

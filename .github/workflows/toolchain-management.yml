@@ -88,7 +88,7 @@ jobs:
 
       - name: Install system dependencies (macOS)
         if: matrix.os == 'macos-latest'
-        run: brew install pkg-config
+        run: brew install pkg-config cmake
 
       - name: Validate toolchain configuration
         run: |
@@ -117,9 +117,12 @@ jobs:
             --exclude visual_3d \
             --exclude ui_controls_demo \
             --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+            --exclude rhai_authoring \
             --exclude cutscene_render_demo \
-            --exclude weaving_playground
+            --exclude weaving_playground \
+            --exclude combat_physics_demo \
+            --exclude navmesh_demo \
+            --exclude physics_demo3d
 
       - name: Run minimal test suite
         run: |
@@ -128,9 +131,12 @@ jobs:
             --exclude visual_3d \
             --exclude ui_controls_demo \
             --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+            --exclude rhai_authoring \
             --exclude cutscene_render_demo \
             --exclude weaving_playground \
+            --exclude combat_physics_demo \
+            --exclude navmesh_demo \
+            --exclude physics_demo3d \
             --lib
 
       - name: Check code formatting compatibility
@@ -144,7 +150,12 @@ jobs:
             --exclude visual_3d \
             --exclude ui_controls_demo \
             --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
+            --exclude rhai_authoring \
+            --exclude cutscene_render_demo \
+            --exclude weaving_playground \
+            --exclude combat_physics_demo \
+            --exclude navmesh_demo \
+            --exclude physics_demo3d \
             --all-features --all-targets -- -D warnings
 
       - name: Test nightly features (if nightly)
@@ -194,7 +205,12 @@ jobs:
             --exclude visual_3d \
             --exclude ui_controls_demo \
             --exclude npc_town_demo \
-            --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d
+            --exclude rhai_authoring \
+            --exclude cutscene_render_demo \
+            --exclude weaving_playground \
+            --exclude combat_physics_demo \
+            --exclude navmesh_demo \
+            --exclude physics_demo3d
 
   performance-benchmarking:
     name: Toolchain Performance Comparison
