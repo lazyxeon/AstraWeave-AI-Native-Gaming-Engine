@@ -1,0 +1,15 @@
+source = "assets_src"
+output = "assets"
+
+[[rules]]
+kind = "texture"
+glob = "**/*.{png,jpg,jpeg}"
+normal_map = false
+
+[[rules]]
+kind = "model"
+glob = "**/*.{gltf,glb}"
+
+[[rules]]
+kind = "audio"
+glob = "**/*.{wav,mp3,ogg,flac}"

@@ -42,6 +42,11 @@ members = [
   "astraweave-input",
   "astraweave-ui",
   "examples/ui_controls_demo",
+  "examples/debug_toolkit_demo",
+  # New tooling crates
+  "tools/aw_editor",
+  "tools/aw_asset_cli",
+  "tools/aw_debug",
 ]
 resolver = "2"
 

@@ -1,0 +1,20 @@
+[package]
+name = "aw_editor"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+eframe = { workspace = true }
+egui = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+notify = "6"
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+image = "0.25"
+uuid = { version = "1", features = ["v4"] }
+rhai = { workspace = true }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-author = { path = "../../astraweave-author" }

@@ -1,0 +1,21 @@
+[package]
+name = "debug_toolkit_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-render = { path = "../../astraweave-render" }
+astraweave-author = { path = "../../astraweave-author" }
+aw_debug = { path = "../../tools/aw_debug" }
+eframe = { workspace = true }
+egui = { workspace = true }
+egui-wgpu = { workspace = true }
+egui-winit = { workspace = true }
+wgpu = { workspace = true }
+winit = { workspace = true }
+glam = { workspace = true }
+pollster = { workspace = true }
+anyhow = { workspace = true }
+notify = "6"
+rand = { workspace = true }
