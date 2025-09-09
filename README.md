@@ -3,9 +3,11 @@
 
 <div align="center">
 
-**The first game engine built from the ground up for AI-native gameplay**
+**The world's first AI-native game engine where artificial intelligence becomes genuinely intelligent gameplay**
 
-*Where agents are first-class citizens, not scripted afterthoughts*
+*AI agents are first-class citizens with genuine learning, adaptation, and emergent behavior*
+
+📊 **[Executive Summary](EXECUTIVE_SUMMARY.md)** • 🎯 **[Pitch Deck](PITCH_DECK.md)** • ⚡ **[One-Page Overview](ONE_PAGE_OVERVIEW.md)**
 
 [![CI](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
 [![Cross Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
@@ -43,6 +45,14 @@
 - **Emergent gameplay** from AI agent interactions
 - **Server-authoritative multiplayer** with AI agent synchronization
 - **Rapid prototyping** of AI-driven game concepts
+
+### Why AstraWeave Matters
+
+🎯 **Market Opportunity**: Game engines ($2.8B market) lack true AI innovation  
+🚀 **First-Mover Advantage**: Only production-ready AI-native engine  
+🧠 **Technical Breakthrough**: Validation-first architecture prevents AI cheating  
+⚡ **Developer-Ready**: 23+ working examples with comprehensive documentation  
+🌍 **Transformational Potential**: Enables entirely new categories of gaming experiences  
 
 ---
 
