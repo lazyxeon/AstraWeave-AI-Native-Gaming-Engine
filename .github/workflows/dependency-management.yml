@@ -157,13 +157,8 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: echo "Windows dependencies managed via vcpkg"
 
-      - name: Install sccache
-        run: |
-          # Install sccache using cargo for simplicity and reliability
-          cargo install sccache --locked || echo "sccache already installed"
-          
-          # Add cargo bin to PATH for all environments
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      # FIX: separate steps; don't mix 'run' and 'uses' in the same step
+      - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.6
 
       - name: Cache cleanup (if requested)
@@ -182,8 +177,7 @@ jobs:
           save-if: ${{ github.event.inputs.cache_action != 'clean' }}
 
       - name: Configure sccache
-        run: |
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+        run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Show sccache stats (before)
         run: sccache --show-stats || true
@@ -191,11 +185,8 @@ jobs:
       - name: Warm dependency cache
         if: github.event.inputs.cache_action == 'warm' || github.event_name == 'schedule'
         run: |
-          # Fetch all dependencies first
           cargo fetch --locked
-          # Pre-compile core workspace components (exclude problematic crates)
           cargo check --workspace ${{ env.EXCLUDED_PACKAGES }}
-          # Pre-compile in release mode for core crates
           cargo check --release \
             -p astraweave-core \
             -p astraweave-ai \
@@ -379,7 +370,4 @@ jobs:
             performance.md
             build-timing.txt
             release-timing.txt
-            
-          name: workspace-analysis-report-${{ github.run_number }}
-          path: analysis.md
           retention-days: 30
