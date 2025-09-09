@@ -1,8 +1,9 @@
 # cargo-deny configuration for Veilweaver: Threads of Eternity
 # This file is checked by the security-audit.yml workflow
+# Updated for improved dependency management and security
 
 [licenses]
-# List of explicitly allowed licenses
+# List of explicitly allowed licenses - updated for game engine needs
 allow = [
     "MIT",
     "Apache-2.0",
@@ -14,16 +15,25 @@ allow = [
     "Zlib",
     "MPL-2.0",
     "Unicode-3.0",  # Used by ICU4X crates
+    "Unicode-DFS-2016",  # Used by Unicode normalization
+    "OFL-1.1",  # SIL Open Font License (for fonts)
 ]
 
 # The confidence threshold for detecting a license from a license text.
 # 0.8 should be high enough to remove false positives
 confidence-threshold = 0.8
 
+# Allow 1 or more licenses on a dependency
+# Some packages may have multiple licenses  
+allow-osi-fsf-libre = "both"
+copyleft = "allow"
+
 [licenses.private]
 # If true, ignores workspace crates that aren't published, or are only
 # published to private registries
 ignore = true
+# Ignore dev dependencies for license checking
+ignore-dev = true
 
 [bans]
 # Lint level for when multiple versions of the same crate are detected
@@ -33,18 +43,40 @@ wildcards = "allow"
 # The graph highlighting used when creating dotgraphs for crates
 # with multiple versions
 highlight = "all"
+
 # List of crates that are allowed. Use with care!
-allow = []
+allow = [
+    # Allow multiple versions of these crates as they're often used in different contexts
+    { name = "syn", version = "*" },  # Common to have multiple syn versions
+    { name = "quote", version = "*" }, # Often paired with syn
+    { name = "proc-macro2", version = "*" }, # Core proc macro support
+]
+
 # List of crates to deny
 deny = [
-    # { name = "openssl", version = "*" },  # Use rustls instead
+    # Prefer rustls over OpenSSL for better security and cross-platform support
+    { name = "openssl", version = "*" },
+    { name = "openssl-sys", version = "*" },
+    # Discourage use of insecure random number generators
+    { name = "rand_core", version = "<0.6" },
 ]
 
 # Certain crates/versions that will be skipped when doing duplicate detection.
-skip = []
+skip = [
+    # Skip known duplicates that are hard to avoid
+    { name = "windows_x86_64_msvc", version = "*" },
+    { name = "windows_x86_64_gnu", version = "*" },
+]
+
 # Similarly to `skip` allows you to skip certain crates from being checked. Unlike `skip`,
 # `skip-tree` skips the crate and all of its dependencies.
-skip-tree = []
+skip-tree = [
+    # Skip problematic dependency trees
+]
+
+# Allow external tools and build dependencies to have different rules
+external-default-features = "allow"
+build-dependencies = true
 
 [sources]
 # Lint level for what to happen when a crate from a crate registry that is
@@ -53,19 +85,39 @@ unknown-registry = "warn"
 # Lint level for what to happen when a crate from a git repository that is not
 # in the allow list is encountered
 unknown-git = "warn"
+
 # List of allowed registries
-allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-# List of allowed Git repositories
-allow-git = []
+allow-registry = [
+    "https://github.com/rust-lang/crates.io-index"
+]
+
+# List of allowed Git repositories (for dependencies not yet on crates.io)
+allow-git = [
+    # Example: "https://github.com/rustwasm/wasm-bindgen",
+]
 
 [advisories]
 # The path where the advisory database is cloned/fetched into
 db-path = "~/.cargo/advisory-db"
 # The url(s) of the advisory databases to use
 db-urls = ["https://github.com/rustsec/advisory-db"]
+
+# The maximum number of days that can pass before failing CI due to stale advisory db
+stale-days = 90
+
 # A list of advisory IDs to ignore. Note that ignored advisories will still
 # output a note when they are encountered.
 ignore = [
-    # Example: ignore a specific advisory
-    # "RUSTSEC-2020-0001",
+    # Known issues that we accept for now
+    # "RUSTSEC-2020-0071",  # Example: potential segfault in time crate
 ]
+
+# Threshold for security vulnerabilities, any vulnerability with a CVSS score
+# lower than this value will be ignored. Valid values are between 0.0 and 10.0.
+# severity-threshold = 0.0
+
+# If this is true, then cargo deny will use the git executable to fetch advisory database.
+# If this is false, then it uses a built-in git library.
+# Setting this to true can be helpful if you have special authentication requirements that the built-in git library does not support.
+# Default value is false.
+git-fetch-with-cli = true

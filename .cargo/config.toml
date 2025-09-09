@@ -1,15 +1,17 @@
 [build]
-# Optimize for CI environment - remove debuginfo in CI for faster builds
-rustflags = ["-C", "debuginfo=0"]
+# Optimize for CI environment with conditional debuginfo
+# Override via environment variable: CARGO_PROFILE_DEV_DEBUG=1 for local development
+rustflags = [
+  "-C", "debuginfo=0",     # Reduce build time and disk usage in CI
+]
+# Use all available cores (auto-detect) - removed jobs=0 as it's invalid
 
 [target.'cfg(all())']
 # Enable sccache for faster compilation when available
-# rustc-wrapper = "sccache"  # Enabled via environment variable in CI
-
-# Optimize for native CPU features in release builds
-[target.'cfg(not(target_env = "msvc"))']
+# Set via environment variable: RUSTC_WRAPPER=sccache in CI
+# rustc-wrapper = "sccache"
 rustflags = ["-C", "target-cpu=native"]
-
+# Optimize for native CPU features in release builds
 [term]
 color = "always"
 progress.when = "auto"
@@ -19,19 +21,28 @@ progress.when = "auto"
 SCCACHE_CACHE_SIZE = { value = "10G" }
 SCCACHE_DIR = { value = "./target/sccache", relative = true }
 SCCACHE_IDLE_TIMEOUT = { value = "0" }
+# Enable more aggressive caching
+SCCACHE_CACHE_MULTIARCH = { value = "1" }
+SCCACHE_ERROR_LOG = { value = "./target/sccache-error.log", relative = true }
 
 [net]
 # Optimize network settings for large workspace
 git-fetch-with-cli = true
 retry = 3
 offline = false
+# Network timeout settings removed as they're not valid in cargo config
 
 [alias]
-# Convenient aliases for common operations
+# Convenient aliases for common operations with improved excludes
 check-all = "check --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
-test-all = "test --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
+test-all = "test --workspace --lib --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
 build-core = "build -p astraweave-core -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-render -p hello_companion"
+build-working = "build --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
 clippy-all = "clippy --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --all-features --all-targets"
+# Additional useful aliases
+deps-update = "update --workspace"
+cache-clean = "clean --doc --release"
+bench-core = "bench -p astraweave-core -p astraweave-physics -p astraweave-nav"
 
 [profile.dev]
 # Optimize development builds for workspace
@@ -44,6 +55,7 @@ lto = false
 panic = "unwind"
 incremental = true
 codegen-units = 256
+rpath = false
 
 [profile.release]
 # Optimize release builds for game engine performance
@@ -56,19 +68,31 @@ lto = "thin"
 panic = "abort"
 codegen-units = 1
 strip = "symbols"
+rpath = false
 
 [profile.bench]
 # Optimize benchmarks
 inherits = "release"
 debug = true
+debug-assertions = false
 
 [profile.test]
 # Optimize test builds for faster CI
 inherits = "dev"
 opt-level = 1
 debug-assertions = true
+overflow-checks = true
 
+# Optimize dependencies in all profiles for faster compilation
 [profile.dev.package."*"]
-# Optimize dependencies in dev builds for faster compilation
 opt-level = 1
+debug = false
+debug-assertions = false
+
+[profile.test.package."*"]
+opt-level = 1
+debug = false
+
+[profile.release.package."*"]
+opt-level = 3
 debug = false

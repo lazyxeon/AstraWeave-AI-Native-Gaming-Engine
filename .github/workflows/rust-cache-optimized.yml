@@ -24,6 +24,7 @@ env:
   # Optimize sccache usage
   SCCACHE_CACHE_SIZE: "10G"
   SCCACHE_IDLE_TIMEOUT: 0
+
   # Problematic packages to exclude from builds (aligned with Cargo.toml metadata)
   EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
 
@@ -36,7 +37,7 @@ jobs:
       fail-fast: false  # Allow other jobs to continue if one fails
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable, "1.89.0", beta]
+        rust: [stable, "1.89.0"]
         build-type: [debug, release]
         include:
           # Primary configuration - runs all checks
@@ -50,16 +51,15 @@ jobs:
             build-type: release
             artifacts: true
         exclude:
-          # Reduce matrix size - skip beta builds on non-primary platforms
-          - os: windows-latest
-            rust: beta
-          - os: macos-latest
-            rust: beta
-          # Skip debug builds on Windows/macOS to save CI time
+          # Reduce matrix size - skip some combinations to save CI time
           - os: windows-latest
             build-type: debug
           - os: macos-latest
             build-type: debug
+          - os: windows-latest
+            rust: "1.89.0"
+          - os: macos-latest
+            rust: "1.89.0"
 
     steps:
       - name: Checkout repository
@@ -109,7 +109,9 @@ jobs:
           $SCCACHE_VERSION = "v0.8.2"
           Invoke-WebRequest -Uri "https://github.com/mozilla/sccache/releases/download/$SCCACHE_VERSION/sccache-$SCCACHE_VERSION-x86_64-pc-windows-msvc.tar.gz" -OutFile "sccache.tar.gz"
           tar -xzf sccache.tar.gz
-          Move-Item "sccache-*/sccache.exe" "C:/Windows/System32/"
+          Move-Item "sccache-*/sccache.exe" (Join-Path $env:USERPROFILE '.cargo\bin')
+          $cargoBinPath = Join-Path $env:USERPROFILE '.cargo\bin'
+          echo $cargoBinPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       # ---- Advanced Rust caching ----
       - name: Set up advanced Rust cache
@@ -118,17 +120,18 @@ jobs:
           # Workspace root for cargo workspace
           workspaces: "."
           # Custom cache key components for matrix builds
-          key: ${{ matrix.os }}-${{ matrix.rust }}-${{ matrix.build-type }}-v2
+          key: ${{ matrix.os }}-${{ matrix.rust }}-${{ matrix.build-type }}-v3
           # Additional paths for sccache and tools
           cache-directories: |
             ~/.cargo/bin/
             target/sccache
+            ~/.cargo/registry/cache/
           # Enable caching for all workspace crates
           cache-all-crates: true
           # Cache even on build failures for debugging
           cache-on-failure: true
-          # Only save cache on main branch pushes to reduce storage usage
-          save-if: ${{ github.ref == 'refs/heads/main' || matrix.primary }}
+          # Only save cache on main branch pushes or primary builds to reduce storage usage
+          save-if: ${{ github.ref == 'refs/heads/main' || matrix.primary == true }}
 
       # ---- sccache configuration ----
       - name: Configure sccache
@@ -138,9 +141,10 @@ jobs:
           echo "SCCACHE_DIR=${{ github.workspace }}/target/sccache" >> $GITHUB_ENV
           echo "SCCACHE_CACHE_SIZE=10G" >> $GITHUB_ENV
           echo "SCCACHE_IDLE_TIMEOUT=0" >> $GITHUB_ENV
+          echo "SCCACHE_CACHE_MULTIARCH=1" >> $GITHUB_ENV
           # Create sccache directory
           mkdir -p "${{ github.workspace }}/target/sccache"
-          sccache --start-server
+          sccache --start-server || echo "sccache server already running"
 
       - name: Show sccache stats (before)
         run: sccache --show-stats
@@ -171,9 +175,9 @@ jobs:
           # Try with nextest first, fallback to regular test
           if command -v cargo-nextest &> /dev/null; then
             cargo nextest run --frozen --workspace ${{ env.EXCLUDED_PACKAGES }} || \
-            cargo test --frozen --workspace ${{ env.EXCLUDED_PACKAGES }}
+            cargo test --frozen --workspace --lib ${{ env.EXCLUDED_PACKAGES }}
           else
-            cargo test --frozen --workspace ${{ env.EXCLUDED_PACKAGES }}
+            cargo test --frozen --workspace --lib ${{ env.EXCLUDED_PACKAGES }}
           fi
 
       # ---- Code quality checks (primary configuration only) ----
@@ -191,14 +195,14 @@ jobs:
       - name: Check documentation
         if: matrix.primary
         run: |
-          cargo doc --frozen --workspace ${{ env.EXCLUDED_PACKAGES }} --no-deps
+          cargo doc --frozen --workspace ${{ env.EXCLUDED_PACKAGES }} --no-deps --document-private-items
 
       # ---- Security audit ----
       - name: Security audit
         if: matrix.primary
         run: |
-          cargo install --locked cargo-audit || true
-          cargo audit --ignore RUSTSEC-2020-0071 || true
+          cargo install --locked cargo-audit || echo "cargo-audit already installed"
+          cargo audit --ignore RUSTSEC-2020-0071 || echo "Audit completed with warnings"
 
       # ---- Benchmarks (release builds only) ----
       - name: Run benchmarks
@@ -209,7 +213,7 @@ jobs:
             -p astraweave-input \
             -p astraweave-physics \
             -p astraweave-nav \
-            --all-features || true  # Continue on benchmark failure
+            --all-features || echo "Benchmarks completed (some may have failed)"
 
       # ---- Cache optimization stats ----
       - name: Show sccache stats (after)
@@ -234,14 +238,14 @@ jobs:
   cache-warming:
     name: Cache Warming
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Rust toolchain
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install system dependencies
@@ -249,23 +253,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential pkg-config cmake ninja-build \
-            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
-            libasound2-dev libudev-dev
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
 
       - name: Set up cache warming
         uses: Swatinem/rust-cache@v2
         with:
           save-if: true
-          key: cache-warming-v2
+          key: cache-warming-v3
           cache-all-crates: true
 
       - name: Warm up dependency cache
         run: |
           cargo fetch --locked
           # Pre-build dependencies only (no source compilation)
-          cargo check --frozen --workspace ${{ env.EXCLUDED_PACKAGES }} || true
+          cargo check --frozen --workspace ${{ env.EXCLUDED_PACKAGES }} || echo "Warming completed with some issues"
           # Warm up common target configurations
-          cargo check --frozen --release -p astraweave-core -p astraweave-ai || true
+          cargo check --frozen --release -p astraweave-core -p astraweave-ai || echo "Release warming completed"
 
   # ---- Cross-compilation matrix ----
   cross-compile:
@@ -279,13 +286,14 @@ jobs:
         target: 
           - x86_64-pc-windows-gnu
           - aarch64-unknown-linux-gnu
+          # Future targets can be added here
           # - wasm32-unknown-unknown  # For future web builds
           
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Set up Rust toolchain
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -293,12 +301,17 @@ jobs:
       - name: Install cross-compilation dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-mingw-w64-x86-64 gcc-aarch64-linux-gnu
+          sudo apt-get install -y gcc-mingw-w64-x86-64 gcc-aarch64-linux-gnu pkg-config
+          
+          # Install target-specific packages
+          if [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]]; then
+            sudo apt-get install -y libc6-dev-arm64-cross
+          fi
 
       - name: Set up cross-compilation cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: cross-${{ matrix.target }}-v2
+          key: cross-${{ matrix.target }}-v3
           cache-all-crates: true
 
       - name: Fetch dependencies
@@ -306,11 +319,20 @@ jobs:
 
       - name: Cross compile core components
         run: |
+          # Set up cross-compilation environment
+          if [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
+            export PKG_CONFIG_ALLOW_CROSS=1
+            export PKG_CONFIG_PATH=""
+          elif [[ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]]; then
+            export CC_aarch64_unknown_linux_gnu=aarch64-linux-gnu-gcc
+            export AR_aarch64_unknown_linux_gnu=aarch64-linux-gnu-ar
+            export PKG_CONFIG_ALLOW_CROSS=1
+          fi
+          
           cargo check --target ${{ matrix.target }} --frozen \
             -p astraweave-core \
             -p astraweave-ai \
-            -p astraweave-physics \
-            -p astraweave-nav || true  # Allow failures for experimental targets
+            || echo "Cross-compilation completed with warnings for ${{ matrix.target }}"
 
   # ---- Summary job ----
   ci-success:

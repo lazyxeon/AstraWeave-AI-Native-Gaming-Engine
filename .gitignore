@@ -1,6 +1,11 @@
 # Build artifacts
 /target/
 target/
+Cargo.lock.bak
+
+# Sccache directory
+target/sccache/
+.sccache/
 
 # Documentation build outputs (mdBook)
 docs/book/
@@ -11,21 +16,31 @@ docs/book/
 *.swp
 *.swo
 *~
+.project
+.settings/
+.classpath
 
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
 # Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+$RECYCLE.BIN/
 
 # Logs
 *.log
+logs/
+*.log.*
 
 # Temporary files
 *.tmp
 *.temp
+tmp/
+.tmp/
 
 # Security and secrets (prevent accidental commit)
 .env
@@ -37,14 +52,52 @@ Desktop.ini
 *.pfx
 secrets/
 private/
+auth/
 
 # Backup files
 *.bak
 *.backup
 *.orig
+*~
+.#*
 
 # Runtime directories
 /tmp/
 *.pid
+.cache/
 
+# Build analysis outputs
+dependency-tree.txt
+unused-deps.txt
+outdated.json
+analysis.md
+performance.md
+build-timing.txt
+release-timing.txt
+audit-report.md
+
+# Coverage and profiling
+/coverage/
+*.profraw
+*.profdata
+lcov.info
+tarpaulin-report.html
+
+# Benchmark results
+criterion/
+bench-results/
+
+# Package manager artifacts
+node_modules/
+package-lock.json
+yarn.lock
+
+# Operating system artifacts
+.Spotlight-V100
+.Trashes
+ehthumbs_vista.db
+*.stackdump
+
+# Output files
 output.txt
+result.txt
