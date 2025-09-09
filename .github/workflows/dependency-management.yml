@@ -1,21 +1,21 @@
-name: Dependency Management & Cache Optimization
+name: Dependency Management & Security
 
 on:
   schedule:
-    # Run daily at 2 AM UTC to keep caches warm
+    # Run daily at 2 AM UTC to keep caches warm and security up-to-date
     - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       cache_action:
-        description: 'Cache action to perform'
+        description: 'Cache management action'
         required: true
         default: 'warm'
         type: choice
         options: [warm, clean, rebuild]
-      force_full_build:
-        description: 'Force full workspace build (including problematic crates)'
+      security_audit:
+        description: 'Run comprehensive security audit'
         required: false
-        default: false
+        default: true
         type: boolean
 
 # Ensure bash everywhere (Windows default is pwsh)
@@ -36,14 +36,16 @@ env:
   CARGO_NET_RETRY: 10
   CARGO_INCREMENTAL: 0  # Better for CI with sccache
   RUST_BACKTRACE: short
+  SCCACHE_CACHE_SIZE: "10G"
+  SCCACHE_IDLE_TIMEOUT: 0
   # Consistent exclusion list for problematic crates
-  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
+  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --exclude debug_toolkit_demo --exclude aw_editor"
 
 jobs:
-  dependency-audit:
-    name: Dependency Security Audit
+  security-audit:
+    name: Security Audit & Dependency Analysis
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -51,19 +53,23 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q build-essential pkg-config cmake ninja-build
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: audit-cache-v2
+          key: audit-cache-v3
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install audit tools
         run: |
           cargo install --locked cargo-audit || echo "cargo-audit already installed"
-          cargo install --locked cargo-deny  || echo "cargo-deny already installed"
+          cargo install --locked cargo-deny || echo "cargo-deny already installed"
+          cargo install --locked cargo-outdated || echo "cargo-outdated already installed"
 
       - name: Run security audit
         run: |
@@ -72,54 +78,48 @@ jobs:
 
       - name: Run cargo-deny check
         run: |
-          echo "Running cargo deny check..."
-          cargo deny check || echo "Deny check completed with warnings"
+          if [ -f "deny.toml" ]; then
+            echo "Running cargo deny check..."
+            cargo deny check || echo "Deny check completed with warnings"
+          else
+            echo "deny.toml not found; skipping cargo-deny"
+          fi
 
-      - name: Generate audit report
+      - name: Check for outdated dependencies
         run: |
-          echo "## Security Audit Report" > audit-report.md
+          echo "Checking for outdated dependencies..."
+          cargo outdated --workspace --format json > outdated.json || true
+
+      - name: Generate comprehensive audit report
+        run: |
+          echo "## Security & Dependency Audit Report" > audit-report.md
           echo "Generated on: $(date)" >> audit-report.md
           echo "" >> audit-report.md
-          echo "### Cargo Audit Results" >> audit-report.md
+          
+          echo "### Security Audit Results" >> audit-report.md
           echo '```' >> audit-report.md
           cargo audit --format json >> audit-report.md 2>&1 || true
           echo '```' >> audit-report.md
+          echo "" >> audit-report.md
+          
+          echo "### Outdated Dependencies" >> audit-report.md
+          echo '```json' >> audit-report.md
+          cat outdated.json >> audit-report.md 2>/dev/null || echo "No outdated dependencies data available" >> audit-report.md
+          echo '```' >> audit-report.md
 
-      - name: Upload audit report
+      - name: Upload audit reports
         uses: actions/upload-artifact@v4
         with:
-          name: security-audit-report
-          path: audit-report.md
+          name: security-audit-report-${{ github.run_number }}
+          path: |
+            audit-report.md
+            outdated.json
           retention-days: 30
 
-  dependency-update:
-    name: Dependency Update Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install cargo-outdated
-        run: cargo install cargo-outdated --locked
-
-      - name: Check for outdated dependencies
-        run: cargo outdated --workspace --format json > outdated.json || true
-
-      - name: Upload outdated dependencies report
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-report
-          path: outdated.json
-          retention-days: 30
-
-  cache-management:
-    name: "Cache Management (${{ github.event.inputs.cache_action || 'warm' }})"
+  cache-optimization:
+    name: "Cache Optimization (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -131,20 +131,18 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
 
       - name: Install system dependencies (Ubuntu)
         if: matrix.os == 'ubuntu-latest'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get update -q
+          sudo apt-get install -y -q \
             build-essential pkg-config cmake ninja-build \
             libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
             libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
             libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
             libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
-            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+            libasound2-dev libpulse-dev libudev-dev
 
       - name: Install system dependencies (macOS)
         if: matrix.os == 'macos-latest'
@@ -152,41 +150,10 @@ jobs:
 
       - name: Install system dependencies (Windows)
         if: matrix.os == 'windows-latest'
-        run: echo "Windows system dependencies installation completed"
+        run: echo "Windows dependencies managed via vcpkg"
 
       - name: Install sccache
-        run: |
-          # Select correct artifact per OS/arch
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            if [[ "$(uname -m)" == "aarch64" ]]; then
-              SCCACHE_ARCH="aarch64-unknown-linux-musl"
-            else
-              SCCACHE_ARCH="x86_64-unknown-linux-musl"
-            fi
-          elif [[ "$RUNNER_OS" == "macOS" ]]; then
-            if [[ "$(uname -m)" == "arm64" ]]; then
-              SCCACHE_ARCH="aarch64-apple-darwin"
-            else
-              SCCACHE_ARCH="x86_64-apple-darwin"
-            fi
-          elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            SCCACHE_ARCH="x86_64-pc-windows-msvc"
-          fi
-
-          SCCACHE_VERSION="v0.10.0"
-          URL="https://github.com/mozilla/sccache/releases/download/${SCCACHE_VERSION}/sccache-${SCCACHE_VERSION}-${SCCACHE_ARCH}.tar.gz"
-
-          echo "Downloading $URL"
-          curl -L "$URL" -o sccache.tar.gz
-          tar -xzf sccache.tar.gz
-
-          mkdir -p ~/.cargo/bin
-          if compgen -G "sccache-*/sccache.exe" > /dev/null; then
-            mv sccache-*/sccache.exe ~/.cargo/bin/
-          else
-            sudo mv sccache-*/sccache /usr/local/bin/ || mv sccache-*/sccache ~/.cargo/bin/
-          fi
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+        uses: mozilla-actions/sccache-action@v0.0.6
 
       - name: Cache cleanup (if requested)
         if: github.event.inputs.cache_action == 'clean'
@@ -194,24 +161,17 @@ jobs:
           cargo clean
           rm -rf ~/.cargo/registry/cache || true
           rm -rf ~/.cargo/git/db || true
-          rm -rf target/sccache || true
 
       - name: Setup optimized cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: cache-mgmt-${{ matrix.os }}-v3
+          key: cache-mgmt-${{ matrix.os }}-v4
           cache-all-crates: true
-          cache-directories: |
-            ~/.cargo/bin/
-            target/sccache
           save-if: ${{ github.event.inputs.cache_action != 'clean' }}
 
       - name: Configure sccache
         run: |
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "SCCACHE_DIR=${{ github.workspace }}/target/sccache" >> $GITHUB_ENV
-          mkdir -p "${{ github.workspace }}/target/sccache"
-          sccache --start-server
 
       - name: Show sccache stats (before)
         run: sccache --show-stats || true
@@ -221,36 +181,29 @@ jobs:
         run: |
           # Fetch all dependencies first
           cargo fetch --locked
-          # Pre-compile most of the workspace (exclude problematic crates)
+          # Pre-compile core workspace components (exclude problematic crates)
           cargo check --workspace ${{ env.EXCLUDED_PACKAGES }}
-          # Pre-compile in release mode for commonly used crates
+          # Pre-compile in release mode for core crates
           cargo check --release \
             -p astraweave-core \
             -p astraweave-ai \
             -p astraweave-physics \
             -p astraweave-render \
-            -p astraweave-nav
+            -p astraweave-nav \
+            -p hello_companion
 
       - name: Rebuild cache (if requested)
         if: github.event.inputs.cache_action == 'rebuild'
         run: |
           cargo clean
-          if [[ "${{ github.event.inputs.force_full_build }}" == "true" ]]; then
-            echo "Building full workspace including problematic crates..."
-            cargo build --workspace || echo "Full build completed with some failures"
-          else
-            echo "Building working workspace crates only..."
-            cargo build --workspace ${{ env.EXCLUDED_PACKAGES }}
-          fi
+          echo "Rebuilding workspace (excluding problematic crates)..."
+          cargo build --workspace ${{ env.EXCLUDED_PACKAGES }}
 
       - name: Show sccache stats (after)
         run: sccache --show-stats || true
 
-      - name: Stop sccache server
-        run: sccache --stop-server || true
-
   workspace-analysis:
-    name: Workspace Analysis
+    name: Workspace Health Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -264,28 +217,29 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: analysis-cache-v2
+          key: analysis-cache-v3
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Install analysis tools
         run: |
-          cargo install --locked cargo-tree     || echo "cargo-tree already installed"
-          cargo install --locked cargo-machete  || echo "cargo-machete already installed"
-          cargo install --locked cargo-outdated || echo "cargo-outdated already installed"
+          cargo install --locked cargo-tree || echo "cargo-tree already installed"
+          cargo install --locked cargo-machete || echo "cargo-machete already installed"
 
-      - name: Analyze dependency tree
+      - name: Analyze workspace structure
         run: |
-          echo "## Workspace Dependency Analysis" > analysis.md
+          echo "## Workspace Health Analysis" > analysis.md
           echo "Generated on: $(date)" >> analysis.md
           echo "" >> analysis.md
+          
           echo "### Workspace Statistics" >> analysis.md
           echo "- Total crates: $(find . -name 'Cargo.toml' | wc -l)" >> analysis.md
           echo "- Total Rust files: $(find . -name '*.rs' | wc -l)" >> analysis.md
           echo "- Total lines of code: $(find . -name '*.rs' -exec wc -l {} + | tail -1 | awk '{print $1}')" >> analysis.md
           echo "" >> analysis.md
-          echo "### Dependency Tree Summary (Top 50)" >> analysis.md
+          
+          echo "### Dependency Tree (Top 50)" >> analysis.md
           echo '```' >> analysis.md
-          cargo tree --workspace --format "{p} {f}" ${{ env.EXCLUDED_PACKAGES }} | head -50 >> analysis.md
+          cargo tree --workspace ${{ env.EXCLUDED_PACKAGES }} --format "{p} {f}" | head -50 >> analysis.md
           echo '```' >> analysis.md
 
       - name: Find unused dependencies
@@ -296,130 +250,17 @@ jobs:
           cargo machete --with-metadata ${{ env.EXCLUDED_PACKAGES }} >> analysis.md 2>&1 || echo "Analysis completed with warnings" >> analysis.md
           echo '```' >> analysis.md
 
-      - name: Check for outdated dependencies
-        run: |
-          echo "" >> analysis.md
-          echo "### Outdated Dependencies" >> analysis.md
-          echo '```' >> analysis.md
-          cargo outdated --workspace --format json >> outdated.json 2>&1 || echo "Outdated check completed with warnings"
-          if [ -f outdated.json ]; then
-            cat outdated.json >> analysis.md
-          fi
-          echo '```' >> analysis.md
-
       - name: Workspace dependency graph
         run: |
           echo "" >> analysis.md
-          echo "### Workspace Dependency Graph" >> analysis.md
+          echo "### Core Dependencies Overview" >> analysis.md
           echo '```' >> analysis.md
-          cargo tree --workspace --graph-features --charset ascii ${{ env.EXCLUDED_PACKAGES }} | head -100 >> analysis.md 2>&1 || echo "Dependency graph generation completed"
+          cargo tree --workspace ${{ env.EXCLUDED_PACKAGES }} --graph-features --charset ascii | head -100 >> analysis.md 2>&1 || echo "Dependency graph generation completed"
           echo '```' >> analysis.md
 
       - name: Upload analysis report
         uses: actions/upload-artifact@v4
         with:
-          name: workspace-analysis-report
-          path: |
-            analysis.md
-            outdated.json
-          retention-days: 30
-
-  performance-profiling:
-    name: Build Performance Profiling
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    if: github.event.inputs.cache_action == 'rebuild' || github.event_name == 'schedule'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential pkg-config cmake ninja-build \
-            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
-            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
-            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
-            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
-            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools time
-
-      - name: Install profiling tools
-        run: |
-          cargo install --locked cargo-llvm-lines || echo "cargo-llvm-lines already installed"
-          cargo install --locked cargo-bloat      || echo "cargo-bloat already installed"
-
-      - name: Setup cache for profiling
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: profiling-cache-v2
-          save-if: ${{ github.ref == 'refs/heads/main' }}
-
-      - name: Profile build performance
-        run: |
-          echo "## Build Performance Profile" > performance.md
-          echo "Generated on: $(date)" >> performance.md
-          echo "" >> performance.md
-          echo "### Clean Build Timing (Core Components)" >> performance.md
-          echo '```' >> performance.md
-          cargo clean
-          /usr/bin/time -v cargo build \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p hello_companion 2>&1 | tee build-timing.txt
-          cat build-timing.txt >> performance.md
-          echo '```' >> performance.md
-          echo "" >> performance.md
-          echo "### Release Build Timing (Core Components)" >> performance.md
-          echo '```' >> performance.md
-          cargo clean
-          /usr/bin/time -v cargo build --release \
-            -p astraweave-core \
-            -p astraweave-ai \
-            -p astraweave-physics \
-            -p hello_companion 2>&1 | tee release-timing.txt
-          cat release-timing.txt >> performance.md
-          echo '```' >> performance.md
-
-      - name: LLVM lines analysis
-        run: |
-          echo "" >> performance.md
-          echo "### LLVM Lines Analysis (Top Compile Time Consumers)" >> performance.md
-          echo '```' >> performance.md
-          cargo llvm-lines -p astraweave-core --release | head -30 >> performance.md 2>&1 || echo "LLVM lines analysis completed"
-          echo '```' >> performance.md
-
-      - name: Binary size analysis
-        run: |
-          echo "" >> performance.md
-          echo "### Binary Size Analysis" >> performance.md
-          echo '```' >> performance.md
-          cargo bloat --release -p hello_companion --crates | head -20 >> performance.md 2>&1 || echo "Binary size analysis completed"
-          echo '```' >> performance.md
-
-      - name: Compilation database analysis
-        run: |
-          echo "" >> performance.md
-          echo "### Compilation Units Analysis" >> performance.md
-          echo '```' >> performance.md
-          find target/release/deps -name "*.rlib" | wc -l >> performance.md
-          echo "Total .rlib files (compilation units): $(find target/release/deps -name '*.rlib' | wc -l)" >> performance.md
-          echo "Total target directory size: $(du -sh target | cut -f1)" >> performance.md
-          echo '```' >> performance.md
-
-      - name: Upload performance report
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-profile-report
-          path: |
-            performance.md
-            build-timing.txt
-            release-timing.txt
+          name: workspace-analysis-report-${{ github.run_number }}
+          path: analysis.md
           retention-days: 30

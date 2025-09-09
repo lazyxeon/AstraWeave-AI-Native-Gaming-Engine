@@ -124,7 +124,7 @@ fn process_texture(src: &Path, out_root: &str) -> Result<PathBuf> {
         }
     }
     if let Ok(basisu) = which("basisu") {
-        let tmp = out.with_extension("basis");
+        let _tmp = out.with_extension("basis");
         let status = Command::new(basisu)
             .args(["-uastc", "-comp_level", "2", "-file", src.to_str().unwrap()])
             .status()?;
@@ -145,7 +145,7 @@ fn process_model(src: &Path, out_root: &str) -> Result<PathBuf> {
     if src.extension().map(|e| e.to_string_lossy().to_lowercase()) == Some("gltf".into())
         || src.extension().map(|e| e.to_string_lossy().to_lowercase()) == Some("glb".into())
     {
-        let (doc, _buffers, _images) = gltf::import(src)?;
+        let (_doc, _buffers, _images) = gltf::import(src)?;
         // Minimal example: just copy the glTF for now; swap to a meshbin writer later
         fs::copy(src, &out)?;
         Ok(out)

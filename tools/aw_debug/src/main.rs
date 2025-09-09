@@ -54,7 +54,8 @@ impl DebugApp {
                 ("render", "Shader recompiled"),
                 ("audio", "Sound effect played"),
             ];
-            let (category, msg) = events[rand::random::<usize>() % events.len()];
+            let index = (rand::random::<f32>() * events.len() as f32) as usize % events.len();
+            let (category, msg) = events[index];
             self.hud.log_event(category, msg);
         }
 
@@ -115,6 +116,6 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "AstraWeave Debug Tools",
         options,
-        Box::new(|_cc| Box::new(DebugApp::new())),
+        Box::new(|_cc| Ok(Box::new(DebugApp::new()))),
     )
 }
