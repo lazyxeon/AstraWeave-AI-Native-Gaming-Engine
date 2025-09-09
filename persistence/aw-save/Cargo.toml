@@ -1,0 +1,21 @@
+[package]
+name = "aw-save"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "AstraWeave save/load, versioning & migration, atomic I/O, checksums, compression."
+
+[dependencies]
+anyhow = "1"
+thiserror = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+postcard = { version = "1", features = ["alloc"] }
+lz4_flex = "0.11"
+crc32fast = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+time = { version = "0.3", features = ["formatting", "parsing", "macros", "serde-human-readable"] }
+hex = "0.4"
+
+[dev-dependencies]
+tempfile = "3"

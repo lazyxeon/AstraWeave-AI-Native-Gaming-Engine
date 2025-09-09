@@ -43,10 +43,14 @@ members = [
   "astraweave-ui",
   "examples/ui_controls_demo",
   "examples/debug_toolkit_demo",
+  "examples/save_integration",
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
   "tools/aw_debug",
+  # persistence
+  "persistence/aw-save",
+  "tools/aw_save_cli",
   # Enhanced networking layer
   "net/aw-net-proto",
   "net/aw-net-server",
