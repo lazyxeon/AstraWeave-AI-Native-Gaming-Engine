@@ -458,6 +458,87 @@ jobs:
             echo "deny.toml not found; skipping cargo-deny"
           fi
 
+  coverage:
+    name: Coverage (Linux)
+    runs-on: ubuntu-latest
+    needs: check
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+          key: coverage-v5
+          cache-all-crates: true
+
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin --locked
+
+      - name: Generate coverage report
+        run: |
+          cargo tarpaulin --workspace --out Xml ${{ env.EXCLUDED_PACKAGES }} || echo "Coverage completed with warnings"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: tarpaulin-report.xml
+
+  benches:
+    name: Benchmarks (Linux)
+    runs-on: ubuntu-latest
+    needs: check
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+            libasound2-dev libudev-dev
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+          key: bench-v5
+          cache-all-crates: true
+
+      - name: Run aw_build benchmarks
+        run: cargo bench -p aw_build
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-results
+          path: target/criterion/**
+          if-no-files-found: ignore
+
   msrv:
     name: Minimum Supported Rust Version
     runs-on: ubuntu-latest

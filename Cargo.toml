@@ -48,6 +48,7 @@ members = [
   "tools/aw_editor",
   "tools/aw_asset_cli",
   "tools/aw_debug",
+  "tools/aw_build",
   # persistence
   "persistence/aw-save",
   "tools/aw_save_cli",

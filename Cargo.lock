@@ -952,6 +952,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "aw_build"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "criterion",
+ "hex",
+ "rayon",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "time",
+ "walkdir",
+ "zip",
+]
+
+[[package]]
 name = "aw_debug"
 version = "0.1.0"
 dependencies = [
