@@ -1,31 +1,46 @@
-name: Benchmarks
+name: Performance Benchmarks
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main", "develop"]
   pull_request:
-    branches: [ "main" ]
-  # Allow manual trigger
+    branches: ["main", "develop"]
   workflow_dispatch:
+
+# Optimize workflow concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
+env:
+  RUSTC_WRAPPER: sccache
+  SCCACHE_CACHE_SIZE: "10G"
+  SCCACHE_IDLE_TIMEOUT: 0
+  CARGO_NET_RETRY: 10
+
 jobs:
   benchmark:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       
-      - name: Install Rust
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       
-      - name: Install Linux dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential pkg-config cmake ninja-build \
@@ -35,55 +50,101 @@ jobs:
             libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
             libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
       
-      - name: Set up Rust cache
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+      
+      - name: Set up advanced Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: benchmark-v4
+          key: benchmark-v6-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
           cache-all-crates: true
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-targets: true
+          cache-directories: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
       
       - name: Run benchmarks
         run: |
-          echo "=== Running Benchmarks ===" > benchmark_results.txt
-          echo "" >> benchmark_results.txt
+          # Install required tools
+          sudo apt-get install -y bc jq timeout
           
-          # Run benchmarks for packages that have them
-          for pkg in astraweave-core astraweave-input; do
-            if [ -d "$pkg/benches" ]; then
-              echo "Running benchmarks for $pkg..." | tee -a benchmark_results.txt
-              if cargo bench -p "$pkg" --benches >> benchmark_results.txt 2>&1; then
-                echo "✅ Benchmarks completed for $pkg" | tee -a benchmark_results.txt
-              else
-                echo "⚠️ Benchmarks had issues for $pkg, but continuing..." | tee -a benchmark_results.txt
-              fi
-              echo "" >> benchmark_results.txt
-            else
-              echo "No benchmarks found for $pkg" | tee -a benchmark_results.txt
-            fi
-          done
+          # Set environment variables for the script
+          export BENCHMARK_RESULTS_DIR="benchmark_results"
+          export VERBOSE="true"
           
-          # Display results summary
-          echo "=== Benchmark Results Summary ==="
-          cat benchmark_results.txt
+          # Run the benchmark script
+          ./.github/scripts/benchmark-runner.sh
       
-      - name: Upload benchmark results
+      - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
-          path: benchmark_results.txt
+          name: benchmark-results-${{ github.sha }}
+          path: benchmark_results/
           retention-days: 30
+        if: always()
       
-      - name: Store benchmark result for tracking
+      - name: Display sccache statistics
+        run: sccache --show-stats
+        if: always()
+      
+      - name: Store benchmark results for tracking
         uses: benchmark-action/github-action-benchmark@v1
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
-          name: Rust Benchmark
-          tool: 'cargo'
-          output-file-path: benchmark_results.txt
+          name: AstraWeave Performance Benchmarks
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark_results/benchmarks.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: false
-          # Show alert with commit comment on detecting possible performance regression
+          auto-push: true
           alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: false
-          # Enable alert commit comment only on push to main
           alert-comment-cc-users: '@lazyxeon'
+          benchmark-data-dir-path: 'dev/bench'
+          max-items-in-chart: 100
+          
+      - name: Comment benchmark results on PR
+        uses: benchmark-action/github-action-benchmark@v1
+        if: github.event_name == 'pull_request' && hashFiles('benchmark_results/benchmarks.json') != ''
+        with:
+          name: AstraWeave Performance Benchmarks
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark_results/benchmarks.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          comment-on-alert: true
+          summary-always: true
+          alert-threshold: '150%'
+          
+      - name: Validate benchmark results
+        run: |
+          echo "=== Benchmark Validation ==="
+          
+          # Check if JSON file exists and is valid
+          if [ ! -f "benchmark_results/benchmarks.json" ]; then
+            echo "❌ No benchmark results file found"
+            exit 1
+          fi
+          
+          # Validate JSON structure
+          if ! jq empty benchmark_results/benchmarks.json; then
+            echo "❌ Invalid JSON in benchmark results"
+            exit 1
+          fi
+          
+          # Check we have at least one benchmark result
+          result_count=$(jq '. | length' benchmark_results/benchmarks.json)
+          if [ "$result_count" -eq 0 ]; then
+            echo "❌ No benchmark results collected"
+            exit 1
+          fi
+          
+          echo "✅ Validation passed: $result_count benchmark results collected"
+          
+          # Display sample results
+          echo ""
+          echo "=== Sample Results ==="
+          jq -r '.[] | "\(.name): \(.value) \(.unit)"' benchmark_results/benchmarks.json | head -5
