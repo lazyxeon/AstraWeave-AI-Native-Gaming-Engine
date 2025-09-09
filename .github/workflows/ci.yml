@@ -27,6 +27,7 @@ env:
   RUST_BACKTRACE: short
   SCCACHE_CACHE_SIZE: "10G"
   SCCACHE_IDLE_TIMEOUT: 0
+  SCCACHE_NO_DAEMON: "1"  # Run sccache in no-daemon mode for CI reliability
   # Centralized exclusion list for problematic crates
   EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --exclude debug_toolkit_demo --exclude aw_editor"
 
@@ -65,6 +66,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
+          # Uninstall existing cmake to avoid tap conflicts
+          brew uninstall --ignore-dependencies cmake || true
           brew install pkg-config cmake
           # Prefer brewed OpenSSL to avoid ring issues
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
@@ -85,6 +88,15 @@ jobs:
           key: check-${{ matrix.os }}-v5
           cache-all-crates: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Ensure target directory exists
+        run: mkdir -p ./target
+
+      - name: Debug sccache setup
+        run: |
+          which sccache || echo "sccache not found"
+          sccache --version || echo "sccache version failed"
+          touch ./target/sccache-error.log || echo "Failed to create sccache log file"
 
       - name: Configure sccache
         run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
@@ -129,6 +141,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
+          # Uninstall existing cmake to avoid tap conflicts
+          brew uninstall --ignore-dependencies cmake || true
           brew install pkg-config cmake
 
       - name: Install sccache
@@ -228,6 +242,8 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew update
+          # Uninstall existing cmake to avoid tap conflicts
+          brew uninstall --ignore-dependencies cmake || true
           brew install pkg-config cmake
           echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl)" >> $GITHUB_ENV
           echo "OPENSSL_LIB_DIR=$(brew --prefix openssl)/lib" >> $GITHUB_ENV
@@ -246,6 +262,15 @@ jobs:
           workspaces: "."
           key: test-${{ matrix.os }}-v5
           cache-all-crates: true
+
+      - name: Ensure target directory exists
+        run: mkdir -p ./target
+
+      - name: Debug sccache setup
+        run: |
+          which sccache || echo "sccache not found"
+          sccache --version || echo "sccache version failed"
+          touch ./target/sccache-error.log || echo "Failed to create sccache log file"
 
       - name: Configure sccache
         run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
@@ -377,6 +402,15 @@ jobs:
           workspaces: "."
           key: quality-v5
           cache-all-crates: true
+
+      - name: Ensure target directory exists
+        run: mkdir -p ./target
+
+      - name: Debug sccache setup
+        run: |
+          which sccache || echo "sccache not found"
+          sccache --version || echo "sccache version failed"
+          touch ./target/sccache-error.log || echo "Failed to create sccache log file"
 
       - name: Configure sccache
         run: echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
