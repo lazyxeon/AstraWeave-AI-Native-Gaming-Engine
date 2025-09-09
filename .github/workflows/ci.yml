@@ -1,4 +1,4 @@
-name: Comprehensive CI
+name: Consolidated CI
 
 on:
   push:
@@ -21,7 +21,7 @@ env:
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: short
   # Consistent exclusion list for problematic crates
-  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
+  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --exclude debug_toolkit_demo --exclude aw_debug --exclude aw_editor --exclude aw_asset_cli"
 
 jobs:
   check:
@@ -41,7 +41,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          components: rustfmt, clippy, rust-src, rust-analyzer
+          components: rustfmt, clippy, rust-src
 
       # ---- OS-specific system dependencies ----
       - name: Install system dependencies (Linux)
@@ -66,7 +66,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: ci-${{ matrix.os }}-v3
+          key: ci-${{ matrix.os }}-v4
           cache-all-crates: true
           cache-directories: |
             ~/.cargo/bin/
@@ -100,7 +100,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          components: rustfmt, clippy
 
       # ---- OS-specific system dependencies ----
       - name: Install system dependencies (Linux)
@@ -125,7 +124,7 @@ jobs:
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: build-${{ matrix.os }}-v3
+          key: build-${{ matrix.os }}-v4
           cache-all-crates: true
           cache-directories: |
             ~/.cargo/bin/
@@ -150,6 +149,8 @@ jobs:
           -p astraweave-memory
           -p astraweave-persona
           -p astraweave-ipc
+          -p astraweave-llm
+          -p astraweave-sdk
           -p hello_companion
 
       # ---- Build working examples (debug, non-blocking) ----
@@ -162,6 +163,7 @@ jobs:
           -p companion_profile
           -p ipc_loopback
           -p llm_toolcall
+          -p llm_integration
           -p phase_director
           -p persona_loader
           -p coop_server
@@ -221,7 +223,7 @@ jobs:
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: test-${{ matrix.os }}-v3
+          key: test-${{ matrix.os }}-v4
           cache-all-crates: true
 
       # ---- Run tests ----
@@ -259,7 +261,7 @@ jobs:
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: linting-v3
+          key: linting-v4
           cache-all-crates: true
 
       # ---- Code formatting ----
@@ -290,7 +292,7 @@ jobs:
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: security-v3
+          key: security-v4
           cache-all-crates: true
 
       - name: Install cargo-audit
@@ -340,7 +342,7 @@ jobs:
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: msrv-${{ steps.msrv.outputs.version }}-v3
+          key: msrv-${{ steps.msrv.outputs.version }}-v4
 
       - name: Check MSRV compatibility
         run: >
@@ -375,7 +377,7 @@ jobs:
       - name: Set up Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: demo-v3
+          key: demo-v4
           cache-all-crates: true
 
       - name: Build hello_companion demo

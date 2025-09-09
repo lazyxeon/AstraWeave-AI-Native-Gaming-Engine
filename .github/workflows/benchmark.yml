@@ -1,4 +1,4 @@
-name: Benchmark
+name: Benchmarks
 
 on:
   push:
@@ -12,17 +12,13 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
-  pages: write
 
 jobs:
   benchmark:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      issues: write
-      pull-requests: write
-      pages: write
+    timeout-minutes: 30
+    
     steps:
       - uses: actions/checkout@v5
       
@@ -39,72 +35,52 @@ jobs:
             libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
             libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
       
-      - name: Install cargo-criterion
-        run: cargo install cargo-criterion
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: benchmark-v4
+          cache-all-crates: true
       
       - name: Run benchmarks
         run: |
-          # Run benchmarks only for packages that have bench targets
-          if cargo bench --help | grep -q "package"; then
-            # List packages that have benchmarks
-            for pkg in astraweave-core astraweave-input; do
-              if [ -d "$pkg/benches" ]; then
-                echo "Running benchmarks for $pkg..."
-                if cargo criterion --output-format bencher -p "$pkg" >> output.txt 2>&1; then
-                  echo "✅ Benchmarks completed successfully for $pkg"
-                else
-                  echo "⚠️ Benchmarks failed for $pkg, but continuing..." >> output.txt
-                fi
-              else
-                echo "No bench directory found for $pkg"
-              fi
-            done
-          else
-            echo "No benchmarks found" > output.txt
-          fi
+          echo "=== Running Benchmarks ===" > benchmark_results.txt
+          echo "" >> benchmark_results.txt
           
-          # Ensure output file exists and has content
-          if [ ! -f output.txt ]; then
-            echo "No benchmark results available" > output.txt
-          elif [ ! -s output.txt ]; then
-            echo "Benchmarks completed but no output generated" > output.txt
-          fi
+          # Run benchmarks for packages that have them
+          for pkg in astraweave-core astraweave-input; do
+            if [ -d "$pkg/benches" ]; then
+              echo "Running benchmarks for $pkg..." | tee -a benchmark_results.txt
+              if cargo bench -p "$pkg" --benches >> benchmark_results.txt 2>&1; then
+                echo "✅ Benchmarks completed for $pkg" | tee -a benchmark_results.txt
+              else
+                echo "⚠️ Benchmarks had issues for $pkg, but continuing..." | tee -a benchmark_results.txt
+              fi
+              echo "" >> benchmark_results.txt
+            else
+              echo "No benchmarks found for $pkg" | tee -a benchmark_results.txt
+            fi
+          done
           
           # Display results summary
           echo "=== Benchmark Results Summary ==="
-          cat output.txt
+          cat benchmark_results.txt
       
-      - name: Initialize gh-pages branch if needed
-        run: |
-          # Configure git
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Check if gh-pages branch exists
-          if ! git ls-remote --heads origin gh-pages | grep -q gh-pages; then
-            echo "Creating gh-pages branch..."
-            git checkout --orphan gh-pages
-            git rm -rf .
-            echo "# Benchmark Results" > README.md
-            echo "" > .nojekyll
-            git add README.md .nojekyll
-            git commit -m "Initialize gh-pages branch for benchmark results"
-            git push origin gh-pages
-            git checkout -
-          else
-            echo "gh-pages branch already exists"
-          fi
-        continue-on-error: true
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark_results.txt
+          retention-days: 30
       
-      - name: Store benchmark result
+      - name: Store benchmark result for tracking
         uses: benchmark-action/github-action-benchmark@v1
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: Rust Benchmark
           tool: 'cargo'
-          output-file-path: output.txt
-          # Publish to GitHub Pages
+          output-file-path: benchmark_results.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
+          auto-push: false
           # Show alert with commit comment on detecting possible performance regression
           alert-threshold: '200%'
           comment-on-alert: true

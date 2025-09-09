@@ -29,6 +29,7 @@ pub struct HitResult {
 
 /// Sweep a capsule from `from` to `to`, apply damage to first hit collider body that isn't `self_id`.
 /// TODO: Fix rapier3d API compatibility issues
+#[allow(clippy::too_many_arguments)]
 pub fn perform_attack_sweep(
     _phys: &mut PhysicsWorld,
     _self_id: u64,

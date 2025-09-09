@@ -6,8 +6,11 @@ license = "MIT"
 
 [dependencies]
 egui = { workspace = true }
+egui_plot = "0.28"
+eframe = { workspace = true }
+rand = { workspace = true }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "registry"] }
 tracing-chrome = "0.7"
 notify = "6"
 crossbeam-channel = "0.5"

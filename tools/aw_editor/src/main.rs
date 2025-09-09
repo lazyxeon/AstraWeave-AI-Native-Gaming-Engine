@@ -1,8 +1,8 @@
-use std::{fs, path::PathBuf, sync::mpsc::channel, time::Duration};
-use eframe::egui;
-use notify::{Watcher, RecommendedWatcher, RecursiveMode, Event};
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use eframe::egui;
+use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
+use serde::{Deserialize, Serialize};
+use std::{fs, path::PathBuf, sync::mpsc::channel, time::Duration};
 use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -19,49 +19,91 @@ struct LevelDoc {
 }
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-struct Sky { time_of_day: String, weather: String }
+struct Sky {
+    time_of_day: String,
+    weather: String,
+}
 
 #[derive(Clone, Serialize, Deserialize)]
-#[serde(tag="kind")]
+#[serde(tag = "kind")]
 enum BiomePaint {
-    #[serde(rename="grass_dense")] GrassDense { area: Circle },
-    #[serde(rename="moss_path")]  MossPath   { polyline: Vec<[i32;2]> },
+    #[serde(rename = "grass_dense")]
+    GrassDense { area: Circle },
+    #[serde(rename = "moss_path")]
+    MossPath { polyline: Vec<[i32; 2]> },
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-struct Circle { cx:i32, cz:i32, radius:i32 }
+struct Circle {
+    cx: i32,
+    cz: i32,
+    radius: i32,
+}
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-struct Obstacle { id:String, pos:[f32;3], yaw:f32, tags:Vec<String> }
+struct Obstacle {
+    id: String,
+    pos: [f32; 3],
+    yaw: f32,
+    tags: Vec<String>,
+}
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-struct NpcSpawn { archetype:String, count:u32, spawn:Spawn, behavior:String }
+struct NpcSpawn {
+    archetype: String,
+    count: u32,
+    spawn: Spawn,
+    behavior: String,
+}
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-struct Spawn { pos:[f32;3], radius:f32 }
+struct Spawn {
+    pos: [f32; 3],
+    radius: f32,
+}
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-struct FateThread { name:String, triggers:Vec<Trigger>, ops:Vec<DirectorOp> }
+struct FateThread {
+    name: String,
+    triggers: Vec<Trigger>,
+    ops: Vec<DirectorOp>,
+}
 
 #[derive(Clone, Serialize, Deserialize)]
-#[serde(tag="kind")]
+#[serde(tag = "kind")]
 enum Trigger {
-    #[serde(rename="enter_area")] EnterArea { center:[f32;3], radius:f32 }
+    #[serde(rename = "enter_area")]
+    EnterArea { center: [f32; 3], radius: f32 },
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-#[serde(tag="op")]
+#[serde(tag = "op")]
 enum DirectorOp {
-    Fortify { area: FortRegion },
-    Collapse { area: FortRegion },
-    SpawnWave { archetype:String, count:u32, scatter:f32 },
+    Fortify {
+        area: FortRegion,
+    },
+    Collapse {
+        area: FortRegion,
+    },
+    SpawnWave {
+        archetype: String,
+        count: u32,
+        scatter: f32,
+    },
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-struct FortRegion { cx:i32, cz:i32, r:i32 }
+struct FortRegion {
+    cx: i32,
+    cz: i32,
+    r: i32,
+}
 
 #[derive(Clone, Serialize, Deserialize, Default)]
-struct BossCfg { director_budget_script:String, phase_script:String }
+struct BossCfg {
+    director_budget_script: String,
+    phase_script: String,
+}
 
 struct EditorApp {
     content_root: PathBuf,
@@ -77,7 +119,10 @@ impl Default for EditorApp {
                 title: "Untitled".into(),
                 biome: "temperate_forest".into(),
                 seed: 42,
-                sky: Sky { time_of_day: "dawn".into(), weather: "clear".into() },
+                sky: Sky {
+                    time_of_day: "dawn".into(),
+                    weather: "clear".into(),
+                },
                 ..Default::default()
             },
             status: "Ready".into(),
@@ -91,22 +136,29 @@ impl eframe::App for EditorApp {
             ui.heading("AstraWeave Level & Encounter Editor");
             ui.separator();
             ui.horizontal(|ui| {
-                if ui.button("New").clicked() { *self = Self::default(); }
+                if ui.button("New").clicked() {
+                    *self = Self::default();
+                }
                 if ui.button("Open").clicked() {
                     // simple hardcoded example; integrate rfd/native dialog if desired
                     let p = self.content_root.join("levels/forest_breach.level.toml");
                     if let Ok(s) = fs::read_to_string(&p) {
                         match toml::from_str::<LevelDoc>(&s) {
-                            Ok(ld) => { self.level = ld; self.status = format!("Opened {:?}", p); }
-                            Err(e) => self.status = format!("Open failed: {e}")
+                            Ok(ld) => {
+                                self.level = ld;
+                                self.status = format!("Opened {:?}", p);
+                            }
+                            Err(e) => self.status = format!("Open failed: {e}"),
                         }
                     }
                 }
                 if ui.button("Save").clicked() {
                     let dir = self.content_root.join("levels");
                     let _ = fs::create_dir_all(&dir);
-                    let p = dir.join(format!("{}.level.toml",
-                        self.level.title.replace(' ', "_").to_lowercase()));
+                    let p = dir.join(format!(
+                        "{}.level.toml",
+                        self.level.title.replace(' ', "_").to_lowercase()
+                    ));
                     match toml::to_string_pretty(&self.level) {
                         Ok(txt) => {
                             if let Err(e) = fs::write(&p, txt) {
@@ -114,12 +166,14 @@ impl eframe::App for EditorApp {
                             } else {
                                 // Signal hot-reload to the runtime
                                 let _ = fs::create_dir_all(&self.content_root);
-                                let _ = fs::write(self.content_root.join("reload.signal"),
-                                                  Uuid::new_v4().to_string());
+                                let _ = fs::write(
+                                    self.content_root.join("reload.signal"),
+                                    Uuid::new_v4().to_string(),
+                                );
                                 self.status = format!("Saved {:?}", p);
                             }
                         }
-                        Err(e) => self.status = format!("Serialize failed: {e}")
+                        Err(e) => self.status = format!("Serialize failed: {e}"),
                     }
                 }
             });
@@ -138,13 +192,21 @@ impl eframe::App for EditorApp {
             ui.separator();
             if ui.button("Add Rock").clicked() {
                 self.level.obstacles.push(Obstacle {
-                    id:"rock_big_01".into(), pos:[0.0,0.0,0.0], yaw:0.0, tags: vec!["cover".into()]
+                    id: "rock_big_01".into(),
+                    pos: [0.0, 0.0, 0.0],
+                    yaw: 0.0,
+                    tags: vec!["cover".into()],
                 });
             }
             if ui.button("Add Wolf Pack").clicked() {
                 self.level.npcs.push(NpcSpawn {
-                    archetype:"wolf_pack".into(), count:3,
-                    spawn:Spawn{pos:[-5.0,0.0,5.0], radius:2.0}, behavior:"patrol".into()
+                    archetype: "wolf_pack".into(),
+                    count: 3,
+                    spawn: Spawn {
+                        pos: [-5.0, 0.0, 5.0],
+                        radius: 2.0,
+                    },
+                    behavior: "patrol".into(),
                 });
             }
         });
@@ -186,7 +248,7 @@ impl eframe::App for EditorApp {
                     ui.separator();
                 }
             });
-            
+
             ui.collapsing("NPCs", |ui| {
                 for (i, npc) in self.level.npcs.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
@@ -218,18 +280,18 @@ impl eframe::App for EditorApp {
                     ui.separator();
                 }
             });
-            
+
             ui.collapsing("Fate Threads", |ui| {
                 for (i, ft) in self.level.fate_threads.iter_mut().enumerate() {
-                    ui.horizontal(|ui| { 
-                        ui.label(format!("Thread #{}: ", i+1)); 
+                    ui.horizontal(|ui| {
+                        ui.label(format!("Thread #{}: ", i+1));
                         ui.text_edit_singleline(&mut ft.name);
                         if ui.button("🗑").clicked() {
                             self.level.fate_threads.remove(i);
                             break;
                         }
                     });
-                    
+
                     ui.collapsing("Triggers", |ui| {
                         for (j, trigger) in ft.triggers.iter_mut().enumerate() {
                             match trigger {
@@ -256,13 +318,13 @@ impl eframe::App for EditorApp {
                             ui.separator();
                         }
                         if ui.button("Add Enter Area Trigger").clicked() {
-                            ft.triggers.push(Trigger::EnterArea { 
-                                center: [0.0, 0.0, 0.0], 
-                                radius: 5.0 
+                            ft.triggers.push(Trigger::EnterArea {
+                                center: [0.0, 0.0, 0.0],
+                                radius: 5.0
                             });
                         }
                     });
-                    
+
                     ui.collapsing("Operations", |ui| {
                         for (j, op) in ft.ops.iter_mut().enumerate() {
                             match op {
@@ -328,17 +390,17 @@ impl eframe::App for EditorApp {
                         }
                         ui.horizontal(|ui| {
                             if ui.button("Add Fortify").clicked() {
-                                ft.ops.push(DirectorOp::Fortify { 
-                                    area: FortRegion { cx: 0, cz: 0, r: 5 } 
+                                ft.ops.push(DirectorOp::Fortify {
+                                    area: FortRegion { cx: 0, cz: 0, r: 5 }
                                 });
                             }
                             if ui.button("Add Collapse").clicked() {
-                                ft.ops.push(DirectorOp::Collapse { 
-                                    area: FortRegion { cx: 0, cz: 0, r: 5 } 
+                                ft.ops.push(DirectorOp::Collapse {
+                                    area: FortRegion { cx: 0, cz: 0, r: 5 }
                                 });
                             }
                             if ui.button("Add Spawn Wave").clicked() {
-                                ft.ops.push(DirectorOp::SpawnWave { 
+                                ft.ops.push(DirectorOp::SpawnWave {
                                     archetype: "wolf_pack".into(),
                                     count: 3,
                                     scatter: 2.5
@@ -354,7 +416,7 @@ impl eframe::App for EditorApp {
                     });
                 }
             });
-            
+
             ui.collapsing("Boss Scripts", |ui| {
                 ui.horizontal(|ui| {
                     ui.label("Budget Script:");
@@ -364,14 +426,14 @@ impl eframe::App for EditorApp {
                     ui.label("Phase Script:");
                     ui.text_edit_singleline(&mut self.level.boss.phase_script);
                 });
-                
+
                 if ui.button("Create Default Scripts").clicked() {
                     // Create default script files if they don't exist
                     let dir = self.content_root.join("encounters");
                     let _ = fs::create_dir_all(&dir);
-                    
+
                     let level_name = self.level.title.replace(' ', "_").to_lowercase();
-                    
+
                     let budget_path = dir.join(format!("{}.budget.rhai", level_name));
                     if !budget_path.exists() {
                         let budget_script = r#"// Return a budget object the engine understands
@@ -387,7 +449,7 @@ fn budget_for_tick(tick) {
 }"#;
                         let _ = fs::write(&budget_path, budget_script);
                     }
-                    
+
                     let phase_path = dir.join(format!("{}.phases.rhai", level_name));
                     if !phase_path.exists() {
                         let phase_script = r#"// Phase transitions by boss HP/time; engine calls these hooks
@@ -398,11 +460,11 @@ fn phase_for(hp_pct, seconds) {
 }"#;
                         let _ = fs::write(&phase_path, phase_script);
                     }
-                    
+
                     // Update the paths in the level document
                     self.level.boss.director_budget_script = format!("content/encounters/{}.budget.rhai", level_name);
                     self.level.boss.phase_script = format!("content/encounters/{}.phases.rhai", level_name);
-                    
+
                     self.status = "Created default boss scripts".into();
                 }
             });
@@ -416,8 +478,12 @@ fn main() -> Result<()> {
     let _ = fs::create_dir_all(&content_dir);
     let _ = fs::create_dir_all(content_dir.join("levels"));
     let _ = fs::create_dir_all(content_dir.join("encounters"));
-    
+
     let options = eframe::NativeOptions::default();
-    eframe::run_native("AstraWeave Level & Encounter Editor", options, Box::new(|_| Box::<EditorApp>::default()))?;
+    eframe::run_native(
+        "AstraWeave Level & Encounter Editor",
+        options,
+        Box::new(|_| Box::<EditorApp>::default()),
+    )?;
     Ok(())
 }
