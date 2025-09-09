@@ -5,7 +5,7 @@
 set -euo pipefail
 
 # Configuration
-BENCHMARK_PACKAGES=(astraweave-core astraweave-input)
+BENCHMARK_PACKAGES_STATIC=(astraweave-core astraweave-input)
 RESULTS_DIR="${BENCHMARK_RESULTS_DIR:-benchmark_results}"
 SUMMARY_FILE="$RESULTS_DIR/summary.txt"
 JSON_FILE="$RESULTS_DIR/benchmarks.json"
@@ -26,6 +26,52 @@ log_error() {
 log_success() {
     echo "[SUCCESS] $*" | tee -a "$SUMMARY_FILE"
 }
+
+# Auto-discover packages with benchmarks
+BENCHMARK_PACKAGES=()
+
+# Function to discover benchmark packages
+discover_benchmark_packages() {
+    local discovered_packages=()
+    
+    # Start with static list
+    for pkg in "${BENCHMARK_PACKAGES_STATIC[@]}"; do
+        if [ -d "$pkg/benches" ]; then
+            discovered_packages+=("$pkg")
+        else
+            echo "[WARN] Static package $pkg has no benchmarks directory"
+        fi
+    done
+    
+    # Auto-discover additional packages with benchmarks
+    for pkg_dir in */; do
+        pkg_name=$(basename "$pkg_dir")
+        if [ -d "$pkg_dir/benches" ] && [[ ! " ${BENCHMARK_PACKAGES_STATIC[*]} " =~ " ${pkg_name} " ]]; then
+            # Check if this is a Rust package with benchmarks
+            if [ -f "$pkg_dir/Cargo.toml" ] && grep -q "\[\[bench\]\]" "$pkg_dir/Cargo.toml"; then
+                discovered_packages+=("$pkg_name")
+                echo "[INFO] Auto-discovered benchmark package: $pkg_name"
+            fi
+        fi
+    done
+    
+    # Set the global array
+    BENCHMARK_PACKAGES=("${discovered_packages[@]}")
+    
+    if [ ${#BENCHMARK_PACKAGES[@]} -eq 0 ]; then
+        log_info "No benchmark packages found"
+        return 1
+    fi
+    
+    log_info "Found ${#BENCHMARK_PACKAGES[@]} benchmark packages: ${BENCHMARK_PACKAGES[*]}"
+    return 0
+}
+
+# Discover benchmark packages
+if ! discover_benchmark_packages; then
+    echo "[ERROR] No benchmark packages found!" | tee -a "$SUMMARY_FILE"
+    exit 1
+fi
 
 # Initialize summary file
 {
@@ -56,7 +102,7 @@ format_time() {
     fi
 }
 
-# Function to process benchmark results
+# Function to process benchmark results for a specific package
 process_benchmarks() {
     local pkg=$1
     local pkg_success=false
@@ -65,27 +111,34 @@ process_benchmarks() {
         local found_benchmarks=false
         
         for benchmark_dir in target/criterion/*/; do
-            if [ -f "$benchmark_dir/new/estimates.json" ]; then
+            if [ -d "$benchmark_dir" ] && [ -f "$benchmark_dir/new/estimates.json" ]; then
                 found_benchmarks=true
                 bench_name=$(basename "$benchmark_dir")
-                mean_ns=$(jq -r '.mean.point_estimate' "$benchmark_dir/new/estimates.json" 2>/dev/null || echo "0")
                 
-                if [ "$mean_ns" != "0" ] && [ "$mean_ns" != "null" ]; then
-                    # Add to JSON
-                    if [ "$FIRST_ENTRY" != true ]; then
-                        echo ',' >> "$JSON_FILE"
+                # Safely extract mean value with error handling
+                if mean_ns=$(jq -r '.mean.point_estimate // empty' "$benchmark_dir/new/estimates.json" 2>/dev/null) && [ -n "$mean_ns" ] && [ "$mean_ns" != "null" ]; then
+                    # Validate that the value is a valid number
+                    if [[ "$mean_ns" =~ ^[0-9]+\.?[0-9]*$ ]] && (( $(echo "$mean_ns > 0" | bc -l) )); then
+                        # Add to JSON
+                        if [ "$FIRST_ENTRY" != true ]; then
+                            echo ',' >> "$JSON_FILE"
+                        fi
+                        
+                        jq -n --arg name "${pkg}::${bench_name}" --argjson value "$mean_ns" \
+                            '{name: $name, unit: "ns", value: $value}' >> "$JSON_FILE"
+                        FIRST_ENTRY=false
+                        BENCHMARK_COUNT=$((BENCHMARK_COUNT + 1))
+                        
+                        # Add to summary with proper formatting
+                        formatted_time=$(format_time "$mean_ns")
+                        printf "  %-30s %s\n" "$bench_name" "$formatted_time" | tee -a "$SUMMARY_FILE"
+                        
+                        pkg_success=true
+                    else
+                        log_error "Invalid benchmark value for $bench_name: $mean_ns"
                     fi
-                    
-                    jq -n --arg name "${pkg}::${bench_name}" --argjson value "$mean_ns" \
-                        '{name: $name, unit: "ns", value: $value}' >> "$JSON_FILE"
-                    FIRST_ENTRY=false
-                    BENCHMARK_COUNT=$((BENCHMARK_COUNT + 1))
-                    
-                    # Add to summary with proper formatting
-                    formatted_time=$(format_time "$mean_ns")
-                    printf "  %-30s %s\n" "$bench_name" "$formatted_time" | tee -a "$SUMMARY_FILE"
-                    
-                    pkg_success=true
+                else
+                    log_error "Could not extract valid benchmark data for $bench_name"
                 fi
             fi
         done
@@ -111,16 +164,16 @@ for pkg in "${BENCHMARK_PACKAGES[@]}"; do
     if [ -d "$pkg/benches" ]; then
         log_info "Running benchmarks for $pkg..."
         
-        # Clear previous criterion results for this package
+        # Clear previous criterion results to avoid cross-contamination
         if [ -d "target/criterion" ]; then
-            find target/criterion -name "*.json" -delete 2>/dev/null || true
+            rm -rf target/criterion/* 2>/dev/null || true
         fi
         
         # Run cargo bench with timeout and capture output
         if timeout 600 cargo bench -p "$pkg" --benches > "${RESULTS_DIR}/${pkg}_stdout.log" 2> "${RESULTS_DIR}/${pkg}_stderr.log"; then
             log_success "Benchmark execution completed for $pkg"
             
-            # Process the results
+            # Process the results immediately for this package
             process_benchmarks "$pkg"
             
             if [ "$VERBOSE" = "true" ]; then

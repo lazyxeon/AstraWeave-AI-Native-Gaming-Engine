@@ -48,7 +48,8 @@ jobs:
             libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb1-dev \
             libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
             libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
-            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools \
+            bc jq coreutils
       
       - name: Install sccache
         uses: mozilla-actions/sccache-action@v0.0.6
@@ -56,21 +57,20 @@ jobs:
       - name: Set up advanced Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: benchmark-v6-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/Cargo.toml') }}
+          key: benchmark-v7-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
           cache-all-crates: true
           save-if: ${{ github.ref == 'refs/heads/main' }}
           cache-targets: true
+          shared-key: "bench"
           cache-directories: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
+            target/criterion/
       
       - name: Run benchmarks
         run: |
-          # Install required tools
-          sudo apt-get install -y bc jq coreutils
-          
           # Set environment variables for the script
           export BENCHMARK_RESULTS_DIR="benchmark_results"
           export VERBOSE="true"
@@ -91,11 +91,11 @@ jobs:
         if: always()
       
       - name: Store benchmark results for tracking
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.20.3
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
           name: AstraWeave Performance Benchmarks
-          tool: 'customBiggerIsBetter'
+          tool: 'customSmallerIsBetter'
           output-file-path: benchmark_results/benchmarks.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
@@ -105,19 +105,22 @@ jobs:
           alert-comment-cc-users: '@lazyxeon'
           benchmark-data-dir-path: 'dev/bench'
           max-items-in-chart: 100
+          gh-pages-branch: gh-pages
+          gh-repository: ${{ github.repository }}
           
       - name: Comment benchmark results on PR
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@v1.20.3
         if: github.event_name == 'pull_request' && hashFiles('benchmark_results/benchmarks.json') != ''
         with:
           name: AstraWeave Performance Benchmarks
-          tool: 'customBiggerIsBetter'
+          tool: 'customSmallerIsBetter'
           output-file-path: benchmark_results/benchmarks.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
           comment-on-alert: true
           summary-always: true
           alert-threshold: '150%'
+          gh-repository: ${{ github.repository }}
           
       - name: Validate benchmark results
         run: |
@@ -126,12 +129,16 @@ jobs:
           # Check if JSON file exists and is valid
           if [ ! -f "benchmark_results/benchmarks.json" ]; then
             echo "❌ No benchmark results file found"
+            echo "Contents of benchmark_results directory:"
+            ls -la benchmark_results/ || echo "Directory doesn't exist"
             exit 1
           fi
           
           # Validate JSON structure
-          if ! jq empty benchmark_results/benchmarks.json; then
+          if ! jq empty benchmark_results/benchmarks.json 2>/dev/null; then
             echo "❌ Invalid JSON in benchmark results"
+            echo "JSON content:"
+            cat benchmark_results/benchmarks.json
             exit 1
           fi
           
@@ -139,12 +146,31 @@ jobs:
           result_count=$(jq '. | length' benchmark_results/benchmarks.json)
           if [ "$result_count" -eq 0 ]; then
             echo "❌ No benchmark results collected"
+            echo "JSON content:"
+            cat benchmark_results/benchmarks.json
+            exit 1
+          fi
+          
+          # Validate result structure
+          if ! jq -e '.[0] | has("name") and has("value") and has("unit")' benchmark_results/benchmarks.json >/dev/null 2>&1; then
+            echo "❌ Benchmark results missing required fields (name, value, unit)"
+            jq '.[0]' benchmark_results/benchmarks.json
             exit 1
           fi
           
           echo "✅ Validation passed: $result_count benchmark results collected"
           
-          # Display sample results
+          # Display all results with statistics
           echo ""
-          echo "=== Sample Results ==="
-          jq -r '.[] | "\(.name): \(.value) \(.unit)"' benchmark_results/benchmarks.json | head -5
+          echo "=== Complete Results ==="
+          jq -r '.[] | "\(.name): \(.value) \(.unit)"' benchmark_results/benchmarks.json
+          
+          # Performance analysis
+          echo ""
+          echo "=== Performance Analysis ==="
+          min_time=$(jq '[.[].value] | min' benchmark_results/benchmarks.json)
+          max_time=$(jq '[.[].value] | max' benchmark_results/benchmarks.json)
+          avg_time=$(jq '[.[].value] | add / length' benchmark_results/benchmarks.json)
+          echo "Fastest operation: ${min_time} ns"
+          echo "Slowest operation: ${max_time} ns" 
+          echo "Average time: ${avg_time} ns"
