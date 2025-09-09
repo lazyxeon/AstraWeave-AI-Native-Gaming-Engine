@@ -25,7 +25,6 @@ confidence-threshold = 0.8
 
 # Allow 1 or more licenses on a dependency
 # Some packages may have multiple licenses  
-allow-osi-fsf-libre = "both"
 copyleft = "allow"
 
 [licenses.private]
