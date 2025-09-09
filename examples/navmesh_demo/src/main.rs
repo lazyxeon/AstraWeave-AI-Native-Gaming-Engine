@@ -1,20 +1,23 @@
 use astraweave_nav::{NavMesh, Triangle};
 use astraweave_render::{Camera, CameraController, Instance, Renderer};
 use glam::{vec3, Vec2};
+use std::sync::Arc;
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    keyboard::{KeyCode, PhysicalKey},
+    event_loop::EventLoop,
+    keyboard::PhysicalKey,
 };
 
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
-    let window = winit::window::WindowBuilder::new()
-        .with_title("NavMesh Demo")
-        .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?;
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+    let window = Arc::new(
+        winit::window::WindowBuilder::new()
+            .with_title("NavMesh Demo")
+            .with_inner_size(PhysicalSize::new(1280, 720))
+            .build(&event_loop)?,
+    );
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(0.0, 10.0, 16.0),
         yaw: -3.14 / 2.0,

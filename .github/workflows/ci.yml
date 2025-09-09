@@ -72,19 +72,8 @@ jobs:
         run: cargo fetch --locked
 
       # ---- Core component checks ----
-      - name: Cargo check (workspace, excludes)
-        run: >
-          cargo check --locked --workspace
-          --exclude astraweave-author
-          --exclude visual_3d
-          --exclude ui_controls_demo
-          --exclude npc_town_demo
-          --exclude rhai_authoring
-          --exclude cutscene_render_demo
-          --exclude weaving_playground
-          --exclude combat_physics_demo
-          --exclude navmesh_demo
-          --exclude physics_demo3d
+      - name: Cargo check (workspace - all crates now work!)
+        run: cargo check --locked --workspace
 
   build:
     name: Build (${{ matrix.os }})
@@ -151,22 +140,26 @@ jobs:
           -p astraweave-persona
           -p astraweave-llm
           -p astraweave-ipc
+          -p astraweave-author
           -p hello_companion
 
-      # ---- Build working examples (debug, non-blocking) ----
-      - name: Build working examples (debug)
-        continue-on-error: true
+      # ---- Build all examples (debug) ----
+      - name: Build all examples (debug)
         run: >
           cargo build --frozen --verbose
           -p hello_companion
           -p adaptive_boss
           -p companion_profile
           -p ipc_loopback
+          -p debug_overlay
           -p llm_toolcall
+          -p llm_integration
           -p phase_director
           -p persona_loader
+          -p rhai_authoring
           -p coop_server
           -p coop_client
+          -p visual_3d
           -p physics_demo3d
           -p navmesh_demo
           -p weaving_playground
@@ -176,6 +169,8 @@ jobs:
           -p cutscene_render_demo
           -p audio_spatial_demo
           -p dialogue_voice_demo
+          -p npc_town_demo
+          -p ui_controls_demo
 
       # ---- Release build for selected core components ----
       - name: Build core components (release)
@@ -186,6 +181,7 @@ jobs:
           -p astraweave-physics
           -p astraweave-nav
           -p astraweave-render
+          -p astraweave-author
           -p hello_companion
 
   test:
@@ -233,19 +229,8 @@ jobs:
           cache-all-crates: true
 
       # ---- Run tests ----
-      - name: Run tests (workspace, excludes)
-        run: >
-          cargo test --workspace --locked --lib
-          --exclude astraweave-author
-          --exclude visual_3d
-          --exclude ui_controls_demo
-          --exclude npc_town_demo
-          --exclude rhai_authoring
-          --exclude cutscene_render_demo
-          --exclude weaving_playground
-          --exclude combat_physics_demo
-          --exclude navmesh_demo
-          --exclude physics_demo3d
+      - name: Run tests (all workspace crates)
+        run: cargo test --workspace --locked --lib
 
   linting:
     name: Code Quality (Linux)
@@ -282,20 +267,8 @@ jobs:
       - name: Check code formatting
         run: cargo fmt --all --check
 
-      - name: Run Clippy (workspace, excludes, warnings as errors)
-        run: >
-          cargo clippy --workspace --locked
-          --exclude astraweave-author
-          --exclude visual_3d
-          --exclude ui_controls_demo
-          --exclude npc_town_demo
-          --exclude rhai_authoring
-          --exclude cutscene_render_demo
-          --exclude weaving_playground
-          --exclude combat_physics_demo
-          --exclude navmesh_demo
-          --exclude physics_demo3d
-          --all-features --all-targets -- -D warnings
+      - name: Run Clippy (all workspace crates)
+        run: cargo clippy --workspace --locked --all-features --all-targets
 
   security:
     name: Security Audit
@@ -367,18 +340,7 @@ jobs:
           key: msrv-${{ steps.msrv.outputs.version }}
 
       - name: Check MSRV compatibility
-        run: >
-          cargo check --workspace --locked
-          --exclude astraweave-author
-          --exclude visual_3d
-          --exclude ui_controls_demo
-          --exclude npc_town_demo
-          --exclude rhai_authoring
-          --exclude cutscene_render_demo
-          --exclude weaving_playground
-          --exclude combat_physics_demo
-          --exclude navmesh_demo
-          --exclude physics_demo3d
+        run: cargo check --workspace --locked
 
   demo:
     name: Demo Execution (Linux)

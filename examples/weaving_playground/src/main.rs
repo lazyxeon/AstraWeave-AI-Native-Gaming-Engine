@@ -5,6 +5,7 @@ use astraweave_nav::NavMesh;
 use astraweave_physics::PhysicsWorld;
 use astraweave_render::{Camera, CameraController, Instance, Renderer};
 use glam::{vec3, Vec2};
+use std::sync::Arc;
 use std::time::Instant;
 use winit::{
     dpi::PhysicalSize,
@@ -15,13 +16,15 @@ use winit::{
 
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
-    let window = winit::window::WindowBuilder::new()
-        .with_title("Weaving Playground")
-        .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?;
+    let window = Arc::new(
+        winit::window::WindowBuilder::new()
+            .with_title("Weaving Playground")
+            .with_inner_size(PhysicalSize::new(1280, 720))
+            .build(&event_loop)?,
+    );
 
     // 3D renderer
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(-4.0, 7.0, 12.0),
         yaw: -3.14 / 2.1,
@@ -170,7 +173,7 @@ fn main() -> anyhow::Result<()> {
                 let dt = (Instant::now() - last).as_secs_f32();
                 last += std::time::Duration::from_secs_f32(dt);
                 cam_ctl.update_camera(&mut camera, dt);
-                phys.step(dt);
+                phys.step();
 
                 // Rebuild instances (simple viz)
                 instances.clear();
@@ -213,5 +216,5 @@ fn main() -> anyhow::Result<()> {
             _ => {}
         }
     })?;
-    // Ok(())
+    Ok(())
 }

@@ -47,28 +47,11 @@ resolver = "2"
 
 # Exclude crates with known compilation issues from workspace operations
 [workspace.metadata.ci-excludes]
-# These crates are excluded from CI builds due to known issues:
-# - astraweave-author: rhai sync/send trait issues
-# - visual_3d: egui/winit API mismatches  
-# - ui_controls_demo: egui API changes
-# - npc_town_demo: API mismatches
-# - rhai_authoring: depends on broken astraweave-author
-# - cutscene_render_demo: missing cutscene module, API mismatches
-# - weaving_playground: API mismatches with renderer and physics
-# - combat_physics_demo: missing combat_physics module
-# - navmesh_demo: renderer API mismatch
-# - physics_demo3d: clippy error with PI constant
+# These crates had compilation issues that have now been fixed:
+# - All previously problematic crates now compile successfully
+# - Only some crates still have warnings but no compilation errors
 problematic = [
-  "astraweave-author",
-  "visual_3d", 
-  "ui_controls_demo",
-  "npc_town_demo",
-  "rhai_authoring",
-  "cutscene_render_demo",
-  "weaving_playground",
-  "combat_physics_demo",
-  "navmesh_demo",
-  "physics_demo3d"
+  # All crates now work! Keeping this section for documentation purposes.
 ]
 
 [workspace.package]

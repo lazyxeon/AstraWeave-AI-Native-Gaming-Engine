@@ -1,5 +1,6 @@
 pub mod biome;
 pub mod combat;
+pub mod combat_physics;
 pub mod crafting;
 pub mod cutscenes;
 pub mod dialogue;
@@ -12,6 +13,7 @@ pub mod weaving;
 
 pub use biome::*;
 pub use combat::*;
+pub use combat_physics::*;
 pub use crafting::*;
 pub use cutscenes::*;
 pub use dialogue::*;

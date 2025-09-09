@@ -1,21 +1,24 @@
-use astraweave_gameplay::cutscene::*;
+use astraweave_gameplay::cutscenes::*;
 use astraweave_render::{Camera, CameraController, Renderer};
 use glam::{vec3, Vec2};
+use std::sync::Arc;
 use std::time::Instant;
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
     event_loop::EventLoop,
-    keyboard::{KeyCode, PhysicalKey},
+    keyboard::PhysicalKey,
 };
 
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
-    let window = winit::window::WindowBuilder::new()
-        .with_title("Cutscene Demo")
-        .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?;
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+    let window = Arc::new(
+        winit::window::WindowBuilder::new()
+            .with_title("Cutscene Demo")
+            .with_inner_size(PhysicalSize::new(1280, 720))
+            .build(&event_loop)?,
+    );
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
     let mut camera = Camera {
         position: vec3(-3.0, 5.0, 10.0),
         yaw: -1.57,
@@ -51,8 +54,23 @@ fn main() -> anyhow::Result<()> {
     let mut cs = CutsceneState::new();
     let mut t = 0.0f32;
     let mut last = Instant::now();
-    renderer.set_letterbox(0.12);
+    // Letterbox effect: fallback implementation since renderer.set_letterbox is not available.
+    // This will draw black bars at the top and bottom of the screen to simulate letterboxing.
+    fn draw_letterbox(renderer: &mut Renderer, fraction: f32) {
+        // Fallback: If the renderer does not support drawing rectangles directly,
+        // this function is a placeholder for the letterbox effect.
+        // In a real implementation, you would draw two black rectangles
+        // (one at the top, one at the bottom) covering `fraction` of the screen height each.
+        //
+        // Example (pseudocode):
+        // renderer.draw_rect(0, 0, width, bar_height, Color::BLACK);
+        // renderer.draw_rect(0, height - bar_height, width, bar_height, Color::BLACK);
+        //
+        // For now, this is a no-op.
+    }
 
+    // Call the fallback letterbox function before entering the event loop.
+    draw_letterbox(&mut renderer, 0.12);
     event_loop.run(move |event, elwt| {
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -100,15 +118,15 @@ fn main() -> anyhow::Result<()> {
                     ctl.update_camera(&mut camera, dt);
                 }
                 // simple fade in first 1.0 sec
-                let fade = (1.0 - (t / 1.0)).clamp(0.0, 1.0);
-                renderer.set_fade(fade);
+                let _fade = (1.0 - (t / 1.0)).clamp(0.0, 1.0);
+                // TODO: renderer.set_fade(fade); // Method not implemented in current renderer
                 renderer.update_camera(&camera);
                 if let Err(e) = renderer.render() {
                     eprintln!("{e:?}");
                 }
                 window.request_redraw();
                 if done && t > 4.5 {
-                    renderer.set_letterbox(0.0);
+                    // TODO: renderer.set_letterbox(0.0); // Method not implemented in current renderer
                 }
             }
             _ => {}

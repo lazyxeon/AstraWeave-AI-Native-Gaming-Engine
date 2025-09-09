@@ -1,5 +1,4 @@
-use astraweave_gameplay::combat_physics::*;
-use astraweave_gameplay::{DamageType, Stats};
+use astraweave_gameplay::*;
 use astraweave_physics::PhysicsWorld;
 use glam::vec3;
 
