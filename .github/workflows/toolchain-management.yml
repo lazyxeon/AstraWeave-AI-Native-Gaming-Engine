@@ -59,11 +59,15 @@ jobs:
             toolchain: nightly
             experimental: true
         exclude:
-          # Skip some combinations to reduce CI time
+          # Skip beta/older versions on Windows/macOS to reduce CI time and cost
           - os: windows-latest
             toolchain: beta
+          - os: windows-latest  
+            toolchain: "1.88.0"
           - os: macos-latest
             toolchain: "1.88.0"
+          - os: macos-latest
+            toolchain: beta
 
     continue-on-error: ${{ matrix.experimental || false }}
 
@@ -90,6 +94,14 @@ jobs:
         if: matrix.os == 'macos-latest'
         run: brew install pkg-config cmake
 
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+
       - name: Validate toolchain configuration
         run: |
           echo "=== Rust Toolchain Information ==="
@@ -112,32 +124,11 @@ jobs:
       - name: Check workspace compatibility
         run: |
           # Test basic compilation with this toolchain
-          cargo check --workspace \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring \
-            --exclude cutscene_render_demo \
-            --exclude weaving_playground \
-            --exclude combat_physics_demo \
-            --exclude navmesh_demo \
-            --exclude physics_demo3d
+          cargo check-all
 
       - name: Run minimal test suite
         run: |
-          cargo test --workspace \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring \
-            --exclude cutscene_render_demo \
-            --exclude weaving_playground \
-            --exclude combat_physics_demo \
-            --exclude navmesh_demo \
-            --exclude physics_demo3d \
-            --lib
+          cargo test-all --lib
 
       - name: Check code formatting compatibility
         if: matrix.toolchain != 'nightly'  # Nightly may have different formatting rules
@@ -145,18 +136,7 @@ jobs:
 
       - name: Run clippy with toolchain
         run: |
-          cargo clippy --workspace \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring \
-            --exclude cutscene_render_demo \
-            --exclude weaving_playground \
-            --exclude combat_physics_demo \
-            --exclude navmesh_demo \
-            --exclude physics_demo3d \
-            --all-features --all-targets -- -D warnings
+          cargo clippy-all
 
       - name: Test nightly features (if nightly)
         if: matrix.toolchain == 'nightly'
@@ -177,8 +157,14 @@ jobs:
       - name: Install MSRV from Cargo.toml
         run: |
           # Extract MSRV if specified in Cargo.toml
-          MSRV=$(grep -r "rust-version" Cargo.toml | head -1 | cut -d'"' -f2 || echo "1.82.0")
+          if grep -q "rust-version" Cargo.toml; then
+            MSRV=$(grep "rust-version" Cargo.toml | cut -d'"' -f2)
+          else
+            # Use toolchain version as fallback
+            MSRV=$(grep "channel" rust-toolchain.toml | cut -d'"' -f2)
+          fi
           echo "MSRV=$MSRV" >> $GITHUB_ENV
+          echo "Detected MSRV: $MSRV"
 
       - name: Set up MSRV toolchain
         uses: dtolnay/rust-toolchain@master
@@ -200,17 +186,7 @@ jobs:
 
       - name: Check MSRV compatibility
         run: |
-          cargo check --workspace \
-            --exclude astraweave-author \
-            --exclude visual_3d \
-            --exclude ui_controls_demo \
-            --exclude npc_town_demo \
-            --exclude rhai_authoring \
-            --exclude cutscene_render_demo \
-            --exclude weaving_playground \
-            --exclude combat_physics_demo \
-            --exclude navmesh_demo \
-            --exclude physics_demo3d
+          cargo check-all
 
   performance-benchmarking:
     name: Toolchain Performance Comparison
@@ -237,6 +213,14 @@ jobs:
             build-essential pkg-config cmake ninja-build \
             libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
             libasound2-dev libudev-dev time
+
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.6
+
+      - name: Configure sccache
+        run: |
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 
       - name: Set up performance cache
         uses: Swatinem/rust-cache@v2

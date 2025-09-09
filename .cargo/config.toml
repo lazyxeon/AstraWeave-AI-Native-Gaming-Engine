@@ -1,6 +1,6 @@
 [build]
 # jobs = 4                      # Uncomment to limit parallelism locally
-# rustc-wrapper = "sccache"     # Enable when sccache is installed (see docs)
+# rustc-wrapper = "sccache"     # Enabled via init_sccache function when available
 
 [term]
 color = "always"

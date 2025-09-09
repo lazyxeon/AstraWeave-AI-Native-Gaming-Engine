@@ -117,12 +117,12 @@ main() {
     # 6. Build validation
     log "Testing core build functionality..."
     validate_step "Core crates check" "cargo check -p astraweave-core -p astraweave-ai -p astraweave-physics"
-    validate_step "Workspace check (excluding problematic)" "cargo check --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
+    validate_step "Workspace check (excluding problematic)" "cargo check-all"
     
     # 7. Code quality
     log "Testing code quality tools..."
     validate_step "Format check" "cargo fmt --all -- --check"
-    validate_step "Clippy check" "cargo clippy --workspace --exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --all-features --all-targets -- -D warnings"
+    validate_step "Clippy check" "cargo clippy-all"
     
     # 8. Script validation
     log "Validating build scripts..."

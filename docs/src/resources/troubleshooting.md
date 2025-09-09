@@ -164,17 +164,20 @@ cargo test -p astraweave-input      # ✅ Tests pass
 **Known Broken Examples:**
 ```bash
 # ❌ These have compilation issues:
-# cargo build -p visual_3d          # egui/winit API issues
-# cargo build -p debug_overlay      # egui API changes
-# cargo build -p rhai_authoring     # rhai sync issues
-# cargo build -p npc_town_demo      # Multiple API mismatches
+# cargo build -p debug_toolkit_demo  # egui/winit/renderer API mismatches
+# cargo build -p aw_editor           # eframe/glutin sync/send trait issues  
+# cargo build -p aw_debug            # eframe API mismatches
+# cargo build -p visual_3d           # clippy deny-level errors
+# cargo build -p navmesh_demo        # clippy deny-level errors (approx_constant)
+# cargo build -p physics_demo3d      # clippy deny-level errors (approx_constant)
 ```
 
 **Workaround:**
-Focus on the working core components for learning:
+Focus on the working core components and use the provided aliases:
 ```bash
-cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics \
-            -p astraweave-nav -p astraweave-render -p hello_companion
+cargo build-core                    # Build core components only
+cargo check-all                     # Check workspace (excluding problematic crates)
+cargo clippy-all                    # Run clippy on working crates
 ```
 
 ## Runtime Issues
