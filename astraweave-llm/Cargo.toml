@@ -11,6 +11,9 @@ reqwest = { workspace = true, optional = true }
 astraweave-core = { path = "../astraweave-core" }
 async-trait = "0.1"
 
+[dev-dependencies]
+tokio = { workspace = true }
+
 [features]
 default = []
 ollama = ["dep:reqwest"]

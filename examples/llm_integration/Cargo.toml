@@ -1,0 +1,11 @@
+[package]
+name = "llm_integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-llm = { path = "../../astraweave-llm", features = ["ollama"] }

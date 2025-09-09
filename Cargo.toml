@@ -16,6 +16,7 @@ members = [
   "examples/ipc_loopback",
   "examples/debug_overlay",
   "examples/llm_toolcall",    
+  "examples/llm_integration",    
   "examples/phase_director",  
   "examples/persona_loader",  
   "examples/rhai_authoring",  
