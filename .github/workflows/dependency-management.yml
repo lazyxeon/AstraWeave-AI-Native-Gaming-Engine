@@ -62,6 +62,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          workspaces: "."
           key: audit-cache-v3
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -153,6 +154,12 @@ jobs:
         run: echo "Windows dependencies managed via vcpkg"
 
       - name: Install sccache
+        run: |
+          # Install sccache using cargo for simplicity and reliability
+          cargo install sccache --locked || echo "sccache already installed"
+          
+          # Add cargo bin to PATH for all environments
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
         uses: mozilla-actions/sccache-action@v0.0.6
 
       - name: Cache cleanup (if requested)
@@ -165,6 +172,7 @@ jobs:
       - name: Setup optimized cache
         uses: Swatinem/rust-cache@v2
         with:
+          workspaces: "."
           key: cache-mgmt-${{ matrix.os }}-v4
           cache-all-crates: true
           save-if: ${{ github.event.inputs.cache_action != 'clean' }}
@@ -217,6 +225,7 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
         with:
+          workspaces: "."
           key: analysis-cache-v3
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
@@ -261,6 +270,112 @@ jobs:
       - name: Upload analysis report
         uses: actions/upload-artifact@v4
         with:
+          name: workspace-analysis-report
+          path: |
+            analysis.md
+            outdated.json
+          retention-days: 30
+
+  performance-profiling:
+    name: Build Performance Profiling
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event.inputs.cache_action == 'rebuild' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools time
+
+      - name: Install profiling tools
+        run: |
+          cargo install --locked cargo-llvm-lines || echo "cargo-llvm-lines already installed"
+          cargo install --locked cargo-bloat      || echo "cargo-bloat already installed"
+
+      - name: Setup cache for profiling
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+          key: profiling-cache-v3
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Profile build performance
+        run: |
+          echo "## Build Performance Profile" > performance.md
+          echo "Generated on: $(date)" >> performance.md
+          echo "" >> performance.md
+          echo "### Clean Build Timing (Core Components)" >> performance.md
+          echo '```' >> performance.md
+          cargo clean
+          /usr/bin/time -v cargo build \
+            -p astraweave-core \
+            -p astraweave-ai \
+            -p astraweave-physics \
+            -p hello_companion 2>&1 | tee build-timing.txt
+          cat build-timing.txt >> performance.md
+          echo '```' >> performance.md
+          echo "" >> performance.md
+          echo "### Release Build Timing (Core Components)" >> performance.md
+          echo '```' >> performance.md
+          cargo clean
+          /usr/bin/time -v cargo build --release \
+            -p astraweave-core \
+            -p astraweave-ai \
+            -p astraweave-physics \
+            -p hello_companion 2>&1 | tee release-timing.txt
+          cat release-timing.txt >> performance.md
+          echo '```' >> performance.md
+
+      - name: LLVM lines analysis
+        run: |
+          echo "" >> performance.md
+          echo "### LLVM Lines Analysis (Top Compile Time Consumers)" >> performance.md
+          echo '```' >> performance.md
+          cargo llvm-lines -p astraweave-core --release | head -30 >> performance.md 2>&1 || echo "LLVM lines analysis completed"
+          echo '```' >> performance.md
+
+      - name: Binary size analysis
+        run: |
+          echo "" >> performance.md
+          echo "### Binary Size Analysis" >> performance.md
+          echo '```' >> performance.md
+          cargo bloat --release -p hello_companion --crates | head -20 >> performance.md 2>&1 || echo "Binary size analysis completed"
+          echo '```' >> performance.md
+
+      - name: Compilation database analysis
+        run: |
+          echo "" >> performance.md
+          echo "### Compilation Units Analysis" >> performance.md
+          echo '```' >> performance.md
+          find target/release/deps -name "*.rlib" | wc -l >> performance.md
+          echo "Total .rlib files (compilation units): $(find target/release/deps -name '*.rlib' | wc -l)" >> performance.md
+          echo "Total target directory size: $(du -sh target | cut -f1)" >> performance.md
+          echo '```' >> performance.md
+
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-profile-report
+          path: |
+            performance.md
+            build-timing.txt
+            release-timing.txt
+            
           name: workspace-analysis-report-${{ github.run_number }}
           path: analysis.md
           retention-days: 30

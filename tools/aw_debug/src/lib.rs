@@ -173,6 +173,7 @@ pub fn watch_reload_signal(
     content_dir: PathBuf,
     on_reload: impl Fn() + Send + 'static,
 ) -> Result<RecommendedWatcher> {
+    let _signal_path = content_dir.join("reload.signal");
     let mut watcher = notify::recommended_watcher(move |res| {
         if let Ok(event) = res {
             if let notify::Event {

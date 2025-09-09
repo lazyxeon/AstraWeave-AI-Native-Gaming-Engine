@@ -39,6 +39,8 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: 1
+  # Consistent exclusion list for problematic crates
+  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --exclude debug_toolkit_demo --exclude aw_debug --exclude aw_editor --exclude aw_asset_cli"
 
 jobs:
   toolchain-validation:
@@ -118,7 +120,8 @@ jobs:
       - name: Set up toolchain-specific cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: toolchain-${{ matrix.os }}-${{ matrix.toolchain }}
+          workspaces: "."
+          key: toolchain-${{ matrix.os }}-${{ matrix.toolchain }}-v3
           cache-all-crates: true
 
       - name: Check workspace compatibility
@@ -182,7 +185,8 @@ jobs:
       - name: Set up MSRV cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: msrv-${{ env.MSRV }}
+          workspaces: "."
+          key: msrv-${{ env.MSRV }}-v3
 
       - name: Check MSRV compatibility
         run: |
@@ -225,7 +229,8 @@ jobs:
       - name: Set up performance cache
         uses: Swatinem/rust-cache@v2
         with:
-          key: perf-${{ matrix.toolchain }}
+          workspaces: "."
+          key: perf-${{ matrix.toolchain }}-v3
 
       - name: Benchmark compilation time
         run: |

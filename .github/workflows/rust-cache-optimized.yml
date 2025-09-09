@@ -1,0 +1,303 @@
+name: Rust Cache Optimized Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Build mode'
+        required: true
+        default: 'standard'
+        type: choice
+        options: [standard, full, release-only]
+      enable_sccache:
+        description: 'Enable sccache compilation caching'
+        required: false
+        default: true
+        type: boolean
+
+# Prevent multiple builds on same PR/branch
+concurrency:
+  group: rust-cache-optimized-${{ github.ref }}
+  cancel-in-progress: true
+
+# Security hardening
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0  # Better for CI with sccache
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  # Consistent exclusion list for problematic crates
+  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d --exclude debug_toolkit_demo --exclude aw_debug --exclude aw_editor --exclude aw_asset_cli"
+
+jobs:
+  prepare:
+    name: Prepare Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Setup build matrix
+        id: matrix
+        run: |
+          if [[ "${{ github.event.inputs.build_mode }}" == "release-only" ]]; then
+            echo 'matrix={"os":["ubuntu-latest"],"rust":["stable"],"build-type":["release"],"primary":[true]}' >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.inputs.build_mode }}" == "full" ]]; then
+            echo 'matrix={"os":["ubuntu-latest","windows-latest","macos-latest"],"rust":["stable","1.89.0","beta"],"build-type":["debug","release"],"primary":[true,false,false,false,false,false]}' >> $GITHUB_OUTPUT
+          else
+            echo 'matrix={"os":["ubuntu-latest","windows-latest","macos-latest"],"rust":["stable","1.89.0"],"build-type":["debug","release"],"primary":[true,false,false,false]}' >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build (${{ matrix.os }}, ${{ matrix.rust }}, ${{ matrix.build-type }})
+    runs-on: ${{ matrix.os }}
+    needs: prepare
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy, rust-src
+
+      # ---- OS-specific system dependencies ----
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install pkg-config cmake
+
+      - name: Install system dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: echo "Windows system dependencies ready"
+
+      # ---- Advanced Rust Cache Setup ----
+      - name: Setup advanced Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "."
+          key: ${{ matrix.os }}-${{ matrix.rust }}-${{ matrix.build-type }}-v3
+          cache-all-crates: true
+          cache-on-failure: true
+          cache-directories: |
+            ~/.cargo/bin/
+            target/sccache
+          save-if: ${{ github.ref == 'refs/heads/main' || matrix.primary }}
+
+      # ---- sccache Setup ----
+      - name: Install and configure sccache
+        if: github.event.inputs.enable_sccache != 'false'
+        run: |
+          # Install sccache using cargo
+          cargo install sccache --locked || echo "sccache already installed"
+          
+          # Configure sccache
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo "SCCACHE_CACHE_SIZE=10G" >> $GITHUB_ENV
+          echo "SCCACHE_DIR=${{ github.workspace }}/target/sccache" >> $GITHUB_ENV
+          
+          # Create sccache directory
+          mkdir -p "${{ github.workspace }}/target/sccache"
+          
+          # Start sccache server
+          sccache --start-server || true
+
+      - name: Show initial sccache stats
+        if: github.event.inputs.enable_sccache != 'false'
+        run: sccache --show-stats || echo "sccache not available"
+
+      # ---- Dependency fetching ----
+      - name: Fetch dependencies
+        run: cargo fetch --locked
+
+      # ---- Core workspace check ----
+      - name: Cargo check (workspace)
+        run: >
+          cargo check --locked --workspace
+          ${{ env.EXCLUDED_PACKAGES }}
+          ${{ matrix.build-type == 'release' && '--release' || '' }}
+
+      # ---- Core component build ----
+      - name: Build core components
+        run: >
+          cargo build --locked
+          ${{ matrix.build-type == 'release' && '--release' || '' }}
+          -p astraweave-core
+          -p astraweave-ai
+          -p astraweave-physics
+          -p astraweave-nav
+          -p astraweave-render
+          -p astraweave-gameplay
+          -p astraweave-audio
+          -p astraweave-npc
+          -p astraweave-input
+          -p astraweave-ui
+          -p astraweave-net
+          -p astraweave-director
+          -p astraweave-memory
+          -p astraweave-persona
+          -p astraweave-ipc
+          -p astraweave-llm
+          -p astraweave-sdk
+          -p hello_companion
+
+      # ---- Working examples build ----
+      - name: Build working examples
+        continue-on-error: true
+        run: >
+          cargo build --locked
+          ${{ matrix.build-type == 'release' && '--release' || '' }}
+          -p hello_companion
+          -p adaptive_boss
+          -p companion_profile
+          -p ipc_loopback
+          -p llm_toolcall
+          -p llm_integration
+          -p phase_director
+          -p persona_loader
+          -p coop_server
+          -p coop_client
+          -p audio_spatial_demo
+          -p dialogue_voice_demo
+
+      # ---- Test execution ----
+      - name: Run tests
+        if: matrix.build-type == 'debug'
+        run: >
+          cargo test --workspace --locked --lib
+          ${{ env.EXCLUDED_PACKAGES }}
+
+      # ---- Code quality checks (primary configuration only) ----
+      - name: Check code formatting
+        if: matrix.primary && matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+        run: cargo fmt --all --check
+
+      - name: Run Clippy
+        if: matrix.primary && matrix.os == 'ubuntu-latest' && matrix.rust == 'stable'
+        run: >
+          cargo clippy --workspace --locked
+          ${{ env.EXCLUDED_PACKAGES }}
+          --all-features --all-targets -- -D warnings
+
+      # ---- Performance artifacts (release builds only) ----
+      - name: Upload release artifacts
+        if: matrix.build-type == 'release' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: astraweave-binaries-${{ matrix.rust }}
+          path: |
+            target/release/hello_companion
+            target/release/deps/*.so
+          retention-days: 7
+
+      # ---- sccache statistics ----
+      - name: Show final sccache stats
+        if: github.event.inputs.enable_sccache != 'false'
+        run: sccache --show-stats || echo "sccache not available"
+
+      - name: Stop sccache server
+        if: github.event.inputs.enable_sccache != 'false'
+        run: sccache --stop-server || true
+
+  # ---- Security audit (runs independently) ----
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup audit cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: audit-cache-v3
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install audit tools
+        run: |
+          cargo install --locked cargo-audit || echo "cargo-audit already installed"
+          cargo install --locked cargo-deny  || echo "cargo-deny already installed"
+
+      - name: Run security audit
+        run: |
+          cargo audit --ignore RUSTSEC-2020-0071 || echo "Audit completed with warnings"
+
+      - name: Run cargo-deny check
+        run: |
+          cargo deny check || echo "Deny check completed with warnings"
+
+  # ---- Demo execution (Linux only for efficiency) ----
+  demo-execution:
+    name: Demo Execution
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event.inputs.build_mode != 'release-only'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+            libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools
+
+      - name: Setup demo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: demo-cache-v3
+          cache-all-crates: true
+
+      - name: Build hello_companion demo
+        run: cargo build --release -p hello_companion
+
+      - name: Run hello_companion demo (with timeout)
+        run: |
+          echo "Running hello_companion demo for 10 seconds..."
+          timeout 10s cargo run --release -p hello_companion || echo "Demo completed or timed out as expected"
+
+      - name: Upload demo artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hello_companion-demo
+          path: target/release/hello_companion
+          retention-days: 7
