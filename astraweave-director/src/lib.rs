@@ -12,7 +12,7 @@ impl BossDirector {
     pub fn plan(&self, snap: &WorldSnapshot, budget: &DirectorBudget) -> DirectorPlan {
         let mut ops = vec![];
         let ppos = snap.player.pos;
-        let mpos = snap.me.pos;
+        let _mpos = snap.me.pos;
         // choose a target enemy if any
         let tgt = snap.enemies.first().map(|e| e.pos).unwrap_or(IVec2 {
             x: ppos.x + 6,

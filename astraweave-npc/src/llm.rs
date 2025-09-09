@@ -77,20 +77,18 @@ impl LlmAdapter for MockLlm {
                             text: "Move along. Keep the peace.".into(),
                         });
                     }
-                } else {
-                    if rng.random::<f32>() < 0.5 {
-                        // tiny patrol step
-                        let step = view.self_pos
-                            + Vec3::new(
-                                rng.random_range(-1.0..1.0),
-                                0.0,
-                                rng.random_range(-1.0..1.0),
-                            );
-                        actions.push(NpcAction::MoveTo {
-                            pos: step,
-                            speed: 1.2,
-                        });
-                    }
+                } else if rng.random::<f32>() < 0.5 {
+                    // tiny patrol step
+                    let step = view.self_pos
+                        + Vec3::new(
+                            rng.random_range(-1.0..1.0),
+                            0.0,
+                            rng.random_range(-1.0..1.0),
+                        );
+                    actions.push(NpcAction::MoveTo {
+                        pos: step,
+                        speed: 1.2,
+                    });
                 }
             }
             Role::Civilian => {

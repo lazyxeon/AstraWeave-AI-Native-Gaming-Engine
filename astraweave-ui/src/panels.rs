@@ -7,16 +7,12 @@ use astraweave_gameplay::{Inventory, RecipeBook};
 
 use crate::{Accessibility, UiFlags};
 
+#[derive(Default)]
 pub struct UiResult {
     pub crafted: Option<String>, // name
 }
 
-impl Default for UiResult {
-    fn default() -> Self {
-        Self { crafted: None }
-    }
-}
-
+#[allow(clippy::too_many_arguments)]
 pub fn draw_ui(
     ctx: &egui::Context,
     flags: &mut UiFlags,

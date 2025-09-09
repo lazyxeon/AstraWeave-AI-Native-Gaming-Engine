@@ -121,20 +121,17 @@ impl NpcManager {
                 npc.pending.remove(0);
             } else {
                 // idle micro-behavior: guards patrol slowly; merchants idle
-                match npc.profile.role {
-                    crate::profile::Role::Guard => {
-                        if let Some(view) = views.get(&npc.id) {
-                            if let Some(pd) = view.player_dist {
-                                if pd < 2.0 {
-                                    // step aside a bit
-                                    let dir = (view.self_pos - view.player_pos.unwrap())
-                                        .normalize_or_zero();
-                                    glue.move_character(npc.body, dir, 0.6);
-                                }
+                if npc.profile.role == crate::profile::Role::Guard {
+                    if let Some(view) = views.get(&npc.id) {
+                        if let Some(pd) = view.player_dist {
+                            if pd < 2.0 {
+                                // step aside a bit
+                                let dir =
+                                    (view.self_pos - view.player_pos.unwrap()).normalize_or_zero();
+                                glue.move_character(npc.body, dir, 0.6);
                             }
                         }
                     }
-                    _ => {}
                 }
             }
         }

@@ -1,7 +1,4 @@
-use astraweave_core::{
-    ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, Team, World,
-    WorldSnapshot,
-};
+use astraweave_core::{ActionStep, IVec2, PlanIntent, Team, World};
 use eframe::egui;
 
 struct App {
@@ -104,7 +101,7 @@ impl eframe::App for App {
             let e = self.world.pos_of(self.enemy).unwrap();
             let draw_dot = |p: IVec2, col: egui::Color32| -> egui::Shape {
                 let center = to_screen(p);
-                egui::Shape::circle_filled(center, (cell_w.min(cell_h) * 0.35) as f32, col)
+                egui::Shape::circle_filled(center, cell_w.min(cell_h) * 0.35, col)
             };
             shapes.push(draw_dot(p, egui::Color32::from_rgb(80, 160, 255)));
             shapes.push(draw_dot(c, egui::Color32::from_rgb(80, 240, 120)));

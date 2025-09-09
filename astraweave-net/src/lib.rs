@@ -23,6 +23,12 @@ pub struct GameServer {
     pub tx: broadcast::Sender<String>,
 }
 
+impl Default for GameServer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GameServer {
     pub fn new() -> Self {
         let mut w = World::new();
@@ -71,14 +77,9 @@ impl GameServer {
         // spawn a task to push snapshots
         let _me = self.clone();
         tokio::spawn(async move {
-            loop {
-                match rx_bcast.recv().await {
-                    Ok(txt) => {
-                        // ignore TX errors (client might disconnect)
-                        let _ = tx.send(Message::Text(txt)).await;
-                    }
-                    Err(_) => break,
-                }
+            while let Ok(txt) = rx_bcast.recv().await {
+                // ignore TX errors (client might disconnect)
+                let _ = tx.send(Message::Text(txt)).await;
             }
         });
 

@@ -44,7 +44,7 @@ fn main() -> anyhow::Result<()> {
     );
 
     let mut last = Instant::now();
-    let mut emitter_id: u64 = 1;
+    let _emitter_id: u64 = 1;
 
     event_loop
         .run(move |event, elwt| {

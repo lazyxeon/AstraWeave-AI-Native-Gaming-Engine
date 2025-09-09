@@ -35,21 +35,11 @@ pub enum AxisKind {
     RT,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Binding {
     pub key: Option<KeyCode>,
     pub mouse: Option<MouseButton>,
     pub gamepad: Option<GamepadButton>,
-}
-
-impl Default for Binding {
-    fn default() -> Self {
-        Self {
-            key: None,
-            mouse: None,
-            gamepad: None,
-        }
-    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -24,8 +24,8 @@ env:
   # Optimize sccache usage
   SCCACHE_CACHE_SIZE: "10G"
   SCCACHE_IDLE_TIMEOUT: 0
-  # Problematic packages to exclude from builds
-  EXCLUDED_PACKAGES: "--exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude navmesh_demo --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo"
+  # Problematic packages to exclude from builds (aligned with Cargo.toml metadata)
+  EXCLUDED_PACKAGES: "--exclude astraweave-author --exclude visual_3d --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring --exclude cutscene_render_demo --exclude weaving_playground --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d"
 
 jobs:
   cache-strategy:
@@ -73,7 +73,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           components: rustfmt, clippy, rust-src
-          targets: ${{ matrix.os == 'ubuntu-latest' && 'x86_64-unknown-linux-gnu' || matrix.os == 'windows-latest' && 'x86_64-pc-windows-msvc' || 'x86_64-apple-darwin' }}
+          # Keep default targets for each platform
 
       # ---- Platform-specific dependencies ----
       - name: Install system dependencies (Ubuntu)
@@ -206,6 +206,7 @@ jobs:
         run: |
           cargo bench --frozen \
             -p astraweave-core \
+            -p astraweave-input \
             -p astraweave-physics \
             -p astraweave-nav \
             --all-features || true  # Continue on benchmark failure
@@ -225,8 +226,8 @@ jobs:
           name: veilweaver-${{ matrix.os }}-${{ matrix.rust }}
           path: |
             target/release/hello_companion*
-            target/release/physics_demo3d*
-            target/release/navmesh_demo*
+            target/release/adaptive_boss*
+            target/release/companion_profile*
           retention-days: 7
 
   # ---- Cache warming job ----

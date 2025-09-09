@@ -25,7 +25,7 @@ fn main() -> anyhow::Result<()> {
 
     // Quest
     let q_txt = fs::read_to_string("assets/quests_main.toml")?;
-    let mut q: quests::Quest = toml::from_str(&q_txt)?;
+    let q: quests::Quest = toml::from_str(&q_txt)?;
     let mut log = quests::QuestLog::default();
     log.add(q.clone());
     println!("Quest added: {}", q.title);

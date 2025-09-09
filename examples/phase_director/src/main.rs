@@ -30,7 +30,7 @@ fn main() -> anyhow::Result<()> {
         pois: vec![],
         objective: Some("defeat_boss".into()),
     };
-    let mut budget = DirectorBudget {
+    let budget = DirectorBudget {
         traps: 2,
         terrain_edits: 3,
         spawns: 2,
