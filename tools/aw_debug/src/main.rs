@@ -38,18 +38,18 @@ impl DebugApp {
     }
 
     fn simulate_frame(&mut self) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         
         // Simulate some changing system times
         for (_, time) in &mut self.system_times {
-            *time += (rng.gen::<f32>() - 0.5) * 0.2;
+            *time += (rng.random::<f32>() - 0.5) * 0.2;
             *time = time.max(0.1);
         }
 
         self.hud.systems_snapshot = self.system_times.clone();
 
         // Occasionally log events
-        if rng.gen::<f32>() < 0.05 {
+        if rng.random::<f32>() < 0.05 {
             let events = [
                 ("ai", "Path recalculated"),
                 ("physics", "Collision detected"),
@@ -63,9 +63,9 @@ impl DebugApp {
         }
 
         // Update entity count occasionally
-        if rng.gen::<f32>() < 0.02 {
+        if rng.random::<f32>() < 0.02 {
             self.entity_count =
-                (self.entity_count as f32 * (1.0 + (rng.gen::<f32>() - 0.5) * 0.1)) as u32;
+                (self.entity_count as f32 * (1.0 + (rng.random::<f32>() - 0.5) * 0.1)) as u32;
             self.hud.entity_count = self.entity_count;
         }
     }

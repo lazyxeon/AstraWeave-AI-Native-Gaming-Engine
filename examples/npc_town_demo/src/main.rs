@@ -105,7 +105,7 @@ fn main() -> anyhow::Result<()> {
                             }
                             KeyCode::KeyE => {
                                 // talk to nearest (merchant or guard). For demo, alternate:
-                                let mut glue = EngineCommandSink {
+                                let glue = EngineCommandSink {
                                     phys: &mut phys,
                                     audio: &mut audio,
                                 };

@@ -114,7 +114,7 @@ fn main() -> anyhow::Result<()> {
     event_loop.run(move |event, elwt| {
         match event {
             Event::WindowEvent { event, .. } => {
-                let consumed_by_ui = ui.on_event(&window, &event);
+                let _consumed_by_ui = ui.on_event(&window, &event);
                 input.process_window_event(&event);
 
                 match event {
@@ -215,7 +215,7 @@ fn main() -> anyhow::Result<()> {
                 renderer.update_instances(&instances);
 
                 // Render 3D + UI
-                let size = renderer.surface_size();
+                let _size = renderer.surface_size();
                 let _ = renderer.render_with(|view, enc, dev, queue, size| {
                     ui.end_and_paint(&window, view, enc, dev, queue, size);
                 });

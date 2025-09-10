@@ -100,7 +100,7 @@ impl App {
                 ("physics", "Collision resolved"),
                 ("world", "Entity position updated"),
             ];
-            let (category, msg) = events[rand::random::<usize>() % events.len()];
+            let (category, msg) = events[rand::random::<u32>() as usize % events.len()];
             self.hud.log_event(category, msg);
         }
 
@@ -131,28 +131,32 @@ fn main() -> anyhow::Result<()> {
 
     // Create window and event loop
     let event_loop = EventLoop::new().unwrap();
-    let window = WindowBuilder::new()
+    let window = std::sync::Arc::new(WindowBuilder::new()
         .with_title("AstraWeave Debug Toolkit Demo")
         .with_inner_size(winit::dpi::LogicalSize::new(1280.0, 720.0))
-        .build(&event_loop)?;
+        .build(&event_loop)?);
 
     // Initialize renderer
-    let mut renderer = pollster::block_on(Renderer::new(&window))?;
+    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
 
     // Set up camera
-    let mut camera = Camera::new(
-        glam::Vec3::new(0.0, 5.0, 10.0),
-        glam::Vec3::new(0.0, 0.0, 0.0),
-        window.inner_size().width as f32 / window.inner_size().height as f32,
-    );
-    let mut camera_controller = CameraController::new(0.2);
+    let mut camera = Camera {
+        position: glam::Vec3::new(0.0, 5.0, 10.0),
+        yaw: -std::f32::consts::PI / 2.0,
+        pitch: -0.6,
+        fovy: 60f32.to_radians(),
+        aspect: window.inner_size().width as f32 / window.inner_size().height as f32,
+        znear: 0.1,
+        zfar: 200.0,
+    };
+    let mut camera_controller = CameraController::new(0.2, 0.005);
 
     // Set up egui integration
+    let egui_ctx = egui::Context::default();
     let mut egui_platform =
-        egui_winit::State::new(egui::ViewportId::default(), &window, None, None);
+        egui_winit::State::new(egui_ctx.clone(), egui::ViewportId::default(), &window, None, None);
     let mut egui_renderer =
-        egui_wgpu::Renderer::new(&renderer.device, renderer.config.format, None, 1);
-    let mut egui_ctx = egui::Context::default();
+        egui_wgpu::Renderer::new(renderer.device(), renderer.surface_format(), None, 1);
 
     // Create our app
     let mut app = App::new();
@@ -160,9 +164,6 @@ fn main() -> anyhow::Result<()> {
     // Run the event loop
     event_loop.run(move |event, elwt| {
         elwt.set_control_flow(ControlFlow::Poll);
-
-        // Handle egui events
-        let _ = egui_platform.on_event(&egui_ctx, &event);
 
         match event {
             Event::WindowEvent {
@@ -180,12 +181,6 @@ fn main() -> anyhow::Result<()> {
                     camera.aspect = size.width as f32 / size.height as f32;
                 }
             }
-            Event::WindowEvent { event, .. } => {
-                camera_controller.process_events(&event);
-            }
-            Event::AboutToWait => {
-                window.request_redraw();
-            }
             Event::WindowEvent {
                 event: WindowEvent::RedrawRequested,
                 ..
@@ -194,100 +189,122 @@ fn main() -> anyhow::Result<()> {
                 app.update();
 
                 // Update camera
-                camera_controller.update_camera(&mut camera);
+                let dt = app.last_update.elapsed().as_secs_f32();
+                camera_controller.update_camera(&mut camera, dt);
 
-                // Begin rendering
-                let output = renderer.surface.get_current_texture().unwrap();
-                let view = output
-                    .texture
-                    .create_view(&wgpu::TextureViewDescriptor::default());
-
-                let mut encoder =
-                    renderer
-                        .device
-                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("Render Encoder"),
+                // Render using the renderer's render_with method
+                renderer.render_with(|view, encoder, device, queue, (width, height)| {
+                    // Clear the screen
+                    {
+                        let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Main Render Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                                        r: 0.1,
+                                        g: 0.2,
+                                        b: 0.3,
+                                        a: 1.0,
+                                    }),
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: None,
+                            timestamp_writes: None,
+                            occlusion_query_set: None,
                         });
 
-                // Clear the screen
-                {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Main Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Clear(wgpu::Color {
-                                    r: 0.1,
-                                    g: 0.2,
-                                    b: 0.3,
-                                    a: 1.0,
-                                }),
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
+                        // Here you would render your 3D scene
+                    }
 
-                    // Here you would render your 3D scene
-                }
+                    // Render egui
+                    let screen_descriptor = egui_wgpu::ScreenDescriptor {
+                        size_in_pixels: [width, height],
+                        pixels_per_point: window.scale_factor() as f32,
+                    };
 
-                // Render egui
-                let screen_descriptor = egui_wgpu::ScreenDescriptor {
-                    size_in_pixels: [window.inner_size().width, window.inner_size().height],
-                    pixels_per_point: window.scale_factor() as f32,
-                };
+                    let egui_input = egui_platform.take_egui_input(&*window);
+                    egui_ctx.begin_frame(egui_input);
 
-                egui_ctx.begin_frame(egui_platform.take_egui_input(&window));
+                    // Create our debug window
+                    egui::Window::new("Debug HUD")
+                        .default_pos([10.0, 10.0])
+                        .default_width(350.0)
+                        .show(&egui_ctx, |ui| {
+                            app.hud.ui(ui);
+                        });
 
-                // Create our debug window
-                egui::Window::new("Debug HUD")
-                    .default_pos([10.0, 10.0])
-                    .default_width(350.0)
-                    .show(&egui_ctx, |ui| {
-                        app.hud.ui(ui);
-                    });
+                    let egui_output = egui_ctx.end_frame();
+                    let clipped_primitives =
+                        egui_ctx.tessellate(egui_output.shapes, egui_output.pixels_per_point);
 
-                let egui_output = egui_ctx.end_frame();
-                let paint_jobs =
-                    egui_ctx.tessellate(egui_output.shapes, egui_output.pixels_per_point);
+                    // Update egui textures
+                    for (id, image_delta) in &egui_output.textures_delta.set {
+                        egui_renderer.update_texture(device, queue, *id, image_delta);
+                    }
 
-                let user_textures = egui_renderer.paint_jobs(
-                    &renderer.device,
-                    &renderer.queue,
-                    paint_jobs,
-                    &screen_descriptor,
-                );
+                    // Render the egui output
+                    {
+                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: Some("Egui Render Pass"),
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Load,
+                                    store: wgpu::StoreOp::Store,
+                                },
+                            })],
+                            depth_stencil_attachment: None,
+                            timestamp_writes: None,
+                            occlusion_query_set: None,
+                        });
 
-                // Render the egui output
-                {
-                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: Some("Egui Render Pass"),
-                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                            view: &view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: wgpu::StoreOp::Store,
-                            },
-                        })],
-                        depth_stencil_attachment: None,
-                        timestamp_writes: None,
-                        occlusion_query_set: None,
-                    });
+                        egui_renderer.render(&mut render_pass, &clipped_primitives, &screen_descriptor);
+                    }
 
-                    egui_renderer.render(&mut render_pass, paint_jobs, &screen_descriptor);
-                }
-
-                // Submit the work
-                renderer.queue.submit(std::iter::once(encoder.finish()));
-                output.present();
+                    // Free up egui textures
+                    for id in &egui_output.textures_delta.free {
+                        egui_renderer.free_texture(id);
+                    }
+                }).unwrap();
 
                 // Update system render time
                 app.system_timers[2].1 = app.last_update.elapsed().as_secs_f32() * 1000.0;
                 app.last_update = Instant::now();
+            }
+            Event::WindowEvent { event, .. } => {
+                // Handle egui events
+                let _ = egui_platform.on_window_event(&*window, &event);
+                
+                match event {
+                    WindowEvent::KeyboardInput {
+                        event:
+                            winit::event::KeyEvent {
+                                state,
+                                physical_key: winit::keyboard::PhysicalKey::Code(code),
+                                ..
+                            },
+                        ..
+                    } => {
+                        camera_controller.process_keyboard(code, state == winit::event::ElementState::Pressed);
+                    }
+                    WindowEvent::MouseInput { state, button, .. } => {
+                        camera_controller.process_mouse_button(button, state == winit::event::ElementState::Pressed);
+                    }
+                    WindowEvent::CursorMoved { position, .. } => {
+                        camera_controller.process_mouse_move(
+                            &mut camera,
+                            glam::Vec2::new(position.x as f32, position.y as f32),
+                        );
+                    }
+                    _ => {}
+                }
+            }
+            Event::AboutToWait => {
+                window.request_redraw();
             }
             _ => {}
         }

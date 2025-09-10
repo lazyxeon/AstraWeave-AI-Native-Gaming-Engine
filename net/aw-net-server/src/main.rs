@@ -10,7 +10,7 @@ use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
 use aw_net_proto::{
-    decode_msg, encode_msg, new_room_id, ClientToServer, Codec, ServerToClient, SessionKey,
+    new_room_id, ClientToServer, Codec, ServerToClient, SessionKey,
     PROTOCOL_VERSION,
 };
 
@@ -90,7 +90,7 @@ async fn main() -> Result<()> {
         let (stream, _addr) = listener.accept().await?;
         let app = state.clone();
         tokio::spawn(async move {
-            let peer = match accept_hdr_async(stream, |req: &Request, resp| {
+            let peer = match accept_hdr_async(stream, |_req: &Request, resp| {
                 // You can inspect headers for auth/cookies here
                 Ok(resp)
             })

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use aw_save::{SaveBundleV1, SaveBundleV2, SaveManager, WorldState, PlayerInventory, CompanionProfile, SAVE_SCHEMA_VERSION};
+use aw_save::{SaveBundleV1, SaveManager, WorldState, PlayerInventory, CompanionProfile, SAVE_SCHEMA_VERSION};
 use std::collections::HashMap;
 use time::OffsetDateTime;
 use uuid::Uuid;
@@ -7,7 +7,7 @@ use uuid::Uuid;
 #[test]
 fn test_v1_to_v2_migration() -> Result<()> {
     let temp_dir = tempfile::tempdir()?;
-    let sm = SaveManager::new(temp_dir.path());
+    let _sm = SaveManager::new(temp_dir.path());
     
     // Create a V1 save bundle (simulating legacy save)
     let v1_bundle = SaveBundleV1 {

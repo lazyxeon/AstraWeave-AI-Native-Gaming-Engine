@@ -1,8 +1,7 @@
 use anyhow::Result;
 use eframe::egui;
-use notify::{Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf, sync::mpsc::channel, time::Duration};
+use std::{fs, path::PathBuf};
 use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -216,13 +215,13 @@ impl eframe::App for EditorApp {
             ui.label("→ Here you can render a simple 2.5D grid preview later.");
             ui.separator();
             ui.collapsing("Obstacles", |ui| {
+                let mut to_remove = None;
                 for (i, obstacle) in self.level.obstacles.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
                         ui.label(format!("#{}: ", i+1));
                         ui.text_edit_singleline(&mut obstacle.id);
                         if ui.button("🗑").clicked() {
-                            self.level.obstacles.remove(i);
-                            break;
+                            to_remove = Some(i);
                         }
                     });
                     ui.horizontal(|ui| {
@@ -246,22 +245,29 @@ impl eframe::App for EditorApp {
                         }
                     });
                     ui.separator();
+                    
+                    if to_remove.is_some() {
+                        break;
+                    }
+                }
+                if let Some(index) = to_remove {
+                    self.level.obstacles.remove(index);
                 }
             });
 
             ui.collapsing("NPCs", |ui| {
+                let mut to_remove = None;
                 for (i, npc) in self.level.npcs.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
                         ui.label(format!("#{}: ", i+1));
                         ui.text_edit_singleline(&mut npc.archetype);
                         if ui.button("🗑").clicked() {
-                            self.level.npcs.remove(i);
-                            break;
+                            to_remove = Some(i);
                         }
                     });
                     ui.horizontal(|ui| {
                         ui.label("Count:");
-                        ui.add(egui::DragValue::new(&mut npc.count).speed(1.0).clamp_range(1..=20));
+                        ui.add(egui::DragValue::new(&mut npc.count).speed(1.0).range(1..=20));
                     });
                     ui.horizontal(|ui| {
                         ui.label("Position:");
@@ -278,29 +284,36 @@ impl eframe::App for EditorApp {
                         ui.text_edit_singleline(&mut npc.behavior);
                     });
                     ui.separator();
+                    
+                    if to_remove.is_some() {
+                        break;
+                    }
+                }
+                if let Some(index) = to_remove {
+                    self.level.npcs.remove(index);
                 }
             });
 
             ui.collapsing("Fate Threads", |ui| {
+                let mut to_remove = None;
                 for (i, ft) in self.level.fate_threads.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
                         ui.label(format!("Thread #{}: ", i+1));
                         ui.text_edit_singleline(&mut ft.name);
                         if ui.button("🗑").clicked() {
-                            self.level.fate_threads.remove(i);
-                            break;
+                            to_remove = Some(i);
                         }
                     });
 
                     ui.collapsing("Triggers", |ui| {
+                        let mut trigger_to_remove = None;
                         for (j, trigger) in ft.triggers.iter_mut().enumerate() {
                             match trigger {
                                 Trigger::EnterArea { center, radius } => {
                                     ui.horizontal(|ui| {
                                         ui.label(format!("Enter Area #{}", j+1));
                                         if ui.button("🗑").clicked() {
-                                            ft.triggers.remove(j);
-                                            break;
+                                            trigger_to_remove = Some(j);
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -316,6 +329,13 @@ impl eframe::App for EditorApp {
                                 }
                             }
                             ui.separator();
+                            
+                            if trigger_to_remove.is_some() {
+                                break;
+                            }
+                        }
+                        if let Some(index) = trigger_to_remove {
+                            ft.triggers.remove(index);
                         }
                         if ui.button("Add Enter Area Trigger").clicked() {
                             ft.triggers.push(Trigger::EnterArea {
@@ -326,14 +346,14 @@ impl eframe::App for EditorApp {
                     });
 
                     ui.collapsing("Operations", |ui| {
+                        let mut op_to_remove = None;
                         for (j, op) in ft.ops.iter_mut().enumerate() {
                             match op {
                                 DirectorOp::Fortify { area } => {
                                     ui.horizontal(|ui| {
                                         ui.label(format!("Fortify #{}", j+1));
                                         if ui.button("🗑").clicked() {
-                                            ft.ops.remove(j);
-                                            break;
+                                            op_to_remove = Some(j);
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -350,8 +370,7 @@ impl eframe::App for EditorApp {
                                     ui.horizontal(|ui| {
                                         ui.label(format!("Collapse #{}", j+1));
                                         if ui.button("🗑").clicked() {
-                                            ft.ops.remove(j);
-                                            break;
+                                            op_to_remove = Some(j);
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -368,8 +387,7 @@ impl eframe::App for EditorApp {
                                     ui.horizontal(|ui| {
                                         ui.label(format!("Spawn Wave #{}", j+1));
                                         if ui.button("🗑").clicked() {
-                                            ft.ops.remove(j);
-                                            break;
+                                            op_to_remove = Some(j);
                                         }
                                     });
                                     ui.horizontal(|ui| {
@@ -378,7 +396,7 @@ impl eframe::App for EditorApp {
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Count:");
-                                        ui.add(egui::DragValue::new(count).speed(1.0).clamp_range(1..=20));
+                                        ui.add(egui::DragValue::new(count).speed(1.0).range(1..=20));
                                     });
                                     ui.horizontal(|ui| {
                                         ui.label("Scatter:");
@@ -387,6 +405,13 @@ impl eframe::App for EditorApp {
                                 }
                             }
                             ui.separator();
+                            
+                            if op_to_remove.is_some() {
+                                break;
+                            }
+                        }
+                        if let Some(index) = op_to_remove {
+                            ft.ops.remove(index);
                         }
                         ui.horizontal(|ui| {
                             if ui.button("Add Fortify").clicked() {
@@ -409,6 +434,13 @@ impl eframe::App for EditorApp {
                         });
                     });
                     ui.separator();
+                    
+                    if to_remove.is_some() {
+                        break;
+                    }
+                }
+                if let Some(index) = to_remove {
+                    self.level.fate_threads.remove(index);
                 }
                 if ui.button("Add Fate Thread").clicked() {
                     self.level.fate_threads.push(FateThread{
@@ -483,7 +515,7 @@ fn main() -> Result<()> {
     eframe::run_native(
         "AstraWeave Level & Encounter Editor",
         options,
-        Box::new(|_| Box::<EditorApp>::default()),
-    )?;
+        Box::new(|_| Ok(Box::<EditorApp>::default())),
+    ).map_err(|e| anyhow::anyhow!("Failed to run eframe: {}", e))?;
     Ok(())
 }
