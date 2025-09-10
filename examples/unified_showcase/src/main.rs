@@ -51,6 +51,7 @@ struct RenderStuff {
     ground_texture: Option<LoadedTexture>,
     texture_bind_group_layout: wgpu::BindGroupLayout,
     ground_bind_group: Option<wgpu::BindGroup>,
+    ground_normal: Option<LoadedTexture>,
 }
 
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
@@ -358,6 +359,37 @@ fn reload_texture_pack(
                         binding: 1,
                         resource: wgpu::BindingResource::Sampler(&new_texture.sampler),
                     },
+          // Construct normal map path by replacing extension with _n.png
+          let tex_stem = Path::new(&texture_name)
+              .file_stem()
+              .and_then(|s| s.to_str())
+              .unwrap_or("texture");
+          let npath = Path::new("assets").join(format!("{}_n.png", tex_stem));
+          let normal_tex = if npath.exists() {
+              load_texture_from_file(&render.device, &render.queue, &npath)?
+          } else {
+              eprintln!("Warning: Normal map not found at {}. Using default normal map.", npath.display());
+              // Use a default normal map (e.g., flat normal)
+              // You may need to provide a default normal map in your assets, e.g., "default_n.png"
+              let default_npath = Path::new("assets").join("default_n.png");
+              load_texture_from_file(&render.device, &render.queue, &default_npath)?
+          };
+
+// create bind group with both textures
+          let combined_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: Some(&format!("{}-albedo-normal", texture_pack_name)),
+                        layout: &render.texture_bind_group_layout,
+                        entries: &[
+        wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&new_texture.view) },
+        wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&new_texture.sampler) },
+        wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&normal_tex.view) },
+        wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&normal_tex.sampler) },
+    ],
+});
+render.ground_texture = Some(new_texture);
+render.ground_normal  = Some(normal_tex);
+render.ground_bind_group = Some(combined_bg);
+
                 ],
             });
             
@@ -826,6 +858,49 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             },
         ],
     });
+    
+// when building layouts:
+texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+    label: Some("albedo+normal"),
+    entries: &[
+        // binding 0: albedo texture
+        wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                multisampled: false,
+                view_dimension: wgpu::TextureViewDimension::D2,
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            },
+            count: None,
+        },
+        // binding 1: albedo sampler
+        wgpu::BindGroupLayoutEntry {
+            binding: 1,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+            count: None,
+        },
+        // binding 2: normal texture
+        wgpu::BindGroupLayoutEntry {
+            binding: 2,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Texture {
+                multisampled: false,
+                view_dimension: wgpu::TextureViewDimension::D2,
+                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            },
+            count: None,
+        },
+        // binding 3: normal sampler
+        wgpu::BindGroupLayoutEntry {
+            binding: 3,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+            count: None,
+        },
+    ],
+});
 
     // Try to load grass texture, fallback to default if not available
     let (ground_texture, ground_bind_group) = match load_texture_from_file(&device, &queue, Path::new("assets/grass.png")) {
