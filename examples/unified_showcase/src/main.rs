@@ -17,6 +17,9 @@ use winit::{
     window::{CursorGrabMode, WindowBuilder},
 };
 
+// Import the proper camera system from astraweave-render
+use astraweave_render::camera::{Camera as RenderCamera, CameraController};
+
 // ------------------------------- Renderer types -------------------------------
 
 #[repr(C)]
@@ -180,71 +183,76 @@ impl Default for UiState {
 }
 
 // ------------------------------- Camera -------------------------------
+// Use the proper camera system from astraweave-render
 
-struct Camera {
-    pos: Vec3,
-    yaw: f32,
-    pitch: f32,
+// ------------------------------- Character System -------------------------------
+
+#[derive(Clone)]
+struct Character {
+    position: Vec3,
+    velocity: Vec3,
+    target_position: Vec3,
+    character_type: CharacterType,
+    animation_time: f32,
+    patrol_points: Vec<Vec3>,
+    current_patrol_index: usize,
 }
 
-impl Camera {
-    fn view_matrix(&self) -> Mat4 {
-        let forward = Vec3::new(
-            self.yaw.cos() * self.pitch.cos(),
-            self.pitch.sin(),
-            self.yaw.sin() * self.pitch.cos(),
-        )
-        .normalize();
-        Mat4::look_to_rh(self.pos, forward, Vec3::Y)
+#[derive(Clone)]
+enum CharacterType {
+    Villager,
+    Guard,
+    Merchant,
+    Animal,
+}
+
+impl Character {
+    fn new(pos: Vec3, char_type: CharacterType) -> Self {
+        Self {
+            position: pos,
+            velocity: Vec3::ZERO,
+            target_position: pos,
+            character_type: char_type,
+            animation_time: 0.0,
+            patrol_points: Vec::new(),
+            current_patrol_index: 0,
+        }
     }
 
-    /// Handle keyboard inputs for movement.  Movement is always allowed; right mouse only gates look.
-    fn handle_inputs(&mut self, dt: f32, input: &InputState, speed: f32) {
-        // Compute forward and right vectors from yaw/pitch
-        let forward = Vec3::new(
-            self.yaw.cos() * self.pitch.cos(),
-            self.pitch.sin(),
-            self.yaw.sin() * self.pitch.cos(),
-        )
-        .normalize();
-        let right = forward.cross(Vec3::Y).normalize();
-        let mut v = Vec3::ZERO;
-        if input.key_w {
-            v += forward;
+    fn update(&mut self, dt: f32) {
+        self.animation_time += dt;
+        
+        // Simple AI behavior - move towards target
+        let direction = (self.target_position - self.position).normalize_or_zero();
+        let speed = match self.character_type {
+            CharacterType::Villager => 1.5,
+            CharacterType::Guard => 2.0,
+            CharacterType::Merchant => 1.2,
+            CharacterType::Animal => 2.5,
+        };
+        
+        self.velocity = direction * speed;
+        self.position += self.velocity * dt;
+        
+        // Check if reached target and update patrol
+        if (self.position - self.target_position).length() < 1.0 && !self.patrol_points.is_empty() {
+            self.current_patrol_index = (self.current_patrol_index + 1) % self.patrol_points.len();
+            self.target_position = self.patrol_points[self.current_patrol_index];
         }
-        if input.key_s {
-            v -= forward;
-        }
-        if input.key_a {
-            v -= right;
-        }
-        if input.key_d {
-            v += right;
-        }
-        if input.key_space {
-            v += Vec3::Y;
-        }
-        if input.key_ctrl {
-            v -= Vec3::Y;
-        }
-        if v.length_squared() > 0.0 {
-            self.pos += v.normalize() * speed * dt;
+    }
+
+    fn get_color(&self) -> [f32; 4] {
+        match self.character_type {
+            CharacterType::Villager => [0.8, 0.6, 0.4, 1.0], // Tan
+            CharacterType::Guard => [0.3, 0.3, 0.8, 1.0],    // Blue
+            CharacterType::Merchant => [0.6, 0.3, 0.8, 1.0], // Purple
+            CharacterType::Animal => [0.9, 0.7, 0.5, 1.0],   // Light brown
         }
     }
 }
-
-// ------------------------------- Input -------------------------------
 
 #[derive(Default)]
 struct InputState {
-    key_w: bool,
-    key_a: bool,
-    key_s: bool,
-    key_d: bool,
-    key_space: bool,
-    key_ctrl: bool,
-    right_mouse: bool,
-    mouse_delta: Vec2,
     scroll_delta: f32,
 }
 
@@ -430,7 +438,7 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
     }
 }
 
-fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) {
+fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) -> Vec<Character> {
     // Clear existing objects (keep ground and first few objects as player/sphere)
     let mut handles_to_remove = Vec::new();
     for (handle, body) in physics.bodies.iter() {
@@ -451,53 +459,118 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
         );
     }
 
-    // Generate environment-specific objects
+    let mut characters = Vec::new();
+
+    // Generate environment-specific objects with more variety
     match texture_pack_name {
         "grassland" => {
-            // Add some trees (tall green boxes)
-            for i in 0..8 {
-                let x = -10.0 + (i as f32) * 3.0 + (i as f32 * 0.7).sin() * 2.0;
-                let z = -5.0 + (i as f32 * 0.9).cos() * 3.0;
+            // Add varied trees (different sizes and types)
+            for i in 0..12 {
+                let x = -15.0 + (i as f32) * 2.5 + (i as f32 * 0.7).sin() * 2.5;
+                let z = -8.0 + (i as f32 * 0.9).cos() * 4.0;
+                
+                // Vary tree height and width
+                let height = 1.2 + (i % 3) as f32 * 0.6;
+                let width = 0.2 + (i % 2) as f32 * 0.2;
 
                 let tree_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -1.5, z))
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
                     .user_data(10 + i)
                     .build();
                 let tree_handle = physics.bodies.insert(tree_rb);
-                let tree_col = r3::ColliderBuilder::cuboid(0.3, 1.5, 0.3).build();
+                let tree_col = r3::ColliderBuilder::cuboid(width, height, width).build();
                 physics
                     .colliders
                     .insert_with_parent(tree_col, tree_handle, &mut physics.bodies);
             }
 
-            // Add some cottages (wider boxes)
-            for i in 0..3 {
-                let x = 5.0 + (i as f32) * 4.0;
-                let z = 2.0 + (i as f32).sin() * 1.5;
+            // Add varied cottages and structures
+            for i in 0..5 {
+                let x = 8.0 + (i as f32) * 6.0;
+                let z = 2.0 + (i as f32).sin() * 3.0;
+                
+                // Create different building types
+                let (width, height, depth) = match i % 3 {
+                    0 => (1.8, 1.2, 1.5), // Large cottage
+                    1 => (1.2, 0.8, 1.0), // Small house
+                    _ => (2.2, 1.5, 1.8), // Manor house
+                };
 
                 let house_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -1.0, z))
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
                     .user_data(20 + i)
                     .build();
                 let house_handle = physics.bodies.insert(house_rb);
-                let house_col = r3::ColliderBuilder::cuboid(1.5, 1.0, 1.0).build();
+                let house_col = r3::ColliderBuilder::cuboid(width, height, depth).build();
                 physics
                     .colliders
                     .insert_with_parent(house_col, house_handle, &mut physics.bodies);
             }
+            
+            // Add some boulders and rocks
+            for i in 0..6 {
+                let x = -5.0 + (i as f32) * 8.0 + (i as f32 * 2.1).sin() * 3.0;
+                let z = 8.0 + (i as f32 * 1.7).cos() * 4.0;
+                let size = 0.4 + (i % 3) as f32 * 0.3;
+
+                let rock_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .user_data(60 + i)
+                    .build();
+                let rock_handle = physics.bodies.insert(rock_rb);
+                let rock_col = r3::ColliderBuilder::cuboid(size, size * 0.7, size * 1.2).build();
+                physics
+                    .colliders
+                    .insert_with_parent(rock_col, rock_handle, &mut physics.bodies);
+            }
+            
+            // Add characters for grassland environment
+            for i in 0..6 {
+                let x = 3.0 + (i as f32) * 4.0;
+                let z = -2.0 + (i as f32 * 1.3).sin() * 6.0;
+                let pos = Vec3::new(x, -1.0, z);
+                
+                let char_type = match i % 4 {
+                    0 => CharacterType::Villager,
+                    1 => CharacterType::Guard,
+                    2 => CharacterType::Merchant,
+                    _ => CharacterType::Animal,
+                };
+                
+                let mut character = Character::new(pos, char_type);
+                
+                // Set up patrol routes
+                character.patrol_points = vec![
+                    pos,
+                    pos + Vec3::new(3.0, 0.0, 0.0),
+                    pos + Vec3::new(3.0, 0.0, 3.0),
+                    pos + Vec3::new(0.0, 0.0, 3.0),
+                ];
+                character.target_position = character.patrol_points[1];
+                
+                characters.push(character);
+            }
         }
         "desert" => {
-            // Add some cacti (tall thin green boxes)
-            for i in 0..6 {
-                let x = -8.0 + (i as f32) * 3.5 + (i as f32 * 1.2).sin() * 1.5;
-                let z = -3.0 + (i as f32 * 0.8).cos() * 4.0;
+            // Add varied cacti (different heights and arrangements)
+            for i in 0..8 {
+                let x = -12.0 + (i as f32) * 3.5 + (i as f32 * 1.2).sin() * 2.0;
+                let z = -4.0 + (i as f32 * 0.8).cos() * 5.0;
+                
+                // Create different cactus types
+                let (width, height) = match i % 4 {
+                    0 => (0.15, 2.0), // Tall thin cactus
+                    1 => (0.25, 1.2), // Medium barrel cactus
+                    2 => (0.2, 1.8),  // Regular cactus
+                    _ => (0.3, 0.8),  // Short wide cactus
+                };
 
                 let cactus_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -1.2, z))
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
                     .user_data(30 + i)
                     .build();
                 let cactus_handle = physics.bodies.insert(cactus_rb);
-                let cactus_col = r3::ColliderBuilder::cuboid(0.2, 1.2, 0.2).build();
+                let cactus_col = r3::ColliderBuilder::cuboid(width, height, width).build();
                 physics.colliders.insert_with_parent(
                     cactus_col,
                     cactus_handle,
@@ -505,40 +578,102 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 );
             }
 
-            // Add some adobe houses (sand-colored boxes)
-            for i in 0..2 {
-                let x = 8.0 + (i as f32) * 5.0;
-                let z = 1.0 + (i as f32).cos() * 2.0;
+            // Add varied adobe structures
+            for i in 0..4 {
+                let x = 10.0 + (i as f32) * 7.0;
+                let z = 1.0 + (i as f32).cos() * 3.0;
+                
+                // Different adobe building styles
+                let (width, height, depth) = match i % 3 {
+                    0 => (1.5, 1.0, 1.5), // Square adobe house
+                    1 => (2.0, 0.8, 1.2), // Rectangular building
+                    _ => (1.8, 1.3, 1.8), // Tall adobe tower
+                };
 
                 let adobe_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -1.2, z))
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
                     .user_data(40 + i)
                     .build();
                 let adobe_handle = physics.bodies.insert(adobe_rb);
-                let adobe_col = r3::ColliderBuilder::cuboid(1.2, 0.8, 1.2).build();
+                let adobe_col = r3::ColliderBuilder::cuboid(width, height, depth).build();
                 physics
                     .colliders
                     .insert_with_parent(adobe_col, adobe_handle, &mut physics.bodies);
             }
+            
+            // Add desert rocks and formations
+            for i in 0..8 {
+                let x = -8.0 + (i as f32) * 6.0 + (i as f32 * 1.9).sin() * 4.0;
+                let z = 10.0 + (i as f32 * 1.3).cos() * 6.0;
+                let size = 0.5 + (i % 4) as f32 * 0.4;
+
+                let formation_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .user_data(70 + i)
+                    .build();
+                let formation_handle = physics.bodies.insert(formation_rb);
+                let formation_col = r3::ColliderBuilder::cuboid(size, size * 1.5, size * 0.8).build();
+                physics
+                    .colliders
+                    .insert_with_parent(formation_col, formation_handle, &mut physics.bodies);
+            }
+            
+            // Add characters for desert environment
+            for i in 0..4 {
+                let x = 5.0 + (i as f32) * 8.0;
+                let z = -3.0 + (i as f32 * 0.9).sin() * 4.0;
+                let pos = Vec3::new(x, -1.0, z);
+                
+                let char_type = match i % 3 {
+                    0 => CharacterType::Merchant,
+                    1 => CharacterType::Guard,
+                    _ => CharacterType::Animal,
+                };
+                
+                let mut character = Character::new(pos, char_type);
+                
+                // Set up larger patrol routes for desert
+                character.patrol_points = vec![
+                    pos,
+                    pos + Vec3::new(6.0, 0.0, 2.0),
+                    pos + Vec3::new(4.0, 0.0, 5.0),
+                    pos + Vec3::new(-2.0, 0.0, 3.0),
+                ];
+                character.target_position = character.patrol_points[1];
+                
+                characters.push(character);
+            }
         }
         _ => {
-            // Default environment - just a few generic objects
-            for i in 0..4 {
-                let x = -5.0 + (i as f32) * 2.5;
-                let z = 3.0;
+            // Enhanced default environment with more variety
+            for i in 0..8 {
+                let x = -8.0 + (i as f32) * 2.0;
+                let z = 3.0 + (i % 2) as f32 * 4.0;
+                let height = 0.8 + (i % 3) as f32 * 0.5;
 
                 let obj_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -1.5, z))
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
                     .user_data(50 + i)
                     .build();
                 let obj_handle = physics.bodies.insert(obj_rb);
-                let obj_col = r3::ColliderBuilder::cuboid(0.5, 1.0, 0.5).build();
+                let obj_col = r3::ColliderBuilder::cuboid(0.5, height, 0.5).build();
                 physics
                     .colliders
                     .insert_with_parent(obj_col, obj_handle, &mut physics.bodies);
             }
+            
+            // Add default characters
+            for i in 0..3 {
+                let x = (i as f32) * 4.0;
+                let z = 0.0;
+                let pos = Vec3::new(x, -1.0, z);
+                let character = Character::new(pos, CharacterType::Villager);
+                characters.push(character);
+            }
         }
     }
+    
+    characters
 }
 
 // ------------------------------- Main entry -------------------------------
@@ -565,15 +700,22 @@ async fn run() -> Result<()> {
     let mut physics = build_physics_world();
 
     // Initialize default environment
-    generate_environment_objects(&mut physics, "grassland");
+    let mut characters = generate_environment_objects(&mut physics, "grassland");
 
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
-    let mut camera = Camera {
-        pos: Vec3::new(0.0, 0.0, 5.0),
+    
+    // Use proper camera system from astraweave-render
+    let mut camera = RenderCamera {
+        position: Vec3::new(0.0, 0.0, 5.0),
         yaw: 0.0,
         pitch: 0.0,
+        fovy: 60f32.to_radians(),
+        aspect: 1.0,
+        znear: 0.01,
+        zfar: 5000.0,
     };
+    let mut camera_controller = CameraController::new(8.0, 0.002);
     let mut input = InputState::default();
     let mut last = Instant::now();
     let mut fps_acc = 0.0;
@@ -601,124 +743,112 @@ async fn run() -> Result<()> {
                     } => {
                         let pressed = state == ElementState::Pressed;
                         match physical_key {
-                            PhysicalKey::Code(KeyCode::KeyW) => input.key_w = pressed,
-                            PhysicalKey::Code(KeyCode::KeyA) => input.key_a = pressed,
-                            PhysicalKey::Code(KeyCode::KeyS) => input.key_s = pressed,
-                            PhysicalKey::Code(KeyCode::KeyD) => input.key_d = pressed,
-                            PhysicalKey::Code(KeyCode::Space) => input.key_space = pressed,
-                            PhysicalKey::Code(KeyCode::ControlLeft)
-                            | PhysicalKey::Code(KeyCode::ControlRight) => input.key_ctrl = pressed,
-                            PhysicalKey::Code(KeyCode::Escape) => {
-                                if pressed {
-                                    elwt_window_target.exit();
-                                }
-                            }
-                            PhysicalKey::Code(KeyCode::KeyP) => {
-                                if pressed {
-                                    ui.physics_paused = !ui.physics_paused;
-                                }
-                            }
-                            PhysicalKey::Code(KeyCode::KeyT) => {
-                                if pressed {
-                                    // Teleport sphere a few meters in front of camera
-                                    let forward = Vec3::new(
-                                        camera.yaw.cos() * camera.pitch.cos(),
-                                        camera.pitch.sin(),
-                                        camera.yaw.sin() * camera.pitch.cos(),
-                                    )
-                                    .normalize();
-                                    let target =
-                                        camera.pos + forward * 4.0 + Vec3::new(0.0, -0.5, 0.0);
-                                    teleport_sphere_to(&mut physics, target);
-                                }
-                            }
-                            PhysicalKey::Code(KeyCode::KeyE) => {
-                                if pressed {
-                                    // Raycast forward and apply impulse to first hit dynamic body
-                                    let forward = Vec3::new(
-                                        camera.yaw.cos() * camera.pitch.cos(),
-                                        camera.pitch.sin(),
-                                        camera.yaw.sin() * camera.pitch.cos(),
-                                    )
-                                    .normalize();
+                            PhysicalKey::Code(code) => {
+                                camera_controller.process_keyboard(code, pressed);
+                                match code {
+                                    KeyCode::Escape => {
+                                        if pressed {
+                                            elwt_window_target.exit();
+                                        }
+                                    }
+                                    KeyCode::KeyP => {
+                                        if pressed {
+                                            ui.physics_paused = !ui.physics_paused;
+                                        }
+                                    }
+                                    KeyCode::KeyT => {
+                                        if pressed {
+                                            // Teleport sphere a few meters in front of camera
+                                            let forward = astraweave_render::camera::Camera::dir(camera.yaw, camera.pitch);
+                                            let target =
+                                                camera.position + forward * 4.0 + Vec3::new(0.0, -0.5, 0.0);
+                                            teleport_sphere_to(&mut physics, target);
+                                        }
+                                    }
+                                    KeyCode::KeyE => {
+                                        if pressed {
+                                            // Raycast forward and apply impulse to first hit dynamic body
+                                            let forward = astraweave_render::camera::Camera::dir(camera.yaw, camera.pitch);
 
-                                    // Create a ray for the query
-                                    let ray_origin = nalgebra::Point3::new(
-                                        camera.pos.x,
-                                        camera.pos.y,
-                                        camera.pos.z,
-                                    );
-                                    let ray_dir =
-                                        nalgebra::Vector3::new(forward.x, forward.y, forward.z);
-                                    let ray = r3::Ray::new(ray_origin, ray_dir);
+                                            // Create a ray for the query
+                                            let ray_origin = nalgebra::Point3::new(
+                                                camera.position.x,
+                                                camera.position.y,
+                                                camera.position.z,
+                                            );
+                                            let ray_dir =
+                                                nalgebra::Vector3::new(forward.x, forward.y, forward.z);
+                                            let ray = r3::Ray::new(ray_origin, ray_dir);
 
-                                    // Update the query pipeline with just the colliders
-                                    physics.query_pipeline.update(&physics.colliders);
+                                            // Update the query pipeline with just the colliders
+                                            physics.query_pipeline.update(&physics.colliders);
 
-                                    // Cast the ray
-                                    if let Some((h, _toi)) = physics.query_pipeline.cast_ray(
-                                        &physics.bodies,
-                                        &physics.colliders,
-                                        &ray,
-                                        15.0,
-                                        true,
-                                        r3::QueryFilter::default(),
-                                    ) {
-                                        if let Some(body) =
-                                            physics.bodies.get_mut(r3::RigidBodyHandle(h.0))
-                                        {
-                                            if !body.is_fixed() {
-                                                let impulse = nalgebra::Vector3::new(
-                                                    forward.x * 3.0,
-                                                    1.0,
-                                                    forward.z * 3.0,
-                                                );
-                                                body.apply_impulse(impulse, true);
+                                            // Cast the ray
+                                            if let Some((h, _toi)) = physics.query_pipeline.cast_ray(
+                                                &physics.bodies,
+                                                &physics.colliders,
+                                                &ray,
+                                                15.0,
+                                                true,
+                                                r3::QueryFilter::default(),
+                                            ) {
+                                                if let Some(body) =
+                                                    physics.bodies.get_mut(r3::RigidBodyHandle(h.0))
+                                                {
+                                                    if !body.is_fixed() {
+                                                        let impulse = nalgebra::Vector3::new(
+                                                            forward.x * 3.0,
+                                                            1.0,
+                                                            forward.z * 3.0,
+                                                        );
+                                                        body.apply_impulse(impulse, true);
+                                                    }
+                                                }
                                             }
                                         }
                                     }
-                                }
-                            }
-                            PhysicalKey::Code(KeyCode::Digit1) => {
-                                if pressed {
-                                    let pack_name = "grassland";
-                                    if let Err(e) = reload_texture_pack(&mut render, pack_name) {
-                                        println!(
-                                            "Failed to switch to {} texture pack: {}",
-                                            pack_name, e
-                                        );
-                                    } else {
-                                        ui.current_texture_pack = pack_name.to_string();
-                                        ui.info_text =
-                                            format!("Switched to {} environment", pack_name);
-                                        generate_environment_objects(&mut physics, pack_name);
+                                    KeyCode::Digit1 => {
+                                        if pressed {
+                                            let pack_name = "grassland";
+                                            if let Err(e) = reload_texture_pack(&mut render, pack_name) {
+                                                println!(
+                                                    "Failed to switch to {} texture pack: {}",
+                                                    pack_name, e
+                                                );
+                                            } else {
+                                                ui.current_texture_pack = pack_name.to_string();
+                                                ui.info_text =
+                                                    format!("Switched to {} environment", pack_name);
+                                                characters = generate_environment_objects(&mut physics, pack_name);
+                                            }
+                                        }
                                     }
-                                }
-                            }
-                            PhysicalKey::Code(KeyCode::Digit2) => {
-                                if pressed {
-                                    let pack_name = "desert";
-                                    if let Err(e) = reload_texture_pack(&mut render, pack_name) {
-                                        println!(
-                                            "Failed to switch to {} texture pack: {}",
-                                            pack_name, e
-                                        );
-                                    } else {
-                                        ui.current_texture_pack = pack_name.to_string();
-                                        ui.info_text =
-                                            format!("Switched to {} environment", pack_name);
-                                        generate_environment_objects(&mut physics, pack_name);
+                                    KeyCode::Digit2 => {
+                                        if pressed {
+                                            let pack_name = "desert";
+                                            if let Err(e) = reload_texture_pack(&mut render, pack_name) {
+                                                println!(
+                                                    "Failed to switch to {} texture pack: {}",
+                                                    pack_name, e
+                                                );
+                                            } else {
+                                                ui.current_texture_pack = pack_name.to_string();
+                                                ui.info_text =
+                                                    format!("Switched to {} environment", pack_name);
+                                                characters = generate_environment_objects(&mut physics, pack_name);
+                                            }
+                                        }
                                     }
+                                    _ => {}
                                 }
-                            }
+                            },
                             _ => {}
                         }
                     }
                     WindowEvent::MouseInput { state, button, .. } => {
+                        camera_controller.process_mouse_button(button, state == ElementState::Pressed);
                         if button == winit::event::MouseButton::Right {
                             let pressed = state == ElementState::Pressed;
-                            input.right_mouse = pressed;
-                            input.mouse_delta = Vec2::ZERO;
                             // Grab or release cursor for reliable deltas
                             if pressed {
                                 let _ = window.set_cursor_grab(CursorGrabMode::Locked);
@@ -747,6 +877,10 @@ async fn run() -> Result<()> {
                             render.surface_cfg.height,
                             render.msaa_samples,
                         );
+                        
+                        // Update UI info with character count
+                        ui.info_text = format!("Environment: {} ({} characters)", 
+                                             ui.current_texture_pack, characters.len());
                     }
                     WindowEvent::RedrawRequested => {
                         let now = Instant::now();
@@ -763,21 +897,24 @@ async fn run() -> Result<()> {
                             fps_cnt = 0;
                         }
 
-                        // Look (gated on right mouse)
-                        if input.right_mouse {
-                            camera.yaw -= input.mouse_delta.x * 0.0025;
-                            camera.pitch -= input.mouse_delta.y * 0.0020;
-                            camera.pitch = camera.pitch.clamp(-1.4, 1.4);
-                        }
-                        input.mouse_delta = Vec2::ZERO;
-
+                        // Update camera
+                        camera.aspect = (render.surface_cfg.width as f32 * ui.resolution_scale).max(1.0) / 
+                                      (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
+                        
                         // Adjust camera speed via scroll
                         if input.scroll_delta.abs() > 0.1 {
-                            ui.camera_speed =
-                                (ui.camera_speed + input.scroll_delta).clamp(1.0, 50.0);
+                            camera_controller.speed = (camera_controller.speed + input.scroll_delta).clamp(1.0, 50.0);
+                            ui.camera_speed = camera_controller.speed;
                             input.scroll_delta = 0.0;
                         }
-                        camera.handle_inputs(dt.as_secs_f32(), &input, ui.camera_speed);
+                        
+                        // Update camera with controller
+                        camera_controller.update_camera(&mut camera, dt.as_secs_f32());
+                        
+                        // Update characters
+                        for character in &mut characters {
+                            character.update(dt.as_secs_f32());
+                        }
 
                         // Physics
                         if !ui.physics_paused {
@@ -785,7 +922,7 @@ async fn run() -> Result<()> {
                         }
 
                         // Sync sim to render
-                        sync_instances_from_physics(&physics, &mut instances);
+                        sync_instances_from_physics(&physics, &characters, &mut instances);
                         render.instance_count = instances.len() as u32;
 
                         if !instances.is_empty() {
@@ -797,15 +934,8 @@ async fn run() -> Result<()> {
                         }
 
                         // Camera uniform
-                        let width =
-                            (render.surface_cfg.width as f32 * ui.resolution_scale).max(1.0);
-                        let height =
-                            (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
-                        let proj =
-                            Mat4::perspective_rh(60f32.to_radians(), width / height, 0.01, 5000.0);
-                        let view = camera.view_matrix();
                         let cam = GpuCamera {
-                            view_proj: (proj * view).to_cols_array(),
+                            view_proj: camera.vp().to_cols_array(),
                         };
                         render
                             .queue
@@ -891,9 +1021,9 @@ async fn run() -> Result<()> {
                 event: DeviceEvent::MouseMotion { delta },
                 ..
             } => {
-                // accumulate mouse delta for look
-                input.mouse_delta.x += delta.0 as f32;
-                input.mouse_delta.y += delta.1 as f32;
+                // Use proper mouse position handling for camera controller
+                let pos = Vec2::new(delta.0 as f32, delta.1 as f32);
+                camera_controller.process_mouse_move(&mut camera, pos);
             }
             _ => {}
         }
@@ -1362,6 +1492,7 @@ struct VsOut {
   @builtin(position) pos: vec4<f32>,
   @location(0) color: vec4<f32>,
   @location(1) world_pos: vec3<f32>,
+  @location(2) view_dir: vec3<f32>,
 };
 
 @vertex
@@ -1372,47 +1503,128 @@ fn vs_main(in: VsIn) -> VsOut {
   out.pos = u_camera.view_proj * world;
   out.color = in.color;
   out.world_pos = world.xyz;
+  
+  // Calculate view direction for sky effects
+  let camera_pos = vec3<f32>(0.0, 2.0, 0.0); // Approximate camera position for sky
+  out.view_dir = normalize(world.xyz - camera_pos);
+  
   return out;
 }
 
-fn sky_color(dir_y: f32) -> vec3<f32> {
+// Enhanced sky with realistic atmosphere, clouds, and sun
+fn sky_color(view_dir: vec3<f32>, time: f32) -> vec3<f32> {
+  let dir_y = view_dir.y;
+  
+  // Basic atmosphere gradient
+  let horizon_color = vec3<f32>(0.7, 0.8, 0.9);
+  let zenith_color = vec3<f32>(0.3, 0.5, 0.8);
+  let sunset_color = vec3<f32>(1.0, 0.6, 0.3);
+  
+  // Sun position (moves over time for day/night cycle)
+  let sun_dir = normalize(vec3<f32>(cos(time * 0.1) * 0.8, 0.6, sin(time * 0.1) * 0.8));
+  let sun_dot = max(dot(view_dir, sun_dir), 0.0);
+  
+  // Atmospheric scattering approximation
+  let sun_influence = pow(sun_dot, 512.0) * 2.0 + pow(sun_dot, 32.0) * 0.5;
+  let sunset_influence = max(0.0, -sun_dir.y + 0.1) * pow(max(0.0, -dir_y + 0.1), 2.0);
+  
+  // Base sky gradient
   let t = clamp(dir_y * 0.5 + 0.5, 0.0, 1.0);
-  return mix(vec3<f32>(0.04, 0.06, 0.09), vec3<f32>(0.25, 0.45, 0.80), t);
+  var sky = mix(horizon_color, zenith_color, t);
+  
+  // Add sunset colors at horizon
+  sky = mix(sky, sunset_color, sunset_influence);
+  
+  // Add sun
+  sky += vec3<f32>(1.0, 0.9, 0.7) * sun_influence;
+  
+  // Cloud noise function
+  let cloud_scale = 0.8;
+  let cloud_time = time * 0.05;
+  let cloud_pos = view_dir.xz * cloud_scale + vec2<f32>(cloud_time, cloud_time * 0.7);
+  
+  // Simple noise for clouds
+  let cloud_noise1 = sin(cloud_pos.x * 3.14) * cos(cloud_pos.y * 2.71) * 0.5 + 0.5;
+  let cloud_noise2 = sin(cloud_pos.x * 6.28 + 1.0) * cos(cloud_pos.y * 5.42 + 1.5) * 0.5 + 0.5;
+  let cloud_density = pow(max(0.0, cloud_noise1 * cloud_noise2 - 0.4), 2.0);
+  
+  // Apply clouds only in upper sky
+  let cloud_mask = clamp(dir_y * 2.0, 0.0, 1.0);
+  let cloud_color = vec3<f32>(0.9, 0.9, 0.95);
+  sky = mix(sky, cloud_color, cloud_density * cloud_mask * 0.8);
+  
+  return sky;
+}
+
+// Enhanced terrain with height variation
+fn get_terrain_height(world_pos: vec2<f32>) -> f32 {
+  let scale = 0.1;
+  let pos = world_pos * scale;
+  
+  // Multi-octave noise for terrain
+  var height = 0.0;
+  height += sin(pos.x * 2.0) * cos(pos.y * 1.5) * 0.5;
+  height += sin(pos.x * 4.0 + 1.0) * cos(pos.y * 3.0 + 0.5) * 0.25;
+  height += sin(pos.x * 8.0 + 2.0) * cos(pos.y * 6.0 + 1.0) * 0.125;
+  
+  return height * 2.0; // Scale height variation
 }
 
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   var col = in.color.rgb;
+  let time = 1000.0; // TODO: Pass actual time as uniform
   
-  // Ground texture sampling
+  // Enhanced ground rendering with height-based terrain
   let ground_y = -2.0;
-  let dist = abs(in.world_pos.y - ground_y);
-  if (dist < 0.51) {
-    let scale = 4.0; // Make this configurable via uniforms later
+  let terrain_height = get_terrain_height(in.world_pos.xz);
+  let terrain_surface = ground_y + terrain_height;
+  let dist = abs(in.world_pos.y - terrain_surface);
+  
+  if (dist < 0.6) {
+    let scale = 4.0;
     let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
-    let tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
+    var tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
+    
+    // Height-based texture blending
+    let height_factor = clamp((terrain_height + 1.0) / 2.0, 0.0, 1.0);
+    let rock_color = vec3<f32>(0.4, 0.35, 0.3);
+    tex_color = mix(tex_color, rock_color, height_factor * 0.3);
     
     // Sample normal map for enhanced surface detail
     let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
-    let normal = normalize(normal_sample * 2.0 - 1.0); // Convert from [0,1] to [-1,1]
+    let normal = normalize(normal_sample * 2.0 - 1.0);
     
-    // Simple lighting calculation using the normal
-    let light_dir = normalize(vec3<f32>(0.5, 1.0, 0.3));
-    let ndotl = max(dot(normal, light_dir), 0.0);
-    let lighting = 0.3 + 0.7 * ndotl; // Ambient + diffuse
+    // Enhanced lighting with multiple light sources
+    let sun_dir = normalize(vec3<f32>(0.6, 0.8, 0.3));
+    let ambient_dir = vec3<f32>(0.0, 1.0, 0.0);
     
-    // Mix with a slight checkerboard pattern for variation
-    let checker_scale = 1.5;
+    let sun_ndotl = max(dot(normal, sun_dir), 0.0);
+    let ambient_ndotl = max(dot(normal, ambient_dir), 0.0);
+    
+    let sun_lighting = sun_ndotl * vec3<f32>(1.0, 0.95, 0.8);
+    let ambient_lighting = ambient_ndotl * vec3<f32>(0.4, 0.5, 0.6) * 0.3;
+    let lighting = sun_lighting + ambient_lighting + vec3<f32>(0.1, 0.1, 0.15); // Base ambient
+    
+    // Enhanced checkerboard pattern with terrain variation
+    let checker_scale = 1.5 + terrain_height * 0.2;
     let cx = floor(in.world_pos.x / checker_scale);
     let cz = floor(in.world_pos.z / checker_scale);
-    let checker = f32((i32(cx + cz) & 1)) * 0.1;
+    let checker = f32((i32(cx + cz) & 1)) * 0.08;
     
-    col = tex_color * lighting * (0.9 + checker);
+    col = tex_color * lighting * (0.95 + checker);
+    
+    // Add atmospheric perspective
+    let distance = length(in.world_pos);
+    let fog_factor = clamp(distance / 50.0, 0.0, 1.0);
+    let fog_color = sky_color(normalize(in.world_pos), time);
+    col = mix(col, fog_color, fog_factor * 0.3);
+  } else {
+    // Render sky for non-ground objects or background
+    let sky = sky_color(in.view_dir, time);
+    col = col * 0.7 + sky * 0.3; // Blend object color with sky ambient
   }
   
-  // Sky ambient lighting
-  let sky = sky_color(0.5);
-  col = col * 0.8 + sky * 0.2;
   return vec4<f32>(col, 1.0);
 }
 "#;
@@ -1510,10 +1722,11 @@ fn teleport_sphere_to(p: &mut Physics, pos: Vec3) {
     }
 }
 
-fn sync_instances_from_physics(p: &Physics, out: &mut Vec<InstanceRaw>) {
+fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut Vec<InstanceRaw>) {
     // Resize output vector to accommodate all objects
     out.clear();
 
+    // Add physics objects
     for (_, body) in p.bodies.iter() {
         if body.is_fixed() && body.user_data == 0 {
             continue; // Skip ground
@@ -1523,21 +1736,42 @@ fn sync_instances_from_physics(p: &Physics, out: &mut Vec<InstanceRaw>) {
         let iso = xf.to_homogeneous();
         let m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
 
-        // Color based on object type (user_data)
+        // Color based on object type (user_data) with enhanced variety
         let color = match body.user_data {
             1 => [0.9, 0.6, 0.2, 1.0],       // Original boxes (orange)
             2 => [0.1, 0.8, 0.9, 1.0],       // Sphere (cyan)
             10..=19 => [0.2, 0.8, 0.3, 1.0], // Trees (green)
-            20..=29 => [0.7, 0.5, 0.3, 1.0], // Cottages (brown)
+            20..=29 => [0.7, 0.5, 0.3, 1.0], // Cottages/Houses (brown)
             30..=39 => [0.3, 0.8, 0.4, 1.0], // Cacti (bright green)
             40..=49 => [0.8, 0.7, 0.5, 1.0], // Adobe houses (sandy)
             50..=59 => [0.6, 0.6, 0.6, 1.0], // Generic objects (gray)
+            60..=69 => [0.4, 0.4, 0.35, 1.0], // Rocks/Boulders (dark gray)
+            70..=79 => [0.6, 0.45, 0.35, 1.0], // Desert formations (reddish brown)
             _ => [0.5, 0.5, 0.5, 1.0],       // Unknown (dark gray)
         };
 
         out.push(InstanceRaw {
             model: m.to_cols_array(),
             color,
+        });
+    }
+    
+    // Add character instances
+    for character in characters {
+        // Create a transform matrix for the character
+        let scale = 0.4; // Characters are smaller than buildings
+        let translation = Mat4::from_translation(character.position);
+        let scaling = Mat4::from_scale(Vec3::splat(scale));
+        
+        // Add some simple animation based on time
+        let bob_offset = (character.animation_time * 3.0).sin() * 0.1;
+        let animation_transform = Mat4::from_translation(Vec3::new(0.0, bob_offset, 0.0));
+        
+        let model_matrix = translation * animation_transform * scaling;
+        
+        out.push(InstanceRaw {
+            model: model_matrix.to_cols_array(),
+            color: character.get_color(),
         });
     }
 }
