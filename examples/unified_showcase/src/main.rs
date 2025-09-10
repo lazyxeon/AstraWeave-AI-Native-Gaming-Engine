@@ -3,19 +3,19 @@
 mod texture_synth;
 
 use anyhow::Result;
-use std::{borrow::Cow, time::Instant, path::Path, fs};
-use winit::{
-    event::{Event, WindowEvent, DeviceEvent, MouseScrollDelta, ElementState, KeyEvent},
-    event_loop::EventLoop,
-    window::{WindowBuilder, CursorGrabMode},
-    keyboard::{PhysicalKey, KeyCode},
-};
-use wgpu::util::DeviceExt;
-use glam::{Mat4, Vec3, Vec2};
+use glam::{Mat4, Vec2, Vec3};
+use image::GenericImageView;
 use rapier3d::prelude as r3;
 use rapier3d::prelude::nalgebra; // Add nalgebra import
 use serde::Deserialize;
-use image::GenericImageView;
+use std::{borrow::Cow, fs, path::Path, time::Instant};
+use wgpu::util::DeviceExt;
+use winit::{
+    event::{DeviceEvent, ElementState, Event, KeyEvent, MouseScrollDelta, WindowEvent},
+    event_loop::EventLoop,
+    keyboard::{KeyCode, PhysicalKey},
+    window::{CursorGrabMode, WindowBuilder},
+};
 
 // ------------------------------- Renderer types -------------------------------
 
@@ -59,6 +59,7 @@ const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
 // ------------------------------- Texture Pack System -------------------------------
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Configuration struct - fields may be used in future iterations
 struct TexturePack {
     name: String,
     description: String,
@@ -69,6 +70,7 @@ struct TexturePack {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Configuration struct - fields may be used in future iterations
 struct GroundConfig {
     texture: String,
     scale: f32,
@@ -76,11 +78,13 @@ struct GroundConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Configuration struct - fields may be used in future iterations
 struct StructuresConfig {
     buildings: Vec<BuildingConfig>,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Configuration struct - fields may be used in future iterations
 struct BuildingConfig {
     #[serde(rename = "type")]
     building_type: String,
@@ -91,6 +95,7 @@ struct BuildingConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Configuration struct - fields may be used in future iterations
 struct SkyConfig {
     horizon_color: [f32; 3],
     zenith_color: [f32; 3],
@@ -98,6 +103,7 @@ struct SkyConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)] // Configuration struct - fields may be used in future iterations
 struct AmbientConfig {
     light_color: [f32; 3],
     light_intensity: f32,
@@ -106,6 +112,7 @@ struct AmbientConfig {
 }
 
 struct LoadedTexture {
+    #[allow(dead_code)] // Texture handle kept for resource management
     texture: wgpu::Texture,
     view: wgpu::TextureView,
     sampler: wgpu::Sampler,
@@ -114,28 +121,30 @@ struct LoadedTexture {
 const CUBE_VERTICES: &[[f32; 3]] = &[
     // A simple unit cube centered at origin
     // front
-    [-0.5, -0.5,  0.5], [ 0.5, -0.5,  0.5], [ 0.5,  0.5,  0.5], [-0.5,  0.5,  0.5],
+    [-0.5, -0.5, 0.5],
+    [0.5, -0.5, 0.5],
+    [0.5, 0.5, 0.5],
+    [-0.5, 0.5, 0.5],
     // back
-    [-0.5, -0.5, -0.5], [-0.5,  0.5, -0.5], [ 0.5,  0.5, -0.5], [ 0.5, -0.5, -0.5],
+    [-0.5, -0.5, -0.5],
+    [-0.5, 0.5, -0.5],
+    [0.5, 0.5, -0.5],
+    [0.5, -0.5, -0.5],
 ];
 
 const CUBE_INDICES: &[u16] = &[
     // front
-    0,1,2, 0,2,3,
-    // right
-    1,7,6, 1,6,2,
-    // back
-    7,4,5, 7,5,6,
-    // left
-    4,0,3, 4,3,5,
-    // top
-    3,2,6, 3,6,5,
-    // bottom
-    4,7,1, 4,1,0,
+    0, 1, 2, 0, 2, 3, // right
+    1, 7, 6, 1, 6, 2, // back
+    7, 4, 5, 7, 5, 6, // left
+    4, 0, 3, 4, 3, 5, // top
+    3, 2, 6, 3, 6, 5, // bottom
+    4, 7, 1, 4, 1, 0,
 ];
 
 // ------------------------------- Egui wiring -------------------------------
 
+#[allow(dead_code)] // UI state fields may be used in future iterations
 struct UiState {
     show_grid: bool,
     show_navmesh: bool,
@@ -183,8 +192,9 @@ impl Camera {
         let forward = Vec3::new(
             self.yaw.cos() * self.pitch.cos(),
             self.pitch.sin(),
-            self.yaw.sin() * self.pitch.cos()
-        ).normalize();
+            self.yaw.sin() * self.pitch.cos(),
+        )
+        .normalize();
         Mat4::look_to_rh(self.pos, forward, Vec3::Y)
     }
 
@@ -194,16 +204,29 @@ impl Camera {
         let forward = Vec3::new(
             self.yaw.cos() * self.pitch.cos(),
             self.pitch.sin(),
-            self.yaw.sin() * self.pitch.cos()
-        ).normalize();
+            self.yaw.sin() * self.pitch.cos(),
+        )
+        .normalize();
         let right = forward.cross(Vec3::Y).normalize();
         let mut v = Vec3::ZERO;
-        if input.key_w { v += forward; }
-        if input.key_s { v -= forward; }
-        if input.key_a { v -= right; }
-        if input.key_d { v += right; }
-        if input.key_space { v += Vec3::Y; }
-        if input.key_ctrl { v -= Vec3::Y; }
+        if input.key_w {
+            v += forward;
+        }
+        if input.key_s {
+            v -= forward;
+        }
+        if input.key_a {
+            v -= right;
+        }
+        if input.key_d {
+            v += right;
+        }
+        if input.key_space {
+            v += Vec3::Y;
+        }
+        if input.key_ctrl {
+            v -= Vec3::Y;
+        }
         if v.length_squared() > 0.0 {
             self.pos += v.normalize() * speed * dt;
         }
@@ -242,6 +265,7 @@ struct Physics {
     integration_params: r3::IntegrationParameters,
 }
 
+#[allow(dead_code)] // Type alias may be used in future iterations
 type Real = f32;
 
 // ------------------------------- Texture Pack Loading -------------------------------
@@ -322,14 +346,12 @@ fn load_texture_from_file(
     load_texture_from_bytes(device, queue, &bytes, &path.to_string_lossy())
 }
 
-fn reload_texture_pack(
-    render: &mut RenderStuff, 
-    texture_pack_name: &str
-) -> Result<()> {
+fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Result<()> {
     // Load texture pack configuration
-    let pack_path = Path::new("assets_src/environments").join(format!("{}.toml", texture_pack_name));
+    let pack_path =
+        Path::new("assets_src/environments").join(format!("{}.toml", texture_pack_name));
     let pack = load_texture_pack(&pack_path)?;
-    
+
     // Load the ground texture specified in the pack
     let texture_name = if pack.ground.texture.ends_with(".ktx2") {
         // Convert .ktx2 reference to .png for now
@@ -337,10 +359,14 @@ fn reload_texture_pack(
     } else {
         pack.ground.texture.clone()
     };
-    
+
     let texture_path = Path::new("assets").join(&texture_name);
-    println!("Loading texture pack '{}' with ground texture: {}", texture_pack_name, texture_path.display());
-    
+    println!(
+        "Loading texture pack '{}' with ground texture: {}",
+        texture_pack_name,
+        texture_path.display()
+    );
+
     match load_texture_from_file(&render.device, &render.queue, &texture_path) {
         Ok(new_texture) => {
             // Construct normal map path by replacing extension with _n.png
@@ -352,7 +378,10 @@ fn reload_texture_pack(
             let normal_tex = if npath.exists() {
                 load_texture_from_file(&render.device, &render.queue, &npath)?
             } else {
-                eprintln!("Warning: Normal map not found at {}. Using default normal map.", npath.display());
+                eprintln!(
+                    "Warning: Normal map not found at {}. Using default normal map.",
+                    npath.display()
+                );
                 // Use a default normal map (e.g., flat normal)
                 // You may need to provide a default normal map in your assets, e.g., "default_n.png"
                 let default_npath = Path::new("assets").join("default_n.png");
@@ -364,23 +393,38 @@ fn reload_texture_pack(
                 label: Some(&format!("{}-albedo-normal", texture_pack_name)),
                 layout: &render.texture_bind_group_layout,
                 entries: &[
-                    wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&new_texture.view) },
-                    wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&new_texture.sampler) },
-                    wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&normal_tex.view) },
-                    wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&normal_tex.sampler) },
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&new_texture.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&new_texture.sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::TextureView(&normal_tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: wgpu::BindingResource::Sampler(&normal_tex.sampler),
+                    },
                 ],
             });
-            
+
             // Update render state
             render.ground_texture = Some(new_texture);
             render.ground_normal = Some(normal_tex);
             render.ground_bind_group = Some(combined_bg);
-            
+
             println!("Successfully loaded texture pack: {}", texture_pack_name);
             Ok(())
         }
         Err(e) => {
-            println!("Failed to load texture for pack '{}': {}", texture_pack_name, e);
+            println!(
+                "Failed to load texture for pack '{}': {}",
+                texture_pack_name, e
+            );
             Err(e)
         }
     }
@@ -390,15 +434,23 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
     // Clear existing objects (keep ground and first few objects as player/sphere)
     let mut handles_to_remove = Vec::new();
     for (handle, body) in physics.bodies.iter() {
-        if body.user_data > 2 { // Keep player objects (user_data 1, 2)
+        if body.user_data > 2 {
+            // Keep player objects (user_data 1, 2)
             handles_to_remove.push(handle);
         }
     }
-    
+
     for handle in handles_to_remove {
-        physics.bodies.remove(handle, &mut physics.islands, &mut physics.colliders, &mut physics.impulse_joints, &mut physics.multibody_joints, true);
+        physics.bodies.remove(
+            handle,
+            &mut physics.islands,
+            &mut physics.colliders,
+            &mut physics.impulse_joints,
+            &mut physics.multibody_joints,
+            true,
+        );
     }
-    
+
     // Generate environment-specific objects
     match texture_pack_name {
         "grassland" => {
@@ -406,26 +458,32 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..8 {
                 let x = -10.0 + (i as f32) * 3.0 + (i as f32 * 0.7).sin() * 2.0;
                 let z = -5.0 + (i as f32 * 0.9).cos() * 3.0;
-                
+
                 let tree_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -1.5, z))
-                    .user_data(10 + i).build();
+                    .user_data(10 + i)
+                    .build();
                 let tree_handle = physics.bodies.insert(tree_rb);
                 let tree_col = r3::ColliderBuilder::cuboid(0.3, 1.5, 0.3).build();
-                physics.colliders.insert_with_parent(tree_col, tree_handle, &mut physics.bodies);
+                physics
+                    .colliders
+                    .insert_with_parent(tree_col, tree_handle, &mut physics.bodies);
             }
-            
+
             // Add some cottages (wider boxes)
             for i in 0..3 {
                 let x = 5.0 + (i as f32) * 4.0;
                 let z = 2.0 + (i as f32).sin() * 1.5;
-                
+
                 let house_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -1.0, z))
-                    .user_data(20 + i).build();
+                    .user_data(20 + i)
+                    .build();
                 let house_handle = physics.bodies.insert(house_rb);
                 let house_col = r3::ColliderBuilder::cuboid(1.5, 1.0, 1.0).build();
-                physics.colliders.insert_with_parent(house_col, house_handle, &mut physics.bodies);
+                physics
+                    .colliders
+                    .insert_with_parent(house_col, house_handle, &mut physics.bodies);
             }
         }
         "desert" => {
@@ -433,26 +491,34 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..6 {
                 let x = -8.0 + (i as f32) * 3.5 + (i as f32 * 1.2).sin() * 1.5;
                 let z = -3.0 + (i as f32 * 0.8).cos() * 4.0;
-                
+
                 let cactus_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -1.2, z))
-                    .user_data(30 + i).build();
+                    .user_data(30 + i)
+                    .build();
                 let cactus_handle = physics.bodies.insert(cactus_rb);
                 let cactus_col = r3::ColliderBuilder::cuboid(0.2, 1.2, 0.2).build();
-                physics.colliders.insert_with_parent(cactus_col, cactus_handle, &mut physics.bodies);
+                physics.colliders.insert_with_parent(
+                    cactus_col,
+                    cactus_handle,
+                    &mut physics.bodies,
+                );
             }
-            
+
             // Add some adobe houses (sand-colored boxes)
             for i in 0..2 {
                 let x = 8.0 + (i as f32) * 5.0;
                 let z = 1.0 + (i as f32).cos() * 2.0;
-                
+
                 let adobe_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -1.2, z))
-                    .user_data(40 + i).build();
+                    .user_data(40 + i)
+                    .build();
                 let adobe_handle = physics.bodies.insert(adobe_rb);
                 let adobe_col = r3::ColliderBuilder::cuboid(1.2, 0.8, 1.2).build();
-                physics.colliders.insert_with_parent(adobe_col, adobe_handle, &mut physics.bodies);
+                physics
+                    .colliders
+                    .insert_with_parent(adobe_col, adobe_handle, &mut physics.bodies);
             }
         }
         _ => {
@@ -460,13 +526,16 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..4 {
                 let x = -5.0 + (i as f32) * 2.5;
                 let z = 3.0;
-                
+
                 let obj_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -1.5, z))
-                    .user_data(50 + i).build();
+                    .user_data(50 + i)
+                    .build();
                 let obj_handle = physics.bodies.insert(obj_rb);
                 let obj_col = r3::ColliderBuilder::cuboid(0.5, 1.0, 0.5).build();
-                physics.colliders.insert_with_parent(obj_col, obj_handle, &mut physics.bodies);
+                physics
+                    .colliders
+                    .insert_with_parent(obj_col, obj_handle, &mut physics.bodies);
             }
         }
     }
@@ -483,37 +552,53 @@ async fn run() -> Result<()> {
     // Generate default textures at startup if missing (seed -> vary looks)
     let seed = 0xA57; // change to taste / hook to key for regeneration
     texture_synth::ensure_textures("assets", seed, false)?;
-    
+
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
-    let window = std::sync::Arc::new(WindowBuilder::new()
-        .with_title("AstraWeave Unified Showcase (Modified)")
-        .build(&event_loop)?);
+    let window = std::sync::Arc::new(
+        WindowBuilder::new()
+            .with_title("AstraWeave Unified Showcase (Modified)")
+            .build(&event_loop)?,
+    );
     // Setup renderer, UI, physics
     let mut render = setup_renderer(window.clone()).await?;
     let mut physics = build_physics_world();
-    
+
     // Initialize default environment
     generate_environment_objects(&mut physics, "grassland");
-    
+
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
-    let mut camera = Camera { pos: Vec3::new(0.0, 0.0, 5.0), yaw: 0.0, pitch: 0.0 };
+    let mut camera = Camera {
+        pos: Vec3::new(0.0, 0.0, 5.0),
+        yaw: 0.0,
+        pitch: 0.0,
+    };
     let mut input = InputState::default();
     let mut last = Instant::now();
     let mut fps_acc = 0.0;
     let mut fps_cnt = 0u32;
 
     let elwt = event_loop;
-    elwt.run(move |event, elwt_window_target| {
+    let _ = elwt.run(move |event, elwt_window_target| {
         elwt_window_target.set_control_flow(winit::event_loop::ControlFlow::Poll);
         match event {
-            Event::WindowEvent { event: win_event, .. } => {
+            Event::WindowEvent {
+                event: win_event, ..
+            } => {
                 match win_event {
                     WindowEvent::CloseRequested => {
                         elwt_window_target.exit();
                     }
-                    WindowEvent::KeyboardInput { event: KeyEvent { physical_key, state, .. }, .. } => {
+                    WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                physical_key,
+                                state,
+                                ..
+                            },
+                        ..
+                    } => {
                         let pressed = state == ElementState::Pressed;
                         match physical_key {
                             PhysicalKey::Code(KeyCode::KeyW) => input.key_w = pressed,
@@ -521,13 +606,17 @@ async fn run() -> Result<()> {
                             PhysicalKey::Code(KeyCode::KeyS) => input.key_s = pressed,
                             PhysicalKey::Code(KeyCode::KeyD) => input.key_d = pressed,
                             PhysicalKey::Code(KeyCode::Space) => input.key_space = pressed,
-                            PhysicalKey::Code(KeyCode::ControlLeft) |
-                            PhysicalKey::Code(KeyCode::ControlRight) => input.key_ctrl = pressed,
+                            PhysicalKey::Code(KeyCode::ControlLeft)
+                            | PhysicalKey::Code(KeyCode::ControlRight) => input.key_ctrl = pressed,
                             PhysicalKey::Code(KeyCode::Escape) => {
-                                if pressed { elwt_window_target.exit(); }
+                                if pressed {
+                                    elwt_window_target.exit();
+                                }
                             }
                             PhysicalKey::Code(KeyCode::KeyP) => {
-                                if pressed { ui.physics_paused = !ui.physics_paused; }
+                                if pressed {
+                                    ui.physics_paused = !ui.physics_paused;
+                                }
                             }
                             PhysicalKey::Code(KeyCode::KeyT) => {
                                 if pressed {
@@ -535,9 +624,11 @@ async fn run() -> Result<()> {
                                     let forward = Vec3::new(
                                         camera.yaw.cos() * camera.pitch.cos(),
                                         camera.pitch.sin(),
-                                        camera.yaw.sin() * camera.pitch.cos()
-                                    ).normalize();
-                                    let target = camera.pos + forward * 4.0 + Vec3::new(0.0, -0.5, 0.0);
+                                        camera.yaw.sin() * camera.pitch.cos(),
+                                    )
+                                    .normalize();
+                                    let target =
+                                        camera.pos + forward * 4.0 + Vec3::new(0.0, -0.5, 0.0);
                                     teleport_sphere_to(&mut physics, target);
                                 }
                             }
@@ -547,17 +638,23 @@ async fn run() -> Result<()> {
                                     let forward = Vec3::new(
                                         camera.yaw.cos() * camera.pitch.cos(),
                                         camera.pitch.sin(),
-                                        camera.yaw.sin() * camera.pitch.cos()
-                                    ).normalize();
-                                    
+                                        camera.yaw.sin() * camera.pitch.cos(),
+                                    )
+                                    .normalize();
+
                                     // Create a ray for the query
-                                    let ray_origin = nalgebra::Point3::new(camera.pos.x, camera.pos.y, camera.pos.z);
-                                    let ray_dir = nalgebra::Vector3::new(forward.x, forward.y, forward.z);
+                                    let ray_origin = nalgebra::Point3::new(
+                                        camera.pos.x,
+                                        camera.pos.y,
+                                        camera.pos.z,
+                                    );
+                                    let ray_dir =
+                                        nalgebra::Vector3::new(forward.x, forward.y, forward.z);
                                     let ray = r3::Ray::new(ray_origin, ray_dir);
-                                    
+
                                     // Update the query pipeline with just the colliders
                                     physics.query_pipeline.update(&physics.colliders);
-                                    
+
                                     // Cast the ray
                                     if let Some((h, _toi)) = physics.query_pipeline.cast_ray(
                                         &physics.bodies,
@@ -565,11 +662,17 @@ async fn run() -> Result<()> {
                                         &ray,
                                         15.0,
                                         true,
-                                        r3::QueryFilter::default()
+                                        r3::QueryFilter::default(),
                                     ) {
-                                        if let Some(body) = physics.bodies.get_mut(r3::RigidBodyHandle(h.0)) {
+                                        if let Some(body) =
+                                            physics.bodies.get_mut(r3::RigidBodyHandle(h.0))
+                                        {
                                             if !body.is_fixed() {
-                                                let impulse = nalgebra::Vector3::new(forward.x * 3.0, 1.0, forward.z * 3.0);
+                                                let impulse = nalgebra::Vector3::new(
+                                                    forward.x * 3.0,
+                                                    1.0,
+                                                    forward.z * 3.0,
+                                                );
                                                 body.apply_impulse(impulse, true);
                                             }
                                         }
@@ -580,10 +683,14 @@ async fn run() -> Result<()> {
                                 if pressed {
                                     let pack_name = "grassland";
                                     if let Err(e) = reload_texture_pack(&mut render, pack_name) {
-                                        println!("Failed to switch to {} texture pack: {}", pack_name, e);
+                                        println!(
+                                            "Failed to switch to {} texture pack: {}",
+                                            pack_name, e
+                                        );
                                     } else {
                                         ui.current_texture_pack = pack_name.to_string();
-                                        ui.info_text = format!("Switched to {} environment", pack_name);
+                                        ui.info_text =
+                                            format!("Switched to {} environment", pack_name);
                                         generate_environment_objects(&mut physics, pack_name);
                                     }
                                 }
@@ -592,10 +699,14 @@ async fn run() -> Result<()> {
                                 if pressed {
                                     let pack_name = "desert";
                                     if let Err(e) = reload_texture_pack(&mut render, pack_name) {
-                                        println!("Failed to switch to {} texture pack: {}", pack_name, e);
+                                        println!(
+                                            "Failed to switch to {} texture pack: {}",
+                                            pack_name, e
+                                        );
                                     } else {
                                         ui.current_texture_pack = pack_name.to_string();
-                                        ui.info_text = format!("Switched to {} environment", pack_name);
+                                        ui.info_text =
+                                            format!("Switched to {} environment", pack_name);
                                         generate_environment_objects(&mut physics, pack_name);
                                     }
                                 }
@@ -611,23 +722,31 @@ async fn run() -> Result<()> {
                             // Grab or release cursor for reliable deltas
                             if pressed {
                                 let _ = window.set_cursor_grab(CursorGrabMode::Locked);
-                                let _ = window.set_cursor_visible(false);
+                                window.set_cursor_visible(false);
                             } else {
                                 let _ = window.set_cursor_grab(CursorGrabMode::None);
-                                let _ = window.set_cursor_visible(true);
+                                window.set_cursor_visible(true);
                             }
                         }
                     }
-                    WindowEvent::MouseWheel { delta, .. } => {
-                        if let MouseScrollDelta::LineDelta(_, y) = delta {
-                            input.scroll_delta = y;
-                        }
+                    WindowEvent::MouseWheel {
+                        delta: MouseScrollDelta::LineDelta(_, y),
+                        ..
+                    } => {
+                        input.scroll_delta = y;
                     }
                     WindowEvent::Resized(size) => {
                         render.surface_cfg.width = size.width.max(1);
                         render.surface_cfg.height = size.height.max(1);
-                        render.surface.configure(&render.device, &render.surface_cfg);
-                        render.depth_view = create_depth(&render.device, render.surface_cfg.width, render.surface_cfg.height, render.msaa_samples);
+                        render
+                            .surface
+                            .configure(&render.device, &render.surface_cfg);
+                        render.depth_view = create_depth(
+                            &render.device,
+                            render.surface_cfg.width,
+                            render.surface_cfg.height,
+                            render.msaa_samples,
+                        );
                     }
                     WindowEvent::RedrawRequested => {
                         let now = Instant::now();
@@ -654,7 +773,8 @@ async fn run() -> Result<()> {
 
                         // Adjust camera speed via scroll
                         if input.scroll_delta.abs() > 0.1 {
-                            ui.camera_speed = (ui.camera_speed + input.scroll_delta).clamp(1.0, 50.0);
+                            ui.camera_speed =
+                                (ui.camera_speed + input.scroll_delta).clamp(1.0, 50.0);
                             input.scroll_delta = 0.0;
                         }
                         camera.handle_inputs(dt.as_secs_f32(), &input, ui.camera_speed);
@@ -667,31 +787,49 @@ async fn run() -> Result<()> {
                         // Sync sim to render
                         sync_instances_from_physics(&physics, &mut instances);
                         render.instance_count = instances.len() as u32;
-                        
+
                         if !instances.is_empty() {
-                            render.queue.write_buffer(&render.instance_vb, 0, bytemuck::cast_slice(&instances));
+                            render.queue.write_buffer(
+                                &render.instance_vb,
+                                0,
+                                bytemuck::cast_slice(&instances),
+                            );
                         }
 
                         // Camera uniform
-                        let width = (render.surface_cfg.width as f32 * ui.resolution_scale).max(1.0);
-                        let height = (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
-                        let proj = Mat4::perspective_rh(60f32.to_radians(), width/height, 0.01, 5000.0);
+                        let width =
+                            (render.surface_cfg.width as f32 * ui.resolution_scale).max(1.0);
+                        let height =
+                            (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
+                        let proj =
+                            Mat4::perspective_rh(60f32.to_radians(), width / height, 0.01, 5000.0);
                         let view = camera.view_matrix();
-                        let cam = GpuCamera { view_proj: (proj * view).to_cols_array() };
-                        render.queue.write_buffer(&render.camera_ub, 0, bytemuck::bytes_of(&cam));
+                        let cam = GpuCamera {
+                            view_proj: (proj * view).to_cols_array(),
+                        };
+                        render
+                            .queue
+                            .write_buffer(&render.camera_ub, 0, bytemuck::bytes_of(&cam));
 
                         // Render
                         let frame = match render.surface.get_current_texture() {
                             Ok(f) => f,
                             Err(_) => {
-                                render.surface.configure(&render.device, &render.surface_cfg);
+                                render
+                                    .surface
+                                    .configure(&render.device, &render.surface_cfg);
                                 render.surface.get_current_texture().unwrap()
                             }
                         };
-                        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-                        let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                            label: Some("main-encoder")
-                        });
+                        let view = frame
+                            .texture
+                            .create_view(&wgpu::TextureViewDescriptor::default());
+                        let mut encoder =
+                            render
+                                .device
+                                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                                    label: Some("main-encoder"),
+                                });
                         {
                             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                 label: Some("main-pass"),
@@ -699,18 +837,25 @@ async fn run() -> Result<()> {
                                     view: &view,
                                     resolve_target: None,
                                     ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.05, g: 0.07, b: 0.09, a: 1.0 }),
+                                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                                            r: 0.05,
+                                            g: 0.07,
+                                            b: 0.09,
+                                            a: 1.0,
+                                        }),
                                         store: wgpu::StoreOp::Store,
                                     },
                                 })],
-                                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                                    view: &render.depth_view,
-                                    depth_ops: Some(wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(1.0),
-                                        store: wgpu::StoreOp::Store,
-                                    }),
-                                    stencil_ops: None,
-                                }),
+                                depth_stencil_attachment: Some(
+                                    wgpu::RenderPassDepthStencilAttachment {
+                                        view: &render.depth_view,
+                                        depth_ops: Some(wgpu::Operations {
+                                            load: wgpu::LoadOp::Clear(1.0),
+                                            store: wgpu::StoreOp::Store,
+                                        }),
+                                        stencil_ops: None,
+                                    },
+                                ),
                                 timestamp_writes: None,
                                 occlusion_query_set: None,
                             });
@@ -721,9 +866,16 @@ async fn run() -> Result<()> {
                             }
                             rp.set_vertex_buffer(0, render.cube_vb.slice(..));
                             rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                            rp.set_index_buffer(render.cube_ib.slice(..), wgpu::IndexFormat::Uint16);
+                            rp.set_index_buffer(
+                                render.cube_ib.slice(..),
+                                wgpu::IndexFormat::Uint16,
+                            );
                             if render.instance_count > 0 {
-                                rp.draw_indexed(0..render.cube_index_count, 0, 0..render.instance_count);
+                                rp.draw_indexed(
+                                    0..render.cube_index_count,
+                                    0,
+                                    0..render.instance_count,
+                                );
                             }
                         }
                         render.queue.submit(Some(encoder.finish()));
@@ -735,7 +887,10 @@ async fn run() -> Result<()> {
             Event::AboutToWait => {
                 window.request_redraw();
             }
-            Event::DeviceEvent { event: DeviceEvent::MouseMotion { delta }, .. } => {
+            Event::DeviceEvent {
+                event: DeviceEvent::MouseMotion { delta },
+                ..
+            } => {
                 // accumulate mouse delta for look
                 input.mouse_delta.x += delta.0 as f32;
                 input.mouse_delta.y += delta.1 as f32;
@@ -746,24 +901,132 @@ async fn run() -> Result<()> {
     Ok(())
 }
 
+// ---------------- Helper functions for default textures ----------------
+
+fn create_default_albedo_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> Result<LoadedTexture> {
+    let white_texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("default-white"),
+        size: wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    queue.write_texture(
+        wgpu::ImageCopyTexture {
+            texture: &white_texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        &[255, 255, 255, 255], // RGBA white
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4),
+            rows_per_image: Some(1),
+        },
+        wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+    );
+    let view = white_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    Ok(LoadedTexture {
+        texture: white_texture,
+        view,
+        sampler,
+    })
+}
+
+fn create_default_normal_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> Result<LoadedTexture> {
+    let normal_texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("default-normal"),
+        size: wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    queue.write_texture(
+        wgpu::ImageCopyTexture {
+            texture: &normal_texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        &[128, 128, 255, 255], // Default normal pointing up (0, 0, 1) in normal map encoding
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4),
+            rows_per_image: Some(1),
+        },
+        wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+    );
+    let view = normal_texture.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    Ok(LoadedTexture {
+        texture: normal_texture,
+        view,
+        sampler,
+    })
+}
+
 // ---------------- renderer setup ----------------
 async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result<RenderStuff> {
     let size = window.inner_size();
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
     let surface = instance.create_surface(window.clone())?;
-    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::HighPerformance,
-        compatible_surface: Some(&surface),
-        force_fallback_adapter: false,
-    }).await.unwrap();
-    let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-        label: Some("device"),
-        required_features: wgpu::Features::empty(),
-        required_limits: wgpu::Limits::default(),
-    }, None).await.unwrap();
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        })
+        .await
+        .unwrap();
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
     let msaa_samples = 1u32;
     let caps = surface.get_capabilities(&adapter);
-    let surface_format = caps.formats.iter().copied().find(|f| f.is_srgb()).unwrap_or(caps.formats[0]);
+    let surface_format = caps
+        .formats
+        .iter()
+        .copied()
+        .find(|f| f.is_srgb())
+        .unwrap_or(caps.formats[0]);
     let surface_cfg = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
@@ -820,115 +1083,117 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     });
 
     // Texture bind group layout (for albedo + normal mapping)
-    let texture_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("albedo+normal"),
-        entries: &[
-            // binding 0: albedo texture
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+    let texture_bind_group_layout =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("albedo+normal"),
+            entries: &[
+                // binding 0: albedo texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
                 },
-                count: None,
-            },
-            // binding 1: albedo sampler
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            },
-            // binding 2: normal texture
-            wgpu::BindGroupLayoutEntry {
-                binding: 2,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    multisampled: false,
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                // binding 1: albedo sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
                 },
-                count: None,
-            },
-            // binding 3: normal sampler
-            wgpu::BindGroupLayoutEntry {
-                binding: 3,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                count: None,
-            },
-        ],
-    });
+                // binding 2: normal texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                // binding 3: normal sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
 
     // Try to load grass texture, fallback to default if not available
-    let (ground_texture, ground_bind_group) = match load_texture_from_file(&device, &queue, Path::new("assets/grass.png")) {
-        Ok(texture) => {
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("ground-texture-bg"),
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&texture.sampler),
-                    },
-                ],
-            });
-            (Some(texture), Some(bind_group))
-        }
-        Err(_) => {
-            // Create a default 1x1 white texture as fallback
-            let white_texture = device.create_texture(&wgpu::TextureDescriptor {
-                label: Some("default-white"),
-                size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            });
-            queue.write_texture(
-                wgpu::ImageCopyTexture {
-                    texture: &white_texture,
-                    mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
-                    aspect: wgpu::TextureAspect::All,
-                },
-                &[255, 255, 255, 255], // RGBA white
-                wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(4),
-                    rows_per_image: Some(1),
-                },
-                wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-            );
-            let view = white_texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
-            let loaded_texture = LoadedTexture { texture: white_texture, view, sampler };
-            
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("default-texture-bg"),
-                layout: &texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&loaded_texture.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&loaded_texture.sampler),
-                    },
-                ],
-            });
-            (Some(loaded_texture), Some(bind_group))
-        }
-    };
+    let (ground_texture, ground_normal, ground_bind_group) =
+        match load_texture_from_file(&device, &queue, Path::new("assets/grass.png")) {
+            Ok(texture) => {
+                // Try to load corresponding normal map
+                let normal_texture = match load_texture_from_file(
+                    &device,
+                    &queue,
+                    Path::new("assets/grass_n.png"),
+                ) {
+                    Ok(normal) => normal,
+                    Err(_) => create_default_normal_texture(&device, &queue)?,
+                };
+
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("ground-texture-bg"),
+                    layout: &texture_bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(&texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::TextureView(&normal_texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 3,
+                            resource: wgpu::BindingResource::Sampler(&normal_texture.sampler),
+                        },
+                    ],
+                });
+                (Some(texture), Some(normal_texture), Some(bind_group))
+            }
+            Err(_) => {
+                // Create default textures as fallback
+                let default_albedo = create_default_albedo_texture(&device, &queue)?;
+                let default_normal = create_default_normal_texture(&device, &queue)?;
+
+                let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("default-texture-bg"),
+                    layout: &texture_bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(&default_albedo.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&default_albedo.sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::TextureView(&default_normal.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 3,
+                            resource: wgpu::BindingResource::Sampler(&default_normal.sampler),
+                        },
+                    ],
+                });
+                (Some(default_albedo), Some(default_normal), Some(bind_group))
+            }
+        };
 
     // Instance buffer (increased size for environment objects)
     let max_instances = 100;
@@ -949,7 +1214,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         bind_group_layouts: &[&camera_bg_layout, &texture_bind_group_layout],
         push_constant_ranges: &[],
     });
-    
+
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("pipeline"),
         layout: Some(&pipeline_layout),
@@ -960,13 +1225,11 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                 wgpu::VertexBufferLayout {
                     array_stride: 3 * 4,
                     step_mode: wgpu::VertexStepMode::Vertex,
-                    attributes: &[
-                        wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x3,
-                            offset: 0,
-                            shader_location: 0,
-                        },
-                    ],
+                    attributes: &[wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x3,
+                        offset: 0,
+                        shader_location: 0,
+                    }],
                 },
                 // instance transform (4 vec4 + color)
                 wgpu::VertexBufferLayout {
@@ -1053,14 +1316,18 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         ground_texture,
         texture_bind_group_layout,
         ground_bind_group,
-        ground_normal: None,
+        ground_normal,
     })
 }
 
 fn create_depth(device: &wgpu::Device, width: u32, height: u32, samples: u32) -> wgpu::TextureView {
     let tex = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("depth"),
-        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        size: wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
         mip_level_count: 1,
         sample_count: samples,
         dimension: wgpu::TextureDimension::D2,
@@ -1079,6 +1346,8 @@ struct Camera { view_proj: mat4x4<f32> };
 
 @group(1) @binding(0) var ground_texture: texture_2d<f32>;
 @group(1) @binding(1) var ground_sampler: sampler;
+@group(1) @binding(2) var ground_normal: texture_2d<f32>;
+@group(1) @binding(3) var normal_sampler: sampler;
 
 struct VsIn {
   @location(0) pos: vec3<f32>,
@@ -1123,13 +1392,22 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
     let tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
     
+    // Sample normal map for enhanced surface detail
+    let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
+    let normal = normalize(normal_sample * 2.0 - 1.0); // Convert from [0,1] to [-1,1]
+    
+    // Simple lighting calculation using the normal
+    let light_dir = normalize(vec3<f32>(0.5, 1.0, 0.3));
+    let ndotl = max(dot(normal, light_dir), 0.0);
+    let lighting = 0.3 + 0.7 * ndotl; // Ambient + diffuse
+    
     // Mix with a slight checkerboard pattern for variation
     let checker_scale = 1.5;
     let cx = floor(in.world_pos.x / checker_scale);
     let cz = floor(in.world_pos.z / checker_scale);
     let checker = f32((i32(cx + cz) & 1)) * 0.1;
     
-    col = tex_color * (0.9 + checker);
+    col = tex_color * lighting * (0.9 + checker);
   }
   
   // Sky ambient lighting
@@ -1146,7 +1424,9 @@ fn build_physics_world() -> Physics {
     let mut colliders = r3::ColliderSet::new();
     let gravity = nalgebra::Vector3::new(0.0, -9.81, 0.0);
     // Ground
-    let ground = r3::RigidBodyBuilder::fixed().translation(nalgebra::Vector3::new(0.0, -2.0, 0.0)).build();
+    let ground = r3::RigidBodyBuilder::fixed()
+        .translation(nalgebra::Vector3::new(0.0, -2.0, 0.0))
+        .build();
     let g_handle = bodies.insert(ground);
     let g_col = r3::ColliderBuilder::cuboid(100.0, 0.5, 100.0).build();
     colliders.insert_with_parent(g_col, g_handle, &mut bodies);
@@ -1154,10 +1434,18 @@ fn build_physics_world() -> Physics {
     for y in 0..5 {
         for x in 0..5 {
             let rb = r3::RigidBodyBuilder::dynamic()
-                .translation(nalgebra::Vector3::new(-2.5 + x as f32 * 0.7, -1.0 + y as f32 * 0.7, 0.0))
-                .user_data(1).build();
+                .translation(nalgebra::Vector3::new(
+                    -2.5 + x as f32 * 0.7,
+                    -1.0 + y as f32 * 0.7,
+                    0.0,
+                ))
+                .user_data(1)
+                .build();
             let h = bodies.insert(rb);
-            let c = r3::ColliderBuilder::cuboid(0.3, 0.3, 0.3).restitution(0.2).friction(0.8).build();
+            let c = r3::ColliderBuilder::cuboid(0.3, 0.3, 0.3)
+                .restitution(0.2)
+                .friction(0.8)
+                .build();
             colliders.insert_with_parent(c, h, &mut bodies);
         }
     }
@@ -1165,9 +1453,13 @@ fn build_physics_world() -> Physics {
     let s_rb = r3::RigidBodyBuilder::dynamic()
         .translation(nalgebra::Vector3::new(1.8, 1.0, 0.0))
         .ccd_enabled(true)
-        .user_data(2).build();
+        .user_data(2)
+        .build();
     let s_handle = bodies.insert(s_rb);
-    let s_col = r3::ColliderBuilder::ball(0.35).restitution(0.5).friction(0.3).build();
+    let s_col = r3::ColliderBuilder::ball(0.35)
+        .restitution(0.5)
+        .friction(0.3)
+        .build();
     colliders.insert_with_parent(s_col, s_handle, &mut bodies);
 
     Physics {
@@ -1193,10 +1485,19 @@ fn physics_step(p: &mut Physics) {
     let hooks = ();
     let events = ();
     p.pipeline.step(
-        &p.gravity, &p.integration_params,
-        &mut p.islands, &mut p.broad, &mut p.narrow, &mut p.bodies,
-        &mut p.colliders, &mut p.impulse_joints, &mut p.multibody_joints, &mut p.ccd,
-        Some(&mut p.query_pipeline), &hooks, &events
+        &p.gravity,
+        &p.integration_params,
+        &mut p.islands,
+        &mut p.broad,
+        &mut p.narrow,
+        &mut p.bodies,
+        &mut p.colliders,
+        &mut p.impulse_joints,
+        &mut p.multibody_joints,
+        &mut p.ccd,
+        Some(&mut p.query_pipeline),
+        &hooks,
+        &events,
     );
 }
 
@@ -1212,20 +1513,20 @@ fn teleport_sphere_to(p: &mut Physics, pos: Vec3) {
 fn sync_instances_from_physics(p: &Physics, out: &mut Vec<InstanceRaw>) {
     // Resize output vector to accommodate all objects
     out.clear();
-    
+
     for (_, body) in p.bodies.iter() {
-        if body.is_fixed() && body.user_data == 0 { 
+        if body.is_fixed() && body.user_data == 0 {
             continue; // Skip ground
         }
-        
+
         let xf = body.position();
         let iso = xf.to_homogeneous();
-        let m = Mat4::from_cols_array_2d(&iso.fixed_view::<4,4>(0,0).into());
-        
+        let m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
+
         // Color based on object type (user_data)
         let color = match body.user_data {
-            1 => [0.9, 0.6, 0.2, 1.0],      // Original boxes (orange)
-            2 => [0.1, 0.8, 0.9, 1.0],      // Sphere (cyan)
+            1 => [0.9, 0.6, 0.2, 1.0],       // Original boxes (orange)
+            2 => [0.1, 0.8, 0.9, 1.0],       // Sphere (cyan)
             10..=19 => [0.2, 0.8, 0.3, 1.0], // Trees (green)
             20..=29 => [0.7, 0.5, 0.3, 1.0], // Cottages (brown)
             30..=39 => [0.3, 0.8, 0.4, 1.0], // Cacti (bright green)
@@ -1233,7 +1534,7 @@ fn sync_instances_from_physics(p: &Physics, out: &mut Vec<InstanceRaw>) {
             50..=59 => [0.6, 0.6, 0.6, 1.0], // Generic objects (gray)
             _ => [0.5, 0.5, 0.5, 1.0],       // Unknown (dark gray)
         };
-        
+
         out.push(InstanceRaw {
             model: m.to_cols_array(),
             color,
