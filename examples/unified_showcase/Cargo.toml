@@ -14,6 +14,9 @@ bytemuck = { workspace = true }
 glam = { workspace = true }
 rapier3d = { workspace = true }
 rodio = { workspace = true }
+toml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 # optional: for a quick path search sample
 pathfinding = "4"

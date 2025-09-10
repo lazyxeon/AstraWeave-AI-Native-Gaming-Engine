@@ -1,0 +1,28 @@
+# Desert Environment Texture Pack  
+name = "Desert"
+description = "A harsh desert environment with sandy dunes and sparse vegetation"
+
+[ground]
+texture = "dirt.ktx2"  # Using dirt texture as sand for now
+scale = 6.0
+color_tint = [1.0, 0.9, 0.7, 1.0]
+
+[structures]
+# Desert settlements using stone
+[[structures.buildings]]
+type = "adobe_house"
+base_texture = "stone.ktx2"
+roof_texture = "stone.ktx2"
+probability = 0.05
+size_range = [1.5, 3.0]
+
+[sky]
+horizon_color = [0.9, 0.7, 0.6]
+zenith_color = [0.4, 0.6, 0.8]
+sun_color = [1.0, 0.8, 0.6]
+
+[ambient]
+light_color = [1.0, 0.9, 0.7]
+light_intensity = 0.8
+fog_color = [0.9, 0.8, 0.7]
+fog_density = 0.01
