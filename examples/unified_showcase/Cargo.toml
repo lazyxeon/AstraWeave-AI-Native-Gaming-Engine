@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 anyhow = { workspace = true }
 winit = { workspace = true }
-wgpu = "0.17"  # Using an older version that doesn't require compilation_options
+wgpu = { workspace = true }
 pollster = { workspace = true }
 bytemuck = { workspace = true }
 glam = { workspace = true }
