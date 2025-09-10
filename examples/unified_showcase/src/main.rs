@@ -30,7 +30,7 @@ struct InstanceRaw {
 }
 
 struct RenderStuff {
-    surface: wgpu::Surface,
+    surface: wgpu::Surface<'static>,
     surface_cfg: wgpu::SurfaceConfiguration,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -187,11 +187,11 @@ fn main() -> Result<()> {
 async fn run() -> Result<()> {
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
-    let window = WindowBuilder::new()
+    let window = std::sync::Arc::new(WindowBuilder::new()
         .with_title("AstraWeave Unified Showcase (Modified)")
-        .build(&event_loop)?;
+        .build(&event_loop)?);
     // Setup renderer, UI, physics
-    let mut render = setup_renderer(&window).await?;
+    let mut render = setup_renderer(window.clone()).await?;
     let mut physics = build_physics_world();
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
@@ -381,6 +381,7 @@ async fn run() -> Result<()> {
                                     stencil_ops: None,
                                 }),
                                 timestamp_writes: None,
+                                occlusion_query_set: None,
                             });
                             rp.set_pipeline(&render.pipeline);
                             rp.set_bind_group(0, &render.camera_bg, &[]);
@@ -410,13 +411,10 @@ async fn run() -> Result<()> {
 }
 
 // ---------------- renderer setup ----------------
-async fn setup_renderer(window: &winit::window::Window) -> Result<RenderStuff> {
+async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result<RenderStuff> {
     let size = window.inner_size();
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::all(),
-        dx12_shader_compiler: Default::default(),
-    });
-    let surface = unsafe { instance.create_surface(&window) }?;
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let surface = instance.create_surface(window.clone())?;
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         compatible_surface: Some(&surface),
@@ -424,18 +422,21 @@ async fn setup_renderer(window: &winit::window::Window) -> Result<RenderStuff> {
     }).await.unwrap();
     let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
         label: Some("device"),
-        features: wgpu::Features::empty(),
-        limits: wgpu::Limits::default(),
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::default(),
     }, None).await.unwrap();
     let msaa_samples = 1u32;
-    let surface_format = surface.get_supported_formats(&adapter)[0];
+    let caps = surface.get_capabilities(&adapter);
+    let surface_format = caps.formats.iter().copied().find(|f| f.is_srgb()).unwrap_or(caps.formats[0]);
     let surface_cfg = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
         width: size.width.max(1),
         height: size.height.max(1),
-        present_mode: wgpu::PresentMode::Fifo,
-        alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        present_mode: caps.present_modes[0],
+        alpha_mode: caps.alpha_modes[0],
+        view_formats: vec![],
+        desired_maximum_frame_latency: 2,
     };
     surface.configure(&device, &surface_cfg);
     let depth_view = create_depth(&device, surface_cfg.width, surface_cfg.height, msaa_samples);
@@ -552,6 +553,7 @@ async fn setup_renderer(window: &winit::window::Window) -> Result<RenderStuff> {
                     ],
                 },
             ],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_module,
@@ -561,6 +563,7 @@ async fn setup_renderer(window: &winit::window::Window) -> Result<RenderStuff> {
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
         }),
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
