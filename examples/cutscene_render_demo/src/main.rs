@@ -56,7 +56,7 @@ fn main() -> anyhow::Result<()> {
     let mut last = Instant::now();
     // Letterbox effect: fallback implementation since renderer.set_letterbox is not available.
     // This will draw black bars at the top and bottom of the screen to simulate letterboxing.
-    fn draw_letterbox(renderer: &mut Renderer, fraction: f32) {
+    fn draw_letterbox(_renderer: &mut Renderer, _fraction: f32) {
         // Fallback: If the renderer does not support drawing rectangles directly,
         // this function is a placeholder for the letterbox effect.
         // In a real implementation, you would draw two black rectangles

@@ -41,9 +41,9 @@ fn main() -> anyhow::Result<()> {
     let mut phys = PhysicsWorld::new(vec3(0.0, -9.81, 0.0));
 
     // Spawn some tokens to visualize
-    let player = w.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
-    let comp = w.spawn("Comp", IVec2 { x: 3, y: 2 }, Team { id: 1 }, 80, 30);
-    let enemy = w.spawn("Enemy", IVec2 { x: 10, y: 2 }, Team { id: 2 }, 60, 0);
+    let _player = w.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
+    let _comp = w.spawn("Comp", IVec2 { x: 3, y: 2 }, Team { id: 1 }, 80, 30);
+    let _enemy = w.spawn("Enemy", IVec2 { x: 10, y: 2 }, Team { id: 2 }, 60, 0);
 
     // Simple island triangles (for nav + visual anchors)
     let tris = generate_island_room();
