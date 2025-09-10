@@ -56,6 +56,9 @@ struct RenderStuff {
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
 
 // ------------------------------- Texture Pack System -------------------------------
+// Generate default textures at startup if missing (seed -> vary looks)
+let seed = 0xA57RA; // change to taste / hook to key for regeneration
+texture_synth::ensure_textures("assets", seed, false)?;
 
 #[derive(Debug, Deserialize)]
 struct TexturePack {
