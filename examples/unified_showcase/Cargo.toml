@@ -1,0 +1,19 @@
+[package]
+name = "unified_showcase"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+winit = { workspace = true }
+wgpu = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }
+glam = { workspace = true }
+rapier3d = { workspace = true }
+rodio = { workspace = true }
+
+# optional: for a quick path search sample
+pathfinding = "4"
