@@ -709,8 +709,19 @@ async fn run() -> Result<()> {
     let mut render = setup_renderer(window.clone()).await?;
     let mut physics = build_physics_world();
 
-    // Initialize default environment
+    // Initialize default environment and texture pack
     let mut characters = generate_environment_objects(&mut physics, "grassland");
+    
+    // Load the initial grassland texture pack
+    if let Err(e) = reload_texture_pack(&mut render, "grassland") {
+        println!("Warning: Failed to load initial grassland texture pack: {}", e);
+        println!("Continuing with default textures...");
+        println!("Note: You can still switch texture packs using keys 1 (grassland) and 2 (desert)");
+    } else {
+        println!("Successfully loaded initial grassland texture pack");
+        println!("Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse");
+        println!("Texture packs: Press 1 for grassland, 2 for desert");
+    }
 
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
