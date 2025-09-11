@@ -221,7 +221,7 @@ impl Character {
 
     fn update(&mut self, dt: f32) {
         self.animation_time += dt;
-        
+
         // Simple AI behavior - move towards target
         let direction = (self.target_position - self.position).normalize_or_zero();
         let speed = match self.character_type {
@@ -230,10 +230,10 @@ impl Character {
             CharacterType::Merchant => 1.2,
             CharacterType::Animal => 2.5,
         };
-        
+
         self.velocity = direction * speed;
         self.position += self.velocity * dt;
-        
+
         // Check if reached target and update patrol
         if (self.position - self.target_position).length() < 1.0 && !self.patrol_points.is_empty() {
             self.current_patrol_index = (self.current_patrol_index + 1) % self.patrol_points.len();
@@ -294,7 +294,10 @@ fn load_texture_from_bytes(
     let img = image::load_from_memory(bytes)?;
     let rgba = img.to_rgba8();
     let dimensions = img.dimensions();
-    println!("Texture '{}' loaded successfully: {}x{} pixels", label, dimensions.0, dimensions.1);
+    println!(
+        "Texture '{}' loaded successfully: {}x{} pixels",
+        label, dimensions.0, dimensions.1
+    );
 
     let size = wgpu::Extent3d {
         width: dimensions.0,
@@ -357,10 +360,17 @@ fn load_texture_from_file(
     println!("Attempting to load texture from file: {}", path.display());
     if !path.exists() {
         eprintln!("ERROR: Texture file does not exist: {}", path.display());
-        return Err(anyhow::anyhow!("Texture file not found: {}", path.display()));
+        return Err(anyhow::anyhow!(
+            "Texture file not found: {}",
+            path.display()
+        ));
     }
     let bytes = fs::read(path)?;
-    println!("Successfully read {} bytes from {}", bytes.len(), path.display());
+    println!(
+        "Successfully read {} bytes from {}",
+        bytes.len(),
+        path.display()
+    );
     load_texture_from_bytes(device, queue, &bytes, &path.to_string_lossy())
 }
 
@@ -478,7 +488,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..12 {
                 let x = -15.0 + (i as f32) * 2.5 + (i as f32 * 0.7).sin() * 2.5;
                 let z = -8.0 + (i as f32 * 0.9).cos() * 4.0;
-                
+
                 // Vary tree height and width
                 let height = 1.2 + (i % 3) as f32 * 0.6;
                 let width = 0.2 + (i % 2) as f32 * 0.2;
@@ -498,7 +508,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..5 {
                 let x = 8.0 + (i as f32) * 6.0;
                 let z = 2.0 + (i as f32).sin() * 3.0;
-                
+
                 // Create different building types
                 let (width, height, depth) = match i % 3 {
                     0 => (1.8, 1.2, 1.5), // Large cottage
@@ -516,7 +526,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .colliders
                     .insert_with_parent(house_col, house_handle, &mut physics.bodies);
             }
-            
+
             // Add some boulders and rocks
             for i in 0..6 {
                 let x = -5.0 + (i as f32) * 8.0 + (i as f32 * 2.1).sin() * 3.0;
@@ -533,22 +543,22 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .colliders
                     .insert_with_parent(rock_col, rock_handle, &mut physics.bodies);
             }
-            
+
             // Add characters for grassland environment
             for i in 0..6 {
                 let x = 3.0 + (i as f32) * 4.0;
                 let z = -2.0 + (i as f32 * 1.3).sin() * 6.0;
                 let pos = Vec3::new(x, -1.0, z);
-                
+
                 let char_type = match i % 4 {
                     0 => CharacterType::Villager,
                     1 => CharacterType::Guard,
                     2 => CharacterType::Merchant,
                     _ => CharacterType::Animal,
                 };
-                
+
                 let mut character = Character::new(pos, char_type);
-                
+
                 // Set up patrol routes
                 character.patrol_points = vec![
                     pos,
@@ -557,7 +567,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     pos + Vec3::new(0.0, 0.0, 3.0),
                 ];
                 character.target_position = character.patrol_points[1];
-                
+
                 characters.push(character);
             }
         }
@@ -566,7 +576,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..8 {
                 let x = -12.0 + (i as f32) * 3.5 + (i as f32 * 1.2).sin() * 2.0;
                 let z = -4.0 + (i as f32 * 0.8).cos() * 5.0;
-                
+
                 // Create different cactus types
                 let (width, height) = match i % 4 {
                     0 => (0.15, 2.0), // Tall thin cactus
@@ -592,7 +602,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..4 {
                 let x = 10.0 + (i as f32) * 7.0;
                 let z = 1.0 + (i as f32).cos() * 3.0;
-                
+
                 // Different adobe building styles
                 let (width, height, depth) = match i % 3 {
                     0 => (1.5, 1.0, 1.5), // Square adobe house
@@ -610,7 +620,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .colliders
                     .insert_with_parent(adobe_col, adobe_handle, &mut physics.bodies);
             }
-            
+
             // Add desert rocks and formations
             for i in 0..8 {
                 let x = -8.0 + (i as f32) * 6.0 + (i as f32 * 1.9).sin() * 4.0;
@@ -622,26 +632,29 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .user_data(70 + i)
                     .build();
                 let formation_handle = physics.bodies.insert(formation_rb);
-                let formation_col = r3::ColliderBuilder::cuboid(size, size * 1.5, size * 0.8).build();
-                physics
-                    .colliders
-                    .insert_with_parent(formation_col, formation_handle, &mut physics.bodies);
+                let formation_col =
+                    r3::ColliderBuilder::cuboid(size, size * 1.5, size * 0.8).build();
+                physics.colliders.insert_with_parent(
+                    formation_col,
+                    formation_handle,
+                    &mut physics.bodies,
+                );
             }
-            
+
             // Add characters for desert environment
             for i in 0..4 {
                 let x = 5.0 + (i as f32) * 8.0;
                 let z = -3.0 + (i as f32 * 0.9).sin() * 4.0;
                 let pos = Vec3::new(x, -1.0, z);
-                
+
                 let char_type = match i % 3 {
                     0 => CharacterType::Merchant,
                     1 => CharacterType::Guard,
                     _ => CharacterType::Animal,
                 };
-                
+
                 let mut character = Character::new(pos, char_type);
-                
+
                 // Set up larger patrol routes for desert
                 character.patrol_points = vec![
                     pos,
@@ -650,7 +663,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     pos + Vec3::new(-2.0, 0.0, 3.0),
                 ];
                 character.target_position = character.patrol_points[1];
-                
+
                 characters.push(character);
             }
         }
@@ -671,7 +684,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .colliders
                     .insert_with_parent(obj_col, obj_handle, &mut physics.bodies);
             }
-            
+
             // Add default characters
             for i in 0..3 {
                 let x = (i as f32) * 4.0;
@@ -682,7 +695,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             }
         }
     }
-    
+
     characters
 }
 
@@ -711,21 +724,28 @@ async fn run() -> Result<()> {
 
     // Initialize default environment and texture pack
     let mut characters = generate_environment_objects(&mut physics, "grassland");
-    
+
     // Load the initial grassland texture pack
     if let Err(e) = reload_texture_pack(&mut render, "grassland") {
-        println!("Warning: Failed to load initial grassland texture pack: {}", e);
+        println!(
+            "Warning: Failed to load initial grassland texture pack: {}",
+            e
+        );
         println!("Continuing with default textures...");
-        println!("Note: You can still switch texture packs using keys 1 (grassland) and 2 (desert)");
+        println!(
+            "Note: You can still switch texture packs using keys 1 (grassland) and 2 (desert)"
+        );
     } else {
         println!("Successfully loaded initial grassland texture pack");
-        println!("Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse");
+        println!(
+            "Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse"
+        );
         println!("Texture packs: Press 1 for grassland, 2 for desert");
     }
 
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
-    
+
     // Use proper camera system from astraweave-render
     let mut camera = RenderCamera {
         position: Vec3::new(0.0, 0.0, 5.0),
@@ -780,16 +800,23 @@ async fn run() -> Result<()> {
                                     KeyCode::KeyT => {
                                         if pressed {
                                             // Teleport sphere a few meters in front of camera
-                                            let forward = astraweave_render::camera::Camera::dir(camera.yaw, camera.pitch);
-                                            let target =
-                                                camera.position + forward * 4.0 + Vec3::new(0.0, -0.5, 0.0);
+                                            let forward = astraweave_render::camera::Camera::dir(
+                                                camera.yaw,
+                                                camera.pitch,
+                                            );
+                                            let target = camera.position
+                                                + forward * 4.0
+                                                + Vec3::new(0.0, -0.5, 0.0);
                                             teleport_sphere_to(&mut physics, target);
                                         }
                                     }
                                     KeyCode::KeyE => {
                                         if pressed {
                                             // Raycast forward and apply impulse to first hit dynamic body
-                                            let forward = astraweave_render::camera::Camera::dir(camera.yaw, camera.pitch);
+                                            let forward = astraweave_render::camera::Camera::dir(
+                                                camera.yaw,
+                                                camera.pitch,
+                                            );
 
                                             // Create a ray for the query
                                             let ray_origin = nalgebra::Point3::new(
@@ -797,22 +824,25 @@ async fn run() -> Result<()> {
                                                 camera.position.y,
                                                 camera.position.z,
                                             );
-                                            let ray_dir =
-                                                nalgebra::Vector3::new(forward.x, forward.y, forward.z);
+                                            let ray_dir = nalgebra::Vector3::new(
+                                                forward.x, forward.y, forward.z,
+                                            );
                                             let ray = r3::Ray::new(ray_origin, ray_dir);
 
                                             // Update the query pipeline with just the colliders
                                             physics.query_pipeline.update(&physics.colliders);
 
                                             // Cast the ray
-                                            if let Some((h, _toi)) = physics.query_pipeline.cast_ray(
-                                                &physics.bodies,
-                                                &physics.colliders,
-                                                &ray,
-                                                15.0,
-                                                true,
-                                                r3::QueryFilter::default(),
-                                            ) {
+                                            if let Some((h, _toi)) =
+                                                physics.query_pipeline.cast_ray(
+                                                    &physics.bodies,
+                                                    &physics.colliders,
+                                                    &ray,
+                                                    15.0,
+                                                    true,
+                                                    r3::QueryFilter::default(),
+                                                )
+                                            {
                                                 if let Some(body) =
                                                     physics.bodies.get_mut(r3::RigidBodyHandle(h.0))
                                                 {
@@ -831,43 +861,58 @@ async fn run() -> Result<()> {
                                     KeyCode::Digit1 => {
                                         if pressed {
                                             let pack_name = "grassland";
-                                            if let Err(e) = reload_texture_pack(&mut render, pack_name) {
+                                            if let Err(e) =
+                                                reload_texture_pack(&mut render, pack_name)
+                                            {
                                                 println!(
                                                     "Failed to switch to {} texture pack: {}",
                                                     pack_name, e
                                                 );
                                             } else {
                                                 ui.current_texture_pack = pack_name.to_string();
-                                                ui.info_text =
-                                                    format!("Switched to {} environment", pack_name);
-                                                characters = generate_environment_objects(&mut physics, pack_name);
+                                                ui.info_text = format!(
+                                                    "Switched to {} environment",
+                                                    pack_name
+                                                );
+                                                characters = generate_environment_objects(
+                                                    &mut physics,
+                                                    pack_name,
+                                                );
                                             }
                                         }
                                     }
                                     KeyCode::Digit2 => {
                                         if pressed {
                                             let pack_name = "desert";
-                                            if let Err(e) = reload_texture_pack(&mut render, pack_name) {
+                                            if let Err(e) =
+                                                reload_texture_pack(&mut render, pack_name)
+                                            {
                                                 println!(
                                                     "Failed to switch to {} texture pack: {}",
                                                     pack_name, e
                                                 );
                                             } else {
                                                 ui.current_texture_pack = pack_name.to_string();
-                                                ui.info_text =
-                                                    format!("Switched to {} environment", pack_name);
-                                                characters = generate_environment_objects(&mut physics, pack_name);
+                                                ui.info_text = format!(
+                                                    "Switched to {} environment",
+                                                    pack_name
+                                                );
+                                                characters = generate_environment_objects(
+                                                    &mut physics,
+                                                    pack_name,
+                                                );
                                             }
                                         }
                                     }
                                     _ => {}
                                 }
-                            },
+                            }
                             _ => {}
                         }
                     }
                     WindowEvent::MouseInput { state, button, .. } => {
-                        camera_controller.process_mouse_button(button, state == ElementState::Pressed);
+                        camera_controller
+                            .process_mouse_button(button, state == ElementState::Pressed);
                         if button == winit::event::MouseButton::Right {
                             let pressed = state == ElementState::Pressed;
                             // Grab or release cursor for reliable deltas
@@ -898,10 +943,13 @@ async fn run() -> Result<()> {
                             render.surface_cfg.height,
                             render.msaa_samples,
                         );
-                        
+
                         // Update UI info with character count
-                        ui.info_text = format!("Environment: {} ({} characters)", 
-                                             ui.current_texture_pack, characters.len());
+                        ui.info_text = format!(
+                            "Environment: {} ({} characters)",
+                            ui.current_texture_pack,
+                            characters.len()
+                        );
                     }
                     WindowEvent::RedrawRequested => {
                         let now = Instant::now();
@@ -919,19 +967,21 @@ async fn run() -> Result<()> {
                         }
 
                         // Update camera
-                        camera.aspect = (render.surface_cfg.width as f32 * ui.resolution_scale).max(1.0) / 
-                                      (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
-                        
+                        camera.aspect = (render.surface_cfg.width as f32 * ui.resolution_scale)
+                            .max(1.0)
+                            / (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
+
                         // Adjust camera speed via scroll
                         if input.scroll_delta.abs() > 0.1 {
-                            camera_controller.speed = (camera_controller.speed + input.scroll_delta).clamp(1.0, 50.0);
+                            camera_controller.speed =
+                                (camera_controller.speed + input.scroll_delta).clamp(1.0, 50.0);
                             ui.camera_speed = camera_controller.speed;
                             input.scroll_delta = 0.0;
                         }
-                        
+
                         // Update camera with controller
                         camera_controller.update_camera(&mut camera, dt.as_secs_f32());
-                        
+
                         // Update characters
                         for character in &mut characters {
                             character.update(dt.as_secs_f32());
@@ -1149,18 +1199,21 @@ fn create_default_normal_texture(
 // ---------------- renderer setup ----------------
 async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result<RenderStuff> {
     let size = window.inner_size();
-    println!("Setting up wgpu renderer with window size: {}x{}", size.width, size.height);
-    
+    println!(
+        "Setting up wgpu renderer with window size: {}x{}",
+        size.width, size.height
+    );
+
     // Enable debug features for better error reporting
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
         flags: wgpu::InstanceFlags::DEBUG | wgpu::InstanceFlags::VALIDATION,
         ..Default::default()
     });
-    
+
     println!("Creating surface...");
     let surface = instance.create_surface(window.clone())?;
-    
+
     println!("Requesting adapter...");
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
@@ -1170,9 +1223,9 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         })
         .await
         .unwrap();
-    
+
     println!("Adapter found: {:?}", adapter.get_info());
-    
+
     println!("Requesting device...");
     let (device, queue) = adapter
         .request_device(
@@ -1185,20 +1238,20 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         )
         .await
         .unwrap();
-    
+
     println!("Device created successfully");
-    
+
     let msaa_samples = 1u32;
     let caps = surface.get_capabilities(&adapter);
     println!("Surface capabilities: {:?}", caps);
-    
+
     let surface_format = caps
         .formats
         .iter()
         .copied()
         .find(|f| f.is_srgb())
         .unwrap_or(caps.formats[0]);
-    
+
     println!("Selected surface format: {:?}", surface_format);
     let surface_cfg = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -1771,26 +1824,25 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
 
     // Add physics objects
     for (_, body) in p.bodies.iter() {
-        if body.is_fixed() && body.user_data == 0 {
-            continue; // Skip ground
-        }
+        // No skipping — we want the ground cube drawn so the ground shader branch runs.
 
         let xf = body.position();
         let iso = xf.to_homogeneous();
         let m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
 
-        // Color based on object type (user_data) with enhanced variety
+        // Color based on object type; give ground a neutral tint
         let color = match body.user_data {
-            1 => [0.9, 0.6, 0.2, 1.0],       // Original boxes (orange)
-            2 => [0.1, 0.8, 0.9, 1.0],       // Sphere (cyan)
-            10..=19 => [0.2, 0.8, 0.3, 1.0], // Trees (green)
-            20..=29 => [0.7, 0.5, 0.3, 1.0], // Cottages/Houses (brown)
-            30..=39 => [0.3, 0.8, 0.4, 1.0], // Cacti (bright green)
-            40..=49 => [0.8, 0.7, 0.5, 1.0], // Adobe houses (sandy)
-            50..=59 => [0.6, 0.6, 0.6, 1.0], // Generic objects (gray)
-            60..=69 => [0.4, 0.4, 0.35, 1.0], // Rocks/Boulders (dark gray)
+            0 => [0.95, 0.95, 0.95, 1.0],      // Ground
+            1 => [0.9, 0.6, 0.2, 1.0],         // Original boxes (orange)
+            2 => [0.1, 0.8, 0.9, 1.0],         // Sphere (cyan)
+            10..=19 => [0.2, 0.8, 0.3, 1.0],   // Trees (green)
+            20..=29 => [0.7, 0.5, 0.3, 1.0],   // Cottages/Houses (brown)
+            30..=39 => [0.3, 0.8, 0.4, 1.0],   // Cacti (bright green)
+            40..=49 => [0.8, 0.7, 0.5, 1.0],   // Adobe houses (sandy)
+            50..=59 => [0.6, 0.6, 0.6, 1.0],   // Generic objects (gray)
+            60..=69 => [0.4, 0.4, 0.35, 1.0],  // Rocks/Boulders (dark gray)
             70..=79 => [0.6, 0.45, 0.35, 1.0], // Desert formations (reddish brown)
-            _ => [0.5, 0.5, 0.5, 1.0],       // Unknown (dark gray)
+            _ => [0.5, 0.5, 0.5, 1.0],         // Unknown (dark gray)
         };
 
         out.push(InstanceRaw {
@@ -1798,20 +1850,20 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
             color,
         });
     }
-    
+
     // Add character instances
     for character in characters {
         // Create a transform matrix for the character
         let scale = 0.4; // Characters are smaller than buildings
         let translation = Mat4::from_translation(character.position);
         let scaling = Mat4::from_scale(Vec3::splat(scale));
-        
+
         // Add some simple animation based on time
         let bob_offset = (character.animation_time * 3.0).sin() * 0.1;
         let animation_transform = Mat4::from_translation(Vec3::new(0.0, bob_offset, 0.0));
-        
+
         let model_matrix = translation * animation_transform * scaling;
-        
+
         out.push(InstanceRaw {
             model: model_matrix.to_cols_array(),
             color: character.get_color(),
