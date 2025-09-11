@@ -1734,6 +1734,7 @@ fn build_physics_world() -> Physics {
     // Ground
     let ground = r3::RigidBodyBuilder::fixed()
         .translation(nalgebra::Vector3::new(0.0, -2.0, 0.0))
+        .user_data(0)
         .build();
     let g_handle = bodies.insert(ground);
     let g_col = r3::ColliderBuilder::cuboid(100.0, 0.5, 100.0).build();
@@ -1823,12 +1824,40 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
     out.clear();
 
     // Add physics objects
-    for (_, body) in p.bodies.iter() {
+    for (h, body) in p.bodies.iter() {
         // No skipping — we want the ground cube drawn so the ground shader branch runs.
 
         let xf = body.position();
         let iso = xf.to_homogeneous();
-        let m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
+        let base_m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
+
+        // Default: no scale (unit cube)
+        let mut model_m = base_m;
+
+        // If this is the ground (user_data == 0 and fixed), scale the render
+        // instance to match the collider half-extents (Rapier cuboid uses half-extents).
+        if body.is_fixed() && body.user_data == 0 {
+            // Find any collider attached to this body; prefer a Cuboid.
+            if let Some((_, col)) = p.colliders.iter().find(|(_, c)| c.parent() == Some(h)) {
+                if let Some(cuboid) = col.shape().as_cuboid() {
+                    let he = cuboid.half_extents; // nalgebra::Vector
+                    // Full extents = half_extents * 2
+                    let sx = he.x * 2.0;
+                    let sy = he.y * 2.0;
+                    let sz = he.z * 2.0;
+                    let scale_m = Mat4::from_scale(Vec3::new(sx, sy, sz));
+                    model_m = base_m * scale_m;
+                } else {
+                    // Fallback: reasonable plane size if shape not Cuboid
+                    let scale_m = Mat4::from_scale(Vec3::new(200.0, 1.0, 200.0));
+                    model_m = base_m * scale_m;
+                }
+            } else {
+                // Fallback if no collider found (shouldn't happen)
+                let scale_m = Mat4::from_scale(Vec3::new(200.0, 1.0, 200.0));
+                model_m = base_m * scale_m;
+            }
+        }
 
         // Color based on object type; give ground a neutral tint
         let color = match body.user_data {
@@ -1846,7 +1875,7 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
         };
 
         out.push(InstanceRaw {
-            model: m.to_cols_array(),
+            model: model_m.to_cols_array(),
             color,
         });
     }
