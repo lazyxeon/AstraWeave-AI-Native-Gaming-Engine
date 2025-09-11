@@ -290,9 +290,11 @@ fn load_texture_from_bytes(
     bytes: &[u8],
     label: &str,
 ) -> Result<LoadedTexture> {
+    println!("Loading texture '{}' from {} bytes", label, bytes.len());
     let img = image::load_from_memory(bytes)?;
     let rgba = img.to_rgba8();
     let dimensions = img.dimensions();
+    println!("Texture '{}' loaded successfully: {}x{} pixels", label, dimensions.0, dimensions.1);
 
     let size = wgpu::Extent3d {
         width: dimensions.0,
@@ -338,6 +340,8 @@ fn load_texture_from_bytes(
         ..Default::default()
     });
 
+    println!("Successfully created texture resources for '{}'", label);
+
     Ok(LoadedTexture {
         texture,
         view,
@@ -350,7 +354,13 @@ fn load_texture_from_file(
     queue: &wgpu::Queue,
     path: &Path,
 ) -> Result<LoadedTexture> {
+    println!("Attempting to load texture from file: {}", path.display());
+    if !path.exists() {
+        eprintln!("ERROR: Texture file does not exist: {}", path.display());
+        return Err(anyhow::anyhow!("Texture file not found: {}", path.display()));
+    }
     let bytes = fs::read(path)?;
+    println!("Successfully read {} bytes from {}", bytes.len(), path.display());
     load_texture_from_bytes(device, queue, &bytes, &path.to_string_lossy())
 }
 
@@ -1128,8 +1138,19 @@ fn create_default_normal_texture(
 // ---------------- renderer setup ----------------
 async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result<RenderStuff> {
     let size = window.inner_size();
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    println!("Setting up wgpu renderer with window size: {}x{}", size.width, size.height);
+    
+    // Enable debug features for better error reporting
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::all(),
+        flags: wgpu::InstanceFlags::DEBUG | wgpu::InstanceFlags::VALIDATION,
+        ..Default::default()
+    });
+    
+    println!("Creating surface...");
     let surface = instance.create_surface(window.clone())?;
+    
+    println!("Requesting adapter...");
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -1138,6 +1159,10 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         })
         .await
         .unwrap();
+    
+    println!("Adapter found: {:?}", adapter.get_info());
+    
+    println!("Requesting device...");
     let (device, queue) = adapter
         .request_device(
             &wgpu::DeviceDescriptor {
@@ -1145,18 +1170,25 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
             },
-            None,
+            None, // Enable validation for debug builds: Some(&std::path::Path::new("wgpu_trace"))
         )
         .await
         .unwrap();
+    
+    println!("Device created successfully");
+    
     let msaa_samples = 1u32;
     let caps = surface.get_capabilities(&adapter);
+    println!("Surface capabilities: {:?}", caps);
+    
     let surface_format = caps
         .formats
         .iter()
         .copied()
         .find(|f| f.is_srgb())
         .unwrap_or(caps.formats[0]);
+    
+    println!("Selected surface format: {:?}", surface_format);
     let surface_cfg = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,

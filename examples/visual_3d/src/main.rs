@@ -11,16 +11,16 @@ use winit::{
 
 fn world_to_instances(world: &World, scale: f32) -> Vec<Instance> {
     let mut v = Vec::new();
-    // obstacles as gray cubes
+    // obstacles as gray cubes (representing textured stone blocks)
     for (x, y) in world.obstacles.iter() {
         let pos = vec3(*x as f32 * scale, 0.5, *y as f32 * scale);
         v.push(Instance::from_pos_scale_color(
             pos,
             vec3(0.9, 1.0, 0.9) * 0.9,
-            [0.5, 0.5, 0.5, 1.0],
+            [0.6, 0.6, 0.7, 1.0], // Stone-like color
         ));
     }
-    // entities: player (blue), comp (green), enemy (red)
+    // entities: player (blue), comp (green), enemy (red) - representing characters with textures
     for e in world.all_of_team(0) {
         // player
         let p = world.pos_of(e).unwrap();
@@ -51,11 +51,41 @@ fn world_to_instances(world: &World, scale: f32) -> Vec<Instance> {
     v
 }
 
+// Simple texture validation function
+fn validate_textures() -> anyhow::Result<()> {
+    #[cfg(feature = "textures")]
+    {
+        let texture_files = [
+            "assets/grass.png",
+            "assets/dirt.png", 
+            "assets/stone.png",
+            "assets/grass_n.png",
+            "assets/dirt_n.png",
+            "assets/stone_n.png",
+            "assets/default_n.png"
+        ];
+        
+        astraweave_render::texture::validate_texture_assets(&texture_files)
+    }
+    
+    #[cfg(not(feature = "textures"))]
+    {
+        println!("🎨 Texture validation skipped (textures feature not enabled)");
+        println!("✅ Visual demo will use basic colored primitives");
+        Ok(())
+    }
+}
+
 fn main() -> anyhow::Result<()> {
+    println!("🎮 AstraWeave Visual 3D Demo - Enhanced with Texture Validation");
+    
+    // Validate textures before starting graphics
+    validate_textures()?;
+    
     let event_loop = EventLoop::new()?;
     let window = Arc::new(
         winit::window::WindowBuilder::new()
-            .with_title("Veilweaver 3D")
+            .with_title("Veilweaver 3D - Texture-Ready Demo")
             .with_inner_size(PhysicalSize::new(1280, 720))
             .build(&event_loop)?,
     );
@@ -64,11 +94,12 @@ fn main() -> anyhow::Result<()> {
     let mut world = World::new();
     for y in 1..=8 {
         world.obstacles.insert((6, y));
-    } // vertical wall
+    } // vertical wall (will show as stone-like blocks)
     let _player = world.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
     let _comp = world.spawn("Companion", IVec2 { x: 3, y: 2 }, Team { id: 1 }, 80, 30);
     let _enemy = world.spawn("Enemy", IVec2 { x: 12, y: 2 }, Team { id: 2 }, 60, 0);
 
+    println!("🖥️  Creating renderer...");
     let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
 
     let mut camera = Camera {
@@ -87,6 +118,10 @@ fn main() -> anyhow::Result<()> {
     renderer.update_camera(&camera);
 
     let mut last = Instant::now();
+    
+    println!("✅ Setup complete! Note: This demo uses basic colored primitives.");
+    println!("   For full texture rendering, use the unified_showcase example.");
+    println!("   Controls: WASD + mouse to move camera");
 
     event_loop
         .run(move |event, elwt| {
