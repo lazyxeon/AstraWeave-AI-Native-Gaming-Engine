@@ -12,6 +12,7 @@ wgpu = { workspace = true }
 winit = { workspace = true }
 pollster = { workspace = true }
 rand = { workspace = true }
+astraweave-terrain = { path = "../astraweave-terrain" }
 image = { version = "0.25", optional = true }
 
 [features]

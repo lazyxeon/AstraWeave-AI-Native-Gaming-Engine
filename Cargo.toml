@@ -26,6 +26,7 @@ members = [
   "examples/visual_3d",
   "astraweave-physics",
   "astraweave-nav",
+  "astraweave-terrain",
   "examples/physics_demo3d",
   "examples/navmesh_demo",
   "astraweave-gameplay",
@@ -45,6 +46,7 @@ members = [
   "examples/debug_toolkit_demo",
   "examples/save_integration",
   "examples/unified_showcase",
+  "examples/terrain_demo",
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
