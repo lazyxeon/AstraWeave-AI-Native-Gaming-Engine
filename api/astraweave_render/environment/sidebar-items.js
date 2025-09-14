@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["WeatherType"],"struct":["SkyConfig","SkyRenderer","TimeOfDay","WeatherParticle","WeatherParticles","WeatherSystem"]};
