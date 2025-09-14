@@ -1,0 +1,189 @@
+{
+  "biome_distribution": {
+    "desert": 65536
+  },
+  "structure_distribution": {
+    "AncientRuin": 2,
+    "Market": 2,
+    "RockFormation": 9,
+    "Temple": 1,
+    "Tomb": 3,
+    "Villa": 2,
+    "Watchtower": 1,
+    "Well": 3
+  },
+  "total_resources": 80,
+  "total_structures": 23,
+  "total_triangles": 129032,
+  "total_vegetation": 26082,
+  "total_vertices": 65536,
+  "world_config": {
+    "biomes": [
+      {
+        "base_resource_amount": [
+          1,
+          4
+        ],
+        "biome_type": "Desert",
+        "conditions": {
+          "height_range": [
+            0.0,
+            30.0
+          ],
+          "max_slope": 20.0,
+          "moisture_range": [
+            0.0,
+            0.30000001192092896
+          ],
+          "temperature_range": [
+            0.699999988079071,
+            1.0
+          ]
+        },
+        "description": "Sandy dunes with sparse vegetation and extreme temperatures",
+        "ground_textures": [
+          "assets/textures/sand_diffuse.png",
+          "assets/textures/sandstone_diffuse.png"
+        ],
+        "name": "Arid Desert",
+        "priority": 2,
+        "resource_respawn": [
+          60.0,
+          300.0
+        ],
+        "resource_weights": [
+          [
+            "Crystal",
+            2.0
+          ],
+          [
+            "Ore",
+            1.5
+          ],
+          [
+            "Fiber",
+            0.5
+          ]
+        ],
+        "sky": {
+          "cloud_coverage": 0.10000000149011612,
+          "fog_color": [
+            0.8999999761581421,
+            0.800000011920929,
+            0.6000000238418579
+          ],
+          "fog_density": 0.019999999552965164,
+          "horizon_color": [
+            0.8999999761581421,
+            0.699999988079071,
+            0.5
+          ],
+          "precipitation": "Sandstorm",
+          "sun_color": [
+            1.0,
+            0.8999999761581421,
+            0.6000000238418579
+          ],
+          "zenith_color": [
+            0.6000000238418579,
+            0.800000011920929,
+            0.8999999761581421
+          ]
+        },
+        "vegetation": {
+          "density": 0.10000000149011612,
+          "random_rotation": true,
+          "size_variation": [
+            0.5,
+            2.0
+          ],
+          "vegetation_types": [
+            {
+              "model_path": "assets/models/cactus.glb",
+              "name": "cactus",
+              "scale_range": [
+                0.699999988079071,
+                1.7999999523162842
+              ],
+              "slope_tolerance": 15.0,
+              "weight": 2.0
+            },
+            {
+              "model_path": "assets/models/desert_shrub.glb",
+              "name": "desert_shrub",
+              "scale_range": [
+                0.6000000238418579,
+                1.2000000476837158
+              ],
+              "slope_tolerance": 25.0,
+              "weight": 1.5
+            }
+          ]
+        }
+      }
+    ],
+    "chunk_size": 256.0,
+    "climate": {
+      "moisture": {
+        "amplitude": 1.0,
+        "lacunarity": 2.1,
+        "octaves": 4,
+        "offset": 0.5,
+        "persistence": 0.6,
+        "scale": 0.0015
+      },
+      "moisture_distance_falloff": 0.0010000000474974513,
+      "temperature": {
+        "amplitude": 1.0,
+        "lacunarity": 2.0,
+        "octaves": 3,
+        "offset": 0.5,
+        "persistence": 0.5,
+        "scale": 0.001
+      },
+      "temperature_height_gradient": -0.006500000134110451,
+      "temperature_latitude_gradient": 0.800000011920929
+    },
+    "heightmap_resolution": 128,
+    "noise": {
+      "base_elevation": {
+        "amplitude": 50.0,
+        "enabled": true,
+        "lacunarity": 2.0,
+        "noise_type": "Perlin",
+        "octaves": 4,
+        "persistence": 0.5,
+        "scale": 0.005
+      },
+      "detail": {
+        "amplitude": 5.0,
+        "enabled": true,
+        "lacunarity": 2.0,
+        "noise_type": "Billow",
+        "octaves": 3,
+        "persistence": 0.6,
+        "scale": 0.02
+      },
+      "erosion_enabled": true,
+      "erosion_strength": 0.30000001192092896,
+      "mountains": {
+        "amplitude": 80.0,
+        "enabled": true,
+        "lacunarity": 2.2,
+        "noise_type": "RidgedNoise",
+        "octaves": 6,
+        "persistence": 0.4,
+        "scale": 0.002
+      }
+    },
+    "seed": 12345,
+    "structures": {
+      "density": 0.4000000059604645,
+      "edge_buffer": 20.0,
+      "height_tolerance": 2.0,
+      "include_ancient": true,
+      "include_defensive": true,
+      "seed": 0
+    }
+  }
+}

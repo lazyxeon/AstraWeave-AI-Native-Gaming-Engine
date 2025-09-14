@@ -349,11 +349,12 @@ impl VegetationScatter {
     }
 }
 
-/// Combined scatter result containing both vegetation and resources
+/// Combined scatter result containing vegetation, resources, and structures
 #[derive(Debug, Clone)]
 pub struct ScatterResult {
     pub vegetation: Vec<VegetationInstance>,
     pub resources: Vec<ResourceNode>,
+    pub structures: Vec<crate::structures::StructureInstance>,
     pub chunk_id: ChunkId,
 }
 
@@ -363,6 +364,7 @@ impl ScatterResult {
         Self {
             vegetation: Vec::new(),
             resources: Vec::new(),
+            structures: Vec::new(),
             chunk_id,
         }
     }
