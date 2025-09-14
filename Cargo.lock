@@ -548,6 +548,7 @@ name = "astraweave-render"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-terrain",
  "bytemuck",
  "glam",
  "image",

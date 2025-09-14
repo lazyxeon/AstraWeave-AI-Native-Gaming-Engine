@@ -9,12 +9,14 @@ pub mod noise_gen;
 pub mod biome;
 pub mod climate;
 pub mod erosion;
+pub mod scatter;
 
 pub use chunk::{TerrainChunk, ChunkId, ChunkManager};
 pub use heightmap::{Heightmap, HeightmapConfig};
 pub use noise_gen::{NoiseConfig, TerrainNoise};
 pub use biome::{Biome, BiomeType, BiomeConfig};
 pub use climate::{ClimateMap, ClimateConfig};
+pub use scatter::{VegetationScatter, VegetationInstance, ScatterConfig, ScatterResult};
 
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
@@ -78,7 +80,54 @@ impl WorldGenerator {
         }
     }
 
-    /// Generate a terrain chunk at the given world position
+    /// Generate a terrain chunk at the given world position with vegetation and resources
+    pub fn generate_chunk_with_scatter(&mut self, chunk_id: ChunkId) -> anyhow::Result<(TerrainChunk, ScatterResult)> {
+        // Generate the basic terrain chunk
+        let chunk = self.generate_chunk(chunk_id)?;
+        
+        // Generate scatter for the chunk
+        let scatter_result = self.scatter_chunk_content(&chunk)?;
+        
+        Ok((chunk, scatter_result))
+    }
+
+    /// Generate scatter content (vegetation and resources) for an existing chunk
+    pub fn scatter_chunk_content(&self, chunk: &TerrainChunk) -> anyhow::Result<ScatterResult> {
+        let mut result = ScatterResult::new(chunk.id());
+        
+        // Create scatter system
+        let scatter_config = ScatterConfig::default();
+        let scatter = VegetationScatter::new(scatter_config);
+        
+        // Sample the biome at the chunk center to determine configuration
+        let chunk_center = chunk.id().to_center_pos(self.config.chunk_size);
+        let center_biome = chunk.get_biome_at_world_pos(chunk_center, self.config.chunk_size)
+            .unwrap_or(BiomeType::Grassland);
+        
+        // Find the biome configuration
+        let biome_config = self.config.biomes
+            .iter()
+            .find(|b| b.biome_type == center_biome)
+            .unwrap_or(&self.config.biomes[0]);
+        
+        // Generate vegetation
+        result.vegetation = scatter.scatter_vegetation(
+            chunk,
+            self.config.chunk_size,
+            biome_config,
+            self.config.seed + chunk.id().x as u64 * 1000 + chunk.id().z as u64,
+        )?;
+        
+        // Generate resources
+        result.resources = scatter.scatter_resources(
+            chunk,
+            self.config.chunk_size,
+            biome_config,
+            self.config.seed + chunk.id().x as u64 * 2000 + chunk.id().z as u64,
+        )?;
+        
+        Ok(result)
+    }
     pub fn generate_chunk(&mut self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
         // Generate heightmap for this chunk
         let heightmap = self.noise.generate_heightmap(
