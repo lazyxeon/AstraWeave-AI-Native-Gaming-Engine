@@ -1181,17 +1181,12 @@ async fn run() -> Result<()> {
                             physics_step(&mut physics);
                         }
 
-                        // Sync sim to render
+                        // Sync sim to render and batch instances by mesh type
                         sync_instances_from_physics(&physics, &characters, &mut instances);
                         render.instance_count = instances.len() as u32;
-
-                        if !instances.is_empty() {
-                            render.queue.write_buffer(
-                                &render.instance_vb,
-                                0,
-                                bytemuck::cast_slice(&instances),
-                            );
-                        }
+                        
+                        // Batch instances by mesh type for efficient rendering
+                        let instance_batches = batch_instances_by_mesh_type(&instances);
 
                         // Camera uniform
                         let cam = GpuCamera {
@@ -1254,70 +1249,32 @@ async fn run() -> Result<()> {
                             if let Some(ref texture_bg) = render.ground_bind_group {
                                 rp.set_bind_group(1, texture_bg, &[]);
                             }
-                            // For now, render all objects with all mesh types (shader will handle selection)
-                            // This is inefficient but demonstrates different models
-                            
-                            if let Some(cube_mesh) = render.meshes.get(&MeshType::Cube) {
-                                rp.set_vertex_buffer(0, cube_mesh.vertex_buffer.slice(..));
-                                rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                rp.set_index_buffer(
-                                    cube_mesh.index_buffer.slice(..),
-                                    wgpu::IndexFormat::Uint16,
-                                );
-                                if render.instance_count > 0 {
-                                    rp.draw_indexed(
-                                        0..cube_mesh.index_count,
+                            // Render each mesh type batch efficiently
+                            for batch in &instance_batches {
+                                if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                    // Upload this batch's instances to the instance buffer
+                                    render.queue.write_buffer(
+                                        &render.instance_vb,
                                         0,
-                                        0..render.instance_count,
+                                        bytemuck::cast_slice(&batch.instances),
                                     );
-                                }
-                            }
-                            
-                            if let Some(tree_mesh) = render.meshes.get(&MeshType::Tree) {
-                                rp.set_vertex_buffer(0, tree_mesh.vertex_buffer.slice(..));
-                                rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                rp.set_index_buffer(
-                                    tree_mesh.index_buffer.slice(..),
-                                    wgpu::IndexFormat::Uint16,
-                                );
-                                if render.instance_count > 0 {
-                                    rp.draw_indexed(
-                                        0..tree_mesh.index_count,
-                                        0,
-                                        0..render.instance_count,
+                                    
+                                    // Set up rendering for this mesh type
+                                    rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                    rp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                    rp.set_index_buffer(
+                                        mesh.index_buffer.slice(..),
+                                        wgpu::IndexFormat::Uint16,
                                     );
-                                }
-                            }
-                            
-                            if let Some(house_mesh) = render.meshes.get(&MeshType::House) {
-                                rp.set_vertex_buffer(0, house_mesh.vertex_buffer.slice(..));
-                                rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                rp.set_index_buffer(
-                                    house_mesh.index_buffer.slice(..),
-                                    wgpu::IndexFormat::Uint16,
-                                );
-                                if render.instance_count > 0 {
-                                    rp.draw_indexed(
-                                        0..house_mesh.index_count,
-                                        0,
-                                        0..render.instance_count,
-                                    );
-                                }
-                            }
-                            
-                            if let Some(character_mesh) = render.meshes.get(&MeshType::Character) {
-                                rp.set_vertex_buffer(0, character_mesh.vertex_buffer.slice(..));
-                                rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                rp.set_index_buffer(
-                                    character_mesh.index_buffer.slice(..),
-                                    wgpu::IndexFormat::Uint16,
-                                );
-                                if render.instance_count > 0 {
-                                    rp.draw_indexed(
-                                        0..character_mesh.index_count,
-                                        0,
-                                        0..render.instance_count,
-                                    );
+                                    
+                                    // Draw this batch
+                                    if !batch.instances.is_empty() {
+                                        rp.draw_indexed(
+                                            0..mesh.index_count,
+                                            0,
+                                            0..batch.instances.len() as u32,
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -1439,6 +1396,42 @@ fn create_default_normal_texture(
 }
 
 // ---------------- renderer setup ----------------
+// Structure to hold batched instance data for efficient rendering
+struct InstanceBatch {
+    instances: Vec<InstanceRaw>,
+    mesh_type: MeshType,
+}
+
+fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch> {
+    let mut batches = Vec::new();
+    
+    // Create separate batches for each mesh type
+    for &mesh_type_val in &[MeshType::Cube as u32, MeshType::Tree as u32, MeshType::House as u32, MeshType::Character as u32] {
+        let mesh_type = match mesh_type_val {
+            0 => MeshType::Cube,
+            1 => MeshType::Tree,
+            2 => MeshType::House,
+            3 => MeshType::Character,
+            _ => MeshType::Cube,
+        };
+        
+        let filtered_instances: Vec<InstanceRaw> = instances
+            .iter()
+            .filter(|instance| instance.mesh_type == mesh_type_val)
+            .copied()
+            .collect();
+            
+        if !filtered_instances.is_empty() {
+            batches.push(InstanceBatch {
+                instances: filtered_instances,
+                mesh_type,
+            });
+        }
+    }
+    
+    batches
+}
+
 fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) -> Mesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("mesh-vertices"),
