@@ -1,0 +1,13 @@
+{
+  "fog_density": 0.0,
+  "rain_intensity": 0.0,
+  "snow_intensity": 0.0,
+  "time_of_day": 12.0,
+  "weather": "Clear",
+  "wind_direction": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "wind_strength": 0.10000000149011612
+}
