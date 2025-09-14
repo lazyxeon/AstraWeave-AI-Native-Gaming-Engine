@@ -251,11 +251,6 @@ impl Character {
     }
 }
 
-#[derive(Default)]
-struct InputState {
-    scroll_delta: f32,
-}
-
 // ------------------------------- Physics -------------------------------
 
 struct Physics {
@@ -738,8 +733,9 @@ async fn run() -> Result<()> {
     } else {
         println!("Successfully loaded initial grassland texture pack");
         println!(
-            "Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse"
+            "Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse, C=toggle camera mode"
         );
+        println!("Mouse wheel: zoom camera | Right-click + mouse: look around");
         println!("Texture packs: Press 1 for grassland, 2 for desert");
     }
 
@@ -757,7 +753,6 @@ async fn run() -> Result<()> {
         zfar: 5000.0,
     };
     let mut camera_controller = CameraController::new(8.0, 0.002);
-    let mut input = InputState::default();
     let mut last = Instant::now();
     let mut fps_acc = 0.0;
     let mut fps_cnt = 0u32;
@@ -858,6 +853,12 @@ async fn run() -> Result<()> {
                                             }
                                         }
                                     }
+                                    KeyCode::KeyC => {
+                                        if pressed {
+                                            camera_controller.toggle_mode(&mut camera);
+                                            println!("Camera mode: {:?}", camera_controller.mode);
+                                        }
+                                    }
                                     KeyCode::Digit1 => {
                                         if pressed {
                                             let pack_name = "grassland";
@@ -929,7 +930,8 @@ async fn run() -> Result<()> {
                         delta: MouseScrollDelta::LineDelta(_, y),
                         ..
                     } => {
-                        input.scroll_delta = y;
+                        // Use camera controller for zoom instead of speed adjustment
+                        camera_controller.process_scroll(&mut camera, y);
                     }
                     WindowEvent::Resized(size) => {
                         render.surface_cfg.width = size.width.max(1);
@@ -970,14 +972,6 @@ async fn run() -> Result<()> {
                         camera.aspect = (render.surface_cfg.width as f32 * ui.resolution_scale)
                             .max(1.0)
                             / (render.surface_cfg.height as f32 * ui.resolution_scale).max(1.0);
-
-                        // Adjust camera speed via scroll
-                        if input.scroll_delta.abs() > 0.1 {
-                            camera_controller.speed =
-                                (camera_controller.speed + input.scroll_delta).clamp(1.0, 50.0);
-                            ui.camera_speed = camera_controller.speed;
-                            input.scroll_delta = 0.0;
-                        }
 
                         // Update camera with controller
                         camera_controller.update_camera(&mut camera, dt.as_secs_f32());
