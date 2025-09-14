@@ -194,3 +194,140 @@ impl CameraController {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_camera_basic_functionality() {
+        let camera = Camera {
+            position: Vec3::new(0.0, 0.0, 5.0),
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 60f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        // Test view matrix generation
+        let view_mat = camera.view_matrix();
+        assert!(!view_mat.is_nan());
+
+        // Test projection matrix generation
+        let proj_mat = camera.proj_matrix();
+        assert!(!proj_mat.is_nan());
+
+        // Test direction calculation
+        let dir = Camera::dir(0.0, 0.0);
+        assert!((dir - Vec3::new(1.0, 0.0, 0.0)).length() < 0.001);
+    }
+
+    #[test]
+    fn test_camera_controller_movement() {
+        let mut controller = CameraController::new(5.0, 0.01);
+        let mut camera = Camera {
+            position: Vec3::ZERO,
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 60f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        // Test keyboard input processing
+        controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
+        assert_eq!(controller.fwd, 1.0);
+        
+        controller.process_keyboard(winit::keyboard::KeyCode::KeyW, false);
+        assert_eq!(controller.fwd, 0.0);
+
+        // Test camera update
+        controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
+        let initial_pos = camera.position;
+        controller.update_camera(&mut camera, 0.1);
+        
+        // Camera should have moved forward
+        assert!(camera.position != initial_pos);
+    }
+
+    #[test]
+    fn test_camera_zoom_functionality() {
+        let mut controller = CameraController::new(5.0, 0.01);
+        let mut camera = Camera {
+            position: Vec3::ZERO,
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 60f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        let initial_fov = camera.fovy;
+        
+        // Test zoom in
+        controller.process_scroll(&mut camera, 1.0);
+        assert!(camera.fovy < initial_fov);
+        
+        // Test zoom out
+        controller.process_scroll(&mut camera, -1.0);
+        assert!(camera.fovy > initial_fov - 0.1);
+    }
+
+    #[test]
+    fn test_camera_mode_toggle() {
+        let mut controller = CameraController::new(5.0, 0.01);
+        let mut camera = Camera {
+            position: Vec3::new(0.0, 0.0, 5.0),
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 60f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        // Initially in FreeFly mode
+        assert!(matches!(controller.mode, CameraMode::FreeFly));
+
+        // Toggle to Orbit mode
+        controller.toggle_mode(&mut camera);
+        assert!(matches!(controller.mode, CameraMode::Orbit));
+        assert!(controller.orbit_target != Vec3::ZERO);
+
+        // Toggle back to FreeFly mode
+        controller.toggle_mode(&mut camera);
+        assert!(matches!(controller.mode, CameraMode::FreeFly));
+    }
+
+    #[test]
+    fn test_orbit_mode_behavior() {
+        let mut controller = CameraController::new(5.0, 0.01);
+        let mut camera = Camera {
+            position: Vec3::new(0.0, 0.0, 5.0),
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 60f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        // Switch to orbit mode
+        controller.toggle_mode(&mut camera);
+        
+        // Test orbit distance zoom
+        let initial_distance = controller.orbit_distance;
+        controller.process_scroll(&mut camera, 1.0);
+        assert!(controller.orbit_distance < initial_distance);
+        
+        // Test orbit target movement
+        let initial_target = controller.orbit_target;
+        controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
+        controller.update_camera(&mut camera, 0.1);
+        assert!(controller.orbit_target != initial_target);
+    }
+}
