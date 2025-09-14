@@ -2048,6 +2048,47 @@ fn vs_main(in: VsIn) -> VsOut {
   return out;
 }
 
+// Sky color function - generates procedural sky based on direction and time
+fn sky_color(direction: vec3<f32>, time: f32) -> vec3<f32> {
+  let dir = normalize(direction);
+  let y = clamp(dir.y, -1.0, 1.0);
+  
+  // Time-based sun position for day/night cycle
+  let sun_angle = time * 0.1;
+  let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.8, sin(sun_angle) * 0.8, sin(sun_angle * 0.3) * 0.4));
+  
+  // Calculate sun influence
+  let sun_dot = max(dot(dir, sun_dir), 0.0);
+  let sun_influence = pow(sun_dot, 32.0);
+  
+  // Day factor based on sun height
+  let day_factor = clamp(sun_dir.y + 0.2, 0.0, 1.0);
+  
+  // Sky gradient colors based on time of day
+  let horizon_day = vec3<f32>(0.8, 0.9, 1.0);    // Light blue horizon
+  let zenith_day = vec3<f32>(0.3, 0.6, 1.0);     // Deep blue zenith
+  let horizon_night = vec3<f32>(0.1, 0.1, 0.3);  // Dark blue horizon
+  let zenith_night = vec3<f32>(0.05, 0.05, 0.2); // Very dark blue zenith
+  
+  // Interpolate between day and night colors
+  let horizon_color = mix(horizon_night, horizon_day, day_factor);
+  let zenith_color = mix(zenith_night, zenith_day, day_factor);
+  
+  // Vertical gradient from horizon to zenith
+  let gradient_factor = clamp((y + 1.0) * 0.5, 0.0, 1.0);
+  let sky_base = mix(horizon_color, zenith_color, gradient_factor * gradient_factor);
+  
+  // Add sun disk and atmospheric scattering
+  let sun_color = vec3<f32>(1.0, 0.9, 0.7) * day_factor;
+  let sun_contribution = sun_influence * sun_color * 0.8;
+  
+  // Add subtle atmospheric effects
+  let atmosphere_factor = 1.0 - abs(y);
+  let atmosphere_color = mix(vec3<f32>(0.9, 0.8, 0.7), vec3<f32>(0.7, 0.8, 1.0), day_factor);
+  let atmosphere_contribution = atmosphere_factor * atmosphere_color * 0.1 * day_factor;
+  
+  return sky_base + sun_contribution + atmosphere_contribution;
+}
 
 
 // Enhanced water rendering for rivers and lakes
