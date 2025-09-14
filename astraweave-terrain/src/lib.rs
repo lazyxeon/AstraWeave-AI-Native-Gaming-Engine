@@ -10,6 +10,7 @@ pub mod biome;
 pub mod climate;
 pub mod erosion;
 pub mod scatter;
+pub mod structures;
 
 pub use chunk::{TerrainChunk, ChunkId, ChunkManager};
 pub use heightmap::{Heightmap, HeightmapConfig};
@@ -17,6 +18,7 @@ pub use noise_gen::{NoiseConfig, TerrainNoise};
 pub use biome::{Biome, BiomeType, BiomeConfig};
 pub use climate::{ClimateMap, ClimateConfig};
 pub use scatter::{VegetationScatter, VegetationInstance, ScatterConfig, ScatterResult};
+pub use structures::{StructureType, StructureConfig, StructureInstance, StructureResult, StructureGenerator};
 
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
@@ -36,6 +38,8 @@ pub struct WorldConfig {
     pub climate: ClimateConfig,
     /// Available biome configurations
     pub biomes: Vec<BiomeConfig>,
+    /// Structure generation configuration
+    pub structures: structures::StructureConfig,
 }
 
 impl Default for WorldConfig {
@@ -52,6 +56,7 @@ impl Default for WorldConfig {
                 BiomeConfig::forest(),
                 BiomeConfig::mountain(),
             ],
+            structures: structures::StructureConfig::default(),
         }
     }
 }
@@ -63,6 +68,7 @@ pub struct WorldGenerator {
     noise: TerrainNoise,
     climate: ClimateMap,
     chunk_manager: ChunkManager,
+    structure_generator: structures::StructureGenerator,
 }
 
 impl WorldGenerator {
@@ -71,12 +77,16 @@ impl WorldGenerator {
         let noise = TerrainNoise::new(&config.noise, config.seed);
         let climate = ClimateMap::new(&config.climate, config.seed + 1);
         let chunk_manager = ChunkManager::new(config.chunk_size, config.heightmap_resolution);
+        let mut structure_config = config.structures.clone();
+        structure_config.seed = config.seed + 2; // Offset seed for structures
+        let structure_generator = structures::StructureGenerator::new(structure_config);
         
         Self {
             config,
             noise,
             climate,
             chunk_manager,
+            structure_generator,
         }
     }
 
@@ -92,7 +102,7 @@ impl WorldGenerator {
     }
 
     /// Generate scatter content (vegetation and resources) for an existing chunk
-    pub fn scatter_chunk_content(&self, chunk: &TerrainChunk) -> anyhow::Result<ScatterResult> {
+    pub fn scatter_chunk_content(&mut self, chunk: &TerrainChunk) -> anyhow::Result<ScatterResult> {
         let mut result = ScatterResult::new(chunk.id());
         
         // Create scatter system
@@ -125,6 +135,14 @@ impl WorldGenerator {
             biome_config,
             self.config.seed + chunk.id().x as u64 * 2000 + chunk.id().z as u64,
         )?;
+        
+        // Generate structures
+        let structure_result = self.structure_generator.generate_structures(
+            chunk,
+            self.config.chunk_size,
+            center_biome,
+        )?;
+        result.structures = structure_result.structures;
         
         Ok(result)
     }

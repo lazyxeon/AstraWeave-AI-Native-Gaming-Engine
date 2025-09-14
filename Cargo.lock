@@ -554,6 +554,7 @@ dependencies = [
  "image",
  "pollster",
  "rand 0.9.2",
+ "serde",
  "wgpu",
  "winit",
 ]
@@ -1152,6 +1153,23 @@ dependencies = [
  "rustc-hash 2.1.1",
  "shlex",
  "syn 2.0.106",
+]
+
+[[package]]
+name = "biome_showcase"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "astraweave-core",
+ "astraweave-render",
+ "astraweave-terrain",
+ "bytemuck",
+ "clap",
+ "glam",
+ "pollster",
+ "serde_json",
+ "wgpu",
+ "winit",
 ]
 
 [[package]]
