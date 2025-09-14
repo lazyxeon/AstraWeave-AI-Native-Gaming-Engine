@@ -4,9 +4,8 @@ description = "A harsh desert environment with sandy dunes and sparse vegetation
 
 [ground]
 texture = "sand"  # Now using proper sand texture
-normal = "sand_n"  # Sand normal map for enhanced detail
 scale = 8.0
-color_tint = [1.0, 1.0, 1.0]  # Neutral tint to preserve texture colors
+color_tint = [1.0, 1.0, 1.0, 1.0]  # Neutral tint to preserve texture colors
 
 [structures]
 # Desert settlements using stone
