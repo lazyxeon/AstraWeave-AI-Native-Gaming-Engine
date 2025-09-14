@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Camera","CameraController"]};
+window.SIDEBAR_ITEMS = {"enum":["CameraMode"],"struct":["Camera","CameraController"]};
