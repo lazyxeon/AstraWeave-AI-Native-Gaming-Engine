@@ -1086,9 +1086,9 @@ async fn run() -> Result<()> {
                 event: DeviceEvent::MouseMotion { delta },
                 ..
             } => {
-                // Use proper mouse position handling for camera controller
-                let pos = Vec2::new(delta.0 as f32, delta.1 as f32);
-                camera_controller.process_mouse_move(&mut camera, pos);
+                // Use proper mouse delta handling for camera controller
+                let mouse_delta = Vec2::new(delta.0 as f32, delta.1 as f32);
+                camera_controller.process_mouse_delta(&mut camera, mouse_delta);
             }
             _ => {}
         }
