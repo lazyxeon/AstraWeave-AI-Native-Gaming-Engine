@@ -117,6 +117,20 @@ impl CameraController {
         }
     }
 
+    pub fn process_mouse_delta(&mut self, camera: &mut Camera, delta: Vec2) {
+        if self.dragging {
+            let scaled_delta = delta * self.sensitivity;
+            camera.yaw -= scaled_delta.x;
+            camera.pitch -= scaled_delta.y;
+            camera.pitch = camera.pitch.clamp(-1.54, 1.54);
+            
+            // Update orbit position if in orbit mode
+            if matches!(self.mode, CameraMode::Orbit) {
+                self.update_orbit_position(camera);
+            }
+        }
+    }
+
     pub fn process_scroll(&mut self, camera: &mut Camera, delta: f32) {
         match self.mode {
             CameraMode::FreeFly => {
@@ -329,5 +343,46 @@ mod tests {
         controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         controller.update_camera(&mut camera, 0.1);
         assert!(controller.orbit_target != initial_target);
+    }
+
+    #[test]
+    fn test_mouse_delta_processing() {
+        let mut controller = CameraController::new(5.0, 0.01);
+        let mut camera = Camera {
+            position: Vec3::ZERO,
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 60f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        // Test that mouse delta processing works without dragging
+        let initial_yaw = camera.yaw;
+        let initial_pitch = camera.pitch;
+        controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
+        assert_eq!(camera.yaw, initial_yaw); // Should not change without dragging
+        assert_eq!(camera.pitch, initial_pitch);
+
+        // Enable dragging
+        controller.process_mouse_button(winit::event::MouseButton::Right, true);
+
+        // Test mouse delta processing with dragging
+        let initial_yaw = camera.yaw;
+        let initial_pitch = camera.pitch;
+        controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
+        
+        // Yaw should decrease (negative delta.x)
+        assert!(camera.yaw < initial_yaw);
+        // Pitch should decrease (negative delta.y)
+        assert!(camera.pitch < initial_pitch);
+        
+        // Test orbit mode delta processing
+        controller.toggle_mode(&mut camera);
+        let initial_pos = camera.position;
+        controller.process_mouse_delta(&mut camera, Vec2::new(5.0, 0.0));
+        // Position should change due to orbit update
+        assert!(camera.position != initial_pos);
     }
 }
