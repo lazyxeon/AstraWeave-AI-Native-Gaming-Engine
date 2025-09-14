@@ -2185,6 +2185,10 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
     var tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
     
+    // Sample normal map for enhanced surface detail (moved before biome-specific texturing)
+    let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
+    let normal = normalize(normal_sample * 2.0 - 1.0);
+    
     // Biome-specific terrain texturing
     if (biome_type == 0) { // Grassland
       // Mix grass with dirt based on terrain height and slope
@@ -2200,13 +2204,13 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       
     } else if (biome_type == 1) { // Desert
       // Use sampled sand texture with height-based lightening and slope-based rock blending
-      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.8, 1.4);
+      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.0, 1.0);
       let sand_tex = tex_color.rgb * h_factor;
       
-      // Optional tint: rock color on steep slopes (simulated through height variation)
+      // Optional tint: rock color on steep slopes (using normal map for better slope detection)
       let rock_color = vec3<f32>(0.5, 0.45, 0.4);
-      let slope_factor = clamp(abs(terrain_height) / 3.0, 0.0, 0.5);
-      let blended = mix(sand_tex, rock_color, slope_factor);
+      let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
+      let blended = mix(sand_tex, rock_color, slope * 0.5);
       
       // Add mineral deposits and oasis effects using the blended texture
       let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
@@ -2217,10 +2221,6 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         tex_color = blended;
       }
     }
-    
-    // Sample normal map for enhanced surface detail
-    let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
-    let normal = normalize(normal_sample * 2.0 - 1.0);
     
     // Enhanced lighting with time-based sun position
     let sun_angle = time * 0.1;

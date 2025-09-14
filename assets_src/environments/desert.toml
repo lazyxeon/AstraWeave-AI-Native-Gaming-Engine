@@ -3,7 +3,7 @@ name = "Desert"
 description = "A harsh desert environment with sandy dunes and sparse vegetation"
 
 [ground]
-texture = "sand"  # Now using proper sand texture
+texture = "sand.png"  # Now using proper sand texture
 scale = 8.0
 color_tint = [1.0, 1.0, 1.0, 1.0]  # Neutral tint to preserve texture colors
 
