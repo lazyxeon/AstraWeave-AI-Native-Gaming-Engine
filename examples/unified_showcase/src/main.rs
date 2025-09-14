@@ -33,6 +33,8 @@ struct GpuCamera {
 struct InstanceRaw {
     model: [f32; 16],
     color: [f32; 4],
+    mesh_type: u32,  // 0=Cube, 1=Tree, 2=House, 3=Character
+    _padding: [u32; 3], // Padding for alignment
 }
 
 struct RenderStuff {
@@ -42,9 +44,8 @@ struct RenderStuff {
     queue: wgpu::Queue,
     depth_view: wgpu::TextureView,
     pipeline: wgpu::RenderPipeline,
-    cube_vb: wgpu::Buffer,
-    cube_ib: wgpu::Buffer,
-    cube_index_count: u32,
+    // Multiple mesh support
+    meshes: std::collections::HashMap<MeshType, Mesh>,
     camera_ub: wgpu::Buffer,
     camera_bg: wgpu::BindGroup,
     instance_vb: wgpu::Buffer,
@@ -144,6 +145,200 @@ const CUBE_INDICES: &[u16] = &[
     3, 2, 6, 3, 6, 5, // bottom
     4, 7, 1, 4, 1, 0,
 ];
+
+// Tree geometry - tall, thin cylinder-like shape with branches
+const TREE_VERTICES: &[[f32; 3]] = &[
+    // Trunk base (octagon for more natural look)
+    [-0.15, -0.5, 0.0],    // 0
+    [-0.1, -0.5, 0.1],     // 1
+    [0.0, -0.5, 0.15],     // 2
+    [0.1, -0.5, 0.1],      // 3
+    [0.15, -0.5, 0.0],     // 4
+    [0.1, -0.5, -0.1],     // 5
+    [0.0, -0.5, -0.15],    // 6
+    [-0.1, -0.5, -0.1],    // 7
+    
+    // Trunk top (narrower)
+    [-0.1, 0.8, 0.0],      // 8
+    [-0.07, 0.8, 0.07],    // 9
+    [0.0, 0.8, 0.1],       // 10
+    [0.07, 0.8, 0.07],     // 11
+    [0.1, 0.8, 0.0],       // 12
+    [0.07, 0.8, -0.07],    // 13
+    [0.0, 0.8, -0.1],      // 14
+    [-0.07, 0.8, -0.07],   // 15
+    
+    // Crown/foliage (wider)
+    [-0.6, 0.6, 0.0],      // 16
+    [-0.4, 0.6, 0.4],      // 17
+    [0.0, 0.6, 0.6],       // 18
+    [0.4, 0.6, 0.4],       // 19
+    [0.6, 0.6, 0.0],       // 20
+    [0.4, 0.6, -0.4],      // 21
+    [0.0, 0.6, -0.6],      // 22
+    [-0.4, 0.6, -0.4],     // 23
+    [0.0, 1.2, 0.0],       // 24 - tree top
+];
+
+const TREE_INDICES: &[u16] = &[
+    // Trunk sides (octagonal)
+    0, 1, 9, 0, 9, 8,
+    1, 2, 10, 1, 10, 9,
+    2, 3, 11, 2, 11, 10,
+    3, 4, 12, 3, 12, 11,
+    4, 5, 13, 4, 13, 12,
+    5, 6, 14, 5, 14, 13,
+    6, 7, 15, 6, 15, 14,
+    7, 0, 8, 7, 8, 15,
+    
+    // Crown (foliage) - simplified triangular shape
+    8, 16, 17, 8, 17, 9,
+    9, 17, 18, 9, 18, 10,
+    10, 18, 19, 10, 19, 11,
+    11, 19, 20, 11, 20, 12,
+    12, 20, 21, 12, 21, 13,
+    13, 21, 22, 13, 22, 14,
+    14, 22, 23, 14, 23, 15,
+    15, 23, 16, 15, 16, 8,
+    
+    // Crown top triangles
+    16, 17, 24, 17, 18, 24, 18, 19, 24, 19, 20, 24,
+    20, 21, 24, 21, 22, 24, 22, 23, 24, 23, 16, 24,
+];
+
+// House geometry - more complex than a cube
+const HOUSE_VERTICES: &[[f32; 3]] = &[
+    // Base (wider than cube)
+    [-0.8, -0.5, 0.8],     // 0
+    [0.8, -0.5, 0.8],      // 1
+    [0.8, 0.3, 0.8],       // 2
+    [-0.8, 0.3, 0.8],      // 3
+    [-0.8, -0.5, -0.8],    // 4
+    [-0.8, 0.3, -0.8],     // 5
+    [0.8, 0.3, -0.8],      // 6
+    [0.8, -0.5, -0.8],     // 7
+    
+    // Roof peak
+    [0.0, 0.8, 0.9],       // 8
+    [0.0, 0.8, -0.9],      // 9
+    
+    // Chimney
+    [0.4, 0.3, -0.6],      // 10
+    [0.6, 0.3, -0.6],      // 11
+    [0.6, 0.3, -0.4],      // 12
+    [0.4, 0.3, -0.4],      // 13
+    [0.4, 0.9, -0.6],      // 14
+    [0.6, 0.9, -0.6],      // 15
+    [0.6, 0.9, -0.4],      // 16
+    [0.4, 0.9, -0.4],      // 17
+];
+
+const HOUSE_INDICES: &[u16] = &[
+    // Base walls
+    0, 1, 2, 0, 2, 3,       // front
+    1, 7, 6, 1, 6, 2,       // right
+    7, 4, 5, 7, 5, 6,       // back
+    4, 0, 3, 4, 3, 5,       // left
+    
+    // Roof triangles
+    3, 2, 8, 2, 6, 8,       // front roof
+    6, 5, 9, 5, 3, 9,       // back roof
+    8, 6, 9, 8, 9, 3,       // roof ridge (top)
+    
+    // Chimney
+    10, 11, 15, 10, 15, 14, // chimney front
+    11, 12, 16, 11, 16, 15, // chimney right
+    12, 13, 17, 12, 17, 16, // chimney back
+    13, 10, 14, 13, 14, 17, // chimney left
+    14, 15, 16, 14, 16, 17, // chimney top
+];
+
+// Character geometry - humanoid shape
+const CHARACTER_VERTICES: &[[f32; 3]] = &[
+    // Head
+    [-0.15, 0.8, 0.15],    // 0
+    [0.15, 0.8, 0.15],     // 1
+    [0.15, 1.0, 0.15],     // 2
+    [-0.15, 1.0, 0.15],    // 3
+    [-0.15, 0.8, -0.15],   // 4
+    [-0.15, 1.0, -0.15],   // 5
+    [0.15, 1.0, -0.15],    // 6
+    [0.15, 0.8, -0.15],    // 7
+    
+    // Torso
+    [-0.2, 0.2, 0.1],      // 8
+    [0.2, 0.2, 0.1],       // 9
+    [0.2, 0.8, 0.1],       // 10
+    [-0.2, 0.8, 0.1],      // 11
+    [-0.2, 0.2, -0.1],     // 12
+    [-0.2, 0.8, -0.1],     // 13
+    [0.2, 0.8, -0.1],      // 14
+    [0.2, 0.2, -0.1],      // 15
+    
+    // Legs
+    [-0.1, -0.5, 0.05],    // 16
+    [0.0, -0.5, 0.05],     // 17
+    [0.0, 0.2, 0.05],      // 18
+    [-0.1, 0.2, 0.05],     // 19
+    [-0.1, -0.5, -0.05],   // 20
+    [-0.1, 0.2, -0.05],    // 21
+    [0.0, 0.2, -0.05],     // 22
+    [0.0, -0.5, -0.05],    // 23
+    
+    [0.0, -0.5, 0.05],     // 24
+    [0.1, -0.5, 0.05],     // 25
+    [0.1, 0.2, 0.05],      // 26
+    [0.0, 0.2, 0.05],      // 27
+    [0.0, -0.5, -0.05],    // 28
+    [0.0, 0.2, -0.05],     // 29
+    [0.1, 0.2, -0.05],     // 30
+    [0.1, -0.5, -0.05],    // 31
+];
+
+const CHARACTER_INDICES: &[u16] = &[
+    // Head
+    0, 1, 2, 0, 2, 3,       // front
+    1, 7, 6, 1, 6, 2,       // right
+    7, 4, 5, 7, 5, 6,       // back
+    4, 0, 3, 4, 3, 5,       // left
+    3, 2, 6, 3, 6, 5,       // top
+    4, 7, 1, 4, 1, 0,       // bottom
+    
+    // Torso
+    8, 9, 10, 8, 10, 11,    // front
+    9, 15, 14, 9, 14, 10,   // right
+    15, 12, 13, 15, 13, 14, // back
+    12, 8, 11, 12, 11, 13,  // left
+    11, 10, 14, 11, 14, 13, // top
+    12, 15, 9, 12, 9, 8,    // bottom
+    
+    // Left leg
+    16, 17, 18, 16, 18, 19,
+    17, 23, 22, 17, 22, 18,
+    23, 20, 21, 23, 21, 22,
+    20, 16, 19, 20, 19, 21,
+    
+    // Right leg
+    24, 25, 26, 24, 26, 27,
+    25, 31, 30, 25, 30, 26,
+    31, 28, 29, 31, 29, 30,
+    28, 24, 27, 28, 27, 29,
+];
+
+// Mesh type enumeration
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+enum MeshType {
+    Cube,
+    Tree,
+    House,
+    Character,
+}
+
+struct Mesh {
+    vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
+    index_count: u32,
+}
 
 // ------------------------------- Egui wiring -------------------------------
 
@@ -986,17 +1181,12 @@ async fn run() -> Result<()> {
                             physics_step(&mut physics);
                         }
 
-                        // Sync sim to render
+                        // Sync sim to render and batch instances by mesh type
                         sync_instances_from_physics(&physics, &characters, &mut instances);
                         render.instance_count = instances.len() as u32;
-
-                        if !instances.is_empty() {
-                            render.queue.write_buffer(
-                                &render.instance_vb,
-                                0,
-                                bytemuck::cast_slice(&instances),
-                            );
-                        }
+                        
+                        // Batch instances by mesh type for efficient rendering
+                        let instance_batches = batch_instances_by_mesh_type(&instances);
 
                         // Camera uniform
                         let cam = GpuCamera {
@@ -1059,18 +1249,33 @@ async fn run() -> Result<()> {
                             if let Some(ref texture_bg) = render.ground_bind_group {
                                 rp.set_bind_group(1, texture_bg, &[]);
                             }
-                            rp.set_vertex_buffer(0, render.cube_vb.slice(..));
-                            rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                            rp.set_index_buffer(
-                                render.cube_ib.slice(..),
-                                wgpu::IndexFormat::Uint16,
-                            );
-                            if render.instance_count > 0 {
-                                rp.draw_indexed(
-                                    0..render.cube_index_count,
-                                    0,
-                                    0..render.instance_count,
-                                );
+                            // Render each mesh type batch efficiently
+                            for batch in &instance_batches {
+                                if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                    // Upload this batch's instances to the instance buffer
+                                    render.queue.write_buffer(
+                                        &render.instance_vb,
+                                        0,
+                                        bytemuck::cast_slice(&batch.instances),
+                                    );
+                                    
+                                    // Set up rendering for this mesh type
+                                    rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                    rp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                    rp.set_index_buffer(
+                                        mesh.index_buffer.slice(..),
+                                        wgpu::IndexFormat::Uint16,
+                                    );
+                                    
+                                    // Draw this batch
+                                    if !batch.instances.is_empty() {
+                                        rp.draw_indexed(
+                                            0..mesh.index_count,
+                                            0,
+                                            0..batch.instances.len() as u32,
+                                        );
+                                    }
+                                }
                             }
                         }
                         render.queue.submit(Some(encoder.finish()));
@@ -1191,6 +1396,73 @@ fn create_default_normal_texture(
 }
 
 // ---------------- renderer setup ----------------
+// Structure to hold batched instance data for efficient rendering
+struct InstanceBatch {
+    instances: Vec<InstanceRaw>,
+    mesh_type: MeshType,
+}
+
+fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch> {
+    let mut batches = Vec::new();
+    
+    // Create separate batches for each mesh type
+    for &mesh_type_val in &[MeshType::Cube as u32, MeshType::Tree as u32, MeshType::House as u32, MeshType::Character as u32] {
+        let mesh_type = match mesh_type_val {
+            0 => MeshType::Cube,
+            1 => MeshType::Tree,
+            2 => MeshType::House,
+            3 => MeshType::Character,
+            _ => MeshType::Cube,
+        };
+        
+        let filtered_instances: Vec<InstanceRaw> = instances
+            .iter()
+            .filter(|instance| instance.mesh_type == mesh_type_val)
+            .copied()
+            .collect();
+            
+        if !filtered_instances.is_empty() {
+            batches.push(InstanceBatch {
+                instances: filtered_instances,
+                mesh_type,
+            });
+        }
+    }
+    
+    batches
+}
+
+fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) -> Mesh {
+    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("mesh-vertices"),
+        contents: bytemuck::cast_slice(vertices),
+        usage: wgpu::BufferUsages::VERTEX,
+    });
+    
+    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("mesh-indices"),
+        contents: bytemuck::cast_slice(indices),
+        usage: wgpu::BufferUsages::INDEX,
+    });
+    
+    Mesh {
+        vertex_buffer,
+        index_buffer,
+        index_count: indices.len() as u32,
+    }
+}
+
+fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshType, Mesh> {
+    let mut meshes = std::collections::HashMap::new();
+    
+    meshes.insert(MeshType::Cube, create_mesh(device, CUBE_VERTICES, CUBE_INDICES));
+    meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, TREE_INDICES));
+    meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, HOUSE_INDICES));
+    meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, CHARACTER_INDICES));
+    
+    meshes
+}
+
 async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result<RenderStuff> {
     let size = window.inner_size();
     println!(
@@ -1260,18 +1532,8 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     surface.configure(&device, &surface_cfg);
     let depth_view = create_depth(&device, surface_cfg.width, surface_cfg.height, msaa_samples);
 
-    // create cube buffers
-    let cube_vb = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cube-vertices"),
-        contents: bytemuck::cast_slice(CUBE_VERTICES),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
-    let cube_ib = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("cube-indices"),
-        contents: bytemuck::cast_slice(CUBE_INDICES),
-        usage: wgpu::BufferUsages::INDEX,
-    });
-    let cube_index_count = CUBE_INDICES.len() as u32;
+    // Create all meshes
+    let meshes = create_all_meshes(&device);
 
     // Create camera uniform buffer and bind group layout
     let camera_ub = device.create_buffer(&wgpu::BufferDescriptor {
@@ -1451,7 +1713,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                         shader_location: 0,
                     }],
                 },
-                // instance transform (4 vec4 + color)
+                // instance transform (4 vec4 + color + mesh_type)
                 wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<InstanceRaw>() as u64,
                     step_mode: wgpu::VertexStepMode::Instance,
@@ -1480,6 +1742,11 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                             format: wgpu::VertexFormat::Float32x4,
                             offset: 64,
                             shader_location: 5,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 80,
+                            shader_location: 6,
                         },
                     ],
                 },
@@ -1525,9 +1792,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         queue,
         depth_view,
         pipeline,
-        cube_vb,
-        cube_ib,
-        cube_index_count,
+        meshes,
         camera_ub,
         camera_bg,
         instance_vb,
@@ -1576,6 +1841,7 @@ struct VsIn {
   @location(3) m2: vec4<f32>,
   @location(4) m3: vec4<f32>,
   @location(5) color: vec4<f32>,
+  @location(6) mesh_type: u32,
 };
 
 struct VsOut {
@@ -1853,24 +2119,26 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
             }
         }
 
-        // Color based on object type; give ground a neutral tint
-        let color = match body.user_data {
-            0 => [0.95, 0.95, 0.95, 1.0],      // Ground
-            1 => [0.9, 0.6, 0.2, 1.0],         // Original boxes (orange)
-            2 => [0.1, 0.8, 0.9, 1.0],         // Sphere (cyan)
-            10..=19 => [0.2, 0.8, 0.3, 1.0],   // Trees (green)
-            20..=29 => [0.7, 0.5, 0.3, 1.0],   // Cottages/Houses (brown)
-            30..=39 => [0.3, 0.8, 0.4, 1.0],   // Cacti (bright green)
-            40..=49 => [0.8, 0.7, 0.5, 1.0],   // Adobe houses (sandy)
-            50..=59 => [0.6, 0.6, 0.6, 1.0],   // Generic objects (gray)
-            60..=69 => [0.4, 0.4, 0.35, 1.0],  // Rocks/Boulders (dark gray)
-            70..=79 => [0.6, 0.45, 0.35, 1.0], // Desert formations (reddish brown)
-            _ => [0.5, 0.5, 0.5, 1.0],         // Unknown (dark gray)
+        // Color and mesh type based on object type
+        let (color, mesh_type) = match body.user_data {
+            0 => ([0.95, 0.95, 0.95, 1.0], MeshType::Cube),     // Ground
+            1 => ([0.9, 0.6, 0.2, 1.0], MeshType::Cube),        // Original boxes (orange)
+            2 => ([0.1, 0.8, 0.9, 1.0], MeshType::Cube),        // Sphere (cyan)
+            10..=19 => ([0.2, 0.8, 0.3, 1.0], MeshType::Tree),  // Trees (green)
+            20..=29 => ([0.7, 0.5, 0.3, 1.0], MeshType::House), // Cottages/Houses (brown)
+            30..=39 => ([0.3, 0.8, 0.4, 1.0], MeshType::Tree),  // Cacti (bright green, use tree mesh)
+            40..=49 => ([0.8, 0.7, 0.5, 1.0], MeshType::House), // Adobe houses (sandy)
+            50..=59 => ([0.6, 0.6, 0.6, 1.0], MeshType::Cube),  // Generic objects (gray)
+            60..=69 => ([0.4, 0.4, 0.35, 1.0], MeshType::Cube), // Rocks/Boulders (dark gray)
+            70..=79 => ([0.6, 0.45, 0.35, 1.0], MeshType::Cube), // Desert formations (reddish brown)
+            _ => ([0.5, 0.5, 0.5, 1.0], MeshType::Cube),         // Unknown (dark gray)
         };
 
         out.push(InstanceRaw {
             model: model_m.to_cols_array(),
             color,
+            mesh_type: mesh_type as u32,
+            _padding: [0; 3],
         });
     }
 
@@ -1890,6 +2158,8 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
         out.push(InstanceRaw {
             model: model_matrix.to_cols_array(),
             color: character.get_color(),
+            mesh_type: MeshType::Character as u32,
+            _padding: [0; 3],
         });
     }
 }
