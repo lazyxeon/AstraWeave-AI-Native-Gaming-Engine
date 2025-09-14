@@ -27,13 +27,16 @@ This demo showcases multiple AstraWeave engine features in one interactive 3D sc
 
 | Input | Action |
 |-------|--------|
-| **Right Mouse + Move** | Look around (first-person camera) |
+| **Right Mouse + Move** | Look around / Camera pivot (smooth rotation) |
 | **WASD** | Move camera (forward/left/back/right) |
 | **Space** | Move camera up |
 | **Ctrl** | Move camera down |
-| **Mouse Wheel** | Adjust camera movement speed |
+| **Mouse Wheel** | Zoom in/out (FreeFly: FOV, Orbit: distance) |
+| **C** | Toggle camera mode (FreeFly ↔ Orbit) |
 | **P** | Pause/resume physics simulation |
 | **T** | Teleport sphere to camera position |
+| **1** | Switch to grassland texture pack |
+| **2** | Switch to desert texture pack |
 | **Esc** | Exit demo |
 
 ## Running the Demo
