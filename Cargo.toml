@@ -26,6 +26,7 @@ members = [
   "examples/visual_3d",
   "astraweave-physics",
   "astraweave-nav",
+  "astraweave-terrain",
   "examples/physics_demo3d",
   "examples/navmesh_demo",
   "astraweave-gameplay",
