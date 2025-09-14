@@ -46,6 +46,7 @@ members = [
   "examples/debug_toolkit_demo",
   "examples/save_integration",
   "examples/unified_showcase",
+  "examples/terrain_demo",
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
