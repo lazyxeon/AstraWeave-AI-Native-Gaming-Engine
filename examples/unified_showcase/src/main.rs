@@ -393,7 +393,7 @@ struct Character {
     current_patrol_index: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 enum CharacterType {
     Villager,
     Guard,
@@ -671,17 +671,22 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
 
     let mut characters = Vec::new();
 
-    // Generate environment-specific objects with more variety
+    // Generate comprehensive biome environments
     match texture_pack_name {
         "grassland" => {
-            // Add varied trees (different sizes and types)
-            for i in 0..12 {
-                let x = -15.0 + (i as f32) * 2.5 + (i as f32 * 0.7).sin() * 2.5;
-                let z = -8.0 + (i as f32 * 0.9).cos() * 4.0;
+            // === VEGETATION ===
+            // Dense forest areas with varied tree types
+            for i in 0..25 {
+                let x = -20.0 + (i as f32) * 1.8 + (i as f32 * 0.7).sin() * 1.5;
+                let z = -15.0 + (i % 5) as f32 * 6.0 + (i as f32 * 0.9).cos() * 2.0;
 
-                // Vary tree height and width
-                let height = 1.2 + (i % 3) as f32 * 0.6;
-                let width = 0.2 + (i % 2) as f32 * 0.2;
+                // Vary tree types and sizes for realistic forest
+                let (height, width, _tree_type) = match i % 4 {
+                    0 => (2.5, 0.3, "oak"),      // Large oak trees
+                    1 => (1.8, 0.2, "pine"),     // Medium pine trees  
+                    2 => (1.2, 0.15, "birch"),   // Small birch trees
+                    _ => (3.0, 0.4, "ancient"),  // Ancient giant trees
+                };
 
                 let tree_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
@@ -694,21 +699,39 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .insert_with_parent(tree_col, tree_handle, &mut physics.bodies);
             }
 
-            // Add varied cottages and structures
-            for i in 0..5 {
-                let x = 8.0 + (i as f32) * 6.0;
-                let z = 2.0 + (i as f32).sin() * 3.0;
+            // Scattered bushes and undergrowth
+            for i in 0..15 {
+                let x = -10.0 + (i as f32) * 3.5 + (i as f32 * 1.3).sin() * 4.0;
+                let z = 5.0 + (i as f32 * 1.1).cos() * 8.0;
+                let size = 0.2 + (i % 3) as f32 * 0.1;
 
-                // Create different building types
-                let (width, height, depth) = match i % 3 {
-                    0 => (1.8, 1.2, 1.5), // Large cottage
-                    1 => (1.2, 0.8, 1.0), // Small house
-                    _ => (2.2, 1.5, 1.8), // Manor house
+                let bush_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .user_data(100 + i)
+                    .build();
+                let bush_handle = physics.bodies.insert(bush_rb);
+                let bush_col = r3::ColliderBuilder::cuboid(size, size * 0.6, size).build();
+                physics
+                    .colliders
+                    .insert_with_parent(bush_col, bush_handle, &mut physics.bodies);
+            }
+
+            // === STRUCTURES ===
+            // Village with varied building types
+            for i in 0..8 {
+                let x = 15.0 + (i as f32) * 8.0 + (i as f32).sin() * 3.0;
+                let z = -5.0 + (i % 3) as f32 * 10.0 + (i as f32).cos() * 2.0;
+
+                let (width, height, depth, _building_type) = match i % 4 {
+                    0 => (2.2, 1.5, 1.8, "manor"),      // Large manor house
+                    1 => (1.5, 1.0, 1.2, "cottage"),    // Medium cottage
+                    2 => (1.0, 0.8, 1.0, "hut"),        // Small hut
+                    _ => (2.8, 2.0, 2.0, "temple"),     // Village temple
                 };
 
                 let house_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
-                    .user_data(20 + i)
+                    .user_data(35 + i)
                     .build();
                 let house_handle = physics.bodies.insert(house_rb);
                 let house_col = r3::ColliderBuilder::cuboid(width, height, depth).build();
@@ -717,62 +740,135 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .insert_with_parent(house_col, house_handle, &mut physics.bodies);
             }
 
-            // Add some boulders and rocks
-            for i in 0..6 {
-                let x = -5.0 + (i as f32) * 8.0 + (i as f32 * 2.1).sin() * 3.0;
-                let z = 8.0 + (i as f32 * 1.7).cos() * 4.0;
-                let size = 0.4 + (i % 3) as f32 * 0.3;
+            // === GEOLOGICAL FEATURES ===
+            // Rolling hills with scattered boulders
+            for i in 0..12 {
+                let x = -25.0 + (i as f32) * 8.0 + (i as f32 * 2.1).sin() * 5.0;
+                let z = 20.0 + (i as f32 * 1.7).cos() * 6.0;
+                let size = 0.8 + (i % 4) as f32 * 0.5;
 
-                let rock_rb = r3::RigidBodyBuilder::fixed()
+                let boulder_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
                     .user_data(60 + i)
                     .build();
-                let rock_handle = physics.bodies.insert(rock_rb);
-                let rock_col = r3::ColliderBuilder::cuboid(size, size * 0.7, size * 1.2).build();
+                let boulder_handle = physics.bodies.insert(boulder_rb);
+                let boulder_col = r3::ColliderBuilder::cuboid(size, size * 0.8, size * 1.1).build();
                 physics
                     .colliders
-                    .insert_with_parent(rock_col, rock_handle, &mut physics.bodies);
+                    .insert_with_parent(boulder_col, boulder_handle, &mut physics.bodies);
             }
 
-            // Add characters for grassland environment
+            // Stone circles and ancient ruins
             for i in 0..6 {
-                let x = 3.0 + (i as f32) * 4.0;
-                let z = -2.0 + (i as f32 * 1.3).sin() * 6.0;
+                let angle = (i as f32) * std::f32::consts::PI * 2.0 / 6.0;
+                let radius = 12.0;
+                let x = radius * angle.cos();
+                let z = radius * angle.sin() + 30.0;
+                let height = 1.5 + (i % 2) as f32 * 0.8;
+
+                let stone_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .user_data(200 + i)
+                    .build();
+                let stone_handle = physics.bodies.insert(stone_rb);
+                let stone_col = r3::ColliderBuilder::cuboid(0.4, height, 0.3).build();
+                physics
+                    .colliders
+                    .insert_with_parent(stone_col, stone_handle, &mut physics.bodies);
+            }
+
+            // === WATER FEATURES ===
+            // River with stone banks
+            for i in 0..10 {
+                let x = -15.0 + (i as f32) * 3.0;
+                let z = -30.0 + (i as f32) * 2.0 + (i as f32 * 2.0).sin() * 8.0;
+                let size = 0.3 + (i % 2) as f32 * 0.2;
+
+                let bank_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.5, z))
+                    .user_data(300 + i)
+                    .build();
+                let bank_handle = physics.bodies.insert(bank_rb);
+                let bank_col = r3::ColliderBuilder::cuboid(size, 0.2, size * 1.5).build();
+                physics
+                    .colliders
+                    .insert_with_parent(bank_col, bank_handle, &mut physics.bodies);
+            }
+
+            // === CHARACTERS ===
+            // Village inhabitants with varied roles and patrol patterns
+            for i in 0..12 {
+                let x = 10.0 + (i as f32) * 5.0 + (i as f32).sin() * 3.0;
+                let z = -8.0 + (i as f32 * 1.3).sin() * 12.0;
                 let pos = Vec3::new(x, -1.0, z);
 
-                let char_type = match i % 4 {
+                let char_type = match i % 5 {
                     0 => CharacterType::Villager,
                     1 => CharacterType::Guard,
                     2 => CharacterType::Merchant,
-                    _ => CharacterType::Animal,
+                    3 => CharacterType::Animal,
+                    _ => CharacterType::Villager,
                 };
 
                 let mut character = Character::new(pos, char_type);
 
-                // Set up patrol routes
-                character.patrol_points = vec![
-                    pos,
-                    pos + Vec3::new(3.0, 0.0, 0.0),
-                    pos + Vec3::new(3.0, 0.0, 3.0),
-                    pos + Vec3::new(0.0, 0.0, 3.0),
-                ];
-                character.target_position = character.patrol_points[1];
+                // Complex patrol routes for realistic behavior
+                match char_type {
+                    CharacterType::Guard => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(8.0, 0.0, 2.0),
+                            pos + Vec3::new(6.0, 0.0, 8.0),
+                            pos + Vec3::new(-2.0, 0.0, 6.0),
+                            pos + Vec3::new(-4.0, 0.0, 0.0),
+                        ];
+                    }
+                    CharacterType::Merchant => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(12.0, 0.0, 0.0),
+                            pos + Vec3::new(8.0, 0.0, -6.0),
+                        ];
+                    }
+                    CharacterType::Animal => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(4.0, 0.0, 4.0),
+                            pos + Vec3::new(-3.0, 0.0, 2.0),
+                            pos + Vec3::new(1.0, 0.0, -3.0),
+                        ];
+                    }
+                    _ => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(3.0, 0.0, 0.0),
+                            pos + Vec3::new(3.0, 0.0, 3.0),
+                            pos + Vec3::new(0.0, 0.0, 3.0),
+                        ];
+                    }
+                }
+                character.target_position = if !character.patrol_points.is_empty() {
+                    character.patrol_points[1]
+                } else {
+                    pos
+                };
 
                 characters.push(character);
             }
         }
         "desert" => {
-            // Add varied cacti (different heights and arrangements)
-            for i in 0..8 {
-                let x = -12.0 + (i as f32) * 3.5 + (i as f32 * 1.2).sin() * 2.0;
-                let z = -4.0 + (i as f32 * 0.8).cos() * 5.0;
+            // === VEGETATION ===
+            // Varied cacti and desert plants
+            for i in 0..20 {
+                let x = -18.0 + (i as f32) * 4.0 + (i as f32 * 1.2).sin() * 3.0;
+                let z = -10.0 + (i % 4) as f32 * 8.0 + (i as f32 * 0.8).cos() * 6.0;
 
-                // Create different cactus types
-                let (width, height) = match i % 4 {
-                    0 => (0.15, 2.0), // Tall thin cactus
-                    1 => (0.25, 1.2), // Medium barrel cactus
-                    2 => (0.2, 1.8),  // Regular cactus
-                    _ => (0.3, 0.8),  // Short wide cactus
+                let (width, height, _cactus_type) = match i % 5 {
+                    0 => (0.2, 3.5, "saguaro"),        // Tall saguaro cactus
+                    1 => (0.4, 1.0, "barrel"),         // Barrel cactus
+                    2 => (0.15, 2.2, "prickly_pear"),  // Prickly pear
+                    3 => (0.25, 1.8, "cholla"),        // Cholla cactus
+                    _ => (0.3, 0.6, "desert_shrub"),   // Desert shrub
                 };
 
                 let cactus_rb = r3::RigidBodyBuilder::fixed()
@@ -788,16 +884,16 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 );
             }
 
-            // Add varied adobe structures
-            for i in 0..4 {
-                let x = 10.0 + (i as f32) * 7.0;
-                let z = 1.0 + (i as f32).cos() * 3.0;
+            // === STRUCTURES ===
+            // Desert settlement with adobe architecture
+            for i in 0..6 {
+                let x = 20.0 + (i as f32) * 12.0 + (i as f32).cos() * 4.0;
+                let z = 5.0 + (i % 2) as f32 * 15.0 + (i as f32).sin() * 3.0;
 
-                // Different adobe building styles
-                let (width, height, depth) = match i % 3 {
-                    0 => (1.5, 1.0, 1.5), // Square adobe house
-                    1 => (2.0, 0.8, 1.2), // Rectangular building
-                    _ => (1.8, 1.3, 1.8), // Tall adobe tower
+                let (width, height, depth, _building_type) = match i % 3 {
+                    0 => (2.5, 1.2, 2.0, "adobe_compound"), // Large compound
+                    1 => (1.8, 0.9, 1.5, "adobe_house"),    // Medium house
+                    _ => (3.0, 1.8, 2.5, "adobe_temple"),   // Temple/mosque
                 };
 
                 let adobe_rb = r3::RigidBodyBuilder::fixed()
@@ -811,19 +907,26 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .insert_with_parent(adobe_col, adobe_handle, &mut physics.bodies);
             }
 
-            // Add desert rocks and formations
-            for i in 0..8 {
-                let x = -8.0 + (i as f32) * 6.0 + (i as f32 * 1.9).sin() * 4.0;
-                let z = 10.0 + (i as f32 * 1.3).cos() * 6.0;
-                let size = 0.5 + (i % 4) as f32 * 0.4;
+            // === GEOLOGICAL FEATURES ===
+            // Mesa formations and desert rock outcrops
+            for i in 0..15 {
+                let x = -25.0 + (i as f32) * 7.0 + (i as f32 * 1.9).sin() * 8.0;
+                let z = 25.0 + (i as f32 * 1.3).cos() * 10.0;
+                let size = 1.2 + (i % 5) as f32 * 0.8;
+
+                let (width, height, depth) = match i % 4 {
+                    0 => (size, size * 2.0, size * 0.8), // Tall mesa
+                    1 => (size * 1.5, size, size * 1.2), // Wide plateau
+                    2 => (size * 0.6, size * 3.0, size * 0.6), // Spire
+                    _ => (size, size * 0.8, size), // Regular rock
+                };
 
                 let formation_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
-                    .user_data(70 + i)
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .user_data(76 + i)
                     .build();
                 let formation_handle = physics.bodies.insert(formation_rb);
-                let formation_col =
-                    r3::ColliderBuilder::cuboid(size, size * 1.5, size * 0.8).build();
+                let formation_col = r3::ColliderBuilder::cuboid(width, height, depth).build();
                 physics.colliders.insert_with_parent(
                     formation_col,
                     formation_handle,
@@ -831,56 +934,128 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 );
             }
 
-            // Add characters for desert environment
-            for i in 0..4 {
-                let x = 5.0 + (i as f32) * 8.0;
-                let z = -3.0 + (i as f32 * 0.9).sin() * 4.0;
+            // Sand dunes (represented as low, wide formations)
+            for i in 0..8 {
+                let x = 0.0 + (i as f32) * 15.0 + (i as f32 * 2.5).sin() * 10.0;
+                let z = -25.0 + (i as f32 * 1.8).cos() * 15.0;
+                let width = 4.0 + (i % 3) as f32 * 2.0;
+                let height = 0.5 + (i % 2) as f32 * 0.3;
+
+                let dune_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .user_data(400 + i)
+                    .build();
+                let dune_handle = physics.bodies.insert(dune_rb);
+                let dune_col = r3::ColliderBuilder::cuboid(width, height, width * 0.6).build();
+                physics
+                    .colliders
+                    .insert_with_parent(dune_col, dune_handle, &mut physics.bodies);
+            }
+
+            // === WATER FEATURES ===
+            // Oasis with palm-like vegetation
+            let oasis_x = 5.0;
+            let oasis_z = 10.0;
+            for i in 0..5 {
+                let angle = (i as f32) * std::f32::consts::PI * 2.0 / 5.0;
+                let radius = 3.0;
+                let x = oasis_x + radius * angle.cos();
+                let z = oasis_z + radius * angle.sin();
+
+                let palm_rb = r3::RigidBodyBuilder::fixed()
+                    .translation(nalgebra::Vector3::new(x, -2.0 + 2.0, z))
+                    .user_data(500 + i)
+                    .build();
+                let palm_handle = physics.bodies.insert(palm_rb);
+                let palm_col = r3::ColliderBuilder::cuboid(0.2, 2.0, 0.2).build();
+                physics
+                    .colliders
+                    .insert_with_parent(palm_col, palm_handle, &mut physics.bodies);
+            }
+
+            // === CHARACTERS ===
+            // Desert nomads and traders
+            for i in 0..8 {
+                let x = 15.0 + (i as f32) * 12.0 + (i as f32).sin() * 5.0;
+                let z = -5.0 + (i as f32 * 0.9).sin() * 8.0;
                 let pos = Vec3::new(x, -1.0, z);
 
-                let char_type = match i % 3 {
+                let char_type = match i % 4 {
                     0 => CharacterType::Merchant,
                     1 => CharacterType::Guard,
-                    _ => CharacterType::Animal,
+                    2 => CharacterType::Animal, // Desert animals (camels, etc.)
+                    _ => CharacterType::Villager, // Nomads
                 };
 
                 let mut character = Character::new(pos, char_type);
 
-                // Set up larger patrol routes for desert
-                character.patrol_points = vec![
-                    pos,
-                    pos + Vec3::new(6.0, 0.0, 2.0),
-                    pos + Vec3::new(4.0, 0.0, 5.0),
-                    pos + Vec3::new(-2.0, 0.0, 3.0),
-                ];
-                character.target_position = character.patrol_points[1];
+                // Longer patrol routes for desert environment
+                match char_type {
+                    CharacterType::Merchant => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(20.0, 0.0, 5.0),
+                            pos + Vec3::new(15.0, 0.0, 15.0),
+                            pos + Vec3::new(-5.0, 0.0, 10.0),
+                        ];
+                    }
+                    CharacterType::Animal => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(8.0, 0.0, 8.0),
+                            pos + Vec3::new(-5.0, 0.0, 12.0),
+                            pos + Vec3::new(-8.0, 0.0, -3.0),
+                        ];
+                    }
+                    _ => {
+                        character.patrol_points = vec![
+                            pos,
+                            pos + Vec3::new(10.0, 0.0, 3.0),
+                            pos + Vec3::new(6.0, 0.0, 8.0),
+                            pos + Vec3::new(-3.0, 0.0, 5.0),
+                        ];
+                    }
+                }
+                character.target_position = if !character.patrol_points.is_empty() {
+                    character.patrol_points[1]
+                } else {
+                    pos
+                };
 
                 characters.push(character);
             }
         }
         _ => {
-            // Enhanced default environment with more variety
-            for i in 0..8 {
-                let x = -8.0 + (i as f32) * 2.0;
-                let z = 3.0 + (i % 2) as f32 * 4.0;
-                let height = 0.8 + (i % 3) as f32 * 0.5;
+            // Enhanced default environment with mixed biome features
+            for i in 0..15 {
+                let x = -12.0 + (i as f32) * 2.5;
+                let z = 3.0 + (i % 3) as f32 * 6.0 + (i as f32).sin() * 3.0;
+                let height = 1.0 + (i % 4) as f32 * 0.8;
 
                 let obj_rb = r3::RigidBodyBuilder::fixed()
                     .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
                     .user_data(50 + i)
                     .build();
                 let obj_handle = physics.bodies.insert(obj_rb);
-                let obj_col = r3::ColliderBuilder::cuboid(0.5, height, 0.5).build();
+                let obj_col = r3::ColliderBuilder::cuboid(0.6, height, 0.6).build();
                 physics
                     .colliders
                     .insert_with_parent(obj_col, obj_handle, &mut physics.bodies);
             }
 
-            // Add default characters
-            for i in 0..3 {
-                let x = (i as f32) * 4.0;
-                let z = 0.0;
+            // Default characters with simple behavior
+            for i in 0..6 {
+                let x = (i as f32) * 6.0;
+                let z = (i % 2) as f32 * 4.0;
                 let pos = Vec3::new(x, -1.0, z);
-                let character = Character::new(pos, CharacterType::Villager);
+                let mut character = Character::new(pos, CharacterType::Villager);
+                character.patrol_points = vec![
+                    pos,
+                    pos + Vec3::new(4.0, 0.0, 0.0),
+                    pos + Vec3::new(4.0, 0.0, 4.0),
+                    pos + Vec3::new(0.0, 0.0, 4.0),
+                ];
+                character.target_position = character.patrol_points[1];
                 characters.push(character);
             }
         }
@@ -1827,12 +2002,16 @@ fn create_depth(device: &wgpu::Device, width: u32, height: u32, samples: u32) ->
 
 const SHADER: &str = r#"
 struct Camera { view_proj: mat4x4<f32> };
-@group(0) @binding(0) var<uniform> u_camera: Camera;
+struct TimeUniform { time: f32, _padding: vec3<f32> };
 
+@group(0) @binding(0) var<uniform> u_camera: Camera;
 @group(1) @binding(0) var ground_texture: texture_2d<f32>;
 @group(1) @binding(1) var ground_sampler: sampler;
 @group(1) @binding(2) var ground_normal: texture_2d<f32>;
 @group(1) @binding(3) var normal_sampler: sampler;
+
+// Note: Time uniform would be @group(2) @binding(0) in a full implementation
+// For now, we'll use a constant or calculated time
 
 struct VsIn {
   @location(0) pos: vec3<f32>,
@@ -1849,6 +2028,7 @@ struct VsOut {
   @location(0) color: vec4<f32>,
   @location(1) world_pos: vec3<f32>,
   @location(2) view_dir: vec3<f32>,
+  @location(3) mesh_type: u32,
 };
 
 @vertex
@@ -1859,6 +2039,7 @@ fn vs_main(in: VsIn) -> VsOut {
   out.pos = u_camera.view_proj * world;
   out.color = in.color;
   out.world_pos = world.xyz;
+  out.mesh_type = in.mesh_type;
   
   // Calculate view direction for sky effects
   let camera_pos = vec3<f32>(0.0, 2.0, 0.0); // Approximate camera position for sky
@@ -1867,118 +2048,154 @@ fn vs_main(in: VsIn) -> VsOut {
   return out;
 }
 
-// Enhanced sky with realistic atmosphere, clouds, and sun
-fn sky_color(view_dir: vec3<f32>, time: f32) -> vec3<f32> {
-  let dir_y = view_dir.y;
+
+
+// Enhanced water rendering for rivers and lakes
+fn get_water_level(world_pos: vec2<f32>, time: f32) -> f32 {
+  let wave_scale = 0.5;
+  let wave_time = time * 2.0;
+  let wave_pos = world_pos * wave_scale + vec2<f32>(wave_time * 0.3, wave_time * 0.5);
   
-  // Basic atmosphere gradient
-  let horizon_color = vec3<f32>(0.7, 0.8, 0.9);
-  let zenith_color = vec3<f32>(0.3, 0.5, 0.8);
-  let sunset_color = vec3<f32>(1.0, 0.6, 0.3);
+  // Water surface animation
+  let wave1 = sin(wave_pos.x * 4.0) * cos(wave_pos.y * 3.0) * 0.1;
+  let wave2 = sin(wave_pos.x * 8.0 + 1.0) * cos(wave_pos.y * 6.0 + 1.5) * 0.05;
   
-  // Sun position (moves over time for day/night cycle)
-  let sun_dir = normalize(vec3<f32>(cos(time * 0.1) * 0.8, 0.6, sin(time * 0.1) * 0.8));
-  let sun_dot = max(dot(view_dir, sun_dir), 0.0);
-  
-  // Atmospheric scattering approximation
-  let sun_influence = pow(sun_dot, 512.0) * 2.0 + pow(sun_dot, 32.0) * 0.5;
-  let sunset_influence = max(0.0, -sun_dir.y + 0.1) * pow(max(0.0, -dir_y + 0.1), 2.0);
-  
-  // Base sky gradient
-  let t = clamp(dir_y * 0.5 + 0.5, 0.0, 1.0);
-  var sky = mix(horizon_color, zenith_color, t);
-  
-  // Add sunset colors at horizon
-  sky = mix(sky, sunset_color, sunset_influence);
-  
-  // Add sun
-  sky += vec3<f32>(1.0, 0.9, 0.7) * sun_influence;
-  
-  // Cloud noise function
-  let cloud_scale = 0.8;
-  let cloud_time = time * 0.05;
-  let cloud_pos = view_dir.xz * cloud_scale + vec2<f32>(cloud_time, cloud_time * 0.7);
-  
-  // Simple noise for clouds
-  let cloud_noise1 = sin(cloud_pos.x * 3.14) * cos(cloud_pos.y * 2.71) * 0.5 + 0.5;
-  let cloud_noise2 = sin(cloud_pos.x * 6.28 + 1.0) * cos(cloud_pos.y * 5.42 + 1.5) * 0.5 + 0.5;
-  let cloud_density = pow(max(0.0, cloud_noise1 * cloud_noise2 - 0.4), 2.0);
-  
-  // Apply clouds only in upper sky
-  let cloud_mask = clamp(dir_y * 2.0, 0.0, 1.0);
-  let cloud_color = vec3<f32>(0.9, 0.9, 0.95);
-  sky = mix(sky, cloud_color, cloud_density * cloud_mask * 0.8);
-  
-  return sky;
+  return -1.8 + wave1 + wave2; // Base water level with waves
 }
 
-// Enhanced terrain with height variation
-fn get_terrain_height(world_pos: vec2<f32>) -> f32 {
-  let scale = 0.1;
-  let pos = world_pos * scale;
+// Determine biome type based on world position
+fn get_biome_type(world_pos: vec2<f32>) -> i32 {
+  let biome_scale = 0.02;
+  let biome_pos = world_pos * biome_scale;
+  let biome_noise = sin(biome_pos.x * 3.0) * cos(biome_pos.y * 2.0);
   
-  // Multi-octave noise for terrain
-  var height = 0.0;
-  height += sin(pos.x * 2.0) * cos(pos.y * 1.5) * 0.5;
-  height += sin(pos.x * 4.0 + 1.0) * cos(pos.y * 3.0 + 0.5) * 0.25;
-  height += sin(pos.x * 8.0 + 2.0) * cos(pos.y * 6.0 + 1.0) * 0.125;
-  
-  return height * 2.0; // Scale height variation
+  if (biome_noise > 0.2) {
+    return 1; // Desert
+  } else {
+    return 0; // Grassland
+  }
 }
 
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   var col = in.color.rgb;
-  let time = 1000.0; // TODO: Pass actual time as uniform
+  let time = 100.0; // TODO: Pass actual time as uniform
   
-  // Enhanced ground rendering with height-based terrain
+  // Determine biome type for this world position
+  let biome_type = get_biome_type(in.world_pos.xz);
+  
+  // Enhanced ground rendering with biome-specific terrain
   let ground_y = -2.0;
-  let terrain_height = get_terrain_height(in.world_pos.xz);
+  let terrain_height = get_biome_terrain_height(in.world_pos.xz, biome_type);
+  let water_level = get_water_level(in.world_pos.xz, time);
   let terrain_surface = ground_y + terrain_height;
-  let dist = abs(in.world_pos.y - terrain_surface);
+  let dist_to_terrain = abs(in.world_pos.y - terrain_surface);
+  let dist_to_water = abs(in.world_pos.y - water_level);
   
-  if (dist < 0.6) {
-    let scale = 4.0;
+  // Check if we're rendering the terrain surface
+  if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
+    let scale = 3.0;
     let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
     var tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
     
-    // Height-based texture blending
-    let height_factor = clamp((terrain_height + 1.0) / 2.0, 0.0, 1.0);
-    let rock_color = vec3<f32>(0.4, 0.35, 0.3);
-    tex_color = mix(tex_color, rock_color, height_factor * 0.3);
+    // Biome-specific terrain texturing
+    if (biome_type == 0) { // Grassland
+      // Mix grass with dirt based on terrain height and slope
+      let height_factor = clamp((terrain_height + 2.0) / 6.0, 0.0, 1.0);
+      let grass_color = vec3<f32>(0.3, 0.6, 0.2);
+      let dirt_color = vec3<f32>(0.4, 0.3, 0.2);
+      tex_color = mix(tex_color, mix(dirt_color, grass_color, height_factor), 0.7);
+      
+      // Add moss and vegetation on flat areas
+      let slope_factor = 1.0 - abs(terrain_height) / 4.0;
+      let moss_color = vec3<f32>(0.2, 0.5, 0.15);
+      tex_color = mix(tex_color, moss_color, slope_factor * 0.3);
+      
+    } else if (biome_type == 1) { // Desert
+      // Desert sand and rock texturing
+      let sand_color = vec3<f32>(0.8, 0.7, 0.5);
+      let rock_color = vec3<f32>(0.5, 0.4, 0.3);
+      let height_factor = clamp(terrain_height / 4.0, 0.0, 1.0);
+      tex_color = mix(sand_color, rock_color, height_factor);
+      
+      // Add mineral deposits and oasis effects
+      let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
+      if (mineral_noise > 0.7) {
+        let mineral_color = vec3<f32>(0.7, 0.6, 0.4);
+        tex_color = mix(tex_color, mineral_color, 0.4);
+      }
+    }
     
     // Sample normal map for enhanced surface detail
     let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
     let normal = normalize(normal_sample * 2.0 - 1.0);
     
-    // Enhanced lighting with multiple light sources
-    let sun_dir = normalize(vec3<f32>(0.6, 0.8, 0.3));
+    // Enhanced lighting with time-based sun position
+    let sun_angle = time * 0.1;
+    let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.8, sin(sun_angle) * 0.8, sin(sun_angle * 0.3) * 0.4));
     let ambient_dir = vec3<f32>(0.0, 1.0, 0.0);
     
     let sun_ndotl = max(dot(normal, sun_dir), 0.0);
     let ambient_ndotl = max(dot(normal, ambient_dir), 0.0);
     
-    let sun_lighting = sun_ndotl * vec3<f32>(1.0, 0.95, 0.8);
-    let ambient_lighting = ambient_ndotl * vec3<f32>(0.4, 0.5, 0.6) * 0.3;
-    let lighting = sun_lighting + ambient_lighting + vec3<f32>(0.1, 0.1, 0.15); // Base ambient
+    // Time-based lighting color
+    let day_factor = clamp(sun_dir.y + 0.2, 0.0, 1.0);
+    let sun_color = mix(vec3<f32>(0.2, 0.2, 0.4), vec3<f32>(1.0, 0.95, 0.8), day_factor);
+    let ambient_color = mix(vec3<f32>(0.1, 0.1, 0.2), vec3<f32>(0.4, 0.5, 0.6), day_factor);
     
-    // Enhanced checkerboard pattern with terrain variation
-    let checker_scale = 1.5 + terrain_height * 0.2;
-    let cx = floor(in.world_pos.x / checker_scale);
-    let cz = floor(in.world_pos.z / checker_scale);
-    let checker = f32((i32(cx + cz) & 1)) * 0.08;
+    let sun_lighting = sun_ndotl * sun_color;
+    let ambient_lighting = ambient_ndotl * ambient_color * 0.3;
+    let base_ambient = mix(vec3<f32>(0.05, 0.05, 0.1), vec3<f32>(0.1, 0.1, 0.15), day_factor);
+    let lighting = sun_lighting + ambient_lighting + base_ambient;
     
-    col = tex_color * lighting * (0.95 + checker);
+    // Enhanced detail patterns
+    let detail_scale = 8.0 + terrain_height * 0.2;
+    let cx = floor(in.world_pos.x / detail_scale);
+    let cz = floor(in.world_pos.z / detail_scale);
+    let detail_pattern = f32((i32(cx + cz) & 1)) * 0.06;
+    
+    col = tex_color * lighting * (0.96 + detail_pattern);
     
     // Add atmospheric perspective
     let distance = length(in.world_pos);
-    let fog_factor = clamp(distance / 50.0, 0.0, 1.0);
+    let fog_factor = clamp(distance / 80.0, 0.0, 1.0);
     let fog_color = sky_color(normalize(in.world_pos), time);
-    col = mix(col, fog_color, fog_factor * 0.3);
+    col = mix(col, fog_color, fog_factor * 0.2);
+    
+  } else if (dist_to_water < 0.3 && terrain_height < -0.5) {
+    // Water rendering for rivers and lakes
+    let water_color = vec3<f32>(0.1, 0.3, 0.6);
+    let wave_distortion = sin(in.world_pos.x * 2.0 + time) * cos(in.world_pos.z * 1.8 + time * 1.2) * 0.05;
+    let water_surface = water_color + vec3<f32>(wave_distortion, wave_distortion * 0.5, -wave_distortion * 0.3);
+    
+    // Reflection and transparency effects
+    let view_angle = abs(dot(normalize(in.view_dir), vec3<f32>(0.0, 1.0, 0.0)));
+    let reflection_factor = 1.0 - view_angle;
+    let sky = sky_color(reflect(in.view_dir, vec3<f32>(0.0, 1.0, 0.0)), time);
+    
+    col = mix(water_surface, sky, reflection_factor * 0.6);
+    
   } else {
-    // Render sky for non-ground objects or background
-    let sky = sky_color(in.view_dir, time);
-    col = col * 0.7 + sky * 0.3; // Blend object color with sky ambient
+    // Sky rendering for non-terrain objects or background
+    if (in.mesh_type == 1u) { // Trees
+      // Enhanced tree rendering with seasonal variation
+      let tree_base_color = in.color.rgb;
+      let seasonal_factor = (sin(time * 0.05) + 1.0) * 0.5;
+      let autumn_color = vec3<f32>(0.8, 0.4, 0.1);
+      let summer_color = vec3<f32>(0.2, 0.8, 0.3);
+      col = mix(tree_base_color, mix(summer_color, autumn_color, seasonal_factor), 0.3);
+      
+    } else if (in.mesh_type == 2u) { // Houses/Structures
+      // Enhanced building rendering with weathering
+      col = in.color.rgb;
+      let weathering = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3) * 0.1;
+      col = col * (0.95 + weathering);
+      
+    } else {
+      // Other objects get sky ambient lighting
+      let sky = sky_color(in.view_dir, time);
+      col = in.color.rgb * 0.8 + sky * 0.2;
+    }
   }
   
   return vec4<f32>(col, 1.0);
@@ -2124,13 +2341,29 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
             0 => ([0.95, 0.95, 0.95, 1.0], MeshType::Cube),     // Ground
             1 => ([0.9, 0.6, 0.2, 1.0], MeshType::Cube),        // Original boxes (orange)
             2 => ([0.1, 0.8, 0.9, 1.0], MeshType::Cube),        // Sphere (cyan)
-            10..=19 => ([0.2, 0.8, 0.3, 1.0], MeshType::Tree),  // Trees (green)
-            20..=29 => ([0.7, 0.5, 0.3, 1.0], MeshType::House), // Cottages/Houses (brown)
-            30..=39 => ([0.3, 0.8, 0.4, 1.0], MeshType::Tree),  // Cacti (bright green, use tree mesh)
-            40..=49 => ([0.8, 0.7, 0.5, 1.0], MeshType::House), // Adobe houses (sandy)
+            
+            // Trees and vegetation (10-34)
+            10..=34 => ([0.2, 0.7, 0.3, 1.0], MeshType::Tree),  // Trees (green)
+            
+            // Buildings and structures (20-27, 40-45) - non-overlapping with trees
+            35..=39 => ([0.7, 0.5, 0.3, 1.0], MeshType::House), // Grassland houses (brown)
+            40..=45 => ([0.8, 0.7, 0.5, 1.0], MeshType::House), // Adobe houses (sandy)
+            
+            // Geological features
+            60..=75 => ([0.5, 0.45, 0.4, 1.0], MeshType::Cube), // Grassland rocks (gray-brown)
+            76..=90 => ([0.6, 0.45, 0.35, 1.0], MeshType::Cube), // Desert formations (reddish brown)
+            
+            // Bushes and undergrowth (100-114)
+            100..=114 => ([0.3, 0.6, 0.2, 1.0], MeshType::Tree), // Bushes (darker green)
+            
+            // Special structures
+            200..=205 => ([0.6, 0.6, 0.7, 1.0], MeshType::Cube), // Stone circles (gray)
+            300..=309 => ([0.4, 0.4, 0.45, 1.0], MeshType::Cube), // River banks (dark gray)
+            400..=407 => ([0.9, 0.8, 0.6, 1.0], MeshType::Cube), // Sand dunes (pale yellow)
+            500..=504 => ([0.4, 0.8, 0.2, 1.0], MeshType::Tree), // Oasis palms (bright green)
+            
+            // Default objects
             50..=59 => ([0.6, 0.6, 0.6, 1.0], MeshType::Cube),  // Generic objects (gray)
-            60..=69 => ([0.4, 0.4, 0.35, 1.0], MeshType::Cube), // Rocks/Boulders (dark gray)
-            70..=79 => ([0.6, 0.45, 0.35, 1.0], MeshType::Cube), // Desert formations (reddish brown)
             _ => ([0.5, 0.5, 0.5, 1.0], MeshType::Cube),         // Unknown (dark gray)
         };
 
