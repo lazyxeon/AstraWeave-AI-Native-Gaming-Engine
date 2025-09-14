@@ -2076,6 +2076,52 @@ fn get_biome_type(world_pos: vec2<f32>) -> i32 {
   }
 }
 
+// Generate biome-specific terrain height
+fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
+  // Base terrain generation using multiple octaves of noise
+  let base_scale = 0.01;
+  let detail_scale = 0.05;
+  let fine_scale = 0.2;
+  
+  // Base elevation noise
+  let base_noise = sin(world_pos.x * base_scale) * cos(world_pos.y * base_scale);
+  let detail_noise = sin(world_pos.x * detail_scale + 1.0) * cos(world_pos.y * detail_scale + 1.5);
+  let fine_noise = sin(world_pos.x * fine_scale + 2.0) * cos(world_pos.y * fine_scale + 2.5);
+  
+  // Combine noise layers
+  let combined_noise = base_noise * 0.6 + detail_noise * 0.3 + fine_noise * 0.1;
+  
+  if (biome_type == 0) { // Grassland - gentle rolling hills
+    let grassland_height = combined_noise * 2.0; // Range roughly -2 to +2
+    
+    // Add river valleys
+    let river_noise = sin(world_pos.x * 0.008) * 0.5;
+    let valley_factor = 1.0 - abs(river_noise);
+    let valley_depth = valley_factor * valley_factor * -1.5;
+    
+    return grassland_height + valley_depth;
+    
+  } else if (biome_type == 1) { // Desert - sand dunes and rocky outcrops
+    let desert_height = combined_noise * 3.0; // Range roughly -3 to +3
+    
+    // Add sand dune patterns
+    let dune_scale = 0.03;
+    let dune_noise = sin(world_pos.x * dune_scale) + cos(world_pos.y * dune_scale * 0.7);
+    let dune_height = dune_noise * 1.5;
+    
+    // Rocky mesa formations
+    let mesa_scale = 0.005;
+    let mesa_noise = sin(world_pos.x * mesa_scale) * cos(world_pos.y * mesa_scale);
+    let mesa_height = step(0.3, mesa_noise) * 4.0; // Flat-topped formations
+    
+    return desert_height + dune_height + mesa_height;
+    
+  } else {
+    // Default fallback - should not happen with current biome types
+    return combined_noise * 1.5;
+  }
+}
+
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   var col = in.color.rgb;
