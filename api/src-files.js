@@ -1,2 +1,2 @@
-createSrcSidebar('[["astraweave_ai",["",[],["lib.rs"]]],["astraweave_core",["",[],["lib.rs","perception.rs","schema.rs","sim.rs","tools.rs","util.rs","validation.rs","world.rs"]]],["astraweave_nav",["",[],["lib.rs"]]],["astraweave_physics",["",[],["lib.rs"]]],["astraweave_render",["",[],["camera.rs","depth.rs","effects.rs","lib.rs","overlay.rs","primitives.rs","renderer.rs","texture.rs","types.rs"]]]]');
-//{"start":19,"fragment_lengths":[36,124,38,42,144]}
+createSrcSidebar('[["astraweave_ai",["",[],["lib.rs"]]],["astraweave_core",["",[],["lib.rs","perception.rs","schema.rs","sim.rs","tools.rs","util.rs","validation.rs","world.rs"]]],["astraweave_nav",["",[],["lib.rs"]]],["astraweave_physics",["",[],["lib.rs"]]],["astraweave_render",["",[],["camera.rs","depth.rs","effects.rs","lib.rs","overlay.rs","primitives.rs","renderer.rs","terrain.rs","texture.rs","types.rs"]]]]');
+//{"start":19,"fragment_lengths":[36,124,38,42,157]}
