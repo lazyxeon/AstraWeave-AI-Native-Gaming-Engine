@@ -2199,17 +2199,22 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       tex_color = mix(tex_color, moss_color, slope_factor * 0.3);
       
     } else if (biome_type == 1) { // Desert
-      // Desert sand and rock texturing
-      let sand_color = vec3<f32>(0.8, 0.7, 0.5);
-      let rock_color = vec3<f32>(0.5, 0.4, 0.3);
-      let height_factor = clamp(terrain_height / 4.0, 0.0, 1.0);
-      tex_color = mix(sand_color, rock_color, height_factor);
+      // Use sampled sand texture with height-based lightening and slope-based rock blending
+      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.8, 1.4);
+      let sand_tex = tex_color.rgb * h_factor;
       
-      // Add mineral deposits and oasis effects
+      // Optional tint: rock color on steep slopes (simulated through height variation)
+      let rock_color = vec3<f32>(0.5, 0.45, 0.4);
+      let slope_factor = clamp(abs(terrain_height) / 3.0, 0.0, 0.5);
+      let blended = mix(sand_tex, rock_color, slope_factor);
+      
+      // Add mineral deposits and oasis effects using the blended texture
       let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
       if (mineral_noise > 0.7) {
         let mineral_color = vec3<f32>(0.7, 0.6, 0.4);
-        tex_color = mix(tex_color, mineral_color, 0.4);
+        tex_color = mix(blended, mineral_color, 0.3);
+      } else {
+        tex_color = blended;
       }
     }
     
