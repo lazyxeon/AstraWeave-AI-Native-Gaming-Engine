@@ -18,5 +18,5 @@ winit = { workspace = true }
 glam = { workspace = true }
 pollster = { workspace = true }
 anyhow = { workspace = true }
-notify = "6"
+notify = "8"
 rand = { workspace = true }
