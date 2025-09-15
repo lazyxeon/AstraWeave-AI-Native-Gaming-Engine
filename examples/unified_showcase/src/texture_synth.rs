@@ -21,8 +21,15 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
     )?;
     synth_if_missing(
         out_dir,
-        "stone.png",
+        "sand.png",
         seed.wrapping_add(303),
+        force,
+        synth_sand,
+    )?;
+    synth_if_missing(
+        out_dir,
+        "stone.png",
+        seed.wrapping_add(404),
         force,
         synth_stone,
     )?;
@@ -41,7 +48,7 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
         let img = f(1024, 1024, seed);
         img.save(&path)?;
         // also write a normal map derived from the height channel when relevant
-        if name.ends_with("grass.png") || name.ends_with("dirt.png") || name.ends_with("stone.png")
+        if name.ends_with("grass.png") || name.ends_with("dirt.png") || name.ends_with("sand.png") || name.ends_with("stone.png")
         {
             let npath = Path::new(out_dir).join(name.replace(".png", "_n.png"));
             let normal = height_to_normal(&img, 2.5);
@@ -135,6 +142,30 @@ fn synth_dirt(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let r = (60.0 + 110.0 * height) as u8;
             let g = (45.0 + 65.0 * height) as u8;
             let b = (35.0 + 45.0 * height) as u8;
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_sand(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let u = x as f32 / w as f32 * 20.0;
+            let v = y as f32 / h as f32 * 20.0;
+            // Fine sand grains and dune patterns
+            let fine_grains = fbm(u * 2.0, v * 2.0, seed ^ 0xc0ff33, 6, 2.0, 0.5);
+            let dune_patterns = fbm(u * 0.3, v * 0.3, seed ^ 0xfade01, 3, 2.0, 0.6);
+            let wind_ripples = fbm(u * 8.0, v * 1.5, seed ^ 0x7ead33, 4, 2.0, 0.4);
+            
+            // Combine patterns for height variation
+            let height = (0.5 + 0.3 * fine_grains + 0.2 * dune_patterns + 0.15 * wind_ripples).clamp(0.0, 1.0);
+            
+            // Sand coloration - warm yellows and tans
+            let r = (200.0 + 50.0 * height) as u8;
+            let g = (175.0 + 60.0 * height) as u8;
+            let b = (120.0 + 40.0 * height) as u8;
             img.put_pixel(x, y, Rgba([r, g, b, 255]));
         }
     }
