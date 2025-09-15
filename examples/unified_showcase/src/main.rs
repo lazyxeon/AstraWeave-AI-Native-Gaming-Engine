@@ -706,10 +706,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
     match texture_pack_name {
         "grassland" => {
             // === VEGETATION ===
-            // Dense forest areas with varied tree types
-            for i in 0..25 {
-                let x = -20.0 + (i as f32) * 1.8 + (i as f32 * 0.7).sin() * 1.5;
-                let z = -15.0 + (i % 5) as f32 * 6.0 + (i as f32 * 0.9).cos() * 2.0;
+            // Dense forest areas with varied tree types - significantly increased density
+            for i in 0..75 {
+                let x = -35.0 + (i as f32) * 1.2 + (i as f32 * 0.7).sin() * 2.5;
+                let z = -25.0 + (i % 8) as f32 * 4.0 + (i as f32 * 0.9).cos() * 3.0;
 
                 // Vary tree types and sizes for realistic forest
                 let (height, width, _tree_type) = match i % 4 {
@@ -730,10 +730,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     .insert_with_parent(tree_col, tree_handle, &mut physics.bodies);
             }
 
-            // Scattered bushes and undergrowth
-            for i in 0..15 {
-                let x = -10.0 + (i as f32) * 3.5 + (i as f32 * 1.3).sin() * 4.0;
-                let z = 5.0 + (i as f32 * 1.1).cos() * 8.0;
+            // Scattered bushes and undergrowth - increased density
+            for i in 0..35 {
+                let x = -15.0 + (i as f32) * 2.5 + (i as f32 * 1.3).sin() * 5.0;
+                let z = 5.0 + (i as f32 * 1.1).cos() * 12.0;
                 let size = 0.2 + (i % 3) as f32 * 0.1;
 
                 let bush_rb = r3::RigidBodyBuilder::fixed()
@@ -748,16 +748,17 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             }
 
             // === STRUCTURES ===
-            // Village with varied building types
-            for i in 0..8 {
-                let x = 15.0 + (i as f32) * 8.0 + (i as f32).sin() * 3.0;
-                let z = -5.0 + (i % 3) as f32 * 10.0 + (i as f32).cos() * 2.0;
+            // Village with varied building types - more structures
+            for i in 0..15 {
+                let x = 15.0 + (i as f32) * 6.0 + (i as f32).sin() * 4.0;
+                let z = -8.0 + (i % 4) as f32 * 8.0 + (i as f32).cos() * 3.0;
 
-                let (width, height, depth, _building_type) = match i % 4 {
+                let (width, height, depth, _building_type) = match i % 5 {
                     0 => (2.2, 1.5, 1.8, "manor"),      // Large manor house
                     1 => (1.5, 1.0, 1.2, "cottage"),    // Medium cottage
                     2 => (1.0, 0.8, 1.0, "hut"),        // Small hut
-                    _ => (2.8, 2.0, 2.0, "temple"),     // Village temple
+                    3 => (2.8, 2.0, 2.0, "temple"),     // Village temple
+                    _ => (1.8, 1.2, 1.5, "workshop"),   // Workshops and shops
                 };
 
                 let house_rb = r3::RigidBodyBuilder::fixed()
@@ -772,10 +773,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             }
 
             // === GEOLOGICAL FEATURES ===
-            // Rolling hills with scattered boulders
-            for i in 0..12 {
-                let x = -25.0 + (i as f32) * 8.0 + (i as f32 * 2.1).sin() * 5.0;
-                let z = 20.0 + (i as f32 * 1.7).cos() * 6.0;
+            // Rolling hills with scattered boulders - increased geological features
+            for i in 0..25 {
+                let x = -30.0 + (i as f32) * 6.0 + (i as f32 * 2.1).sin() * 8.0;
+                let z = 20.0 + (i as f32 * 1.7).cos() * 10.0;
                 let size = 0.8 + (i % 4) as f32 * 0.5;
 
                 let boulder_rb = r3::RigidBodyBuilder::fixed()
@@ -827,10 +828,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             }
 
             // === CHARACTERS ===
-            // Village inhabitants with varied roles and patrol patterns
-            for i in 0..12 {
-                let x = 10.0 + (i as f32) * 5.0 + (i as f32).sin() * 3.0;
-                let z = -8.0 + (i as f32 * 1.3).sin() * 12.0;
+            // Village inhabitants with varied roles and patrol patterns - more NPCs
+            for i in 0..20 {
+                let x = 10.0 + (i as f32) * 4.0 + (i as f32).sin() * 4.0;
+                let z = -12.0 + (i as f32 * 1.3).sin() * 15.0;
                 let pos = Vec3::new(x, -1.0, z);
 
                 let char_type = match i % 5 {
@@ -889,10 +890,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
         }
         "desert" => {
             // === VEGETATION ===
-            // Varied cacti and desert plants
-            for i in 0..20 {
-                let x = -18.0 + (i as f32) * 4.0 + (i as f32 * 1.2).sin() * 3.0;
-                let z = -10.0 + (i % 4) as f32 * 8.0 + (i as f32 * 0.8).cos() * 6.0;
+            // Varied cacti and desert plants - increased density
+            for i in 0..40 {
+                let x = -25.0 + (i as f32) * 3.0 + (i as f32 * 1.2).sin() * 4.0;
+                let z = -15.0 + (i % 6) as f32 * 6.0 + (i as f32 * 0.8).cos() * 8.0;
 
                 let (width, height, _cactus_type) = match i % 5 {
                     0 => (0.2, 3.5, "saguaro"),        // Tall saguaro cactus
@@ -916,10 +917,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             }
 
             // === STRUCTURES ===
-            // Desert settlement with adobe architecture
-            for i in 0..6 {
-                let x = 20.0 + (i as f32) * 12.0 + (i as f32).cos() * 4.0;
-                let z = 5.0 + (i % 2) as f32 * 15.0 + (i as f32).sin() * 3.0;
+            // Desert settlement with adobe architecture - more buildings
+            for i in 0..12 {
+                let x = 20.0 + (i as f32) * 8.0 + (i as f32).cos() * 5.0;
+                let z = 5.0 + (i % 3) as f32 * 12.0 + (i as f32).sin() * 4.0;
 
                 let (width, height, depth, _building_type) = match i % 3 {
                     0 => (2.5, 1.2, 2.0, "adobe_compound"), // Large compound
@@ -939,10 +940,10 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             }
 
             // === GEOLOGICAL FEATURES ===
-            // Mesa formations and desert rock outcrops
-            for i in 0..15 {
-                let x = -25.0 + (i as f32) * 7.0 + (i as f32 * 1.9).sin() * 8.0;
-                let z = 25.0 + (i as f32 * 1.3).cos() * 10.0;
+            // Mesa formations and desert rock outcrops - more geological variety
+            for i in 0..25 {
+                let x = -30.0 + (i as f32) * 5.0 + (i as f32 * 1.9).sin() * 10.0;
+                let z = 25.0 + (i as f32 * 1.3).cos() * 12.0;
                 let size = 1.2 + (i % 5) as f32 * 0.8;
 
                 let (width, height, depth) = match i % 4 {
@@ -1143,15 +1144,15 @@ async fn run() -> Result<()> {
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
 
-    // Use proper camera system from astraweave-render with elevated view for biome overview
+    // Use proper camera system from astraweave-render with optimized view for biome showcase
     let mut camera = RenderCamera {
-        position: Vec3::new(8.0, 5.0, 15.0), // Elevated position for better biome view
-        yaw: -0.3,    // Slight left turn to show more environment
-        pitch: -0.2,  // Look slightly down at the terrain
-        fovy: 70f32.to_radians(), // Wider field of view for more immersive biome view
+        position: Vec3::new(0.0, 8.0, 25.0), // Positioned to view both village and forest areas
+        yaw: -0.1,    // Slight turn to show environment depth
+        pitch: -0.3,  // Look down to see terrain detail and object placement
+        fovy: 75f32.to_radians(), // Wider field of view for immersive biome experience
         aspect: 1.0,
         znear: 0.01,
-        zfar: 5000.0,
+        zfar: 8000.0, // Extended far plane for distant terrain visibility
     };
     let mut camera_controller = CameraController::new(8.0, 0.002);
     let mut last = Instant::now();
@@ -1429,9 +1430,9 @@ async fn run() -> Result<()> {
                                     resolve_target: None,
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.4,  // Lighter sky blue 
-                                            g: 0.6,  // instead of dark gray
-                                            b: 0.8,  // for better biome feel
+                                            r: 0.3,  // Softer, more atmospheric sky blue 
+                                            g: 0.5,  // that transitions better with
+                                            b: 0.8,  // the procedural sky rendering
                                             a: 1.0,
                                         }),
                                         store: wgpu::StoreOp::Store,
@@ -1885,8 +1886,8 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             }
         };
 
-    // Instance buffer (increased size for environment objects)
-    let max_instances = 100;
+    // Instance buffer (increased size for enhanced environment objects)
+    let max_instances = 200; // Increased from 100 to accommodate more objects
     let instance_vb = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("instance-buffer"),
         size: (std::mem::size_of::<InstanceRaw>() * max_instances) as u64,
@@ -2081,46 +2082,74 @@ fn vs_main(in: VsIn) -> VsOut {
   return out;
 }
 
-// Sky color function - generates procedural sky based on direction and time
+// Enhanced sky color function - generates biome-appropriate sky with atmospheric effects
 fn sky_color(direction: vec3<f32>, time: f32) -> vec3<f32> {
   let dir = normalize(direction);
   let y = clamp(dir.y, -1.0, 1.0);
   
-  // Time-based sun position for day/night cycle
-  let sun_angle = time * 0.1;
-  let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.8, sin(sun_angle) * 0.8, sin(sun_angle * 0.3) * 0.4));
+  // Enhanced time-based sun position for day/night cycle
+  let sun_angle = time * 0.08; // Slightly slower day cycle
+  let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.9, sin(sun_angle) * 0.9, sin(sun_angle * 0.2) * 0.3));
   
-  // Calculate sun influence
+  // Calculate sun influence with enhanced scattering
   let sun_dot = max(dot(dir, sun_dir), 0.0);
-  let sun_influence = pow(sun_dot, 32.0);
+  let sun_influence = pow(sun_dot, 16.0); // Brighter sun disk
+  let sun_halo = pow(sun_dot, 4.0) * 0.3; // Soft sun halo
   
-  // Day factor based on sun height
-  let day_factor = clamp(sun_dir.y + 0.2, 0.0, 1.0);
+  // Enhanced day factor based on sun height
+  let day_factor = clamp(sun_dir.y + 0.3, 0.0, 1.0);
   
-  // Sky gradient colors based on time of day
-  let horizon_day = vec3<f32>(0.8, 0.9, 1.0);    // Light blue horizon
-  let zenith_day = vec3<f32>(0.3, 0.6, 1.0);     // Deep blue zenith
-  let horizon_night = vec3<f32>(0.1, 0.1, 0.3);  // Dark blue horizon
-  let zenith_night = vec3<f32>(0.05, 0.05, 0.2); // Very dark blue zenith
+  // More vibrant sky gradient colors
+  let horizon_day = vec3<f32>(0.9, 0.95, 1.0);    // Brighter blue horizon
+  let zenith_day = vec3<f32>(0.2, 0.5, 0.95);     // Rich blue zenith
+  let horizon_sunset = vec3<f32>(1.0, 0.7, 0.4);  // Warm sunset colors
+  let zenith_sunset = vec3<f32>(0.8, 0.4, 0.6);   // Purple sunset zenith
+  let horizon_night = vec3<f32>(0.05, 0.05, 0.2); // Deep blue night
+  let zenith_night = vec3<f32>(0.02, 0.02, 0.15); // Dark night zenith
   
-  // Interpolate between day and night colors
-  let horizon_color = mix(horizon_night, horizon_day, day_factor);
-  let zenith_color = mix(zenith_night, zenith_day, day_factor);
+  // Calculate sunset factor for warm transitional colors
+  let sunset_factor = clamp(1.0 - abs(sun_dir.y) * 3.0, 0.0, 1.0) * clamp(day_factor * 2.0, 0.0, 1.0);
   
-  // Vertical gradient from horizon to zenith
-  let gradient_factor = clamp((y + 1.0) * 0.5, 0.0, 1.0);
-  let sky_base = mix(horizon_color, zenith_color, gradient_factor * gradient_factor);
+  // Blend colors based on time of day and sunset
+  let horizon_color = mix(
+    mix(horizon_night, horizon_day, day_factor),
+    horizon_sunset,
+    sunset_factor
+  );
+  let zenith_color = mix(
+    mix(zenith_night, zenith_day, day_factor),
+    zenith_sunset,
+    sunset_factor
+  );
   
-  // Add sun disk and atmospheric scattering
-  let sun_color = vec3<f32>(1.0, 0.9, 0.7) * day_factor;
-  let sun_contribution = sun_influence * sun_color * 0.8;
+  // Enhanced vertical gradient with atmospheric curve
+  let atmosphere_curve = pow(clamp((y + 1.0) * 0.5, 0.0, 1.0), 0.7);
+  let sky_base = mix(horizon_color, zenith_color, atmosphere_curve);
   
-  // Add subtle atmospheric effects
-  let atmosphere_factor = 1.0 - abs(y);
-  let atmosphere_color = mix(vec3<f32>(0.9, 0.8, 0.7), vec3<f32>(0.7, 0.8, 1.0), day_factor);
-  let atmosphere_contribution = atmosphere_factor * atmosphere_color * 0.1 * day_factor;
+  // Enhanced sun disk and atmospheric scattering
+  let sun_color = mix(
+    vec3<f32>(1.0, 0.95, 0.8),  // Day sun
+    vec3<f32>(1.0, 0.6, 0.3),   // Sunset sun
+    sunset_factor
+  ) * day_factor;
+  let sun_contribution = (sun_influence * 0.8 + sun_halo) * sun_color;
   
-  return sky_base + sun_contribution + atmosphere_contribution;
+  // Enhanced atmospheric effects with distance-based haze
+  let atmosphere_factor = pow(1.0 - abs(y), 1.5);
+  let atmosphere_color = mix(
+    vec3<f32>(0.6, 0.7, 0.9),   // Cool atmospheric color
+    vec3<f32>(1.0, 0.8, 0.6),   // Warm atmospheric color
+    sunset_factor
+  );
+  let atmosphere_contribution = atmosphere_factor * atmosphere_color * 0.15 * day_factor;
+  
+  // Add subtle cloud-like variation
+  let cloud_noise = sin(dir.x * 8.0 + time * 0.5) * cos(dir.z * 6.0 + time * 0.3) * 0.1;
+  let cloud_factor = max(cloud_noise, 0.0) * clamp(y + 0.2, 0.0, 1.0);
+  let cloud_color = mix(vec3<f32>(0.9, 0.9, 0.95), vec3<f32>(1.0, 0.8, 0.7), sunset_factor);
+  let cloud_contribution = cloud_factor * cloud_color * day_factor * 0.3;
+  
+  return sky_base + sun_contribution + atmosphere_contribution + cloud_contribution;
 }
 
 
@@ -2150,49 +2179,61 @@ fn get_biome_type(world_pos: vec2<f32>) -> i32 {
   }
 }
 
-// Generate biome-specific terrain height
+// Generate biome-specific terrain height with enhanced variation
 fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
-  // Base terrain generation using multiple octaves of noise
-  let base_scale = 0.01;
-  let detail_scale = 0.05;
-  let fine_scale = 0.2;
+  // Enhanced base terrain generation using multiple octaves of noise
+  let base_scale = 0.005;  // Larger terrain features
+  let detail_scale = 0.02;  // Medium detail
+  let fine_scale = 0.15;   // Fine surface detail
+  let micro_scale = 0.8;   // Micro surface variation
   
-  // Base elevation noise
+  // Base elevation noise with more dramatic height
   let base_noise = sin(world_pos.x * base_scale) * cos(world_pos.y * base_scale);
   let detail_noise = sin(world_pos.x * detail_scale + 1.0) * cos(world_pos.y * detail_scale + 1.5);
   let fine_noise = sin(world_pos.x * fine_scale + 2.0) * cos(world_pos.y * fine_scale + 2.5);
+  let micro_noise = sin(world_pos.x * micro_scale + 3.0) * cos(world_pos.y * micro_scale + 3.5);
   
-  // Combine noise layers
-  let combined_noise = base_noise * 0.6 + detail_noise * 0.3 + fine_noise * 0.1;
+  // Combine noise layers with stronger influence
+  let combined_noise = base_noise * 0.5 + detail_noise * 0.25 + fine_noise * 0.15 + micro_noise * 0.1;
   
-  if (biome_type == 0) { // Grassland - gentle rolling hills
-    let grassland_height = combined_noise * 2.0; // Range roughly -2 to +2
+  if (biome_type == 0) { // Grassland - rolling hills with valleys
+    let grassland_height = combined_noise * 4.0; // Increased from 2.0 for more dramatic terrain
     
-    // Add river valleys
-    let river_noise = sin(world_pos.x * 0.008) * 0.5;
+    // Enhanced river valleys with meandering patterns
+    let river_x = sin(world_pos.x * 0.006) * 0.8;
+    let river_z = cos(world_pos.y * 0.004) * 0.6;
+    let river_noise = sin((world_pos.x + river_z * 20.0) * 0.008) * cos((world_pos.y + river_x * 15.0) * 0.01);
     let valley_factor = 1.0 - abs(river_noise);
-    let valley_depth = valley_factor * valley_factor * -1.5;
+    let valley_depth = valley_factor * valley_factor * valley_factor * -3.0; // Deeper valleys
     
-    return grassland_height + valley_depth;
+    // Add gentle rolling hills
+    let hill_pattern = sin(world_pos.x * 0.01) * cos(world_pos.y * 0.012) * 2.0;
     
-  } else if (biome_type == 1) { // Desert - sand dunes and rocky outcrops
-    let desert_height = combined_noise * 3.0; // Range roughly -3 to +3
+    return grassland_height + valley_depth + hill_pattern;
     
-    // Add sand dune patterns
-    let dune_scale = 0.03;
-    let dune_noise = sin(world_pos.x * dune_scale) + cos(world_pos.y * dune_scale * 0.7);
-    let dune_height = dune_noise * 1.5;
+  } else if (biome_type == 1) { // Desert - dramatic mesas and dunes
+    let desert_height = combined_noise * 5.0; // Increased from 3.0 for more dramatic terrain
     
-    // Rocky mesa formations
-    let mesa_scale = 0.005;
+    // Enhanced sand dune patterns with wind erosion
+    let dune_scale = 0.02;
+    let dune_noise = sin(world_pos.x * dune_scale) + cos(world_pos.y * dune_scale * 0.6);
+    let wind_direction = sin(world_pos.x * 0.001) * cos(world_pos.y * 0.0008);
+    let dune_height = (dune_noise + wind_direction * 0.5) * 2.5; // Larger dunes
+    
+    // More dramatic rocky mesa formations
+    let mesa_scale = 0.003;
     let mesa_noise = sin(world_pos.x * mesa_scale) * cos(world_pos.y * mesa_scale);
-    let mesa_height = step(0.3, mesa_noise) * 4.0; // Flat-topped formations
+    let mesa_height = step(0.2, mesa_noise) * 8.0; // Taller mesas (increased from 4.0)
     
-    return desert_height + dune_height + mesa_height;
+    // Add canyon effects
+    let canyon_noise = sin(world_pos.x * 0.008) * cos(world_pos.y * 0.006);
+    let canyon_depth = step(0.6, abs(canyon_noise)) * -4.0;
+    
+    return desert_height + dune_height + mesa_height + canyon_depth;
     
   } else {
-    // Default fallback - should not happen with current biome types
-    return combined_noise * 1.5;
+    // Enhanced default fallback
+    return combined_noise * 3.0; // Increased from 1.5
   }
 }
 
