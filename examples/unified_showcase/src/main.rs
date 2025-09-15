@@ -325,6 +325,36 @@ const CHARACTER_INDICES: &[u16] = &[
     28, 24, 27, 28, 27, 29,
 ];
 
+// Large skybox geometry - inverted cube to render from inside
+const SKYBOX_VERTICES: &[[f32; 3]] = &[
+    // Front face (inverted normals - face inward)
+    [-500.0, -500.0, 500.0],   // 0
+    [500.0, -500.0, 500.0],    // 1  
+    [500.0, 500.0, 500.0],     // 2
+    [-500.0, 500.0, 500.0],    // 3
+    
+    // Back face
+    [-500.0, -500.0, -500.0],  // 4
+    [-500.0, 500.0, -500.0],   // 5
+    [500.0, 500.0, -500.0],    // 6
+    [500.0, -500.0, -500.0],   // 7
+];
+
+const SKYBOX_INDICES: &[u16] = &[
+    // Front face (inverted winding for inside view)
+    0, 2, 1, 0, 3, 2,
+    // Right face 
+    1, 6, 7, 1, 2, 6,
+    // Back face
+    7, 5, 4, 7, 6, 5,
+    // Left face
+    4, 3, 0, 4, 5, 3,
+    // Top face
+    3, 6, 2, 3, 5, 6,
+    // Bottom face  
+    4, 1, 7, 4, 0, 1,
+];
+
 // Mesh type enumeration
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 enum MeshType {
@@ -332,6 +362,7 @@ enum MeshType {
     Tree,
     House,
     Character,
+    Skybox,
 }
 
 struct Mesh {
@@ -1112,12 +1143,12 @@ async fn run() -> Result<()> {
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
 
-    // Use proper camera system from astraweave-render
+    // Use proper camera system from astraweave-render with elevated view for biome overview
     let mut camera = RenderCamera {
-        position: Vec3::new(0.0, 0.0, 5.0),
-        yaw: 0.0,
-        pitch: 0.0,
-        fovy: 60f32.to_radians(),
+        position: Vec3::new(8.0, 5.0, 15.0), // Elevated position for better biome view
+        yaw: -0.3,    // Slight left turn to show more environment
+        pitch: -0.2,  // Look slightly down at the terrain
+        fovy: 70f32.to_radians(), // Wider field of view for more immersive biome view
         aspect: 1.0,
         znear: 0.01,
         zfar: 5000.0,
@@ -1398,9 +1429,9 @@ async fn run() -> Result<()> {
                                     resolve_target: None,
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.05,
-                                            g: 0.07,
-                                            b: 0.09,
+                                            r: 0.4,  // Lighter sky blue 
+                                            g: 0.6,  // instead of dark gray
+                                            b: 0.8,  // for better biome feel
                                             a: 1.0,
                                         }),
                                         store: wgpu::StoreOp::Store,
@@ -1580,13 +1611,14 @@ struct InstanceBatch {
 fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch> {
     let mut batches = Vec::new();
     
-    // Create separate batches for each mesh type
-    for &mesh_type_val in &[MeshType::Cube as u32, MeshType::Tree as u32, MeshType::House as u32, MeshType::Character as u32] {
+    // Create separate batches for each mesh type including skybox
+    for &mesh_type_val in &[MeshType::Skybox as u32, MeshType::Cube as u32, MeshType::Tree as u32, MeshType::House as u32, MeshType::Character as u32] {
         let mesh_type = match mesh_type_val {
             0 => MeshType::Cube,
             1 => MeshType::Tree,
             2 => MeshType::House,
             3 => MeshType::Character,
+            4 => MeshType::Skybox,
             _ => MeshType::Cube,
         };
         
@@ -1634,6 +1666,7 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshTyp
     meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, TREE_INDICES));
     meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, HOUSE_INDICES));
     meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, CHARACTER_INDICES));
+    meshes.insert(MeshType::Skybox, create_mesh(device, SKYBOX_VERTICES, SKYBOX_INDICES));
     
     meshes
 }
@@ -2269,7 +2302,11 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     
   } else {
     // Sky rendering for non-terrain objects or background
-    if (in.mesh_type == 1u) { // Trees
+    if (in.mesh_type == 4u) { // Skybox
+      // Full procedural sky rendering
+      col = sky_color(in.view_dir, time);
+      
+    } else if (in.mesh_type == 1u) { // Trees
       // Enhanced tree rendering with seasonal variation
       let tree_base_color = in.color.rgb;
       let seasonal_factor = (sin(time * 0.05) + 1.0) * 0.5;
@@ -2300,13 +2337,13 @@ fn build_physics_world() -> Physics {
     let mut bodies = r3::RigidBodySet::new();
     let mut colliders = r3::ColliderSet::new();
     let gravity = nalgebra::Vector3::new(0.0, -9.81, 0.0);
-    // Ground
+    // Large ground plane for extensive biome coverage
     let ground = r3::RigidBodyBuilder::fixed()
         .translation(nalgebra::Vector3::new(0.0, -2.0, 0.0))
         .user_data(0)
         .build();
     let g_handle = bodies.insert(ground);
-    let g_col = r3::ColliderBuilder::cuboid(100.0, 0.5, 100.0).build();
+    let g_col = r3::ColliderBuilder::cuboid(500.0, 0.5, 500.0).build(); // Much larger ground
     colliders.insert_with_parent(g_col, g_handle, &mut bodies);
     // Stack of boxes
     for y in 0..5 {
@@ -2391,6 +2428,16 @@ fn teleport_sphere_to(p: &mut Physics, pos: Vec3) {
 fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut Vec<InstanceRaw>) {
     // Resize output vector to accommodate all objects
     out.clear();
+
+    // First, add skybox instance centered at origin with identity transform
+    // The skybox should always be rendered first and cover the entire background
+    let skybox_instance = InstanceRaw {
+        model: Mat4::IDENTITY.to_cols_array(),
+        color: [0.7, 0.85, 1.0, 1.0], // Sky blue color for sky shader
+        mesh_type: MeshType::Skybox as u32,
+        _padding: [0, 0, 0],
+    };
+    out.push(skybox_instance);
 
     // Add physics objects
     for (h, body) in p.bodies.iter() {
