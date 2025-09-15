@@ -52,7 +52,7 @@ jobs:
             bc jq coreutils
       
       - name: Install sccache
-        uses: mozilla-actions/sccache-action@v0.0.6
+        uses: mozilla-actions/sccache-action@v0.0.9
       
       - name: Set up advanced Rust cache
         uses: Swatinem/rust-cache@v2
