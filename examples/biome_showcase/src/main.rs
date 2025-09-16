@@ -85,8 +85,6 @@ struct BiomeShowcase {
     generated_chunks: Vec<ChunkId>,
     /// Statistics
     stats: BiomeStats,
-    /// Last frame time
-    last_frame: Instant,
 }
 
 /// Statistics about the generated biome
@@ -170,7 +168,6 @@ impl BiomeShowcase {
             camera_controller,
             generated_chunks: Vec::new(),
             stats: BiomeStats::default(),
-            last_frame: Instant::now(),
         })
     }
 
