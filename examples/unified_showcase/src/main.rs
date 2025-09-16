@@ -59,6 +59,21 @@ struct RenderStuff {
     texture_bind_group_layout: wgpu::BindGroupLayout,
     ground_bind_group: Option<wgpu::BindGroup>,
     ground_normal: Option<LoadedTexture>,
+    ground_mra: Option<LoadedTexture>,
+    ground_emissive: Option<LoadedTexture>,
+    // Additional biome textures
+    dirt_albedo: Option<LoadedTexture>,
+    dirt_normal: Option<LoadedTexture>,
+    dirt_mra: Option<LoadedTexture>,
+    stone_albedo: Option<LoadedTexture>,
+    stone_normal: Option<LoadedTexture>,
+    stone_mra: Option<LoadedTexture>,
+    sand_albedo: Option<LoadedTexture>,
+    sand_normal: Option<LoadedTexture>,
+    sand_mra: Option<LoadedTexture>,
+    forest_albedo: Option<LoadedTexture>,
+    forest_normal: Option<LoadedTexture>,
+    forest_mra: Option<LoadedTexture>,
 }
 
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
@@ -672,7 +687,35 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
                 load_texture_from_file(&render.device, &render.queue, &default_npath)?
             };
 
-            // Create bind group with both textures
+            // Load optional MRA and emissive textures based on base texture stem
+            let mra_path = Path::new("assets").join(format!("{}_mra.png", tex_stem));
+            let emissive_path = Path::new("assets").join(format!("{}_e.png", tex_stem));
+            let mra_tex = if mra_path.exists() {
+                load_texture_from_file(&render.device, &render.queue, &mra_path)?
+            } else {
+                create_default_mra_texture(&render.device, &render.queue)?
+            };
+            let emissive_tex = if emissive_path.exists() {
+                load_texture_from_file(&render.device, &render.queue, &emissive_path)?
+            } else {
+                create_default_emissive_texture(&render.device, &render.queue)?
+            };
+
+            // Prepare additional biome textures (use existing ones or fall back to ground)
+            let dirt_albedo_ref = render.dirt_albedo.as_ref().unwrap_or(&new_texture);
+            let dirt_normal_ref = render.dirt_normal.as_ref().unwrap_or(&normal_tex);
+            let dirt_mra_ref = render.dirt_mra.as_ref().unwrap_or(&mra_tex);
+            let stone_albedo_ref = render.stone_albedo.as_ref().unwrap_or(&new_texture);
+            let stone_normal_ref = render.stone_normal.as_ref().unwrap_or(&normal_tex);
+            let stone_mra_ref = render.stone_mra.as_ref().unwrap_or(&mra_tex);
+            let sand_albedo_ref = render.sand_albedo.as_ref().unwrap_or(&new_texture);
+            let sand_normal_ref = render.sand_normal.as_ref().unwrap_or(&normal_tex);
+            let sand_mra_ref = render.sand_mra.as_ref().unwrap_or(&mra_tex);
+            let forest_albedo_ref = render.forest_albedo.as_ref().unwrap_or(&new_texture);
+            let forest_normal_ref = render.forest_normal.as_ref().unwrap_or(&normal_tex);
+            let forest_mra_ref = render.forest_mra.as_ref().unwrap_or(&mra_tex);
+
+            // Create bind group with albedo, normal, MRA, emissive and biome sets
             let combined_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some(&format!("{}-albedo-normal", texture_pack_name)),
                 layout: &render.texture_bind_group_layout,
@@ -693,6 +736,38 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
                         binding: 3,
                         resource: wgpu::BindingResource::Sampler(&normal_tex.sampler),
                     },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: wgpu::BindingResource::TextureView(&mra_tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 5,
+                        resource: wgpu::BindingResource::Sampler(&mra_tex.sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 6,
+                        resource: wgpu::BindingResource::TextureView(&emissive_tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 7,
+                        resource: wgpu::BindingResource::Sampler(&emissive_tex.sampler),
+                    },
+                    // Dirt
+                    wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(&dirt_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&dirt_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 10, resource: wgpu::BindingResource::TextureView(&dirt_mra_ref.view) },
+                    // Stone
+                    wgpu::BindGroupEntry { binding: 11, resource: wgpu::BindingResource::TextureView(&stone_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 12, resource: wgpu::BindingResource::TextureView(&stone_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 13, resource: wgpu::BindingResource::TextureView(&stone_mra_ref.view) },
+                    // Sand
+                    wgpu::BindGroupEntry { binding: 14, resource: wgpu::BindingResource::TextureView(&sand_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 15, resource: wgpu::BindingResource::TextureView(&sand_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 16, resource: wgpu::BindingResource::TextureView(&sand_mra_ref.view) },
+                    // Forest
+                    wgpu::BindGroupEntry { binding: 17, resource: wgpu::BindingResource::TextureView(&forest_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 18, resource: wgpu::BindingResource::TextureView(&forest_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 19, resource: wgpu::BindingResource::TextureView(&forest_mra_ref.view) },
                 ],
             });
 
@@ -700,6 +775,8 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
             render.ground_texture = Some(new_texture);
             render.ground_normal = Some(normal_tex);
             render.ground_bind_group = Some(combined_bg);
+            render.ground_mra = Some(mra_tex);
+            render.ground_emissive = Some(emissive_tex);
 
             println!("Successfully loaded texture pack: {}", texture_pack_name);
             Ok(())
@@ -1880,6 +1957,89 @@ fn create_default_normal_texture(
     })
 }
 
+// Default MRA texture: R=AO=1.0 (no occlusion), G=Roughness=0.8, B=Metallic=0.0
+fn create_default_mra_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> Result<LoadedTexture> {
+    let mra_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("default-mra"),
+        size: wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8Unorm,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    // RGBA: AO, Roughness, Metallic, unused
+    let ao = (1.0 * 255.0) as u8;
+    let rough = (0.8 * 255.0) as u8;
+    let metal = (0.0 * 255.0) as u8;
+    queue.write_texture(
+        wgpu::ImageCopyTexture {
+            texture: &mra_tex,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        &[ao, rough, metal, 255],
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4),
+            rows_per_image: Some(1),
+        },
+        wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+    );
+    let view = mra_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    Ok(LoadedTexture { texture: mra_tex, view, sampler })
+}
+
+// Default emissive texture: black (no emission)
+fn create_default_emissive_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> Result<LoadedTexture> {
+    let e_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("default-emissive"),
+        size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    queue.write_texture(
+        wgpu::ImageCopyTexture { texture: &e_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        &[0, 0, 0, 255],
+        wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+        wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+    );
+    let view = e_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    Ok(LoadedTexture { texture: e_tex, view, sampler })
+}
+
+// Fallback: create a 1x1 texture matching the color of an existing texture's first texel
+fn default_albedo_clone(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    _src: &LoadedTexture,
+) -> Result<LoadedTexture> {
+    // We don't read from GPU; just make a neutral 1x1 white as a safe stand-in
+    create_default_albedo_texture(device, queue)
+}
+
 // ---------------- renderer setup ----------------
 // Structure to hold batched instance data for efficient rendering
 struct InstanceBatch {
@@ -2170,10 +2330,10 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         }],
     });
 
-    // Texture bind group layout (for albedo + normal mapping)
+    // Texture bind group layout (for PBR: albedo + normal + MRA + emissive)
     let texture_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("albedo+normal"),
+            label: Some("pbr-textures"),
             entries: &[
                 // binding 0: albedo texture
                 wgpu::BindGroupLayoutEntry {
@@ -2211,11 +2371,67 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
+                // binding 4: MRA (metallic in B, roughness in G, occlusion in R)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                // binding 5: MRA sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                // binding 6: emissive texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 6,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                // binding 7: emissive sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 7,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                // Dirt set: albedo, normal, mra
+                wgpu::BindGroupLayoutEntry { binding: 8, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 9, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 10, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                // Stone set
+                wgpu::BindGroupLayoutEntry { binding: 11, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 12, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 13, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                // Sand set
+                wgpu::BindGroupLayoutEntry { binding: 14, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 15, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 16, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                // Forest floor set
+                wgpu::BindGroupLayoutEntry { binding: 17, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 18, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 19, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
             ],
         });
 
     // Try to load grass texture, fallback to default if not available
-    let (ground_texture, ground_normal, ground_bind_group) =
+    let (ground_texture, ground_normal, ground_mra, ground_emissive, ground_bind_group,
+         dirt_albedo, dirt_normal, dirt_mra,
+         stone_albedo, stone_normal, stone_mra,
+         sand_albedo, sand_normal, sand_mra,
+         forest_albedo, forest_normal, forest_mra) =
         match load_texture_from_file(&device, &queue, Path::new("assets/grass.png")) {
             Ok(texture) => {
                 // Try to load corresponding normal map
@@ -2227,6 +2443,40 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                     Ok(normal) => normal,
                     Err(_) => create_default_normal_texture(&device, &queue)?,
                 };
+                // Load MRA and emissive if present
+                let mra_texture = match load_texture_from_file(
+                    &device,
+                    &queue,
+                    Path::new("assets/grass_mra.png"),
+                ) {
+                    Ok(tex) => tex,
+                    Err(_) => create_default_mra_texture(&device, &queue)?,
+                };
+                let emissive_texture = match load_texture_from_file(
+                    &device,
+                    &queue,
+                    Path::new("assets/grass_e.png"),
+                ) {
+                    Ok(tex) => tex,
+                    Err(_) => create_default_emissive_texture(&device, &queue)?,
+                };
+
+                // Load additional biome textures (with fallbacks)
+                let dirt_albedo = load_texture_from_file(&device, &queue, Path::new("assets/dirt.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let dirt_normal = load_texture_from_file(&device, &queue, Path::new("assets/dirt_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let dirt_mra = load_texture_from_file(&device, &queue, Path::new("assets/dirt_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+
+                let stone_albedo = load_texture_from_file(&device, &queue, Path::new("assets/stone.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let stone_normal = load_texture_from_file(&device, &queue, Path::new("assets/stone_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let stone_mra = load_texture_from_file(&device, &queue, Path::new("assets/stone_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+
+                let sand_albedo = load_texture_from_file(&device, &queue, Path::new("assets/sand.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let sand_normal = load_texture_from_file(&device, &queue, Path::new("assets/sand_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let sand_mra = load_texture_from_file(&device, &queue, Path::new("assets/sand_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+
+                let forest_albedo = load_texture_from_file(&device, &queue, Path::new("assets/forest_floor.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let forest_normal = load_texture_from_file(&device, &queue, Path::new("assets/forest_floor_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let forest_mra = load_texture_from_file(&device, &queue, Path::new("assets/forest_floor_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
 
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("ground-texture-bg"),
@@ -2248,14 +2498,60 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                             binding: 3,
                             resource: wgpu::BindingResource::Sampler(&normal_texture.sampler),
                         },
+                        wgpu::BindGroupEntry {
+                            binding: 4,
+                            resource: wgpu::BindingResource::TextureView(&mra_texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 5,
+                            resource: wgpu::BindingResource::Sampler(&mra_texture.sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 6,
+                            resource: wgpu::BindingResource::TextureView(&emissive_texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 7,
+                            resource: wgpu::BindingResource::Sampler(&emissive_texture.sampler),
+                        },
+                        // Dirt
+                        wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(&dirt_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&dirt_normal.view) },
+                        wgpu::BindGroupEntry { binding: 10, resource: wgpu::BindingResource::TextureView(&dirt_mra.view) },
+                        // Stone
+                        wgpu::BindGroupEntry { binding: 11, resource: wgpu::BindingResource::TextureView(&stone_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 12, resource: wgpu::BindingResource::TextureView(&stone_normal.view) },
+                        wgpu::BindGroupEntry { binding: 13, resource: wgpu::BindingResource::TextureView(&stone_mra.view) },
+                        // Sand
+                        wgpu::BindGroupEntry { binding: 14, resource: wgpu::BindingResource::TextureView(&sand_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 15, resource: wgpu::BindingResource::TextureView(&sand_normal.view) },
+                        wgpu::BindGroupEntry { binding: 16, resource: wgpu::BindingResource::TextureView(&sand_mra.view) },
+                        // Forest floor
+                        wgpu::BindGroupEntry { binding: 17, resource: wgpu::BindingResource::TextureView(&forest_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 18, resource: wgpu::BindingResource::TextureView(&forest_normal.view) },
+                        wgpu::BindGroupEntry { binding: 19, resource: wgpu::BindingResource::TextureView(&forest_mra.view) },
                     ],
                 });
-                (Some(texture), Some(normal_texture), Some(bind_group))
+                (
+                    Some(texture),
+                    Some(normal_texture),
+                    Some(mra_texture),
+                    Some(emissive_texture),
+                    Some(bind_group),
+                    Some(dirt_albedo), Some(dirt_normal), Some(dirt_mra),
+                    Some(stone_albedo), Some(stone_normal), Some(stone_mra),
+                    Some(sand_albedo), Some(sand_normal), Some(sand_mra),
+                    Some(forest_albedo), Some(forest_normal), Some(forest_mra),
+                )
             }
             Err(_) => {
                 // Create default textures as fallback
                 let default_albedo = create_default_albedo_texture(&device, &queue)?;
                 let default_normal = create_default_normal_texture(&device, &queue)?;
+                let default_mra = create_default_mra_texture(&device, &queue)?;
+                let default_emissive = create_default_emissive_texture(&device, &queue)?;
+
+                // Fallbacks: we will reuse default textures directly in the bind group
 
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("default-texture-bg"),
@@ -2277,9 +2573,51 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                             binding: 3,
                             resource: wgpu::BindingResource::Sampler(&default_normal.sampler),
                         },
+                        wgpu::BindGroupEntry {
+                            binding: 4,
+                            resource: wgpu::BindingResource::TextureView(&default_mra.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 5,
+                            resource: wgpu::BindingResource::Sampler(&default_mra.sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 6,
+                            resource: wgpu::BindingResource::TextureView(&default_emissive.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 7,
+                            resource: wgpu::BindingResource::Sampler(&default_emissive.sampler),
+                        },
+                        // Dirt (defaults)
+                        wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 10, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
+                        // Stone (defaults)
+                        wgpu::BindGroupEntry { binding: 11, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 12, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 13, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
+                        // Sand (defaults)
+                        wgpu::BindGroupEntry { binding: 14, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 15, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 16, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
+                        // Forest (defaults)
+                        wgpu::BindGroupEntry { binding: 17, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 18, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 19, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
                     ],
                 });
-                (Some(default_albedo), Some(default_normal), Some(bind_group))
+                (
+                    Some(default_albedo),
+                    Some(default_normal),
+                    Some(default_mra),
+                    Some(default_emissive),
+                    Some(bind_group),
+                    None, None, None,
+                    None, None, None,
+                    None, None, None,
+                    None, None, None,
+                )
             }
         };
 
@@ -2408,6 +2746,21 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         texture_bind_group_layout,
         ground_bind_group,
         ground_normal,
+        ground_mra,
+        ground_emissive,
+        // Additional biome textures
+        dirt_albedo,
+        dirt_normal,
+        dirt_mra,
+        stone_albedo,
+        stone_normal,
+        stone_mra,
+        sand_albedo,
+        sand_normal,
+        sand_mra,
+        forest_albedo,
+        forest_normal,
+        forest_mra,
     })
 }
 
@@ -2440,6 +2793,23 @@ struct TimeUniform { time: f32, _padding: vec3<f32> };
 @group(1) @binding(1) var ground_sampler: sampler;
 @group(1) @binding(2) var ground_normal: texture_2d<f32>;
 @group(1) @binding(3) var normal_sampler: sampler;
+@group(1) @binding(4) var ground_mra: texture_2d<f32>; // R: AO, G: Roughness, B: Metallic
+@group(1) @binding(5) var mra_sampler: sampler;
+@group(1) @binding(6) var ground_emissive: texture_2d<f32>;
+@group(1) @binding(7) var emissive_sampler: sampler;
+// Additional biome textures (share samplers above)
+@group(1) @binding(8) var dirt_albedo: texture_2d<f32>;
+@group(1) @binding(9) var dirt_normal: texture_2d<f32>;
+@group(1) @binding(10) var dirt_mra: texture_2d<f32>;
+@group(1) @binding(11) var stone_albedo: texture_2d<f32>;
+@group(1) @binding(12) var stone_normal: texture_2d<f32>;
+@group(1) @binding(13) var stone_mra: texture_2d<f32>;
+@group(1) @binding(14) var sand_albedo: texture_2d<f32>;
+@group(1) @binding(15) var sand_normal: texture_2d<f32>;
+@group(1) @binding(16) var sand_mra: texture_2d<f32>;
+@group(1) @binding(17) var forest_albedo: texture_2d<f32>;
+@group(1) @binding(18) var forest_normal: texture_2d<f32>;
+@group(1) @binding(19) var forest_mra: texture_2d<f32>;
 
 // Note: Time uniform would be @group(2) @binding(0) in a full implementation
 // For now, we'll use a constant or calculated time
@@ -2702,7 +3072,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     return vec4<f32>(col, 1.0);
   }
   
-  // For ground or other unspecified mesh types, use standard terrain rendering
+    // For ground or other unspecified mesh types, use PBR-ish terrain rendering
   // Determine biome type for this world position
   let biome_type = get_biome_type(in.world_pos.xz);
   
@@ -2716,13 +3086,31 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   
   // Check if we're rendering the terrain surface
   if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
-    let scale = 3.0;
-    let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
-    var tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
-    
-    // Sample normal map for enhanced surface detail (moved before biome-specific texturing)
-    let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
-    let normal = normalize(normal_sample * 2.0 - 1.0);
+        let scale = 3.0;
+        let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
+        // Select biome textures
+        var base_color = vec3<f32>(1.0, 1.0, 1.0);
+        var normal_sample = vec3<f32>(0.5, 0.5, 1.0);
+        var mra = vec4<f32>(1.0, 0.8, 0.0, 1.0);
+        if (biome_type == 0) {
+            base_color = textureSample(ground_texture, ground_sampler, uv).rgb;
+            normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
+            mra = textureSample(ground_mra, mra_sampler, uv);
+        } else if (biome_type == 1) {
+            base_color = textureSample(sand_albedo, ground_sampler, uv).rgb;
+            normal_sample = textureSample(sand_normal, normal_sampler, uv).rgb;
+            mra = textureSample(sand_mra, mra_sampler, uv);
+        } else { // Forest
+            base_color = textureSample(forest_albedo, ground_sampler, uv).rgb;
+            normal_sample = textureSample(forest_normal, normal_sampler, uv).rgb;
+            mra = textureSample(forest_mra, mra_sampler, uv);
+        }
+        // Derived parameters
+        let normal = normalize(normal_sample * 2.0 - 1.0);
+        let ao = mra.r; // ambient occlusion
+        let roughness = clamp(mra.g, 0.04, 1.0);
+        let metallic = clamp(mra.b, 0.0, 1.0);
+        let emissive = textureSample(ground_emissive, emissive_sampler, uv).rgb;
     
     // Biome-specific terrain texturing
     if (biome_type == 0) { // Grassland
@@ -2730,35 +3118,32 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       let height_factor = clamp((terrain_height + 2.0) / 6.0, 0.0, 1.0);
       let grass_color = vec3<f32>(0.3, 0.6, 0.2);
       let dirt_color = vec3<f32>(0.4, 0.3, 0.2);
-      tex_color = mix(tex_color, mix(dirt_color, grass_color, height_factor), 0.7);
+    base_color = mix(base_color, mix(dirt_color, grass_color, height_factor), 0.7);
       
       // Add moss and vegetation on flat areas
       let slope_factor = 1.0 - abs(terrain_height) / 4.0;
       let moss_color = vec3<f32>(0.2, 0.5, 0.15);
-      tex_color = mix(tex_color, moss_color, slope_factor * 0.3);
+    base_color = mix(base_color, moss_color, slope_factor * 0.3);
       
     } else if (biome_type == 1) { // Desert
-      // Use sampled sand texture with height-based lightening and slope-based rock blending
-      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.0, 1.0);
-      let sand_tex = tex_color.rgb * h_factor;
-      
-      // Optional tint: rock color on steep slopes (using normal map for better slope detection)
-      let rock_color = vec3<f32>(0.5, 0.45, 0.4);
-      let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-      let blended = mix(sand_tex, rock_color, slope * 0.5);
-      
-      // Add mineral deposits and oasis effects using the blended texture
-      let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
-      if (mineral_noise > 0.7) {
-        let mineral_color = vec3<f32>(0.7, 0.6, 0.4);
-        tex_color = mix(blended, mineral_color, 0.3);
-      } else {
-        tex_color = blended;
-      }
+            // Use sampled sand textures, blend in stone on steep slopes
+            let h_factor = clamp(1.0 + terrain_height * 0.3, 0.0, 1.0);
+            var sand_tex = base_color.rgb * h_factor;
+            let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
+            let stone_tex = textureSample(stone_albedo, ground_sampler, uv * 0.8).rgb;
+            sand_tex = mix(sand_tex, stone_tex, slope * 0.4);
+            // Mineral deposits
+            let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
+            if (mineral_noise > 0.7) {
+                let mineral_color = vec3<f32>(0.7, 0.6, 0.4);
+                base_color = mix(sand_tex, mineral_color, 0.3);
+            } else {
+                base_color = sand_tex;
+            }
     } else if (biome_type == 2) { // Dense Forest
       // Rich forest floor with deep organic layers
       let height_factor = clamp((terrain_height + 2.0) / 5.0, 0.0, 1.0);
-      let forest_base = tex_color.rgb;
+    let forest_base = base_color.rgb;
       
       // Dark rich soil base
       let soil_color = vec3<f32>(0.25, 0.2, 0.15);
@@ -2770,71 +3155,82 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       let moss_factor = (1.0 - slope) * 0.6;
       
       // Height-based composition
-      let base_mix = mix(soil_color, leaf_litter, height_factor);
-      tex_color = mix(forest_base, base_mix, 0.8);
-      tex_color = mix(tex_color, moss_color, moss_factor);
+            let base_mix = mix(soil_color, leaf_litter, height_factor);
+            base_color = mix(forest_base, base_mix, 0.8);
+            base_color = mix(base_color, moss_color, moss_factor);
+            // Blend dirt in flatter areas
+            let dirt_tex = textureSample(dirt_albedo, ground_sampler, uv).rgb;
+            base_color = mix(base_color, dirt_tex, (1.0 - slope) * 0.2);
       
       // Add depth variation with organic patches
       let organic_noise = sin(in.world_pos.x * 2.0) * cos(in.world_pos.z * 1.8);
       if (organic_noise > 0.4) {
         let organic_color = vec3<f32>(0.3, 0.25, 0.18);
-        tex_color = mix(tex_color, organic_color, 0.4);
+                base_color = mix(base_color, organic_color, 0.4);
       }
       
       // Dappled light effect (filtering through canopy)
       let light_spots = sin(in.world_pos.x * 0.3) * cos(in.world_pos.z * 0.25);
       if (light_spots > 0.6) {
-        tex_color = tex_color * 1.15; // Brighter in light spots
+                base_color = base_color * 1.15; // Brighter in light spots
       } else if (light_spots < -0.3) {
-        tex_color = tex_color * 0.85; // Darker in deep shade
+                base_color = base_color * 0.85; // Darker in deep shade
       }
     }
-    
-    // Enhanced lighting with biome-specific adjustments
-    let sun_angle = time * 0.1;
-    let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.8, sin(sun_angle) * 0.8, sin(sun_angle * 0.3) * 0.4));
-    let ambient_dir = vec3<f32>(0.0, 1.0, 0.0);
-    
-    let sun_ndotl = max(dot(normal, sun_dir), 0.0);
-    let ambient_ndotl = max(dot(normal, ambient_dir), 0.0);
-    
-    // Biome-specific lighting adjustments
-    let day_factor = clamp(sun_dir.y + 0.2, 0.0, 1.0);
-    var sun_color: vec3<f32>;
-    var ambient_color: vec3<f32>;
-    var base_ambient: vec3<f32>;
-    
-    if (biome_type == 0) { // Grassland - bright, clear lighting
-      sun_color = mix(vec3<f32>(0.2, 0.2, 0.4), vec3<f32>(1.0, 0.95, 0.8), day_factor);
-      ambient_color = mix(vec3<f32>(0.1, 0.1, 0.2), vec3<f32>(0.4, 0.5, 0.6), day_factor);
-      base_ambient = mix(vec3<f32>(0.05, 0.05, 0.1), vec3<f32>(0.1, 0.1, 0.15), day_factor);
-    } else if (biome_type == 1) { // Desert - warm, harsh lighting  
-      sun_color = mix(vec3<f32>(0.3, 0.2, 0.3), vec3<f32>(1.0, 0.9, 0.7), day_factor);
-      ambient_color = mix(vec3<f32>(0.15, 0.1, 0.15), vec3<f32>(0.5, 0.4, 0.5), day_factor);
-      base_ambient = mix(vec3<f32>(0.08, 0.05, 0.08), vec3<f32>(0.12, 0.08, 0.1), day_factor);
-    } else { // Forest - filtered, green-tinted lighting
-      sun_color = mix(vec3<f32>(0.15, 0.2, 0.3), vec3<f32>(0.8, 0.9, 0.7), day_factor);
-      ambient_color = mix(vec3<f32>(0.08, 0.12, 0.15), vec3<f32>(0.3, 0.4, 0.3), day_factor);
-      base_ambient = mix(vec3<f32>(0.04, 0.06, 0.08), vec3<f32>(0.08, 0.1, 0.08), day_factor);
-    }
-    
-    let sun_lighting = sun_ndotl * sun_color;
-    let ambient_lighting = ambient_ndotl * ambient_color * 0.3;
-    let lighting = sun_lighting + ambient_lighting + base_ambient;
-    
-    // Enhanced detail patterns
+        // Lighting: simple Cook-Torrance PBR
+        let V = normalize(-in.view_dir);
+        let N = normalize(normal);
+        let sun_angle = time * 0.1;
+        let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+        let H = normalize(L + V);
+
+        // Fresnel (Schlick)
+        let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
+        let F = F0 + (vec3<f32>(1.0, 1.0, 1.0) - F0) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+        // Normal distribution (GGX)
+        let a = roughness * roughness;
+        let a2 = a * a;
+        let NdotH = max(dot(N, H), 0.0);
+        let NdotH2 = NdotH * NdotH;
+        let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+        let D = a2 / (3.14159 * denom * denom + 1e-5);
+        // Geometry Smith
+        let NdotV = max(dot(N, V), 0.0);
+        let NdotL = max(dot(N, L), 0.0);
+        let k = (roughness + 1.0);
+        let k2 = (k*k) / 8.0;
+        let Gv = NdotV / (NdotV * (1.0 - k2) + k2 + 1e-5);
+        let Gl = NdotL / (NdotL * (1.0 - k2) + k2 + 1e-5);
+        let G = Gv * Gl;
+
+        let kd = (vec3<f32>(1.0, 1.0, 1.0) - F) * (1.0 - metallic);
+        let diffuse = kd * base_color / 3.14159;
+        let specular = (F * D * G) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+        let ambient = base_color * ao * 0.2;
+        var color = ambient + (diffuse + specular) * NdotL + emissive;
+
+        // Enhanced detail patterns applied as subtle modulation
     let detail_scale = 8.0 + terrain_height * 0.2;
     let cx = floor(in.world_pos.x / detail_scale);
     let cz = floor(in.world_pos.z / detail_scale);
     let detail_pattern = f32((i32(cx + cz) & 1)) * 0.06;
-    
-    col = tex_color * lighting * (0.96 + detail_pattern);
-    
-    // Add atmospheric perspective
+        color = color * (0.96 + detail_pattern);
+
+        // Tone map (ACES approx) and gamma correct
+        let aA = 2.51;
+        let bA = 0.03;
+        let cA = 2.43;
+        let dA = 0.59;
+        let eA = 0.14;
+        var tone = clamp((color * (aA * color + bA)) / (color * (cA * color + dA) + eA), vec3<f32>(0.0), vec3<f32>(1.0));
+        tone = pow(tone, vec3<f32>(1.0/2.2));
+        col = tone;
+
+        // Add atmospheric perspective
     let distance = length(in.world_pos);
     let fog_factor = clamp(distance / 80.0, 0.0, 1.0);
     let fog_color = sky_color(normalize(in.world_pos), time);
-    col = mix(col, fog_color, fog_factor * 0.2);
+        col = mix(col, fog_color, fog_factor * 0.2);
     
   } else if (dist_to_water < 0.3 && terrain_height < -0.5) {
     // Water rendering for rivers and lakes
