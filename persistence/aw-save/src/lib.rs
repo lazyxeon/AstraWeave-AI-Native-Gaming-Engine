@@ -21,7 +21,7 @@ use std::{
     io::{Read, Write},
     path::{Path, PathBuf},
 };
-use time::{OffsetDateTime, format_description::well_known::Rfc3339};
+use time::{format_description, OffsetDateTime};
 use uuid::Uuid;
 
 const MAGIC: &[u8; 4] = b"ASVS";
@@ -38,7 +38,9 @@ pub struct SaveManager {
 impl SaveManager {
     /// Create a manager rooted at `<root>/<player_id>/`.
     pub fn new(root: impl AsRef<Path>) -> Self {
-        Self { root: root.as_ref().to_path_buf() }
+        Self {
+            root: root.as_ref().to_path_buf(),
+        }
     }
 
     /// Compute the directory for a player.
@@ -50,7 +52,14 @@ impl SaveManager {
     pub fn save(&self, player_id: &str, slot: u8, bundle: SaveBundleV2) -> Result<PathBuf> {
         let dir = self.player_dir(player_id);
         fs::create_dir_all(&dir)?;
-        let stamp = OffsetDateTime::now_utc().format(&Rfc3339).unwrap_or_else(|_| "now".into());
+        // Use Windows-safe timestamp format (replace colons with dashes)
+        let format = format_description::parse("[year]-[month]-[day]T[hour]-[minute]-[second]Z")
+            .unwrap_or_else(|_| {
+                format_description::parse("[year][month][day]T[hour][minute][second]Z").unwrap()
+            });
+        let stamp = OffsetDateTime::now_utc()
+            .format(&format)
+            .unwrap_or_else(|_| "now".into());
         let fname = format!("slot{:02}_{}_{}.awsv", slot, stamp, bundle.save_id);
         let path = dir.join(fname);
         write_awsv(&path, &bundle)?;
@@ -66,8 +75,15 @@ impl SaveManager {
             .unwrap_or_else(|_| fs::read_dir(".").unwrap()) // empty fallback
             .filter_map(|e| e.ok())
             .map(|e| e.path())
-            .filter(|p| p.extension().map(|e| e=="awsv").unwrap_or(false))
-            .filter(|p| p.file_name().map(|s| s.to_string_lossy().starts_with(&format!("slot{:02}_", slot))).unwrap_or(false))
+            .filter(|p| p.extension().map(|e| e == "awsv").unwrap_or(false))
+            .filter(|p| {
+                p.file_name()
+                    .map(|s| {
+                        s.to_string_lossy()
+                            .starts_with(&format!("slot{:02}_", slot))
+                    })
+                    .unwrap_or(false)
+            })
             .collect();
         candidates.sort(); // lexicographic includes timestamp in name
         let path = candidates.last().cloned().context("no save for slot")?;
@@ -76,7 +92,8 @@ impl SaveManager {
     }
 
     pub fn list_saves(&self, player_id: &str) -> Result<Vec<SaveMeta>> {
-        read_index(&self.player_dir(player_id)).or_else(|_| scan_dir_for_meta(&self.player_dir(player_id)))
+        read_index(&self.player_dir(player_id))
+            .or_else(|_| scan_dir_for_meta(&self.player_dir(player_id)))
     }
 
     /// Migration: read any old file and produce current V2 bundle; optionally resave.
@@ -100,13 +117,13 @@ impl SaveManager {
 /// What's inside the postcard payload (CURRENT).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveBundleV2 {
-    pub schema: u16,                 // == SAVE_SCHEMA_VERSION
-    pub save_id: Uuid,               // unique id for this save
-    pub created_at: OffsetDateTime,  // when file was created
-    pub player_id: String,           // stable user id
-    pub slot: u8,                    // user-visible slot (00..)
+    pub schema: u16,                // == SAVE_SCHEMA_VERSION
+    pub save_id: Uuid,              // unique id for this save
+    pub created_at: OffsetDateTime, // when file was created
+    pub player_id: String,          // stable user id
+    pub slot: u8,                   // user-visible slot (00..)
     // ---- Game data (engine owns the shape of inner fields) ----
-    pub world: WorldState,           // ECS/world snapshot container
+    pub world: WorldState, // ECS/world snapshot container
     pub companions: Vec<CompanionProfile>,
     pub inventory: PlayerInventory,
     // Additional (free-form) metadata for future
@@ -194,7 +211,11 @@ fn write_or_update_index(dir: &Path, v2: &SaveBundleV2, file_path: &Path) -> Res
     list.retain(|m| m.save_id != v2.save_id);
     list.push(SaveMeta {
         save_id: v2.save_id,
-        file: file_path.file_name().unwrap().to_string_lossy().into_owned(),
+        file: file_path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .into_owned(),
         created_at: v2.created_at,
         player_id: v2.player_id.clone(),
         slot: v2.slot,
@@ -214,7 +235,7 @@ fn scan_dir_for_meta(dir: &Path) -> Result<Vec<SaveMeta>> {
     let mut out = vec![];
     for e in fs::read_dir(dir)? {
         let p = e?.path();
-        if p.extension().map(|e| e=="awsv").unwrap_or(false) {
+        if p.extension().map(|e| e == "awsv").unwrap_or(false) {
             if let Ok(v2) = read_awsv(&p) {
                 out.push(SaveMeta {
                     save_id: v2.save_id,
@@ -253,7 +274,11 @@ fn write_awsv(path: &Path, v2: &SaveBundleV2) -> Result<()> {
     // atomic write in the same directory
     let tmp = path.with_extension("tmp");
     {
-        let mut f = OpenOptions::new().create(true).write(true).truncate(true).open(&tmp)?;
+        let mut f = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&tmp)?;
         f.write_all(&buf)?;
         f.sync_all()?;
     }
@@ -273,7 +298,10 @@ fn read_awsv(path: &Path) -> Result<SaveBundleV2> {
     }
 }
 
-struct AnySave { version: u16, blob: Vec<u8> }
+struct AnySave {
+    version: u16,
+    blob: Vec<u8>,
+}
 
 fn read_any_version(path: &Path) -> Result<AnySave> {
     let mut f = File::open(path)?;
@@ -302,13 +330,73 @@ fn read_any_version(path: &Path) -> Result<AnySave> {
         CODEC_LZ4 => lz4_flex::decompress_size_prepended(&payload)?,
         _ => bail!("unknown codec {codec}"),
     };
-    Ok(AnySave { version, blob: data })
+    Ok(AnySave {
+        version,
+        blob: data,
+    })
 }
 
 // --------- Helpers ----------
 
 fn sanitize(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_windows_safe_timestamp() {
+        // Test that the timestamp format doesn't contain invalid Windows filename characters
+        let format = format_description::parse("[year]-[month]-[day]T[hour]-[minute]-[second]Z")
+            .unwrap_or_else(|_| {
+                format_description::parse("[year][month][day]T[hour][minute][second]Z").unwrap()
+            });
+        let stamp = OffsetDateTime::now_utc()
+            .format(&format)
+            .unwrap_or_else(|_| "now".into());
+
+        println!("Generated timestamp: {}", stamp);
+
+        // Windows invalid filename characters: < > : " | ? *
+        let invalid_chars = ['<', '>', ':', '"', '|', '?', '*'];
+        let has_invalid_chars = stamp.chars().any(|c| invalid_chars.contains(&c));
+
+        assert!(
+            !has_invalid_chars,
+            "Timestamp '{}' contains invalid Windows filename characters",
+            stamp
+        );
+        assert!(
+            !stamp.contains(':'),
+            "Timestamp '{}' should not contain colons for Windows compatibility",
+            stamp
+        );
+
+        // Verify it's still a reasonable timestamp format (contains expected separators)
+        assert!(
+            stamp.contains('-'),
+            "Timestamp '{}' should contain date separators",
+            stamp
+        );
+        assert!(
+            stamp.contains('T'),
+            "Timestamp '{}' should contain T separator",
+            stamp
+        );
+        assert!(
+            stamp.ends_with('Z'),
+            "Timestamp '{}' should end with Z",
+            stamp
+        );
+    }
 }
