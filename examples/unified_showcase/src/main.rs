@@ -1480,6 +1480,7 @@ async fn run() -> Result<()> {
                                     KeyCode::Digit2 => {
                                         if pressed {
                                             let pack_name = "desert";
+                                            println!("Attempting to switch to desert texture pack...");
                                             if let Err(e) =
                                                 reload_texture_pack(&mut render, pack_name)
                                             {
@@ -1493,10 +1494,12 @@ async fn run() -> Result<()> {
                                                     "Switched to {} environment",
                                                     pack_name
                                                 );
+                                                println!("Successfully switched to desert texture pack");
                                                 characters = generate_environment_objects(
                                                     &mut physics,
                                                     pack_name,
                                                 );
+                                                println!("Regenerated {} desert environment objects", characters.len());
                                             }
                                         }
                                     }
@@ -1645,9 +1648,9 @@ async fn run() -> Result<()> {
                                     resolve_target: None,
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.3,  // Softer, more atmospheric sky blue 
-                                            g: 0.5,  // that transitions better with
-                                            b: 0.8,  // the procedural sky rendering
+                                            r: 0.4,  // Sky color that matches procedural sky
+                                            g: 0.6,  // to eliminate void appearance
+                                            b: 0.9,  // if skybox has any gaps
                                             a: 1.0,
                                         }),
                                         store: wgpu::StoreOp::Store,
@@ -2322,19 +2325,19 @@ fn vs_main(in: VsIn) -> VsOut {
   
   // Special handling for skybox (mesh_type 4) - position at far plane
   if (in.mesh_type == 4u) {
-    // For skybox, we want to remove translation and keep it at far plane
-    let skybox_pos = vec4<f32>(in.pos, 1.0);
-    // Transform without translation to keep skybox centered on camera
-    let view_proj_no_translation = u_camera.view_proj;
-    out.pos = view_proj_no_translation * skybox_pos;
+    // For skybox, create a view matrix without translation (rotation only)
+    // and scale the skybox vertex position to create a large enough skybox
+    let scaled_pos = vec4<f32>(in.pos * 0.1, 1.0); // Scale down from large vertices
+    out.pos = u_camera.view_proj * scaled_pos;
     // Ensure skybox is always at far plane depth
-    out.pos.z = out.pos.w * 0.99999; // Just before far plane
+    out.pos.z = out.pos.w * 0.999; // At far plane
+    out.world_pos = scaled_pos.xyz;
   } else {
     out.pos = u_camera.view_proj * world;
+    out.world_pos = world.xyz;
   }
   
   out.color = in.color;
-  out.world_pos = world.xyz;
   out.mesh_type = in.mesh_type;
   
   // Calculate view direction for sky effects
