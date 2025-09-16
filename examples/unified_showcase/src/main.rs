@@ -1364,11 +1364,13 @@ async fn run() -> Result<()> {
 
     // Initialize default environment and texture pack
     let mut characters = generate_environment_objects(&mut physics, "grassland");
+    println!("🌿 Generated {} character instances for initial grassland environment", characters.len());
 
     // Load the initial grassland texture pack
+    println!("🌱 Initializing with grassland texture pack...");
     if let Err(e) = reload_texture_pack(&mut render, "grassland") {
         println!(
-            "Warning: Failed to load initial grassland texture pack: {}",
+            "⚠ Warning: Failed to load initial grassland texture pack: {}",
             e
         );
         println!("Continuing with default textures...");
@@ -1376,7 +1378,7 @@ async fn run() -> Result<()> {
             "Note: You can still switch texture packs using keys 1 (grassland) and 2 (desert)"
         );
     } else {
-        println!("Successfully loaded initial grassland texture pack");
+        println!("✅ Successfully loaded initial grassland texture pack");
         println!(
             "Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse, C=toggle camera mode"
         );
@@ -1507,11 +1509,12 @@ async fn run() -> Result<()> {
                                     KeyCode::Digit1 => {
                                         if pressed {
                                             let pack_name = "grassland";
+                                            println!("🌱 Switching to {} texture pack...", pack_name);
                                             if let Err(e) =
                                                 reload_texture_pack(&mut render, pack_name)
                                             {
                                                 println!(
-                                                    "Failed to switch to {} texture pack: {}",
+                                                    "❌ Failed to switch to {} texture pack: {}",
                                                     pack_name, e
                                                 );
                                             } else {
@@ -1524,17 +1527,19 @@ async fn run() -> Result<()> {
                                                     &mut physics,
                                                     pack_name,
                                                 );
+                                                println!("✅ Successfully switched to {} environment with {} characters", pack_name, characters.len());
                                             }
                                         }
                                     }
                                     KeyCode::Digit2 => {
                                         if pressed {
                                             let pack_name = "desert";
+                                            println!("🏜️ Switching to {} texture pack...", pack_name);
                                             if let Err(e) =
                                                 reload_texture_pack(&mut render, pack_name)
                                             {
                                                 println!(
-                                                    "Failed to switch to {} texture pack: {}",
+                                                    "❌ Failed to switch to {} texture pack: {}",
                                                     pack_name, e
                                                 );
                                             } else {
@@ -1547,6 +1552,7 @@ async fn run() -> Result<()> {
                                                     &mut physics,
                                                     pack_name,
                                                 );
+                                                println!("✅ Successfully switched to {} environment with {} characters", pack_name, characters.len());
                                             }
                                         }
                                     }
