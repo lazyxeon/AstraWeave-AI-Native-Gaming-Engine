@@ -1,8 +1,11 @@
 // Texture system demonstration for AstraWeave unified showcase
 // This script shows how to use the texture system components to load, manage, and render textures
 
+#[path = "../texture_manager.rs"]
 mod texture_manager;
+#[path = "../texture_utils.rs"]
 mod texture_utils;
+#[path = "../material.rs"]
 mod material;
 
 use anyhow::Result;

@@ -1,4 +1,5 @@
 use std::path::Path;
+#[path = "../texture_generator.rs"]
 mod texture_generator;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

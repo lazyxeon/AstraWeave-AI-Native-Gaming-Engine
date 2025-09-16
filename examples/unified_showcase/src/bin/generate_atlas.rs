@@ -1,6 +1,7 @@
 // Atlas generator utility for AstraWeave unified showcase
 // This tool generates texture atlases from individual textures based on configuration
 
+#[path = "../texture_manager.rs"]
 mod texture_manager;
 
 use anyhow::Result;

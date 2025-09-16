@@ -18,6 +18,9 @@ use winit::{
 };
 
 // Import the proper camera system from astraweave-render
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
 use astraweave_render::camera::{Camera as RenderCamera, CameraController};
 
 // ------------------------------- Renderer types -------------------------------
@@ -122,6 +125,7 @@ struct LoadedTexture {
     sampler: wgpu::Sampler,
 }
 
+#[allow(dead_code)]
 const CUBE_VERTICES: &[[f32; 3]] = &[
     // A simple unit cube centered at origin
     // front
@@ -136,6 +140,7 @@ const CUBE_VERTICES: &[[f32; 3]] = &[
     [0.5, -0.5, -0.5],
 ];
 
+#[allow(dead_code)]
 const CUBE_INDICES: &[u16] = &[
     // front
     0, 1, 2, 0, 2, 3, // right
@@ -181,6 +186,9 @@ const TREE_VERTICES: &[[f32; 3]] = &[
 ];
 
 const TREE_INDICES: &[u16] = &[
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
     // Trunk sides (octagonal)
     0, 1, 9, 0, 9, 8,
     1, 2, 10, 1, 10, 9,
@@ -207,6 +215,9 @@ const TREE_INDICES: &[u16] = &[
 ];
 
 // House geometry - more complex than a cube
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
 const HOUSE_VERTICES: &[[f32; 3]] = &[
     // Base (wider than cube)
     [-0.8, -0.5, 0.8],     // 0
@@ -234,6 +245,9 @@ const HOUSE_VERTICES: &[[f32; 3]] = &[
 ];
 
 const HOUSE_INDICES: &[u16] = &[
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
     // Base walls
     0, 1, 2, 0, 2, 3,       // front
     1, 7, 6, 1, 6, 2,       // right
@@ -256,44 +270,54 @@ const HOUSE_INDICES: &[u16] = &[
 // Character geometry - humanoid shape
 const CHARACTER_VERTICES: &[[f32; 3]] = &[
     // Head
-    [-0.15, 0.8, 0.15],    // 0
-    [0.15, 0.8, 0.15],     // 1
-    [0.15, 1.0, 0.15],     // 2
-    [-0.15, 1.0, 0.15],    // 3
-    [-0.15, 0.8, -0.15],   // 4
-    [-0.15, 1.0, -0.15],   // 5
-    [0.15, 1.0, -0.15],    // 6
-    [0.15, 0.8, -0.15],    // 7
-    
+    [-0.2, 1.0, 0.2],     // 0
+    [0.2, 1.0, 0.2],      // 1
+    [0.2, 1.4, 0.2],      // 2
+    [-0.2, 1.4, 0.2],     // 3
+    [-0.2, 1.0, -0.2],    // 4
+    [-0.2, 1.4, -0.2],    // 5
+    [0.2, 1.4, -0.2],     // 6
+    [0.2, 1.0, -0.2],     // 7
+
     // Torso
-    [-0.2, 0.2, 0.1],      // 8
-    [0.2, 0.2, 0.1],       // 9
-    [0.2, 0.8, 0.1],       // 10
-    [-0.2, 0.8, 0.1],      // 11
-    [-0.2, 0.2, -0.1],     // 12
-    [-0.2, 0.8, -0.1],     // 13
-    [0.2, 0.8, -0.1],      // 14
-    [0.2, 0.2, -0.1],      // 15
-    
-    // Legs
-    [-0.1, -0.5, 0.05],    // 16
-    [0.0, -0.5, 0.05],     // 17
-    [0.0, 0.2, 0.05],      // 18
-    [-0.1, 0.2, 0.05],     // 19
-    [-0.1, -0.5, -0.05],   // 20
-    [-0.1, 0.2, -0.05],    // 21
-    [0.0, 0.2, -0.05],     // 22
-    [0.0, -0.5, -0.05],    // 23
-    
-    [0.0, -0.5, 0.05],     // 24
-    [0.1, -0.5, 0.05],     // 25
-    [0.1, 0.2, 0.05],      // 26
-    [0.0, 0.2, 0.05],      // 27
-    [0.0, -0.5, -0.05],    // 28
-    [0.0, 0.2, -0.05],     // 29
-    [0.1, 0.2, -0.05],     // 30
-    [0.1, -0.5, -0.05],    // 31
+    [-0.25, 0.4, 0.15],   // 8
+    [0.25, 0.4, 0.15],    // 9
+    [0.25, 1.0, 0.15],    // 10
+    [-0.25, 1.0, 0.15],   // 11
+    [-0.25, 0.4, -0.15],  // 12
+    [-0.25, 1.0, -0.15],  // 13
+    [0.25, 1.0, -0.15],   // 14
+    [0.25, 0.4, -0.15],   // 15
+
+    // Left leg
+    [-0.15, -0.5, 0.1],   // 16
+    [-0.05, -0.5, 0.1],   // 17
+    [-0.05, 0.4, 0.1],    // 18
+    [-0.15, 0.4, 0.1],    // 19
+    [-0.15, -0.5, -0.1],  // 20
+    [-0.15, 0.4, -0.1],   // 21
+    [-0.05, 0.4, -0.1],   // 22
+    [-0.05, -0.5, -0.1],  // 23
+
+    // Right leg
+    [0.05, -0.5, 0.1],    // 24
+    [0.15, -0.5, 0.1],    // 25
+    [0.15, 0.4, 0.1],     // 26
+    [0.05, 0.4, 0.1],     // 27
+    [0.05, -0.5, -0.1],   // 28
+    [0.05, 0.4, -0.1],    // 29
+    [0.15, 0.4, -0.1],    // 30
+    [0.15, -0.5, -0.1],   // 31
 ];
+
+// Fullscreen triangle in clip-space for sky rendering (no seams, stable)
+const SKY_FS_VERTICES: &[[f32; 3]] = &[
+    [-1.0, -1.0, 0.0],
+    [3.0, -1.0, 0.0],
+    [-1.0, 3.0, 0.0],
+];
+
+const SKY_FS_INDICES: &[u16] = &[0, 1, 2];
 
 const CHARACTER_INDICES: &[u16] = &[
     // Head
@@ -326,6 +350,7 @@ const CHARACTER_INDICES: &[u16] = &[
 ];
 
 // Enhanced skybox geometry - large inverted cube optimized for biome immersion
+#[allow(dead_code)]
 const SKYBOX_VERTICES: &[[f32; 3]] = &[
     // Front face (inverted normals - face inward)
     [-2000.0, -2000.0, 2000.0],   // 0 - Expanded for better sky coverage
@@ -340,6 +365,7 @@ const SKYBOX_VERTICES: &[[f32; 3]] = &[
     [2000.0, -2000.0, -2000.0],   // 7
 ];
 
+#[allow(dead_code)]
 const SKYBOX_INDICES: &[u16] = &[
     // Front face (inverted winding for inside view)
     0, 2, 1, 0, 3, 2,
@@ -2038,7 +2064,7 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshTyp
     meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, TREE_INDICES));
     meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, HOUSE_INDICES));
     meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, CHARACTER_INDICES));
-    meshes.insert(MeshType::Skybox, create_mesh(device, SKYBOX_VERTICES, SKYBOX_INDICES));
+    meshes.insert(MeshType::Skybox, create_mesh(device, SKY_FS_VERTICES, SKY_FS_INDICES));
     
     meshes
 }
@@ -2415,26 +2441,22 @@ struct TimeUniform { time: f32, _padding: vec3<f32> };
 @group(1) @binding(2) var ground_normal: texture_2d<f32>;
 @group(1) @binding(3) var normal_sampler: sampler;
 
-// Mesh-specific textures
-@group(2) @binding(0) var tree_texture: texture_2d<f32>;
-@group(2) @binding(1) var house_texture: texture_2d<f32>;
-@group(2) @binding(2) var character_texture: texture_2d<f32>;
-@group(2) @binding(3) var effects_texture: texture_2d<f32>;
-@group(2) @binding(4) var mesh_sampler: sampler;
-
 // Note: Time uniform would be @group(2) @binding(0) in a full implementation
 // For now, we'll use a constant or calculated time
 
+// Vertex inputs aligned with Rust vertex buffers:
+// - location(0): position (vec3)
+// - locations(1..4): model matrix columns (vec4)
+// - location(5): color (vec4)
+// - location(6): mesh_type (u32)
 struct VsIn {
-  @location(0) pos: vec3<f32>,
-  @location(1) normal: vec3<f32>,  // Added normal
-  @location(2) uv: vec2<f32>,      // Added texture coordinates
-  @location(3) m0: vec4<f32>,
-  @location(4) m1: vec4<f32>,
-  @location(5) m2: vec4<f32>,
-  @location(6) m3: vec4<f32>,
-  @location(7) color: vec4<f32>,
-  @location(8) mesh_type: u32,
+    @location(0) pos: vec3<f32>,
+    @location(1) m0: vec4<f32>,
+    @location(2) m1: vec4<f32>,
+    @location(3) m2: vec4<f32>,
+    @location(4) m3: vec4<f32>,
+    @location(5) color: vec4<f32>,
+    @location(6) mesh_type: u32,
 };
 
 struct VsOut {
@@ -2442,14 +2464,14 @@ struct VsOut {
   @location(0) color: vec4<f32>,
   @location(1) world_pos: vec3<f32>,
   @location(2) view_dir: vec3<f32>,
-  @location(3) normal: vec3<f32>,   // Added normal
-  @location(4) uv: vec2<f32>,       // Added texture coordinates
+    @location(3) normal: vec3<f32>,
+    @location(4) uv: vec2<f32>,
   @location(5) mesh_type: u32,
 };
 
 @vertex
 fn vs_main(in: VsIn) -> VsOut {
-  let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
+    let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
   var out: VsOut;
   let world = model * vec4<f32>(in.pos, 1.0);
   
@@ -2472,16 +2494,13 @@ fn vs_main(in: VsIn) -> VsOut {
   } else {
     out.pos = u_camera.view_proj * world;
     out.world_pos = world.xyz;
-    out.uv = in.uv;
+        // Derive UVs procedurally from world position (no per-vertex UVs provided)
+        let scale = 10.0;
+        out.uv = vec2<f32>(world.x / scale, world.z / scale);
   }
   
-  // Transform normal to world space
-  let normal_matrix = mat3x3<f32>(
-    model[0].xyz,
-    model[1].xyz,
-    model[2].xyz
-  );
-  out.normal = normalize(normal_matrix * in.normal);
+    // Default normal (up). Real meshes should provide normals; this keeps lighting reasonable.
+    out.normal = vec3<f32>(0.0, 1.0, 0.0);
   
   out.color = in.color;
   out.mesh_type = in.mesh_type;
@@ -2495,72 +2514,17 @@ fn vs_main(in: VsIn) -> VsOut {
 
 // Enhanced sky color function - generates biome-appropriate sky with atmospheric effects
 fn sky_color(direction: vec3<f32>, time: f32) -> vec3<f32> {
-  let dir = normalize(direction);
-  let y = clamp(dir.y, -1.0, 1.0);
-  
-  // Enhanced time-based sun position for day/night cycle
-  let sun_angle = time * 0.08; // Slightly slower day cycle
-  let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.9, sin(sun_angle) * 0.9, sin(sun_angle * 0.2) * 0.3));
-  
-  // Calculate sun influence with enhanced scattering
-  let sun_dot = max(dot(dir, sun_dir), 0.0);
-  let sun_influence = pow(sun_dot, 16.0); // Brighter sun disk
-  let sun_halo = pow(sun_dot, 4.0) * 0.3; // Soft sun halo
-  
-  // Enhanced day factor based on sun height
-  let day_factor = clamp(sun_dir.y + 0.3, 0.0, 1.0);
-  
-  // More vibrant sky gradient colors
-  let horizon_day = vec3<f32>(0.9, 0.95, 1.0);    // Brighter blue horizon
-  let zenith_day = vec3<f32>(0.2, 0.5, 0.95);     // Rich blue zenith
-  let horizon_sunset = vec3<f32>(1.0, 0.7, 0.4);  // Warm sunset colors
-  let zenith_sunset = vec3<f32>(0.8, 0.4, 0.6);   // Purple sunset zenith
-  let horizon_night = vec3<f32>(0.05, 0.05, 0.2); // Deep blue night
-  let zenith_night = vec3<f32>(0.02, 0.02, 0.15); // Dark night zenith
-  
-  // Calculate sunset factor for warm transitional colors
-  let sunset_factor = clamp(1.0 - abs(sun_dir.y) * 3.0, 0.0, 1.0) * clamp(day_factor * 2.0, 0.0, 1.0);
-  
-  // Blend colors based on time of day and sunset
-  let horizon_color = mix(
-    mix(horizon_night, horizon_day, day_factor),
-    horizon_sunset,
-    sunset_factor
-  );
-  let zenith_color = mix(
-    mix(zenith_night, zenith_day, day_factor),
-    zenith_sunset,
-    sunset_factor
-  );
-  
-  // Enhanced vertical gradient with atmospheric curve
-  let atmosphere_curve = pow(clamp((y + 1.0) * 0.5, 0.0, 1.0), 0.7);
-  let sky_base = mix(horizon_color, zenith_color, atmosphere_curve);
-  
-  // Enhanced sun disk and atmospheric scattering
-  let sun_color = mix(
-    vec3<f32>(1.0, 0.95, 0.8),  // Day sun
-    vec3<f32>(1.0, 0.6, 0.3),   // Sunset sun
-    sunset_factor
-  ) * day_factor;
-  let sun_contribution = (sun_influence * 0.8 + sun_halo) * sun_color;
-  
-  // Enhanced atmospheric effects with distance-based haze
-  let atmosphere_factor = pow(1.0 - abs(y), 1.5);
-  let atmosphere_color = mix(
-    vec3<f32>(0.6, 0.7, 0.9),   // Cool atmospheric color
-    vec3<f32>(1.0, 0.8, 0.6),   // Warm atmospheric color
-    sunset_factor
-  );
-  let atmosphere_contribution = atmosphere_factor * atmosphere_color * 0.15 * day_factor;
-  
-  // Add subtle cloud-like variation
-  let cloud_noise = sin(dir.x * 8.0 + time * 0.5) * cos(dir.z * 6.0 + time * 0.3) * 0.1;
-  let cloud_factor = max(cloud_noise, 0.0) * clamp(y + 0.2, 0.0, 1.0);
-  let cloud_color = mix(vec3<f32>(0.9, 0.9, 0.95), vec3<f32>(1.0, 0.8, 0.7), sunset_factor);
-  let cloud_contribution = cloud_factor * cloud_color * day_factor * 0.3;
-  
-  return sky_base + sun_contribution + atmosphere_contribution + cloud_contribution;
+    let dir = normalize(direction);
+    let y = clamp(dir.y, -1.0, 1.0);
+    // Stable daytime blue gradient
+    let horizon = vec3<f32>(0.75, 0.85, 1.0);
+    let zenith = vec3<f32>(0.15, 0.45, 0.9);
+    let t = pow(clamp((y + 1.0) * 0.5, 0.0, 1.0), 0.6);
+    let base = mix(horizon, zenith, t);
+    // Soft moving clouds
+    let n = sin(dir.x * 5.0 + time * 0.2) * cos(dir.z * 4.0 + time * 0.15);
+    let clouds = clamp(n, 0.0, 1.0) * 0.12;
+    return base + vec3<f32>(clouds, clouds, clouds);
 }
 
 
@@ -2687,22 +2651,22 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   let time = 100.0; // TODO: Pass actual time as uniform
   
   // Mesh-specific rendering based on mesh type
-  if (in.mesh_type == 1u) { // Tree
+    if (in.mesh_type == 1u) { // Tree
     // Sample tree texture based on UV coordinates
-    if (textureSample(tree_texture, mesh_sampler, in.uv).a > 0.1) {
+        if (textureSample(ground_texture, ground_sampler, in.uv).a > 0.1) {
       // Tree trunk - apply bark texture
       if (in.uv.y < 0.6) {
-        col = textureSample(tree_texture, mesh_sampler, in.uv).rgb;
+                col = textureSample(ground_texture, ground_sampler, in.uv).rgb;
       } 
       // Tree leaves - apply leaf texture with color variation
       else {
-        var leaf_color = textureSample(tree_texture, mesh_sampler, in.uv).rgb;
+                var leaf_color = textureSample(ground_texture, ground_sampler, in.uv).rgb;
         leaf_color = leaf_color * in.color.rgb * 1.2; // Boost saturation slightly
         col = leaf_color;
       }
       
       // Apply normal mapping for detailed bark/leaf rendering
-      let normal_sample = textureSample(ground_normal, normal_sampler, in.uv).rgb;
+            let normal_sample = textureSample(ground_normal, normal_sampler, in.uv).rgb;
       let normal = normalize(normal_sample * 2.0 - 1.0);
       
       // Apply simple directional lighting
@@ -2713,9 +2677,9 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       return vec4<f32>(col, 1.0);
     }
   } 
-  else if (in.mesh_type == 2u) { // House
-    // Sample house texture based on UV coordinates
-    col = textureSample(house_texture, mesh_sampler, in.uv).rgb;
+    else if (in.mesh_type == 2u) { // House
+        // Sample house texture based on UV coordinates (reuse ground texture for demo)
+        col = textureSample(ground_texture, ground_sampler, in.uv).rgb;
     
     // Apply lighting with ambient occlusion in corners
     let ao = 1.0 - (1.0 - in.uv.x) * (1.0 - in.uv.y) * 0.5;
@@ -2723,9 +2687,9 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     
     return vec4<f32>(col, 1.0);
   }
-  else if (in.mesh_type == 3u) { // Character
-    // Sample character texture based on UV coordinates
-    col = textureSample(character_texture, mesh_sampler, in.uv).rgb;
+    else if (in.mesh_type == 3u) { // Character
+        // Sample character texture based on UV coordinates (reuse ground texture for demo)
+        col = textureSample(ground_texture, ground_sampler, in.uv).rgb;
     
     // Apply character color tinting
     col = col * in.color.rgb;
