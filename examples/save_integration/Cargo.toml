@@ -8,7 +8,7 @@ anyhow = "1"
 serde = { version = "1", features = ["derive"] }
 uuid = { version = "1", features = ["v4", "serde"] }
 time = { version = "0.3", features = ["formatting", "parsing", "macros", "serde-human-readable"] }
-bincode = "2"
+bincode = { version = "2", features = ["serde"] }
 
 # AstraWeave dependencies  
 astraweave-core = { path = "../../astraweave-core" }
