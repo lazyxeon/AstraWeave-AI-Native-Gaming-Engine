@@ -4,7 +4,7 @@
 //! based on biome type, terrain features, and generation rules.
 
 use anyhow::Result;
-use glam::{Vec3, Vec2};
+use glam::Vec3;
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 use serde::{Deserialize, Serialize};
