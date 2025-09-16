@@ -573,10 +573,10 @@ mod tests {
         let mut world_gen = WorldGenerator::new(world_config);
         let chunk = world_gen.generate_chunk(ChunkId::new(0, 0))?;
         
-        let result = generator.generate_structures(&chunk, 256.0, BiomeType::Grassland)?;
+        let _result = generator.generate_structures(&chunk, 256.0, BiomeType::Grassland)?;
         
-        // Should generate some structures
-        assert!(result.total_count() >= 0); // Could be 0 due to random placement failures
+        // Should generate some structures (could be 0 due to random placement failures)
+        // No need to assert >= 0 since total_count() returns usize which is always >= 0
         
         Ok(())
     }
@@ -597,7 +597,7 @@ mod tests {
         });
         
         let config = StructureConfig::default();
-        let mut generator = StructureGenerator::new(config);
+        let generator = StructureGenerator::new(config);
         
         // Should not allow another cottage too close (min spacing is 30.0)
         assert!(!generator.check_spacing(pos2, StructureType::Cottage, &result));

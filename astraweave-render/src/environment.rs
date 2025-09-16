@@ -57,14 +57,24 @@ impl TimeOfDay {
     pub fn get_sun_position(&self) -> Vec3 {
         // Sun rises at 6am, peaks at noon, sets at 6pm
         let sun_angle = (self.current_time - 6.0) * std::f32::consts::PI / 12.0;
-        let sun_height = sun_angle.sin().max(0.0);
+        let sun_height = sun_angle.sin();
         let sun_azimuth = (self.current_time - 12.0) * std::f32::consts::PI / 12.0;
         
-        vec3(
-            sun_azimuth.sin() * sun_height.sqrt(),
-            sun_height,
-            sun_azimuth.cos() * sun_height.sqrt(),
-        ).normalize()
+        // At noon (12:00), sun should be nearly overhead (0, 1, 0)
+        // At sunrise/sunset (6:00/18:00), sun should be at horizon
+        // At midnight (0:00), sun should be below horizon (0, -1, 0)
+        
+        if sun_height.abs() < 0.01 {
+            // Near horizon, avoid division by zero
+            vec3(sun_azimuth.sin(), 0.0, sun_azimuth.cos()).normalize()
+        } else {
+            let horizontal_distance = (1.0 - sun_height.abs()).max(0.1);
+            vec3(
+                sun_azimuth.sin() * horizontal_distance,
+                sun_height,
+                sun_azimuth.cos() * horizontal_distance,
+            ).normalize()
+        }
     }
 
     /// Get the moon position in the sky (opposite to sun)
@@ -611,7 +621,7 @@ mod tests {
         let mut weather = WeatherSystem::new();
         assert_eq!(weather.current_weather(), WeatherType::Clear);
         
-        weather.set_weather(WeatherType::Rain, 5.0);
+        weather.set_weather(WeatherType::Rain, 0.0);
         assert_eq!(weather.current_weather(), WeatherType::Rain);
         assert!(weather.get_rain_intensity() > 0.0);
     }
@@ -697,8 +707,16 @@ impl WeatherSystem {
     pub fn set_weather(&mut self, weather: WeatherType, transition_duration: f32) {
         if weather != self.current_weather {
             self.target_weather = weather;
-            self.transition_duration = transition_duration;
-            self.transition_progress = 0.0;
+            if transition_duration <= 0.0 {
+                // Instant weather change
+                self.current_weather = weather;
+                self.transition_progress = 1.0;
+                self.update_weather_parameters();
+            } else {
+                // Gradual transition
+                self.transition_duration = transition_duration;
+                self.transition_progress = 0.0;
+            }
         }
     }
 
