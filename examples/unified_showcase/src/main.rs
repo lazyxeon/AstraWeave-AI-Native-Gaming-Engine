@@ -1892,6 +1892,119 @@ fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch>
     batches
 }
 
+// Generate terrain mesh with height variations matching the shader logic
+fn generate_terrain_mesh(size: usize, scale: f32) -> (Vec<[f32; 3]>, Vec<u16>) {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    
+    // Generate vertices with height variation
+    for z in 0..=size {
+        for x in 0..=size {
+            let world_x = (x as f32 - size as f32 * 0.5) * scale;
+            let world_z = (z as f32 - size as f32 * 0.5) * scale;
+            
+            // Match the shader's biome and terrain height logic
+            let world_pos = [world_x, world_z];
+            let biome_type = get_biome_type_rust(world_pos);
+            let terrain_height = get_biome_terrain_height_rust(world_pos, biome_type);
+            
+            vertices.push([world_x, -2.0 + terrain_height, world_z]);
+        }
+    }
+    
+    // Generate indices for triangles
+    for z in 0..size {
+        for x in 0..size {
+            let i0 = (z * (size + 1) + x) as u16;
+            let i1 = (z * (size + 1) + x + 1) as u16;
+            let i2 = ((z + 1) * (size + 1) + x) as u16;
+            let i3 = ((z + 1) * (size + 1) + x + 1) as u16;
+            
+            // Two triangles per quad
+            indices.extend_from_slice(&[i0, i2, i1, i1, i2, i3]);
+        }
+    }
+    
+    (vertices, indices)
+}
+
+// Rust implementation of shader biome detection
+fn get_biome_type_rust(world_pos: [f32; 2]) -> i32 {
+    let biome_scale = 0.02;
+    let biome_pos = [world_pos[0] * biome_scale, world_pos[1] * biome_scale];
+    
+    let primary_noise = (biome_pos[0] * 3.0).sin() * (biome_pos[1] * 2.0).cos();
+    let secondary_noise = ((biome_pos[0] * 1.5) + 100.0).sin() * ((biome_pos[1] * 1.8) + 200.0).cos();
+    let combined_noise = primary_noise * 0.7 + secondary_noise * 0.3;
+    
+    if combined_noise > 0.3 {
+        1 // Desert
+    } else if combined_noise < -0.2 {
+        2 // Dense Forest
+    } else {
+        0 // Grassland
+    }
+}
+
+// Rust implementation of shader terrain height generation
+fn get_biome_terrain_height_rust(world_pos: [f32; 2], biome_type: i32) -> f32 {
+    let base_scale = 0.005;
+    let detail_scale = 0.02;
+    let fine_scale = 0.15;
+    let micro_scale = 0.8;
+    
+    let base_noise = (world_pos[0] * base_scale).sin() * (world_pos[1] * base_scale).cos();
+    let detail_noise = ((world_pos[0] * detail_scale) + 1.0).sin() * ((world_pos[1] * detail_scale) + 1.5).cos();
+    let fine_noise = ((world_pos[0] * fine_scale) + 2.0).sin() * ((world_pos[1] * fine_scale) + 2.5).cos();
+    let micro_noise = ((world_pos[0] * micro_scale) + 3.0).sin() * ((world_pos[1] * micro_scale) + 3.5).cos();
+    
+    let combined_noise = base_noise * 0.5 + detail_noise * 0.25 + fine_noise * 0.15 + micro_noise * 0.1;
+    
+    match biome_type {
+        0 => { // Grassland
+            let grassland_height = combined_noise * 4.0;
+            
+            // River valleys
+            let river_x = (world_pos[0] * 0.006).sin() * 0.8;
+            let river_z = (world_pos[1] * 0.004).cos() * 0.6;
+            let river_noise = ((world_pos[0] + river_z * 20.0) * 0.008).sin() * ((world_pos[1] + river_x * 15.0) * 0.01).cos();
+            let valley_factor = 1.0 - river_noise.abs();
+            let valley_depth = valley_factor * valley_factor * valley_factor * -3.0;
+            
+            // Rolling hills
+            let hill_pattern = (world_pos[0] * 0.01).sin() * (world_pos[1] * 0.012).cos() * 2.0;
+            
+            grassland_height + valley_depth + hill_pattern
+        },
+        1 => { // Desert
+            let desert_height = combined_noise * 5.0;
+            
+            // Sand dunes
+            let dune_scale = 0.02;
+            let dune_noise = (world_pos[0] * dune_scale).sin() + (world_pos[1] * dune_scale * 0.6).cos();
+            let wind_direction = (world_pos[0] * 0.001).sin() * (world_pos[1] * 0.0008).cos();
+            let dune_height = (dune_noise + wind_direction * 0.5) * 2.5;
+            
+            // Mesa formations
+            let mesa_scale = 0.003;
+            let mesa_noise = (world_pos[0] * mesa_scale).sin() * (world_pos[1] * mesa_scale).cos();
+            let mesa_height = if mesa_noise > 0.2 { 8.0 } else { 0.0 };
+            
+            desert_height + dune_height + mesa_height
+        },
+        _ => { // Forest
+            let forest_height = combined_noise * 3.5;
+            
+            // Rolling forest floor with clearings
+            let clearing_scale = 0.008;
+            let clearing_noise = (world_pos[0] * clearing_scale).sin() * (world_pos[1] * clearing_scale * 0.7).cos();
+            let elevation_mod = if clearing_noise > 0.4 { -1.5 } else { 1.0 };
+            
+            forest_height + elevation_mod
+        }
+    }
+}
+
 fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) -> Mesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("mesh-vertices"),
@@ -1915,7 +2028,13 @@ fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) ->
 fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshType, Mesh> {
     let mut meshes = std::collections::HashMap::new();
     
-    meshes.insert(MeshType::Cube, create_mesh(device, CUBE_VERTICES, CUBE_INDICES));
+    // Generate terrain mesh instead of simple cube for ground
+    let terrain_size = 100; // 100x100 vertices for detailed terrain
+    let terrain_scale = 10.0; // 10 units between vertices = 1000x1000 total (matches 500 half-extent × 2)
+    let (terrain_vertices, terrain_indices) = generate_terrain_mesh(terrain_size, terrain_scale);
+    
+    // Create terrain mesh as Cube type (since ground uses MeshType::Cube)
+    meshes.insert(MeshType::Cube, create_mesh(device, &terrain_vertices, &terrain_indices));
     meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, TREE_INDICES));
     meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, HOUSE_INDICES));
     meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, CHARACTER_INDICES));
@@ -2329,8 +2448,8 @@ fn vs_main(in: VsIn) -> VsOut {
     let scaled_vertex = vec4<f32>(in.pos * 0.5, 1.0); // Larger skybox for better coverage  
     let world_skybox = model * scaled_vertex; // Apply model transform (camera translation)
     out.pos = u_camera.view_proj * world_skybox;
-    // Let depth testing work normally for skybox
-    // out.pos.z = out.pos.w * 0.999; // At far plane
+    // Ensure skybox is always at far plane
+    out.pos.z = out.pos.w * 0.999; // At far plane
     out.world_pos = world_skybox.xyz;
   } else {
     out.pos = u_camera.view_proj * world;
@@ -2340,8 +2459,8 @@ fn vs_main(in: VsIn) -> VsOut {
   out.color = in.color;
   out.mesh_type = in.mesh_type;
   
-  // Calculate view direction for sky effects
-  let camera_pos = vec3<f32>(0.0, 2.0, 0.0); // Approximate camera position for sky
+  // Calculate view direction for sky effects - use approximation since camera is typically above terrain
+  let camera_pos = vec3<f32>(0.0, 5.0, 0.0); // Better approximation for typical camera height
   out.view_dir = normalize(world.xyz - camera_pos);
   
   return out;
@@ -2828,40 +2947,33 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos
     out.push(skybox_instance);
 
     // Add physics objects
-    for (h, body) in p.bodies.iter() {
+    for (_h, body) in p.bodies.iter() {
         // No skipping — we want the ground cube drawn so the ground shader branch runs.
 
         let xf = body.position();
         let iso = xf.to_homogeneous();
         let base_m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
 
-        // Default: no scale (unit cube)
-        let mut model_m = base_m;
-
-        // If this is the ground (user_data == 0 and fixed), scale the render
-        // instance to match the collider half-extents (Rapier cuboid uses half-extents).
-        if body.is_fixed() && body.user_data == 0 {
-            // Find any collider attached to this body; prefer a Cuboid.
-            if let Some((_, col)) = p.colliders.iter().find(|(_, c)| c.parent() == Some(h)) {
-                if let Some(cuboid) = col.shape().as_cuboid() {
-                    let he = cuboid.half_extents; // nalgebra::Vector
-                    // Full extents = half_extents * 2
-                    let sx = he.x * 2.0;
-                    let sy = he.y * 2.0;
-                    let sz = he.z * 2.0;
-                    let scale_m = Mat4::from_scale(Vec3::new(sx, sy, sz));
-                    model_m = base_m * scale_m;
-                } else {
-                    // Fallback: reasonable plane size if shape not Cuboid
-                    let scale_m = Mat4::from_scale(Vec3::new(200.0, 1.0, 200.0));
-                    model_m = base_m * scale_m;
-                }
-            } else {
-                // Fallback if no collider found (shouldn't happen)
-                let scale_m = Mat4::from_scale(Vec3::new(200.0, 1.0, 200.0));
-                model_m = base_m * scale_m;
-            }
-        }
+        // Handle scaling for different object types
+        let model_m = if body.is_fixed() && body.user_data == 0 {
+            // Ground uses the terrain mesh which is already correctly sized - no scaling needed
+            base_m
+        } else {
+            // Scale objects based on their type for better visibility
+            let object_scale = match body.user_data {
+                1..=2 => 1.0,           // Original demo objects - keep normal size
+                10..=34 => 8.0,         // Trees - scale up significantly  
+                35..=45 => 6.0,         // Houses - scale up for visibility
+                60..=90 => 3.0,         // Rocks and boulders - moderate scaling
+                100..=170 => 4.0,       // Bushes and undergrowth - medium scale
+                200..=309 => 2.5,       // Stone circles and river banks
+                400..=407 => 2.0,       // Sand dunes  
+                500..=504 => 10.0,      // Oasis palms - very tall
+                _ => 2.0,               // Default moderate scaling
+            };
+            let scale_m = Mat4::from_scale(Vec3::splat(object_scale));
+            base_m * scale_m
+        };
 
         // Color and mesh type based on object type
         let (color, mesh_type) = match body.user_data {
@@ -2904,8 +3016,8 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos
 
     // Add character instances
     for character in characters {
-        // Create a transform matrix for the character
-        let scale = 0.4; // Characters are smaller than buildings
+        // Create a transform matrix for the character - scale up significantly for visibility
+        let scale = 5.0; // Characters need to be much larger to be visible on the terrain
         let translation = Mat4::from_translation(character.position);
         let scaling = Mat4::from_scale(Vec3::splat(scale));
 
