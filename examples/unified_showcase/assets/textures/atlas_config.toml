@@ -1,0 +1,154 @@
+# Texture Atlas Configuration for AstraWeave Unified Showcase
+
+[atlas]
+name = "unified_showcase_atlas"
+description = "Complete texture atlas for the unified showcase demo"
+version = "1.0.0"
+dimensions = [2048, 2048]  # Width, height of the atlas
+
+# Terrain textures
+[terrain.grass]
+diffuse = "textures/terrain/grass.png"
+normal = "textures/terrain/grass_n.png"
+roughness = 0.7
+metallic = 0.0
+uv_rect = [0, 0, 256, 256]  # x, y, width, height in atlas
+
+[terrain.dirt]
+diffuse = "textures/terrain/dirt.png"
+normal = "textures/terrain/dirt_n.png"
+roughness = 0.8
+metallic = 0.0
+uv_rect = [256, 0, 256, 256]
+
+[terrain.sand]
+diffuse = "textures/terrain/sand.png"
+normal = "textures/terrain/sand_n.png"
+roughness = 0.6
+metallic = 0.0
+uv_rect = [512, 0, 256, 256]
+
+[terrain.stone]
+diffuse = "textures/terrain/stone.png"
+normal = "textures/terrain/stone_n.png"
+roughness = 0.9
+metallic = 0.1
+uv_rect = [768, 0, 256, 256]
+
+[terrain.forest_floor]
+diffuse = "textures/terrain/forest_floor.png"
+normal = "textures/terrain/forest_floor_n.png"
+roughness = 0.9
+metallic = 0.0
+uv_rect = [1024, 0, 256, 256]
+
+# Structure textures - Trees
+[structures.tree_bark]
+diffuse = "textures/structures/tree_bark.png"
+normal = "textures/structures/tree_bark_n.png"
+roughness = 0.9
+metallic = 0.0
+uv_rect = [0, 256, 256, 256]
+
+[structures.leaves_oak]
+diffuse = "textures/structures/leaves_oak.png"
+normal = "textures/structures/leaves_oak_n.png"
+roughness = 0.8
+metallic = 0.0
+alpha_mask = true
+uv_rect = [256, 256, 256, 256]
+
+[structures.leaves_pine]
+diffuse = "textures/structures/leaves_pine.png"
+normal = "textures/structures/leaves_pine_n.png"
+roughness = 0.7
+metallic = 0.0
+alpha_mask = true
+uv_rect = [512, 256, 256, 256]
+
+# Structure textures - Buildings
+[structures.wood_wall]
+diffuse = "textures/structures/wood_wall.png"
+normal = "textures/structures/wood_wall_n.png"
+roughness = 0.7
+metallic = 0.0
+uv_rect = [768, 256, 256, 256]
+
+[structures.thatch_roof]
+diffuse = "textures/structures/thatch_roof.png"
+normal = "textures/structures/thatch_roof_n.png"
+roughness = 0.9
+metallic = 0.0
+uv_rect = [1024, 256, 256, 256]
+
+[structures.adobe_wall]
+diffuse = "textures/structures/adobe_wall.png"
+normal = "textures/structures/adobe_wall_n.png"
+roughness = 0.8
+metallic = 0.0
+uv_rect = [1280, 256, 256, 256]
+
+# Character textures
+[characters.body]
+diffuse = "textures/characters/body.png"
+normal = "textures/characters/body_n.png"
+roughness = 0.7
+metallic = 0.0
+uv_rect = [0, 512, 512, 512]
+
+[characters.face]
+diffuse = "textures/characters/face.png"
+normal = "textures/characters/face_n.png"
+roughness = 0.7
+metallic = 0.0
+uv_rect = [512, 512, 256, 256]
+
+[characters.clothing]
+diffuse = "textures/characters/clothing.png"
+normal = "textures/characters/clothing_n.png"
+roughness = 0.8
+metallic = 0.0
+uv_rect = [768, 512, 512, 512]
+
+# Skybox textures
+[skybox.day]
+diffuse = "textures/skybox/day.png"
+roughness = 0.0
+metallic = 0.0
+uv_rect = [0, 1024, 1024, 1024]
+
+[skybox.night]
+diffuse = "textures/skybox/night.png"
+roughness = 0.0
+metallic = 0.0
+uv_rect = [1024, 1024, 1024, 1024]
+
+# Effect textures
+[effects.water]
+diffuse = "textures/effects/water.png"
+normal = "textures/effects/water_n.png"
+roughness = 0.1
+metallic = 0.3
+uv_rect = [0, 1536, 256, 256]
+
+[effects.fire]
+diffuse = "textures/effects/fire.png"
+roughness = 0.0
+metallic = 0.0
+emissive = true
+uv_rect = [256, 1536, 256, 256]
+
+[effects.dust]
+diffuse = "textures/effects/dust.png"
+roughness = 0.0
+metallic = 0.0
+alpha_mask = true
+uv_rect = [512, 1536, 256, 256]
+
+[effects.rain]
+diffuse = "textures/effects/rain.png"
+normal = "textures/effects/rain_n.png"
+roughness = 0.0
+metallic = 0.0
+alpha_mask = true
+uv_rect = [768, 1536, 256, 256]

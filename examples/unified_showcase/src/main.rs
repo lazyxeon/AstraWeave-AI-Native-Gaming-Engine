@@ -2415,17 +2415,26 @@ struct TimeUniform { time: f32, _padding: vec3<f32> };
 @group(1) @binding(2) var ground_normal: texture_2d<f32>;
 @group(1) @binding(3) var normal_sampler: sampler;
 
+// Mesh-specific textures
+@group(2) @binding(0) var tree_texture: texture_2d<f32>;
+@group(2) @binding(1) var house_texture: texture_2d<f32>;
+@group(2) @binding(2) var character_texture: texture_2d<f32>;
+@group(2) @binding(3) var effects_texture: texture_2d<f32>;
+@group(2) @binding(4) var mesh_sampler: sampler;
+
 // Note: Time uniform would be @group(2) @binding(0) in a full implementation
 // For now, we'll use a constant or calculated time
 
 struct VsIn {
   @location(0) pos: vec3<f32>,
-  @location(1) m0: vec4<f32>,
-  @location(2) m1: vec4<f32>,
-  @location(3) m2: vec4<f32>,
-  @location(4) m3: vec4<f32>,
-  @location(5) color: vec4<f32>,
-  @location(6) mesh_type: u32,
+  @location(1) normal: vec3<f32>,  // Added normal
+  @location(2) uv: vec2<f32>,      // Added texture coordinates
+  @location(3) m0: vec4<f32>,
+  @location(4) m1: vec4<f32>,
+  @location(5) m2: vec4<f32>,
+  @location(6) m3: vec4<f32>,
+  @location(7) color: vec4<f32>,
+  @location(8) mesh_type: u32,
 };
 
 struct VsOut {
@@ -2433,7 +2442,9 @@ struct VsOut {
   @location(0) color: vec4<f32>,
   @location(1) world_pos: vec3<f32>,
   @location(2) view_dir: vec3<f32>,
-  @location(3) mesh_type: u32,
+  @location(3) normal: vec3<f32>,   // Added normal
+  @location(4) uv: vec2<f32>,       // Added texture coordinates
+  @location(5) mesh_type: u32,
 };
 
 @vertex
@@ -2451,15 +2462,31 @@ fn vs_main(in: VsIn) -> VsOut {
     // Ensure skybox is always at far plane
     out.pos.z = out.pos.w * 0.999; // At far plane
     out.world_pos = world_skybox.xyz;
+    
+    // For skybox, we use position as texture coordinates
+    let pos_normalized = normalize(in.pos);
+    out.uv = vec2<f32>(
+      0.5 + atan2(pos_normalized.z, pos_normalized.x) / (2.0 * 3.14159),
+      0.5 - asin(pos_normalized.y) / 3.14159
+    );
   } else {
     out.pos = u_camera.view_proj * world;
     out.world_pos = world.xyz;
+    out.uv = in.uv;
   }
+  
+  // Transform normal to world space
+  let normal_matrix = mat3x3<f32>(
+    model[0].xyz,
+    model[1].xyz,
+    model[2].xyz
+  );
+  out.normal = normalize(normal_matrix * in.normal);
   
   out.color = in.color;
   out.mesh_type = in.mesh_type;
   
-  // Calculate view direction for sky effects - use approximation since camera is typically above terrain
+  // Calculate view direction for sky effects
   let camera_pos = vec3<f32>(0.0, 5.0, 0.0); // Better approximation for typical camera height
   out.view_dir = normalize(world.xyz - camera_pos);
   
@@ -2659,6 +2686,59 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   var col = in.color.rgb;
   let time = 100.0; // TODO: Pass actual time as uniform
   
+  // Mesh-specific rendering based on mesh type
+  if (in.mesh_type == 1u) { // Tree
+    // Sample tree texture based on UV coordinates
+    if (textureSample(tree_texture, mesh_sampler, in.uv).a > 0.1) {
+      // Tree trunk - apply bark texture
+      if (in.uv.y < 0.6) {
+        col = textureSample(tree_texture, mesh_sampler, in.uv).rgb;
+      } 
+      // Tree leaves - apply leaf texture with color variation
+      else {
+        var leaf_color = textureSample(tree_texture, mesh_sampler, in.uv).rgb;
+        leaf_color = leaf_color * in.color.rgb * 1.2; // Boost saturation slightly
+        col = leaf_color;
+      }
+      
+      // Apply normal mapping for detailed bark/leaf rendering
+      let normal_sample = textureSample(ground_normal, normal_sampler, in.uv).rgb;
+      let normal = normalize(normal_sample * 2.0 - 1.0);
+      
+      // Apply simple directional lighting
+      let light_dir = normalize(vec3<f32>(0.5, 0.8, 0.2));
+      let light_intensity = max(dot(normal, light_dir), 0.0) * 0.6 + 0.4;
+      col = col * light_intensity;
+      
+      return vec4<f32>(col, 1.0);
+    }
+  } 
+  else if (in.mesh_type == 2u) { // House
+    // Sample house texture based on UV coordinates
+    col = textureSample(house_texture, mesh_sampler, in.uv).rgb;
+    
+    // Apply lighting with ambient occlusion in corners
+    let ao = 1.0 - (1.0 - in.uv.x) * (1.0 - in.uv.y) * 0.5;
+    col = col * in.color.rgb * ao;
+    
+    return vec4<f32>(col, 1.0);
+  }
+  else if (in.mesh_type == 3u) { // Character
+    // Sample character texture based on UV coordinates
+    col = textureSample(character_texture, mesh_sampler, in.uv).rgb;
+    
+    // Apply character color tinting
+    col = col * in.color.rgb;
+    
+    return vec4<f32>(col, 1.0);
+  }
+  else if (in.mesh_type == 4u) { // Skybox
+    // Use procedural sky color based on view direction
+    col = sky_color(in.view_dir, time);
+    return vec4<f32>(col, 1.0);
+  }
+  
+  // For ground or other unspecified mesh types, use standard terrain rendering
   // Determine biome type for this world position
   let biome_type = get_biome_type(in.world_pos.xz);
   
