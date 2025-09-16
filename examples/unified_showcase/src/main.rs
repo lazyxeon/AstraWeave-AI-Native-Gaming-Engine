@@ -1607,7 +1607,7 @@ async fn run() -> Result<()> {
                         }
 
                         // Sync sim to render and batch instances by mesh type
-                        sync_instances_from_physics(&physics, &characters, &mut instances);
+                        sync_instances_from_physics(&physics, &characters, camera.position, &mut instances);
                         render.instance_count = instances.len() as u32;
                         
                         // Batch instances by mesh type for efficient rendering
@@ -2228,7 +2228,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             topology: wgpu::PrimitiveTopology::TriangleList,
             strip_index_format: None,
             front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
+            cull_mode: None, // Disable culling to allow skybox with inverted winding
             ..Default::default()
         },
         depth_stencil: Some(wgpu::DepthStencilState {
@@ -2325,13 +2325,13 @@ fn vs_main(in: VsIn) -> VsOut {
   
   // Special handling for skybox (mesh_type 4) - position at far plane
   if (in.mesh_type == 4u) {
-    // For skybox, create a view matrix without translation (rotation only)
-    // and scale the skybox vertex position to create a large enough skybox
-    let scaled_pos = vec4<f32>(in.pos * 0.1, 1.0); // Scale down from large vertices
-    out.pos = u_camera.view_proj * scaled_pos;
-    // Ensure skybox is always at far plane depth
-    out.pos.z = out.pos.w * 0.999; // At far plane
-    out.world_pos = scaled_pos.xyz;
+    // For skybox, apply model transform then scale down the large vertices
+    let scaled_vertex = vec4<f32>(in.pos * 0.5, 1.0); // Larger skybox for better coverage  
+    let world_skybox = model * scaled_vertex; // Apply model transform (camera translation)
+    out.pos = u_camera.view_proj * world_skybox;
+    // Let depth testing work normally for skybox
+    // out.pos.z = out.pos.w * 0.999; // At far plane
+    out.world_pos = world_skybox.xyz;
   } else {
     out.pos = u_camera.view_proj * world;
     out.world_pos = world.xyz;
@@ -2811,14 +2811,14 @@ fn teleport_sphere_to(p: &mut Physics, pos: Vec3) {
     }
 }
 
-fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut Vec<InstanceRaw>) {
+fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos: Vec3, out: &mut Vec<InstanceRaw>) {
     // Resize output vector to accommodate all objects
     out.clear();
 
     // Enhanced skybox instance - positioned to follow camera for optimal immersion
     // Create a transform that follows the camera position to ensure the skybox
     // always encompasses the view without creating depth buffer conflicts
-    let skybox_translation = Mat4::from_translation(Vec3::new(0.0, 0.0, 0.0)); // Keep at origin for now
+    let skybox_translation = Mat4::from_translation(camera_pos); // Position skybox at camera location
     let skybox_instance = InstanceRaw {
         model: skybox_translation.to_cols_array(),
         color: [0.8, 0.9, 1.0, 1.0], // Enhanced sky blue for better atmospheric feel
