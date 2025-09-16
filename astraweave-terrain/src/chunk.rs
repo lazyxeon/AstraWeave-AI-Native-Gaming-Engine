@@ -166,7 +166,8 @@ impl TerrainChunk {
 pub struct ChunkManager {
     chunks: HashMap<ChunkId, TerrainChunk>,
     chunk_size: f32,
-    heightmap_resolution: u32,
+    #[allow(dead_code)]
+    heightmap_resolution: u32, // currently unused
     max_loaded_chunks: usize,
 }
 
