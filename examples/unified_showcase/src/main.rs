@@ -615,6 +615,15 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
         texture_pack_name,
         texture_path.display()
     );
+    
+    // Debug: Check if texture file exists
+    if !texture_path.exists() {
+        eprintln!(
+            "ERROR: Texture file not found: {}",
+            texture_path.display()
+        );
+        return Err(anyhow::anyhow!("Texture file not found: {}", texture_path.display()));
+    }
 
     match load_texture_from_file(&render.device, &render.queue, &texture_path) {
         Ok(new_texture) => {
@@ -1663,30 +1672,64 @@ async fn run() -> Result<()> {
                                 rp.set_bind_group(1, texture_bg, &[]);
                             }
                             // Render each mesh type batch efficiently
+                            // Render skybox first with special depth handling
                             for batch in &instance_batches {
-                                if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
-                                    // Upload this batch's instances to the instance buffer
-                                    render.queue.write_buffer(
-                                        &render.instance_vb,
-                                        0,
-                                        bytemuck::cast_slice(&batch.instances),
-                                    );
-                                    
-                                    // Set up rendering for this mesh type
-                                    rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                    rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                    rp.set_index_buffer(
-                                        mesh.index_buffer.slice(..),
-                                        wgpu::IndexFormat::Uint16,
-                                    );
-                                    
-                                    // Draw this batch
-                                    if !batch.instances.is_empty() {
-                                        rp.draw_indexed(
-                                            0..mesh.index_count,
+                                if batch.mesh_type == MeshType::Skybox {
+                                    if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                        // Upload skybox instances to the instance buffer
+                                        render.queue.write_buffer(
+                                            &render.instance_vb,
                                             0,
-                                            0..batch.instances.len() as u32,
+                                            bytemuck::cast_slice(&batch.instances),
                                         );
+                                        
+                                        // Set up rendering for skybox - render at far plane
+                                        rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                        rp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                        rp.set_index_buffer(
+                                            mesh.index_buffer.slice(..),
+                                            wgpu::IndexFormat::Uint16,
+                                        );
+                                        
+                                        // Draw skybox
+                                        if !batch.instances.is_empty() {
+                                            rp.draw_indexed(
+                                                0..mesh.index_count,
+                                                0,
+                                                0..batch.instances.len() as u32,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Render all other mesh types after skybox
+                            for batch in &instance_batches {
+                                if batch.mesh_type != MeshType::Skybox {
+                                    if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                        // Upload this batch's instances to the instance buffer
+                                        render.queue.write_buffer(
+                                            &render.instance_vb,
+                                            0,
+                                            bytemuck::cast_slice(&batch.instances),
+                                        );
+                                        
+                                        // Set up rendering for this mesh type
+                                        rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                        rp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                        rp.set_index_buffer(
+                                            mesh.index_buffer.slice(..),
+                                            wgpu::IndexFormat::Uint16,
+                                        );
+                                        
+                                        // Draw this batch
+                                        if !batch.instances.is_empty() {
+                                            rp.draw_indexed(
+                                                0..mesh.index_count,
+                                                0,
+                                                0..batch.instances.len() as u32,
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -2276,7 +2319,20 @@ fn vs_main(in: VsIn) -> VsOut {
   let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
   var out: VsOut;
   let world = model * vec4<f32>(in.pos, 1.0);
-  out.pos = u_camera.view_proj * world;
+  
+  // Special handling for skybox (mesh_type 4) - position at far plane
+  if (in.mesh_type == 4u) {
+    // For skybox, we want to remove translation and keep it at far plane
+    let skybox_pos = vec4<f32>(in.pos, 1.0);
+    // Transform without translation to keep skybox centered on camera
+    let view_proj_no_translation = u_camera.view_proj;
+    out.pos = view_proj_no_translation * skybox_pos;
+    // Ensure skybox is always at far plane depth
+    out.pos.z = out.pos.w * 0.99999; // Just before far plane
+  } else {
+    out.pos = u_camera.view_proj * world;
+  }
+  
   out.color = in.color;
   out.world_pos = world.xyz;
   out.mesh_type = in.mesh_type;
