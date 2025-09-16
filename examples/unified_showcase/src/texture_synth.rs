@@ -12,6 +12,7 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
         force,
         synth_grass,
     )?;
+    synth_mra_if_missing(out_dir, "grass_mra.png", 0.2, 0.7, 0.0, force)?;
     synth_if_missing(
         out_dir,
         "dirt.png",
@@ -19,6 +20,7 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
         force,
         synth_dirt,
     )?;
+    synth_mra_if_missing(out_dir, "dirt_mra.png", 0.9, 0.85, 0.0, force)?;
     synth_if_missing(
         out_dir,
         "sand.png",
@@ -26,6 +28,7 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
         force,
         synth_sand,
     )?;
+    synth_mra_if_missing(out_dir, "sand_mra.png", 0.8, 0.6, 0.0, force)?;
     synth_if_missing(
         out_dir,
         "stone.png",
@@ -33,6 +36,7 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
         force,
         synth_stone,
     )?;
+    synth_mra_if_missing(out_dir, "stone_mra.png", 0.6, 0.9, 0.05, force)?;
     // Add enhanced forest floor texture for deeper biome variety
     synth_if_missing(
         out_dir,
@@ -41,6 +45,7 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
         force,
         synth_forest_floor,
     )?;
+    synth_mra_if_missing(out_dir, "forest_floor_mra.png", 0.9, 0.8, 0.0, force)?;
     Ok(())
 }
 
@@ -73,6 +78,27 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
             let normal = height_to_normal(&img, normal_strength);
             normal.save(&npath)?;
         }
+    }
+    Ok(())
+}
+
+fn synth_mra_if_missing(
+    out_dir: &str,
+    name: &str,
+    ao: f32,
+    roughness: f32,
+    metallic: f32,
+    force: bool,
+) -> anyhow::Result<()> {
+    let path = Path::new(out_dir).join(name);
+    if force || !path.exists() {
+        let w = 4u32; // tiny; GPU will sample fine
+        let h = 4u32;
+        let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(w, h);
+        let to_u8 = |v: f32| ((v.clamp(0.0, 1.0)) * 255.0) as u8;
+        let px = Rgba([to_u8(ao), to_u8(roughness), to_u8(metallic), 255]);
+        for y in 0..h { for x in 0..w { img.put_pixel(x, y, px); } }
+        img.save(&path)?;
     }
     Ok(())
 }
