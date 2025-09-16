@@ -618,22 +618,28 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
 
     match load_texture_from_file(&render.device, &render.queue, &texture_path) {
         Ok(new_texture) => {
+            println!("✓ Successfully loaded albedo texture: {}", texture_path.display());
+            
             // Construct normal map path by replacing extension with _n.png
             let tex_stem = Path::new(&texture_name)
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("texture");
             let npath = Path::new("assets").join(format!("{}_n.png", tex_stem));
+            
+            println!("Looking for normal map: {}", npath.display());
             let normal_tex = if npath.exists() {
+                println!("✓ Found normal map: {}", npath.display());
                 load_texture_from_file(&render.device, &render.queue, &npath)?
             } else {
                 eprintln!(
-                    "Warning: Normal map not found at {}. Using default normal map.",
+                    "⚠ Warning: Normal map not found at {}. Using default normal map.",
                     npath.display()
                 );
                 // Use a default normal map (e.g., flat normal)
                 // You may need to provide a default normal map in your assets, e.g., "default_n.png"
                 let default_npath = Path::new("assets").join("default_n.png");
+                println!("Using default normal map: {}", default_npath.display());
                 load_texture_from_file(&render.device, &render.queue, &default_npath)?
             };
 
@@ -671,9 +677,62 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
         }
         Err(e) => {
             println!(
-                "Failed to load texture for pack '{}': {}",
-                texture_pack_name, e
+                "❌ Failed to load texture for pack '{}' from path '{}': {}",
+                texture_pack_name, texture_path.display(), e
             );
+            
+            // More detailed error information
+            if !texture_path.exists() {
+                println!("❌ Texture file does not exist: {}", texture_path.display());
+            } else {
+                println!("📄 Texture file exists but failed to load: {}", texture_path.display());
+            }
+            
+            // Try to fallback to grass texture if loading desert/other fails
+            if texture_pack_name != "grassland" {
+                println!("🔄 Attempting fallback to grassland texture...");
+                let fallback_path = Path::new("assets").join("grass.png");
+                match load_texture_from_file(&render.device, &render.queue, &fallback_path) {
+                    Ok(fallback_texture) => {
+                        println!("✓ Successfully loaded fallback grass texture");
+                        let fallback_normal = create_default_normal_texture(&render.device, &render.queue)?;
+                        
+                        let combined_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                            label: Some(&format!("{}-fallback-bind-group", texture_pack_name)),
+                            layout: &render.texture_bind_group_layout,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(&fallback_texture.view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(&fallback_texture.sampler),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 2,
+                                    resource: wgpu::BindingResource::TextureView(&fallback_normal.view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 3,
+                                    resource: wgpu::BindingResource::Sampler(&fallback_normal.sampler),
+                                },
+                            ],
+                        });
+                        
+                        render.ground_texture = Some(fallback_texture);
+                        render.ground_normal = Some(fallback_normal);
+                        render.ground_bind_group = Some(combined_bg);
+                        
+                        println!("✓ Successfully set fallback texture for pack: {}", texture_pack_name);
+                        return Ok(());
+                    }
+                    Err(fallback_e) => {
+                        println!("❌ Fallback texture also failed: {}", fallback_e);
+                    }
+                }
+            }
+            
             Err(e)
         }
     }
@@ -2372,22 +2431,23 @@ fn get_water_level(world_pos: vec2<f32>, time: f32) -> f32 {
   return -1.8 + wave1 + wave2; // Base water level with waves
 }
 
-// Determine biome type based on world position
+// Determine biome type based on world position - FIXED: More consistent biome regions
 fn get_biome_type(world_pos: vec2<f32>) -> i32 {
-  let biome_scale = 0.02;
+  let biome_scale = 0.01; // Larger biome regions for easier testing
   let biome_pos = world_pos * biome_scale;
   
   // Enhanced biome detection with three distinct regions
-  let primary_noise = sin(biome_pos.x * 3.0) * cos(biome_pos.y * 2.0);
-  let secondary_noise = sin(biome_pos.x * 1.5 + 100.0) * cos(biome_pos.y * 1.8 + 200.0);
-  let combined_noise = primary_noise * 0.7 + secondary_noise * 0.3;
+  let primary_noise = sin(biome_pos.x * 2.0) * cos(biome_pos.y * 1.5);
+  let secondary_noise = sin(biome_pos.x * 1.0 + 50.0) * cos(biome_pos.y * 1.2 + 100.0);
+  let combined_noise = primary_noise * 0.8 + secondary_noise * 0.2;
   
-  if (combined_noise > 0.3) {
-    return 1; // Desert
-  } else if (combined_noise < -0.2) {
-    return 2; // Dense Forest
+  // Create more stable biome regions
+  if (combined_noise > 0.2) {
+    return 1; // Desert - lowered threshold for easier access
+  } else if (combined_noise < -0.1) {
+    return 2; // Dense Forest - adjusted threshold
   } else {
-    return 0; // Grassland
+    return 0; // Grassland - default
   }
 }
 
@@ -2492,8 +2552,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   let dist_to_terrain = abs(in.world_pos.y - terrain_surface);
   let dist_to_water = abs(in.world_pos.y - water_level);
   
-  // Check if we're rendering the terrain surface
-  if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
+  // Check if we're rendering the terrain surface - FIXED: simplified and more reliable condition
+  if (in.mesh_type == 0u || dist_to_terrain < 1.2) {
     let scale = 3.0;
     let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
     var tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
@@ -2502,7 +2562,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
     let normal = normalize(normal_sample * 2.0 - 1.0);
     
-    // Biome-specific terrain texturing
+    // Biome-specific terrain texturing - FIXED: Added debug coloring for easier identification
     if (biome_type == 0) { // Grassland
       // Mix grass with dirt based on terrain height and slope
       let height_factor = clamp((terrain_height + 2.0) / 6.0, 0.0, 1.0);
@@ -2516,19 +2576,23 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       tex_color = mix(tex_color, moss_color, slope_factor * 0.3);
       
     } else if (biome_type == 1) { // Desert
-      // Use sampled sand texture with height-based lightening and slope-based rock blending
-      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.0, 1.0);
+      // Use sampled sand texture with enhanced visibility for debugging
+      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.7, 1.3); // Increased minimum brightness
       let sand_tex = tex_color.rgb * h_factor;
       
+      // Enhanced desert colors to ensure visibility
+      let desert_base = vec3<f32>(0.8, 0.7, 0.5); // Brighter sand base color
+      tex_color = mix(sand_tex, desert_base, 0.3); // Blend with visible desert color
+      
       // Optional tint: rock color on steep slopes (using normal map for better slope detection)
-      let rock_color = vec3<f32>(0.5, 0.45, 0.4);
+      let rock_color = vec3<f32>(0.6, 0.5, 0.4);
       let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-      let blended = mix(sand_tex, rock_color, slope * 0.5);
+      let blended = mix(tex_color, rock_color, slope * 0.3);
       
       // Add mineral deposits and oasis effects using the blended texture
       let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
       if (mineral_noise > 0.7) {
-        let mineral_color = vec3<f32>(0.7, 0.6, 0.4);
+        let mineral_color = vec3<f32>(0.8, 0.7, 0.5);
         tex_color = mix(blended, mineral_color, 0.3);
       } else {
         tex_color = blended;
