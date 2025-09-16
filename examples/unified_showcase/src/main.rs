@@ -2448,8 +2448,8 @@ fn vs_main(in: VsIn) -> VsOut {
     let scaled_vertex = vec4<f32>(in.pos * 0.5, 1.0); // Larger skybox for better coverage  
     let world_skybox = model * scaled_vertex; // Apply model transform (camera translation)
     out.pos = u_camera.view_proj * world_skybox;
-    // Let depth testing work normally for skybox
-    // out.pos.z = out.pos.w * 0.999; // At far plane
+    // Ensure skybox is always at far plane
+    out.pos.z = out.pos.w * 0.999; // At far plane
     out.world_pos = world_skybox.xyz;
   } else {
     out.pos = u_camera.view_proj * world;
@@ -2947,22 +2947,33 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos
     out.push(skybox_instance);
 
     // Add physics objects
-    for (h, body) in p.bodies.iter() {
+    for (_h, body) in p.bodies.iter() {
         // No skipping — we want the ground cube drawn so the ground shader branch runs.
 
         let xf = body.position();
         let iso = xf.to_homogeneous();
         let base_m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
 
-        // Default: no scale (unit cube)
-        let mut model_m = base_m;
-
-        // If this is the ground (user_data == 0 and fixed), don't scale since 
-        // terrain mesh is already properly sized to match the physics collider
-        if body.is_fixed() && body.user_data == 0 {
+        // Handle scaling for different object types
+        let model_m = if body.is_fixed() && body.user_data == 0 {
             // Ground uses the terrain mesh which is already correctly sized - no scaling needed
-            model_m = base_m;
-        }
+            base_m
+        } else {
+            // Scale objects based on their type for better visibility
+            let object_scale = match body.user_data {
+                1..=2 => 1.0,           // Original demo objects - keep normal size
+                10..=34 => 8.0,         // Trees - scale up significantly  
+                35..=45 => 6.0,         // Houses - scale up for visibility
+                60..=90 => 3.0,         // Rocks and boulders - moderate scaling
+                100..=170 => 4.0,       // Bushes and undergrowth - medium scale
+                200..=309 => 2.5,       // Stone circles and river banks
+                400..=407 => 2.0,       // Sand dunes  
+                500..=504 => 10.0,      // Oasis palms - very tall
+                _ => 2.0,               // Default moderate scaling
+            };
+            let scale_m = Mat4::from_scale(Vec3::splat(object_scale));
+            base_m * scale_m
+        };
 
         // Color and mesh type based on object type
         let (color, mesh_type) = match body.user_data {
@@ -3005,8 +3016,8 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos
 
     // Add character instances
     for character in characters {
-        // Create a transform matrix for the character
-        let scale = 0.4; // Characters are smaller than buildings
+        // Create a transform matrix for the character - scale up significantly for visibility
+        let scale = 5.0; // Characters need to be much larger to be visible on the terrain
         let translation = Mat4::from_translation(character.position);
         let scaling = Mat4::from_scale(Vec3::splat(scale));
 
