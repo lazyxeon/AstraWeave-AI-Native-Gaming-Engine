@@ -54,6 +54,7 @@ struct RenderStuff {
     instance_vb: wgpu::Buffer,
     instance_count: u32,
     msaa_samples: u32,
+    msaa_color_view: Option<wgpu::TextureView>,
     // Texture resources
     ground_texture: Option<LoadedTexture>,
     texture_bind_group_layout: wgpu::BindGroupLayout,
@@ -546,11 +547,12 @@ fn load_texture_pack(path: &Path) -> Result<TexturePack> {
     Ok(pack)
 }
 
-fn load_texture_from_bytes(
+fn load_texture_from_bytes_with_format(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     bytes: &[u8],
     label: &str,
+    format: wgpu::TextureFormat,
 ) -> Result<LoadedTexture> {
     println!("Loading texture '{}' from {} bytes", label, bytes.len());
     let img = image::load_from_memory(bytes)?;
@@ -573,7 +575,7 @@ fn load_texture_from_bytes(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        format,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
@@ -600,8 +602,9 @@ fn load_texture_from_bytes(
         address_mode_v: wgpu::AddressMode::Repeat,
         address_mode_w: wgpu::AddressMode::Repeat,
         mag_filter: wgpu::FilterMode::Linear,
-        min_filter: wgpu::FilterMode::Nearest,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
         ..Default::default()
     });
 
@@ -627,13 +630,26 @@ fn load_texture_from_file(
             path.display()
         ));
     }
-    let bytes = fs::read(path)?;
+        let bytes = fs::read(path).map_err(|e| {
+            eprintln!("Failed to read texture file: {}", e);
+            anyhow::anyhow!("Texture file not found: {}", path.display())
+        })?;
     println!(
         "Successfully read {} bytes from {}",
         bytes.len(),
         path.display()
     );
-    load_texture_from_bytes(device, queue, &bytes, &path.to_string_lossy())
+    // Decide texture format by filename convention
+    // *_n.* (normal) and *_mra.* should be UNORM; albedo/emissive use sRGB
+    let name_lc = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_ascii_lowercase();
+    let is_normal = name_lc.ends_with("_n");
+    let is_mra = name_lc.ends_with("_mra");
+    let format = if is_normal || is_mra {
+        wgpu::TextureFormat::Rgba8Unorm
+    } else {
+        wgpu::TextureFormat::Rgba8UnormSrgb
+    };
+    load_texture_from_bytes_with_format(device, queue, &bytes, &path.to_string_lossy(), format)
 }
 
 fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Result<()> {
@@ -1668,6 +1684,16 @@ async fn run() -> Result<()> {
                             render.surface_cfg.height,
                             render.msaa_samples,
                         );
+                        // Recreate MSAA color target
+                        render.msaa_color_view = if render.msaa_samples > 1 {
+                            Some(create_msaa_color(
+                                &render.device,
+                                render.surface_cfg.format,
+                                render.surface_cfg.width,
+                                render.surface_cfg.height,
+                                render.msaa_samples,
+                            ))
+                        } else { None };
 
                         // Update UI info with character count
                         ui.info_text = format!(
@@ -1747,8 +1773,8 @@ async fn run() -> Result<()> {
                             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                 label: Some("main-pass"),
                                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: &view,
-                                    resolve_target: None,
+                                    view: render.msaa_color_view.as_ref().unwrap_or(&view),
+                                    resolve_target: if render.msaa_samples > 1 { Some(&view) } else { None },
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color {
                                             r: 0.4,  // Sky color that matches procedural sky
@@ -1903,7 +1929,16 @@ fn create_default_albedo_texture(
         },
     );
     let view = white_texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..Default::default()
+    });
     Ok(LoadedTexture {
         texture: white_texture,
         view,
@@ -1925,7 +1960,7 @@ fn create_default_normal_texture(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+    format: wgpu::TextureFormat::Rgba8Unorm,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
@@ -1949,7 +1984,16 @@ fn create_default_normal_texture(
         },
     );
     let view = normal_texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+    anisotropy_clamp: 8,
+        ..Default::default()
+    });
     Ok(LoadedTexture {
         texture: normal_texture,
         view,
@@ -1972,7 +2016,7 @@ fn create_default_mra_texture(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8Unorm,
+    format: wgpu::TextureFormat::Rgba8Unorm,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
@@ -2000,7 +2044,16 @@ fn create_default_mra_texture(
         },
     );
     let view = mra_tex.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..Default::default()
+    });
     Ok(LoadedTexture { texture: mra_tex, view, sampler })
 }
 
@@ -2015,7 +2068,7 @@ fn create_default_emissive_texture(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+    format: wgpu::TextureFormat::Rgba8UnormSrgb,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
@@ -2026,7 +2079,16 @@ fn create_default_emissive_texture(
         wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
     );
     let view = e_tex.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..Default::default()
+    });
     Ok(LoadedTexture { texture: e_tex, view, sampler })
 }
 
@@ -2273,7 +2335,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
 
     println!("Device created successfully");
 
-    let msaa_samples = 1u32;
+    let msaa_samples = 4u32; // enable 4x MSAA
     let caps = surface.get_capabilities(&adapter);
     println!("Surface capabilities: {:?}", caps);
 
@@ -2297,6 +2359,17 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     };
     surface.configure(&device, &surface_cfg);
     let depth_view = create_depth(&device, surface_cfg.width, surface_cfg.height, msaa_samples);
+    let msaa_color_view = if msaa_samples > 1 {
+        Some(create_msaa_color(
+            &device,
+            surface_cfg.format,
+            surface_cfg.width,
+            surface_cfg.height,
+            msaa_samples,
+        ))
+    } else {
+        None
+    };
 
     // Create all meshes
     let meshes = create_all_meshes(&device);
@@ -2742,6 +2815,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         instance_vb,
         instance_count: 0, // Will be updated dynamically
         msaa_samples,
+    msaa_color_view,
         ground_texture,
         texture_bind_group_layout,
         ground_bind_group,
@@ -2782,6 +2856,26 @@ fn create_depth(device: &wgpu::Device, width: u32, height: u32, samples: u32) ->
     tex.create_view(&wgpu::TextureViewDescriptor::default())
 }
 
+fn create_msaa_color(
+    device: &wgpu::Device,
+    format: wgpu::TextureFormat,
+    width: u32,
+    height: u32,
+    samples: u32,
+) -> wgpu::TextureView {
+    let tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("msaa-color"),
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: samples,
+        dimension: wgpu::TextureDimension::D2,
+        format,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+    tex.create_view(&wgpu::TextureViewDescriptor::default())
+}
+
 // ---------------- shader with procedural ground/sky ----------------
 
 const SHADER: &str = r#"
@@ -2813,6 +2907,29 @@ struct TimeUniform { time: f32, _padding: vec3<f32> };
 
 // Note: Time uniform would be @group(2) @binding(0) in a full implementation
 // For now, we'll use a constant or calculated time
+
+// Helper struct and function for triplanar sampling across biome texture sets
+struct SampleSet { c: vec3<f32>, n: vec3<f32>, m: vec4<f32> };
+
+fn sample_set(biome: i32, uv: vec2<f32>) -> SampleSet {
+    var c = vec3<f32>(1.0,1.0,1.0);
+    var n = vec3<f32>(0.5,0.5,1.0);
+    var m = vec4<f32>(1.0,0.8,0.0,1.0);
+    if (biome == 0) {
+        c = textureSample(ground_texture, ground_sampler, uv).rgb;
+        n = textureSample(ground_normal, normal_sampler, uv).rgb;
+        m = textureSample(ground_mra, mra_sampler, uv);
+    } else if (biome == 1) {
+        c = textureSample(sand_albedo, ground_sampler, uv).rgb;
+        n = textureSample(sand_normal, normal_sampler, uv).rgb;
+        m = textureSample(sand_mra, mra_sampler, uv);
+    } else {
+        c = textureSample(forest_albedo, ground_sampler, uv).rgb;
+        n = textureSample(forest_normal, normal_sampler, uv).rgb;
+        m = textureSample(forest_mra, mra_sampler, uv);
+    }
+    return SampleSet(c, n, m);
+}
 
 // Vertex inputs aligned with Rust vertex buffers:
 // - location(0): position (vec3)
@@ -3086,31 +3203,51 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   
   // Check if we're rendering the terrain surface
   if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
-        let scale = 3.0;
-        let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
-        // Select biome textures
-        var base_color = vec3<f32>(1.0, 1.0, 1.0);
-        var normal_sample = vec3<f32>(0.5, 0.5, 1.0);
-        var mra = vec4<f32>(1.0, 0.8, 0.0, 1.0);
-        if (biome_type == 0) {
-            base_color = textureSample(ground_texture, ground_sampler, uv).rgb;
-            normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
-            mra = textureSample(ground_mra, mra_sampler, uv);
-        } else if (biome_type == 1) {
-            base_color = textureSample(sand_albedo, ground_sampler, uv).rgb;
-            normal_sample = textureSample(sand_normal, normal_sampler, uv).rgb;
-            mra = textureSample(sand_mra, mra_sampler, uv);
-        } else { // Forest
-            base_color = textureSample(forest_albedo, ground_sampler, uv).rgb;
-            normal_sample = textureSample(forest_normal, normal_sampler, uv).rgb;
-            mra = textureSample(forest_mra, mra_sampler, uv);
-        }
-        // Derived parameters
-        let normal = normalize(normal_sample * 2.0 - 1.0);
+        // Triplanar sampling for ground materials
+        let ws_pos = in.world_pos;
+        let scale_grass = 2.0;
+        let scale_sand  = 2.5;
+        let scale_forest= 2.2;
+        var tile: f32 = scale_grass;
+        if (biome_type == 1) { tile = scale_sand; }
+        else if (biome_type == 2) { tile = scale_forest; }
+
+        // Derive a world-space surface normal via height gradients
+        let eps = 0.5;
+        let hL = get_biome_terrain_height((ws_pos.xz + vec2<f32>(-eps, 0.0)), biome_type);
+        let hR = get_biome_terrain_height((ws_pos.xz + vec2<f32>( eps, 0.0)), biome_type);
+        let hD = get_biome_terrain_height((ws_pos.xz + vec2<f32>( 0.0,-eps)), biome_type);
+        let hU = get_biome_terrain_height((ws_pos.xz + vec2<f32>( 0.0, eps)), biome_type);
+        let dx = hR - hL;
+        let dz = hU - hD;
+        let n_world = normalize(vec3<f32>(-dx, 2.0, -dz));
+
+        // Projected UVs for three axes and a fallback 2D uv for misc sampling
+        let tx = vec2<f32>(ws_pos.y / tile, ws_pos.z / tile);
+        let ty = vec2<f32>(ws_pos.x / tile, ws_pos.z / tile);
+        let tz = vec2<f32>(ws_pos.x / tile, ws_pos.y / tile);
+        let uv2 = vec2<f32>(ws_pos.x / tile, ws_pos.z / tile);
+
+        let w = pow(abs(n_world), vec3<f32>(4.0));
+        let wsum = max(w.x + w.y + w.z, 1e-4);
+        let wnorm = w / wsum;
+
+        let sx = sample_set(biome_type, tx);
+        let sy = sample_set(biome_type, ty);
+        let sz = sample_set(biome_type, tz);
+
+        var base_color = sx.c * wnorm.x + sy.c * wnorm.y + sz.c * wnorm.z;
+        var mra = sx.m * wnorm.x + sy.m * wnorm.y + sz.m * wnorm.z;
+        // Blend normals from projections; renormalize
+        let nx = normalize(sx.n * 2.0 - 1.0);
+        let ny = normalize(sy.n * 2.0 - 1.0);
+        let nz = normalize(sz.n * 2.0 - 1.0);
+        var n_blend = normalize(nx * wnorm.x + ny * wnorm.y + nz * wnorm.z);
+        let normal = n_blend;
         let ao = mra.r; // ambient occlusion
         let roughness = clamp(mra.g, 0.04, 1.0);
         let metallic = clamp(mra.b, 0.0, 1.0);
-        let emissive = textureSample(ground_emissive, emissive_sampler, uv).rgb;
+        let emissive = textureSample(ground_emissive, emissive_sampler, uv2).rgb;
     
     // Biome-specific terrain texturing
     if (biome_type == 0) { // Grassland
@@ -3130,7 +3267,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             let h_factor = clamp(1.0 + terrain_height * 0.3, 0.0, 1.0);
             var sand_tex = base_color.rgb * h_factor;
             let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-            let stone_tex = textureSample(stone_albedo, ground_sampler, uv * 0.8).rgb;
+            let stone_tex = textureSample(stone_albedo, ground_sampler, uv2 * 0.8).rgb;
             sand_tex = mix(sand_tex, stone_tex, slope * 0.4);
             // Mineral deposits
             let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
@@ -3159,7 +3296,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             base_color = mix(forest_base, base_mix, 0.8);
             base_color = mix(base_color, moss_color, moss_factor);
             // Blend dirt in flatter areas
-            let dirt_tex = textureSample(dirt_albedo, ground_sampler, uv).rgb;
+            let dirt_tex = textureSample(dirt_albedo, ground_sampler, uv2).rgb;
             base_color = mix(base_color, dirt_tex, (1.0 - slope) * 0.2);
       
       // Add depth variation with organic patches
