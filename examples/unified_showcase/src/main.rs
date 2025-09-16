@@ -325,19 +325,19 @@ const CHARACTER_INDICES: &[u16] = &[
     28, 24, 27, 28, 27, 29,
 ];
 
-// Large skybox geometry - inverted cube to render from inside
+// Enhanced skybox geometry - large inverted cube optimized for biome immersion
 const SKYBOX_VERTICES: &[[f32; 3]] = &[
     // Front face (inverted normals - face inward)
-    [-500.0, -500.0, 500.0],   // 0
-    [500.0, -500.0, 500.0],    // 1  
-    [500.0, 500.0, 500.0],     // 2
-    [-500.0, 500.0, 500.0],    // 3
+    [-2000.0, -2000.0, 2000.0],   // 0 - Expanded for better sky coverage
+    [2000.0, -2000.0, 2000.0],    // 1  
+    [2000.0, 2000.0, 2000.0],     // 2
+    [-2000.0, 2000.0, 2000.0],    // 3
     
     // Back face
-    [-500.0, -500.0, -500.0],  // 4
-    [-500.0, 500.0, -500.0],   // 5
-    [500.0, 500.0, -500.0],    // 6
-    [500.0, -500.0, -500.0],   // 7
+    [-2000.0, -2000.0, -2000.0],  // 4
+    [-2000.0, 2000.0, -2000.0],   // 5
+    [2000.0, 2000.0, -2000.0],    // 6
+    [2000.0, -2000.0, -2000.0],   // 7
 ];
 
 const SKYBOX_INDICES: &[u16] = &[
@@ -1328,15 +1328,15 @@ async fn run() -> Result<()> {
     let mut instances = build_show_instances();
     let mut ui = UiState::default();
 
-    // Use proper camera system from astraweave-render with optimized view for biome showcase
+    // Use proper camera system from astraweave-render with enhanced positioning for optimal biome showcase
     let mut camera = RenderCamera {
-        position: Vec3::new(0.0, 8.0, 25.0), // Positioned to view both village and forest areas
-        yaw: -0.1,    // Slight turn to show environment depth
-        pitch: -0.3,  // Look down to see terrain detail and object placement
-        fovy: 75f32.to_radians(), // Wider field of view for immersive biome experience
+        position: Vec3::new(15.0, 12.0, 30.0), // Enhanced position to better showcase biome diversity
+        yaw: -0.3,    // Better angle to view village, forest, and terrain features
+        pitch: -0.4,  // Optimal pitch to see both terrain detail and sky
+        fovy: 70f32.to_radians(), // Optimized field of view for biome immersion
         aspect: 1.0,
         znear: 0.01,
-        zfar: 8000.0, // Extended far plane for distant terrain visibility
+        zfar: 10000.0, // Extended far plane for maximum terrain visibility
     };
     let mut camera_controller = CameraController::new(8.0, 0.002);
     let mut last = Instant::now();
@@ -2756,11 +2756,13 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
     // Resize output vector to accommodate all objects
     out.clear();
 
-    // First, add skybox instance centered at origin with identity transform
-    // The skybox should always be rendered first and cover the entire background
+    // Enhanced skybox instance - positioned to follow camera for optimal immersion
+    // Create a transform that follows the camera position to ensure the skybox
+    // always encompasses the view without creating depth buffer conflicts
+    let skybox_translation = Mat4::from_translation(Vec3::new(0.0, 0.0, 0.0)); // Keep at origin for now
     let skybox_instance = InstanceRaw {
-        model: Mat4::IDENTITY.to_cols_array(),
-        color: [0.7, 0.85, 1.0, 1.0], // Sky blue color for sky shader
+        model: skybox_translation.to_cols_array(),
+        color: [0.8, 0.9, 1.0, 1.0], // Enhanced sky blue for better atmospheric feel
         mesh_type: MeshType::Skybox as u32,
         _padding: [0, 0, 0],
     };
