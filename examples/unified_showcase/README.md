@@ -17,11 +17,13 @@ This demo showcases multiple AstraWeave engine features in one interactive 3D sc
 - **Audio System**: Spatial audio with Rodio
 - **Input System**: Comprehensive keyboard and mouse controls
 
-### 🎯 Scene Contents
-- **Ground plane**: Large static physics collider
-- **Box stack**: 25 dynamic rigid body cubes (5x5 grid, 5 layers high)
-- **Bouncing sphere**: Dynamic sphere with continuous collision detection
-- **Camera**: Free-flying first-person camera with physics-independent movement
+### 🎯 Enhanced Biome Experience
+- **Three Distinct Environments**: Grassland, Desert, and Dense Forest biomes
+- **High-Resolution Textures**: 2048x2048 procedurally generated textures with normal maps
+- **Rich Environmental Objects**: 150+ interactive objects per biome (trees, buildings, characters)
+- **Advanced Terrain**: Biome-specific height patterns with geological features
+- **Atmospheric Lighting**: Biome-appropriate lighting and fog effects
+- **Seamless Switching**: Runtime biome switching with complete environment regeneration
 
 ## Controls
 
@@ -37,6 +39,7 @@ This demo showcases multiple AstraWeave engine features in one interactive 3D sc
 | **T** | Teleport sphere to camera position |
 | **1** | Switch to grassland texture pack |
 | **2** | Switch to desert texture pack |
+| **3** | Switch to forest texture pack |
 | **Esc** | Exit demo |
 
 ## Running the Demo

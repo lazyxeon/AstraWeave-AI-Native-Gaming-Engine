@@ -198,8 +198,8 @@ fn synth_sand(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let fine_grains = fbm(u * 4.0, v * 4.0, seed ^ 0xc0ff33, 7, 2.0, 0.5);
             let dune_patterns = fbm(u * 0.3, v * 0.3, seed ^ 0xfade01, 4, 2.0, 0.6);
             let wind_ripples = fbm(u * 12.0, v * 2.0, seed ^ 0x7ead33, 5, 2.0, 0.4);
-            let large_formations = fbm(u * 0.1, v * 0.1, seed ^ 0xbeach, 3, 2.0, 0.7);
-            let micro_detail = fbm(u * 16.0, v * 16.0, seed ^ 0x5and1, 4, 2.0, 0.3);
+            let large_formations = fbm(u * 0.1, v * 0.1, seed ^ 0xbeac44, 3, 2.0, 0.7);
+            let micro_detail = fbm(u * 16.0, v * 16.0, seed ^ 0x5a9d17, 4, 2.0, 0.3);
             
             // Combine patterns for realistic sand height variation
             let height = (0.5 + 0.25 * fine_grains + 0.2 * dune_patterns + 0.15 * wind_ripples 
@@ -211,7 +211,7 @@ fn synth_sand(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let base_b = 135.0 + 30.0 * height;
             
             // Add mineral deposits and color variation
-            let mineral_factor = fbm(u * 0.7, v * 0.7, seed ^ 0xmin3ral, 3, 2.0, 0.6);
+            let mineral_factor = fbm(u * 0.7, v * 0.7, seed ^ 0x9abe7a, 3, 2.0, 0.6);
             let iron_tint = if mineral_factor > 0.6 { 0.15 } else { 0.0 };
             
             let r = (base_r + iron_tint * 20.0).min(255.0) as u8;
@@ -234,9 +234,9 @@ fn synth_stone(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             // Enhanced stone patterns with geological realism
             let veins = fbm(u * 1.6, v * 1.3, seed ^ 0x7777, 7, 2.1, 0.5);
             let base = fbm(u, v, seed ^ 0x1111, 6, 2.0, 0.55);
-            let cracks = fbm(u * 3.2, v * 3.2, seed ^ 0xcrack, 5, 2.0, 0.4);
-            let weathering = fbm(u * 0.5, v * 0.5, seed ^ 0xweath, 4, 2.0, 0.6);
-            let fine_texture = fbm(u * 8.0, v * 8.0, seed ^ 0xfine, 4, 2.0, 0.3);
+            let cracks = fbm(u * 3.2, v * 3.2, seed ^ 0xc7ac4, 5, 2.0, 0.4);
+            let weathering = fbm(u * 0.5, v * 0.5, seed ^ 0xaea754, 4, 2.0, 0.6);
+            let fine_texture = fbm(u * 8.0, v * 8.0, seed ^ 0xf19e7, 4, 2.0, 0.3);
             
             // Combine for realistic stone height variation
             let height = (0.55 + 0.3 * base + 0.2 * veins - 0.1 * cracks 
@@ -248,7 +248,7 @@ fn synth_stone(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let crack_darkness = if cracks > 0.7 { -20.0 } else { 0.0 };
             
             // Color variation for different stone types
-            let stone_type = fbm(u * 0.2, v * 0.2, seed ^ 0xtype, 2, 2.0, 0.5);
+            let stone_type = fbm(u * 0.2, v * 0.2, seed ^ 0x79e34, 2, 2.0, 0.5);
             let (r_tint, g_tint, b_tint) = if stone_type > 0.3 {
                 (10.0, 5.0, -5.0) // Slightly warmer stone
             } else if stone_type < -0.3 {
@@ -311,11 +311,11 @@ fn synth_forest_floor(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8
             let v = y as f32 / h as f32 * 24.0;
             
             // Multi-layered forest floor composition
-            let leaf_litter = fbm(u * 2.5, v * 2.5, seed ^ 0xleaf, 6, 2.0, 0.5);
-            let moss_patches = fbm(u * 1.2, v * 1.2, seed ^ 0xmoss, 5, 2.0, 0.6);
+            let leaf_litter = fbm(u * 2.5, v * 2.5, seed ^ 0x1eaf7, 6, 2.0, 0.5);
+            let moss_patches = fbm(u * 1.2, v * 1.2, seed ^ 0x90557, 5, 2.0, 0.6);
             let soil_base = fbm(u * 0.8, v * 0.8, seed ^ 0x5011, 4, 2.0, 0.55);
-            let twigs_debris = fbm(u * 6.0, v * 6.0, seed ^ 0x7w1g, 4, 2.0, 0.4);
-            let decomposition = fbm(u * 0.3, v * 0.3, seed ^ 0xdecay, 3, 2.0, 0.7);
+            let twigs_debris = fbm(u * 6.0, v * 6.0, seed ^ 0x791a7, 4, 2.0, 0.4);
+            let decomposition = fbm(u * 0.3, v * 0.3, seed ^ 0xdeca7, 3, 2.0, 0.7);
             
             // Height variation from organic matter
             let height = (0.5 + 0.25 * leaf_litter + 0.2 * moss_patches + 0.15 * soil_base
