@@ -6741,6 +6741,7 @@ dependencies = [
  "rapier3d",
  "rodio",
  "serde",
+ "serde_json",
  "toml",
  "wgpu",
  "winit",
