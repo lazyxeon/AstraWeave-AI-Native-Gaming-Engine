@@ -34,6 +34,21 @@ struct GpuCamera {
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct PostParams {
+    exposure: f32,
+    _pad: [f32; 3],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct BloomParams {
+    threshold: f32,
+    intensity: f32,
+    _pad: [f32; 2],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct InstanceRaw {
     model: [f32; 16],
     color: [f32; 4],
@@ -56,6 +71,10 @@ struct RenderStuff {
     instance_count: u32,
     msaa_samples: u32,
     msaa_color_view: Option<wgpu::TextureView>,
+    // HDR offscreen color for post-processing
+    hdr_tex: wgpu::Texture,
+    hdr_view: wgpu::TextureView,
+    hdr_msaa_view: Option<wgpu::TextureView>,
     // Shadow mapping resources
     shadow_view: wgpu::TextureView,
     shadow_sampler: wgpu::Sampler,
@@ -67,6 +86,8 @@ struct RenderStuff {
     // Texture resources
     ground_texture: Option<LoadedTexture>,
     texture_bind_group_layout: wgpu::BindGroupLayout,
+    // Post/tonemap params
+    exposure_buf: wgpu::Buffer,
     ground_bind_group: Option<wgpu::BindGroup>,
     ground_normal: Option<LoadedTexture>,
     ground_mra: Option<LoadedTexture>,
@@ -84,6 +105,12 @@ struct RenderStuff {
     forest_albedo: Option<LoadedTexture>,
     forest_normal: Option<LoadedTexture>,
     forest_mra: Option<LoadedTexture>,
+    // Post-processing resources
+    post_pipeline: wgpu::RenderPipeline,
+    post_bg: wgpu::BindGroup,
+    post_bgl: wgpu::BindGroupLayout,
+    post_sampler: wgpu::Sampler,
+    bloom_ub: wgpu::Buffer,
 }
 
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
@@ -474,6 +501,9 @@ struct UiState {
     physics_paused: bool,
     camera_speed: f32,
     resolution_scale: f32,
+    exposure: f32,
+    bloom_threshold: f32,
+    bloom_intensity: f32,
     fake_ao: bool,
     fake_reflections: bool,
     fps_text: String,
@@ -491,6 +521,9 @@ impl Default for UiState {
             physics_paused: false,
             camera_speed: 8.0,
             resolution_scale: 1.0,
+            exposure: 1.0,
+        bloom_threshold: 0.7,
+        bloom_intensity: 0.6,
             fake_ao: true,
             fake_reflections: false,
             fps_text: String::new(),
@@ -1857,6 +1890,60 @@ async fn run() -> Result<()> {
                                             }
                                         }
                                     }
+                                    KeyCode::Equal => { // '+' to increase exposure
+                                        if pressed {
+                                            ui.exposure = (ui.exposure * 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::NumpadAdd => { // Numpad '+'
+                                        if pressed {
+                                            ui.exposure = (ui.exposure * 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::Minus => { // '-' to decrease exposure
+                                        if pressed {
+                                            ui.exposure = (ui.exposure / 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::NumpadSubtract => { // Numpad '-'
+                                        if pressed {
+                                            ui.exposure = (ui.exposure / 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::Digit0 => { // Reset exposure to default
+                                        if pressed {
+                                            ui.exposure = 1.0;
+                                            println!("Exposure reset to {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::BracketLeft => { // decrease bloom threshold
+                                        if pressed {
+                                            ui.bloom_threshold = (ui.bloom_threshold - 0.05).clamp(0.0, 5.0);
+                                            println!("Bloom threshold: {:.2}", ui.bloom_threshold);
+                                        }
+                                    }
+                                    KeyCode::BracketRight => { // increase bloom threshold
+                                        if pressed {
+                                            ui.bloom_threshold = (ui.bloom_threshold + 0.05).clamp(0.0, 5.0);
+                                            println!("Bloom threshold: {:.2}", ui.bloom_threshold);
+                                        }
+                                    }
+                                    KeyCode::Semicolon => { // decrease bloom intensity
+                                        if pressed {
+                                            ui.bloom_intensity = (ui.bloom_intensity - 0.05).clamp(0.0, 2.0);
+                                            println!("Bloom intensity: {:.2}", ui.bloom_intensity);
+                                        }
+                                    }
+                                    KeyCode::Quote => { // increase bloom intensity
+                                        if pressed {
+                                            ui.bloom_intensity = (ui.bloom_intensity + 0.05).clamp(0.0, 2.0);
+                                            println!("Bloom intensity: {:.2}", ui.bloom_intensity);
+                                        }
+                                    }
                                     _ => {}
                                 }
                             }
@@ -1907,6 +1994,62 @@ async fn run() -> Result<()> {
                                 render.msaa_samples,
                             ))
                         } else { None };
+
+                        // Recreate HDR targets for post-processing
+                        let hdr_size = wgpu::Extent3d {
+                            width: render.surface_cfg.width,
+                            height: render.surface_cfg.height,
+                            depth_or_array_layers: 1,
+                        };
+                        let hdr_mips = mip_level_count_for(hdr_size);
+                        render.hdr_tex = render.device.create_texture(&wgpu::TextureDescriptor {
+                            label: Some("hdr-tex"),
+                            size: hdr_size,
+                            mip_level_count: hdr_mips,
+                            sample_count: 1,
+                            dimension: wgpu::TextureDimension::D2,
+                            format: wgpu::TextureFormat::Rgba16Float,
+                            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                                | wgpu::TextureUsages::TEXTURE_BINDING
+                                | wgpu::TextureUsages::COPY_SRC,
+                            view_formats: &[],
+                        });
+                        render.hdr_view = render
+                            .hdr_tex
+                            .create_view(&wgpu::TextureViewDescriptor::default());
+                        render.hdr_msaa_view = if render.msaa_samples > 1 {
+                            let msaa_tex = render.device.create_texture(&wgpu::TextureDescriptor {
+                                label: Some("hdr-msaa"),
+                                size: hdr_size,
+                                mip_level_count: 1,
+                                sample_count: render.msaa_samples,
+                                dimension: wgpu::TextureDimension::D2,
+                                format: wgpu::TextureFormat::Rgba16Float,
+                                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                                view_formats: &[],
+                            });
+                            Some(msaa_tex.create_view(&wgpu::TextureViewDescriptor::default()))
+                        } else {
+                            None
+                        };
+
+                        // Recreate post bind group to point at new HDR view
+                        render.post_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                            label: Some("post-bg"),
+                            layout: &render.post_bgl,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(&render.hdr_view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(&render.post_sampler),
+                                },
+                                wgpu::BindGroupEntry { binding: 2, resource: render.exposure_buf.as_entire_binding() },
+                                wgpu::BindGroupEntry { binding: 3, resource: render.bloom_ub.as_entire_binding() },
+                            ],
+                        });
 
                         // Update UI info with character count
                         ui.info_text = format!(
@@ -1962,6 +2105,13 @@ async fn run() -> Result<()> {
                         render
                             .queue
                             .write_buffer(&render.camera_ub, 0, bytemuck::bytes_of(&cam));
+
+                        // Update exposure uniform buffer from UI state
+                        let post = PostParams { exposure: ui.exposure, _pad: [0.0; 3] };
+                        render.queue.write_buffer(&render.exposure_buf, 0, bytemuck::bytes_of(&post));
+                        // Update bloom uniform
+                        let bloom = BloomParams { threshold: ui.bloom_threshold, intensity: ui.bloom_intensity, _pad: [0.0; 2] };
+                        render.queue.write_buffer(&render.bloom_ub, 0, bytemuck::bytes_of(&bloom));
 
                         // Prepare command encoder (reused for shadow and main passes)
                         let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame-encoder") });
@@ -2021,17 +2171,27 @@ async fn run() -> Result<()> {
                         let view = frame
                             .texture
                             .create_view(&wgpu::TextureViewDescriptor::default());
+                        // Main pass into HDR offscreen target (with MSAA resolve if enabled)
                         {
+                            let color_view = render
+                                .hdr_msaa_view
+                                .as_ref()
+                                .unwrap_or(&render.hdr_view);
+                            let resolve_target = if render.msaa_samples > 1 {
+                                Some(&render.hdr_view)
+                            } else {
+                                None
+                            };
                             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                 label: Some("main-pass"),
                                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: render.msaa_color_view.as_ref().unwrap_or(&view),
-                                    resolve_target: if render.msaa_samples > 1 { Some(&view) } else { None },
+                                    view: color_view,
+                                    resolve_target,
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.4,  // Sky color that matches procedural sky
-                                            g: 0.6,  // to eliminate void appearance
-                                            b: 0.9,  // if skybox has any gaps
+                                            r: 0.4,
+                                            g: 0.6,
+                                            b: 0.9,
                                             a: 1.0,
                                         }),
                                         store: wgpu::StoreOp::Store,
@@ -2052,27 +2212,26 @@ async fn run() -> Result<()> {
                             });
                             rp.set_pipeline(&render.pipeline);
                             rp.set_bind_group(0, &render.camera_bg, &[]);
-                            if let Some(ref texture_bg) = render.ground_bind_group { rp.set_bind_group(1, texture_bg, &[]); }
+                            if let Some(ref texture_bg) = render.ground_bind_group {
+                                rp.set_bind_group(1, texture_bg, &[]);
+                            }
                             rp.set_bind_group(2, &render.shadow_bg, &[]);
                             rp.set_bind_group(3, &render.light_bg, &[]);
-                            // Render each mesh type batch efficiently
-                            // Render skybox first with special depth handling
+                            // Render skybox first
                             for batch in &instance_batches {
                                 if batch.mesh_type == MeshType::Skybox {
                                     if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
-                                        // Upload skybox instances to the instance buffer
                                         render.queue.write_buffer(
                                             &render.instance_vb,
                                             0,
                                             bytemuck::cast_slice(&batch.instances),
                                         );
-                                        
-                                        // Set up rendering for skybox - render at far plane
                                         rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                        rp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                                        
-                                        // Draw skybox
+                                        rp.set_index_buffer(
+                                            mesh.index_buffer.slice(..),
+                                            wgpu::IndexFormat::Uint32,
+                                        );
                                         if !batch.instances.is_empty() {
                                             rp.draw_indexed(
                                                 0..mesh.index_count,
@@ -2083,24 +2242,21 @@ async fn run() -> Result<()> {
                                     }
                                 }
                             }
-                            
-                            // Render all other mesh types after skybox
+                            // Render other mesh batches
                             for batch in &instance_batches {
                                 if batch.mesh_type != MeshType::Skybox {
                                     if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
-                                        // Upload this batch's instances to the instance buffer
                                         render.queue.write_buffer(
                                             &render.instance_vb,
                                             0,
                                             bytemuck::cast_slice(&batch.instances),
                                         );
-                                        
-                                        // Set up rendering for this mesh type
                                         rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                        rp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                                        
-                                        // Draw this batch
+                                        rp.set_index_buffer(
+                                            mesh.index_buffer.slice(..),
+                                            wgpu::IndexFormat::Uint32,
+                                        );
                                         if !batch.instances.is_empty() {
                                             rp.draw_indexed(
                                                 0..mesh.index_count,
@@ -2112,7 +2268,51 @@ async fn run() -> Result<()> {
                                 }
                             }
                         }
+
+                        // Submit main pass before generating mips
                         render.queue.submit(Some(encoder.finish()));
+
+                        // Generate mips for HDR color (used by bloom post)
+                        let hdr_size = wgpu::Extent3d {
+                            width: render.surface_cfg.width,
+                            height: render.surface_cfg.height,
+                            depth_or_array_layers: 1,
+                        };
+                        generate_mipmaps(
+                            &render.device,
+                            &render.queue,
+                            &render.hdr_tex,
+                            wgpu::TextureFormat::Rgba16Float,
+                            hdr_size,
+                            mip_level_count_for(hdr_size),
+                        );
+
+                        // Post pass: composite bloom to the swapchain
+                        let mut encoder2 = render
+                            .device
+                            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                                label: Some("post-encoder"),
+                            });
+                        {
+                            let mut rp = encoder2.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("post-pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+                            rp.set_pipeline(&render.post_pipeline);
+                            rp.set_bind_group(0, &render.post_bg, &[]);
+                            rp.draw(0..3, 0..1);
+                        }
+                        render.queue.submit(Some(encoder2.finish()));
                         frame.present();
                     }
                     _ => {}
@@ -2619,6 +2819,34 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         None
     };
 
+    // HDR offscreen color target with mips for bloom
+    let hdr_size = wgpu::Extent3d { width: surface_cfg.width, height: surface_cfg.height, depth_or_array_layers: 1 };
+    let hdr_mips = mip_level_count_for(hdr_size);
+    let hdr_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("hdr-tex"),
+        size: hdr_size,
+        mip_level_count: hdr_mips,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba16Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC,
+        view_formats: &[],
+    });
+    let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let hdr_msaa_view = if msaa_samples > 1 {
+        let tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("hdr-msaa"),
+            size: hdr_size,
+            mip_level_count: 1,
+            sample_count: msaa_samples,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        Some(tex.create_view(&wgpu::TextureViewDescriptor::default()))
+    } else { None };
+
     // Create all meshes
     let meshes = create_all_meshes(&device);
 
@@ -2629,26 +2857,51 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    // Create exposure uniform buffer (PostParams)
+    let exposure_init = PostParams { exposure: 1.0, _pad: [0.0; 3] };
+    let exposure_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("exposure-ub"),
+        contents: bytemuck::bytes_of(&exposure_init),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
     let camera_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("camera-layout"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
-            count: None,
-        }],
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
     });
     let camera_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("camera-bg"),
         layout: &camera_bg_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: camera_ub.as_entire_binding(),
-        }],
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_ub.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: exposure_buf.as_entire_binding(),
+            },
+        ],
     });
 
     // Light uniform and bind group (holds light view-projection)
@@ -2675,6 +2928,128 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         label: Some("light-bg"),
         layout: &light_bg_layout,
         entries: &[wgpu::BindGroupEntry { binding: 0, resource: light_ub.as_entire_binding() }],
+    });
+
+    // Post-processing: bloom bind group layout and resources
+    let post_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("post-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry { // hdr color
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry { // sampler
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+            // exposure params in post
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry { // bloom params
+                binding: 3,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                count: None,
+            },
+        ],
+    });
+    let post_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("post-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
+    let bloom_init = BloomParams { threshold: 0.7, intensity: 0.6, _pad: [0.0; 2] };
+    let bloom_ub = device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("bloom-ub"), contents: bytemuck::bytes_of(&bloom_init), usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST });
+    let post_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("post-bg"),
+        layout: &post_bgl,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&hdr_view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&post_sampler) },
+            wgpu::BindGroupEntry { binding: 2, resource: exposure_buf.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: bloom_ub.as_entire_binding() },
+        ],
+    });
+
+    // Fullscreen post shader combining exposure-tonemapped HDR with thresholded bloom from mips
+        const POST_SHADER: &str = r#"
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
+  var out: VsOut; let xy = vec2<f32>(f32(i32(vi)-1), f32((i32(vi)&1)*2-1));
+  out.pos = vec4<f32>(xy, 0.0, 1.0); out.uv = vec2<f32>((xy.x+1.0)*0.5, 1.0-(xy.y+1.0)*0.5); return out;
+}
+@group(0) @binding(0) var hdr_tex: texture_2d<f32>;
+@group(0) @binding(1) var hdr_smp: sampler;
+struct PostParams { exposure: f32; _pad: vec3<f32>; };
+@group(0) @binding(2) var<uniform> post: PostParams;
+struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
+@group(0) @binding(3) var<uniform> bloom: Bloom;
+@fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
+  // base color from hdr
+    var base = textureSample(hdr_tex, hdr_smp, in.uv).rgb;
+  // multi-mip bloom sampling
+  var bloom_sum = vec3<f32>(0.0);
+  var w = 0.0;
+  let levels = 5;
+  for (var i: i32 = 1; i <= levels; i = i + 1) {
+    let lod = f32(i);
+    let c = textureSampleLevel(hdr_tex, hdr_smp, in.uv, lod).rgb;
+    let luma = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let m = max(luma - bloom.threshold, 0.0);
+    let val = c * (m / max(luma + 1e-4, 1e-4));
+    let weight = 1.0 / (1.0 + f32(i));
+    bloom_sum += val * weight; w += weight;
+  }
+  let bloom_col = bloom_sum / max(w, 1e-4) * bloom.intensity;
+    var color = base + bloom_col;
+    // Auto-exposure: estimate average scene luminance from a high mip level near 1x1
+    // Sample a small kernel around uv at a large LOD (hardware clamps to max level)
+    let offs: array<vec2<f32>, 9> = array<vec2<f32>, 9>(
+        vec2<f32>(-0.25, -0.25), vec2<f32>(0.0, -0.25), vec2<f32>(0.25, -0.25),
+        vec2<f32>(-0.25,  0.0 ), vec2<f32>(0.0,  0.0 ), vec2<f32>(0.25,  0.0 ),
+        vec2<f32>(-0.25,  0.25), vec2<f32>(0.0,  0.25), vec2<f32>(0.25,  0.25)
+    );
+    var logLumSum = 0.0;
+    let lodProbe = 8.0; // large LOD; will clamp to highest mip available
+    for (var i: i32 = 0; i < 9; i = i + 1) {
+        let uvp = clamp(in.uv + offs[i], vec2<f32>(0.0), vec2<f32>(1.0));
+        let samp = textureSampleLevel(hdr_tex, hdr_smp, uvp, lodProbe).rgb;
+        let lum = max(dot(samp, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4);
+        logLumSum = logLumSum + log(lum);
+    }
+    let logAvg = logLumSum / 9.0;
+    let avgLum = exp(logAvg);
+    let targetGray = 0.18;
+    let autoScale = clamp(targetGray / avgLum, 0.25, 4.0);
+
+    // Apply manual exposure scaled by auto exposure factor, then tone map
+    color = color * (post.exposure * autoScale);
+    let aA = 2.51; let bA = 0.03; let cA = 2.43; let dA = 0.59; let eA = 0.14;
+    let tone = clamp((color * (aA * color + bA)) / (color * (cA * color + dA) + eA), vec3<f32>(0.0), vec3<f32>(1.0));
+    return vec4<f32>(tone, 1.0);
+}
+"#;
+    let post_sm = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("post-sm"), source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER)) });
+    let post_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("post-pl"), bind_group_layouts: &[&post_bgl], push_constant_ranges: &[] });
+    let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("post-pipeline"),
+        layout: Some(&post_pl),
+        vertex: wgpu::VertexState { module: &post_sm, entry_point: "vs", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() },
+        fragment: Some(wgpu::FragmentState { module: &post_sm, entry_point: "fs", targets: &[Some(wgpu::ColorTargetState { format: surface_format, blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL })], compilation_options: wgpu::PipelineCompilationOptions::default() }),
+        primitive: wgpu::PrimitiveState::default(), depth_stencil: None, multisample: wgpu::MultisampleState::default(), multiview: None,
     });
 
     // Texture bind group layout (for PBR: albedo + normal + MRA + emissive)
@@ -3154,7 +3529,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             module: &shader_module,
             entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState {
-                format: surface_format,
+                format: wgpu::TextureFormat::Rgba16Float,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
@@ -3196,6 +3571,9 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         instance_count: 0, // Will be updated dynamically
         msaa_samples,
         msaa_color_view,
+        hdr_tex,
+        hdr_view,
+        hdr_msaa_view,
         shadow_view,
         shadow_sampler,
         shadow_pipeline,
@@ -3205,6 +3583,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         shadow_bg,
         ground_texture,
         texture_bind_group_layout,
+    exposure_buf,
         ground_bind_group,
         ground_normal,
         ground_mra,
@@ -3222,6 +3601,11 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         forest_albedo,
         forest_normal,
         forest_mra,
+        post_pipeline,
+        post_bg,
+        post_bgl,
+        post_sampler,
+        bloom_ub,
     })
 }
 
@@ -3303,6 +3687,8 @@ struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
 
 @group(0) @binding(0) var<uniform> u_camera: Camera;
+struct PostParams { exposure: f32; _pad0: vec3<f32>; } // 16-byte aligned
+@group(0) @binding(1) var<uniform> u_post: PostParams;
 @group(1) @binding(0) var ground_texture: texture_2d<f32>;
 @group(1) @binding(1) var ground_sampler: sampler;
 @group(1) @binding(2) var ground_normal: texture_2d<f32>;
@@ -3364,19 +3750,42 @@ fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
     // Transform from NDC (-1..1) to 0..1
     let uv = proj.xy * 0.5 + vec2<f32>(0.5, 0.5);
     let depth = proj.z * 0.5 + 0.5;
-    // Simple receiver bias to reduce acne
+    // Receiver bias to reduce acne (slightly angle-dependent)
     let bias = max(0.0005 * (1.0 - dot(N, L)), 0.0005);
     // Early out if outside light frustum
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return 0.0; }
+
+    // Rotated Poisson-disk PCF (16 taps)
+    let texel = 1.0 / 2048.0; // matches shadow map size
+    // Base Poisson points in unit disk
+    let poisson: array<vec2<f32>, 16> = array<vec2<f32>, 16>(
+        vec2<f32>(-0.94201624, -0.39906216), vec2<f32>(0.94558609, -0.76890725),
+        vec2<f32>(-0.09418410, -0.92938870), vec2<f32>(0.34495938,  0.29387760),
+        vec2<f32>(-0.91588581,  0.45771432), vec2<f32>(-0.81544232, -0.87912464),
+        vec2<f32>(-0.38277543,  0.27676845), vec2<f32>(0.97484398,  0.75648379),
+        vec2<f32>(0.44323325,  -0.97511554), vec2<f32>(0.53742981, -0.47373420),
+        vec2<f32>(-0.26496911, -0.41893023), vec2<f32>(0.79197514,  0.19090188),
+        vec2<f32>(-0.24188840,  0.99706507), vec2<f32>(-0.81409955, 0.91437590),
+        vec2<f32>(0.19984126,   0.78641367), vec2<f32>(0.14383161, -0.14100790)
+    );
+
+    // Random rotation per-fragment derived from UV to reduce banding
+    let rnd = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let angle = rnd * 6.2831853; // 2*pi
+    let c = cos(angle);
+    let s = sin(angle);
+    let rot = mat2x2<f32>(vec2<f32>(c, s), vec2<f32>(-s, c)); // [ [c,-s],[s,c] ] in column form
+
+    // Filter radius: slightly wider at grazing angles to hide stair-steps
+    let radius = (2.0 + (1.0 - clamp(dot(N, L), 0.0, 1.0)) * 2.0) * texel;
+
     var occl: f32 = 0.0;
-    let texel = 1.0 / 2048.0; // matches shadow_size
-    for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
-        for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
-            let offs = vec2<f32>(f32(dx), f32(dy)) * texel * 1.5;
-            occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + offs, depth - bias));
-        }
+    for (var i: i32 = 0; i < 16; i = i + 1) {
+        let p = rot * poisson[i];
+        let offs = p * radius * 2.5; // scale disk to a few texels
+        occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + offs, depth - bias));
     }
-    return occl / 9.0;
+    return occl / 16.0;
 }
 
 // by material: 0=grass,1=dirt,2=stone,3=sand,4=forest
@@ -4047,20 +4456,26 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         let noise_mod = (n - 0.5) * 0.06; // ~[-0.03, 0.03]
         color = color * (1.0 + noise_mod);
 
-    // Tone map (ACES approx). Keep in linear; surface format is sRGB
-        let aA = 2.51;
-        let bA = 0.03;
-        let cA = 2.43;
-        let dA = 0.59;
-        let eA = 0.14;
-    var tone = clamp((color * (aA * color + bA)) / (color * (cA * color + dA) + eA), vec3<f32>(0.0), vec3<f32>(1.0));
-    col = tone;
+        // Exponential height fog with simple Rayleigh/Mie approximation (apply pre-tone-map)
+        let cam_height = 5.0; // TODO: pass actual camera height
+        let height_falloff = 0.02;
+        let base_density = 0.02;
+        let view_dir = normalize(in.view_dir);
+        let distance_view = length(in.world_pos - vec3<f32>(0.0, cam_height, 0.0));
+        let altitude = clamp(in.world_pos.y, -50.0, 500.0);
+        let height_term = exp(-height_falloff * (altitude - cam_height));
+        let fog_amount = 1.0 - exp(-base_density * height_term * distance_view);
+        let cosTheta = clamp(dot(-view_dir, L), -1.0, 1.0);
+        let rayleigh_phase = 0.75 * (1.0 + cosTheta * cosTheta);
+        let mie_g = 0.5;
+        let mie_phase = 1.0 / pow(1.0 + mie_g * mie_g - 2.0 * mie_g * cosTheta, 1.5);
+        let fog_sky = sky_color(normalize(in.world_pos), time);
+        let fog_color = fog_sky * 0.6 * rayleigh_phase + vec3<f32>(0.9, 0.9, 0.85) * 0.05 * mie_phase;
+        color = mix(color, fog_color, clamp(fog_amount, 0.0, 1.0));
 
-        // Add atmospheric perspective
-    let distance = length(in.world_pos);
-    let fog_factor = clamp(distance / 80.0, 0.0, 1.0);
-    let fog_color = sky_color(normalize(in.world_pos), time);
-        col = mix(col, fog_color, fog_factor * 0.2);
+        // Leave color in linear HDR here; post pass will apply exposure + tone mapping
+        col = color;
+        // Atmospheric perspective now handled by height fog above (pre-tonemap)
     
   } else if (dist_to_water < 0.3 && terrain_height < -0.5) {
     // Water rendering for rivers and lakes
