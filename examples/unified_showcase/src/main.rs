@@ -555,6 +555,11 @@ fn load_texture_pack(path: &Path) -> Result<TexturePack> {
     Ok(pack)
 }
 
+fn mip_level_count_for(size: wgpu::Extent3d) -> u32 {
+    let max_dim = size.width.max(size.height).max(size.depth_or_array_layers);
+    (32 - max_dim.leading_zeros()).max(1)
+}
+
 fn load_texture_from_bytes_with_format(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
@@ -577,14 +582,15 @@ fn load_texture_from_bytes_with_format(
         depth_or_array_layers: 1,
     };
 
+    let mip_levels = mip_level_count_for(size);
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some(label),
         size,
-        mip_level_count: 1,
+        mip_level_count: mip_levels,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });
 
@@ -603,6 +609,9 @@ fn load_texture_from_bytes_with_format(
         },
         size,
     );
+
+    // Generate mipmaps using a simple render pass downsampling
+    generate_mipmaps(device, queue, &texture, format, size, mip_levels);
 
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -623,6 +632,159 @@ fn load_texture_from_bytes_with_format(
         view,
         sampler,
     })
+}
+
+fn generate_mipmaps(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    texture: &wgpu::Texture,
+    format: wgpu::TextureFormat,
+    size: wgpu::Extent3d,
+    mip_levels: u32,
+) {
+    if mip_levels <= 1 {
+        return;
+    }
+
+    // Shader to sample from previous mip level and write into current target level
+    const MIPMAP_SHADER: &str = r#"
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
+  var out: VsOut;
+  let xy = vec2<f32>(f32(i32(vi) - 1), f32((i32(vi) & 1) * 2 - 1));
+  out.pos = vec4<f32>(xy, 0.0, 1.0);
+  out.uv = vec2<f32>( (xy.x+1.0)*0.5, 1.0 - (xy.y+1.0)*0.5 );
+  return out;
+}
+
+@group(0) @binding(0) var src_tex: texture_2d<f32>;
+@group(0) @binding(1) var src_smp: sampler;
+
+@fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
+  // Simple linear sample; hardware does the filtering
+  let c = textureSample(src_tex, src_smp, in.uv);
+  return c;
+}
+"#;
+
+    let sm = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("mipmap-gen-shader"),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(MIPMAP_SHADER)),
+    });
+
+    let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("mipmap-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ],
+    });
+
+    let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("mipmap-pl"),
+        bind_group_layouts: &[&bgl],
+        push_constant_ranges: &[],
+    });
+
+    let rp = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("mipmap-pipeline"),
+        layout: Some(&pl),
+        vertex: wgpu::VertexState { module: &sm, entry_point: "vs", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() },
+        fragment: Some(wgpu::FragmentState {
+            module: &sm,
+            entry_point: "fs",
+            targets: &[Some(wgpu::ColorTargetState { format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+    });
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("mipmap-linear-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
+
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("mipmap-encoder") });
+
+    let mut src_w = size.width;
+    let mut src_h = size.height;
+    for level in 1..mip_levels {
+    // next level dimensions
+        src_w = (src_w.max(1) / 2).max(1);
+        src_h = (src_h.max(1) / 2).max(1);
+
+        let src_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("mip-src-view"),
+            format: Some(format),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: level - 1,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: Some(1),
+        });
+
+        let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("mipmap-bg"),
+            layout: &bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&src_view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sampler) },
+            ],
+        });
+
+        let dst_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("mip-dst-view"),
+            format: Some(format),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: level,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: Some(1),
+        });
+
+        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("mipmap-pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &dst_view,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        rpass.set_pipeline(&rp);
+        rpass.set_bind_group(0, &bind, &[]);
+        rpass.draw(0..3, 0..1);
+        drop(rpass);
+    }
+
+    queue.submit(Some(encoder.finish()));
 }
 
 fn load_texture_from_file(
@@ -3199,13 +3361,11 @@ fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_wid
     let w_smooth = pow(w, vec3<f32>(transition_width));
     let wsum = max(w_smooth.x + w_smooth.y + w_smooth.z, 1e-4);
     let wnorm = w_smooth / wsum;
-    
-    // Color blending with gamma correction for more realistic mixing
-    let col_linear = pow(a.c, vec3<f32>(2.2)) * wnorm.x + 
-                     pow(b.c, vec3<f32>(2.2)) * wnorm.y + 
-                     pow(c.c, vec3<f32>(2.2)) * wnorm.z;
-    let col = pow(col_linear, vec3<f32>(1.0/2.2));
-    
+
+    // Colors are already sampled in linear space (sRGB textures are linearized by the sampler),
+    // so blend directly in linear space without manual gamma conversions
+    let col = a.c * wnorm.x + b.c * wnorm.y + c.c * wnorm.z;
+
     // Enhanced normal blending with proper tangent space interpolation
     let na = normalize(a.n * 2.0 - 1.0);
     let nb = normalize(b.n * 2.0 - 1.0);
@@ -3557,7 +3717,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
                 let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
                 let shadow = sample_shadow(in.world_pos, N, L);
                 col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
-                return vec4<f32>(pow(col, vec3<f32>(1.0/2.2)), 1.0);
+                // Output linear color; surface is sRGB so conversion happens on write
+                return vec4<f32>(col, 1.0);
     }
         else if (in.mesh_type == 2u) { // House/Structure (walls vs roof)
                 let ws_pos = in.world_pos;
@@ -3604,7 +3765,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
                 let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
                 let shadow = sample_shadow(in.world_pos, N, L);
                 col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
-                return vec4<f32>(pow(col, vec3<f32>(1.0/2.2)), 1.0);
+                return vec4<f32>(col, 1.0);
     }
         else if (in.mesh_type == 3u) { // Character - simple PBR triplanar with tint
                 let ws_pos = in.world_pos;
@@ -3642,7 +3803,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
                 let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
                 let shadow = sample_shadow(in.world_pos, N, L);
                 col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
-                return vec4<f32>(pow(col, vec3<f32>(1.0/2.2)), 1.0);
+                return vec4<f32>(col, 1.0);
     }
   else if (in.mesh_type == 4u) { // Skybox
     // Use procedural sky color based on view direction
@@ -3840,15 +4001,14 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let detail_pattern = f32((i32(cx + cz) & 1)) * 0.06;
         color = color * (0.96 + detail_pattern);
 
-        // Tone map (ACES approx) and gamma correct
+    // Tone map (ACES approx). Keep in linear; surface format is sRGB
         let aA = 2.51;
         let bA = 0.03;
         let cA = 2.43;
         let dA = 0.59;
         let eA = 0.14;
-        var tone = clamp((color * (aA * color + bA)) / (color * (cA * color + dA) + eA), vec3<f32>(0.0), vec3<f32>(1.0));
-        tone = pow(tone, vec3<f32>(1.0/2.2));
-        col = tone;
+    var tone = clamp((color * (aA * color + bA)) / (color * (cA * color + dA) + eA), vec3<f32>(0.0), vec3<f32>(1.0));
+    col = tone;
 
         // Add atmospheric perspective
     let distance = length(in.world_pos);
