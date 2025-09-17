@@ -5,25 +5,10 @@ This demo showcases multiple AstraWeave engine features in one interactive 3D sc
 ## Features Demonstrated
 
 ### 🎮 Interactive 3D Scene
-- **Real-time 3D rendering** using WGPU with instanced geometry
-- **Dynamic camera controls** with smooth movement and mouse look
-- **Physics simulation** using Rapier3D with realistic object interactions
-- **Spatial audio system** (optional, requires `assets/sound.ogg`)
 
 ### 🔧 Engine Components
-- **Rendering System**: WGPU-based 3D graphics pipeline
-- **Physics System**: Rapier3D rigid body dynamics
-- **Navigation System**: Basic navmesh structures (expandable)
-- **Audio System**: Spatial audio with Rodio
-- **Input System**: Comprehensive keyboard and mouse controls
 
 ### 🎯 Enhanced Biome Experience
-- **Three Distinct Environments**: Grassland, Desert, and Dense Forest biomes
-- **High-Resolution Textures**: 2048x2048 procedurally generated textures with normal maps
-- **Rich Environmental Objects**: 150+ interactive objects per biome (trees, buildings, characters)
-- **Advanced Terrain**: Biome-specific height patterns with geological features
-- **Atmospheric Lighting**: Biome-appropriate lighting and fog effects
-- **Seamless Switching**: Runtime biome switching with complete environment regeneration
 
 ## Controls
 
@@ -75,22 +60,11 @@ To enable spatial audio, place an OGG audio file at `assets/sound.ogg`. The demo
 ### Architecture
 The demo follows a self-contained design pattern that can easily be adapted to use the full AstraWeave engine crates:
 
-- **Current**: Direct integration with `wgpu`, `rapier3d`, `rodio`, `winit`
-- **Future**: Can be refactored to use `astraweave-render`, `astraweave-physics`, `astraweave-audio`, etc.
 
 ### Performance
-- **Target**: 60 FPS at 1280x720
-- **Rendering**: Single-pass forward rendering with depth testing
-- **Physics**: Fixed 60Hz timestep with continuous collision detection
-- **Memory**: Efficient instanced rendering for batch geometry
 
 ### Extensibility
 The demo provides a foundation for adding:
-- Advanced rendering effects (PBR materials, lighting, shadows)
-- Complex physics interactions (joints, constraints, forces)
-- Navigation mesh pathfinding with AI agents
-- Procedural content generation
-- Networking for multiplayer scenarios
 
 ## Code Structure
 
@@ -119,26 +93,66 @@ This demo serves as a reference implementation for integrating multiple engine s
 ## Troubleshooting
 
 ### Graphics Issues
-- Ensure your GPU supports Vulkan or OpenGL
-- Update graphics drivers
-- Check console output for WGPU adapter information
 
 ### Audio Issues
-- Verify `assets/sound.ogg` exists and is a valid OGG file
-- Check system audio configuration
-- Audio is optional - demo runs without it
 
 ### Performance Issues
-- Use release build: `cargo run -p unified_showcase --release`
-- Reduce resolution scale (future UI control)
-- Close other GPU-intensive applications
 
 ## Development Notes
 
 This demo showcases the AstraWeave engine's capabilities while maintaining simplicity and readability. It serves as both a technical demonstration and a starting point for developers building games with the AstraWeave ecosystem.
 
 The implementation emphasizes:
-- **Clarity**: Well-documented, readable code
-- **Performance**: Efficient rendering and physics
-- **Extensibility**: Easy to modify and expand
-- **Best Practices**: Modern Rust patterns and engine design principles
+
+# Unified Showcase (HDR + PBR + Bloom)
+
+A UE5-inspired physically based rendering demo using a two-pass HDR pipeline with ACES-like tonemapping, auto-exposure, multi-mip bloom, soft shadows, triplanar texturing, and a cube skybox.
+
+## Build & Run (Windows PowerShell)
+
+- Build and run only this example binary:
+
+```
+cargo run -p unified_showcase --release --bin unified_showcase
+```
+
+- Optional: enable wgpu logs for troubleshooting:
+
+```
+$env:RUST_LOG = "wgpu_core=warn,wgpu=info"; cargo run -p unified_showcase --release --bin unified_showcase
+```
+
+## Controls
+
+- Movement/camera: `W/A/S/D` + mouse, right-click to look
+- Camera mode toggle: `C`
+- Physics pause: `P`
+- Teleport sphere: `T`
+- Apply impulse: `E`
+- Texture packs: `1` = grassland, `2` = desert, `3` = forest
+- Exposure: `=` to increase, `-` to decrease
+- Bloom threshold: `[` decrease, `]` increase
+- Bloom intensity: `;` decrease, `'` increase
+- Exit: `Esc`
+
+## Features
+
+- Two-pass pipeline: HDR offscreen (Rgba16Float) → post to swapchain
+- Full mip chain with runtime mip generation (used by bloom and auto-exposure)
+- ACES-like tone mapping and auto-exposure in post
+- Multi-mip bloom (thresholded, intensity adjustable)
+- Cook–Torrance GGX with Schlick Fresnel + correlated Smith
+- Triplanar sampling with micro-variation; anisotropic filtering = 16
+- 16-tap Poisson PCF soft shadows
+- Improved sky (large inverted cube skybox) and height fog
+
+## Troubleshooting
+
+- If you see validation errors about views or uniform sizes, ensure you’re on `wgpu 0.20` and use the exact bind groups shipped here; we separate a single-mip resolve view for main pass and a full-mip view for post.
+- On first run, shader compilation may take a moment; keep the window focused.
+- Avoid building the full workspace due to known broken examples. Target this bin explicitly as shown above.
+
+## Known Limitations
+
+- Some other binaries in this package may not compile; always target `--bin unified_showcase` for this demo.
+- Visuals are tuned for demonstration and may be adjusted per GPU/driver.

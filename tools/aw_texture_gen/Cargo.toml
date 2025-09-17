@@ -1,0 +1,9 @@
+[package]
+name = "aw_texture_gen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+image = { version = "0.25", default-features = false, features = ["png", "rayon", "jpeg"] }
+clap = { version = "4", features = ["derive"] }

@@ -36,7 +36,11 @@ struct GpuCamera {
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct PostParams {
     exposure: f32,
-    _pad: [f32; 3],
+    // WGSL uniform layout (std140-like): vec3 members are 16-byte aligned and sized,
+    // so a struct with `f32` then `vec3<f32>` occupies 32 bytes. Add extra padding
+    // to ensure the Rust-side buffer size matches what the shader expects.
+    _pad: [f32; 3],    // to align next field to 16B
+    _pad2: [f32; 4],   // extra 16B so total struct size is 32B
 }
 
 #[repr(C)]
@@ -73,12 +77,17 @@ struct RenderStuff {
     msaa_color_view: Option<wgpu::TextureView>,
     // HDR offscreen color for post-processing
     hdr_tex: wgpu::Texture,
+    // Full-mip view for sampling in post
     hdr_view: wgpu::TextureView,
+    // Single-mip view for render/resolve (mip 0 only)
+    hdr_resolve_view: wgpu::TextureView,
     hdr_msaa_view: Option<wgpu::TextureView>,
     // Shadow mapping resources
     shadow_view: wgpu::TextureView,
+    #[allow(dead_code)] // not read directly; used via bind group in shaders
     shadow_sampler: wgpu::Sampler,
     shadow_pipeline: wgpu::RenderPipeline,
+    #[allow(dead_code)] // tracked for rebuilds; read via shader constants
     shadow_size: u32,
     light_ub: wgpu::Buffer,
     light_bg: wgpu::BindGroup,
@@ -404,14 +413,7 @@ const CHARACTER_VERTICES: &[[f32; 3]] = &[
     [0.15, -0.5, -0.1],   // 31
 ];
 
-// Fullscreen triangle in clip-space for sky rendering (no seams, stable)
-const SKY_FS_VERTICES: &[[f32; 3]] = &[
-    [-1.0, -1.0, 0.0],
-    [3.0, -1.0, 0.0],
-    [-1.0, 3.0, 0.0],
-];
-
-const SKY_FS_INDICES: &[u16] = &[0, 1, 2];
+// (removed) Old fullscreen sky triangle constants; replaced by cube skybox
 
 const CHARACTER_INDICES: &[u16] = &[
     // Head
@@ -633,7 +635,9 @@ fn load_texture_pack(path: &Path) -> Result<TexturePack> {
 
 fn mip_level_count_for(size: wgpu::Extent3d) -> u32 {
     let max_dim = size.width.max(size.height).max(size.depth_or_array_layers);
-    (32 - max_dim.leading_zeros()).max(1)
+    // floor(log2(max_dim)) + 1 for full chain including base level
+    let max_dim = max_dim.max(1);
+    (f32::log2(max_dim as f32).floor() as u32) + 1
 }
 
 fn load_texture_from_bytes_with_format(
@@ -891,8 +895,16 @@ fn load_texture_from_file(
     let is_normal = name_lc.ends_with("_n");
     let is_mra = name_lc.ends_with("_mra");
     let format = if is_normal || is_mra {
+        println!(
+            "Inferred UNORM format (non-sRGB) for texture: {}",
+            path.display()
+        );
         wgpu::TextureFormat::Rgba8Unorm
     } else {
+        println!(
+            "Inferred sRGB format for texture: {}",
+            path.display()
+        );
         wgpu::TextureFormat::Rgba8UnormSrgb
     };
     load_texture_from_bytes_with_format(device, queue, &bytes, &path.to_string_lossy(), format)
@@ -911,7 +923,8 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
         pack.ground.texture.clone()
     };
 
-    let texture_path = Path::new("assets").join(&texture_name);
+    // Resolve the ground/albedo texture path via our asset resolution logic
+    let texture_path = resolve_asset_path(&texture_name);
     println!(
         "Loading texture pack '{}' with ground texture: {}",
         texture_pack_name,
@@ -934,31 +947,41 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("texture");
-            let npath = Path::new("assets").join(format!("{}_n.png", tex_stem));
+            let npath = resolve_asset_path(&format!("{}_n.png", tex_stem));
             let normal_tex = if npath.exists() {
+                println!("Using normal map: {}", npath.display());
                 load_texture_from_file(&render.device, &render.queue, &npath)?
             } else {
+                let default_npath = resolve_asset_path("default_n.png");
                 eprintln!(
-                    "Warning: Normal map not found at {}. Using default normal map.",
-                    npath.display()
+                    "Warning: Normal map not found at {}. Falling back to {}",
+                    npath.display(),
+                    default_npath.display()
                 );
-                // Use a default normal map (e.g., flat normal)
-                // You may need to provide a default normal map in your assets, e.g., "default_n.png"
-                let default_npath = Path::new("assets").join("default_n.png");
                 load_texture_from_file(&render.device, &render.queue, &default_npath)?
             };
 
             // Load optional MRA and emissive textures based on base texture stem
-            let mra_path = Path::new("assets").join(format!("{}_mra.png", tex_stem));
-            let emissive_path = Path::new("assets").join(format!("{}_e.png", tex_stem));
+            let mra_path = resolve_asset_path(&format!("{}_mra.png", tex_stem));
+            let emissive_path = resolve_asset_path(&format!("{}_e.png", tex_stem));
             let mra_tex = if mra_path.exists() {
+                println!("Using MRA map: {}", mra_path.display());
                 load_texture_from_file(&render.device, &render.queue, &mra_path)?
             } else {
+                eprintln!(
+                    "Info: MRA map not found at {}. Using default MRA.",
+                    mra_path.display()
+                );
                 create_default_mra_texture(&render.device, &render.queue)?
             };
             let emissive_tex = if emissive_path.exists() {
+                println!("Using emissive map: {}", emissive_path.display());
                 load_texture_from_file(&render.device, &render.queue, &emissive_path)?
             } else {
+                eprintln!(
+                    "Info: Emissive map not found at {}. Using default emissive (black).",
+                    emissive_path.display()
+                );
                 create_default_emissive_texture(&render.device, &render.queue)?
             };
 
@@ -1664,7 +1687,8 @@ async fn run() -> Result<()> {
     // Generate default textures at startup if missing (seed -> vary looks)
     let seed = 0xA57; // change to taste / hook to key for regeneration
     let out_dir = asset_dir();
-    texture_synth::ensure_textures(&out_dir.to_string_lossy(), seed, true)?;
+    // Do not overwrite existing high-fidelity assets at startup; only synthesize if missing
+    texture_synth::ensure_textures(&out_dir.to_string_lossy(), seed, false)?;
 
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
@@ -2017,6 +2041,17 @@ async fn run() -> Result<()> {
                         render.hdr_view = render
                             .hdr_tex
                             .create_view(&wgpu::TextureViewDescriptor::default());
+                        // Single-mip view (level 0) for render/resolve target
+                        render.hdr_resolve_view = render.hdr_tex.create_view(&wgpu::TextureViewDescriptor {
+                            label: Some("hdr-resolve-view"),
+                            format: Some(wgpu::TextureFormat::Rgba16Float),
+                            dimension: Some(wgpu::TextureViewDimension::D2),
+                            aspect: wgpu::TextureAspect::All,
+                            base_mip_level: 0,
+                            mip_level_count: Some(1),
+                            base_array_layer: 0,
+                            array_layer_count: Some(1),
+                        });
                         render.hdr_msaa_view = if render.msaa_samples > 1 {
                             let msaa_tex = render.device.create_texture(&wgpu::TextureDescriptor {
                                 label: Some("hdr-msaa"),
@@ -2040,6 +2075,7 @@ async fn run() -> Result<()> {
                             entries: &[
                                 wgpu::BindGroupEntry {
                                     binding: 0,
+                                    // Post samples from full-mip view
                                     resource: wgpu::BindingResource::TextureView(&render.hdr_view),
                                 },
                                 wgpu::BindGroupEntry {
@@ -2107,7 +2143,7 @@ async fn run() -> Result<()> {
                             .write_buffer(&render.camera_ub, 0, bytemuck::bytes_of(&cam));
 
                         // Update exposure uniform buffer from UI state
-                        let post = PostParams { exposure: ui.exposure, _pad: [0.0; 3] };
+                        let post = PostParams { exposure: ui.exposure, _pad: [0.0; 3], _pad2: [0.0; 4] };
                         render.queue.write_buffer(&render.exposure_buf, 0, bytemuck::bytes_of(&post));
                         // Update bloom uniform
                         let bloom = BloomParams { threshold: ui.bloom_threshold, intensity: ui.bloom_intensity, _pad: [0.0; 2] };
@@ -2173,12 +2209,14 @@ async fn run() -> Result<()> {
                             .create_view(&wgpu::TextureViewDescriptor::default());
                         // Main pass into HDR offscreen target (with MSAA resolve if enabled)
                         {
+                            // Use MSAA view if enabled; otherwise render directly to single-mip resolve view
                             let color_view = render
                                 .hdr_msaa_view
                                 .as_ref()
-                                .unwrap_or(&render.hdr_view);
+                                .unwrap_or(&render.hdr_resolve_view);
+                            // Resolve into the single-mip resolve view when MSAA is enabled
                             let resolve_target = if render.msaa_samples > 1 {
-                                Some(&render.hdr_view)
+                                Some(&render.hdr_resolve_view)
                             } else {
                                 None
                             };
@@ -2734,7 +2772,7 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshTyp
     meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, &to_u32_indices(TREE_INDICES)));
     meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, &to_u32_indices(HOUSE_INDICES)));
     meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, &to_u32_indices(CHARACTER_INDICES)));
-    meshes.insert(MeshType::Skybox, create_mesh(device, SKY_FS_VERTICES, &to_u32_indices(SKY_FS_INDICES)));
+    meshes.insert(MeshType::Skybox, create_mesh(device, SKYBOX_VERTICES, &to_u32_indices(SKYBOX_INDICES)));
     
     meshes
 }
@@ -2833,6 +2871,17 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         view_formats: &[],
     });
     let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    // Single-mip resolve/render view for mip level 0
+    let hdr_resolve_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor {
+        label: Some("hdr-resolve-view"),
+        format: Some(wgpu::TextureFormat::Rgba16Float),
+        dimension: Some(wgpu::TextureViewDimension::D2),
+        aspect: wgpu::TextureAspect::All,
+        base_mip_level: 0,
+        mip_level_count: Some(1),
+        base_array_layer: 0,
+        array_layer_count: Some(1),
+    });
     let hdr_msaa_view = if msaa_samples > 1 {
         let tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("hdr-msaa"),
@@ -2858,7 +2907,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         mapped_at_creation: false,
     });
     // Create exposure uniform buffer (PostParams)
-    let exposure_init = PostParams { exposure: 1.0, _pad: [0.0; 3] };
+    let exposure_init = PostParams { exposure: 1.0, _pad: [0.0; 3], _pad2: [0.0; 4] };
     let exposure_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("exposure-ub"),
         contents: bytemuck::bytes_of(&exposure_init),
@@ -2977,6 +3026,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         label: Some("post-bg"),
         layout: &post_bgl,
         entries: &[
+            // Bind full-mip HDR view for sampling in post
             wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&hdr_view) },
             wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&post_sampler) },
             wgpu::BindGroupEntry { binding: 2, resource: exposure_buf.as_entire_binding() },
@@ -2988,12 +3038,21 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         const POST_SHADER: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
-  var out: VsOut; let xy = vec2<f32>(f32(i32(vi)-1), f32((i32(vi)&1)*2-1));
-  out.pos = vec4<f32>(xy, 0.0, 1.0); out.uv = vec2<f32>((xy.x+1.0)*0.5, 1.0-(xy.y+1.0)*0.5); return out;
+    var out: VsOut;
+    // Full-screen covering triangle
+    var positions = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -1.0),
+        vec2<f32>( 3.0, -1.0),
+        vec2<f32>(-1.0,  3.0)
+    );
+    let xy = positions[vi];
+    out.pos = vec4<f32>(xy, 0.0, 1.0);
+    out.uv = vec2<f32>((xy.x + 1.0) * 0.5, 1.0 - (xy.y + 1.0) * 0.5);
+    return out;
 }
 @group(0) @binding(0) var hdr_tex: texture_2d<f32>;
 @group(0) @binding(1) var hdr_smp: sampler;
-struct PostParams { exposure: f32; _pad: vec3<f32>; };
+struct PostParams { exposure: f32, _pad: vec3<f32>, };
 @group(0) @binding(2) var<uniform> post: PostParams;
 struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
 @group(0) @binding(3) var<uniform> bloom: Bloom;
@@ -3016,19 +3075,45 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
   let bloom_col = bloom_sum / max(w, 1e-4) * bloom.intensity;
     var color = base + bloom_col;
     // Auto-exposure: estimate average scene luminance from a high mip level near 1x1
-    // Sample a small kernel around uv at a large LOD (hardware clamps to max level)
-    let offs: array<vec2<f32>, 9> = array<vec2<f32>, 9>(
-        vec2<f32>(-0.25, -0.25), vec2<f32>(0.0, -0.25), vec2<f32>(0.25, -0.25),
-        vec2<f32>(-0.25,  0.0 ), vec2<f32>(0.0,  0.0 ), vec2<f32>(0.25,  0.0 ),
-        vec2<f32>(-0.25,  0.25), vec2<f32>(0.0,  0.25), vec2<f32>(0.25,  0.25)
-    );
+    // Unrolled taps to avoid dynamic indexing restrictions
     var logLumSum = 0.0;
     let lodProbe = 8.0; // large LOD; will clamp to highest mip available
-    for (var i: i32 = 0; i < 9; i = i + 1) {
-        let uvp = clamp(in.uv + offs[i], vec2<f32>(0.0), vec2<f32>(1.0));
-        let samp = textureSampleLevel(hdr_tex, hdr_smp, uvp, lodProbe).rgb;
-        let lum = max(dot(samp, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4);
-        logLumSum = logLumSum + log(lum);
+    {
+        let uv0 = clamp(in.uv + vec2<f32>(-0.25, -0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c0 = textureSampleLevel(hdr_tex, hdr_smp, uv0, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c0, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv1 = clamp(in.uv + vec2<f32>(0.0, -0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c1 = textureSampleLevel(hdr_tex, hdr_smp, uv1, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c1, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv2 = clamp(in.uv + vec2<f32>(0.25, -0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c2 = textureSampleLevel(hdr_tex, hdr_smp, uv2, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c2, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv3 = clamp(in.uv + vec2<f32>(-0.25, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c3 = textureSampleLevel(hdr_tex, hdr_smp, uv3, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c3, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv4 = clamp(in.uv + vec2<f32>(0.0, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c4 = textureSampleLevel(hdr_tex, hdr_smp, uv4, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c4, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv5 = clamp(in.uv + vec2<f32>(0.25, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c5 = textureSampleLevel(hdr_tex, hdr_smp, uv5, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c5, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv6 = clamp(in.uv + vec2<f32>(-0.25, 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c6 = textureSampleLevel(hdr_tex, hdr_smp, uv6, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c6, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv7 = clamp(in.uv + vec2<f32>(0.0, 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c7 = textureSampleLevel(hdr_tex, hdr_smp, uv7, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c7, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv8 = clamp(in.uv + vec2<f32>(0.25, 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c8 = textureSampleLevel(hdr_tex, hdr_smp, uv8, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c8, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
     }
     let logAvg = logLumSum / 9.0;
     let avgLum = exp(logAvg);
@@ -3573,6 +3658,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         msaa_color_view,
         hdr_tex,
         hdr_view,
+    hdr_resolve_view,
         hdr_msaa_view,
         shadow_view,
         shadow_sampler,
@@ -3687,7 +3773,7 @@ struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
 
 @group(0) @binding(0) var<uniform> u_camera: Camera;
-struct PostParams { exposure: f32; _pad0: vec3<f32>; } // 16-byte aligned
+struct PostParams { exposure: f32, _pad0: vec3<f32>, } // 16-byte aligned
 @group(0) @binding(1) var<uniform> u_post: PostParams;
 @group(1) @binding(0) var ground_texture: texture_2d<f32>;
 @group(1) @binding(1) var ground_sampler: sampler;
@@ -3757,17 +3843,6 @@ fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
 
     // Rotated Poisson-disk PCF (16 taps)
     let texel = 1.0 / 2048.0; // matches shadow map size
-    // Base Poisson points in unit disk
-    let poisson: array<vec2<f32>, 16> = array<vec2<f32>, 16>(
-        vec2<f32>(-0.94201624, -0.39906216), vec2<f32>(0.94558609, -0.76890725),
-        vec2<f32>(-0.09418410, -0.92938870), vec2<f32>(0.34495938,  0.29387760),
-        vec2<f32>(-0.91588581,  0.45771432), vec2<f32>(-0.81544232, -0.87912464),
-        vec2<f32>(-0.38277543,  0.27676845), vec2<f32>(0.97484398,  0.75648379),
-        vec2<f32>(0.44323325,  -0.97511554), vec2<f32>(0.53742981, -0.47373420),
-        vec2<f32>(-0.26496911, -0.41893023), vec2<f32>(0.79197514,  0.19090188),
-        vec2<f32>(-0.24188840,  0.99706507), vec2<f32>(-0.81409955, 0.91437590),
-        vec2<f32>(0.19984126,   0.78641367), vec2<f32>(0.14383161, -0.14100790)
-    );
 
     // Random rotation per-fragment derived from UV to reduce banding
     let rnd = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -3779,12 +3854,40 @@ fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
     // Filter radius: slightly wider at grazing angles to hide stair-steps
     let radius = (2.0 + (1.0 - clamp(dot(N, L), 0.0, 1.0)) * 2.0) * texel;
 
+    // Unrolled 16 Poisson taps to avoid dynamic array indexing restrictions
     var occl: f32 = 0.0;
-    for (var i: i32 = 0; i < 16; i = i + 1) {
-        let p = rot * poisson[i];
-        let offs = p * radius * 2.5; // scale disk to a few texels
-        occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + offs, depth - bias));
-    }
+    let p0 = rot * vec2<f32>(-0.94201624, -0.39906216);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p0 * radius * 2.5, depth - bias));
+    let p1 = rot * vec2<f32>(0.94558609, -0.76890725);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p1 * radius * 2.5, depth - bias));
+    let p2 = rot * vec2<f32>(-0.09418410, -0.92938870);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p2 * radius * 2.5, depth - bias));
+    let p3 = rot * vec2<f32>(0.34495938, 0.29387760);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p3 * radius * 2.5, depth - bias));
+    let p4 = rot * vec2<f32>(-0.91588581, 0.45771432);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p4 * radius * 2.5, depth - bias));
+    let p5 = rot * vec2<f32>(-0.81544232, -0.87912464);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p5 * radius * 2.5, depth - bias));
+    let p6 = rot * vec2<f32>(-0.38277543, 0.27676845);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p6 * radius * 2.5, depth - bias));
+    let p7 = rot * vec2<f32>(0.97484398, 0.75648379);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p7 * radius * 2.5, depth - bias));
+    let p8 = rot * vec2<f32>(0.44323325, -0.97511554);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p8 * radius * 2.5, depth - bias));
+    let p9 = rot * vec2<f32>(0.53742981, -0.47373420);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p9 * radius * 2.5, depth - bias));
+    let p10 = rot * vec2<f32>(-0.26496911, -0.41893023);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p10 * radius * 2.5, depth - bias));
+    let p11 = rot * vec2<f32>(0.79197514, 0.19090188);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p11 * radius * 2.5, depth - bias));
+    let p12 = rot * vec2<f32>(-0.24188840, 0.99706507);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p12 * radius * 2.5, depth - bias));
+    let p13 = rot * vec2<f32>(-0.81409955, 0.91437590);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p13 * radius * 2.5, depth - bias));
+    let p14 = rot * vec2<f32>(0.19984126, 0.78641367);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p14 * radius * 2.5, depth - bias));
+    let p15 = rot * vec2<f32>(0.14383161, -0.14100790);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p15 * radius * 2.5, depth - bias));
     return occl / 16.0;
 }
 
