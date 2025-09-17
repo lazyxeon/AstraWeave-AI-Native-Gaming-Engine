@@ -1044,6 +1044,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aw_texture_gen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "image",
+]
+
+[[package]]
 name = "axum"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
