@@ -58,8 +58,8 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
 ) -> anyhow::Result<()> {
     let path = Path::new(out_dir).join(name);
     if force || !path.exists() {
-        // Enhanced texture resolution for better 3D biome quality
-        let img = f(2048, 2048, seed);
+        // Enhanced texture resolution for photorealistic 3D biome quality
+        let img = f(4096, 4096, seed);
         img.save(&path)?;
         // Enhanced normal map generation with improved quality
         if name.ends_with("grass.png") || name.ends_with("dirt.png") || name.ends_with("sand.png") 
@@ -155,38 +155,47 @@ fn synth_grass(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
     let mut img = ImageBuffer::new(w, h);
     for y in 0..h {
         for x in 0..w {
-            let u = x as f32 / w as f32 * 32.0;
-            let v = y as f32 / h as f32 * 32.0;
+            let u = x as f32 / w as f32 * 64.0; // Higher frequency for more detail
+            let v = y as f32 / h as f32 * 64.0;
             
-            // Enhanced grass pattern with multiple layers
-            let base = fbm(u, v, seed, 6, 2.05, 0.52);
-            let clump = fbm(u * 0.35, v * 0.35, seed ^ 0x55aa, 4, 2.0, 0.6);
-            let fine_detail = fbm(u * 8.0, v * 8.0, seed ^ 0x1337, 3, 2.0, 0.4);
-            let dirt_patches = fbm(u * 0.8, v * 0.8, seed ^ 0xcafe, 5, 2.0, 0.5);
+            // Multi-layered grass pattern with enhanced realism
+            let base = fbm(u, v, seed, 8, 2.1, 0.45); // More octaves for detail
+            let clump = fbm(u * 0.25, v * 0.25, seed ^ 0x55aa, 6, 2.0, 0.6);
+            let fine_detail = fbm(u * 12.0, v * 12.0, seed ^ 0x1337, 5, 2.0, 0.3);
+            let dirt_patches = fbm(u * 1.2, v * 1.2, seed ^ 0xcafe, 7, 2.0, 0.4);
+            let micro_variation = fbm(u * 32.0, v * 32.0, seed ^ 0xfeed, 4, 2.0, 0.2);
+            let seasonal_variation = fbm(u * 0.5, v * 0.5, seed ^ 0xdead, 3, 2.0, 0.5);
             
             // Height variation with patches of dirt showing through
-            let height = (0.55 + 0.35 * base + 0.30 * clump + 0.1 * fine_detail).clamp(0.0, 1.0);
-            let dirt_factor = (dirt_patches > 0.3) as i32 as f32 * 0.3;
+            let height = (0.6 + 0.25 * base + 0.2 * clump + 0.08 * fine_detail + 
+                         0.05 * micro_variation + 0.02 * seasonal_variation).clamp(0.0, 1.0);
+            let dirt_factor = (dirt_patches > 0.4) as i32 as f32 * 0.25;
             
-            // Enhanced grass coloration with seasonal variation
-            let grass_green = 90.0 + 120.0 * height;
-            let grass_yellow = 70.0 + 40.0 * (1.0 - height);
-            let dirt_brown = 65.0 + 45.0 * height;
+            // Enhanced grass coloration with seasonal and health variation
+            let grass_green = 110.0 + 120.0 * height + seasonal_variation * 30.0;
+            let grass_yellow = 80.0 + 50.0 * (1.0 - height) - seasonal_variation * 20.0;
+            let dirt_brown_r = 75.0 + 35.0 * height;
+            let dirt_brown_g = 55.0 + 25.0 * height;
+            let dirt_brown_b = 35.0 + 15.0 * height;
             
             let (r, g, b) = if dirt_factor > 0.0 {
-                // Dirt patches mixed with grass
-                let mix = 0.7;
+                // Dirt patches mixed with grass - more realistic blending
+                let mix = dirt_factor;
+                let grass_r = grass_green * 0.3 + grass_yellow * 0.2;
+                let grass_g = grass_green;
+                let grass_b = grass_green * 0.15;
+                
                 (
-                    ((grass_green * 0.35 + grass_yellow * 0.25) * mix + dirt_brown * (1.0 - mix)) as u8,
-                    (grass_green * mix + dirt_brown * 0.6 * (1.0 - mix)) as u8,
-                    (grass_green * 0.2 * mix + dirt_brown * 0.4 * (1.0 - mix)) as u8,
+                    ((grass_r * (1.0 - mix) + dirt_brown_r * mix) as u8).min(255),
+                    ((grass_g * (1.0 - mix) + dirt_brown_g * mix) as u8).min(255),
+                    ((grass_b * (1.0 - mix) + dirt_brown_b * mix) as u8).min(255),
                 )
             } else {
-                // Pure grass areas
+                // Pure grass areas with subtle color variation
                 (
-                    (grass_green * 0.35 + grass_yellow * 0.25) as u8,
+                    (grass_green * 0.3 + grass_yellow * 0.2) as u8,
                     grass_green as u8,
-                    (grass_green * 0.2) as u8,
+                    (grass_green * 0.15) as u8,
                 )
             };
             img.put_pixel(x, y, Rgba([r, g, b, 255]));
@@ -217,32 +226,42 @@ fn synth_sand(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
     let mut img = ImageBuffer::new(w, h);
     for y in 0..h {
         for x in 0..w {
-            let u = x as f32 / w as f32 * 20.0;
-            let v = y as f32 / h as f32 * 20.0;
+            let u = x as f32 / w as f32 * 32.0; // Higher frequency for more detail
+            let v = y as f32 / h as f32 * 32.0;
             
-            // Enhanced sand patterns with multiple detail levels
-            let fine_grains = fbm(u * 4.0, v * 4.0, seed ^ 0xc0ff33, 7, 2.0, 0.5);
-            let dune_patterns = fbm(u * 0.3, v * 0.3, seed ^ 0xfade01, 4, 2.0, 0.6);
-            let wind_ripples = fbm(u * 12.0, v * 2.0, seed ^ 0x7ead33, 5, 2.0, 0.4);
-            let large_formations = fbm(u * 0.1, v * 0.1, seed ^ 0xbeac44, 3, 2.0, 0.7);
-            let micro_detail = fbm(u * 16.0, v * 16.0, seed ^ 0x5a9d17, 4, 2.0, 0.3);
+            // Enhanced sand patterns with multiple detail levels and realistic dune formation
+            let fine_grains = fbm(u * 6.0, v * 6.0, seed ^ 0xc0ff33, 9, 2.0, 0.45);
+            let dune_patterns = fbm(u * 0.4, v * 0.4, seed ^ 0xfade01, 6, 2.0, 0.55);
+            let wind_ripples = fbm(u * 16.0, v * 3.0, seed ^ 0x7ead33, 7, 2.0, 0.35);
+            let large_formations = fbm(u * 0.15, v * 0.15, seed ^ 0xbeac44, 4, 2.0, 0.65);
+            let micro_detail = fbm(u * 24.0, v * 24.0, seed ^ 0x5a9d17, 6, 2.0, 0.25);
+            let mineral_deposits = fbm(u * 1.2, v * 1.2, seed ^ 0xfeed, 5, 2.0, 0.4);
+            let erosion_patterns = fbm(u * 8.0, v * 8.0, seed ^ 0xdead, 4, 2.0, 0.3);
             
             // Combine patterns for realistic sand height variation
-            let height = (0.5 + 0.25 * fine_grains + 0.2 * dune_patterns + 0.15 * wind_ripples 
-                         + 0.1 * large_formations + 0.08 * micro_detail).clamp(0.0, 1.0);
+            let height = (0.55 + 0.18 * fine_grains + 0.15 * dune_patterns + 0.12 * wind_ripples 
+                         + 0.08 * large_formations + 0.06 * micro_detail + 0.04 * erosion_patterns).clamp(0.0, 1.0);
             
-            // Enhanced sand coloration with mineral variation
-            let base_r = 210.0 + 35.0 * height;
-            let base_g = 185.0 + 45.0 * height;
-            let base_b = 135.0 + 30.0 * height;
+            // Enhanced sand coloration with mineral variation and realistic color gradients
+            let base_r = 220.0 + 30.0 * height;
+            let base_g = 195.0 + 40.0 * height;
+            let base_b = 140.0 + 25.0 * height;
             
-            // Add mineral deposits and color variation
-            let mineral_factor = fbm(u * 0.7, v * 0.7, seed ^ 0x9abe7a, 3, 2.0, 0.6);
-            let iron_tint = if mineral_factor > 0.6 { 0.15 } else { 0.0 };
+            // Mineral deposits and color variation
+            let mineral_factor = mineral_deposits;
+            let iron_tint = if mineral_factor > 0.6 { 0.2 } else { 0.0 };
+            let clay_tint = if mineral_factor > 0.4 && mineral_factor < 0.6 { 0.15 } else { 0.0 };
             
-            let r = (base_r + iron_tint * 20.0).min(255.0) as u8;
-            let g = (base_g - iron_tint * 10.0).max(0.0) as u8;
-            let b = (base_b - iron_tint * 25.0).max(0.0) as u8;
+            // Wind erosion effects
+            let erosion_factor = erosion_patterns;
+            let wind_darkening = if erosion_factor > 0.7 { -15.0 } else { 0.0 };
+            
+            // Dune shadow effects
+            let dune_shadow = dune_patterns * 10.0;
+            
+            let r = (base_r + iron_tint * 30.0 + clay_tint * 15.0 + wind_darkening + dune_shadow).clamp(0.0, 255.0) as u8;
+            let g = (base_g - iron_tint * 15.0 + clay_tint * 20.0 + wind_darkening * 0.8 + dune_shadow * 0.6).clamp(0.0, 255.0) as u8;
+            let b = (base_b - iron_tint * 35.0 + clay_tint * 10.0 + wind_darkening * 0.6 + dune_shadow * 0.4).clamp(0.0, 255.0) as u8;
             
             img.put_pixel(x, y, Rgba([r, g, b, 255]));
         }
@@ -254,38 +273,56 @@ fn synth_stone(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
     let mut img = ImageBuffer::new(w, h);
     for y in 0..h {
         for x in 0..w {
-            let u = x as f32 / w as f32 * 10.0;
-            let v = y as f32 / h as f32 * 10.0;
+            let u = x as f32 / w as f32 * 16.0; // Higher frequency for more detail
+            let v = y as f32 / h as f32 * 16.0;
             
-            // Enhanced stone patterns with geological realism
-            let veins = fbm(u * 1.6, v * 1.3, seed ^ 0x7777, 7, 2.1, 0.5);
-            let base = fbm(u, v, seed ^ 0x1111, 6, 2.0, 0.55);
-            let cracks = fbm(u * 3.2, v * 3.2, seed ^ 0xc7ac4, 5, 2.0, 0.4);
-            let weathering = fbm(u * 0.5, v * 0.5, seed ^ 0xaea754, 4, 2.0, 0.6);
-            let fine_texture = fbm(u * 8.0, v * 8.0, seed ^ 0xf19e7, 4, 2.0, 0.3);
+            // Enhanced stone patterns with geological realism and multiple rock types
+            let veins = fbm(u * 2.2, v * 2.0, seed ^ 0x7777, 9, 2.1, 0.45);
+            let base = fbm(u, v, seed ^ 0x1111, 8, 2.0, 0.5);
+            let cracks = fbm(u * 4.0, v * 4.0, seed ^ 0xc7ac4, 6, 2.0, 0.35);
+            let weathering = fbm(u * 0.6, v * 0.6, seed ^ 0xaea754, 5, 2.0, 0.55);
+            let fine_texture = fbm(u * 10.0, v * 10.0, seed ^ 0xf19e7, 5, 2.0, 0.25);
+            let crystal_inclusions = fbm(u * 6.0, v * 6.0, seed ^ 0xdead, 4, 2.0, 0.3);
+            let sedimentary_layers = fbm(u * 0.3, v * 0.8, seed ^ 0xbeef, 3, 2.0, 0.6);
             
-            // Combine for realistic stone height variation
-            let height = (0.55 + 0.3 * base + 0.2 * veins - 0.1 * cracks 
-                         + 0.1 * weathering + 0.05 * fine_texture).clamp(0.0, 1.0);
+            // Combine for realistic stone height variation with more complexity
+            let height = (0.6 + 0.25 * base + 0.15 * veins - 0.08 * cracks 
+                         + 0.08 * weathering + 0.04 * fine_texture + 
+                         0.03 * crystal_inclusions + 0.02 * sedimentary_layers).clamp(0.0, 1.0);
             
-            // Enhanced stone coloration with mineral variation
-            let base_gray = 130.0 + 80.0 * height;
-            let vein_brightness = if veins > 0.5 { 25.0 } else { 0.0 };
-            let crack_darkness = if cracks > 0.7 { -20.0 } else { 0.0 };
+            // Enhanced stone coloration with mineral variation and rock types
+            let base_gray = 140.0 + 70.0 * height;
+            let vein_brightness = if veins > 0.5 { 30.0 } else { 0.0 };
+            let crack_darkness = if cracks > 0.6 { -25.0 } else { 0.0 };
+            let weathering_effect = weathering * 15.0;
             
-            // Color variation for different stone types
-            let stone_type = fbm(u * 0.2, v * 0.2, seed ^ 0x79e34, 2, 2.0, 0.5);
-            let (r_tint, g_tint, b_tint) = if stone_type > 0.3 {
-                (10.0, 5.0, -5.0) // Slightly warmer stone
-            } else if stone_type < -0.3 {
-                (-5.0, 0.0, 10.0) // Slightly cooler stone
+            // Color variation for different stone types based on position
+            let stone_type_u = fbm(u * 0.1, v * 0.1, seed ^ 0x79e34, 2, 2.0, 0.5);
+            let stone_type_v = fbm(u * 0.08, v * 0.12, seed ^ 0xfeed, 2, 2.0, 0.5);
+            
+            let (r_tint, g_tint, b_tint) = if stone_type_u > 0.6 {
+                // Granite-like with quartz veins
+                (15.0, 10.0, 5.0)
+            } else if stone_type_u < 0.2 {
+                // Basalt-like, darker
+                (-10.0, -5.0, 5.0)
+            } else if stone_type_v > 0.7 {
+                // Limestone-like, slightly yellowish
+                (8.0, 5.0, -5.0)
+            } else if stone_type_v < 0.3 {
+                // Sandstone-like, reddish
+                (12.0, -2.0, -8.0)
             } else {
-                (0.0, 0.0, 0.0) // Neutral gray stone
+                // Standard gray stone
+                (0.0, 0.0, 0.0)
             };
             
-            let r = (base_gray + vein_brightness + crack_darkness + r_tint).clamp(0.0, 255.0) as u8;
-            let g = (base_gray + vein_brightness + crack_darkness + g_tint).clamp(0.0, 255.0) as u8;
-            let b = (base_gray + vein_brightness + crack_darkness + b_tint).clamp(0.0, 255.0) as u8;
+            // Crystal inclusions add sparkle
+            let crystal_effect = if crystal_inclusions > 0.7 { 20.0 } else { 0.0 };
+            
+            let r = (base_gray + vein_brightness + crack_darkness + weathering_effect + r_tint + crystal_effect).clamp(0.0, 255.0) as u8;
+            let g = (base_gray + vein_brightness + crack_darkness + weathering_effect + g_tint + crystal_effect * 0.8).clamp(0.0, 255.0) as u8;
+            let b = (base_gray + vein_brightness + crack_darkness + weathering_effect + b_tint + crystal_effect * 0.6).clamp(0.0, 255.0) as u8;
             
             img.put_pixel(x, y, Rgba([r, g, b, 255]));
         }
@@ -333,60 +370,89 @@ fn synth_forest_floor(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8
     let mut img = ImageBuffer::new(w, h);
     for y in 0..h {
         for x in 0..w {
-            let u = x as f32 / w as f32 * 24.0;
-            let v = y as f32 / h as f32 * 24.0;
+            let u = x as f32 / w as f32 * 36.0; // Higher frequency for more detail
+            let v = y as f32 / h as f32 * 36.0;
             
-            // Multi-layered forest floor composition
-            let leaf_litter = fbm(u * 2.5, v * 2.5, seed ^ 0x1eaf7, 6, 2.0, 0.5);
-            let moss_patches = fbm(u * 1.2, v * 1.2, seed ^ 0x90557, 5, 2.0, 0.6);
-            let soil_base = fbm(u * 0.8, v * 0.8, seed ^ 0x5011, 4, 2.0, 0.55);
-            let twigs_debris = fbm(u * 6.0, v * 6.0, seed ^ 0x791a7, 4, 2.0, 0.4);
-            let decomposition = fbm(u * 0.3, v * 0.3, seed ^ 0xdeca7, 3, 2.0, 0.7);
+            // Multi-layered forest floor composition with enhanced realism
+            let leaf_litter = fbm(u * 3.5, v * 3.5, seed ^ 0x1eaf7, 8, 2.0, 0.45);
+            let moss_patches = fbm(u * 1.8, v * 1.8, seed ^ 0x90557, 7, 2.0, 0.5);
+            let soil_base = fbm(u * 1.2, v * 1.2, seed ^ 0x5011, 6, 2.0, 0.55);
+            let twigs_debris = fbm(u * 8.0, v * 8.0, seed ^ 0x791a7, 6, 2.0, 0.35);
+            let decomposition = fbm(u * 0.4, v * 0.4, seed ^ 0xdeca7, 5, 2.0, 0.65);
+            let fungal_growth = fbm(u * 12.0, v * 12.0, seed ^ 0xabcd, 4, 2.0, 0.3);
+            let root_exposure = fbm(u * 2.5, v * 6.0, seed ^ 0x1234, 3, 2.0, 0.4);
             
-            // Height variation from organic matter
-            let height = (0.5 + 0.25 * leaf_litter + 0.2 * moss_patches + 0.15 * soil_base
-                         + 0.1 * twigs_debris + 0.1 * decomposition).clamp(0.0, 1.0);
+            // Height variation from organic matter with more complexity
+            let height = (0.55 + 0.2 * leaf_litter + 0.15 * moss_patches + 0.12 * soil_base
+                         + 0.08 * twigs_debris + 0.08 * decomposition + 0.04 * fungal_growth
+                         + 0.03 * root_exposure).clamp(0.0, 1.0);
             
-            // Color composition based on forest floor materials
-            let moss_factor = (moss_patches > 0.2) as i32 as f32;
-            let decay_factor = (decomposition > 0.4) as i32 as f32;
+            // Color composition based on forest floor materials with seasonal variation
+            let moss_factor = (moss_patches > 0.25) as i32 as f32;
+            let decay_factor = (decomposition > 0.45) as i32 as f32;
+            let fungal_factor = (fungal_growth > 0.6) as i32 as f32;
+            let root_factor = (root_exposure > 0.5) as i32 as f32;
             
-            // Base brown soil colors
-            let soil_r = 85.0 + 40.0 * height;
-            let soil_g = 65.0 + 35.0 * height;
-            let soil_b = 35.0 + 25.0 * height;
+            // Base brown soil colors with organic variation
+            let soil_r = 95.0 + 35.0 * height;
+            let soil_g = 75.0 + 30.0 * height;
+            let soil_b = 45.0 + 20.0 * height;
             
-            // Moss green tinting
-            let moss_r = 45.0 + 30.0 * height;
-            let moss_g = 95.0 + 60.0 * height;
-            let moss_b = 35.0 + 20.0 * height;
+            // Moss green tinting with seasonal variation
+            let moss_r = 55.0 + 25.0 * height;
+            let moss_g = 105.0 + 50.0 * height;
+            let moss_b = 45.0 + 15.0 * height;
             
-            // Decayed organic matter (darker)
-            let decay_r = 35.0 + 20.0 * height;
-            let decay_g = 30.0 + 15.0 * height;
-            let decay_b = 20.0 + 10.0 * height;
+            // Decayed organic matter (darker, richer)
+            let decay_r = 45.0 + 15.0 * height;
+            let decay_g = 40.0 + 12.0 * height;
+            let decay_b = 25.0 + 8.0 * height;
             
-            // Blend colors based on composition
-            let (r, g, b) = if moss_factor > 0.0 && decay_factor > 0.0 {
+            // Fungal growth (subtle color shifts)
+            let fungal_r = 85.0 + 20.0 * height;
+            let fungal_g = 65.0 + 15.0 * height;
+            let fungal_b = 55.0 + 10.0 * height;
+            
+            // Root exposure (darker, more soil-like)
+            let root_r = 65.0 + 25.0 * height;
+            let root_g = 55.0 + 20.0 * height;
+            let root_b = 35.0 + 15.0 * height;
+            
+            // Blend colors based on composition with priority system
+            let (r, g, b) = if fungal_factor > 0.0 {
+                // Fungal growth takes priority
+                (
+                    (soil_r * 0.3 + fungal_r * 0.7) as u8,
+                    (soil_g * 0.3 + fungal_g * 0.7) as u8,
+                    (soil_b * 0.3 + fungal_b * 0.7) as u8,
+                )
+            } else if root_factor > 0.0 {
+                // Root exposure
+                (
+                    (soil_r * 0.4 + root_r * 0.6) as u8,
+                    (soil_g * 0.4 + root_g * 0.6) as u8,
+                    (soil_b * 0.4 + root_b * 0.6) as u8,
+                )
+            } else if moss_factor > 0.0 && decay_factor > 0.0 {
                 // Mixed moss and decay
                 (
-                    (soil_r * 0.4 + moss_r * 0.3 + decay_r * 0.3) as u8,
-                    (soil_g * 0.4 + moss_g * 0.3 + decay_g * 0.3) as u8,
-                    (soil_b * 0.4 + moss_b * 0.3 + decay_b * 0.3) as u8,
+                    (soil_r * 0.3 + moss_r * 0.35 + decay_r * 0.35) as u8,
+                    (soil_g * 0.3 + moss_g * 0.35 + decay_g * 0.35) as u8,
+                    (soil_b * 0.3 + moss_b * 0.35 + decay_b * 0.35) as u8,
                 )
             } else if moss_factor > 0.0 {
                 // Mossy areas
                 (
-                    (soil_r * 0.6 + moss_r * 0.4) as u8,
-                    (soil_g * 0.6 + moss_g * 0.4) as u8,
-                    (soil_b * 0.6 + moss_b * 0.4) as u8,
+                    (soil_r * 0.5 + moss_r * 0.5) as u8,
+                    (soil_g * 0.5 + moss_g * 0.5) as u8,
+                    (soil_b * 0.5 + moss_b * 0.5) as u8,
                 )
             } else if decay_factor > 0.0 {
                 // Decayed organic matter
                 (
-                    (soil_r * 0.7 + decay_r * 0.3) as u8,
-                    (soil_g * 0.7 + decay_g * 0.3) as u8,
-                    (soil_b * 0.7 + decay_b * 0.3) as u8,
+                    (soil_r * 0.6 + decay_r * 0.4) as u8,
+                    (soil_g * 0.6 + decay_g * 0.4) as u8,
+                    (soil_b * 0.6 + decay_b * 0.4) as u8,
                 )
             } else {
                 // Regular forest soil

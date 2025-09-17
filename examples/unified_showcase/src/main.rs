@@ -55,6 +55,14 @@ struct RenderStuff {
     instance_count: u32,
     msaa_samples: u32,
     msaa_color_view: Option<wgpu::TextureView>,
+    // Shadow mapping resources
+    shadow_view: wgpu::TextureView,
+    shadow_sampler: wgpu::Sampler,
+    shadow_pipeline: wgpu::RenderPipeline,
+    shadow_size: u32,
+    light_ub: wgpu::Buffer,
+    light_bg: wgpu::BindGroup,
+    shadow_bg: wgpu::BindGroup,
     // Texture resources
     ground_texture: Option<LoadedTexture>,
     texture_bind_group_layout: wgpu::BindGroupLayout,
@@ -604,7 +612,7 @@ fn load_texture_from_bytes_with_format(
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
         mipmap_filter: wgpu::FilterMode::Linear,
-        anisotropy_clamp: 8,
+        anisotropy_clamp: 16,
         ..Default::default()
     });
 
@@ -1021,7 +1029,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             // Varied cacti and desert plants - increased density
             for i in 0..40 {
                 let x = -25.0 + (i as f32) * 3.0 + (i as f32 * 1.2).sin() * 4.0;
-                let z = -15.0 + (i % 6) as f32 * 6.0 + (i as f32 * 0.8).cos() * 8.0;
+                let z = -15.0 + (i % 6) as f32 * 6.0 + (i as f32).cos() * 8.0;
 
                 let (width, height, _cactus_type) = match i % 5 {
                     0 => (0.2, 3.5, "saguaro"),        // Tall saguaro cactus
@@ -1418,7 +1426,7 @@ fn main() -> Result<()> {
 async fn run() -> Result<()> {
     // Generate default textures at startup if missing (seed -> vary looks)
     let seed = 0xA57; // change to taste / hook to key for regeneration
-    texture_synth::ensure_textures("assets", seed, false)?;
+    texture_synth::ensure_textures("assets", seed, true)?;
 
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
@@ -1750,6 +1758,51 @@ async fn run() -> Result<()> {
                             .queue
                             .write_buffer(&render.camera_ub, 0, bytemuck::bytes_of(&cam));
 
+                        // Prepare command encoder (reused for shadow and main passes)
+                        let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame-encoder") });
+
+                        // Update light matrices (directional light)
+                        let light_dir = glam::Vec3::new(0.6, 1.0, 0.4).normalize();
+                        let light_view = Mat4::look_at_rh(-light_dir * 150.0, Vec3::ZERO, Vec3::Y);
+                        let ortho_extent = 220.0;
+                        let light_proj = Mat4::orthographic_rh(
+                            -ortho_extent, ortho_extent,
+                            -ortho_extent, ortho_extent,
+                            0.1, 400.0,
+                        );
+                        let light_vp = light_proj * light_view;
+                        let lcam = GpuCamera { view_proj: light_vp.to_cols_array() };
+                        render.queue.write_buffer(&render.light_ub, 0, bytemuck::bytes_of(&lcam));
+
+                        // Shadow pass
+                        {
+                            let mut sp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("shadow-pass"),
+                                color_attachments: &[],
+                                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                                    view: &render.shadow_view,
+                                    depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                                    stencil_ops: None,
+                                }),
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+                            sp.set_pipeline(&render.shadow_pipeline);
+                            sp.set_bind_group(0, &render.light_bg, &[]);
+                            for batch in &instance_batches {
+                                if batch.mesh_type == MeshType::Skybox { continue; }
+                                if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                    render.queue.write_buffer(&render.instance_vb, 0, bytemuck::cast_slice(&batch.instances));
+                                    sp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                    sp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                    sp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                                    if !batch.instances.is_empty() {
+                                        sp.draw_indexed(0..mesh.index_count, 0, 0..batch.instances.len() as u32);
+                                    }
+                                }
+                            }
+                        }
+
                         // Render
                         let frame = match render.surface.get_current_texture() {
                             Ok(f) => f,
@@ -1763,12 +1816,6 @@ async fn run() -> Result<()> {
                         let view = frame
                             .texture
                             .create_view(&wgpu::TextureViewDescriptor::default());
-                        let mut encoder =
-                            render
-                                .device
-                                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                                    label: Some("main-encoder"),
-                                });
                         {
                             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                 label: Some("main-pass"),
@@ -1800,9 +1847,9 @@ async fn run() -> Result<()> {
                             });
                             rp.set_pipeline(&render.pipeline);
                             rp.set_bind_group(0, &render.camera_bg, &[]);
-                            if let Some(ref texture_bg) = render.ground_bind_group {
-                                rp.set_bind_group(1, texture_bg, &[]);
-                            }
+                            if let Some(ref texture_bg) = render.ground_bind_group { rp.set_bind_group(1, texture_bg, &[]); }
+                            rp.set_bind_group(2, &render.shadow_bg, &[]);
+                            rp.set_bind_group(3, &render.light_bg, &[]);
                             // Render each mesh type batch efficiently
                             // Render skybox first with special depth handling
                             for batch in &instance_batches {
@@ -1818,10 +1865,7 @@ async fn run() -> Result<()> {
                                         // Set up rendering for skybox - render at far plane
                                         rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                        rp.set_index_buffer(
-                                            mesh.index_buffer.slice(..),
-                                            wgpu::IndexFormat::Uint16,
-                                        );
+                                        rp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                                         
                                         // Draw skybox
                                         if !batch.instances.is_empty() {
@@ -1849,10 +1893,7 @@ async fn run() -> Result<()> {
                                         // Set up rendering for this mesh type
                                         rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                        rp.set_index_buffer(
-                                            mesh.index_buffer.slice(..),
-                                            wgpu::IndexFormat::Uint16,
-                                        );
+                                        rp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                                         
                                         // Draw this batch
                                         if !batch.instances.is_empty() {
@@ -2141,7 +2182,7 @@ fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch>
 }
 
 // Generate terrain mesh with height variations matching the shader logic
-fn generate_terrain_mesh(size: usize, scale: f32) -> (Vec<[f32; 3]>, Vec<u16>) {
+fn generate_terrain_mesh(size: usize, scale: f32) -> (Vec<[f32; 3]>, Vec<u32>) {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     
@@ -2163,10 +2204,10 @@ fn generate_terrain_mesh(size: usize, scale: f32) -> (Vec<[f32; 3]>, Vec<u16>) {
     // Generate indices for triangles
     for z in 0..size {
         for x in 0..size {
-            let i0 = (z * (size + 1) + x) as u16;
-            let i1 = (z * (size + 1) + x + 1) as u16;
-            let i2 = ((z + 1) * (size + 1) + x) as u16;
-            let i3 = ((z + 1) * (size + 1) + x + 1) as u16;
+            let i0 = (z * (size + 1) + x) as u32;
+            let i1 = (z * (size + 1) + x + 1) as u32;
+            let i2 = ((z + 1) * (size + 1) + x) as u32;
+            let i3 = ((z + 1) * (size + 1) + x + 1) as u32;
             
             // Two triangles per quad
             indices.extend_from_slice(&[i0, i2, i1, i1, i2, i3]);
@@ -2253,7 +2294,7 @@ fn get_biome_terrain_height_rust(world_pos: [f32; 2], biome_type: i32) -> f32 {
     }
 }
 
-fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) -> Mesh {
+fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u32]) -> Mesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("mesh-vertices"),
         contents: bytemuck::cast_slice(vertices),
@@ -2273,20 +2314,22 @@ fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) ->
     }
 }
 
+fn to_u32_indices(src: &[u16]) -> Vec<u32> { src.iter().map(|&i| i as u32).collect() }
+
 fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshType, Mesh> {
     let mut meshes = std::collections::HashMap::new();
     
     // Generate terrain mesh instead of simple cube for ground
-    let terrain_size = 100; // 100x100 vertices for detailed terrain
-    let terrain_scale = 10.0; // 10 units between vertices = 1000x1000 total (matches 500 half-extent × 2)
+    let terrain_size = 256; // higher resolution grid
+    let terrain_scale = 6.0; // tighter spacing to increase detail
     let (terrain_vertices, terrain_indices) = generate_terrain_mesh(terrain_size, terrain_scale);
     
     // Create terrain mesh as Cube type (since ground uses MeshType::Cube)
     meshes.insert(MeshType::Cube, create_mesh(device, &terrain_vertices, &terrain_indices));
-    meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, TREE_INDICES));
-    meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, HOUSE_INDICES));
-    meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, CHARACTER_INDICES));
-    meshes.insert(MeshType::Skybox, create_mesh(device, SKY_FS_VERTICES, SKY_FS_INDICES));
+    meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, &to_u32_indices(TREE_INDICES)));
+    meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, &to_u32_indices(HOUSE_INDICES)));
+    meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, &to_u32_indices(CHARACTER_INDICES)));
+    meshes.insert(MeshType::Skybox, create_mesh(device, SKY_FS_VERTICES, &to_u32_indices(SKY_FS_INDICES)));
     
     meshes
 }
@@ -2403,6 +2446,32 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         }],
     });
 
+    // Light uniform and bind group (holds light view-projection)
+    let light_ub = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("light-ub"),
+        size: std::mem::size_of::<GpuCamera>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    let light_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("light-layout"),
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        }],
+    });
+    let light_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("light-bg"),
+        layout: &light_bg_layout,
+        entries: &[wgpu::BindGroupEntry { binding: 0, resource: light_ub.as_entire_binding() }],
+    });
+
     // Texture bind group layout (for PBR: albedo + normal + MRA + emissive)
     let texture_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -2498,6 +2567,62 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                 wgpu::BindGroupLayoutEntry { binding: 19, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
             ],
         });
+
+    // Shadow map layout: depth texture + comparison sampler
+    let shadow_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("shadow-layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Depth,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
+                count: None,
+            },
+        ],
+    });
+
+    // Create shadow map resources
+    let shadow_size = 2048u32;
+    let shadow_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("shadow-map"),
+        size: wgpu::Extent3d { width: shadow_size, height: shadow_size, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+    let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("shadow-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        compare: Some(wgpu::CompareFunction::LessEqual),
+        ..Default::default()
+    });
+    let shadow_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("shadow-bg"),
+        layout: &shadow_bg_layout,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&shadow_view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&shadow_sampler) },
+        ],
+    });
 
     // Try to load grass texture, fallback to default if not available
     let (ground_texture, ground_normal, ground_mra, ground_emissive, ground_bind_group,
@@ -2704,13 +2829,63 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     });
 
     // Create pipeline with procedural shader
+    // Create shadow pipeline
+    let shadow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("shadow-shader"),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADOW_SHADER)),
+    });
+    let shadow_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("shadow-pipeline-layout"),
+        bind_group_layouts: &[&light_bg_layout],
+        push_constant_ranges: &[],
+    });
+    let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("shadow-pipeline"),
+        layout: Some(&shadow_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shadow_shader,
+            entry_point: "vs_shadow",
+            buffers: &[
+                wgpu::VertexBufferLayout {
+                    array_stride: 3 * 4,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 }],
+                },
+                wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<InstanceRaw>() as u64,
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &[
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 0, shader_location: 1 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 16, shader_location: 2 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 32, shader_location: 3 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 48, shader_location: 4 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 64, shader_location: 5 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Uint32, offset: 80, shader_location: 6 },
+                    ],
+                },
+            ],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        },
+        fragment: None,
+        primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, front_face: wgpu::FrontFace::Ccw, cull_mode: Some(wgpu::Face::Back), ..Default::default() },
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::LessEqual,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState { constant: 2, slope_scale: 2.0, clamp: 0.0 },
+        }),
+        multisample: wgpu::MultisampleState { count: 1, mask: !0, alpha_to_coverage_enabled: false },
+        multiview: None,
+    });
+
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("shader"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADER)),
     });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("pipeline-layout"),
-        bind_group_layouts: &[&camera_bg_layout, &texture_bind_group_layout],
+        bind_group_layouts: &[&camera_bg_layout, &texture_bind_group_layout, &shadow_bg_layout, &light_bg_layout],
         push_constant_ranges: &[],
     });
 
@@ -2815,7 +2990,14 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         instance_vb,
         instance_count: 0, // Will be updated dynamically
         msaa_samples,
-    msaa_color_view,
+        msaa_color_view,
+        shadow_view,
+        shadow_sampler,
+        shadow_pipeline,
+        shadow_size,
+        light_ub,
+        light_bg,
+        shadow_bg,
         ground_texture,
         texture_bind_group_layout,
         ground_bind_group,
@@ -2878,6 +3060,39 @@ fn create_msaa_color(
 
 // ---------------- shader with procedural ground/sky ----------------
 
+// Depth-only shadow map shader
+const SHADOW_SHADER: &str = r#"
+struct Camera { view_proj: mat4x4<f32> };
+
+@group(0) @binding(0) var<uniform> u_light: Camera;
+
+struct VsIn {
+    @location(0) pos: vec3<f32>,
+    @location(1) m0: vec4<f32>,
+    @location(2) m1: vec4<f32>,
+    @location(3) m2: vec4<f32>,
+    @location(4) m3: vec4<f32>,
+    @location(5) color: vec4<f32>,
+    @location(6) mesh_type: u32,
+};
+
+struct VsOut { @builtin(position) pos: vec4<f32> };
+
+@vertex
+fn vs_shadow(in: VsIn) -> VsOut {
+    var out: VsOut;
+    // Skip skybox by pushing it out of clip space
+    if (in.mesh_type == 4u) {
+        out.pos = vec4<f32>(2.0, 2.0, 2.0, 1.0);
+        return out;
+    }
+    let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
+    let world = model * vec4<f32>(in.pos, 1.0);
+    out.pos = u_light.view_proj * world;
+    return out;
+}
+"#;
+
 const SHADER: &str = r#"
 struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
@@ -2905,12 +3120,18 @@ struct TimeUniform { time: f32, _padding: vec3<f32> };
 @group(1) @binding(18) var forest_normal: texture_2d<f32>;
 @group(1) @binding(19) var forest_mra: texture_2d<f32>;
 
+// Shadows
+@group(2) @binding(0) var shadow_map: texture_depth_2d;
+@group(2) @binding(1) var shadow_sampler: sampler_comparison;
+@group(3) @binding(0) var<uniform> u_light: Camera;
+
 // Note: Time uniform would be @group(2) @binding(0) in a full implementation
 // For now, we'll use a constant or calculated time
 
-// Helper struct and function for triplanar sampling across biome texture sets
+// Helper struct and functions for triplanar sampling across texture sets
 struct SampleSet { c: vec3<f32>, n: vec3<f32>, m: vec4<f32> };
 
+// by biome (legacy)
 fn sample_set(biome: i32, uv: vec2<f32>) -> SampleSet {
     var c = vec3<f32>(1.0,1.0,1.0);
     var n = vec3<f32>(0.5,0.5,1.0);
@@ -2929,6 +3150,149 @@ fn sample_set(biome: i32, uv: vec2<f32>) -> SampleSet {
         m = textureSample(forest_mra, mra_sampler, uv);
     }
     return SampleSet(c, n, m);
+}
+
+// Percentage-closer filtering shadow test
+fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
+    let pos_light = u_light.view_proj * vec4<f32>(world_pos, 1.0);
+    let proj = pos_light.xyz / pos_light.w;
+    // Transform from NDC (-1..1) to 0..1
+    let uv = proj.xy * 0.5 + vec2<f32>(0.5, 0.5);
+    let depth = proj.z * 0.5 + 0.5;
+    // Simple receiver bias to reduce acne
+    let bias = max(0.0005 * (1.0 - dot(N, L)), 0.0005);
+    // Early out if outside light frustum
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return 0.0; }
+    var occl: f32 = 0.0;
+    let texel = 1.0 / 2048.0; // matches shadow_size
+    for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
+        for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
+            let offs = vec2<f32>(f32(dx), f32(dy)) * texel * 1.5;
+            occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + offs, depth - bias));
+        }
+    }
+    return occl / 9.0;
+}
+
+// by material: 0=grass,1=dirt,2=stone,3=sand,4=forest
+fn sample_material(which: i32, uv: vec2<f32>) -> SampleSet {
+    if (which == 0) { return SampleSet(textureSample(ground_texture, ground_sampler, uv).rgb,
+                                       textureSample(ground_normal, normal_sampler, uv).rgb,
+                                       textureSample(ground_mra, mra_sampler, uv)); }
+    if (which == 1) { return SampleSet(textureSample(dirt_albedo, ground_sampler, uv).rgb,
+                                       textureSample(dirt_normal, normal_sampler, uv).rgb,
+                                       textureSample(dirt_mra, mra_sampler, uv)); }
+    if (which == 2) { return SampleSet(textureSample(stone_albedo, ground_sampler, uv).rgb,
+                                       textureSample(stone_normal, normal_sampler, uv).rgb,
+                                       textureSample(stone_mra, mra_sampler, uv)); }
+    if (which == 3) { return SampleSet(textureSample(sand_albedo, ground_sampler, uv).rgb,
+                                       textureSample(sand_normal, normal_sampler, uv).rgb,
+                                       textureSample(sand_mra, mra_sampler, uv)); }
+    /* which == 4 */  return SampleSet(textureSample(forest_albedo, ground_sampler, uv).rgb,
+                                       textureSample(forest_normal, normal_sampler, uv).rgb,
+                                       textureSample(forest_mra, mra_sampler, uv));
+}
+
+// Blend three sample sets with enhanced triplanar weights and material transitions
+fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_width: f32) -> SampleSet {
+    // Enhanced weight calculation with smooth transitions
+    let w_smooth = pow(w, vec3<f32>(transition_width));
+    let wsum = max(w_smooth.x + w_smooth.y + w_smooth.z, 1e-4);
+    let wnorm = w_smooth / wsum;
+    
+    // Color blending with gamma correction for more realistic mixing
+    let col_linear = pow(a.c, vec3<f32>(2.2)) * wnorm.x + 
+                     pow(b.c, vec3<f32>(2.2)) * wnorm.y + 
+                     pow(c.c, vec3<f32>(2.2)) * wnorm.z;
+    let col = pow(col_linear, vec3<f32>(1.0/2.2));
+    
+    // Enhanced normal blending with proper tangent space interpolation
+    let na = normalize(a.n * 2.0 - 1.0);
+    let nb = normalize(b.n * 2.0 - 1.0);
+    let nc = normalize(c.n * 2.0 - 1.0);
+    
+    // Use weighted average with angle-based weighting for better normal interpolation
+    let n_blend = na * wnorm.x + nb * wnorm.y + nc * wnorm.z;
+    let nr = normalize(n_blend) * 0.5 + 0.5;
+    
+    // MRA blending with material property preservation
+    let mr = a.m * wnorm.x + b.m * wnorm.y + c.m * wnorm.z;
+    
+    return SampleSet(col, nr, mr);
+}
+
+// Enhanced triplanar sampling with detail mapping and micro-variation
+fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: vec3<f32>, 
+                           scale: f32, detail_scale: f32) -> SampleSet {
+    // Base UV coordinates for triplanar mapping
+    let uv_x = world_pos.zy * scale;
+    let uv_y = world_pos.xz * scale; 
+    let uv_z = world_pos.xy * scale;
+    
+    // Add micro-variation to break up tiling patterns
+    let variation = sin(world_pos * detail_scale) * 0.1;
+    let uv_x_varied = uv_x + variation.zy;
+    let uv_y_varied = uv_y + variation.xz;
+    let uv_z_varied = uv_z + variation.xy;
+    
+    // Sample each axis with variation
+    let sample_x = sample_material(material_idx, uv_x_varied);
+    let sample_y = sample_material(material_idx, uv_y_varied);
+    let sample_z = sample_material(material_idx, uv_z_varied);
+    
+    // Enhanced weight calculation based on normal with smooth transitions
+    let n_abs = abs(normal);
+    let weights = pow(n_abs, vec3<f32>(3.0)); // Sharper transitions
+    let weight_sum = max(weights.x + weights.y + weights.z, 1e-4);
+    let wnorm = weights / weight_sum;
+    
+    // Use enhanced blending with smooth transitions
+    return blend3(sample_x, sample_y, sample_z, wnorm, 2.0);
+}
+
+// Detail mapping function for micro-surface variation
+fn apply_detail_mapping(base_color: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, detail_strength: f32) -> vec3<f32> {
+    // Create high-frequency detail pattern
+    let detail_uv = world_pos.xz * detail_scale;
+    let detail_noise = sin(detail_uv.x) * cos(detail_uv.y) + 
+                      sin(detail_uv.x * 2.0) * cos(detail_uv.y * 2.0) * 0.5 +
+                      sin(detail_uv.x * 4.0) * cos(detail_uv.y * 4.0) * 0.25;
+    
+    // Create variation pattern
+    let variation = (detail_noise * 0.5 + 0.5) * detail_strength;
+    
+    // Apply detail as subtle color variation
+    let detail_color = base_color * (1.0 + variation * 0.1);
+    
+    // Add some high-frequency color noise
+    let color_noise = sin(world_pos.x * 8.0 + world_pos.z * 8.0) * 0.02;
+    return detail_color + vec3<f32>(color_noise, color_noise * 0.8, color_noise * 0.6);
+}
+
+// Perturb the surface normal using a simple high-frequency procedural pattern
+fn perturb_normal(normal: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, strength: f32) -> vec3<f32> {
+    // Generate a small pseudo-normal variation using trigonometric noise
+    let nx = sin(world_pos.x * detail_scale) * cos(world_pos.z * detail_scale * 1.3);
+    let ny = sin(world_pos.z * detail_scale * 0.9) * cos(world_pos.x * detail_scale * 1.1);
+    let nz = sin((world_pos.x + world_pos.z) * detail_scale * 0.7);
+    let n_perturb = vec3<f32>(nx, ny, nz) * strength;
+    return normalize(normal + n_perturb);
+}
+
+// Calculate tessellation factor based on distance and terrain features
+fn calculate_tessellation_factor(world_pos: vec3<f32>, camera_pos: vec3<f32>, slope: f32) -> f32 {
+    let distance = length(world_pos - camera_pos);
+    
+    // Base tessellation decreases with distance
+    let distance_factor = clamp(1.0 - distance / 100.0, 0.1, 1.0);
+    
+    // Increase tessellation on steep slopes for better detail
+    let slope_factor = 1.0 + slope * 2.0;
+    
+    // Combine factors with some noise for natural variation
+    let noise_factor = sin(world_pos.x * 0.01) * cos(world_pos.z * 0.01) * 0.1 + 0.9;
+    
+    return distance_factor * slope_factor * noise_factor;
 }
 
 // Vertex inputs aligned with Rust vertex buffers:
@@ -2954,6 +3318,7 @@ struct VsOut {
     @location(3) normal: vec3<f32>,
     @location(4) uv: vec2<f32>,
   @location(5) mesh_type: u32,
+    @location(6) local_pos: vec3<f32>,
 };
 
 @vertex
@@ -2971,6 +3336,7 @@ fn vs_main(in: VsIn) -> VsOut {
     // Ensure skybox is always at far plane
     out.pos.z = out.pos.w * 0.999; // At far plane
     out.world_pos = world_skybox.xyz;
+    out.local_pos = in.pos;
     
     // For skybox, we use position as texture coordinates
     let pos_normalized = normalize(in.pos);
@@ -2984,6 +3350,7 @@ fn vs_main(in: VsIn) -> VsOut {
         // Derive UVs procedurally from world position (no per-vertex UVs provided)
         let scale = 10.0;
         out.uv = vec2<f32>(world.x / scale, world.z / scale);
+      out.local_pos = in.pos;
   }
   
     // Default normal (up). Real meshes should provide normals; this keeps lighting reasonable.
@@ -3071,7 +3438,7 @@ fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
     let river_x = sin(world_pos.x * 0.006) * 0.8;
     let river_z = cos(world_pos.y * 0.004) * 0.6;
     let river_noise = sin((world_pos.x + river_z * 20.0) * 0.008) * cos((world_pos.y + river_x * 15.0) * 0.01);
-    let valley_factor = 1.0 - abs(river_noise);
+    let valley_factor = 1.0 - river_noise;
     let valley_depth = valley_factor * valley_factor * valley_factor * -3.0; // Deeper valleys
     
     // Add gentle rolling hills
@@ -3121,7 +3488,7 @@ fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
     let stream_x = sin(world_pos.x * 0.007) * 0.6;
     let stream_z = cos(world_pos.y * 0.005) * 0.4;
     let stream_noise = sin((world_pos.x + stream_z * 15.0) * 0.01) * cos((world_pos.y + stream_x * 12.0) * 0.009);
-    let stream_factor = 1.0 - abs(stream_noise);
+    let stream_factor = 1.0 - stream_noise;
     let stream_depth = stream_factor * stream_factor * -2.0;
     
     return forest_height + rolling_hills + clearing_depression + mound_height + stream_depth;
@@ -3138,51 +3505,145 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   let time = 100.0; // TODO: Pass actual time as uniform
   
   // Mesh-specific rendering based on mesh type
-    if (in.mesh_type == 1u) { // Tree
-    // Sample tree texture based on UV coordinates
-        if (textureSample(ground_texture, ground_sampler, in.uv).a > 0.1) {
-      // Tree trunk - apply bark texture
-      if (in.uv.y < 0.6) {
-                col = textureSample(ground_texture, ground_sampler, in.uv).rgb;
-      } 
-      // Tree leaves - apply leaf texture with color variation
-      else {
-                var leaf_color = textureSample(ground_texture, ground_sampler, in.uv).rgb;
-        leaf_color = leaf_color * in.color.rgb * 1.2; // Boost saturation slightly
-        col = leaf_color;
-      }
-      
-      // Apply normal mapping for detailed bark/leaf rendering
-            let normal_sample = textureSample(ground_normal, normal_sampler, in.uv).rgb;
-      let normal = normalize(normal_sample * 2.0 - 1.0);
-      
-      // Apply simple directional lighting
-      let light_dir = normalize(vec3<f32>(0.5, 0.8, 0.2));
-      let light_intensity = max(dot(normal, light_dir), 0.0) * 0.6 + 0.4;
-      col = col * light_intensity;
-      
-      return vec4<f32>(col, 1.0);
+        if (in.mesh_type == 1u) { // Tree (PBR triplanar using existing materials)
+                let ws_pos = in.world_pos;
+                let V = normalize(-in.view_dir);
+                let sun_angle = time * 0.1;
+                let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+        
+                // Use local Y to separate trunk vs canopy
+                let is_trunk = in.local_pos.y < 0.6;
+            var base_sample: SampleSet = sample_triplanar_enhanced(1, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.5, 8.0);
+                if (is_trunk) {
+                        // Trunk: use dirt color with stone normal characteristics
+                let dirt = sample_triplanar_enhanced(1, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.5, 8.0);
+                        let stone = sample_triplanar_enhanced(2, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.5, 8.0);
+                        base_sample.c = mix(dirt.c, dirt.c * vec3<f32>(0.55, 0.45, 0.35), 0.4);
+                        base_sample.n = stone.n;
+                        base_sample.m = dirt.m; // use dirt MRA
+                } else {
+                        // Leaves: use forest floor material as proxy leaves
+                        base_sample = sample_triplanar_enhanced(4, ws_pos, vec3<f32>(0.0,1.0,0.0), 1.8, 10.0);
+                        // Slightly boost saturation/green
+                        base_sample.c = base_sample.c * vec3<f32>(0.9, 1.15, 0.9);
+                        // Make rougher, more diffuse
+                        base_sample.m.g = clamp(base_sample.m.g + 0.15, 0.0, 1.0);
+                }
+                // PBR lighting similar to terrain
+                let N = normalize(base_sample.n * 2.0 - 1.0);
+                let H = normalize(L + V);
+                let ao = base_sample.m.r;
+                let roughness = clamp(base_sample.m.g, 0.08, 0.98);
+                let metallic = clamp(base_sample.m.b * 0.2, 0.0, 0.2);
+                let base_color = base_sample.c;
+                let ior = mix(1.3, 2.0, metallic);
+                let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+                let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+                let F = F0_vec + (vec3<f32>(1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+                let a = roughness * roughness; let a2 = a * a;
+                let NdotH = max(dot(N, H), 0.0); let NdotH2 = NdotH * NdotH;
+                let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                let D = a2 / (3.14159 * denom * denom + 1e-5);
+                let NdotV = max(dot(N, V), 0.0); let NdotL = max(dot(N, L), 0.0);
+                let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+                let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+                let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+                let G_geom = Gv * Gl;
+                let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
+                let diffuse = kd * base_color / 3.14159;
+                let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+                let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.35;
+                let enhanced_ao = pow(ao, 0.85);
+                let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
+                let shadow = sample_shadow(in.world_pos, N, L);
+                col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
+                return vec4<f32>(pow(col, vec3<f32>(1.0/2.2)), 1.0);
     }
-  } 
-    else if (in.mesh_type == 2u) { // House
-        // Sample house texture based on UV coordinates (reuse ground texture for demo)
-        col = textureSample(ground_texture, ground_sampler, in.uv).rgb;
-    
-    // Apply lighting with ambient occlusion in corners
-    let ao = 1.0 - (1.0 - in.uv.x) * (1.0 - in.uv.y) * 0.5;
-    col = col * in.color.rgb * ao;
-    
-    return vec4<f32>(col, 1.0);
-  }
-    else if (in.mesh_type == 3u) { // Character
-        // Sample character texture based on UV coordinates (reuse ground texture for demo)
-        col = textureSample(ground_texture, ground_sampler, in.uv).rgb;
-    
-    // Apply character color tinting
-    col = col * in.color.rgb;
-    
-    return vec4<f32>(col, 1.0);
-  }
+        else if (in.mesh_type == 2u) { // House/Structure (walls vs roof)
+                let ws_pos = in.world_pos;
+                let V = normalize(-in.view_dir);
+                let sun_angle = time * 0.1;
+                let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+
+                // Separate walls (lower) and roof (upper) by local Y
+                let is_roof = in.local_pos.y > 0.6;
+                var base_sample: SampleSet;
+                if (is_roof) {
+                        // Roof: use sand material tinted
+                        base_sample = sample_triplanar_enhanced(3, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.2, 8.0);
+                        base_sample.c = base_sample.c * vec3<f32>(1.0, 0.95, 0.85);
+                } else {
+                        // Walls: use stone material
+                        base_sample = sample_triplanar_enhanced(2, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.0, 8.0);
+                }
+                // PBR shading
+                let N = normalize(base_sample.n * 2.0 - 1.0);
+                let H = normalize(L + V);
+                let ao = base_sample.m.r;
+                let roughness = clamp(base_sample.m.g, 0.12, 0.98);
+                let metallic = clamp(base_sample.m.b * 0.2, 0.0, 0.2);
+                let base_color = base_sample.c;
+                let ior = mix(1.3, 2.0, metallic);
+                let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+                let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+                let F = F0_vec + (vec3<f32>(1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+                let a = roughness * roughness; let a2 = a * a;
+                let NdotH = max(dot(N, H), 0.0); let NdotH2 = NdotH * NdotH;
+                let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                let D = a2 / (3.14159 * denom * denom + 1e-5);
+                let NdotV = max(dot(N, V), 0.0); let NdotL = max(dot(N, L), 0.0);
+                let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+                let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+                let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+                let G_geom = Gv * Gl;
+                let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
+                let diffuse = kd * base_color / 3.14159;
+                let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+                let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.3;
+                let enhanced_ao = pow(ao, 0.85);
+                let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
+                let shadow = sample_shadow(in.world_pos, N, L);
+                col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
+                return vec4<f32>(pow(col, vec3<f32>(1.0/2.2)), 1.0);
+    }
+        else if (in.mesh_type == 3u) { // Character - simple PBR triplanar with tint
+                let ws_pos = in.world_pos;
+                let V = normalize(-in.view_dir);
+                let sun_angle = time * 0.1;
+                let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+                // Use dirt as baseline material, tinted by instance color
+                var base_sample: SampleSet = sample_triplanar_enhanced(1, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.2, 9.0);
+                base_sample.c = clamp(base_sample.c * in.color.rgb, vec3<f32>(0.0), vec3<f32>(1.0));
+                // PBR shading
+                let N = normalize(base_sample.n * 2.0 - 1.0);
+                let H = normalize(L + V);
+                let ao = base_sample.m.r;
+                let roughness = clamp(base_sample.m.g, 0.2, 0.95);
+                let metallic = clamp(base_sample.m.b * 0.1, 0.0, 0.15);
+                let base_color = base_sample.c;
+                let ior = mix(1.3, 2.0, metallic);
+                let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+                let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+                let F = F0_vec + (vec3<f32>(1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+                let a = roughness * roughness; let a2 = a * a;
+                let NdotH = max(dot(N, H), 0.0); let NdotH2 = NdotH * NdotH;
+                let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                let D = a2 / (3.14159 * denom * denom + 1e-5);
+                let NdotV = max(dot(N, V), 0.0); let NdotL = max(dot(N, L), 0.0);
+                let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+                let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+                let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+                let G_geom = Gv * Gl;
+                let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
+                let diffuse = kd * base_color / 3.14159;
+                let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+                let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.25;
+                let enhanced_ao = pow(ao, 0.85);
+                let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
+                let shadow = sample_shadow(in.world_pos, N, L);
+                col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
+                return vec4<f32>(pow(col, vec3<f32>(1.0/2.2)), 1.0);
+    }
   else if (in.mesh_type == 4u) { // Skybox
     // Use procedural sky color based on view direction
     col = sky_color(in.view_dir, time);
@@ -3203,153 +3664,179 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   
   // Check if we're rendering the terrain surface
   if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
-        // Triplanar sampling for ground materials
+        // Enhanced triplanar sampling with biome-specific scales and detail mapping
         let ws_pos = in.world_pos;
-        let scale_grass = 2.0;
-        let scale_sand  = 2.5;
-        let scale_forest= 2.2;
-        var tile: f32 = scale_grass;
-        if (biome_type == 1) { tile = scale_sand; }
-        else if (biome_type == 2) { tile = scale_forest; }
-
-        // Derive a world-space surface normal via height gradients
-        let eps = 0.5;
+        let base_scale = 2.0;
+        let detail_scale = 8.0;
+        
+        // Biome-specific texture scaling for more realistic material distribution
+        var biome_scale = base_scale;
+        if (biome_type == 1) { biome_scale = base_scale * 1.2; } // Desert - slightly larger scale
+        else if (biome_type == 2) { biome_scale = base_scale * 0.9; } // Forest - slightly smaller scale
+        
+        // Enhanced surface normal calculation with better height gradients
+        let eps = 0.3;
+        let hC = terrain_height;
         let hL = get_biome_terrain_height((ws_pos.xz + vec2<f32>(-eps, 0.0)), biome_type);
         let hR = get_biome_terrain_height((ws_pos.xz + vec2<f32>( eps, 0.0)), biome_type);
         let hD = get_biome_terrain_height((ws_pos.xz + vec2<f32>( 0.0,-eps)), biome_type);
         let hU = get_biome_terrain_height((ws_pos.xz + vec2<f32>( 0.0, eps)), biome_type);
-        let dx = hR - hL;
-        let dz = hU - hD;
-        let n_world = normalize(vec3<f32>(-dx, 2.0, -dz));
+        let dx = (hR - hL) / (2.0 * eps);
+        let dz = (hU - hD) / (2.0 * eps);
+        let n_world = normalize(vec3<f32>(-dx, 1.0, -dz));
 
-        // Projected UVs for three axes and a fallback 2D uv for misc sampling
-        let tx = vec2<f32>(ws_pos.y / tile, ws_pos.z / tile);
-        let ty = vec2<f32>(ws_pos.x / tile, ws_pos.z / tile);
-        let tz = vec2<f32>(ws_pos.x / tile, ws_pos.y / tile);
-        let uv2 = vec2<f32>(ws_pos.x / tile, ws_pos.z / tile);
+        // Advanced material weight calculation with multiple influencing factors
+        let slope = clamp(1.0 - n_world.y, 0.0, 1.0);
+        let height_factor = clamp((hC + 2.0) / 4.0, 0.0, 1.0); // Normalized height factor
+        let moisture_factor = sin(ws_pos.x * 0.01) * cos(ws_pos.z * 0.008) * 0.5 + 0.5; // Pseudo-moisture
+        
+        // Base material weights with biome-specific logic
+        var w_grass = 0.0;
+        var w_dirt = 0.0;
+        var w_stone = 0.0;
+        var w_sand = 0.0;
+        var w_forest = 0.0;
+        
+        if (biome_type == 0) { // Grassland
+            // Grass dominates low slopes and mid elevations
+            w_grass = (1.0 - slope) * smoothstep(0.0, 0.6, height_factor) * (1.0 - moisture_factor * 0.3);
+            // Dirt appears on steeper slopes and drier areas
+            w_dirt = slope * 0.4 + moisture_factor * 0.2;
+            // Stone for rocky outcrops
+            w_stone = smoothstep(0.3, 0.8, slope) * 0.6;
+            
+        } else if (biome_type == 1) { // Desert
+            // Sand dominates with some variation
+            w_sand = 0.7 * (1.0 - smoothstep(0.4, 0.9, slope));
+            // Stone for rocky areas and steep slopes
+            w_stone = smoothstep(0.2, 0.7, slope) * 0.8;
+            // Dirt in transitional areas
+            w_dirt = 0.2 * (1.0 - slope) * moisture_factor;
+            
+        } else if (biome_type == 2) { // Forest
+            // Forest floor dominates with organic materials
+            w_forest = 0.6 * (1.0 - slope) * smoothstep(0.0, 0.7, height_factor);
+            // Grass in clearings
+            w_grass = 0.3 * (1.0 - slope) * (1.0 - smoothstep(0.3, 0.8, height_factor));
+            // Dirt on slopes
+            w_dirt = slope * 0.4;
+            // Stone for rocky areas
+            w_stone = smoothstep(0.5, 1.0, slope) * 0.5;
+        }
+        
+        // Normalize weights to ensure they sum to 1
+        var total_weight = w_grass + w_dirt + w_stone + w_sand + w_forest;
+        if (total_weight < 0.1) {
+            // Fallback to ensure we always have some material
+            w_grass = 0.5;
+            w_dirt = 0.3;
+            w_stone = 0.2;
+            total_weight = 1.0;
+        }
+        w_grass /= total_weight;
+        w_dirt /= total_weight;
+        w_stone /= total_weight;
+        w_sand /= total_weight;
+        w_forest /= total_weight;
 
-        let w = pow(abs(n_world), vec3<f32>(4.0));
-        let wsum = max(w.x + w.y + w.z, 1e-4);
-        let wnorm = w / wsum;
+        // Enhanced triplanar sampling for each material with detail mapping
+        let grass_sample = sample_triplanar_enhanced(0, ws_pos, n_world, biome_scale, detail_scale);
+        let dirt_sample = sample_triplanar_enhanced(1, ws_pos, n_world, biome_scale, detail_scale);
+        let stone_sample = sample_triplanar_enhanced(2, ws_pos, n_world, biome_scale, detail_scale);
+        let sand_sample = sample_triplanar_enhanced(3, ws_pos, n_world, biome_scale, detail_scale);
+        let forest_sample = sample_triplanar_enhanced(4, ws_pos, n_world, biome_scale, detail_scale);
 
-        let sx = sample_set(biome_type, tx);
-        let sy = sample_set(biome_type, ty);
-        let sz = sample_set(biome_type, tz);
+        // Combine materials with enhanced blending
+        var base_color = grass_sample.c * w_grass + 
+                        dirt_sample.c * w_dirt + 
+                        stone_sample.c * w_stone + 
+                        sand_sample.c * w_sand + 
+                        forest_sample.c * w_forest;
+        
+        var mra = grass_sample.m * w_grass + 
+                 dirt_sample.m * w_dirt + 
+                 stone_sample.m * w_stone + 
+                 sand_sample.m * w_sand + 
+                 forest_sample.m * w_forest;
+        
+        // Enhanced normal blending with proper interpolation
+        var normal_blend = (grass_sample.n * 2.0 - 1.0) * w_grass +
+                          (dirt_sample.n * 2.0 - 1.0) * w_dirt +
+                          (stone_sample.n * 2.0 - 1.0) * w_stone +
+                          (sand_sample.n * 2.0 - 1.0) * w_sand +
+                          (forest_sample.n * 2.0 - 1.0) * w_forest;
+        var normal = normalize(normal_blend);
 
-        var base_color = sx.c * wnorm.x + sy.c * wnorm.y + sz.c * wnorm.z;
-        var mra = sx.m * wnorm.x + sy.m * wnorm.y + sz.m * wnorm.z;
-        // Blend normals from projections; renormalize
-        let nx = normalize(sx.n * 2.0 - 1.0);
-        let ny = normalize(sy.n * 2.0 - 1.0);
-        let nz = normalize(sz.n * 2.0 - 1.0);
-        var n_blend = normalize(nx * wnorm.x + ny * wnorm.y + nz * wnorm.z);
-        let normal = n_blend;
+    // Calculate tessellation factor for geometry detail
+        let tessellation_factor = calculate_tessellation_factor(ws_pos, vec3<f32>(0.0, 5.0, 0.0), slope);
+        
+        // Use tessellation factor to modulate detail mapping strength
+    let detail_strength = 0.6; // Base strength for micro detail mapping
+    let adaptive_detail_strength = detail_strength * tessellation_factor;
+        base_color = apply_detail_mapping(base_color, ws_pos, detail_scale, adaptive_detail_strength);
+        
+        // Apply normal perturbation with adaptive strength
+        let adaptive_normal_strength = 0.1 * tessellation_factor;
+        normal = perturb_normal(normal, ws_pos, detail_scale * 2.0, adaptive_normal_strength);
+
         let ao = mra.r; // ambient occlusion
-        let roughness = clamp(mra.g, 0.04, 1.0);
-        let metallic = clamp(mra.b, 0.0, 1.0);
-        let emissive = textureSample(ground_emissive, emissive_sampler, uv2).rgb;
+        let roughness = clamp(mra.g, 0.08, 0.95);
+        let metallic = clamp(mra.b, 0.0, 0.2);
+        let emissive = vec3<f32>(0.0); // disable emissive for terrain by default
     
     // Biome-specific terrain texturing
-    if (biome_type == 0) { // Grassland
-      // Mix grass with dirt based on terrain height and slope
-      let height_factor = clamp((terrain_height + 2.0) / 6.0, 0.0, 1.0);
-      let grass_color = vec3<f32>(0.3, 0.6, 0.2);
-      let dirt_color = vec3<f32>(0.4, 0.3, 0.2);
-    base_color = mix(base_color, mix(dirt_color, grass_color, height_factor), 0.7);
-      
-      // Add moss and vegetation on flat areas
-      let slope_factor = 1.0 - abs(terrain_height) / 4.0;
-      let moss_color = vec3<f32>(0.2, 0.5, 0.15);
-    base_color = mix(base_color, moss_color, slope_factor * 0.3);
-      
-    } else if (biome_type == 1) { // Desert
-            // Use sampled sand textures, blend in stone on steep slopes
-            let h_factor = clamp(1.0 + terrain_height * 0.3, 0.0, 1.0);
-            var sand_tex = base_color.rgb * h_factor;
-            let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-            let stone_tex = textureSample(stone_albedo, ground_sampler, uv2 * 0.8).rgb;
-            sand_tex = mix(sand_tex, stone_tex, slope * 0.4);
-            // Mineral deposits
-            let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
-            if (mineral_noise > 0.7) {
-                let mineral_color = vec3<f32>(0.7, 0.6, 0.4);
-                base_color = mix(sand_tex, mineral_color, 0.3);
-            } else {
-                base_color = sand_tex;
-            }
-    } else if (biome_type == 2) { // Dense Forest
-      // Rich forest floor with deep organic layers
-      let height_factor = clamp((terrain_height + 2.0) / 5.0, 0.0, 1.0);
-    let forest_base = base_color.rgb;
-      
-      // Dark rich soil base
-      let soil_color = vec3<f32>(0.25, 0.2, 0.15);
-      let leaf_litter = vec3<f32>(0.4, 0.3, 0.2);
-      let moss_color = vec3<f32>(0.15, 0.4, 0.2);
-      
-      // Slope-based moss coverage (more moss on gentle slopes)
-      let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-      let moss_factor = (1.0 - slope) * 0.6;
-      
-      // Height-based composition
-            let base_mix = mix(soil_color, leaf_litter, height_factor);
-            base_color = mix(forest_base, base_mix, 0.8);
-            base_color = mix(base_color, moss_color, moss_factor);
-            // Blend dirt in flatter areas
-            let dirt_tex = textureSample(dirt_albedo, ground_sampler, uv2).rgb;
-            base_color = mix(base_color, dirt_tex, (1.0 - slope) * 0.2);
-      
-      // Add depth variation with organic patches
-      let organic_noise = sin(in.world_pos.x * 2.0) * cos(in.world_pos.z * 1.8);
-      if (organic_noise > 0.4) {
-        let organic_color = vec3<f32>(0.3, 0.25, 0.18);
-                base_color = mix(base_color, organic_color, 0.4);
-      }
-      
-      // Dappled light effect (filtering through canopy)
-      let light_spots = sin(in.world_pos.x * 0.3) * cos(in.world_pos.z * 0.25);
-      if (light_spots > 0.6) {
-                base_color = base_color * 1.15; // Brighter in light spots
-      } else if (light_spots < -0.3) {
-                base_color = base_color * 0.85; // Darker in deep shade
-      }
-    }
-        // Lighting: simple Cook-Torrance PBR
+        // Note: Removed large flat-color biome overlays; rely on layered PBR materials above
+        // Enhanced PBR lighting with improved Cook-Torrance BRDF
         let V = normalize(-in.view_dir);
         let N = normalize(normal);
         let sun_angle = time * 0.1;
         let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
         let H = normalize(L + V);
 
-        // Fresnel (Schlick)
-        let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
-        let F = F0 + (vec3<f32>(1.0, 1.0, 1.0) - F0) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
-        // Normal distribution (GGX)
+        // Enhanced Fresnel with realistic IOR values based on material
+        let ior = mix(1.3, 2.5, metallic); // Vary IOR based on metallic content
+        let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+        let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+        let F = F0_vec + (vec3<f32>(1.0, 1.0, 1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+        
+        // Improved Normal Distribution Function (GGX)
         let a = roughness * roughness;
         let a2 = a * a;
         let NdotH = max(dot(N, H), 0.0);
         let NdotH2 = NdotH * NdotH;
         let denom = (NdotH2 * (a2 - 1.0) + 1.0);
         let D = a2 / (3.14159 * denom * denom + 1e-5);
-        // Geometry Smith
+        
+        // Enhanced Geometry Smith with correlated masking-shadowing
         let NdotV = max(dot(N, V), 0.0);
         let NdotL = max(dot(N, L), 0.0);
-        let k = (roughness + 1.0);
-        let k2 = (k*k) / 8.0;
-        let Gv = NdotV / (NdotV * (1.0 - k2) + k2 + 1e-5);
-        let Gl = NdotL / (NdotL * (1.0 - k2) + k2 + 1e-5);
-        let G = Gv * Gl;
+        let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+        let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+        let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+        let G_geom = Gv * Gl;
 
+        // Enhanced diffuse with subsurface scattering for organic materials
         let kd = (vec3<f32>(1.0, 1.0, 1.0) - F) * (1.0 - metallic);
-        let diffuse = kd * base_color / 3.14159;
-        let specular = (F * D * G) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
-        let ambient = base_color * ao * 0.2;
-        var color = ambient + (diffuse + specular) * NdotL + emissive;
+        
+        // Add subsurface scattering approximation for materials like grass and soil
+        let subsurface_factor = 0.15 * (1.0 - roughness) * (1.0 - metallic) * ao;
+        let subsurface = subsurface_factor * base_color * max(dot(N, L), 0.0) * 0.5;
+        
+        let diffuse = kd * base_color / 3.14159 + subsurface;
+        let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+        
+        // Enhanced ambient lighting with sky contribution and improved AO
+        let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.4;
+        let enhanced_ao = pow(ao, 0.8); // Enhance AO contrast
+        let ambient = base_color * enhanced_ao * 0.3 + sky_ambient * enhanced_ao;
+        
+        let shadow = sample_shadow(in.world_pos, N, L);
+        var color = ambient + (diffuse + specular) * NdotL * (1.0 - shadow) + emissive;
 
         // Enhanced detail patterns applied as subtle modulation
-    let detail_scale = 8.0 + terrain_height * 0.2;
-    let cx = floor(in.world_pos.x / detail_scale);
-    let cz = floor(in.world_pos.z / detail_scale);
+    let detail_scale2 = 8.0 + terrain_height * 0.2;
+    let cx = floor(in.world_pos.x / detail_scale2);
+    let cz = floor(in.world_pos.z / detail_scale2);
     let detail_pattern = f32((i32(cx + cz) & 1)) * 0.06;
         color = color * (0.96 + detail_pattern);
 
@@ -3556,33 +4043,18 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos
         let (color, mesh_type) = match body.user_data {
             0 => ([0.95, 0.95, 0.95, 1.0], MeshType::Cube),     // Ground
             1 => ([0.9, 0.6, 0.2, 1.0], MeshType::Cube),        // Original boxes (orange)
-            2 => ([0.1, 0.8, 0.9, 1.0], MeshType::Cube),        // Sphere (cyan)
-            
-            // Trees and vegetation (10-34)
-            10..=34 => ([0.2, 0.7, 0.3, 1.0], MeshType::Tree),  // Trees (green)
-            
-            // Buildings and structures (20-27, 40-45) - non-overlapping with trees
-            35..=39 => ([0.7, 0.5, 0.3, 1.0], MeshType::House), // Grassland houses (brown)
-            40..=45 => ([0.8, 0.7, 0.5, 1.0], MeshType::House), // Adobe houses (sandy)
-            
-            // Geological features
-            60..=75 => ([0.5, 0.45, 0.4, 1.0], MeshType::Cube), // Grassland rocks (gray-brown)
-            76..=90 => ([0.6, 0.45, 0.35, 1.0], MeshType::Cube), // Desert formations (reddish brown)
-            
-            // Bushes and undergrowth (100-114)
-            100..=114 => ([0.3, 0.6, 0.2, 1.0], MeshType::Tree), // Bushes (darker green)
-            
-            // Special structures
-            200..=205 => ([0.6, 0.6, 0.7, 1.0], MeshType::Cube), // Stone circles (gray)
-            300..=309 => ([0.4, 0.4, 0.45, 1.0], MeshType::Cube), // River banks (dark gray)
-            400..=407 => ([0.9, 0.8, 0.6, 1.0], MeshType::Cube), // Sand dunes (pale yellow)
-            500..=504 => ([0.4, 0.8, 0.2, 1.0], MeshType::Tree), // Oasis palms (bright green)
-            
-            // Default objects
-            50..=59 => ([0.6, 0.6, 0.6, 1.0], MeshType::Cube),  // Generic objects (gray)
-            _ => ([0.5, 0.5, 0.5, 1.0], MeshType::Cube),         // Unknown (dark gray)
+            2 => ([0.2, 0.6, 0.9, 1.0], MeshType::Cube),        // Sphere (use cube mesh fallback)
+            10..=34 => ([0.20, 0.80, 0.30, 1.0], MeshType::Tree),   // Trees
+            35..=45 => ([0.60, 0.60, 0.60, 1.0], MeshType::House),  // Houses
+            60..=90 => ([0.50, 0.50, 0.50, 1.0], MeshType::Cube),   // Rocks/Boulders
+            100..=170 => ([0.10, 0.50, 0.20, 1.0], MeshType::Tree), // Bushes/Undergrowth (tree as proxy)
+            200..=309 => ([0.40, 0.40, 0.40, 1.0], MeshType::Cube), // Stone features
+            400..=407 => ([0.90, 0.80, 0.60, 1.0], MeshType::Cube), // Sand dunes
+            500..=504 => ([0.20, 0.70, 0.30, 1.0], MeshType::Tree), // Oasis palms
+            _ => ([0.80, 0.80, 0.80, 1.0], MeshType::Cube),         // Default
         };
 
+        // Push instance for this physics body
         out.push(InstanceRaw {
             model: model_m.to_cols_array(),
             color,
