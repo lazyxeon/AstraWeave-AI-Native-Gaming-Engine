@@ -9,6 +9,7 @@ use rapier3d::prelude as r3;
 use rapier3d::prelude::nalgebra; // Add nalgebra import
 use serde::Deserialize;
 use std::{borrow::Cow, fs, path::Path, time::Instant};
+use std::path::PathBuf;
 use wgpu::util::DeviceExt;
 use winit::{
     event::{DeviceEvent, ElementState, Event, KeyEvent, MouseScrollDelta, WindowEvent},
@@ -147,6 +148,48 @@ struct LoadedTexture {
     texture: wgpu::Texture,
     view: wgpu::TextureView,
     sampler: wgpu::Sampler,
+}
+
+// ------------------------------- Asset path resolution -------------------------------
+fn candidate_paths() -> Vec<PathBuf> {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    vec![
+        PathBuf::from("assets"),
+        manifest.join("assets"),
+        manifest.join("../../assets"),
+        PathBuf::from("../assets"),
+        PathBuf::from("../../assets"),
+    ]
+}
+
+fn resolve_asset_path(rel: &str) -> PathBuf {
+    for base in candidate_paths() {
+        let p = base.join(rel);
+        if p.exists() { return p; }
+    }
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets").join(rel)
+}
+
+fn asset_dir() -> PathBuf {
+    for base in candidate_paths() {
+        if base.exists() { return base; }
+    }
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets")
+}
+
+fn resolve_asset_src_path(rel: &str) -> PathBuf {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for base in [
+        PathBuf::from("assets_src"),
+        manifest.join("assets_src"),
+        manifest.join("../../assets_src"),
+        PathBuf::from("../assets_src"),
+        PathBuf::from("../../assets_src"),
+    ] {
+        let p = base.join(rel);
+        if p.exists() { return p; }
+    }
+    manifest.join("../../assets_src").join(rel)
 }
 
 #[allow(dead_code)]
@@ -824,8 +867,7 @@ fn load_texture_from_file(
 
 fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Result<()> {
     // Load texture pack configuration
-    let pack_path =
-        Path::new("assets_src/environments").join(format!("{}.toml", texture_pack_name));
+    let pack_path = resolve_asset_src_path(&format!("environments/{}.toml", texture_pack_name));
     let pack = load_texture_pack(&pack_path)?;
 
     // Load the ground texture specified in the pack
@@ -1588,7 +1630,8 @@ fn main() -> Result<()> {
 async fn run() -> Result<()> {
     // Generate default textures at startup if missing (seed -> vary looks)
     let seed = 0xA57; // change to taste / hook to key for regeneration
-    texture_synth::ensure_textures("assets", seed, true)?;
+    let out_dir = asset_dir();
+    texture_synth::ensure_textures(&out_dir.to_string_lossy(), seed, true)?;
 
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
@@ -2792,13 +2835,13 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
          stone_albedo, stone_normal, stone_mra,
          sand_albedo, sand_normal, sand_mra,
          forest_albedo, forest_normal, forest_mra) =
-        match load_texture_from_file(&device, &queue, Path::new("assets/grass.png")) {
+    match load_texture_from_file(&device, &queue, &resolve_asset_path("grass.png")) {
             Ok(texture) => {
                 // Try to load corresponding normal map
                 let normal_texture = match load_texture_from_file(
                     &device,
                     &queue,
-                    Path::new("assets/grass_n.png"),
+                    &resolve_asset_path("grass_n.png"),
                 ) {
                     Ok(normal) => normal,
                     Err(_) => create_default_normal_texture(&device, &queue)?,
@@ -2807,7 +2850,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                 let mra_texture = match load_texture_from_file(
                     &device,
                     &queue,
-                    Path::new("assets/grass_mra.png"),
+                    &resolve_asset_path("grass_mra.png"),
                 ) {
                     Ok(tex) => tex,
                     Err(_) => create_default_mra_texture(&device, &queue)?,
@@ -2815,28 +2858,28 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                 let emissive_texture = match load_texture_from_file(
                     &device,
                     &queue,
-                    Path::new("assets/grass_e.png"),
+                    &resolve_asset_path("grass_e.png"),
                 ) {
                     Ok(tex) => tex,
                     Err(_) => create_default_emissive_texture(&device, &queue)?,
                 };
 
                 // Load additional biome textures (with fallbacks)
-                let dirt_albedo = load_texture_from_file(&device, &queue, Path::new("assets/dirt.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
-                let dirt_normal = load_texture_from_file(&device, &queue, Path::new("assets/dirt_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
-                let dirt_mra = load_texture_from_file(&device, &queue, Path::new("assets/dirt_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+                let dirt_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("dirt.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let dirt_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("dirt_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let dirt_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("dirt_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
 
-                let stone_albedo = load_texture_from_file(&device, &queue, Path::new("assets/stone.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
-                let stone_normal = load_texture_from_file(&device, &queue, Path::new("assets/stone_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
-                let stone_mra = load_texture_from_file(&device, &queue, Path::new("assets/stone_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+                let stone_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("stone.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let stone_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("stone_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let stone_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("stone_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
 
-                let sand_albedo = load_texture_from_file(&device, &queue, Path::new("assets/sand.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
-                let sand_normal = load_texture_from_file(&device, &queue, Path::new("assets/sand_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
-                let sand_mra = load_texture_from_file(&device, &queue, Path::new("assets/sand_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+                let sand_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("sand.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let sand_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("sand_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let sand_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("sand_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
 
-                let forest_albedo = load_texture_from_file(&device, &queue, Path::new("assets/forest_floor.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
-                let forest_normal = load_texture_from_file(&device, &queue, Path::new("assets/forest_floor_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
-                let forest_mra = load_texture_from_file(&device, &queue, Path::new("assets/forest_floor_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+                let forest_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("forest_floor.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let forest_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("forest_floor_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let forest_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("forest_floor_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
 
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("ground-texture-bg"),
@@ -3995,11 +4038,14 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         var color = ambient + (diffuse + specular) * NdotL * (1.0 - shadow) + emissive;
 
         // Enhanced detail patterns applied as subtle modulation
-    let detail_scale2 = 8.0 + terrain_height * 0.2;
-    let cx = floor(in.world_pos.x / detail_scale2);
-    let cz = floor(in.world_pos.z / detail_scale2);
-    let detail_pattern = f32((i32(cx + cz) & 1)) * 0.06;
-        color = color * (0.96 + detail_pattern);
+        // Replace checkerboard artifact with multi-octave hash noise
+        let p = in.world_pos.xz * 0.15;
+        let n1 = fract(sin(dot(p, vec2<f32>(127.1, 311.7)) + time * 0.11) * 43758.5453);
+        let n2 = fract(sin(dot(p * 2.03 + 17.0, vec2<f32>(269.5, 183.3)) + time * 0.07) * 43758.5453);
+        let n3 = fract(sin(dot(p * 4.01 + 31.0, vec2<f32>(12.9, 78.2)) + time * 0.05) * 43758.5453);
+        let n = (n1 * 0.5 + n2 * 0.3 + n3 * 0.2);
+        let noise_mod = (n - 0.5) * 0.06; // ~[-0.03, 0.03]
+        color = color * (1.0 + noise_mod);
 
     // Tone map (ACES approx). Keep in linear; surface format is sRGB
         let aA = 2.51;
