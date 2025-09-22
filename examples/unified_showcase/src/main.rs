@@ -949,6 +949,8 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
 
     match load_texture_from_file(&render.device, &render.queue, &texture_path) {
         Ok(new_texture) => {
+            println!("✓ Successfully loaded albedo texture: {}", texture_path.display());
+            
             // Construct normal map path by replacing extension with _n.png
             let tex_stem = Path::new(&texture_name)
                 .file_stem()
@@ -1074,9 +1076,58 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
         }
         Err(e) => {
             println!(
-                "Failed to load texture for pack '{}': {}",
-                texture_pack_name, e
+                "❌ Failed to load texture for pack '{}' from path '{}': {}",
+                texture_pack_name, texture_path.display(), e
             );
+            
+            // More detailed error information
+            // Redundant file existence check removed; rely on error message above and load_texture_from_file's own logging.
+            
+            // Try to fallback to grass texture if loading desert/other fails
+            if texture_pack_name != "grassland" {
+                println!("🔄 Attempting fallback to grassland texture...");
+                let fallback_path = Path::new("assets").join("grass.png");
+                match load_texture_from_file(&render.device, &render.queue, &fallback_path) {
+                    Ok(fallback_texture) => {
+                        println!("✓ Successfully loaded fallback grass texture");
+                        let fallback_normal = create_default_normal_texture(&render.device, &render.queue)?;
+                        
+                        let combined_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                            label: Some(&format!("{}-fallback-bind-group", texture_pack_name)),
+                            layout: &render.texture_bind_group_layout,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(&fallback_texture.view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(&fallback_texture.sampler),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 2,
+                                    resource: wgpu::BindingResource::TextureView(&fallback_normal.view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 3,
+                                    resource: wgpu::BindingResource::Sampler(&fallback_normal.sampler),
+                                },
+                            ],
+                        });
+                        
+                        render.ground_texture = Some(fallback_texture);
+                        render.ground_normal = Some(fallback_normal);
+                        render.ground_bind_group = Some(combined_bg);
+                        
+                        println!("✓ Successfully set fallback texture for pack: {}", texture_pack_name);
+                        return Ok(());
+                    }
+                    Err(fallback_e) => {
+                        println!("❌ Fallback texture also failed: {}", fallback_e);
+                    }
+                }
+            }
+            
             Err(e)
         }
     }
@@ -1727,11 +1778,13 @@ async fn run() -> Result<()> {
 
     // Initialize default environment and texture pack
     let mut characters = generate_environment_objects(&mut physics, "grassland");
+    println!("🌿 Generated {} character instances for initial grassland environment", characters.len());
 
     // Load the initial grassland texture pack
+    println!("🌱 Initializing with grassland texture pack...");
     if let Err(e) = reload_texture_pack(&mut render, "grassland") {
         println!(
-            "Warning: Failed to load initial grassland texture pack: {}",
+            "⚠ Warning: Failed to load initial grassland texture pack: {}",
             e
         );
         println!("Continuing with default textures...");
@@ -1739,7 +1792,7 @@ async fn run() -> Result<()> {
             "Note: You can still switch texture packs using keys 1 (grassland) and 2 (desert)"
         );
     } else {
-        println!("Successfully loaded initial grassland texture pack");
+        println!("✅ Successfully loaded initial grassland texture pack");
         println!(
             "Controls: WASD+mouse=camera, P=pause physics, T=teleport sphere, E=apply impulse, C=toggle camera mode"
         );
@@ -1876,11 +1929,12 @@ async fn run() -> Result<()> {
                                     KeyCode::Digit1 => {
                                         if pressed {
                                             let pack_name = "grassland";
+                                            println!("🌱 Switching to {} texture pack...", pack_name);
                                             if let Err(e) =
                                                 reload_texture_pack(&mut render, pack_name)
                                             {
                                                 println!(
-                                                    "Failed to switch to {} texture pack: {}",
+                                                    "❌ Failed to switch to {} texture pack: {}",
                                                     pack_name, e
                                                 );
                                             } else {
@@ -1893,6 +1947,7 @@ async fn run() -> Result<()> {
                                                     &mut physics,
                                                     pack_name,
                                                 );
+                                                println!("✅ Successfully switched to {} environment with {} characters", pack_name, characters.len());
                                             }
                                         }
                                     }
@@ -1904,7 +1959,7 @@ async fn run() -> Result<()> {
                                                 reload_texture_pack(&mut render, pack_name)
                                             {
                                                 println!(
-                                                    "Failed to switch to {} texture pack: {}",
+                                                    "❌ Failed to switch to {} texture pack: {}",
                                                     pack_name, e
                                                 );
                                             } else {
@@ -4270,7 +4325,7 @@ fn get_water_level(world_pos: vec2<f32>, time: f32) -> f32 {
   return -1.8 + wave1 + wave2; // Base water level with waves
 }
 
-// Determine biome type based on world position
+// Determine biome type based on world position - FIXED: More consistent biome regions
 fn get_biome_type(world_pos: vec2<f32>) -> i32 {
     let biome_scale = 0.01;
     let biome_pos = world_pos * biome_scale;

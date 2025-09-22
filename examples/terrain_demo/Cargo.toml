@@ -10,4 +10,4 @@ anyhow.workspace = true
 glam.workspace = true
 astraweave-terrain = { path = "../../astraweave-terrain" }
 astraweave-render = { path = "../../astraweave-render" }
-clap = { version = "4.0", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
