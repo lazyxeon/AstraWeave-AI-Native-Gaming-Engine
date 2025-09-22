@@ -20,7 +20,7 @@ serde = { workspace = true, features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "hdr", "webp", "tga", "dds", "tiff"] }
 serde_json = "1.0"
 astraweave-render = { path = "../../astraweave-render" }
-noise = "0.8"
+noise = "0.9"
 
 # optional: for a quick path search sample
 pathfinding = "4"
