@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license.workspace = true
 publish = false
+default-run = "unified_showcase"
 
 [dependencies]
 anyhow = { workspace = true }
@@ -23,3 +24,26 @@ noise = "0.9"
 
 # optional: for a quick path search sample
 pathfinding = "4"
+
+[features]
+default = []
+dev-tools = []
+
+[[bin]]
+name = "unified_showcase"
+path = "src/main.rs"
+
+[[bin]]
+name = "generate_atlas"
+path = "src/bin/generate_atlas.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "generate_textures"
+path = "src/bin/generate_textures.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "texture_system_demo"
+path = "src/bin/texture_system_demo.rs"
+required-features = ["dev-tools"]
