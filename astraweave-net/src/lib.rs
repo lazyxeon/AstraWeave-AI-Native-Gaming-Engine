@@ -71,7 +71,7 @@ impl GameServer {
         // send welcome
         tx.send(Message::Text(serde_json::to_string(&Msg::ServerWelcome {
             id: 1,
-        })?))
+        })?.into()))
         .await?;
 
         // spawn a task to push snapshots
@@ -79,7 +79,7 @@ impl GameServer {
         tokio::spawn(async move {
             while let Ok(txt) = rx_bcast.recv().await {
                 // ignore TX errors (client might disconnect)
-                let _ = tx.send(Message::Text(txt)).await;
+                let _ = tx.send(Message::Text(txt.into())).await;
             }
         });
 

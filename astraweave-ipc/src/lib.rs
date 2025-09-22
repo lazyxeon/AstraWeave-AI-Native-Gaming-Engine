@@ -26,7 +26,7 @@ async fn handle_conn(stream: tokio::net::TcpStream) -> Result<()> {
             let snap: WorldSnapshot = serde_json::from_str(&txt)?;
             let plan: PlanIntent = orch.propose_plan(&snap);
             let out = serde_json::to_string(&plan)?;
-            tx.send(Message::Text(out)).await?;
+            tx.send(Message::Text(out.into())).await?;
         } else if msg.is_close() {
             break;
         }
@@ -38,7 +38,7 @@ pub async fn ws_client_roundtrip(addr: &str, snapshot: &WorldSnapshot) -> Result
     let (ws, _) = tokio_tungstenite::connect_async(addr).await?;
     let (mut tx, mut rx) = ws.split();
     let js = serde_json::to_string(snapshot)?;
-    tx.send(Message::Text(js)).await?;
+    tx.send(Message::Text(js.into())).await?;
     if let Some(msg) = rx.next().await {
         let msg = msg?;
         let txt = msg.into_text()?;
