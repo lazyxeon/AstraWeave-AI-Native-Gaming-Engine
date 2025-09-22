@@ -1,0 +1,20 @@
+[
+  {
+    "src": "assets_src/textures/stone.png",
+    "out": "assets/stone.ktx2",
+    "sha256": "bb676648413e7219015a57d76b478f8df0d9df08600ed177b11ae556ce5653be",
+    "kind": "texture"
+  },
+  {
+    "src": "assets_src/textures/grass.png",
+    "out": "assets/grass.ktx2",
+    "sha256": "f8d8554fc06f8134ae72a30e950ce52f5bf0278c7943cc9d3d9d665f9fe8b1fe",
+    "kind": "texture"
+  },
+  {
+    "src": "assets_src/textures/dirt.png",
+    "out": "assets/dirt.ktx2",
+    "sha256": "859a86257cc65e1ee41820999f42c291d91577c2e87fe35cffc00782a825f2f0",
+    "kind": "texture"
+  }
+]

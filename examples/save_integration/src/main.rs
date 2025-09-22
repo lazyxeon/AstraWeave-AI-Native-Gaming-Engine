@@ -160,7 +160,9 @@ fn serialize_world_state(world: &World) -> Result<Vec<u8>> {
     // In a real implementation, you'd serialize the ECS components properly
     // For this example, we'll just encode the world time and basic info
     let simplified_state = (world.t, world.next_id);
-    Ok(bincode::serialize(&simplified_state).unwrap_or_default())
+    use bincode::serde::encode_to_vec;
+    use bincode::config::standard;
+    Ok(encode_to_vec(&simplified_state, standard()).unwrap_or_default())
 }
 
 /// Calculate a hash of the world state for quick comparison
@@ -180,7 +182,10 @@ fn restore_world_from_save(bundle: &SaveBundleV2) -> Result<World> {
     
     // Restore basic world state
     if !bundle.world.ecs_blob.is_empty() {
-        if let Ok((time, next_id)) = bincode::deserialize::<(f32, u32)>(&bundle.world.ecs_blob) {
+        use bincode::serde::decode_from_slice;
+        use bincode::config::standard;
+        if let Ok((value, _len)) = decode_from_slice(&bundle.world.ecs_blob, standard()) {
+            let (time, next_id): (f32, u32) = value;
             world.t = time;
             world.next_id = next_id;
         }

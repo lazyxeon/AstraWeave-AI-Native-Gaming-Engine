@@ -77,12 +77,34 @@ fn main() -> Result<()> {
 
 fn globwalk(root: &str, pat: &str) -> Result<Vec<PathBuf>> {
     let mut v = vec![];
-    for e in WalkDir::new(root) {
-        let e = e?;
-        if e.file_type().is_file() {
-            let p = e.into_path();
-            if glob::Pattern::new(pat)?.matches_path(&p) {
-                v.push(p);
+    
+    // Handle brace expansion like *.{png,jpg,jpeg}
+    let patterns = if pat.contains('{') && pat.contains('}') {
+        let start = pat.find('{').unwrap();
+        let end = pat.find('}').unwrap();
+        let prefix = &pat[..start];
+        let suffix = &pat[end+1..];
+        let extensions = &pat[start+1..end];
+        
+        extensions.split(',')
+            .map(|ext| format!("{}{}{}", prefix, ext, suffix))
+            .collect::<Vec<_>>()
+    } else {
+        vec![pat.to_string()]
+    };
+    
+    for pattern_str in patterns {
+        for e in WalkDir::new(root) {
+            let e = e?;
+            if e.file_type().is_file() {
+                let p = e.into_path();
+                // Create pattern relative to root for matching
+                let relative_path = p.strip_prefix(root).unwrap_or(&p);
+                if glob::Pattern::new(&pattern_str)?.matches_path(relative_path) {
+                    if !v.contains(&p) {
+                        v.push(p);
+                    }
+                }
             }
         }
     }

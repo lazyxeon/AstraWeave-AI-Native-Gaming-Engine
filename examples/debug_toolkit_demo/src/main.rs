@@ -9,10 +9,15 @@ use winit::{
 };
 
 struct App {
+    #[allow(dead_code)]
     world: World,
+    #[allow(dead_code)]
     player: u32,
+    #[allow(dead_code)]
     comp: u32,
+    #[allow(dead_code)]
     enemy: u32,
+    #[allow(dead_code)]
     plan: Option<PlanIntent>,
 
     // Debug toolkit integration

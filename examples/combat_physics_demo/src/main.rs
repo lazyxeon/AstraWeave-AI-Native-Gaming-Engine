@@ -4,7 +4,7 @@ use glam::vec3;
 
 fn main() -> anyhow::Result<()> {
     let mut phys = PhysicsWorld::new(vec3(0.0, -9.81, 0.0));
-    let ground = phys.create_ground_plane(vec3(50.0, 0.0, 50.0), 1.0);
+    let _ground = phys.create_ground_plane(vec3(50.0, 0.0, 50.0), 1.0);
     let player_id = phys.add_dynamic_box(
         vec3(0.0, 1.0, 0.0),
         vec3(0.3, 0.5, 0.3),

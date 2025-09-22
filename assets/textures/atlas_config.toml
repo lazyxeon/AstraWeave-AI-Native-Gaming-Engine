@@ -1,0 +1,162 @@
+# Texture Atlas Configuration
+# This file defines all textures used in the unified_showcase example
+
+[atlas]
+name = "unified_showcase_atlas"
+description = "Complete texture atlas for the unified showcase demo"
+version = "1.0.0"
+dimensions = [2048, 2048]  # Width, height of the atlas
+
+# TERRAIN TEXTURES
+[terrain.grass]
+diffuse = "terrain/grass.png"
+normal = "terrain/grass_n.png"
+roughness = 0.7
+uv_rect = [0, 0, 256, 256]  # x, y, width, height in atlas
+
+[terrain.dirt]
+diffuse = "terrain/dirt.png"
+normal = "terrain/dirt_n.png"
+roughness = 0.8
+uv_rect = [256, 0, 256, 256]
+
+[terrain.sand]
+diffuse = "terrain/sand.png"
+normal = "terrain/sand_n.png"
+roughness = 0.6
+uv_rect = [512, 0, 256, 256]
+
+[terrain.stone]
+diffuse = "terrain/stone.png"
+normal = "terrain/stone_n.png"
+roughness = 0.9
+uv_rect = [768, 0, 256, 256]
+
+[terrain.snow]
+diffuse = "terrain/snow.png"
+normal = "terrain/snow_n.png"
+roughness = 0.3
+uv_rect = [1024, 0, 256, 256]
+
+[terrain.forest_floor]
+diffuse = "terrain/forest_floor.png"
+normal = "terrain/forest_floor_n.png"
+roughness = 0.75
+uv_rect = [1280, 0, 256, 256]
+
+# TREE TEXTURES
+[trees.trunk]
+diffuse = "structures/tree_bark.png"
+normal = "structures/tree_bark_n.png"
+roughness = 0.85
+uv_rect = [0, 256, 256, 256]
+
+[trees.leaves_oak]
+diffuse = "structures/leaves_oak.png"
+normal = "structures/leaves_oak_n.png"
+roughness = 0.5
+uv_rect = [256, 256, 256, 256]
+alpha_mask = true
+
+[trees.leaves_pine]
+diffuse = "structures/leaves_pine.png"
+normal = "structures/leaves_pine_n.png"
+roughness = 0.6
+uv_rect = [512, 256, 256, 256]
+alpha_mask = true
+
+[trees.leaves_palm]
+diffuse = "structures/leaves_palm.png"
+normal = "structures/leaves_palm_n.png"
+roughness = 0.5
+uv_rect = [768, 256, 256, 256]
+alpha_mask = true
+
+# HOUSE TEXTURES
+[houses.wood_wall]
+diffuse = "structures/wood_wall.png"
+normal = "structures/wood_wall_n.png"
+roughness = 0.75
+uv_rect = [0, 512, 256, 256]
+
+[houses.wood_roof]
+diffuse = "structures/wood_roof.png"
+normal = "structures/wood_roof_n.png"
+roughness = 0.8
+uv_rect = [256, 512, 256, 256]
+
+[houses.stone_wall]
+diffuse = "structures/stone_wall.png"
+normal = "structures/stone_wall_n.png"
+roughness = 0.9
+uv_rect = [512, 512, 256, 256]
+
+[houses.adobe_wall]
+diffuse = "structures/adobe_wall.png"
+normal = "structures/adobe_wall_n.png"
+roughness = 0.7
+uv_rect = [768, 512, 256, 256]
+
+[houses.thatch_roof]
+diffuse = "structures/thatch_roof.png"
+normal = "structures/thatch_roof_n.png"
+roughness = 0.6
+uv_rect = [1024, 512, 256, 256]
+
+# CHARACTER TEXTURES
+[characters.villager]
+diffuse = "characters/villager.png"
+normal = "characters/villager_n.png"
+roughness = 0.7
+uv_rect = [0, 768, 256, 256]
+
+[characters.guard]
+diffuse = "characters/guard.png"
+normal = "characters/guard_n.png"
+roughness = 0.8
+uv_rect = [256, 768, 256, 256]
+
+[characters.merchant]
+diffuse = "characters/merchant.png"
+normal = "characters/merchant_n.png"
+roughness = 0.7
+uv_rect = [512, 768, 256, 256]
+
+[characters.animal]
+diffuse = "characters/animal.png"
+normal = "characters/animal_n.png"
+roughness = 0.6
+uv_rect = [768, 768, 256, 256]
+
+# SKYBOX TEXTURES
+[skybox.day]
+top = "skybox/day_top.png"
+bottom = "skybox/day_bottom.png"
+left = "skybox/day_left.png"
+right = "skybox/day_right.png"
+front = "skybox/day_front.png"
+back = "skybox/day_back.png"
+
+[skybox.night]
+top = "skybox/night_top.png"
+bottom = "skybox/night_bottom.png"
+left = "skybox/night_left.png"
+right = "skybox/night_right.png"
+front = "skybox/night_front.png"
+back = "skybox/night_back.png"
+
+# EFFECT TEXTURES
+[effects.water]
+diffuse = "effects/water.png"
+normal = "effects/water_n.png"
+distortion = "effects/water_distortion.png"
+roughness = 0.1
+uv_rect = [0, 1024, 256, 256]
+
+[effects.particles]
+fire = "effects/fire_particle.png"
+smoke = "effects/smoke_particle.png"
+dust = "effects/dust_particle.png"
+leaf = "effects/leaf_particle.png"
+snow = "effects/snow_particle.png"
+rain = "effects/rain_particle.png"

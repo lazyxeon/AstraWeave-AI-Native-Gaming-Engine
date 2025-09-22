@@ -1,4 +1,5 @@
 pub mod biome;
+pub mod biome_spawn;
 pub mod combat;
 pub mod combat_physics;
 pub mod crafting;
@@ -12,6 +13,7 @@ pub mod types;
 pub mod weaving;
 
 pub use biome::*;
+pub use biome_spawn::*;
 pub use combat::*;
 pub use combat_physics::*;
 pub use crafting::*;

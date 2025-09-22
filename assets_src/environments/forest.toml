@@ -1,0 +1,36 @@
+# Dense Forest Environment Texture Pack
+name = "Dense Forest"
+description = "A rich, dense forest environment with ancient trees and moss-covered ground"
+
+[ground]
+texture = "forest_floor.png"
+scale = 6.0
+color_tint = [0.9, 1.0, 0.8, 1.0]
+
+[structures]
+# Forest dwellings and natural formations
+[[structures.buildings]]
+type = "tree_house"
+base_texture = "stone.ktx2"
+roof_texture = "forest_floor.ktx2"
+probability = 0.08
+size_range = [2.5, 4.5]
+
+[[structures.buildings]]
+type = "woodland_shrine"
+base_texture = "stone.ktx2"
+roof_texture = "grass.ktx2"
+probability = 0.03
+size_range = [1.8, 2.8]
+
+[sky]
+# Forest canopy-filtered sky colors
+horizon_color = [0.6, 0.7, 0.6]
+zenith_color = [0.3, 0.4, 0.5]
+sun_color = [0.9, 0.8, 0.6]
+
+[ambient]
+light_color = [0.8, 0.9, 0.7]
+light_intensity = 0.5
+fog_color = [0.7, 0.8, 0.7]
+fog_density = 0.04
