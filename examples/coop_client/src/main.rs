@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
     // say hello
     tx.send(Message::Text(serde_json::to_string(&Msg::ClientHello {
         name: "player1".into(),
-    })?))
+    })?.into()))
     .await?;
 
     // propose a plan for actor_id=2 (companion in our server)
@@ -36,7 +36,7 @@ async fn main() -> Result<()> {
             actor_id: 2,
             intent: plan,
         },
-    )?))
+    )?.into()))
     .await?;
 
     // read a couple of server messages

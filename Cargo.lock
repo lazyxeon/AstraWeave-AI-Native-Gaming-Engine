@@ -593,7 +593,7 @@ dependencies = [
  "anyhow",
  "astraweave-gameplay",
  "astraweave-input",
- "egui 0.28.1",
+ "egui",
  "egui-wgpu",
  "egui-winit",
  "glam",
@@ -1000,7 +1000,7 @@ dependencies = [
  "bytemuck",
  "crossbeam-channel",
  "eframe",
- "egui 0.28.1",
+ "egui",
  "egui_plot",
  "notify",
  "rand 0.9.2",
@@ -1018,7 +1018,7 @@ dependencies = [
  "astraweave-author",
  "astraweave-core",
  "eframe",
- "egui 0.28.1",
+ "egui",
  "image",
  "notify",
  "rhai",
@@ -2039,7 +2039,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "eframe",
- "egui 0.28.1",
+ "egui",
 ]
 
 [[package]]
@@ -2052,7 +2052,7 @@ dependencies = [
  "astraweave-render",
  "aw_debug",
  "eframe",
- "egui 0.28.1",
+ "egui",
  "egui-wgpu",
  "egui-winit",
  "glam",
@@ -2193,16 +2193,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2e6b451ff1143f6de0f33fc7f1b68fecfd2c7de06e104de96c4514de3f5396f8"
 dependencies = [
  "bytemuck",
- "emath 0.28.1",
-]
-
-[[package]]
-name = "ecolor"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94bdf37f8d5bd9aa7f753573fdda9cf7343afa73dd28d7bfe9593bd9798fc07e"
-dependencies = [
- "emath 0.32.3",
+ "emath",
 ]
 
 [[package]]
@@ -2214,7 +2205,7 @@ dependencies = [
  "ahash",
  "bytemuck",
  "document-features",
- "egui 0.28.1",
+ "egui",
  "egui-wgpu",
  "egui-winit",
  "egui_glow",
@@ -2250,26 +2241,10 @@ checksum = "20c97e70a2768de630f161bb5392cbd3874fcf72868f14df0e002e82e06cb798"
 dependencies = [
  "accesskit",
  "ahash",
- "emath 0.28.1",
- "epaint 0.28.1",
+ "emath",
+ "epaint",
  "log",
  "nohash-hasher",
-]
-
-[[package]]
-name = "egui"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d5d0306cd61ca75e29682926d71f2390160247f135965242e904a636f51c0dc"
-dependencies = [
- "ahash",
- "bitflags 2.9.4",
- "emath 0.32.3",
- "epaint 0.32.3",
- "nohash-hasher",
- "profiling",
- "smallvec",
- "unicode-segmentation",
 ]
 
 [[package]]
@@ -2281,8 +2256,8 @@ dependencies = [
  "ahash",
  "bytemuck",
  "document-features",
- "egui 0.28.1",
- "epaint 0.28.1",
+ "egui",
+ "epaint",
  "log",
  "thiserror 1.0.69",
  "type-map",
@@ -2300,7 +2275,7 @@ dependencies = [
  "accesskit_winit",
  "ahash",
  "arboard",
- "egui 0.28.1",
+ "egui",
  "log",
  "raw-window-handle 0.6.2",
  "smithay-clipboard",
@@ -2317,7 +2292,7 @@ checksum = "4e2bdc8b38cfa17cc712c4ae079e30c71c00cd4c2763c9e16dc7860a02769103"
 dependencies = [
  "ahash",
  "bytemuck",
- "egui 0.28.1",
+ "egui",
  "glow",
  "log",
  "memoffset 0.9.1",
@@ -2328,13 +2303,13 @@ dependencies = [
 
 [[package]]
 name = "egui_plot"
-version = "0.33.0"
+version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524318041a8ea90c81c738e8985f8ad9e3f9bed636b03c2ff37b218113ed5121"
+checksum = "c7acc4fe778c41b91d57e04c1a2cf5765b3dc977f9f8384d2bb2eb4254855365"
 dependencies = [
  "ahash",
- "egui 0.32.3",
- "emath 0.32.3",
+ "egui",
+ "emath",
 ]
 
 [[package]]
@@ -2351,12 +2326,6 @@ checksum = "0a6a21708405ea88f63d8309650b4d77431f4bc28fb9d8e6f77d3963b51249e6"
 dependencies = [
  "bytemuck",
 ]
-
-[[package]]
-name = "emath"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45fd7bc25f769a3c198fe1cf183124bf4de3bd62ef7b4f1eaf6b08711a3af8db"
 
 [[package]]
 name = "embedded-io"
@@ -2424,26 +2393,11 @@ dependencies = [
  "ab_glyph",
  "ahash",
  "bytemuck",
- "ecolor 0.28.1",
- "emath 0.28.1",
+ "ecolor",
+ "emath",
  "log",
  "nohash-hasher",
  "parking_lot 0.12.4",
-]
-
-[[package]]
-name = "epaint"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63adcea970b7a13094fe97a36ab9307c35a750f9e24bf00bb7ef3de573e0fddb"
-dependencies = [
- "ab_glyph",
- "ahash",
- "ecolor 0.32.3",
- "emath 0.32.3",
- "nohash-hasher",
- "parking_lot 0.12.4",
- "profiling",
 ]
 
 [[package]]
@@ -6676,7 +6630,7 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "astraweave-ui",
- "egui 0.28.1",
+ "egui",
  "egui-wgpu",
  "egui-winit",
  "glam",

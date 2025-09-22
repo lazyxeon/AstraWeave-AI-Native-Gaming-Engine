@@ -328,7 +328,7 @@ async fn on_client_msg(
 // Helpers
 async fn send(app: &AppState, ws: &mut tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>, msg: &ServerToClient) -> Result<()> {
     let bytes = aw_net_proto::encode_msg(app.codec, msg);
-    ws.send(Message::Binary(bytes)).await?;
+    ws.send(Message::Binary(bytes.into())).await?;
     Ok(())
 }
 async fn recv<T: for<'de> serde::Deserialize<'de>>(

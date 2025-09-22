@@ -101,6 +101,6 @@ async fn main() -> anyhow::Result<()> {
 
 async fn send(ws: &mut WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>, msg: &ClientToServer) -> anyhow::Result<()> {
     let bytes = aw_net_proto::encode_msg(aw_net_proto::Codec::PostcardLz4, msg);
-    ws.send(Message::Binary(bytes)).await?;
+    ws.send(Message::Binary(bytes.into())).await?;
     Ok(())
 }
