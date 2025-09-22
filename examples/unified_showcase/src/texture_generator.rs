@@ -1,5 +1,5 @@
-use image::{ImageBuffer, RgbaImage, GenericImageView};
-use noise::{NoiseFn, Perlin, Seedable, Turbulence, Worley};
+use image::{ImageBuffer, RgbaImage};
+use noise::{NoiseFn, Perlin, Turbulence, Worley};
 use std::path::Path;
 
 // Procedural texture generation for the unified showcase
@@ -12,7 +12,8 @@ impl TextureGenerator {
     pub fn new(seed: u32) -> Self {
         Self {
             perlin: Perlin::new(seed),
-            worley: Worley::new(seed).set_distance_function(noise::distance_fns::euclidean),
+            // Use Worley's default distance function (Euclidean) for compatibility across noise versions
+            worley: Worley::new(seed),
         }
     }
 

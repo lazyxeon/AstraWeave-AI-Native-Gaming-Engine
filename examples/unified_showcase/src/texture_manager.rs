@@ -138,7 +138,9 @@ impl TextureManager {
     
     /// Load all textures from their paths
     pub fn preload_all_textures(&mut self, base_path: &Path) -> Result<()> {
-        for (texture_id, entry) in &self.textures {
+        // Collect keys first to avoid borrowing self immutably and mutably at the same time
+        let keys: Vec<String> = self.textures.keys().cloned().collect();
+        for texture_id in keys.iter() {
             self.load_texture(texture_id, base_path)?;
         }
         
