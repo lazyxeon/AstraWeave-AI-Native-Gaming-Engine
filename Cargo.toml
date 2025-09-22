@@ -53,6 +53,7 @@ members = [
   "tools/aw_asset_cli",
   "tools/aw_debug",
   "tools/aw_build",
+  "tools/aw_texture_gen",
   # persistence
   "persistence/aw-save",
   "tools/aw_save_cli",

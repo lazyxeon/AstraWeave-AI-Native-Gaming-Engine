@@ -9,6 +9,7 @@ use rapier3d::prelude as r3;
 use rapier3d::prelude::nalgebra; // Add nalgebra import
 use serde::Deserialize;
 use std::{borrow::Cow, fs, path::Path, time::Instant};
+use std::path::PathBuf;
 use wgpu::util::DeviceExt;
 use winit::{
     event::{DeviceEvent, ElementState, Event, KeyEvent, MouseScrollDelta, WindowEvent},
@@ -18,6 +19,9 @@ use winit::{
 };
 
 // Import the proper camera system from astraweave-render
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
 use astraweave_render::camera::{Camera as RenderCamera, CameraController};
 
 // ------------------------------- Renderer types -------------------------------
@@ -30,12 +34,35 @@ struct GpuCamera {
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct PostParams {
+    exposure: f32,
+    // WGSL uniform layout (std140-like): vec3 members are 16-byte aligned and sized,
+    // so a struct with `f32` then `vec3<f32>` occupies 32 bytes. Add extra padding
+    // to ensure the Rust-side buffer size matches what the shader expects.
+    _pad: [f32; 3],    // to align next field to 16B
+    _pad2: [f32; 4],   // extra 16B so total struct size is 32B
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct BloomParams {
+    threshold: f32,
+    intensity: f32,
+    _pad: [f32; 2],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct InstanceRaw {
     model: [f32; 16],
     color: [f32; 4],
     mesh_type: u32,  // 0=Cube, 1=Tree, 2=House, 3=Character
     _padding: [u32; 3], // Padding for alignment
 }
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct DebugParamsRust { debug_tint: u32, _pad: [u32; 3], _pad2: [u32; 4] }
 
 struct RenderStuff {
     surface: wgpu::Surface<'static>,
@@ -51,11 +78,53 @@ struct RenderStuff {
     instance_vb: wgpu::Buffer,
     instance_count: u32,
     msaa_samples: u32,
+    msaa_color_view: Option<wgpu::TextureView>,
+    // HDR offscreen color for post-processing
+    hdr_tex: wgpu::Texture,
+    // Full-mip view for sampling in post
+    hdr_view: wgpu::TextureView,
+    // Single-mip view for render/resolve (mip 0 only)
+    hdr_resolve_view: wgpu::TextureView,
+    hdr_msaa_view: Option<wgpu::TextureView>,
+    // Shadow mapping resources
+    shadow_view: wgpu::TextureView,
+    #[allow(dead_code)] // not read directly; used via bind group in shaders
+    shadow_sampler: wgpu::Sampler,
+    shadow_pipeline: wgpu::RenderPipeline,
+    #[allow(dead_code)] // tracked for rebuilds; read via shader constants
+    shadow_size: u32,
+    light_ub: wgpu::Buffer,
+    light_bg: wgpu::BindGroup,
+    shadow_bg: wgpu::BindGroup,
     // Texture resources
     ground_texture: Option<LoadedTexture>,
     texture_bind_group_layout: wgpu::BindGroupLayout,
+    // Post/tonemap params
+    exposure_buf: wgpu::Buffer,
     ground_bind_group: Option<wgpu::BindGroup>,
     ground_normal: Option<LoadedTexture>,
+    ground_mra: Option<LoadedTexture>,
+    ground_emissive: Option<LoadedTexture>,
+    // Additional biome textures
+    dirt_albedo: Option<LoadedTexture>,
+    dirt_normal: Option<LoadedTexture>,
+    dirt_mra: Option<LoadedTexture>,
+    stone_albedo: Option<LoadedTexture>,
+    stone_normal: Option<LoadedTexture>,
+    stone_mra: Option<LoadedTexture>,
+    sand_albedo: Option<LoadedTexture>,
+    sand_normal: Option<LoadedTexture>,
+    sand_mra: Option<LoadedTexture>,
+    forest_albedo: Option<LoadedTexture>,
+    forest_normal: Option<LoadedTexture>,
+    forest_mra: Option<LoadedTexture>,
+    // Post-processing resources
+    post_pipeline: wgpu::RenderPipeline,
+    post_bg: wgpu::BindGroup,
+    post_bgl: wgpu::BindGroupLayout,
+    post_sampler: wgpu::Sampler,
+    bloom_ub: wgpu::Buffer,
+    debug_buf: wgpu::Buffer,
 }
 
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
@@ -122,6 +191,49 @@ struct LoadedTexture {
     sampler: wgpu::Sampler,
 }
 
+// ------------------------------- Asset path resolution -------------------------------
+fn candidate_paths() -> Vec<PathBuf> {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    vec![
+        PathBuf::from("assets"),
+        manifest.join("assets"),
+        manifest.join("../../assets"),
+        PathBuf::from("../assets"),
+        PathBuf::from("../../assets"),
+    ]
+}
+
+fn resolve_asset_path(rel: &str) -> PathBuf {
+    for base in candidate_paths() {
+        let p = base.join(rel);
+        if p.exists() { return p; }
+    }
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets").join(rel)
+}
+
+fn asset_dir() -> PathBuf {
+    for base in candidate_paths() {
+        if base.exists() { return base; }
+    }
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../../assets")
+}
+
+fn resolve_asset_src_path(rel: &str) -> PathBuf {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    for base in [
+        PathBuf::from("assets_src"),
+        manifest.join("assets_src"),
+        manifest.join("../../assets_src"),
+        PathBuf::from("../assets_src"),
+        PathBuf::from("../../assets_src"),
+    ] {
+        let p = base.join(rel);
+        if p.exists() { return p; }
+    }
+    manifest.join("../../assets_src").join(rel)
+}
+
+#[allow(dead_code)]
 const CUBE_VERTICES: &[[f32; 3]] = &[
     // A simple unit cube centered at origin
     // front
@@ -136,6 +248,7 @@ const CUBE_VERTICES: &[[f32; 3]] = &[
     [0.5, -0.5, -0.5],
 ];
 
+#[allow(dead_code)]
 const CUBE_INDICES: &[u16] = &[
     // front
     0, 1, 2, 0, 2, 3, // right
@@ -181,6 +294,9 @@ const TREE_VERTICES: &[[f32; 3]] = &[
 ];
 
 const TREE_INDICES: &[u16] = &[
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
     // Trunk sides (octagonal)
     0, 1, 9, 0, 9, 8,
     1, 2, 10, 1, 10, 9,
@@ -207,6 +323,9 @@ const TREE_INDICES: &[u16] = &[
 ];
 
 // House geometry - more complex than a cube
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
 const HOUSE_VERTICES: &[[f32; 3]] = &[
     // Base (wider than cube)
     [-0.8, -0.5, 0.8],     // 0
@@ -234,6 +353,9 @@ const HOUSE_VERTICES: &[[f32; 3]] = &[
 ];
 
 const HOUSE_INDICES: &[u16] = &[
+    #[allow(dead_code)]
+    #[allow(dead_code)]
+    #[allow(dead_code)]
     // Base walls
     0, 1, 2, 0, 2, 3,       // front
     1, 7, 6, 1, 6, 2,       // right
@@ -256,44 +378,47 @@ const HOUSE_INDICES: &[u16] = &[
 // Character geometry - humanoid shape
 const CHARACTER_VERTICES: &[[f32; 3]] = &[
     // Head
-    [-0.15, 0.8, 0.15],    // 0
-    [0.15, 0.8, 0.15],     // 1
-    [0.15, 1.0, 0.15],     // 2
-    [-0.15, 1.0, 0.15],    // 3
-    [-0.15, 0.8, -0.15],   // 4
-    [-0.15, 1.0, -0.15],   // 5
-    [0.15, 1.0, -0.15],    // 6
-    [0.15, 0.8, -0.15],    // 7
-    
+    [-0.2, 1.0, 0.2],     // 0
+    [0.2, 1.0, 0.2],      // 1
+    [0.2, 1.4, 0.2],      // 2
+    [-0.2, 1.4, 0.2],     // 3
+    [-0.2, 1.0, -0.2],    // 4
+    [-0.2, 1.4, -0.2],    // 5
+    [0.2, 1.4, -0.2],     // 6
+    [0.2, 1.0, -0.2],     // 7
+
     // Torso
-    [-0.2, 0.2, 0.1],      // 8
-    [0.2, 0.2, 0.1],       // 9
-    [0.2, 0.8, 0.1],       // 10
-    [-0.2, 0.8, 0.1],      // 11
-    [-0.2, 0.2, -0.1],     // 12
-    [-0.2, 0.8, -0.1],     // 13
-    [0.2, 0.8, -0.1],      // 14
-    [0.2, 0.2, -0.1],      // 15
-    
-    // Legs
-    [-0.1, -0.5, 0.05],    // 16
-    [0.0, -0.5, 0.05],     // 17
-    [0.0, 0.2, 0.05],      // 18
-    [-0.1, 0.2, 0.05],     // 19
-    [-0.1, -0.5, -0.05],   // 20
-    [-0.1, 0.2, -0.05],    // 21
-    [0.0, 0.2, -0.05],     // 22
-    [0.0, -0.5, -0.05],    // 23
-    
-    [0.0, -0.5, 0.05],     // 24
-    [0.1, -0.5, 0.05],     // 25
-    [0.1, 0.2, 0.05],      // 26
-    [0.0, 0.2, 0.05],      // 27
-    [0.0, -0.5, -0.05],    // 28
-    [0.0, 0.2, -0.05],     // 29
-    [0.1, 0.2, -0.05],     // 30
-    [0.1, -0.5, -0.05],    // 31
+    [-0.25, 0.4, 0.15],   // 8
+    [0.25, 0.4, 0.15],    // 9
+    [0.25, 1.0, 0.15],    // 10
+    [-0.25, 1.0, 0.15],   // 11
+    [-0.25, 0.4, -0.15],  // 12
+    [-0.25, 1.0, -0.15],  // 13
+    [0.25, 1.0, -0.15],   // 14
+    [0.25, 0.4, -0.15],   // 15
+
+    // Left leg
+    [-0.15, -0.5, 0.1],   // 16
+    [-0.05, -0.5, 0.1],   // 17
+    [-0.05, 0.4, 0.1],    // 18
+    [-0.15, 0.4, 0.1],    // 19
+    [-0.15, -0.5, -0.1],  // 20
+    [-0.15, 0.4, -0.1],   // 21
+    [-0.05, 0.4, -0.1],   // 22
+    [-0.05, -0.5, -0.1],  // 23
+
+    // Right leg
+    [0.05, -0.5, 0.1],    // 24
+    [0.15, -0.5, 0.1],    // 25
+    [0.15, 0.4, 0.1],     // 26
+    [0.05, 0.4, 0.1],     // 27
+    [0.05, -0.5, -0.1],   // 28
+    [0.05, 0.4, -0.1],    // 29
+    [0.15, 0.4, -0.1],    // 30
+    [0.15, -0.5, -0.1],   // 31
 ];
+
+// (removed) Old fullscreen sky triangle constants; replaced by cube skybox
 
 const CHARACTER_INDICES: &[u16] = &[
     // Head
@@ -326,6 +451,7 @@ const CHARACTER_INDICES: &[u16] = &[
 ];
 
 // Enhanced skybox geometry - large inverted cube optimized for biome immersion
+#[allow(dead_code)]
 const SKYBOX_VERTICES: &[[f32; 3]] = &[
     // Front face (inverted normals - face inward)
     [-2000.0, -2000.0, 2000.0],   // 0 - Expanded for better sky coverage
@@ -340,6 +466,7 @@ const SKYBOX_VERTICES: &[[f32; 3]] = &[
     [2000.0, -2000.0, -2000.0],   // 7
 ];
 
+#[allow(dead_code)]
 const SKYBOX_INDICES: &[u16] = &[
     // Front face (inverted winding for inside view)
     0, 2, 1, 0, 3, 2,
@@ -381,12 +508,16 @@ struct UiState {
     physics_paused: bool,
     camera_speed: f32,
     resolution_scale: f32,
+    exposure: f32,
+    bloom_threshold: f32,
+    bloom_intensity: f32,
     fake_ao: bool,
     fake_reflections: bool,
     fps_text: String,
     info_text: String,
     current_texture_pack: String,
     available_texture_packs: Vec<String>,
+    debug_material_tint: bool,
 }
 
 impl Default for UiState {
@@ -398,12 +529,16 @@ impl Default for UiState {
             physics_paused: false,
             camera_speed: 8.0,
             resolution_scale: 1.0,
+            exposure: 1.0,
+        bloom_threshold: 0.7,
+        bloom_intensity: 0.6,
             fake_ao: true,
             fake_reflections: false,
             fps_text: String::new(),
             info_text: "AstraWeave Unified Showcase".to_string(),
             current_texture_pack: "grassland".to_string(),
             available_texture_packs: vec!["grassland".to_string(), "desert".to_string()],
+            debug_material_tint: false,
         }
     }
 }
@@ -505,11 +640,19 @@ fn load_texture_pack(path: &Path) -> Result<TexturePack> {
     Ok(pack)
 }
 
-fn load_texture_from_bytes(
+fn mip_level_count_for(size: wgpu::Extent3d) -> u32 {
+    let max_dim = size.width.max(size.height).max(size.depth_or_array_layers);
+    // floor(log2(max_dim)) + 1 for full chain including base level
+    let max_dim = max_dim.max(1);
+    (f32::log2(max_dim as f32).floor() as u32) + 1
+}
+
+fn load_texture_from_bytes_with_format(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
     bytes: &[u8],
     label: &str,
+    format: wgpu::TextureFormat,
 ) -> Result<LoadedTexture> {
     println!("Loading texture '{}' from {} bytes", label, bytes.len());
     let img = image::load_from_memory(bytes)?;
@@ -526,14 +669,15 @@ fn load_texture_from_bytes(
         depth_or_array_layers: 1,
     };
 
+    let mip_levels = mip_level_count_for(size);
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some(label),
         size,
-        mip_level_count: 1,
+        mip_level_count: mip_levels,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        format,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });
 
@@ -553,14 +697,18 @@ fn load_texture_from_bytes(
         size,
     );
 
+    // Generate mipmaps using a simple render pass downsampling
+    generate_mipmaps(device, queue, &texture, format, size, mip_levels);
+
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         address_mode_u: wgpu::AddressMode::Repeat,
         address_mode_v: wgpu::AddressMode::Repeat,
         address_mode_w: wgpu::AddressMode::Repeat,
         mag_filter: wgpu::FilterMode::Linear,
-        min_filter: wgpu::FilterMode::Nearest,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 16,
         ..Default::default()
     });
 
@@ -571,6 +719,159 @@ fn load_texture_from_bytes(
         view,
         sampler,
     })
+}
+
+fn generate_mipmaps(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    texture: &wgpu::Texture,
+    format: wgpu::TextureFormat,
+    size: wgpu::Extent3d,
+    mip_levels: u32,
+) {
+    if mip_levels <= 1 {
+        return;
+    }
+
+    // Shader to sample from previous mip level and write into current target level
+    const MIPMAP_SHADER: &str = r#"
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
+  var out: VsOut;
+  let xy = vec2<f32>(f32(i32(vi) - 1), f32((i32(vi) & 1) * 2 - 1));
+  out.pos = vec4<f32>(xy, 0.0, 1.0);
+  out.uv = vec2<f32>( (xy.x+1.0)*0.5, 1.0 - (xy.y+1.0)*0.5 );
+  return out;
+}
+
+@group(0) @binding(0) var src_tex: texture_2d<f32>;
+@group(0) @binding(1) var src_smp: sampler;
+
+@fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
+  // Simple linear sample; hardware does the filtering
+  let c = textureSample(src_tex, src_smp, in.uv);
+  return c;
+}
+"#;
+
+    let sm = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("mipmap-gen-shader"),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(MIPMAP_SHADER)),
+    });
+
+    let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("mipmap-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+        ],
+    });
+
+    let pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("mipmap-pl"),
+        bind_group_layouts: &[&bgl],
+        push_constant_ranges: &[],
+    });
+
+    let rp = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("mipmap-pipeline"),
+        layout: Some(&pl),
+        vertex: wgpu::VertexState { module: &sm, entry_point: "vs", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() },
+        fragment: Some(wgpu::FragmentState {
+            module: &sm,
+            entry_point: "fs",
+            targets: &[Some(wgpu::ColorTargetState { format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+    });
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("mipmap-linear-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
+
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("mipmap-encoder") });
+
+    let mut src_w = size.width;
+    let mut src_h = size.height;
+    for level in 1..mip_levels {
+    // next level dimensions
+        src_w = (src_w.max(1) / 2).max(1);
+        src_h = (src_h.max(1) / 2).max(1);
+
+        let src_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("mip-src-view"),
+            format: Some(format),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: level - 1,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: Some(1),
+        });
+
+        let bind = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("mipmap-bg"),
+            layout: &bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&src_view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sampler) },
+            ],
+        });
+
+        let dst_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("mip-dst-view"),
+            format: Some(format),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: level,
+            mip_level_count: Some(1),
+            base_array_layer: 0,
+            array_layer_count: Some(1),
+        });
+
+        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("mipmap-pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &dst_view,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        rpass.set_pipeline(&rp);
+        rpass.set_bind_group(0, &bind, &[]);
+        rpass.draw(0..3, 0..1);
+        drop(rpass);
+    }
+
+    queue.submit(Some(encoder.finish()));
 }
 
 fn load_texture_from_file(
@@ -586,19 +887,39 @@ fn load_texture_from_file(
             path.display()
         ));
     }
-    let bytes = fs::read(path)?;
+        let bytes = fs::read(path).map_err(|e| {
+            eprintln!("Failed to read texture file: {}", e);
+            anyhow::anyhow!("Texture file not found: {}", path.display())
+        })?;
     println!(
         "Successfully read {} bytes from {}",
         bytes.len(),
         path.display()
     );
-    load_texture_from_bytes(device, queue, &bytes, &path.to_string_lossy())
+    // Decide texture format by filename convention
+    // *_n.* (normal) and *_mra.* should be UNORM; albedo/emissive use sRGB
+    let name_lc = path.file_stem().and_then(|s| s.to_str()).unwrap_or("").to_ascii_lowercase();
+    let is_normal = name_lc.ends_with("_n");
+    let is_mra = name_lc.ends_with("_mra");
+    let format = if is_normal || is_mra {
+        println!(
+            "Inferred UNORM format (non-sRGB) for texture: {}",
+            path.display()
+        );
+        wgpu::TextureFormat::Rgba8Unorm
+    } else {
+        println!(
+            "Inferred sRGB format for texture: {}",
+            path.display()
+        );
+        wgpu::TextureFormat::Rgba8UnormSrgb
+    };
+    load_texture_from_bytes_with_format(device, queue, &bytes, &path.to_string_lossy(), format)
 }
 
 fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Result<()> {
     // Load texture pack configuration
-    let pack_path =
-        Path::new("assets_src/environments").join(format!("{}.toml", texture_pack_name));
+    let pack_path = resolve_asset_src_path(&format!("environments/{}.toml", texture_pack_name));
     let pack = load_texture_pack(&pack_path)?;
 
     // Load the ground texture specified in the pack
@@ -609,12 +930,22 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
         pack.ground.texture.clone()
     };
 
-    let texture_path = Path::new("assets").join(&texture_name);
+    // Resolve the ground/albedo texture path via our asset resolution logic
+    let texture_path = resolve_asset_path(&texture_name);
     println!(
         "Loading texture pack '{}' with ground texture: {}",
         texture_pack_name,
         texture_path.display()
     );
+    
+    // Debug: Check if texture file exists
+    if !texture_path.exists() {
+        eprintln!(
+            "ERROR: Texture file not found: {}",
+            texture_path.display()
+        );
+        return Err(anyhow::anyhow!("Texture file not found: {}", texture_path.display()));
+    }
 
     match load_texture_from_file(&render.device, &render.queue, &texture_path) {
         Ok(new_texture) => {
@@ -625,25 +956,59 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
                 .file_stem()
                 .and_then(|s| s.to_str())
                 .unwrap_or("texture");
-            let npath = Path::new("assets").join(format!("{}_n.png", tex_stem));
-            
-            println!("Looking for normal map: {}", npath.display());
+            let npath = resolve_asset_path(&format!("{}_n.png", tex_stem));
             let normal_tex = if npath.exists() {
-                println!("✓ Found normal map: {}", npath.display());
+                println!("Using normal map: {}", npath.display());
                 load_texture_from_file(&render.device, &render.queue, &npath)?
             } else {
+                let default_npath = resolve_asset_path("default_n.png");
                 eprintln!(
-                    "⚠ Warning: Normal map not found at {}. Using default normal map.",
-                    npath.display()
+                    "Warning: Normal map not found at {}. Falling back to {}",
+                    npath.display(),
+                    default_npath.display()
                 );
-                // Use a default normal map (e.g., flat normal)
-                // You may need to provide a default normal map in your assets, e.g., "default_n.png"
-                let default_npath = Path::new("assets").join("default_n.png");
-                println!("Using default normal map: {}", default_npath.display());
                 load_texture_from_file(&render.device, &render.queue, &default_npath)?
             };
 
-            // Create bind group with both textures
+            // Load optional MRA and emissive textures based on base texture stem
+            let mra_path = resolve_asset_path(&format!("{}_mra.png", tex_stem));
+            let emissive_path = resolve_asset_path(&format!("{}_e.png", tex_stem));
+            let mra_tex = if mra_path.exists() {
+                println!("Using MRA map: {}", mra_path.display());
+                load_texture_from_file(&render.device, &render.queue, &mra_path)?
+            } else {
+                eprintln!(
+                    "Info: MRA map not found at {}. Using default MRA.",
+                    mra_path.display()
+                );
+                create_default_mra_texture(&render.device, &render.queue)?
+            };
+            let emissive_tex = if emissive_path.exists() {
+                println!("Using emissive map: {}", emissive_path.display());
+                load_texture_from_file(&render.device, &render.queue, &emissive_path)?
+            } else {
+                eprintln!(
+                    "Info: Emissive map not found at {}. Using default emissive (black).",
+                    emissive_path.display()
+                );
+                create_default_emissive_texture(&render.device, &render.queue)?
+            };
+
+            // Prepare additional biome textures (use existing ones or fall back to ground)
+            let dirt_albedo_ref = render.dirt_albedo.as_ref().unwrap_or(&new_texture);
+            let dirt_normal_ref = render.dirt_normal.as_ref().unwrap_or(&normal_tex);
+            let dirt_mra_ref = render.dirt_mra.as_ref().unwrap_or(&mra_tex);
+            let stone_albedo_ref = render.stone_albedo.as_ref().unwrap_or(&new_texture);
+            let stone_normal_ref = render.stone_normal.as_ref().unwrap_or(&normal_tex);
+            let stone_mra_ref = render.stone_mra.as_ref().unwrap_or(&mra_tex);
+            let sand_albedo_ref = render.sand_albedo.as_ref().unwrap_or(&new_texture);
+            let sand_normal_ref = render.sand_normal.as_ref().unwrap_or(&normal_tex);
+            let sand_mra_ref = render.sand_mra.as_ref().unwrap_or(&mra_tex);
+            let forest_albedo_ref = render.forest_albedo.as_ref().unwrap_or(&new_texture);
+            let forest_normal_ref = render.forest_normal.as_ref().unwrap_or(&normal_tex);
+            let forest_mra_ref = render.forest_mra.as_ref().unwrap_or(&mra_tex);
+
+            // Create bind group with albedo, normal, MRA, emissive and biome sets
             let combined_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some(&format!("{}-albedo-normal", texture_pack_name)),
                 layout: &render.texture_bind_group_layout,
@@ -664,6 +1029,38 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
                         binding: 3,
                         resource: wgpu::BindingResource::Sampler(&normal_tex.sampler),
                     },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: wgpu::BindingResource::TextureView(&mra_tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 5,
+                        resource: wgpu::BindingResource::Sampler(&mra_tex.sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 6,
+                        resource: wgpu::BindingResource::TextureView(&emissive_tex.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 7,
+                        resource: wgpu::BindingResource::Sampler(&emissive_tex.sampler),
+                    },
+                    // Dirt
+                    wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(&dirt_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&dirt_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 10, resource: wgpu::BindingResource::TextureView(&dirt_mra_ref.view) },
+                    // Stone
+                    wgpu::BindGroupEntry { binding: 11, resource: wgpu::BindingResource::TextureView(&stone_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 12, resource: wgpu::BindingResource::TextureView(&stone_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 13, resource: wgpu::BindingResource::TextureView(&stone_mra_ref.view) },
+                    // Sand
+                    wgpu::BindGroupEntry { binding: 14, resource: wgpu::BindingResource::TextureView(&sand_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 15, resource: wgpu::BindingResource::TextureView(&sand_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 16, resource: wgpu::BindingResource::TextureView(&sand_mra_ref.view) },
+                    // Forest
+                    wgpu::BindGroupEntry { binding: 17, resource: wgpu::BindingResource::TextureView(&forest_albedo_ref.view) },
+                    wgpu::BindGroupEntry { binding: 18, resource: wgpu::BindingResource::TextureView(&forest_normal_ref.view) },
+                    wgpu::BindGroupEntry { binding: 19, resource: wgpu::BindingResource::TextureView(&forest_mra_ref.view) },
                 ],
             });
 
@@ -671,6 +1068,8 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
             render.ground_texture = Some(new_texture);
             render.ground_normal = Some(normal_tex);
             render.ground_bind_group = Some(combined_bg);
+            render.ground_mra = Some(mra_tex);
+            render.ground_emissive = Some(emissive_tex);
 
             println!("Successfully loaded texture pack: {}", texture_pack_name);
             Ok(())
@@ -778,8 +1177,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (3.0, 0.4, "ancient"),  // Ancient giant trees
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let tree_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(10 + i)
                     .build();
                 let tree_handle = physics.bodies.insert(tree_rb);
@@ -795,8 +1195,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 5.0 + (i as f32 * 1.1).cos() * 12.0;
                 let size = 0.2 + (i % 3) as f32 * 0.1;
 
+                let base_y = terrain_surface_y(x, z);
                 let bush_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.6, z))
                     .user_data(100 + i)
                     .build();
                 let bush_handle = physics.bodies.insert(bush_rb);
@@ -820,8 +1221,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (1.8, 1.2, 1.5, "workshop"),   // Workshops and shops
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let house_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(35 + i)
                     .build();
                 let house_handle = physics.bodies.insert(house_rb);
@@ -838,8 +1240,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 20.0 + (i as f32 * 1.7).cos() * 10.0;
                 let size = 0.8 + (i % 4) as f32 * 0.5;
 
+                let base_y = terrain_surface_y(x, z);
                 let boulder_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.8, z))
                     .user_data(60 + i)
                     .build();
                 let boulder_handle = physics.bodies.insert(boulder_rb);
@@ -857,8 +1260,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = radius * angle.sin() + 30.0;
                 let height = 1.5 + (i % 2) as f32 * 0.8;
 
+                let base_y = terrain_surface_y(x, z);
                 let stone_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(200 + i)
                     .build();
                 let stone_handle = physics.bodies.insert(stone_rb);
@@ -875,8 +1279,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = -30.0 + (i as f32) * 2.0 + (i as f32 * 2.0).sin() * 8.0;
                 let size = 0.3 + (i % 2) as f32 * 0.2;
 
+                let base_y = terrain_surface_y(x, z);
                 let bank_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.5, z))
+                    .translation(nalgebra::Vector3::new(x, base_y - 0.5, z))
                     .user_data(300 + i)
                     .build();
                 let bank_handle = physics.bodies.insert(bank_rb);
@@ -891,7 +1296,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..20 {
                 let x = 10.0 + (i as f32) * 4.0 + (i as f32).sin() * 4.0;
                 let z = -12.0 + (i as f32 * 1.3).sin() * 15.0;
-                let pos = Vec3::new(x, -1.0, z);
+                let pos = Vec3::new(x, terrain_surface_y(x, z) + 0.5, z);
 
                 let char_type = match i % 5 {
                     0 => CharacterType::Villager,
@@ -952,7 +1357,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             // Varied cacti and desert plants - increased density
             for i in 0..40 {
                 let x = -25.0 + (i as f32) * 3.0 + (i as f32 * 1.2).sin() * 4.0;
-                let z = -15.0 + (i % 6) as f32 * 6.0 + (i as f32 * 0.8).cos() * 8.0;
+                let z = -15.0 + (i % 6) as f32 * 6.0 + (i as f32).cos() * 8.0;
 
                 let (width, height, _cactus_type) = match i % 5 {
                     0 => (0.2, 3.5, "saguaro"),        // Tall saguaro cactus
@@ -962,8 +1367,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (0.3, 0.6, "desert_shrub"),   // Desert shrub
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let cactus_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(30 + i)
                     .build();
                 let cactus_handle = physics.bodies.insert(cactus_rb);
@@ -987,8 +1393,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (3.0, 1.8, 2.5, "adobe_temple"),   // Temple/mosque
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let adobe_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(40 + i)
                     .build();
                 let adobe_handle = physics.bodies.insert(adobe_rb);
@@ -1012,8 +1419,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (size, size * 0.8, size), // Regular rock
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let formation_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(76 + i)
                     .build();
                 let formation_handle = physics.bodies.insert(formation_rb);
@@ -1032,8 +1440,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let width = 4.0 + (i % 3) as f32 * 2.0;
                 let height = 0.5 + (i % 2) as f32 * 0.3;
 
+                let base_y = terrain_surface_y(x, z);
                 let dune_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(400 + i)
                     .build();
                 let dune_handle = physics.bodies.insert(dune_rb);
@@ -1053,8 +1462,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let x = oasis_x + radius * angle.cos();
                 let z = oasis_z + radius * angle.sin();
 
+                let base_y = terrain_surface_y(x, z);
                 let palm_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + 2.0, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + 2.0, z))
                     .user_data(500 + i)
                     .build();
                 let palm_handle = physics.bodies.insert(palm_rb);
@@ -1069,7 +1479,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..8 {
                 let x = 15.0 + (i as f32) * 12.0 + (i as f32).sin() * 5.0;
                 let z = -5.0 + (i as f32 * 0.9).sin() * 8.0;
-                let pos = Vec3::new(x, -1.0, z);
+                let pos = Vec3::new(x, terrain_surface_y(x, z) + 0.5, z);
 
                 let char_type = match i % 4 {
                     0 => CharacterType::Merchant,
@@ -1136,8 +1546,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (2.2, 0.25, "maple"),          // Forest maples
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let tree_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(10 + i)
                     .build();
                 let tree_handle = physics.bodies.insert(tree_rb);
@@ -1153,8 +1564,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 8.0 + (i as f32 * 1.2).cos() * 15.0;
                 let size = 0.15 + (i % 4) as f32 * 0.08;
 
+                let base_y = terrain_surface_y(x, z);
                 let undergrowth_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.5, z))
                     .user_data(150 + i)
                     .build();
                 let undergrowth_handle = physics.bodies.insert(undergrowth_rb);
@@ -1177,8 +1589,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (1.6, 1.4, 1.4, "ranger_cabin"),    // Ranger cabins
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let structure_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(200 + i)
                     .build();
                 let structure_handle = physics.bodies.insert(structure_rb);
@@ -1195,8 +1608,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 25.0 + (i as f32 * 1.8).cos() * 12.0;
                 let size = 1.0 + (i % 3) as f32 * 0.6;
 
+                let base_y = terrain_surface_y(x, z);
                 let boulder_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size * 0.8, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.8, z))
                     .user_data(250 + i)
                     .build();
                 let boulder_handle = physics.bodies.insert(boulder_rb);
@@ -1215,8 +1629,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let x = circle_center_x + radius * angle.cos();
                 let z = circle_center_z + radius * angle.sin();
 
+                let base_y = terrain_surface_y(x, z);
                 let stone_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + 1.5, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + 1.5, z))
                     .user_data(300 + i)
                     .build();
                 let stone_handle = physics.bodies.insert(stone_rb);
@@ -1232,8 +1647,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let x = -10.0 + (i as f32) * 15.0;
                 let z = -12.0 + (i as f32) * 8.0;
 
+                let base_y = terrain_surface_y(x, z);
                 let pool_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + 0.2, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + 0.2, z))
                     .user_data(350 + i)
                     .build();
                 let pool_handle = physics.bodies.insert(pool_rb);
@@ -1248,7 +1664,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..10 {
                 let x = -20.0 + (i as f32) * 8.0 + (i as f32 * 1.1).sin() * 12.0;
                 let z = -10.0 + (i as f32 * 0.9).cos() * 18.0;
-                let pos = Vec3::new(x, -1.5, z);
+                let pos = Vec3::new(x, terrain_surface_y(x, z) + 0.5, z);
 
                 let char_type = match i % 5 {
                     0 => CharacterType::Guard,    // Forest rangers
@@ -1349,7 +1765,9 @@ fn main() -> Result<()> {
 async fn run() -> Result<()> {
     // Generate default textures at startup if missing (seed -> vary looks)
     let seed = 0xA57; // change to taste / hook to key for regeneration
-    texture_synth::ensure_textures("assets", seed, false)?;
+    let out_dir = asset_dir();
+    // Do not overwrite existing high-fidelity assets at startup; only synthesize if missing
+    texture_synth::ensure_textures(&out_dir.to_string_lossy(), seed, false)?;
 
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
@@ -1506,6 +1924,12 @@ async fn run() -> Result<()> {
                                             println!("Camera mode: {:?}", camera_controller.mode);
                                         }
                                     }
+                                    KeyCode::KeyM => {
+                                        if pressed {
+                                            ui.debug_material_tint = !ui.debug_material_tint;
+                                            println!("Material debug tint: {}", ui.debug_material_tint);
+                                        }
+                                    }
                                     KeyCode::Digit1 => {
                                         if pressed {
                                             let pack_name = "grassland";
@@ -1534,7 +1958,7 @@ async fn run() -> Result<()> {
                                     KeyCode::Digit2 => {
                                         if pressed {
                                             let pack_name = "desert";
-                                            println!("🏜️ Switching to {} texture pack...", pack_name);
+                                            println!("Attempting to switch to desert texture pack...");
                                             if let Err(e) =
                                                 reload_texture_pack(&mut render, pack_name)
                                             {
@@ -1548,11 +1972,12 @@ async fn run() -> Result<()> {
                                                     "Switched to {} environment",
                                                     pack_name
                                                 );
+                                                println!("Successfully switched to desert texture pack");
                                                 characters = generate_environment_objects(
                                                     &mut physics,
                                                     pack_name,
                                                 );
-                                                println!("✅ Successfully switched to {} environment with {} characters", pack_name, characters.len());
+                                                println!("Regenerated {} desert environment objects", characters.len());
                                             }
                                         }
                                     }
@@ -1576,6 +2001,60 @@ async fn run() -> Result<()> {
                                                     pack_name,
                                                 );
                                             }
+                                        }
+                                    }
+                                    KeyCode::Equal => { // '+' to increase exposure
+                                        if pressed {
+                                            ui.exposure = (ui.exposure * 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::NumpadAdd => { // Numpad '+'
+                                        if pressed {
+                                            ui.exposure = (ui.exposure * 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::Minus => { // '-' to decrease exposure
+                                        if pressed {
+                                            ui.exposure = (ui.exposure / 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::NumpadSubtract => { // Numpad '-'
+                                        if pressed {
+                                            ui.exposure = (ui.exposure / 1.1).clamp(0.1, 5.0);
+                                            println!("Exposure: {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::Digit0 => { // Reset exposure to default
+                                        if pressed {
+                                            ui.exposure = 1.0;
+                                            println!("Exposure reset to {:.2}", ui.exposure);
+                                        }
+                                    }
+                                    KeyCode::BracketLeft => { // decrease bloom threshold
+                                        if pressed {
+                                            ui.bloom_threshold = (ui.bloom_threshold - 0.05).clamp(0.0, 5.0);
+                                            println!("Bloom threshold: {:.2}", ui.bloom_threshold);
+                                        }
+                                    }
+                                    KeyCode::BracketRight => { // increase bloom threshold
+                                        if pressed {
+                                            ui.bloom_threshold = (ui.bloom_threshold + 0.05).clamp(0.0, 5.0);
+                                            println!("Bloom threshold: {:.2}", ui.bloom_threshold);
+                                        }
+                                    }
+                                    KeyCode::Semicolon => { // decrease bloom intensity
+                                        if pressed {
+                                            ui.bloom_intensity = (ui.bloom_intensity - 0.05).clamp(0.0, 2.0);
+                                            println!("Bloom intensity: {:.2}", ui.bloom_intensity);
+                                        }
+                                    }
+                                    KeyCode::Quote => { // increase bloom intensity
+                                        if pressed {
+                                            ui.bloom_intensity = (ui.bloom_intensity + 0.05).clamp(0.0, 2.0);
+                                            println!("Bloom intensity: {:.2}", ui.bloom_intensity);
                                         }
                                     }
                                     _ => {}
@@ -1618,6 +2097,84 @@ async fn run() -> Result<()> {
                             render.surface_cfg.height,
                             render.msaa_samples,
                         );
+                        // Recreate MSAA color target
+                        render.msaa_color_view = if render.msaa_samples > 1 {
+                            Some(create_msaa_color(
+                                &render.device,
+                                render.surface_cfg.format,
+                                render.surface_cfg.width,
+                                render.surface_cfg.height,
+                                render.msaa_samples,
+                            ))
+                        } else { None };
+
+                        // Recreate HDR targets for post-processing
+                        let hdr_size = wgpu::Extent3d {
+                            width: render.surface_cfg.width,
+                            height: render.surface_cfg.height,
+                            depth_or_array_layers: 1,
+                        };
+                        let hdr_mips = mip_level_count_for(hdr_size);
+                        render.hdr_tex = render.device.create_texture(&wgpu::TextureDescriptor {
+                            label: Some("hdr-tex"),
+                            size: hdr_size,
+                            mip_level_count: hdr_mips,
+                            sample_count: 1,
+                            dimension: wgpu::TextureDimension::D2,
+                            format: wgpu::TextureFormat::Rgba16Float,
+                            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                                | wgpu::TextureUsages::TEXTURE_BINDING
+                                | wgpu::TextureUsages::COPY_SRC,
+                            view_formats: &[],
+                        });
+                        render.hdr_view = render
+                            .hdr_tex
+                            .create_view(&wgpu::TextureViewDescriptor::default());
+                        // Single-mip view (level 0) for render/resolve target
+                        render.hdr_resolve_view = render.hdr_tex.create_view(&wgpu::TextureViewDescriptor {
+                            label: Some("hdr-resolve-view"),
+                            format: Some(wgpu::TextureFormat::Rgba16Float),
+                            dimension: Some(wgpu::TextureViewDimension::D2),
+                            aspect: wgpu::TextureAspect::All,
+                            base_mip_level: 0,
+                            mip_level_count: Some(1),
+                            base_array_layer: 0,
+                            array_layer_count: Some(1),
+                        });
+                        render.hdr_msaa_view = if render.msaa_samples > 1 {
+                            let msaa_tex = render.device.create_texture(&wgpu::TextureDescriptor {
+                                label: Some("hdr-msaa"),
+                                size: hdr_size,
+                                mip_level_count: 1,
+                                sample_count: render.msaa_samples,
+                                dimension: wgpu::TextureDimension::D2,
+                                format: wgpu::TextureFormat::Rgba16Float,
+                                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                                view_formats: &[],
+                            });
+                            Some(msaa_tex.create_view(&wgpu::TextureViewDescriptor::default()))
+                        } else {
+                            None
+                        };
+
+                        // Recreate post bind group to point at new HDR view
+                        render.post_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                            label: Some("post-bg"),
+                            layout: &render.post_bgl,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    // Post samples from full-mip view
+                                    resource: wgpu::BindingResource::TextureView(&render.hdr_view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(&render.post_sampler),
+                                },
+                                wgpu::BindGroupEntry { binding: 2, resource: render.exposure_buf.as_entire_binding() },
+                                wgpu::BindGroupEntry { binding: 3, resource: render.bloom_ub.as_entire_binding() },
+                            ],
+                        });
 
                         // Update UI info with character count
                         ui.info_text = format!(
@@ -1652,6 +2209,10 @@ async fn run() -> Result<()> {
                         // Update characters
                         for character in &mut characters {
                             character.update(dt.as_secs_f32());
+                            // Project to terrain surface to avoid floating/penetration due to slope changes
+                            let ground_y = terrain_surface_y(character.position.x, character.position.z);
+                            // Maintain a small offset so feet aren't z-fighting the ground
+                            character.position.y = ground_y + 0.5;
                         }
 
                         // Physics
@@ -1660,7 +2221,7 @@ async fn run() -> Result<()> {
                         }
 
                         // Sync sim to render and batch instances by mesh type
-                        sync_instances_from_physics(&physics, &characters, &mut instances);
+                        sync_instances_from_physics(&physics, &characters, camera.position, &mut instances);
                         render.instance_count = instances.len() as u32;
                         
                         // Batch instances by mesh type for efficient rendering
@@ -1673,6 +2234,62 @@ async fn run() -> Result<()> {
                         render
                             .queue
                             .write_buffer(&render.camera_ub, 0, bytemuck::bytes_of(&cam));
+
+                        // Update exposure uniform buffer from UI state
+                        let post = PostParams { exposure: ui.exposure, _pad: [0.0; 3], _pad2: [0.0; 4] };
+                        render.queue.write_buffer(&render.exposure_buf, 0, bytemuck::bytes_of(&post));
+                        // Update bloom uniform
+                        let bloom = BloomParams { threshold: ui.bloom_threshold, intensity: ui.bloom_intensity, _pad: [0.0; 2] };
+                        render.queue.write_buffer(&render.bloom_ub, 0, bytemuck::bytes_of(&bloom));
+
+                        // Update debug toggle uniform
+                        let dbg = DebugParamsRust { debug_tint: if ui.debug_material_tint { 1 } else { 0 }, _pad: [0; 3], _pad2: [0; 4] };
+                        render.queue.write_buffer(&render.debug_buf, 0, bytemuck::bytes_of(&dbg));
+
+                        // Prepare command encoder (reused for shadow and main passes)
+                        let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame-encoder") });
+
+                        // Update light matrices (directional light)
+                        let light_dir = glam::Vec3::new(0.6, 1.0, 0.4).normalize();
+                        let light_view = Mat4::look_at_rh(-light_dir * 150.0, Vec3::ZERO, Vec3::Y);
+                        let ortho_extent = 220.0;
+                        let light_proj = Mat4::orthographic_rh(
+                            -ortho_extent, ortho_extent,
+                            -ortho_extent, ortho_extent,
+                            0.1, 400.0,
+                        );
+                        let light_vp = light_proj * light_view;
+                        let lcam = GpuCamera { view_proj: light_vp.to_cols_array() };
+                        render.queue.write_buffer(&render.light_ub, 0, bytemuck::bytes_of(&lcam));
+
+                        // Shadow pass
+                        {
+                            let mut sp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("shadow-pass"),
+                                color_attachments: &[],
+                                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                                    view: &render.shadow_view,
+                                    depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                                    stencil_ops: None,
+                                }),
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+                            sp.set_pipeline(&render.shadow_pipeline);
+                            sp.set_bind_group(0, &render.light_bg, &[]);
+                            for batch in &instance_batches {
+                                if batch.mesh_type == MeshType::Skybox { continue; }
+                                if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                    render.queue.write_buffer(&render.instance_vb, 0, bytemuck::cast_slice(&batch.instances));
+                                    sp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                    sp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                    sp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                                    if !batch.instances.is_empty() {
+                                        sp.draw_indexed(0..mesh.index_count, 0, 0..batch.instances.len() as u32);
+                                    }
+                                }
+                            }
+                        }
 
                         // Render
                         let frame = match render.surface.get_current_texture() {
@@ -1687,23 +2304,29 @@ async fn run() -> Result<()> {
                         let view = frame
                             .texture
                             .create_view(&wgpu::TextureViewDescriptor::default());
-                        let mut encoder =
-                            render
-                                .device
-                                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                                    label: Some("main-encoder"),
-                                });
+                        // Main pass into HDR offscreen target (with MSAA resolve if enabled)
                         {
+                            // Use MSAA view if enabled; otherwise render directly to single-mip resolve view
+                            let color_view = render
+                                .hdr_msaa_view
+                                .as_ref()
+                                .unwrap_or(&render.hdr_resolve_view);
+                            // Resolve into the single-mip resolve view when MSAA is enabled
+                            let resolve_target = if render.msaa_samples > 1 {
+                                Some(&render.hdr_resolve_view)
+                            } else {
+                                None
+                            };
                             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                 label: Some("main-pass"),
                                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                    view: &view,
-                                    resolve_target: None,
+                                    view: color_view,
+                                    resolve_target,
                                     ops: wgpu::Operations {
                                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                                            r: 0.3,  // Softer, more atmospheric sky blue 
-                                            g: 0.5,  // that transitions better with
-                                            b: 0.8,  // the procedural sky rendering
+                                            r: 0.4,
+                                            g: 0.6,
+                                            b: 0.9,
                                             a: 1.0,
                                         }),
                                         store: wgpu::StoreOp::Store,
@@ -1727,36 +2350,104 @@ async fn run() -> Result<()> {
                             if let Some(ref texture_bg) = render.ground_bind_group {
                                 rp.set_bind_group(1, texture_bg, &[]);
                             }
-                            // Render each mesh type batch efficiently
+                            rp.set_bind_group(2, &render.shadow_bg, &[]);
+                            rp.set_bind_group(3, &render.light_bg, &[]);
+                            // Render skybox first
                             for batch in &instance_batches {
-                                if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
-                                    // Upload this batch's instances to the instance buffer
-                                    render.queue.write_buffer(
-                                        &render.instance_vb,
-                                        0,
-                                        bytemuck::cast_slice(&batch.instances),
-                                    );
-                                    
-                                    // Set up rendering for this mesh type
-                                    rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                                    rp.set_vertex_buffer(1, render.instance_vb.slice(..));
-                                    rp.set_index_buffer(
-                                        mesh.index_buffer.slice(..),
-                                        wgpu::IndexFormat::Uint16,
-                                    );
-                                    
-                                    // Draw this batch
-                                    if !batch.instances.is_empty() {
-                                        rp.draw_indexed(
-                                            0..mesh.index_count,
+                                if batch.mesh_type == MeshType::Skybox {
+                                    if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                        render.queue.write_buffer(
+                                            &render.instance_vb,
                                             0,
-                                            0..batch.instances.len() as u32,
+                                            bytemuck::cast_slice(&batch.instances),
                                         );
+                                        rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                        rp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                        rp.set_index_buffer(
+                                            mesh.index_buffer.slice(..),
+                                            wgpu::IndexFormat::Uint32,
+                                        );
+                                        if !batch.instances.is_empty() {
+                                            rp.draw_indexed(
+                                                0..mesh.index_count,
+                                                0,
+                                                0..batch.instances.len() as u32,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                            // Render other mesh batches
+                            for batch in &instance_batches {
+                                if batch.mesh_type != MeshType::Skybox {
+                                    if let Some(mesh) = render.meshes.get(&batch.mesh_type) {
+                                        render.queue.write_buffer(
+                                            &render.instance_vb,
+                                            0,
+                                            bytemuck::cast_slice(&batch.instances),
+                                        );
+                                        rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                                        rp.set_vertex_buffer(1, render.instance_vb.slice(..));
+                                        rp.set_index_buffer(
+                                            mesh.index_buffer.slice(..),
+                                            wgpu::IndexFormat::Uint32,
+                                        );
+                                        if !batch.instances.is_empty() {
+                                            rp.draw_indexed(
+                                                0..mesh.index_count,
+                                                0,
+                                                0..batch.instances.len() as u32,
+                                            );
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        // Submit main pass before generating mips
                         render.queue.submit(Some(encoder.finish()));
+
+                        // Generate mips for HDR color (used by bloom post)
+                        let hdr_size = wgpu::Extent3d {
+                            width: render.surface_cfg.width,
+                            height: render.surface_cfg.height,
+                            depth_or_array_layers: 1,
+                        };
+                        generate_mipmaps(
+                            &render.device,
+                            &render.queue,
+                            &render.hdr_tex,
+                            wgpu::TextureFormat::Rgba16Float,
+                            hdr_size,
+                            mip_level_count_for(hdr_size),
+                        );
+
+                        // Post pass: composite bloom to the swapchain
+                        let mut encoder2 = render
+                            .device
+                            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                                label: Some("post-encoder"),
+                            });
+                        {
+                            let mut rp = encoder2.begin_render_pass(&wgpu::RenderPassDescriptor {
+                                label: Some("post-pass"),
+                                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                                    view: &view,
+                                    resolve_target: None,
+                                    ops: wgpu::Operations {
+                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        store: wgpu::StoreOp::Store,
+                                    },
+                                })],
+                                depth_stencil_attachment: None,
+                                timestamp_writes: None,
+                                occlusion_query_set: None,
+                            });
+                            rp.set_pipeline(&render.post_pipeline);
+                            rp.set_bind_group(0, &render.post_bg, &[]);
+                            rp.draw(0..3, 0..1);
+                        }
+                        render.queue.submit(Some(encoder2.finish()));
                         frame.present();
                     }
                     _ => {}
@@ -1819,7 +2510,16 @@ fn create_default_albedo_texture(
         },
     );
     let view = white_texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..Default::default()
+    });
     Ok(LoadedTexture {
         texture: white_texture,
         view,
@@ -1841,7 +2541,7 @@ fn create_default_normal_texture(
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+    format: wgpu::TextureFormat::Rgba8Unorm,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
@@ -1865,12 +2565,122 @@ fn create_default_normal_texture(
         },
     );
     let view = normal_texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+    anisotropy_clamp: 8,
+        ..Default::default()
+    });
     Ok(LoadedTexture {
         texture: normal_texture,
         view,
         sampler,
     })
+}
+
+// Default MRA texture: R=AO=1.0 (no occlusion), G=Roughness=0.8, B=Metallic=0.0
+fn create_default_mra_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> Result<LoadedTexture> {
+    let mra_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("default-mra"),
+        size: wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+    format: wgpu::TextureFormat::Rgba8Unorm,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    // RGBA: AO, Roughness, Metallic, unused
+    let ao = (1.0 * 255.0) as u8;
+    let rough = (0.8 * 255.0) as u8;
+    let metal = (0.0 * 255.0) as u8;
+    queue.write_texture(
+        wgpu::ImageCopyTexture {
+            texture: &mra_tex,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+            aspect: wgpu::TextureAspect::All,
+        },
+        &[ao, rough, metal, 255],
+        wgpu::ImageDataLayout {
+            offset: 0,
+            bytes_per_row: Some(4),
+            rows_per_image: Some(1),
+        },
+        wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        },
+    );
+    let view = mra_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..Default::default()
+    });
+    Ok(LoadedTexture { texture: mra_tex, view, sampler })
+}
+
+// Default emissive texture: black (no emission)
+fn create_default_emissive_texture(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+) -> Result<LoadedTexture> {
+    let e_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("default-emissive"),
+        size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    queue.write_texture(
+        wgpu::ImageCopyTexture { texture: &e_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        &[0, 0, 0, 255],
+        wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+        wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+    );
+    let view = e_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        anisotropy_clamp: 8,
+        ..Default::default()
+    });
+    Ok(LoadedTexture { texture: e_tex, view, sampler })
+}
+
+// Fallback: create a 1x1 texture matching the color of an existing texture's first texel
+fn default_albedo_clone(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    _src: &LoadedTexture,
+) -> Result<LoadedTexture> {
+    // We don't read from GPU; just make a neutral 1x1 white as a safe stand-in
+    create_default_albedo_texture(device, queue)
 }
 
 // ---------------- renderer setup ----------------
@@ -1879,6 +2689,10 @@ struct InstanceBatch {
     instances: Vec<InstanceRaw>,
     mesh_type: MeshType,
 }
+
+// Shared terrain parameters used by both rendering and physics so visuals and collisions match
+const TERRAIN_SIZE: usize = 256; // grid resolution along one axis
+const TERRAIN_SCALE: f32 = 6.0;  // world units between vertices
 
 fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch> {
     let mut batches = Vec::new();
@@ -1911,7 +2725,145 @@ fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch>
     batches
 }
 
-fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) -> Mesh {
+// Generate terrain mesh with height variations matching the shader logic
+fn generate_terrain_mesh(size: usize, scale: f32) -> (Vec<[f32; 3]>, Vec<u32>) {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    
+    // Generate vertices with height variation
+    for z in 0..=size {
+        for x in 0..=size {
+            let world_x = (x as f32 - size as f32 * 0.5) * scale;
+            let world_z = (z as f32 - size as f32 * 0.5) * scale;
+            
+            // Match the shader's biome and terrain height logic
+            let world_pos = [world_x, world_z];
+            let biome_type = get_biome_type_rust(world_pos);
+            let terrain_height = get_biome_terrain_height_rust(world_pos, biome_type);
+            
+            vertices.push([world_x, -2.0 + terrain_height, world_z]);
+        }
+    }
+    
+    // Generate indices for triangles
+    for z in 0..size {
+        for x in 0..size {
+            let i0 = (z * (size + 1) + x) as u32;
+            let i1 = (z * (size + 1) + x + 1) as u32;
+            let i2 = ((z + 1) * (size + 1) + x) as u32;
+            let i3 = ((z + 1) * (size + 1) + x + 1) as u32;
+            
+            // Two triangles per quad
+            indices.extend_from_slice(&[i0, i2, i1, i1, i2, i3]);
+        }
+    }
+    
+    (vertices, indices)
+}
+
+// Rust implementation of shader biome detection
+fn smooth2_scalar(t: f32) -> f32 { t * t * t * (t * (t * 6.0 - 15.0) + 10.0) }
+
+fn fract_scalar(x: f32) -> f32 { x - x.floor() }
+
+fn hash21_rust(p: [f32; 2]) -> f32 {
+    let h = p[0] * 127.1 + p[1] * 311.7;
+    fract_scalar((h).sin() * 43758.5453)
+}
+
+fn value_noise2_rust(p: [f32; 2]) -> f32 {
+    let ix = p[0].floor();
+    let iy = p[1].floor();
+    let fx = p[0] - ix;
+    let fy = p[1] - iy;
+    let ux = smooth2_scalar(fx);
+    let uy = smooth2_scalar(fy);
+    let a = hash21_rust([ix + 0.0, iy + 0.0]);
+    let b = hash21_rust([ix + 1.0, iy + 0.0]);
+    let c = hash21_rust([ix + 0.0, iy + 1.0]);
+    let d = hash21_rust([ix + 1.0, iy + 1.0]);
+    let x1 = a + (b - a) * ux;
+    let x2 = c + (d - c) * ux;
+    x1 + (x2 - x1) * uy
+}
+
+fn fbm2_rust(p: [f32; 2], octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    let mut f = 0.0f32;
+    let mut amp = 0.5f32;
+    let mut freq = 1.0f32;
+    let mut i = 0;
+    while i < octaves {
+        f += value_noise2_rust([p[0] * freq, p[1] * freq]) * amp;
+        freq *= lacunarity;
+        amp *= gain;
+        i += 1;
+    }
+    f
+}
+
+fn fbm_ridge2_rust(p: [f32; 2], octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    let mut f = 0.0f32;
+    let mut amp = 0.5f32;
+    let mut freq = 1.0f32;
+    let mut i = 0;
+    while i < octaves {
+        let n = value_noise2_rust([p[0] * freq, p[1] * freq]);
+        let r = 1.0 - (n * 2.0 - 1.0).abs();
+        f += r * amp;
+        freq *= lacunarity;
+        amp *= gain;
+        i += 1;
+    }
+    f
+}
+
+fn get_biome_type_rust(world_pos: [f32; 2]) -> i32 {
+    let biome_scale = 0.01;
+    let biome_pos = [world_pos[0] * biome_scale, world_pos[1] * biome_scale];
+    let n = fbm2_rust(biome_pos, 5, 2.0, 0.5) * 2.0 - 1.0;
+    if n > 0.25 { 1 } else if n < -0.25 { 2 } else { 0 }
+}
+
+// Rust implementation of shader terrain height generation
+fn get_biome_terrain_height_rust(world_pos: [f32; 2], biome_type: i32) -> f32 {
+    // Match WGSL FBM-based terrain height generation
+    let p = [world_pos[0] * 0.01, world_pos[1] * 0.01];
+    let base = (fbm2_rust(p, 5, 2.0, 0.5) * 2.0 - 1.0) * 3.5;
+    let detail = (fbm2_rust([p[0] * 3.0, p[1] * 3.0], 3, 2.2, 0.5) - 0.5) * 1.5;
+    let h = base + detail;
+    match biome_type {
+        0 => { // Grassland
+            let river = fbm_ridge2_rust([p[0] * 0.9, p[1] * 0.9], 3, 2.0, 0.6);
+            let valleys = (river - 0.6) * 6.0;
+            h + valleys.clamp(-3.5, 0.0)
+        }
+        1 => { // Desert
+            let wind_dir = {
+                let len = (0.8f32 * 0.8 + 0.6 * 0.6).sqrt();
+                [0.8 / len, 0.6 / len]
+            };
+            let d = p[0] * 6.0 * wind_dir[0] + p[1] * 6.0 * wind_dir[1];
+            let dunes = (fbm_ridge2_rust([d, d * 0.3], 4, 2.0, 0.55) - 0.5) * 3.0;
+            let mesas = if fbm_ridge2_rust([p[0] * 0.7, p[1] * 0.7], 4, 2.0, 0.5) >= 0.7 { 6.0 } else { 0.0 };
+            h + dunes + mesas
+        }
+        2 => { // Forest
+            let soft = fbm2_rust([p[0] * 0.7, p[1] * 0.7], 4, 2.0, 0.5) * 2.0 - 1.0;
+            let mounds = if fbm2_rust([p[0] * 1.3 + 12.3, p[1] * 1.3 + 12.3], 4, 2.0, 0.5) >= 0.65 { 1.6 } else { 0.0 };
+            h * 0.9 + soft * 2.2 + mounds
+        }
+        _ => h,
+    }
+}
+
+// Compute the visual terrain surface Y at a given world-space (x, z)
+fn terrain_surface_y(x: f32, z: f32) -> f32 {
+    let biome = get_biome_type_rust([x, z]);
+    // Terrain in mesh generation was placed at base -2.0 plus height variation
+    -2.0 + get_biome_terrain_height_rust([x, z], biome)
+}
+
+fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u32]) -> Mesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("mesh-vertices"),
         contents: bytemuck::cast_slice(vertices),
@@ -1931,14 +2883,20 @@ fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u16]) ->
     }
 }
 
+fn to_u32_indices(src: &[u16]) -> Vec<u32> { src.iter().map(|&i| i as u32).collect() }
+
 fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshType, Mesh> {
     let mut meshes = std::collections::HashMap::new();
     
-    meshes.insert(MeshType::Cube, create_mesh(device, CUBE_VERTICES, CUBE_INDICES));
-    meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, TREE_INDICES));
-    meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, HOUSE_INDICES));
-    meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, CHARACTER_INDICES));
-    meshes.insert(MeshType::Skybox, create_mesh(device, SKYBOX_VERTICES, SKYBOX_INDICES));
+    // Generate terrain mesh instead of simple cube for ground
+    let (terrain_vertices, terrain_indices) = generate_terrain_mesh(TERRAIN_SIZE, TERRAIN_SCALE);
+    
+    // Create terrain mesh as Cube type (since ground uses MeshType::Cube)
+    meshes.insert(MeshType::Cube, create_mesh(device, &terrain_vertices, &terrain_indices));
+    meshes.insert(MeshType::Tree, create_mesh(device, TREE_VERTICES, &to_u32_indices(TREE_INDICES)));
+    meshes.insert(MeshType::House, create_mesh(device, HOUSE_VERTICES, &to_u32_indices(HOUSE_INDICES)));
+    meshes.insert(MeshType::Character, create_mesh(device, CHARACTER_VERTICES, &to_u32_indices(CHARACTER_INDICES)));
+    meshes.insert(MeshType::Skybox, create_mesh(device, SKYBOX_VERTICES, &to_u32_indices(SKYBOX_INDICES)));
     
     meshes
 }
@@ -1987,7 +2945,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
 
     println!("Device created successfully");
 
-    let msaa_samples = 1u32;
+    let msaa_samples = 4u32; // enable 4x MSAA
     let caps = surface.get_capabilities(&adapter);
     println!("Surface capabilities: {:?}", caps);
 
@@ -2011,6 +2969,56 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     };
     surface.configure(&device, &surface_cfg);
     let depth_view = create_depth(&device, surface_cfg.width, surface_cfg.height, msaa_samples);
+    let msaa_color_view = if msaa_samples > 1 {
+        Some(create_msaa_color(
+            &device,
+            surface_cfg.format,
+            surface_cfg.width,
+            surface_cfg.height,
+            msaa_samples,
+        ))
+    } else {
+        None
+    };
+
+    // HDR offscreen color target with mips for bloom
+    let hdr_size = wgpu::Extent3d { width: surface_cfg.width, height: surface_cfg.height, depth_or_array_layers: 1 };
+    let hdr_mips = mip_level_count_for(hdr_size);
+    let hdr_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("hdr-tex"),
+        size: hdr_size,
+        mip_level_count: hdr_mips,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba16Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC,
+        view_formats: &[],
+    });
+    let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    // Single-mip resolve/render view for mip level 0
+    let hdr_resolve_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor {
+        label: Some("hdr-resolve-view"),
+        format: Some(wgpu::TextureFormat::Rgba16Float),
+        dimension: Some(wgpu::TextureViewDimension::D2),
+        aspect: wgpu::TextureAspect::All,
+        base_mip_level: 0,
+        mip_level_count: Some(1),
+        base_array_layer: 0,
+        array_layer_count: Some(1),
+    });
+    let hdr_msaa_view = if msaa_samples > 1 {
+        let tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("hdr-msaa"),
+            size: hdr_size,
+            mip_level_count: 1,
+            sample_count: msaa_samples,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        Some(tex.create_view(&wgpu::TextureViewDescriptor::default()))
+    } else { None };
 
     // Create all meshes
     let meshes = create_all_meshes(&device);
@@ -2022,8 +3030,82 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    // Create exposure uniform buffer (PostParams)
+    let exposure_init = PostParams { exposure: 1.0, _pad: [0.0; 3], _pad2: [0.0; 4] };
+    let exposure_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("exposure-ub"),
+        contents: bytemuck::bytes_of(&exposure_init),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
+    let debug_init = DebugParamsRust { debug_tint: 0, _pad: [0; 3], _pad2: [0; 4] };
+    let debug_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("debug-ub"),
+        contents: bytemuck::bytes_of(&debug_init),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
     let camera_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("camera-layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 4,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
+    });
+    let camera_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("camera-bg"),
+        layout: &camera_bg_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_ub.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: exposure_buf.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: debug_buf.as_entire_binding(),
+            },
+        ],
+    });
+
+    // Light uniform and bind group (holds light view-projection)
+    let light_ub = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("light-ub"),
+        size: std::mem::size_of::<GpuCamera>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    let light_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("light-layout"),
         entries: &[wgpu::BindGroupLayoutEntry {
             binding: 0,
             visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
@@ -2035,19 +3117,174 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             count: None,
         }],
     });
-    let camera_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("camera-bg"),
-        layout: &camera_bg_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: camera_ub.as_entire_binding(),
-        }],
+    let light_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("light-bg"),
+        layout: &light_bg_layout,
+        entries: &[wgpu::BindGroupEntry { binding: 0, resource: light_ub.as_entire_binding() }],
     });
 
-    // Texture bind group layout (for albedo + normal mapping)
+    // Post-processing: bloom bind group layout and resources
+    let post_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("post-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry { // hdr color
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry { // sampler
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            },
+            // exposure params in post
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry { // bloom params
+                binding: 3,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
+                count: None,
+            },
+        ],
+    });
+    let post_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("post-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        ..Default::default()
+    });
+    let bloom_init = BloomParams { threshold: 0.7, intensity: 0.6, _pad: [0.0; 2] };
+    let bloom_ub = device.create_buffer_init(&wgpu::util::BufferInitDescriptor { label: Some("bloom-ub"), contents: bytemuck::bytes_of(&bloom_init), usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST });
+    let post_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("post-bg"),
+        layout: &post_bgl,
+        entries: &[
+            // Bind full-mip HDR view for sampling in post
+            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&hdr_view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&post_sampler) },
+            wgpu::BindGroupEntry { binding: 2, resource: exposure_buf.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 3, resource: bloom_ub.as_entire_binding() },
+        ],
+    });
+
+    // Fullscreen post shader combining exposure-tonemapped HDR with thresholded bloom from mips
+        const POST_SHADER: &str = r#"
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
+    var out: VsOut;
+    // Full-screen covering triangle
+    var positions = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -1.0),
+        vec2<f32>( 3.0, -1.0),
+        vec2<f32>(-1.0,  3.0)
+    );
+    let xy = positions[vi];
+    out.pos = vec4<f32>(xy, 0.0, 1.0);
+    out.uv = vec2<f32>((xy.x + 1.0) * 0.5, 1.0 - (xy.y + 1.0) * 0.5);
+    return out;
+}
+@group(0) @binding(0) var hdr_tex: texture_2d<f32>;
+@group(0) @binding(1) var hdr_smp: sampler;
+struct PostParams { exposure: f32, _pad: vec3<f32>, };
+@group(0) @binding(2) var<uniform> post: PostParams;
+struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
+@group(0) @binding(3) var<uniform> bloom: Bloom;
+@fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
+  // base color from hdr
+    var base = textureSample(hdr_tex, hdr_smp, in.uv).rgb;
+  // multi-mip bloom sampling
+  var bloom_sum = vec3<f32>(0.0);
+  var w = 0.0;
+  let levels = 5;
+  for (var i: i32 = 1; i <= levels; i = i + 1) {
+    let lod = f32(i);
+    let c = textureSampleLevel(hdr_tex, hdr_smp, in.uv, lod).rgb;
+    let luma = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let m = max(luma - bloom.threshold, 0.0);
+    let val = c * (m / max(luma + 1e-4, 1e-4));
+    let weight = 1.0 / (1.0 + f32(i));
+    bloom_sum += val * weight; w += weight;
+  }
+  let bloom_col = bloom_sum / max(w, 1e-4) * bloom.intensity;
+    var color = base + bloom_col;
+    // Auto-exposure: estimate average scene luminance from a high mip level near 1x1
+    // Unrolled taps to avoid dynamic indexing restrictions
+    var logLumSum = 0.0;
+    let lodProbe = 8.0; // large LOD; will clamp to highest mip available
+    {
+        let uv0 = clamp(in.uv + vec2<f32>(-0.25, -0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c0 = textureSampleLevel(hdr_tex, hdr_smp, uv0, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c0, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv1 = clamp(in.uv + vec2<f32>(0.0, -0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c1 = textureSampleLevel(hdr_tex, hdr_smp, uv1, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c1, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv2 = clamp(in.uv + vec2<f32>(0.25, -0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c2 = textureSampleLevel(hdr_tex, hdr_smp, uv2, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c2, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv3 = clamp(in.uv + vec2<f32>(-0.25, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c3 = textureSampleLevel(hdr_tex, hdr_smp, uv3, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c3, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv4 = clamp(in.uv + vec2<f32>(0.0, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c4 = textureSampleLevel(hdr_tex, hdr_smp, uv4, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c4, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv5 = clamp(in.uv + vec2<f32>(0.25, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c5 = textureSampleLevel(hdr_tex, hdr_smp, uv5, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c5, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv6 = clamp(in.uv + vec2<f32>(-0.25, 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c6 = textureSampleLevel(hdr_tex, hdr_smp, uv6, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c6, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv7 = clamp(in.uv + vec2<f32>(0.0, 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c7 = textureSampleLevel(hdr_tex, hdr_smp, uv7, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c7, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+
+        let uv8 = clamp(in.uv + vec2<f32>(0.25, 0.25), vec2<f32>(0.0), vec2<f32>(1.0));
+        let c8 = textureSampleLevel(hdr_tex, hdr_smp, uv8, lodProbe).rgb;
+        logLumSum = logLumSum + log(max(dot(c8, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4));
+    }
+    let logAvg = logLumSum / 9.0;
+    let avgLum = exp(logAvg);
+    let targetGray = 0.18;
+    let autoScale = clamp(targetGray / avgLum, 0.25, 4.0);
+
+    // Apply manual exposure scaled by auto exposure factor, then tone map
+    color = color * (post.exposure * autoScale);
+    let aA = 2.51; let bA = 0.03; let cA = 2.43; let dA = 0.59; let eA = 0.14;
+    let tone = clamp((color * (aA * color + bA)) / (color * (cA * color + dA) + eA), vec3<f32>(0.0), vec3<f32>(1.0));
+    return vec4<f32>(tone, 1.0);
+}
+"#;
+    let post_sm = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("post-sm"), source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER)) });
+    let post_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("post-pl"), bind_group_layouts: &[&post_bgl], push_constant_ranges: &[] });
+    let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("post-pipeline"),
+        layout: Some(&post_pl),
+        vertex: wgpu::VertexState { module: &post_sm, entry_point: "vs", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() },
+        fragment: Some(wgpu::FragmentState { module: &post_sm, entry_point: "fs", targets: &[Some(wgpu::ColorTargetState { format: surface_format, blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL })], compilation_options: wgpu::PipelineCompilationOptions::default() }),
+        primitive: wgpu::PrimitiveState::default(), depth_stencil: None, multisample: wgpu::MultisampleState::default(), multiview: None,
+    });
+
+    // Texture bind group layout (for PBR: albedo + normal + MRA + emissive)
     let texture_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("albedo+normal"),
+            label: Some("pbr-textures"),
             entries: &[
                 // binding 0: albedo texture
                 wgpu::BindGroupLayoutEntry {
@@ -2085,22 +3322,168 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
+                // binding 4: MRA (metallic in B, roughness in G, occlusion in R)
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                // binding 5: MRA sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                // binding 6: emissive texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 6,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                // binding 7: emissive sampler
+                wgpu::BindGroupLayoutEntry {
+                    binding: 7,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                // Dirt set: albedo, normal, mra
+                wgpu::BindGroupLayoutEntry { binding: 8, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 9, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 10, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                // Stone set
+                wgpu::BindGroupLayoutEntry { binding: 11, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 12, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 13, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                // Sand set
+                wgpu::BindGroupLayoutEntry { binding: 14, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 15, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 16, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                // Forest floor set
+                wgpu::BindGroupLayoutEntry { binding: 17, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 18, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 19, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { multisampled: false, view_dimension: wgpu::TextureViewDimension::D2, sample_type: wgpu::TextureSampleType::Float { filterable: true } }, count: None },
             ],
         });
 
+    // Shadow map layout: depth texture + comparison sampler
+    let shadow_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("shadow-layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Depth,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
+                count: None,
+            },
+        ],
+    });
+
+    // Create shadow map resources
+    let shadow_size = 2048u32;
+    let shadow_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("shadow-map"),
+        size: wgpu::Extent3d { width: shadow_size, height: shadow_size, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+    let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("shadow-sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        compare: Some(wgpu::CompareFunction::LessEqual),
+        ..Default::default()
+    });
+    let shadow_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("shadow-bg"),
+        layout: &shadow_bg_layout,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&shadow_view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&shadow_sampler) },
+        ],
+    });
+
     // Try to load grass texture, fallback to default if not available
-    let (ground_texture, ground_normal, ground_bind_group) =
-        match load_texture_from_file(&device, &queue, Path::new("assets/grass.png")) {
+    let (ground_texture, ground_normal, ground_mra, ground_emissive, ground_bind_group,
+         dirt_albedo, dirt_normal, dirt_mra,
+         stone_albedo, stone_normal, stone_mra,
+         sand_albedo, sand_normal, sand_mra,
+         forest_albedo, forest_normal, forest_mra) =
+    match load_texture_from_file(&device, &queue, &resolve_asset_path("grass.png")) {
             Ok(texture) => {
                 // Try to load corresponding normal map
                 let normal_texture = match load_texture_from_file(
                     &device,
                     &queue,
-                    Path::new("assets/grass_n.png"),
+                    &resolve_asset_path("grass_n.png"),
                 ) {
                     Ok(normal) => normal,
                     Err(_) => create_default_normal_texture(&device, &queue)?,
                 };
+                // Load MRA and emissive if present
+                let mra_texture = match load_texture_from_file(
+                    &device,
+                    &queue,
+                    &resolve_asset_path("grass_mra.png"),
+                ) {
+                    Ok(tex) => tex,
+                    Err(_) => create_default_mra_texture(&device, &queue)?,
+                };
+                let emissive_texture = match load_texture_from_file(
+                    &device,
+                    &queue,
+                    &resolve_asset_path("grass_e.png"),
+                ) {
+                    Ok(tex) => tex,
+                    Err(_) => create_default_emissive_texture(&device, &queue)?,
+                };
+
+                // Load additional biome textures (with fallbacks)
+                let dirt_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("dirt.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let dirt_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("dirt_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let dirt_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("dirt_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+
+                let stone_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("stone.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let stone_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("stone_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let stone_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("stone_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+
+                let sand_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("sand.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let sand_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("sand_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let sand_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("sand_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
+
+                let forest_albedo = load_texture_from_file(&device, &queue, &resolve_asset_path("forest_floor.png")).unwrap_or_else(|_| default_albedo_clone(&device, &queue, &texture).unwrap());
+                let forest_normal = load_texture_from_file(&device, &queue, &resolve_asset_path("forest_floor_n.png")).unwrap_or_else(|_| create_default_normal_texture(&device, &queue).unwrap());
+                let forest_mra = load_texture_from_file(&device, &queue, &resolve_asset_path("forest_floor_mra.png")).unwrap_or_else(|_| create_default_mra_texture(&device, &queue).unwrap());
 
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("ground-texture-bg"),
@@ -2122,14 +3505,60 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                             binding: 3,
                             resource: wgpu::BindingResource::Sampler(&normal_texture.sampler),
                         },
+                        wgpu::BindGroupEntry {
+                            binding: 4,
+                            resource: wgpu::BindingResource::TextureView(&mra_texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 5,
+                            resource: wgpu::BindingResource::Sampler(&mra_texture.sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 6,
+                            resource: wgpu::BindingResource::TextureView(&emissive_texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 7,
+                            resource: wgpu::BindingResource::Sampler(&emissive_texture.sampler),
+                        },
+                        // Dirt
+                        wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(&dirt_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&dirt_normal.view) },
+                        wgpu::BindGroupEntry { binding: 10, resource: wgpu::BindingResource::TextureView(&dirt_mra.view) },
+                        // Stone
+                        wgpu::BindGroupEntry { binding: 11, resource: wgpu::BindingResource::TextureView(&stone_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 12, resource: wgpu::BindingResource::TextureView(&stone_normal.view) },
+                        wgpu::BindGroupEntry { binding: 13, resource: wgpu::BindingResource::TextureView(&stone_mra.view) },
+                        // Sand
+                        wgpu::BindGroupEntry { binding: 14, resource: wgpu::BindingResource::TextureView(&sand_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 15, resource: wgpu::BindingResource::TextureView(&sand_normal.view) },
+                        wgpu::BindGroupEntry { binding: 16, resource: wgpu::BindingResource::TextureView(&sand_mra.view) },
+                        // Forest floor
+                        wgpu::BindGroupEntry { binding: 17, resource: wgpu::BindingResource::TextureView(&forest_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 18, resource: wgpu::BindingResource::TextureView(&forest_normal.view) },
+                        wgpu::BindGroupEntry { binding: 19, resource: wgpu::BindingResource::TextureView(&forest_mra.view) },
                     ],
                 });
-                (Some(texture), Some(normal_texture), Some(bind_group))
+                (
+                    Some(texture),
+                    Some(normal_texture),
+                    Some(mra_texture),
+                    Some(emissive_texture),
+                    Some(bind_group),
+                    Some(dirt_albedo), Some(dirt_normal), Some(dirt_mra),
+                    Some(stone_albedo), Some(stone_normal), Some(stone_mra),
+                    Some(sand_albedo), Some(sand_normal), Some(sand_mra),
+                    Some(forest_albedo), Some(forest_normal), Some(forest_mra),
+                )
             }
             Err(_) => {
                 // Create default textures as fallback
                 let default_albedo = create_default_albedo_texture(&device, &queue)?;
                 let default_normal = create_default_normal_texture(&device, &queue)?;
+                let default_mra = create_default_mra_texture(&device, &queue)?;
+                let default_emissive = create_default_emissive_texture(&device, &queue)?;
+
+                // Fallbacks: we will reuse default textures directly in the bind group
 
                 let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                     label: Some("default-texture-bg"),
@@ -2151,9 +3580,51 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                             binding: 3,
                             resource: wgpu::BindingResource::Sampler(&default_normal.sampler),
                         },
+                        wgpu::BindGroupEntry {
+                            binding: 4,
+                            resource: wgpu::BindingResource::TextureView(&default_mra.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 5,
+                            resource: wgpu::BindingResource::Sampler(&default_mra.sampler),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 6,
+                            resource: wgpu::BindingResource::TextureView(&default_emissive.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 7,
+                            resource: wgpu::BindingResource::Sampler(&default_emissive.sampler),
+                        },
+                        // Dirt (defaults)
+                        wgpu::BindGroupEntry { binding: 8, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 9, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 10, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
+                        // Stone (defaults)
+                        wgpu::BindGroupEntry { binding: 11, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 12, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 13, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
+                        // Sand (defaults)
+                        wgpu::BindGroupEntry { binding: 14, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 15, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 16, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
+                        // Forest (defaults)
+                        wgpu::BindGroupEntry { binding: 17, resource: wgpu::BindingResource::TextureView(&default_albedo.view) },
+                        wgpu::BindGroupEntry { binding: 18, resource: wgpu::BindingResource::TextureView(&default_normal.view) },
+                        wgpu::BindGroupEntry { binding: 19, resource: wgpu::BindingResource::TextureView(&default_mra.view) },
                     ],
                 });
-                (Some(default_albedo), Some(default_normal), Some(bind_group))
+                (
+                    Some(default_albedo),
+                    Some(default_normal),
+                    Some(default_mra),
+                    Some(default_emissive),
+                    Some(bind_group),
+                    None, None, None,
+                    None, None, None,
+                    None, None, None,
+                    None, None, None,
+                )
             }
         };
 
@@ -2167,13 +3638,63 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     });
 
     // Create pipeline with procedural shader
+    // Create shadow pipeline
+    let shadow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("shadow-shader"),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADOW_SHADER)),
+    });
+    let shadow_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("shadow-pipeline-layout"),
+        bind_group_layouts: &[&light_bg_layout],
+        push_constant_ranges: &[],
+    });
+    let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("shadow-pipeline"),
+        layout: Some(&shadow_pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shadow_shader,
+            entry_point: "vs_shadow",
+            buffers: &[
+                wgpu::VertexBufferLayout {
+                    array_stride: 3 * 4,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 }],
+                },
+                wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<InstanceRaw>() as u64,
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &[
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 0, shader_location: 1 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 16, shader_location: 2 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 32, shader_location: 3 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 48, shader_location: 4 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x4, offset: 64, shader_location: 5 },
+                        wgpu::VertexAttribute { format: wgpu::VertexFormat::Uint32, offset: 80, shader_location: 6 },
+                    ],
+                },
+            ],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        },
+        fragment: None,
+        primitive: wgpu::PrimitiveState { topology: wgpu::PrimitiveTopology::TriangleList, front_face: wgpu::FrontFace::Ccw, cull_mode: Some(wgpu::Face::Back), ..Default::default() },
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::LessEqual,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState { constant: 2, slope_scale: 2.0, clamp: 0.0 },
+        }),
+        multisample: wgpu::MultisampleState { count: 1, mask: !0, alpha_to_coverage_enabled: false },
+        multiview: None,
+    });
+
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("shader"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADER)),
     });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("pipeline-layout"),
-        bind_group_layouts: &[&camera_bg_layout, &texture_bind_group_layout],
+        bind_group_layouts: &[&camera_bg_layout, &texture_bind_group_layout, &shadow_bg_layout, &light_bg_layout],
         push_constant_ranges: &[],
     });
 
@@ -2237,7 +3758,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             module: &shader_module,
             entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState {
-                format: surface_format,
+                format: wgpu::TextureFormat::Rgba16Float,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
@@ -2247,7 +3768,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             topology: wgpu::PrimitiveTopology::TriangleList,
             strip_index_format: None,
             front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
+            cull_mode: None, // Disable culling to allow skybox with inverted winding
             ..Default::default()
         },
         depth_stencil: Some(wgpu::DepthStencilState {
@@ -2278,10 +3799,44 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         instance_vb,
         instance_count: 0, // Will be updated dynamically
         msaa_samples,
+        msaa_color_view,
+        hdr_tex,
+        hdr_view,
+    hdr_resolve_view,
+        hdr_msaa_view,
+        shadow_view,
+        shadow_sampler,
+        shadow_pipeline,
+        shadow_size,
+        light_ub,
+        light_bg,
+        shadow_bg,
         ground_texture,
         texture_bind_group_layout,
+    exposure_buf,
         ground_bind_group,
         ground_normal,
+        ground_mra,
+        ground_emissive,
+        // Additional biome textures
+        dirt_albedo,
+        dirt_normal,
+        dirt_mra,
+        stone_albedo,
+        stone_normal,
+        stone_mra,
+        sand_albedo,
+        sand_normal,
+        sand_mra,
+        forest_albedo,
+        forest_normal,
+        forest_mra,
+        post_pipeline,
+        post_bg,
+        post_bgl,
+        post_sampler,
+        bloom_ub,
+        debug_buf,
     })
 }
 
@@ -2303,29 +3858,390 @@ fn create_depth(device: &wgpu::Device, width: u32, height: u32, samples: u32) ->
     tex.create_view(&wgpu::TextureViewDescriptor::default())
 }
 
+fn create_msaa_color(
+    device: &wgpu::Device,
+    format: wgpu::TextureFormat,
+    width: u32,
+    height: u32,
+    samples: u32,
+) -> wgpu::TextureView {
+    let tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("msaa-color"),
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: samples,
+        dimension: wgpu::TextureDimension::D2,
+        format,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+    tex.create_view(&wgpu::TextureViewDescriptor::default())
+}
+
 // ---------------- shader with procedural ground/sky ----------------
+
+// Depth-only shadow map shader
+const SHADOW_SHADER: &str = r#"
+struct Camera { view_proj: mat4x4<f32> };
+
+@group(0) @binding(0) var<uniform> u_light: Camera;
+
+struct VsIn {
+    @location(0) pos: vec3<f32>,
+    @location(1) m0: vec4<f32>,
+    @location(2) m1: vec4<f32>,
+    @location(3) m2: vec4<f32>,
+    @location(4) m3: vec4<f32>,
+    @location(5) color: vec4<f32>,
+    @location(6) mesh_type: u32,
+};
+
+struct VsOut { @builtin(position) pos: vec4<f32> };
+
+@vertex
+fn vs_shadow(in: VsIn) -> VsOut {
+    var out: VsOut;
+    // Skip skybox by pushing it out of clip space
+    if (in.mesh_type == 4u) {
+        out.pos = vec4<f32>(2.0, 2.0, 2.0, 1.0);
+        return out;
+    }
+    let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
+    let world = model * vec4<f32>(in.pos, 1.0);
+    out.pos = u_light.view_proj * world;
+    return out;
+}
+"#;
 
 const SHADER: &str = r#"
 struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
+struct DebugParams { debug_tint: u32, _pad: vec3<f32> };
 
 @group(0) @binding(0) var<uniform> u_camera: Camera;
+@group(0) @binding(4) var<uniform> u_debug: DebugParams;
+struct PostParams { exposure: f32, _pad0: vec3<f32>, } // 16-byte aligned
+@group(0) @binding(1) var<uniform> u_post: PostParams;
 @group(1) @binding(0) var ground_texture: texture_2d<f32>;
 @group(1) @binding(1) var ground_sampler: sampler;
 @group(1) @binding(2) var ground_normal: texture_2d<f32>;
 @group(1) @binding(3) var normal_sampler: sampler;
+@group(1) @binding(4) var ground_mra: texture_2d<f32>; // R: AO, G: Roughness, B: Metallic
+@group(1) @binding(5) var mra_sampler: sampler;
+@group(1) @binding(6) var ground_emissive: texture_2d<f32>;
+@group(1) @binding(7) var emissive_sampler: sampler;
+// Additional biome textures (share samplers above)
+@group(1) @binding(8) var dirt_albedo: texture_2d<f32>;
+@group(1) @binding(9) var dirt_normal: texture_2d<f32>;
+@group(1) @binding(10) var dirt_mra: texture_2d<f32>;
+@group(1) @binding(11) var stone_albedo: texture_2d<f32>;
+@group(1) @binding(12) var stone_normal: texture_2d<f32>;
+@group(1) @binding(13) var stone_mra: texture_2d<f32>;
+@group(1) @binding(14) var sand_albedo: texture_2d<f32>;
+@group(1) @binding(15) var sand_normal: texture_2d<f32>;
+@group(1) @binding(16) var sand_mra: texture_2d<f32>;
+@group(1) @binding(17) var forest_albedo: texture_2d<f32>;
+@group(1) @binding(18) var forest_normal: texture_2d<f32>;
+@group(1) @binding(19) var forest_mra: texture_2d<f32>;
+
+// Shadows
+@group(2) @binding(0) var shadow_map: texture_depth_2d;
+@group(2) @binding(1) var shadow_sampler: sampler_comparison;
+@group(3) @binding(0) var<uniform> u_light: Camera;
 
 // Note: Time uniform would be @group(2) @binding(0) in a full implementation
 // For now, we'll use a constant or calculated time
 
+// Helper struct and functions for triplanar sampling across texture sets
+struct SampleSet { c: vec3<f32>, n: vec3<f32>, m: vec4<f32> };
+
+// -----------------------------------------------------------------------------
+// Noise utilities (hash, value noise, FBM) to avoid grid-aligned artifacts
+// -----------------------------------------------------------------------------
+
+fn hash21(p: vec2<f32>) -> f32 {
+    let h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453);
+}
+
+fn smooth2(t: vec2<f32>) -> vec2<f32> {
+    // Quintic smoothing for C2 continuity
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+fn value_noise2(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = smooth2(f);
+
+    let a = hash21(i + vec2<f32>(0.0, 0.0));
+    let b = hash21(i + vec2<f32>(1.0, 0.0));
+    let c = hash21(i + vec2<f32>(0.0, 1.0));
+    let d = hash21(i + vec2<f32>(1.0, 1.0));
+
+    let x1 = mix(a, b, u.x);
+    let x2 = mix(c, d, u.x);
+    return mix(x1, x2, u.y);
+}
+
+fn fbm2(p: vec2<f32>, octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    var f = 0.0;
+    var amp = 0.5;
+    var freq = 1.0;
+    var i = 0;
+    loop {
+        if (i >= octaves) { break; }
+        f = f + value_noise2(p * freq) * amp;
+        freq = freq * lacunarity;
+        amp = amp * gain;
+        i = i + 1;
+    }
+    return f;
+}
+
+fn fbm_ridge2(p: vec2<f32>, octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    // Ridged multifractal using absolute value and inversion
+    var f = 0.0;
+    var amp = 0.5;
+    var freq = 1.0;
+    var i = 0;
+    loop {
+        if (i >= octaves) { break; }
+        let n = value_noise2(p * freq);
+        let r = 1.0 - abs(n * 2.0 - 1.0);
+        f = f + r * amp;
+        freq = freq * lacunarity;
+        amp = amp * gain;
+        i = i + 1;
+    }
+    return f;
+}
+
+fn noise_grad2(p: vec2<f32>) -> vec2<f32> {
+    // Central differences gradient of value noise
+    let e = 0.001;
+    let dx = value_noise2(p + vec2<f32>(e, 0.0)) - value_noise2(p - vec2<f32>(e, 0.0));
+    let dy = value_noise2(p + vec2<f32>(0.0, e)) - value_noise2(p - vec2<f32>(0.0, e));
+    return vec2<f32>(dx, dy) / (2.0 * e);
+}
+
+// by biome (legacy)
+fn sample_set(biome: i32, uv: vec2<f32>) -> SampleSet {
+    var c = vec3<f32>(1.0,1.0,1.0);
+    var n = vec3<f32>(0.5,0.5,1.0);
+    var m = vec4<f32>(1.0,0.8,0.0,1.0);
+    if (biome == 0) {
+        c = textureSample(ground_texture, ground_sampler, uv).rgb;
+        n = textureSample(ground_normal, normal_sampler, uv).rgb;
+        m = textureSample(ground_mra, mra_sampler, uv);
+    } else if (biome == 1) {
+        c = textureSample(sand_albedo, ground_sampler, uv).rgb;
+        n = textureSample(sand_normal, normal_sampler, uv).rgb;
+        m = textureSample(sand_mra, mra_sampler, uv);
+    } else {
+        c = textureSample(forest_albedo, ground_sampler, uv).rgb;
+        n = textureSample(forest_normal, normal_sampler, uv).rgb;
+        m = textureSample(forest_mra, mra_sampler, uv);
+    }
+    return SampleSet(c, n, m);
+}
+
+// Percentage-closer filtering shadow test
+fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
+    let pos_light = u_light.view_proj * vec4<f32>(world_pos, 1.0);
+    let proj = pos_light.xyz / pos_light.w;
+    // Transform from NDC (-1..1) to 0..1
+    let uv = proj.xy * 0.5 + vec2<f32>(0.5, 0.5);
+    let depth = proj.z * 0.5 + 0.5;
+    // Receiver bias to reduce acne (slightly angle-dependent)
+    let bias = max(0.0005 * (1.0 - dot(N, L)), 0.0005);
+    // Early out if outside light frustum
+    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return 0.0; }
+
+    // Rotated Poisson-disk PCF (16 taps)
+    let texel = 1.0 / 2048.0; // matches shadow map size
+
+    // Random rotation per-fragment derived from UV to reduce banding
+    let rnd = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let angle = rnd * 6.2831853; // 2*pi
+    let c = cos(angle);
+    let s = sin(angle);
+    let rot = mat2x2<f32>(vec2<f32>(c, s), vec2<f32>(-s, c)); // [ [c,-s],[s,c] ] in column form
+
+    // Filter radius: slightly wider at grazing angles to hide stair-steps
+    let radius = (2.0 + (1.0 - clamp(dot(N, L), 0.0, 1.0)) * 2.0) * texel;
+
+    // Unrolled 16 Poisson taps to avoid dynamic array indexing restrictions
+    var occl: f32 = 0.0;
+    let p0 = rot * vec2<f32>(-0.94201624, -0.39906216);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p0 * radius * 2.5, depth - bias));
+    let p1 = rot * vec2<f32>(0.94558609, -0.76890725);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p1 * radius * 2.5, depth - bias));
+    let p2 = rot * vec2<f32>(-0.09418410, -0.92938870);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p2 * radius * 2.5, depth - bias));
+    let p3 = rot * vec2<f32>(0.34495938, 0.29387760);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p3 * radius * 2.5, depth - bias));
+    let p4 = rot * vec2<f32>(-0.91588581, 0.45771432);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p4 * radius * 2.5, depth - bias));
+    let p5 = rot * vec2<f32>(-0.81544232, -0.87912464);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p5 * radius * 2.5, depth - bias));
+    let p6 = rot * vec2<f32>(-0.38277543, 0.27676845);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p6 * radius * 2.5, depth - bias));
+    let p7 = rot * vec2<f32>(0.97484398, 0.75648379);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p7 * radius * 2.5, depth - bias));
+    let p8 = rot * vec2<f32>(0.44323325, -0.97511554);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p8 * radius * 2.5, depth - bias));
+    let p9 = rot * vec2<f32>(0.53742981, -0.47373420);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p9 * radius * 2.5, depth - bias));
+    let p10 = rot * vec2<f32>(-0.26496911, -0.41893023);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p10 * radius * 2.5, depth - bias));
+    let p11 = rot * vec2<f32>(0.79197514, 0.19090188);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p11 * radius * 2.5, depth - bias));
+    let p12 = rot * vec2<f32>(-0.24188840, 0.99706507);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p12 * radius * 2.5, depth - bias));
+    let p13 = rot * vec2<f32>(-0.81409955, 0.91437590);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p13 * radius * 2.5, depth - bias));
+    let p14 = rot * vec2<f32>(0.19984126, 0.78641367);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p14 * radius * 2.5, depth - bias));
+    let p15 = rot * vec2<f32>(0.14383161, -0.14100790);
+    occl = occl + (1.0 - textureSampleCompare(shadow_map, shadow_sampler, uv + p15 * radius * 2.5, depth - bias));
+    return occl / 16.0;
+}
+
+// by material: 0=grass,1=dirt,2=stone,3=sand,4=forest
+fn sample_material(which: i32, uv: vec2<f32>) -> SampleSet {
+    if (which == 0) { return SampleSet(textureSample(ground_texture, ground_sampler, uv).rgb,
+                                       textureSample(ground_normal, normal_sampler, uv).rgb,
+                                       textureSample(ground_mra, mra_sampler, uv)); }
+    if (which == 1) { return SampleSet(textureSample(dirt_albedo, ground_sampler, uv).rgb,
+                                       textureSample(dirt_normal, normal_sampler, uv).rgb,
+                                       textureSample(dirt_mra, mra_sampler, uv)); }
+    if (which == 2) { return SampleSet(textureSample(stone_albedo, ground_sampler, uv).rgb,
+                                       textureSample(stone_normal, normal_sampler, uv).rgb,
+                                       textureSample(stone_mra, mra_sampler, uv)); }
+    if (which == 3) { return SampleSet(textureSample(sand_albedo, ground_sampler, uv).rgb,
+                                       textureSample(sand_normal, normal_sampler, uv).rgb,
+                                       textureSample(sand_mra, mra_sampler, uv)); }
+    /* which == 4 */  return SampleSet(textureSample(forest_albedo, ground_sampler, uv).rgb,
+                                       textureSample(forest_normal, normal_sampler, uv).rgb,
+                                       textureSample(forest_mra, mra_sampler, uv));
+}
+
+// Blend three sample sets with enhanced triplanar weights and material transitions
+fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_width: f32) -> SampleSet {
+    // Enhanced weight calculation with smooth transitions
+    let w_smooth = pow(w, vec3<f32>(transition_width));
+    let wsum = max(w_smooth.x + w_smooth.y + w_smooth.z, 1e-4);
+    let wnorm = w_smooth / wsum;
+
+    // Colors are already sampled in linear space (sRGB textures are linearized by the sampler),
+    // so blend directly in linear space without manual gamma conversions
+    var col = a.c * wnorm.x + b.c * wnorm.y + c.c * wnorm.z;
+
+    // Enhanced normal blending with proper tangent space interpolation
+    let na = normalize(a.n * 2.0 - 1.0);
+    let nb = normalize(b.n * 2.0 - 1.0);
+    let nc = normalize(c.n * 2.0 - 1.0);
+    
+    // Use weighted average with angle-based weighting for better normal interpolation
+    let n_blend = na * wnorm.x + nb * wnorm.y + nc * wnorm.z;
+    let nr = normalize(n_blend) * 0.5 + 0.5;
+    
+    // MRA blending with material property preservation
+    let mr = a.m * wnorm.x + b.m * wnorm.y + c.m * wnorm.z;
+    
+    // Optional debug tint to validate material sampling bindings
+    if (u_debug.debug_tint == 1u) {
+        let tint_a = vec3<f32>(1.0, 0.0, 0.0);
+        let tint_b = vec3<f32>(0.0, 1.0, 0.0);
+        let tint_c = vec3<f32>(0.0, 0.0, 1.0);
+        col = col * 0.5 + (tint_a * wnorm.x + tint_b * wnorm.y + tint_c * wnorm.z) * 0.5;
+    }
+    return SampleSet(col, nr, mr);
+}
+
+// Enhanced triplanar sampling with detail mapping and micro-variation
+fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: vec3<f32>, 
+                           scale: f32, detail_scale: f32) -> SampleSet {
+    // Base UV coordinates for triplanar mapping
+    let uv_x = world_pos.zy * scale;
+    let uv_y = world_pos.xz * scale; 
+    let uv_z = world_pos.xy * scale;
+    // Add micro-variation using FBM noise to break up tiling without grid artifacts
+    let n_xy = fbm2(world_pos.xy * detail_scale * 0.15, 4, 2.0, 0.5);
+    let n_yz = fbm2(world_pos.yz * detail_scale * 0.15, 4, 2.0, 0.5);
+    let n_zx = fbm2(world_pos.zx * detail_scale * 0.15, 4, 2.0, 0.5);
+    let v = 0.08; // variation strength
+    let uv_x_varied = uv_x + vec2<f32>(n_yz, n_zx) * v;
+    let uv_y_varied = uv_y + vec2<f32>(n_zx, n_xy) * v;
+    let uv_z_varied = uv_z + vec2<f32>(n_xy, n_yz) * v;
+    
+    // Sample each axis with variation
+    let sample_x = sample_material(material_idx, uv_x_varied);
+    let sample_y = sample_material(material_idx, uv_y_varied);
+    let sample_z = sample_material(material_idx, uv_z_varied);
+    
+    // Enhanced weight calculation based on normal with smooth transitions
+    let n_abs = abs(normal);
+    let weights = pow(n_abs, vec3<f32>(2.0)); // Slightly softer to reduce seams
+    let weight_sum = max(weights.x + weights.y + weights.z, 1e-4);
+    let wnorm = weights / weight_sum;
+    
+    // Use enhanced blending with smooth transitions
+    return blend3(sample_x, sample_y, sample_z, wnorm, 2.0);
+}
+
+// Detail mapping function for micro-surface variation
+fn apply_detail_mapping(base_color: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, detail_strength: f32) -> vec3<f32> {
+    // FBM-based subtle albedo variation
+    let p = world_pos.xz * detail_scale;
+    let n = fbm2(p, 4, 2.0, 0.5);
+    let variation = (n - 0.5) * 2.0; // [-1,1]
+    let detail_color = base_color * (1.0 + variation * 0.06 * detail_strength);
+    return detail_color;
+}
+
+// Perturb the surface normal using a simple high-frequency procedural pattern
+fn perturb_normal(normal: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, strength: f32) -> vec3<f32> {
+    // Use gradient of FBM to perturb normal in a stable, non-grid way
+    let p = world_pos.xz * detail_scale;
+    let g = noise_grad2(p);
+    // Build tangent basis with up approximation; for terrain N is already close to up
+    let T = normalize(cross(normal, vec3<f32>(0.0, 1.0, 0.0)) + vec3<f32>(1e-4, 0.0, 0.0));
+    let B = normalize(cross(normal, T));
+    let n_perturb = (T * g.x + B * g.y) * strength;
+    return normalize(normal + n_perturb);
+}
+
+// Calculate tessellation factor based on distance and terrain features
+fn calculate_tessellation_factor(world_pos: vec3<f32>, camera_pos: vec3<f32>, slope: f32) -> f32 {
+    let distance = length(world_pos - camera_pos);
+    
+    // Base tessellation decreases with distance
+    let distance_factor = clamp(1.0 - distance / 100.0, 0.1, 1.0);
+    
+    // Increase tessellation on steep slopes for better detail
+    let slope_factor = 1.0 + slope * 2.0;
+    
+    // Combine factors with some noise for natural variation
+    let noise_factor = sin(world_pos.x * 0.01) * cos(world_pos.z * 0.01) * 0.1 + 0.9;
+    
+    return distance_factor * slope_factor * noise_factor;
+}
+
+// Vertex inputs aligned with Rust vertex buffers:
+// - location(0): position (vec3)
+// - locations(1..4): model matrix columns (vec4)
+// - location(5): color (vec4)
+// - location(6): mesh_type (u32)
 struct VsIn {
-  @location(0) pos: vec3<f32>,
-  @location(1) m0: vec4<f32>,
-  @location(2) m1: vec4<f32>,
-  @location(3) m2: vec4<f32>,
-  @location(4) m3: vec4<f32>,
-  @location(5) color: vec4<f32>,
-  @location(6) mesh_type: u32,
+    @location(0) pos: vec3<f32>,
+    @location(1) m0: vec4<f32>,
+    @location(2) m1: vec4<f32>,
+    @location(3) m2: vec4<f32>,
+    @location(4) m3: vec4<f32>,
+    @location(5) color: vec4<f32>,
+    @location(6) mesh_type: u32,
 };
 
 struct VsOut {
@@ -2333,21 +4249,52 @@ struct VsOut {
   @location(0) color: vec4<f32>,
   @location(1) world_pos: vec3<f32>,
   @location(2) view_dir: vec3<f32>,
-  @location(3) mesh_type: u32,
+    @location(3) normal: vec3<f32>,
+    @location(4) uv: vec2<f32>,
+  @location(5) mesh_type: u32,
+    @location(6) local_pos: vec3<f32>,
 };
 
 @vertex
 fn vs_main(in: VsIn) -> VsOut {
-  let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
+    let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
   var out: VsOut;
   let world = model * vec4<f32>(in.pos, 1.0);
-  out.pos = u_camera.view_proj * world;
+  
+  // Special handling for skybox (mesh_type 4) - position at far plane
+  if (in.mesh_type == 4u) {
+    // For skybox, apply model transform then scale down the large vertices
+    let scaled_vertex = vec4<f32>(in.pos * 0.5, 1.0); // Larger skybox for better coverage  
+    let world_skybox = model * scaled_vertex; // Apply model transform (camera translation)
+    out.pos = u_camera.view_proj * world_skybox;
+    // Ensure skybox is always at far plane
+    out.pos.z = out.pos.w * 0.999; // At far plane
+    out.world_pos = world_skybox.xyz;
+    out.local_pos = in.pos;
+    
+    // For skybox, we use position as texture coordinates
+    let pos_normalized = normalize(in.pos);
+    out.uv = vec2<f32>(
+      0.5 + atan2(pos_normalized.z, pos_normalized.x) / (2.0 * 3.14159),
+      0.5 - asin(pos_normalized.y) / 3.14159
+    );
+  } else {
+    out.pos = u_camera.view_proj * world;
+    out.world_pos = world.xyz;
+        // Derive UVs procedurally from world position (no per-vertex UVs provided)
+        let scale = 10.0;
+        out.uv = vec2<f32>(world.x / scale, world.z / scale);
+      out.local_pos = in.pos;
+  }
+  
+    // Default normal (up). Real meshes should provide normals; this keeps lighting reasonable.
+    out.normal = vec3<f32>(0.0, 1.0, 0.0);
+  
   out.color = in.color;
-  out.world_pos = world.xyz;
   out.mesh_type = in.mesh_type;
   
   // Calculate view direction for sky effects
-  let camera_pos = vec3<f32>(0.0, 2.0, 0.0); // Approximate camera position for sky
+  let camera_pos = vec3<f32>(0.0, 5.0, 0.0); // Better approximation for typical camera height
   out.view_dir = normalize(world.xyz - camera_pos);
   
   return out;
@@ -2355,72 +4302,17 @@ fn vs_main(in: VsIn) -> VsOut {
 
 // Enhanced sky color function - generates biome-appropriate sky with atmospheric effects
 fn sky_color(direction: vec3<f32>, time: f32) -> vec3<f32> {
-  let dir = normalize(direction);
-  let y = clamp(dir.y, -1.0, 1.0);
-  
-  // Enhanced time-based sun position for day/night cycle
-  let sun_angle = time * 0.08; // Slightly slower day cycle
-  let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.9, sin(sun_angle) * 0.9, sin(sun_angle * 0.2) * 0.3));
-  
-  // Calculate sun influence with enhanced scattering
-  let sun_dot = max(dot(dir, sun_dir), 0.0);
-  let sun_influence = pow(sun_dot, 16.0); // Brighter sun disk
-  let sun_halo = pow(sun_dot, 4.0) * 0.3; // Soft sun halo
-  
-  // Enhanced day factor based on sun height
-  let day_factor = clamp(sun_dir.y + 0.3, 0.0, 1.0);
-  
-  // More vibrant sky gradient colors
-  let horizon_day = vec3<f32>(0.9, 0.95, 1.0);    // Brighter blue horizon
-  let zenith_day = vec3<f32>(0.2, 0.5, 0.95);     // Rich blue zenith
-  let horizon_sunset = vec3<f32>(1.0, 0.7, 0.4);  // Warm sunset colors
-  let zenith_sunset = vec3<f32>(0.8, 0.4, 0.6);   // Purple sunset zenith
-  let horizon_night = vec3<f32>(0.05, 0.05, 0.2); // Deep blue night
-  let zenith_night = vec3<f32>(0.02, 0.02, 0.15); // Dark night zenith
-  
-  // Calculate sunset factor for warm transitional colors
-  let sunset_factor = clamp(1.0 - abs(sun_dir.y) * 3.0, 0.0, 1.0) * clamp(day_factor * 2.0, 0.0, 1.0);
-  
-  // Blend colors based on time of day and sunset
-  let horizon_color = mix(
-    mix(horizon_night, horizon_day, day_factor),
-    horizon_sunset,
-    sunset_factor
-  );
-  let zenith_color = mix(
-    mix(zenith_night, zenith_day, day_factor),
-    zenith_sunset,
-    sunset_factor
-  );
-  
-  // Enhanced vertical gradient with atmospheric curve
-  let atmosphere_curve = pow(clamp((y + 1.0) * 0.5, 0.0, 1.0), 0.7);
-  let sky_base = mix(horizon_color, zenith_color, atmosphere_curve);
-  
-  // Enhanced sun disk and atmospheric scattering
-  let sun_color = mix(
-    vec3<f32>(1.0, 0.95, 0.8),  // Day sun
-    vec3<f32>(1.0, 0.6, 0.3),   // Sunset sun
-    sunset_factor
-  ) * day_factor;
-  let sun_contribution = (sun_influence * 0.8 + sun_halo) * sun_color;
-  
-  // Enhanced atmospheric effects with distance-based haze
-  let atmosphere_factor = pow(1.0 - abs(y), 1.5);
-  let atmosphere_color = mix(
-    vec3<f32>(0.6, 0.7, 0.9),   // Cool atmospheric color
-    vec3<f32>(1.0, 0.8, 0.6),   // Warm atmospheric color
-    sunset_factor
-  );
-  let atmosphere_contribution = atmosphere_factor * atmosphere_color * 0.15 * day_factor;
-  
-  // Add subtle cloud-like variation
-  let cloud_noise = sin(dir.x * 8.0 + time * 0.5) * cos(dir.z * 6.0 + time * 0.3) * 0.1;
-  let cloud_factor = max(cloud_noise, 0.0) * clamp(y + 0.2, 0.0, 1.0);
-  let cloud_color = mix(vec3<f32>(0.9, 0.9, 0.95), vec3<f32>(1.0, 0.8, 0.7), sunset_factor);
-  let cloud_contribution = cloud_factor * cloud_color * day_factor * 0.3;
-  
-  return sky_base + sun_contribution + atmosphere_contribution + cloud_contribution;
+    let dir = normalize(direction);
+    let y = clamp(dir.y, -1.0, 1.0);
+    // Stable daytime blue gradient
+    let horizon = vec3<f32>(0.75, 0.85, 1.0);
+    let zenith = vec3<f32>(0.15, 0.45, 0.9);
+    let t = pow(clamp((y + 1.0) * 0.5, 0.0, 1.0), 0.6);
+    let base = mix(horizon, zenith, t);
+    // Soft moving clouds
+    let n = sin(dir.x * 5.0 + time * 0.2) * cos(dir.z * 4.0 + time * 0.15);
+    let clouds = clamp(n, 0.0, 1.0) * 0.12;
+    return base + vec3<f32>(clouds, clouds, clouds);
 }
 
 
@@ -2439,107 +4331,53 @@ fn get_water_level(world_pos: vec2<f32>, time: f32) -> f32 {
 
 // Determine biome type based on world position - FIXED: More consistent biome regions
 fn get_biome_type(world_pos: vec2<f32>) -> i32 {
-  let biome_scale = 0.01; // Larger biome regions for easier testing
-  let biome_pos = world_pos * biome_scale;
-  
-  // Enhanced biome detection with three distinct regions
-  let primary_noise = sin(biome_pos.x * 2.0) * cos(biome_pos.y * 1.5);
-  let secondary_noise = sin(biome_pos.x * 1.0 + 50.0) * cos(biome_pos.y * 1.2 + 100.0);
-  let combined_noise = primary_noise * 0.8 + secondary_noise * 0.2;
-  
-  // Create more stable biome regions
-  if (combined_noise > 0.2) {
-    return 1; // Desert - lowered threshold for easier access
-  } else if (combined_noise < -0.1) {
-    return 2; // Dense Forest - adjusted threshold
-  } else {
-    return 0; // Grassland - default
-  }
+    let biome_scale = 0.01;
+    let biome_pos = world_pos * biome_scale;
+    // Smooth FBM determines regions; thresholds split into 3 biomes
+    let n = fbm2(biome_pos, 5, 2.0, 0.5) * 2.0 - 1.0; // [-1,1]
+    if (n > 0.25) {
+        return 1; // Desert
+    } else if (n < -0.25) {
+        return 2; // Dense Forest
+    } else {
+        return 0; // Grassland
+    }
 }
 
 // Generate biome-specific terrain height with enhanced variation
 fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
-  // Enhanced base terrain generation using multiple octaves of noise
-  let base_scale = 0.005;  // Larger terrain features
-  let detail_scale = 0.02;  // Medium detail
-  let fine_scale = 0.15;   // Fine surface detail
-  let micro_scale = 0.8;   // Micro surface variation
-  
-  // Base elevation noise with more dramatic height
-  let base_noise = sin(world_pos.x * base_scale) * cos(world_pos.y * base_scale);
-  let detail_noise = sin(world_pos.x * detail_scale + 1.0) * cos(world_pos.y * detail_scale + 1.5);
-  let fine_noise = sin(world_pos.x * fine_scale + 2.0) * cos(world_pos.y * fine_scale + 2.5);
-  let micro_noise = sin(world_pos.x * micro_scale + 3.0) * cos(world_pos.y * micro_scale + 3.5);
-  
-  // Combine noise layers with stronger influence
-  let combined_noise = base_noise * 0.5 + detail_noise * 0.25 + fine_noise * 0.15 + micro_noise * 0.1;
-  
-  if (biome_type == 0) { // Grassland - rolling hills with valleys
-    let grassland_height = combined_noise * 4.0; // Increased from 2.0 for more dramatic terrain
-    
-    // Enhanced river valleys with meandering patterns
-    let river_x = sin(world_pos.x * 0.006) * 0.8;
-    let river_z = cos(world_pos.y * 0.004) * 0.6;
-    let river_noise = sin((world_pos.x + river_z * 20.0) * 0.008) * cos((world_pos.y + river_x * 15.0) * 0.01);
-    let valley_factor = 1.0 - abs(river_noise);
-    let valley_depth = valley_factor * valley_factor * valley_factor * -3.0; // Deeper valleys
-    
-    // Add gentle rolling hills
-    let hill_pattern = sin(world_pos.x * 0.01) * cos(world_pos.y * 0.012) * 2.0;
-    
-    return grassland_height + valley_depth + hill_pattern;
-    
-  } else if (biome_type == 1) { // Desert - dramatic mesas and dunes
-    let desert_height = combined_noise * 5.0; // Increased from 3.0 for more dramatic terrain
-    
-    // Enhanced sand dune patterns with wind erosion
-    let dune_scale = 0.02;
-    let dune_noise = sin(world_pos.x * dune_scale) + cos(world_pos.y * dune_scale * 0.6);
-    let wind_direction = sin(world_pos.x * 0.001) * cos(world_pos.y * 0.0008);
-    let dune_height = (dune_noise + wind_direction * 0.5) * 2.5; // Larger dunes
-    
-    // More dramatic rocky mesa formations
-    let mesa_scale = 0.003;
-    let mesa_noise = sin(world_pos.x * mesa_scale) * cos(world_pos.y * mesa_scale);
-    let mesa_height = step(0.2, mesa_noise) * 8.0; // Taller mesas (increased from 4.0)
-    
-    // Add canyon effects
-    let canyon_noise = sin(world_pos.x * 0.008) * cos(world_pos.y * 0.006);
-    let canyon_depth = step(0.6, abs(canyon_noise)) * -4.0;
-    
-    return desert_height + dune_height + mesa_height + canyon_depth;
-    
-  } else if (biome_type == 2) { // Dense Forest - undulating hills with valleys
-    let forest_height = combined_noise * 3.5; // Moderate height variation
-    
-    // Gentle undulating hills characteristic of forest terrain
-    let hill_scale = 0.008;
-    let hill_noise = sin(world_pos.x * hill_scale) * cos(world_pos.y * hill_scale * 0.7);
-    let rolling_hills = hill_noise * 2.8;
-    
-    // Forest clearings and depressions
-    let clearing_scale = 0.015;
-    let clearing_noise = sin(world_pos.x * clearing_scale + 50.0) * cos(world_pos.y * clearing_scale + 30.0);
-    let clearing_depression = step(0.4, clearing_noise) * -1.5;
-    
-    // Ancient forest mounds (raised areas around old growth)
-    let mound_scale = 0.004;
-    let mound_noise = sin(world_pos.x * mound_scale + 100.0) * cos(world_pos.y * mound_scale + 200.0);
-    let mound_height = step(0.3, mound_noise) * 1.8;
-    
-    // Stream valleys cutting through forest
-    let stream_x = sin(world_pos.x * 0.007) * 0.6;
-    let stream_z = cos(world_pos.y * 0.005) * 0.4;
-    let stream_noise = sin((world_pos.x + stream_z * 15.0) * 0.01) * cos((world_pos.y + stream_x * 12.0) * 0.009);
-    let stream_factor = 1.0 - abs(stream_noise);
-    let stream_depth = stream_factor * stream_factor * -2.0;
-    
-    return forest_height + rolling_hills + clearing_depression + mound_height + stream_depth;
-    
-  } else {
-    // Enhanced default fallback
-    return combined_noise * 3.0; // Increased from 1.5
-  }
+    // Base FBM terrain: smooth features with octave detail
+    let p = world_pos * 0.01;
+    let base = (fbm2(p, 5, 2.0, 0.5) * 2.0 - 1.0) * 3.5; // [-3.5,3.5]
+    let detail = (fbm2(p * 3.0, 3, 2.2, 0.5) - 0.5) * 1.5;
+    var h = base + detail;
+
+    if (biome_type == 0) { // Grassland - rolling hills with river valleys
+        // River mask via ridge FBM to carve shallow valleys
+        let river = fbm_ridge2(p * 0.9, 3, 2.0, 0.6);
+        let valleys = (river - 0.6) * 6.0; // negative mostly
+        h = h + clamp(valleys, -3.5, 0.0);
+        return h;
+
+    } else if (biome_type == 1) { // Desert - dunes and mesas
+        // Dunes via directional ridged noise along wind axis
+        let wind_dir = normalize(vec2<f32>(0.8, 0.6));
+        let d = dot(p * 6.0, wind_dir);
+        let dunes = (fbm_ridge2(vec2<f32>(d, d * 0.3), 4, 2.0, 0.55) - 0.5) * 3.0;
+        // Mesas via thresholded ridge noise
+        let mesas = step(0.7, fbm_ridge2(p * 0.7, 4, 2.0, 0.5)) * 6.0;
+        h = h + dunes + mesas;
+        return h;
+
+    } else if (biome_type == 2) { // Dense Forest - softer undulations with mounds
+        let soft = fbm2(p * 0.7, 4, 2.0, 0.5) * 2.0 - 1.0;
+        let mounds = step(0.65, fbm2(p * 1.3 + 12.3, 4, 2.0, 0.5)) * 1.6;
+        h = h * 0.9 + soft * 2.2 + mounds;
+        return h;
+
+    } else {
+        return h;
+    }
 }
 
 @fragment
@@ -2547,6 +4385,154 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   var col = in.color.rgb;
   let time = 100.0; // TODO: Pass actual time as uniform
   
+  // Mesh-specific rendering based on mesh type
+        if (in.mesh_type == 1u) { // Tree (PBR triplanar using existing materials)
+                let ws_pos = in.world_pos;
+                let V = normalize(-in.view_dir);
+                let sun_angle = time * 0.1;
+                let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+        
+                // Use local Y to separate trunk vs canopy
+                let is_trunk = in.local_pos.y < 0.6;
+            var base_sample: SampleSet = sample_triplanar_enhanced(1, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.5, 8.0);
+                if (is_trunk) {
+                        // Trunk: use dirt color with stone normal characteristics
+                let dirt = sample_triplanar_enhanced(1, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.5, 8.0);
+                        let stone = sample_triplanar_enhanced(2, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.5, 8.0);
+                        base_sample.c = mix(dirt.c, dirt.c * vec3<f32>(0.55, 0.45, 0.35), 0.4);
+                        base_sample.n = stone.n;
+                        base_sample.m = dirt.m; // use dirt MRA
+                } else {
+                        // Leaves: use forest floor material as proxy leaves
+                        base_sample = sample_triplanar_enhanced(4, ws_pos, vec3<f32>(0.0,1.0,0.0), 1.8, 10.0);
+                        // Slightly boost saturation/green
+                        base_sample.c = base_sample.c * vec3<f32>(0.9, 1.15, 0.9);
+                        // Make rougher, more diffuse
+                        base_sample.m.g = clamp(base_sample.m.g + 0.15, 0.0, 1.0);
+                }
+                // PBR lighting similar to terrain
+                let N = normalize(base_sample.n * 2.0 - 1.0);
+                let H = normalize(L + V);
+                let ao = base_sample.m.r;
+                let roughness = clamp(base_sample.m.g, 0.08, 0.98);
+                let metallic = clamp(base_sample.m.b * 0.2, 0.0, 0.2);
+                let base_color = base_sample.c;
+                let ior = mix(1.3, 2.0, metallic);
+                let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+                let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+                let F = F0_vec + (vec3<f32>(1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+                let a = roughness * roughness; let a2 = a * a;
+                let NdotH = max(dot(N, H), 0.0); let NdotH2 = NdotH * NdotH;
+                let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                let D = a2 / (3.14159 * denom * denom + 1e-5);
+                let NdotV = max(dot(N, V), 0.0); let NdotL = max(dot(N, L), 0.0);
+                let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+                let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+                let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+                let G_geom = Gv * Gl;
+                let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
+                let diffuse = kd * base_color / 3.14159;
+                let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+                let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.35;
+                let enhanced_ao = pow(ao, 0.85);
+                let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
+                let shadow = sample_shadow(in.world_pos, N, L);
+                col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
+                // Output linear color; surface is sRGB so conversion happens on write
+                return vec4<f32>(col, 1.0);
+    }
+        else if (in.mesh_type == 2u) { // House/Structure (walls vs roof)
+                let ws_pos = in.world_pos;
+                let V = normalize(-in.view_dir);
+                let sun_angle = time * 0.1;
+                let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+
+                // Separate walls (lower) and roof (upper) by local Y
+                let is_roof = in.local_pos.y > 0.6;
+                var base_sample: SampleSet;
+                if (is_roof) {
+                        // Roof: use sand material tinted
+                        base_sample = sample_triplanar_enhanced(3, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.2, 8.0);
+                        base_sample.c = base_sample.c * vec3<f32>(1.0, 0.95, 0.85);
+                } else {
+                        // Walls: use stone material
+                        base_sample = sample_triplanar_enhanced(2, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.0, 8.0);
+                }
+                // PBR shading
+                let N = normalize(base_sample.n * 2.0 - 1.0);
+                let H = normalize(L + V);
+                let ao = base_sample.m.r;
+                let roughness = clamp(base_sample.m.g, 0.12, 0.98);
+                let metallic = clamp(base_sample.m.b * 0.2, 0.0, 0.2);
+                let base_color = base_sample.c;
+                let ior = mix(1.3, 2.0, metallic);
+                let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+                let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+                let F = F0_vec + (vec3<f32>(1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+                let a = roughness * roughness; let a2 = a * a;
+                let NdotH = max(dot(N, H), 0.0); let NdotH2 = NdotH * NdotH;
+                let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                let D = a2 / (3.14159 * denom * denom + 1e-5);
+                let NdotV = max(dot(N, V), 0.0); let NdotL = max(dot(N, L), 0.0);
+                let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+                let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+                let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+                let G_geom = Gv * Gl;
+                let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
+                let diffuse = kd * base_color / 3.14159;
+                let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+                let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.3;
+                let enhanced_ao = pow(ao, 0.85);
+                let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
+                let shadow = sample_shadow(in.world_pos, N, L);
+                col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
+                return vec4<f32>(col, 1.0);
+    }
+        else if (in.mesh_type == 3u) { // Character - simple PBR triplanar with tint
+                let ws_pos = in.world_pos;
+                let V = normalize(-in.view_dir);
+                let sun_angle = time * 0.1;
+                let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+                // Use dirt as baseline material, tinted by instance color
+                var base_sample: SampleSet = sample_triplanar_enhanced(1, ws_pos, vec3<f32>(0.0,1.0,0.0), 2.2, 9.0);
+                base_sample.c = clamp(base_sample.c * in.color.rgb, vec3<f32>(0.0), vec3<f32>(1.0));
+                // PBR shading
+                let N = normalize(base_sample.n * 2.0 - 1.0);
+                let H = normalize(L + V);
+                let ao = base_sample.m.r;
+                let roughness = clamp(base_sample.m.g, 0.2, 0.95);
+                let metallic = clamp(base_sample.m.b * 0.1, 0.0, 0.15);
+                let base_color = base_sample.c;
+                let ior = mix(1.3, 2.0, metallic);
+                let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+                let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+                let F = F0_vec + (vec3<f32>(1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+                let a = roughness * roughness; let a2 = a * a;
+                let NdotH = max(dot(N, H), 0.0); let NdotH2 = NdotH * NdotH;
+                let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+                let D = a2 / (3.14159 * denom * denom + 1e-5);
+                let NdotV = max(dot(N, V), 0.0); let NdotL = max(dot(N, L), 0.0);
+                let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+                let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+                let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+                let G_geom = Gv * Gl;
+                let kd = (vec3<f32>(1.0) - F) * (1.0 - metallic);
+                let diffuse = kd * base_color / 3.14159;
+                let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+                let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.25;
+                let enhanced_ao = pow(ao, 0.85);
+                let ambient = base_color * enhanced_ao * 0.25 + sky_ambient * enhanced_ao;
+                let shadow = sample_shadow(in.world_pos, N, L);
+                col = ambient + (diffuse + specular) * NdotL * (1.0 - shadow);
+                return vec4<f32>(col, 1.0);
+    }
+  else if (in.mesh_type == 4u) { // Skybox
+    // Use procedural sky color based on view direction
+    col = sky_color(in.view_dir, time);
+    return vec4<f32>(col, 1.0);
+  }
+  
+    // For ground or other unspecified mesh types, use PBR-ish terrain rendering
   // Determine biome type for this world position
   let biome_type = get_biome_type(in.world_pos.xz);
   
@@ -2558,131 +4544,199 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   let dist_to_terrain = abs(in.world_pos.y - terrain_surface);
   let dist_to_water = abs(in.world_pos.y - water_level);
   
-  // Check if we're rendering the terrain surface - FIXED: simplified and more reliable condition
-  if (in.mesh_type == 0u || dist_to_terrain < 1.2) {
-    let scale = 3.0;
-    let uv = vec2<f32>(in.world_pos.x / scale, in.world_pos.z / scale);
-    var tex_color = textureSample(ground_texture, ground_sampler, uv).rgb;
+  // Check if we're rendering the terrain surface
+  if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
+        // Enhanced triplanar sampling with biome-specific scales and detail mapping
+        let ws_pos = in.world_pos;
+        let base_scale = 2.0;
+        let detail_scale = 8.0;
+        
+        // Biome-specific texture scaling for more realistic material distribution
+        var biome_scale = base_scale;
+        if (biome_type == 1) { biome_scale = base_scale * 1.2; } // Desert - slightly larger scale
+        else if (biome_type == 2) { biome_scale = base_scale * 0.9; } // Forest - slightly smaller scale
+        
+        // Enhanced surface normal calculation with better height gradients
+        let eps = 0.3;
+        let hC = terrain_height;
+        let hL = get_biome_terrain_height((ws_pos.xz + vec2<f32>(-eps, 0.0)), biome_type);
+        let hR = get_biome_terrain_height((ws_pos.xz + vec2<f32>( eps, 0.0)), biome_type);
+        let hD = get_biome_terrain_height((ws_pos.xz + vec2<f32>( 0.0,-eps)), biome_type);
+        let hU = get_biome_terrain_height((ws_pos.xz + vec2<f32>( 0.0, eps)), biome_type);
+        let dx = (hR - hL) / (2.0 * eps);
+        let dz = (hU - hD) / (2.0 * eps);
+        let n_world = normalize(vec3<f32>(-dx, 1.0, -dz));
+
+        // Advanced material weight calculation with multiple influencing factors
+        let slope = clamp(1.0 - n_world.y, 0.0, 1.0);
+        let height_factor = clamp((hC + 2.0) / 4.0, 0.0, 1.0); // Normalized height factor
+        let moisture_factor = sin(ws_pos.x * 0.01) * cos(ws_pos.z * 0.008) * 0.5 + 0.5; // Pseudo-moisture
+        
+        // Base material weights with biome-specific logic
+        var w_grass = 0.0;
+        var w_dirt = 0.0;
+        var w_stone = 0.0;
+        var w_sand = 0.0;
+        var w_forest = 0.0;
+        
+        if (biome_type == 0) { // Grassland
+            // Grass dominates low slopes and mid elevations
+            w_grass = (1.0 - slope) * smoothstep(0.0, 0.6, height_factor) * (1.0 - moisture_factor * 0.3);
+            // Dirt appears on steeper slopes and drier areas
+            w_dirt = slope * 0.4 + moisture_factor * 0.2;
+            // Stone for rocky outcrops
+            w_stone = smoothstep(0.3, 0.8, slope) * 0.6;
+            
+        } else if (biome_type == 1) { // Desert
+            // Sand dominates with some variation
+            w_sand = 0.7 * (1.0 - smoothstep(0.4, 0.9, slope));
+            // Stone for rocky areas and steep slopes
+            w_stone = smoothstep(0.2, 0.7, slope) * 0.8;
+            // Dirt in transitional areas
+            w_dirt = 0.2 * (1.0 - slope) * moisture_factor;
+            
+        } else if (biome_type == 2) { // Forest
+            // Forest floor dominates with organic materials
+            w_forest = 0.6 * (1.0 - slope) * smoothstep(0.0, 0.7, height_factor);
+            // Grass in clearings
+            w_grass = 0.3 * (1.0 - slope) * (1.0 - smoothstep(0.3, 0.8, height_factor));
+            // Dirt on slopes
+            w_dirt = slope * 0.4;
+            // Stone for rocky areas
+            w_stone = smoothstep(0.5, 1.0, slope) * 0.5;
+        }
+        
+        // Normalize weights to ensure they sum to 1
+        var total_weight = w_grass + w_dirt + w_stone + w_sand + w_forest;
+        if (total_weight < 0.1) {
+            // Fallback to ensure we always have some material
+            w_grass = 0.5;
+            w_dirt = 0.3;
+            w_stone = 0.2;
+            total_weight = 1.0;
+        }
+        w_grass /= total_weight;
+        w_dirt /= total_weight;
+        w_stone /= total_weight;
+        w_sand /= total_weight;
+        w_forest /= total_weight;
+
+        // Enhanced triplanar sampling for each material with detail mapping
+        let grass_sample = sample_triplanar_enhanced(0, ws_pos, n_world, biome_scale, detail_scale);
+        let dirt_sample = sample_triplanar_enhanced(1, ws_pos, n_world, biome_scale, detail_scale);
+        let stone_sample = sample_triplanar_enhanced(2, ws_pos, n_world, biome_scale, detail_scale);
+        let sand_sample = sample_triplanar_enhanced(3, ws_pos, n_world, biome_scale, detail_scale);
+        let forest_sample = sample_triplanar_enhanced(4, ws_pos, n_world, biome_scale, detail_scale);
+
+        // Combine materials with enhanced blending
+        var base_color = grass_sample.c * w_grass + 
+                        dirt_sample.c * w_dirt + 
+                        stone_sample.c * w_stone + 
+                        sand_sample.c * w_sand + 
+                        forest_sample.c * w_forest;
+        
+        var mra = grass_sample.m * w_grass + 
+                 dirt_sample.m * w_dirt + 
+                 stone_sample.m * w_stone + 
+                 sand_sample.m * w_sand + 
+                 forest_sample.m * w_forest;
+        
+        // Enhanced normal blending with proper interpolation
+        var normal_blend = (grass_sample.n * 2.0 - 1.0) * w_grass +
+                          (dirt_sample.n * 2.0 - 1.0) * w_dirt +
+                          (stone_sample.n * 2.0 - 1.0) * w_stone +
+                          (sand_sample.n * 2.0 - 1.0) * w_sand +
+                          (forest_sample.n * 2.0 - 1.0) * w_forest;
+        var normal = normalize(normal_blend);
+
+    // Calculate tessellation factor for geometry detail
+        let tessellation_factor = calculate_tessellation_factor(ws_pos, vec3<f32>(0.0, 5.0, 0.0), slope);
+        
+        // Use tessellation factor to modulate detail mapping strength
+    let detail_strength = 0.6; // Base strength for micro detail mapping
+    let adaptive_detail_strength = detail_strength * tessellation_factor;
+        base_color = apply_detail_mapping(base_color, ws_pos, detail_scale, adaptive_detail_strength);
+        
+        // Apply normal perturbation with adaptive strength
+        let adaptive_normal_strength = 0.1 * tessellation_factor;
+        normal = perturb_normal(normal, ws_pos, detail_scale * 2.0, adaptive_normal_strength);
+
+        let ao = mra.r; // ambient occlusion
+        let roughness = clamp(mra.g, 0.08, 0.95);
+        let metallic = clamp(mra.b, 0.0, 0.2);
+        let emissive = vec3<f32>(0.0); // disable emissive for terrain by default
     
-    // Sample normal map for enhanced surface detail (moved before biome-specific texturing)
-    let normal_sample = textureSample(ground_normal, normal_sampler, uv).rgb;
-    let normal = normalize(normal_sample * 2.0 - 1.0);
-    
-    // Biome-specific terrain texturing - FIXED: Added debug coloring for easier identification
-    if (biome_type == 0) { // Grassland
-      // Mix grass with dirt based on terrain height and slope
-      let height_factor = clamp((terrain_height + 2.0) / 6.0, 0.0, 1.0);
-      let grass_color = vec3<f32>(0.3, 0.6, 0.2);
-      let dirt_color = vec3<f32>(0.4, 0.3, 0.2);
-      tex_color = mix(tex_color, mix(dirt_color, grass_color, height_factor), 0.7);
-      
-      // Add moss and vegetation on flat areas
-      let slope_factor = 1.0 - abs(terrain_height) / 4.0;
-      let moss_color = vec3<f32>(0.2, 0.5, 0.15);
-      tex_color = mix(tex_color, moss_color, slope_factor * 0.3);
-      
-    } else if (biome_type == 1) { // Desert
-      // Use sampled sand texture with enhanced visibility for debugging
-      let h_factor = clamp(1.0 + terrain_height * 0.3, 0.7, 1.3); // Increased minimum brightness
-      let sand_tex = tex_color.rgb * h_factor;
-      
-      // Enhanced desert colors to ensure visibility
-      let desert_base = vec3<f32>(0.8, 0.7, 0.5); // Brighter sand base color
-      tex_color = mix(sand_tex, desert_base, 0.3); // Blend with visible desert color
-      
-      // Optional tint: rock color on steep slopes (using normal map for better slope detection)
-      let rock_color = vec3<f32>(0.6, 0.5, 0.4);
-      let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-      let blended = mix(tex_color, rock_color, slope * 0.3);
-      
-      // Add mineral deposits and oasis effects using the blended texture
-      let mineral_noise = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3);
-      if (mineral_noise > 0.7) {
-        let mineral_color = vec3<f32>(0.8, 0.7, 0.5);
-        tex_color = mix(blended, mineral_color, 0.3);
-      } else {
-        tex_color = blended;
-      }
-    } else if (biome_type == 2) { // Dense Forest
-      // Rich forest floor with deep organic layers
-      let height_factor = clamp((terrain_height + 2.0) / 5.0, 0.0, 1.0);
-      let forest_base = tex_color.rgb;
-      
-      // Dark rich soil base
-      let soil_color = vec3<f32>(0.25, 0.2, 0.15);
-      let leaf_litter = vec3<f32>(0.4, 0.3, 0.2);
-      let moss_color = vec3<f32>(0.15, 0.4, 0.2);
-      
-      // Slope-based moss coverage (more moss on gentle slopes)
-      let slope = clamp(1.0 - abs(normal.y), 0.0, 1.0);
-      let moss_factor = (1.0 - slope) * 0.6;
-      
-      // Height-based composition
-      let base_mix = mix(soil_color, leaf_litter, height_factor);
-      tex_color = mix(forest_base, base_mix, 0.8);
-      tex_color = mix(tex_color, moss_color, moss_factor);
-      
-      // Add depth variation with organic patches
-      let organic_noise = sin(in.world_pos.x * 2.0) * cos(in.world_pos.z * 1.8);
-      if (organic_noise > 0.4) {
-        let organic_color = vec3<f32>(0.3, 0.25, 0.18);
-        tex_color = mix(tex_color, organic_color, 0.4);
-      }
-      
-      // Dappled light effect (filtering through canopy)
-      let light_spots = sin(in.world_pos.x * 0.3) * cos(in.world_pos.z * 0.25);
-      if (light_spots > 0.6) {
-        tex_color = tex_color * 1.15; // Brighter in light spots
-      } else if (light_spots < -0.3) {
-        tex_color = tex_color * 0.85; // Darker in deep shade
-      }
-    }
-    
-    // Enhanced lighting with biome-specific adjustments
-    let sun_angle = time * 0.1;
-    let sun_dir = normalize(vec3<f32>(cos(sun_angle) * 0.8, sin(sun_angle) * 0.8, sin(sun_angle * 0.3) * 0.4));
-    let ambient_dir = vec3<f32>(0.0, 1.0, 0.0);
-    
-    let sun_ndotl = max(dot(normal, sun_dir), 0.0);
-    let ambient_ndotl = max(dot(normal, ambient_dir), 0.0);
-    
-    // Biome-specific lighting adjustments
-    let day_factor = clamp(sun_dir.y + 0.2, 0.0, 1.0);
-    var sun_color: vec3<f32>;
-    var ambient_color: vec3<f32>;
-    var base_ambient: vec3<f32>;
-    
-    if (biome_type == 0) { // Grassland - bright, clear lighting
-      sun_color = mix(vec3<f32>(0.2, 0.2, 0.4), vec3<f32>(1.0, 0.95, 0.8), day_factor);
-      ambient_color = mix(vec3<f32>(0.1, 0.1, 0.2), vec3<f32>(0.4, 0.5, 0.6), day_factor);
-      base_ambient = mix(vec3<f32>(0.05, 0.05, 0.1), vec3<f32>(0.1, 0.1, 0.15), day_factor);
-    } else if (biome_type == 1) { // Desert - warm, harsh lighting  
-      sun_color = mix(vec3<f32>(0.3, 0.2, 0.3), vec3<f32>(1.0, 0.9, 0.7), day_factor);
-      ambient_color = mix(vec3<f32>(0.15, 0.1, 0.15), vec3<f32>(0.5, 0.4, 0.5), day_factor);
-      base_ambient = mix(vec3<f32>(0.08, 0.05, 0.08), vec3<f32>(0.12, 0.08, 0.1), day_factor);
-    } else { // Forest - filtered, green-tinted lighting
-      sun_color = mix(vec3<f32>(0.15, 0.2, 0.3), vec3<f32>(0.8, 0.9, 0.7), day_factor);
-      ambient_color = mix(vec3<f32>(0.08, 0.12, 0.15), vec3<f32>(0.3, 0.4, 0.3), day_factor);
-      base_ambient = mix(vec3<f32>(0.04, 0.06, 0.08), vec3<f32>(0.08, 0.1, 0.08), day_factor);
-    }
-    
-    let sun_lighting = sun_ndotl * sun_color;
-    let ambient_lighting = ambient_ndotl * ambient_color * 0.3;
-    let lighting = sun_lighting + ambient_lighting + base_ambient;
-    
-    // Enhanced detail patterns
-    let detail_scale = 8.0 + terrain_height * 0.2;
-    let cx = floor(in.world_pos.x / detail_scale);
-    let cz = floor(in.world_pos.z / detail_scale);
-    let detail_pattern = f32((i32(cx + cz) & 1)) * 0.06;
-    
-    col = tex_color * lighting * (0.96 + detail_pattern);
-    
-    // Add atmospheric perspective
-    let distance = length(in.world_pos);
-    let fog_factor = clamp(distance / 80.0, 0.0, 1.0);
-    let fog_color = sky_color(normalize(in.world_pos), time);
-    col = mix(col, fog_color, fog_factor * 0.2);
+    // Biome-specific terrain texturing
+        // Note: Removed large flat-color biome overlays; rely on layered PBR materials above
+        // Enhanced PBR lighting with improved Cook-Torrance BRDF
+        let V = normalize(-in.view_dir);
+        let N = normalize(normal);
+        let sun_angle = time * 0.1;
+        let L = normalize(vec3<f32>(cos(sun_angle) * 0.8, max(sin(sun_angle) * 0.8, 0.2), sin(sun_angle * 0.3) * 0.4));
+        let H = normalize(L + V);
+
+        // Enhanced Fresnel with realistic IOR values based on material
+        let ior = mix(1.3, 2.5, metallic); // Vary IOR based on metallic content
+        let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
+        let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
+        let F = F0_vec + (vec3<f32>(1.0, 1.0, 1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
+        
+        // Improved Normal Distribution Function (GGX)
+        let a = roughness * roughness;
+        let a2 = a * a;
+        let NdotH = max(dot(N, H), 0.0);
+        let NdotH2 = NdotH * NdotH;
+        let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+        let D = a2 / (3.14159 * denom * denom + 1e-5);
+        
+        // Enhanced Geometry Smith with correlated masking-shadowing
+        let NdotV = max(dot(N, V), 0.0);
+        let NdotL = max(dot(N, L), 0.0);
+        let k = (roughness + 1.0) * (roughness + 1.0) / 8.0;
+        let Gv = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+        let Gl = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+        let G_geom = Gv * Gl;
+
+        // Enhanced diffuse with subsurface scattering for organic materials
+        let kd = (vec3<f32>(1.0, 1.0, 1.0) - F) * (1.0 - metallic);
+        
+        // Add subsurface scattering approximation for materials like grass and soil
+        let subsurface_factor = 0.15 * (1.0 - roughness) * (1.0 - metallic) * ao;
+        let subsurface = subsurface_factor * base_color * max(dot(N, L), 0.0) * 0.5;
+        
+        let diffuse = kd * base_color / 3.14159 + subsurface;
+        let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
+        
+        // Enhanced ambient lighting with sky contribution and improved AO
+        let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.4;
+        let enhanced_ao = pow(ao, 0.8); // Enhance AO contrast
+        let ambient = base_color * enhanced_ao * 0.3 + sky_ambient * enhanced_ao;
+        
+        let shadow = sample_shadow(in.world_pos, N, L);
+        var color = ambient + (diffuse + specular) * NdotL * (1.0 - shadow) + emissive;
+
+    // Remove crosshatch-like overlay modulation; rely on material detail mapping above
+
+        // Exponential height fog with simple Rayleigh/Mie approximation (apply pre-tone-map)
+        let cam_height = 5.0; // TODO: pass actual camera height
+        let height_falloff = 0.02;
+        let base_density = 0.02;
+        let view_dir = normalize(in.view_dir);
+        let distance_view = length(in.world_pos - vec3<f32>(0.0, cam_height, 0.0));
+        let altitude = clamp(in.world_pos.y, -50.0, 500.0);
+        let height_term = exp(-height_falloff * (altitude - cam_height));
+        let fog_amount = 1.0 - exp(-base_density * height_term * distance_view);
+        let cosTheta = clamp(dot(-view_dir, L), -1.0, 1.0);
+        let rayleigh_phase = 0.75 * (1.0 + cosTheta * cosTheta);
+        let mie_g = 0.5;
+        let mie_phase = 1.0 / pow(1.0 + mie_g * mie_g - 2.0 * mie_g * cosTheta, 1.5);
+        let fog_sky = sky_color(normalize(in.world_pos), time);
+        let fog_color = fog_sky * 0.6 * rayleigh_phase + vec3<f32>(0.9, 0.9, 0.85) * 0.05 * mie_phase;
+        color = mix(color, fog_color, clamp(fog_amount, 0.0, 1.0));
+
+        // Leave color in linear HDR here; post pass will apply exposure + tone mapping
+        col = color;
+        // Atmospheric perspective now handled by height fog above (pre-tonemap)
     
   } else if (dist_to_water < 0.3 && terrain_height < -0.5) {
     // Water rendering for rivers and lakes
@@ -2734,13 +4788,27 @@ fn build_physics_world() -> Physics {
     let mut bodies = r3::RigidBodySet::new();
     let mut colliders = r3::ColliderSet::new();
     let gravity = nalgebra::Vector3::new(0.0, -9.81, 0.0);
-    // Large ground plane for extensive biome coverage
+    // Ground collider that matches the rendered terrain using a TriMesh
+    // Generate the same terrain data used for rendering
+    let (terrain_vertices, terrain_indices) = generate_terrain_mesh(TERRAIN_SIZE, TERRAIN_SCALE);
+    // Convert to rapier types
+    let mut points: Vec<nalgebra::Point3<f32>> = Vec::with_capacity(terrain_vertices.len());
+    for v in &terrain_vertices {
+        points.push(nalgebra::Point3::new(v[0], v[1], v[2]));
+    }
+    let mut indices: Vec<[u32; 3]> = Vec::with_capacity(terrain_indices.len() / 3);
+    for tri in terrain_indices.chunks_exact(3) {
+        indices.push([tri[0], tri[1], tri[2]]);
+    }
     let ground = r3::RigidBodyBuilder::fixed()
-        .translation(nalgebra::Vector3::new(0.0, -2.0, 0.0))
+        .translation(nalgebra::Vector3::new(0.0, 0.0, 0.0))
         .user_data(0)
         .build();
     let g_handle = bodies.insert(ground);
-    let g_col = r3::ColliderBuilder::cuboid(500.0, 0.5, 500.0).build(); // Much larger ground
+    let g_col = r3::ColliderBuilder::trimesh(points, indices)
+        .friction(0.9)
+        .restitution(0.1)
+        .build();
     colliders.insert_with_parent(g_col, g_handle, &mut bodies);
     // Stack of boxes
     for y in 0..5 {
@@ -2822,14 +4890,14 @@ fn teleport_sphere_to(p: &mut Physics, pos: Vec3) {
     }
 }
 
-fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut Vec<InstanceRaw>) {
+fn sync_instances_from_physics(p: &Physics, characters: &[Character], camera_pos: Vec3, out: &mut Vec<InstanceRaw>) {
     // Resize output vector to accommodate all objects
     out.clear();
 
     // Enhanced skybox instance - positioned to follow camera for optimal immersion
     // Create a transform that follows the camera position to ensure the skybox
     // always encompasses the view without creating depth buffer conflicts
-    let skybox_translation = Mat4::from_translation(Vec3::new(0.0, 0.0, 0.0)); // Keep at origin for now
+    let skybox_translation = Mat4::from_translation(camera_pos); // Position skybox at camera location
     let skybox_instance = InstanceRaw {
         model: skybox_translation.to_cols_array(),
         color: [0.8, 0.9, 1.0, 1.0], // Enhanced sky blue for better atmospheric feel
@@ -2839,72 +4907,50 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
     out.push(skybox_instance);
 
     // Add physics objects
-    for (h, body) in p.bodies.iter() {
+    for (_h, body) in p.bodies.iter() {
         // No skipping — we want the ground cube drawn so the ground shader branch runs.
 
         let xf = body.position();
         let iso = xf.to_homogeneous();
         let base_m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
 
-        // Default: no scale (unit cube)
-        let mut model_m = base_m;
-
-        // If this is the ground (user_data == 0 and fixed), scale the render
-        // instance to match the collider half-extents (Rapier cuboid uses half-extents).
-        if body.is_fixed() && body.user_data == 0 {
-            // Find any collider attached to this body; prefer a Cuboid.
-            if let Some((_, col)) = p.colliders.iter().find(|(_, c)| c.parent() == Some(h)) {
-                if let Some(cuboid) = col.shape().as_cuboid() {
-                    let he = cuboid.half_extents; // nalgebra::Vector
-                    // Full extents = half_extents * 2
-                    let sx = he.x * 2.0;
-                    let sy = he.y * 2.0;
-                    let sz = he.z * 2.0;
-                    let scale_m = Mat4::from_scale(Vec3::new(sx, sy, sz));
-                    model_m = base_m * scale_m;
-                } else {
-                    // Fallback: reasonable plane size if shape not Cuboid
-                    let scale_m = Mat4::from_scale(Vec3::new(200.0, 1.0, 200.0));
-                    model_m = base_m * scale_m;
-                }
-            } else {
-                // Fallback if no collider found (shouldn't happen)
-                let scale_m = Mat4::from_scale(Vec3::new(200.0, 1.0, 200.0));
-                model_m = base_m * scale_m;
-            }
-        }
+        // Handle scaling for different object types
+        let model_m = if body.is_fixed() && body.user_data == 0 {
+            // Ground uses the terrain mesh which is already correctly sized - no scaling needed
+            base_m
+        } else {
+            // Scale objects based on their type for better visibility
+            let object_scale = match body.user_data {
+                1..=2 => 1.0,           // Original demo objects - keep normal size
+                10..=34 => 8.0,         // Trees - scale up significantly  
+                35..=45 => 6.0,         // Houses - scale up for visibility
+                60..=90 => 3.0,         // Rocks and boulders - moderate scaling
+                100..=170 => 4.0,       // Bushes and undergrowth - medium scale
+                200..=309 => 2.5,       // Stone circles and river banks
+                400..=407 => 2.0,       // Sand dunes  
+                500..=504 => 10.0,      // Oasis palms - very tall
+                _ => 2.0,               // Default moderate scaling
+            };
+            let scale_m = Mat4::from_scale(Vec3::splat(object_scale));
+            base_m * scale_m
+        };
 
         // Color and mesh type based on object type
         let (color, mesh_type) = match body.user_data {
             0 => ([0.95, 0.95, 0.95, 1.0], MeshType::Cube),     // Ground
             1 => ([0.9, 0.6, 0.2, 1.0], MeshType::Cube),        // Original boxes (orange)
-            2 => ([0.1, 0.8, 0.9, 1.0], MeshType::Cube),        // Sphere (cyan)
-            
-            // Trees and vegetation (10-34)
-            10..=34 => ([0.2, 0.7, 0.3, 1.0], MeshType::Tree),  // Trees (green)
-            
-            // Buildings and structures (20-27, 40-45) - non-overlapping with trees
-            35..=39 => ([0.7, 0.5, 0.3, 1.0], MeshType::House), // Grassland houses (brown)
-            40..=45 => ([0.8, 0.7, 0.5, 1.0], MeshType::House), // Adobe houses (sandy)
-            
-            // Geological features
-            60..=75 => ([0.5, 0.45, 0.4, 1.0], MeshType::Cube), // Grassland rocks (gray-brown)
-            76..=90 => ([0.6, 0.45, 0.35, 1.0], MeshType::Cube), // Desert formations (reddish brown)
-            
-            // Bushes and undergrowth (100-114)
-            100..=114 => ([0.3, 0.6, 0.2, 1.0], MeshType::Tree), // Bushes (darker green)
-            
-            // Special structures
-            200..=205 => ([0.6, 0.6, 0.7, 1.0], MeshType::Cube), // Stone circles (gray)
-            300..=309 => ([0.4, 0.4, 0.45, 1.0], MeshType::Cube), // River banks (dark gray)
-            400..=407 => ([0.9, 0.8, 0.6, 1.0], MeshType::Cube), // Sand dunes (pale yellow)
-            500..=504 => ([0.4, 0.8, 0.2, 1.0], MeshType::Tree), // Oasis palms (bright green)
-            
-            // Default objects
-            50..=59 => ([0.6, 0.6, 0.6, 1.0], MeshType::Cube),  // Generic objects (gray)
-            _ => ([0.5, 0.5, 0.5, 1.0], MeshType::Cube),         // Unknown (dark gray)
+            2 => ([0.2, 0.6, 0.9, 1.0], MeshType::Cube),        // Sphere (use cube mesh fallback)
+            10..=34 => ([0.20, 0.80, 0.30, 1.0], MeshType::Tree),   // Trees
+            35..=45 => ([0.60, 0.60, 0.60, 1.0], MeshType::House),  // Houses
+            60..=90 => ([0.50, 0.50, 0.50, 1.0], MeshType::Cube),   // Rocks/Boulders
+            100..=170 => ([0.10, 0.50, 0.20, 1.0], MeshType::Tree), // Bushes/Undergrowth (tree as proxy)
+            200..=309 => ([0.40, 0.40, 0.40, 1.0], MeshType::Cube), // Stone features
+            400..=407 => ([0.90, 0.80, 0.60, 1.0], MeshType::Cube), // Sand dunes
+            500..=504 => ([0.20, 0.70, 0.30, 1.0], MeshType::Tree), // Oasis palms
+            _ => ([0.80, 0.80, 0.80, 1.0], MeshType::Cube),         // Default
         };
 
+        // Push instance for this physics body
         out.push(InstanceRaw {
             model: model_m.to_cols_array(),
             color,
@@ -2915,8 +4961,8 @@ fn sync_instances_from_physics(p: &Physics, characters: &[Character], out: &mut 
 
     // Add character instances
     for character in characters {
-        // Create a transform matrix for the character
-        let scale = 0.4; // Characters are smaller than buildings
+        // Create a transform matrix for the character - scale up significantly for visibility
+        let scale = 5.0; // Characters need to be much larger to be visible on the terrain
         let translation = Mat4::from_translation(character.position);
         let scaling = Mat4::from_scale(Vec3::splat(scale));
 

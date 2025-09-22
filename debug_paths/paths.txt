@@ -1,0 +1,30 @@
+Working directory: C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine
+Assets: 
+
+    Directory: C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine\assets
+
+
+Mode                 LastWriteTime         Length Name                                              
+----                 -------------         ------ ----                                              
+d-----          9/9/2025   6:29 PM                npc                                               
+-a----         9/10/2025   7:16 PM        1036188 default_n.png                                     
+-a----          9/9/2025   6:29 PM            316 dialogue_audio_map.toml                           
+-a----          9/9/2025   6:29 PM            463 dialogue_intro.toml                               
+-a----         9/10/2025   4:28 PM           9790 dirt.ktx2                                         
+
+
+
+Environments: 
+
+    Directory: 
+    C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine\assets_src\environments
+
+
+Mode                 LastWriteTime         Length Name                                              
+----                 -------------         ------ ----                                              
+-a----         9/14/2025   7:13 PM            713 desert.toml                                       
+-a----         9/16/2025   1:48 PM            874 forest.toml                                       
+-a----         9/10/2025   4:28 PM            716 grassland.toml                                    
+
+
+
