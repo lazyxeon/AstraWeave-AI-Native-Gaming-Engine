@@ -19,7 +19,9 @@ type RoomId = String;
 
 #[derive(Clone)]
 struct Player {
+    #[allow(dead_code)]
     id: PlayerId,
+    #[allow(dead_code)]
     display: String,
     last_input_seq: u32,
     last_seen: Instant,
@@ -29,6 +31,7 @@ struct Player {
 
 #[derive(Clone)]
 struct Room {
+    #[allow(dead_code)]
     id: RoomId,
     region: String,
     game_mode: String,
@@ -45,6 +48,7 @@ struct Room {
 struct AppState {
     rooms: Arc<Mutex<HashMap<RoomId, Room>>>,
     // sled persistence as key-value: "room:<id>" => JSON, "player:<id>" => JSON
+    #[allow(dead_code)]
     db: sled::Db,
     codec: Codec,
 }

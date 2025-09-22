@@ -26,6 +26,7 @@ members = [
   "examples/visual_3d",
   "astraweave-physics",
   "astraweave-nav",
+  "astraweave-terrain",
   "examples/physics_demo3d",
   "examples/navmesh_demo",
   "astraweave-gameplay",
@@ -44,11 +45,15 @@ members = [
   "examples/ui_controls_demo",
   "examples/debug_toolkit_demo",
   "examples/save_integration",
+  "examples/unified_showcase",
+  "examples/terrain_demo",
+  "examples/biome_showcase",
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
   "tools/aw_debug",
   "tools/aw_build",
+  "tools/aw_texture_gen",
   # persistence
   "persistence/aw-save",
   "tools/aw_save_cli",
@@ -81,15 +86,15 @@ thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
-zip = "0.6"
+zip = "5.1"
 rand = "0.9"
 sha2 = "0.10"
 hex = "0.4"
-rhai = "1.22"
+rhai = "1.23"
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
-tungstenite = "0.21"
-tokio-tungstenite = "0.21"
+tungstenite = "0.23"
+tokio-tungstenite = "0.23"
 egui = "0.28"
 eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
@@ -104,4 +109,4 @@ rodio = "0.17"
 egui-winit = "0.28"
 egui-wgpu = "0.28"
 gilrs = "0.10"
-criterion = "0.5"
+criterion = "0.7"

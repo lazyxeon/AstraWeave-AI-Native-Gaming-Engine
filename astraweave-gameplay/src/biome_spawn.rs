@@ -1,8 +1,8 @@
 use glam::Vec3;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 use crate::{ResourceKind};
 use crate::harvesting::ResourceNode;
-use crate::weaving::WeaveConsequence;
+use crate::types::WeaveConsequence;
 
 #[derive(Clone, Debug)]
 pub struct BiomeRule {

@@ -1,4 +1,4 @@
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -12,7 +12,7 @@ pub struct SessionKey(pub [u8; 32]);
 impl SessionKey {
     pub fn random() -> Self {
         let mut bytes = [0u8; 32];
-        rand::thread_rng().fill(&mut bytes);
+        rand::rng().fill(&mut bytes);
         SessionKey(bytes)
     }
 }
@@ -98,7 +98,11 @@ pub fn encode_msg(codec: Codec, msg: &impl Serialize) -> Vec<u8> {
             let raw = postcard::to_allocvec(msg).expect("serialize");
             lz4_flex::compress_prepend_size(&raw)
         }
-        Codec::Bincode => bincode::serialize(msg).expect("serialize"),
+        Codec::Bincode => {
+            use bincode::serde::{encode_to_vec};
+            use bincode::config::standard;
+            encode_to_vec(msg, standard()).expect("serialize")
+        },
     }
 }
 
@@ -109,7 +113,13 @@ pub fn decode_msg<T: for<'de> Deserialize<'de>>(codec: Codec, bytes: &[u8]) -> R
                 .map_err(|e| WireError::Decode(format!("lz4: {e}")))?;
             postcard::from_bytes(&decompressed).map_err(|e| WireError::Decode(format!("postcard: {e}")))
         }
-        Codec::Bincode => bincode::deserialize(bytes).map_err(|e| WireError::Decode(format!("bincode: {e}"))),
+        Codec::Bincode => {
+            use bincode::serde::{decode_from_slice};
+            use bincode::config::standard;
+            let (val, _len) = decode_from_slice(bytes, standard())
+                .map_err(|e| WireError::Decode(format!("bincode: {e}")))?;
+            Ok(val)
+        },
     }
 }
 
@@ -131,7 +141,7 @@ pub fn sign16(input: &[u8], session_key_hint: &[u8; 8]) -> [u8; 16] {
 
 /// Generate a short, URL-safe room id.
 pub fn new_room_id() -> String {
-    rand::thread_rng()
+    rand::rng()
         .sample_iter(&Alphanumeric)
         .take(8)
         .map(char::from)

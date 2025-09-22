@@ -7,7 +7,7 @@ description = "AstraWeave save/load, versioning & migration, atomic I/O, checksu
 
 [dependencies]
 anyhow = "1"
-thiserror = "1"
+thiserror = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 postcard = { version = "1", features = ["alloc"] }
