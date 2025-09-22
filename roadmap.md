@@ -1,60 +1,127 @@
-✅1. **3D Rendering and Visual Assets**
+﻿# AstraWeave Roadmap — From AI-Native Prototype to Production Engine (UE5-Class)
 
-   * The current engine is console/log–based; there’s no graphics subsystem. You would need a rendering pipeline (e.g. wgpu or vulkan integration) with scene graph, mesh loading, shaders, animation playback and UI widgets.
-   * No art assets exist yet: character models, environments, props, visual effects, and UI art need to be created or sourced.
+Goal: Evolve AstraWeave into a full, production-grade, AI-native game engine on par with Unreal Engine 5—where AI is first-class (not a plugin), with a modern renderer, robust tooling, editor, and scalable runtime. All milestones below are scoped to the existing Rust + wgpu + rapier + egui stack.
 
-✅2. **Physics and World Simulation**
+Principles
+- AI-first: Perception → Reasoning → Planning → Action is built-in and deterministic; tools are validated, no AI “cheating.”
+- Deterministic sim: Fixed-tick ECS with strong validation boundaries; multiplayer-friendly and replayable.
+- Modular workspace: Isolated crates per system; clear public APIs; testable in isolation; minimal unsafe.
+- Dev velocity: Hot-reload where safe (scripts, assets, materials), fast iteration loops, strong instrumentation.
 
-   * The prototype uses a simple 2D grid for pathing and line‑of‑sight. A full action RPG requires a 3D physics engine (collision, rigid bodies, joints, ragdolls, kinematics) and navmesh/pathfinding suitable for complex terrain.
-   * Systems such as climbing, swimming, destructible objects, and dynamic weather aren’t implemented.
+Phase 0 (0–3 months): Stabilize Core and Ship a Visual Hello-World
+Deliverables
+- Rendering MVP: astraweave-render produces a lit scene (PBR, HDR, tonemapping, sky, shadows) via wgpu 0.20 (or latest compatible).
+- Scene I/O: glTF 2.0 import (meshes, materials, textures); simple scene graph; GPU resource manager; frustum culling; basic instancing.
+- Animation v0: Skeletal playback (simple blend, GPU skinning).
+- Editor Shell: `tools/aw_editor` rebuilt using eframe/egui with dockable panels (Scene, Hierarchy, Inspector, Console, Profiler); live reload of material/shader params.
+- AI Loop: Keep current `WorldSnapshot` / `PlanIntent`; unify `Orchestrator` API; CI example that runs end-to-end without panics.
+- Fix/green core: make check, minimal lint set; working examples curated; broken demos quarantined.
 
-✅3. **Gameplay Mechanics and Content**
+Key Crates/Changes
+- New: `astraweave-scene`, `astraweave-materials`, `astraweave-anim`, `astraweave-asset` (importers), `astraweave-shaders` (WGSL).
+- Update: `astraweave-render` (PBR + shadows + post), `tools/aw_editor` (panelized), `examples/visual_3d` (MVP scene viewer).
 
-   * The fate‑weaving mechanic is described in docs but not coded. Core gameplay loops like crafting, combat combos, echo infusion, resource harvesting and the consequences of “thread weaving” need to be implemented.
-   * Story content (quests, dialogue, characters, cutscenes) and level design (biomes, puzzles, dungeons) are missing. A narrative writer and level designer are needed to build the 100+ hour experience promised by the concept.
+Exit Criteria
+- Run: `cargo run -p visual_3d` shows a PBR scene with a skinned character at 60 FPS on mid-tier GPU.
+- Editor: can load a scene, tweak a material, toggle lights, and save.
 
-✅4. **Audio and Dialogue Systems**
+Phase 1 (3–6 months): AI-Native Gameplay and Authoring Tools
+Deliverables
+- AI Orchestrator Suite: Rule-based + Utility/GOAP + LLM orchestrator behind `Orchestrator` trait; switchable per agent.
+- Tool Sandbox v1: Formalized action verbs with validation categories (nav, physics, resources, visibility); comprehensive error taxonomy.
+- Persona/Memory v1: `astraweave-persona` + `astraweave-memory` stabilized (profiles, episodic facts, skills); deterministic serialization and versioning.
+- Nav & Physics: Rapier 3D character controller; navmesh baking (off-thread) + A*; cost layers; link with validation.
+- Dialogue & Audio v1: `astraweave-audio` spatial audio; dialogue runner with branching; TTS integration hook; subtitle system.
+- Authoring: Visual Behavior Graph (BT/HTN) panel in editor; Rhai hot-reload for behaviors; quest/dialogue graphs.
 
-   * The engine doesn’t handle audio. Support for background music, spatial sound effects, voice‑over playback and procedural dialogue needs to be added.
-   * AI‑driven companion banter will require text‑to‑speech or recorded voice lines, and a dialogue system to manage timing and variation.
+Key Crates/Changes
+- New: `astraweave-behavior` (BT/HTN graphs), `astraweave-dialogue`, `astraweave-quests`.
+- Update: `astraweave-ai`, `astraweave-nav`, `astraweave-physics`, `astraweave-audio`, `tools/aw_editor` (graph editors).
 
-✅5. **UI/UX and Player Controls**
+Exit Criteria
+- Example “hello_companion_3d”: companion perceives, plans, and executes in a small 3D level; voice line triggers; player orders via UI.
+- Editor: author a simple quest + behavior graph and run it live.
 
-   * There’s no menu system, HUD, inventory screen, map/quest log, crafting interface or accessibility options. These would need to be designed and integrated with the engine.
-   * Input handling beyond simple key or mouse events (controller support, remapping, touch) must be added.
+Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
+Rendering
+- PBR 2.0: Clearcoat, anisotropy, transmission; clustered/forward+ lighting; cascaded shadow maps; SSR, SSAO/ASSAO, SSGI (probe-based); bloom/DoF/motion blur.
+- GI: DDGI (probe volumes) + SDFGI fallback; lightmap baking path (GPU compute) for static scenes.
+- Visibility: GPU-driven culled draws (compute binning) and meshlet/cluster culling; bindless resources where supported.
+- Textures: Virtual Texturing (clipmap/mega-texture) for massive worlds; streaming & residency.
+- VFX: GPU particle system; decals and screen-space effects.
 
-✅6. **AI Model Integration**
+Asset & Tooling
+- Asset pipeline: deterministic importers (glTF, FBX via external tool, WAV/OGG, OTF/TTF), GUIDs, dependency graph, incremental builds, cache.
+- Material Editor: node-based graphs compiled to WGSL; preview viewport; parameter collections; material variants.
+- Animation 2.0: Retargeting, blend trees, IK (FABRIK/CCD), root motion; animation events.
 
-   * The repository includes a mock or local rule‑based orchestrator and placeholder for LLM calls, but not integration with a real language model API. You need to decide on an AI backend (local model, hosted service) and build wrappers, authentication, and streaming to feed world state and receive plans.
-   * Safety, content filtering, latency handling and fallback behaviours should be formalized.
+Exit Criteria
+- Visual benchmark scene parity: lighting/features comparable to a mid-level UE5 scene (no Nanite/Lumen yet) at 60 FPS 1080p on a mid-tier GPU.
+- Editor: import a mid-complexity scene, edit materials, bake a light cache, profile frame breakdown.
 
-✅7. **Tools and Pipelines**
+Phase 3 (12–18 months): Multiplayer, Determinism, and Scale
+Deliverables
+- Netcode: Server-authoritative with client prediction & reconciliation; snapshot delta encoding; interest management; region matchmaking; replay capture.
+- Deterministic Sim: audited fixed-tick path; lockstep option; authoritative tool validation across clients.
+- Save/Live Ops: robust save/versioning (`aw-save`), migration; asset patching and hotfix pipeline; crash reporting hooks.
+- Security: anti-cheat hooks (server-side validation + telemetry); sandboxing for scripting.
 
-   * Level and encounter editors: Non‑programmers will need tools to author biomes, placement of obstacles, NPCs and “fate threads,” plus scripts for boss phases and director budgets.
-   * Asset pipeline: import/convert textures, models, animations, and audio from DCC tools into the engine’s format.
-   * Debugging and profiling tools: performance monitors, visual profilers, event logs, and hot‑reload for scripts.
+Exit Criteria
+- 4-player co-op demo in a medium-sized level with AI companions; 60 Hz sim; jitter-buffered voice/text; no desync under packet loss; stable replays.
 
-✅8. **Networking and Multiplayer**
+Phase 4 (18–24 months): Production Polish and Extensibility
+Deliverables
+- Cinematics: Timeline, tracks (anim, camera, audio, FX), cutscene editor; sequencer API.
+- UI/UX: game UI framework (HUD, menus, inventory, map) with data-binding; accessibility options.
+- Marketplace-Ready SDK: stable public APIs; versioning policy; plugin system for third parties; sample packs.
+- Documentation & Samples: full docs site; 10+ polished sample projects (AI, networking, rendering, tools). 
 
-   * A simple WebSocket co‑op prototype exists, but full multiplayer requires robust server authority, prediction and reconciliation, matchmaking/lobbies, persistence, and anti‑cheat measures.
-   * If cross‑platform play is intended, network code must handle platform differences, NAT traversal, and possibly region‑based servers.
+Exit Criteria
+- “Feature-complete” engine with editor; external team can build a vertical slice without engine dev support.
 
-✅9. **Data Persistence and Save System**
+Cross-Cutting Workstreams (Continuous)
+- Testing & CI: golden-image tests for renderer, snapshot tests for AI plans, physics regression, perf gates; `make ci` runs format, clippy (curated deny list), tests, benches.
+- Performance: frame timing budgets; per-subsystem profilers; tracing to Chrome; capture & replay.
+- Quality & Security: cargo-deny/audit clean; SBOM; reproducible builds; signed assets; defensively coded tools/LLM adapters.
+- Content: exemplar assets (characters, terrain, materials) under permissive licenses for samples.
 
-   * The engine lacks a comprehensive save/load pipeline for game progress, companion profiles, world state and player inventories.
-   * Versioning and migration of save files will be needed as the game evolves.
+Technical Parity Mapping vs UE5 (Pragmatic Targets)
+- Nanite → GPU-driven cluster culling + meshlet path, LOD streaming, VT for textures; no hardware mesh shaders requirement.
+- Lumen → DDGI + SDFGI hybrid; baked fallback; SSR/SSGI augment; editor GI volumes.
+- Blueprints → Visual Behavior/Graph editors backed by Rust/Rhai; node-based materials & animation graphs.
+- Sequencer → Timeline/cinematic tracks with camera rig and event binding.
+- Editor → eframe/egui-based multi-dock editor; later optional migration to winit multi-window if needed.
 
-10. **Testing, Documentation and Build Tools**
+Initial Backlog (actionable next sprints)
+- Render MVP: PBR BRDF (Disney-ish), CSM shadows, ACES tonemap; import glTF; draw submission with bindless-like structs.
+- Editor: scene tree, inspector, console/logger, live material param editing; file watcher & hot-reload for WGSL/materials.
+- AI: unify `Orchestrator` returning `PlanIntent`; validation error types; sample tool verbs + tests.
+- Nav/Physics: Rapier CC; bake navmesh from scene collider mesh; runtime A*; validation integration tests.
+- Audio: rodio 3D spatialization; mixer; event-driven cues.
+- CI: workspace check with curated excludes; renderer headless test renders; input unit tests.
 
-    * Unit tests and automated integration tests are largely absent. A mature project needs CI/CD scripts, test coverage, and performance benchmarks.
-    * There should be developer documentation for the engine API, AI scripting, persona pack format, and authoring tools.
-    * Build scripts for packaging releases on PC and the target console (including asset bundling and update patching) need to be created.
+Resourcing & Risks
+- Team: 1 rendering, 1 tools/editor, 1 AI/gameplay, 1 networking/systems, 1 content TD (part-time). Grow as needed.
+- Risks: wgpu feature gaps (mesh shaders); mitigate with compute-based culling. LLM latency; mitigate with on-device 7B quantized + short-horizon planner.
 
-11. **Platform & Hardware Implementation**
+KPIs & Success Metrics
+- Editor cold start < 3s; hot reload < 500ms.
+- Visual demo 1080p60 on 3060-class GPU.
+- Co-op demo stable at 60Hz with < 120ms RTT; no desync over 10 min.
+- CI: green on core + examples; perf regression < 5% week-over-week.
 
-    * The “AstraCore” console is still a theoretical specification. A real device requires hardware prototyping, operating system development, driver support, power/thermal management, and manufacturing.
-    * For PC, the engine must be adapted to run efficiently on a variety of GPUs, CPUs and operating systems, with minimum and recommended specs defined.
+How To Track
+- Create GitHub Projects board with swimlanes matching phases/workstreams.
+- Each milestone produces: demo video, example crate, docs page, and CI validation.
 
-By filling in these missing pieces—graphics and physics, gameplay systems, toolchain, full AI integration, network infrastructure, and production‑ready tooling, the Veilweaver project can move from proof‑of‑concept to a playable, scalable game and engine.
+Appendix: Proposed Crates/Dirs
+- `astraweave-scene/` (scene graph, transforms, cameras)
+- `astraweave-asset/` (importers, GUIDs, dependency graph, cache)
+- `astraweave-shaders/` (WGSL modules, shaderlib)
+- `astraweave-materials/` (PBR, node graphs → WGSL compiler)
+- `astraweave-anim/` (skeletal/IK, blend trees)
+- `astraweave-behavior/` (BT/HTN graphs, runtime)
+- `astraweave-dialogue/`, `astraweave-quests/`
+- `examples/visual_3d/`, `examples/hello_companion_3d/`
 
-* All Checkmarked items are roughed in, not fully developed and fleshed out.
+This roadmap is intentionally staged: ship a viewable, editable, and AI-playable core quickly; iterate toward UE5-class rendering, tools, and multiplayer scale while preserving AstraWeave’s AI-native edge.
