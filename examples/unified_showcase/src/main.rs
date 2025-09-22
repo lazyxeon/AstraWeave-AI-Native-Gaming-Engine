@@ -1081,11 +1081,7 @@ fn reload_texture_pack(render: &mut RenderStuff, texture_pack_name: &str) -> Res
             );
             
             // More detailed error information
-            if !texture_path.exists() {
-                println!("❌ Texture file does not exist: {}", texture_path.display());
-            } else {
-                println!("📄 Texture file exists but failed to load: {}", texture_path.display());
-            }
+            // Redundant file existence check removed; rely on error message above and load_texture_from_file's own logging.
             
             // Try to fallback to grass texture if loading desert/other fails
             if texture_pack_name != "grassland" {
