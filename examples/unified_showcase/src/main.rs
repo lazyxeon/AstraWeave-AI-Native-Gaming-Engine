@@ -60,6 +60,10 @@ struct InstanceRaw {
     _padding: [u32; 3], // Padding for alignment
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct DebugParamsRust { debug_tint: u32, _pad: [u32; 3], _pad2: [u32; 4] }
+
 struct RenderStuff {
     surface: wgpu::Surface<'static>,
     surface_cfg: wgpu::SurfaceConfiguration,
@@ -120,6 +124,7 @@ struct RenderStuff {
     post_bgl: wgpu::BindGroupLayout,
     post_sampler: wgpu::Sampler,
     bloom_ub: wgpu::Buffer,
+    debug_buf: wgpu::Buffer,
 }
 
 const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth24Plus;
@@ -512,6 +517,7 @@ struct UiState {
     info_text: String,
     current_texture_pack: String,
     available_texture_packs: Vec<String>,
+    debug_material_tint: bool,
 }
 
 impl Default for UiState {
@@ -532,6 +538,7 @@ impl Default for UiState {
             info_text: "AstraWeave Unified Showcase".to_string(),
             current_texture_pack: "grassland".to_string(),
             available_texture_packs: vec!["grassland".to_string(), "desert".to_string()],
+            debug_material_tint: false,
         }
     }
 }
@@ -1115,8 +1122,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (3.0, 0.4, "ancient"),  // Ancient giant trees
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let tree_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(10 + i)
                     .build();
                 let tree_handle = physics.bodies.insert(tree_rb);
@@ -1132,8 +1140,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 5.0 + (i as f32 * 1.1).cos() * 12.0;
                 let size = 0.2 + (i % 3) as f32 * 0.1;
 
+                let base_y = terrain_surface_y(x, z);
                 let bush_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.6, z))
                     .user_data(100 + i)
                     .build();
                 let bush_handle = physics.bodies.insert(bush_rb);
@@ -1157,8 +1166,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (1.8, 1.2, 1.5, "workshop"),   // Workshops and shops
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let house_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(35 + i)
                     .build();
                 let house_handle = physics.bodies.insert(house_rb);
@@ -1175,8 +1185,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 20.0 + (i as f32 * 1.7).cos() * 10.0;
                 let size = 0.8 + (i % 4) as f32 * 0.5;
 
+                let base_y = terrain_surface_y(x, z);
                 let boulder_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.8, z))
                     .user_data(60 + i)
                     .build();
                 let boulder_handle = physics.bodies.insert(boulder_rb);
@@ -1194,8 +1205,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = radius * angle.sin() + 30.0;
                 let height = 1.5 + (i % 2) as f32 * 0.8;
 
+                let base_y = terrain_surface_y(x, z);
                 let stone_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(200 + i)
                     .build();
                 let stone_handle = physics.bodies.insert(stone_rb);
@@ -1212,8 +1224,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = -30.0 + (i as f32) * 2.0 + (i as f32 * 2.0).sin() * 8.0;
                 let size = 0.3 + (i % 2) as f32 * 0.2;
 
+                let base_y = terrain_surface_y(x, z);
                 let bank_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.5, z))
+                    .translation(nalgebra::Vector3::new(x, base_y - 0.5, z))
                     .user_data(300 + i)
                     .build();
                 let bank_handle = physics.bodies.insert(bank_rb);
@@ -1228,7 +1241,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..20 {
                 let x = 10.0 + (i as f32) * 4.0 + (i as f32).sin() * 4.0;
                 let z = -12.0 + (i as f32 * 1.3).sin() * 15.0;
-                let pos = Vec3::new(x, -1.0, z);
+                let pos = Vec3::new(x, terrain_surface_y(x, z) + 0.5, z);
 
                 let char_type = match i % 5 {
                     0 => CharacterType::Villager,
@@ -1299,8 +1312,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (0.3, 0.6, "desert_shrub"),   // Desert shrub
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let cactus_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(30 + i)
                     .build();
                 let cactus_handle = physics.bodies.insert(cactus_rb);
@@ -1324,8 +1338,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (3.0, 1.8, 2.5, "adobe_temple"),   // Temple/mosque
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let adobe_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(40 + i)
                     .build();
                 let adobe_handle = physics.bodies.insert(adobe_rb);
@@ -1349,8 +1364,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (size, size * 0.8, size), // Regular rock
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let formation_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(76 + i)
                     .build();
                 let formation_handle = physics.bodies.insert(formation_rb);
@@ -1369,8 +1385,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let width = 4.0 + (i % 3) as f32 * 2.0;
                 let height = 0.5 + (i % 2) as f32 * 0.3;
 
+                let base_y = terrain_surface_y(x, z);
                 let dune_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(400 + i)
                     .build();
                 let dune_handle = physics.bodies.insert(dune_rb);
@@ -1390,8 +1407,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let x = oasis_x + radius * angle.cos();
                 let z = oasis_z + radius * angle.sin();
 
+                let base_y = terrain_surface_y(x, z);
                 let palm_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + 2.0, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + 2.0, z))
                     .user_data(500 + i)
                     .build();
                 let palm_handle = physics.bodies.insert(palm_rb);
@@ -1406,7 +1424,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..8 {
                 let x = 15.0 + (i as f32) * 12.0 + (i as f32).sin() * 5.0;
                 let z = -5.0 + (i as f32 * 0.9).sin() * 8.0;
-                let pos = Vec3::new(x, -1.0, z);
+                let pos = Vec3::new(x, terrain_surface_y(x, z) + 0.5, z);
 
                 let char_type = match i % 4 {
                     0 => CharacterType::Merchant,
@@ -1473,8 +1491,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (2.2, 0.25, "maple"),          // Forest maples
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let tree_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(10 + i)
                     .build();
                 let tree_handle = physics.bodies.insert(tree_rb);
@@ -1490,8 +1509,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 8.0 + (i as f32 * 1.2).cos() * 15.0;
                 let size = 0.15 + (i % 4) as f32 * 0.08;
 
+                let base_y = terrain_surface_y(x, z);
                 let undergrowth_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.5, z))
                     .user_data(150 + i)
                     .build();
                 let undergrowth_handle = physics.bodies.insert(undergrowth_rb);
@@ -1514,8 +1534,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                     _ => (1.6, 1.4, 1.4, "ranger_cabin"),    // Ranger cabins
                 };
 
+                let base_y = terrain_surface_y(x, z);
                 let structure_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + height, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + height, z))
                     .user_data(200 + i)
                     .build();
                 let structure_handle = physics.bodies.insert(structure_rb);
@@ -1532,8 +1553,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let z = 25.0 + (i as f32 * 1.8).cos() * 12.0;
                 let size = 1.0 + (i % 3) as f32 * 0.6;
 
+                let base_y = terrain_surface_y(x, z);
                 let boulder_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + size * 0.8, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + size * 0.8, z))
                     .user_data(250 + i)
                     .build();
                 let boulder_handle = physics.bodies.insert(boulder_rb);
@@ -1552,8 +1574,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let x = circle_center_x + radius * angle.cos();
                 let z = circle_center_z + radius * angle.sin();
 
+                let base_y = terrain_surface_y(x, z);
                 let stone_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + 1.5, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + 1.5, z))
                     .user_data(300 + i)
                     .build();
                 let stone_handle = physics.bodies.insert(stone_rb);
@@ -1569,8 +1592,9 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
                 let x = -10.0 + (i as f32) * 15.0;
                 let z = -12.0 + (i as f32) * 8.0;
 
+                let base_y = terrain_surface_y(x, z);
                 let pool_rb = r3::RigidBodyBuilder::fixed()
-                    .translation(nalgebra::Vector3::new(x, -2.0 + 0.2, z))
+                    .translation(nalgebra::Vector3::new(x, base_y + 0.2, z))
                     .user_data(350 + i)
                     .build();
                 let pool_handle = physics.bodies.insert(pool_rb);
@@ -1585,7 +1609,7 @@ fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) 
             for i in 0..10 {
                 let x = -20.0 + (i as f32) * 8.0 + (i as f32 * 1.1).sin() * 12.0;
                 let z = -10.0 + (i as f32 * 0.9).cos() * 18.0;
-                let pos = Vec3::new(x, -1.5, z);
+                let pos = Vec3::new(x, terrain_surface_y(x, z) + 0.5, z);
 
                 let char_type = match i % 5 {
                     0 => CharacterType::Guard,    // Forest rangers
@@ -1841,6 +1865,12 @@ async fn run() -> Result<()> {
                                         if pressed {
                                             camera_controller.toggle_mode(&mut camera);
                                             println!("Camera mode: {:?}", camera_controller.mode);
+                                        }
+                                    }
+                                    KeyCode::KeyM => {
+                                        if pressed {
+                                            ui.debug_material_tint = !ui.debug_material_tint;
+                                            println!("Material debug tint: {}", ui.debug_material_tint);
                                         }
                                     }
                                     KeyCode::Digit1 => {
@@ -2120,6 +2150,10 @@ async fn run() -> Result<()> {
                         // Update characters
                         for character in &mut characters {
                             character.update(dt.as_secs_f32());
+                            // Project to terrain surface to avoid floating/penetration due to slope changes
+                            let ground_y = terrain_surface_y(character.position.x, character.position.z);
+                            // Maintain a small offset so feet aren't z-fighting the ground
+                            character.position.y = ground_y + 0.5;
                         }
 
                         // Physics
@@ -2148,6 +2182,10 @@ async fn run() -> Result<()> {
                         // Update bloom uniform
                         let bloom = BloomParams { threshold: ui.bloom_threshold, intensity: ui.bloom_intensity, _pad: [0.0; 2] };
                         render.queue.write_buffer(&render.bloom_ub, 0, bytemuck::bytes_of(&bloom));
+
+                        // Update debug toggle uniform
+                        let dbg = DebugParamsRust { debug_tint: if ui.debug_material_tint { 1 } else { 0 }, _pad: [0; 3], _pad2: [0; 4] };
+                        render.queue.write_buffer(&render.debug_buf, 0, bytemuck::bytes_of(&dbg));
 
                         // Prepare command encoder (reused for shadow and main passes)
                         let mut encoder = render.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("frame-encoder") });
@@ -2593,6 +2631,10 @@ struct InstanceBatch {
     mesh_type: MeshType,
 }
 
+// Shared terrain parameters used by both rendering and physics so visuals and collisions match
+const TERRAIN_SIZE: usize = 256; // grid resolution along one axis
+const TERRAIN_SCALE: f32 = 6.0;  // world units between vertices
+
 fn batch_instances_by_mesh_type(instances: &[InstanceRaw]) -> Vec<InstanceBatch> {
     let mut batches = Vec::new();
     
@@ -2661,80 +2703,105 @@ fn generate_terrain_mesh(size: usize, scale: f32) -> (Vec<[f32; 3]>, Vec<u32>) {
 }
 
 // Rust implementation of shader biome detection
-fn get_biome_type_rust(world_pos: [f32; 2]) -> i32 {
-    let biome_scale = 0.02;
-    let biome_pos = [world_pos[0] * biome_scale, world_pos[1] * biome_scale];
-    
-    let primary_noise = (biome_pos[0] * 3.0).sin() * (biome_pos[1] * 2.0).cos();
-    let secondary_noise = ((biome_pos[0] * 1.5) + 100.0).sin() * ((biome_pos[1] * 1.8) + 200.0).cos();
-    let combined_noise = primary_noise * 0.7 + secondary_noise * 0.3;
-    
-    if combined_noise > 0.3 {
-        1 // Desert
-    } else if combined_noise < -0.2 {
-        2 // Dense Forest
-    } else {
-        0 // Grassland
+fn smooth2_scalar(t: f32) -> f32 { t * t * t * (t * (t * 6.0 - 15.0) + 10.0) }
+
+fn fract_scalar(x: f32) -> f32 { x - x.floor() }
+
+fn hash21_rust(p: [f32; 2]) -> f32 {
+    let h = p[0] * 127.1 + p[1] * 311.7;
+    fract_scalar((h).sin() * 43758.5453)
+}
+
+fn value_noise2_rust(p: [f32; 2]) -> f32 {
+    let ix = p[0].floor();
+    let iy = p[1].floor();
+    let fx = p[0] - ix;
+    let fy = p[1] - iy;
+    let ux = smooth2_scalar(fx);
+    let uy = smooth2_scalar(fy);
+    let a = hash21_rust([ix + 0.0, iy + 0.0]);
+    let b = hash21_rust([ix + 1.0, iy + 0.0]);
+    let c = hash21_rust([ix + 0.0, iy + 1.0]);
+    let d = hash21_rust([ix + 1.0, iy + 1.0]);
+    let x1 = a + (b - a) * ux;
+    let x2 = c + (d - c) * ux;
+    x1 + (x2 - x1) * uy
+}
+
+fn fbm2_rust(p: [f32; 2], octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    let mut f = 0.0f32;
+    let mut amp = 0.5f32;
+    let mut freq = 1.0f32;
+    let mut i = 0;
+    while i < octaves {
+        f += value_noise2_rust([p[0] * freq, p[1] * freq]) * amp;
+        freq *= lacunarity;
+        amp *= gain;
+        i += 1;
     }
+    f
+}
+
+fn fbm_ridge2_rust(p: [f32; 2], octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    let mut f = 0.0f32;
+    let mut amp = 0.5f32;
+    let mut freq = 1.0f32;
+    let mut i = 0;
+    while i < octaves {
+        let n = value_noise2_rust([p[0] * freq, p[1] * freq]);
+        let r = 1.0 - (n * 2.0 - 1.0).abs();
+        f += r * amp;
+        freq *= lacunarity;
+        amp *= gain;
+        i += 1;
+    }
+    f
+}
+
+fn get_biome_type_rust(world_pos: [f32; 2]) -> i32 {
+    let biome_scale = 0.01;
+    let biome_pos = [world_pos[0] * biome_scale, world_pos[1] * biome_scale];
+    let n = fbm2_rust(biome_pos, 5, 2.0, 0.5) * 2.0 - 1.0;
+    if n > 0.25 { 1 } else if n < -0.25 { 2 } else { 0 }
 }
 
 // Rust implementation of shader terrain height generation
 fn get_biome_terrain_height_rust(world_pos: [f32; 2], biome_type: i32) -> f32 {
-    let base_scale = 0.005;
-    let detail_scale = 0.02;
-    let fine_scale = 0.15;
-    let micro_scale = 0.8;
-    
-    let base_noise = (world_pos[0] * base_scale).sin() * (world_pos[1] * base_scale).cos();
-    let detail_noise = ((world_pos[0] * detail_scale) + 1.0).sin() * ((world_pos[1] * detail_scale) + 1.5).cos();
-    let fine_noise = ((world_pos[0] * fine_scale) + 2.0).sin() * ((world_pos[1] * fine_scale) + 2.5).cos();
-    let micro_noise = ((world_pos[0] * micro_scale) + 3.0).sin() * ((world_pos[1] * micro_scale) + 3.5).cos();
-    
-    let combined_noise = base_noise * 0.5 + detail_noise * 0.25 + fine_noise * 0.15 + micro_noise * 0.1;
-    
+    // Match WGSL FBM-based terrain height generation
+    let p = [world_pos[0] * 0.01, world_pos[1] * 0.01];
+    let base = (fbm2_rust(p, 5, 2.0, 0.5) * 2.0 - 1.0) * 3.5;
+    let detail = (fbm2_rust([p[0] * 3.0, p[1] * 3.0], 3, 2.2, 0.5) - 0.5) * 1.5;
+    let h = base + detail;
     match biome_type {
         0 => { // Grassland
-            let grassland_height = combined_noise * 4.0;
-            
-            // River valleys
-            let river_x = (world_pos[0] * 0.006).sin() * 0.8;
-            let river_z = (world_pos[1] * 0.004).cos() * 0.6;
-            let river_noise = ((world_pos[0] + river_z * 20.0) * 0.008).sin() * ((world_pos[1] + river_x * 15.0) * 0.01).cos();
-            let valley_factor = 1.0 - river_noise.abs();
-            let valley_depth = valley_factor * valley_factor * valley_factor * -3.0;
-            
-            // Rolling hills
-            let hill_pattern = (world_pos[0] * 0.01).sin() * (world_pos[1] * 0.012).cos() * 2.0;
-            
-            grassland_height + valley_depth + hill_pattern
-        },
-        1 => { // Desert
-            let desert_height = combined_noise * 5.0;
-            
-            // Sand dunes
-            let dune_scale = 0.02;
-            let dune_noise = (world_pos[0] * dune_scale).sin() + (world_pos[1] * dune_scale * 0.6).cos();
-            let wind_direction = (world_pos[0] * 0.001).sin() * (world_pos[1] * 0.0008).cos();
-            let dune_height = (dune_noise + wind_direction * 0.5) * 2.5;
-            
-            // Mesa formations
-            let mesa_scale = 0.003;
-            let mesa_noise = (world_pos[0] * mesa_scale).sin() * (world_pos[1] * mesa_scale).cos();
-            let mesa_height = if mesa_noise > 0.2 { 8.0 } else { 0.0 };
-            
-            desert_height + dune_height + mesa_height
-        },
-        _ => { // Forest
-            let forest_height = combined_noise * 3.5;
-            
-            // Rolling forest floor with clearings
-            let clearing_scale = 0.008;
-            let clearing_noise = (world_pos[0] * clearing_scale).sin() * (world_pos[1] * clearing_scale * 0.7).cos();
-            let elevation_mod = if clearing_noise > 0.4 { -1.5 } else { 1.0 };
-            
-            forest_height + elevation_mod
+            let river = fbm_ridge2_rust([p[0] * 0.9, p[1] * 0.9], 3, 2.0, 0.6);
+            let valleys = (river - 0.6) * 6.0;
+            h + valleys.clamp(-3.5, 0.0)
         }
+        1 => { // Desert
+            let wind_dir = {
+                let len = (0.8f32 * 0.8 + 0.6 * 0.6).sqrt();
+                [0.8 / len, 0.6 / len]
+            };
+            let d = p[0] * 6.0 * wind_dir[0] + p[1] * 6.0 * wind_dir[1];
+            let dunes = (fbm_ridge2_rust([d, d * 0.3], 4, 2.0, 0.55) - 0.5) * 3.0;
+            let mesas = if fbm_ridge2_rust([p[0] * 0.7, p[1] * 0.7], 4, 2.0, 0.5) >= 0.7 { 6.0 } else { 0.0 };
+            h + dunes + mesas
+        }
+        2 => { // Forest
+            let soft = fbm2_rust([p[0] * 0.7, p[1] * 0.7], 4, 2.0, 0.5) * 2.0 - 1.0;
+            let mounds = if fbm2_rust([p[0] * 1.3 + 12.3, p[1] * 1.3 + 12.3], 4, 2.0, 0.5) >= 0.65 { 1.6 } else { 0.0 };
+            h * 0.9 + soft * 2.2 + mounds
+        }
+        _ => h,
     }
+}
+
+// Compute the visual terrain surface Y at a given world-space (x, z)
+fn terrain_surface_y(x: f32, z: f32) -> f32 {
+    let biome = get_biome_type_rust([x, z]);
+    // Terrain in mesh generation was placed at base -2.0 plus height variation
+    -2.0 + get_biome_terrain_height_rust([x, z], biome)
 }
 
 fn create_mesh(device: &wgpu::Device, vertices: &[[f32; 3]], indices: &[u32]) -> Mesh {
@@ -2763,9 +2830,7 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshTyp
     let mut meshes = std::collections::HashMap::new();
     
     // Generate terrain mesh instead of simple cube for ground
-    let terrain_size = 256; // higher resolution grid
-    let terrain_scale = 6.0; // tighter spacing to increase detail
-    let (terrain_vertices, terrain_indices) = generate_terrain_mesh(terrain_size, terrain_scale);
+    let (terrain_vertices, terrain_indices) = generate_terrain_mesh(TERRAIN_SIZE, TERRAIN_SCALE);
     
     // Create terrain mesh as Cube type (since ground uses MeshType::Cube)
     meshes.insert(MeshType::Cube, create_mesh(device, &terrain_vertices, &terrain_indices));
@@ -2913,6 +2978,12 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         contents: bytemuck::bytes_of(&exposure_init),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
+    let debug_init = DebugParamsRust { debug_tint: 0, _pad: [0; 3], _pad2: [0; 4] };
+    let debug_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("debug-ub"),
+        contents: bytemuck::bytes_of(&debug_init),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
     let camera_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("camera-layout"),
         entries: &[
@@ -2936,6 +3007,16 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                 },
                 count: None,
             },
+            wgpu::BindGroupLayoutEntry {
+                binding: 4,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
         ],
     });
     let camera_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -2949,6 +3030,10 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: exposure_buf.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 4,
+                resource: debug_buf.as_entire_binding(),
             },
         ],
     });
@@ -3692,6 +3777,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         post_bgl,
         post_sampler,
         bloom_ub,
+        debug_buf,
     })
 }
 
@@ -3771,8 +3857,10 @@ fn vs_shadow(in: VsIn) -> VsOut {
 const SHADER: &str = r#"
 struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
+struct DebugParams { debug_tint: u32, _pad: vec3<f32> };
 
 @group(0) @binding(0) var<uniform> u_camera: Camera;
+@group(0) @binding(4) var<uniform> u_debug: DebugParams;
 struct PostParams { exposure: f32, _pad0: vec3<f32>, } // 16-byte aligned
 @group(0) @binding(1) var<uniform> u_post: PostParams;
 @group(1) @binding(0) var ground_texture: texture_2d<f32>;
@@ -3807,6 +3895,76 @@ struct PostParams { exposure: f32, _pad0: vec3<f32>, } // 16-byte aligned
 
 // Helper struct and functions for triplanar sampling across texture sets
 struct SampleSet { c: vec3<f32>, n: vec3<f32>, m: vec4<f32> };
+
+// -----------------------------------------------------------------------------
+// Noise utilities (hash, value noise, FBM) to avoid grid-aligned artifacts
+// -----------------------------------------------------------------------------
+
+fn hash21(p: vec2<f32>) -> f32 {
+    let h = dot(p, vec2<f32>(127.1, 311.7));
+    return fract(sin(h) * 43758.5453);
+}
+
+fn smooth2(t: vec2<f32>) -> vec2<f32> {
+    // Quintic smoothing for C2 continuity
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+fn value_noise2(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let u = smooth2(f);
+
+    let a = hash21(i + vec2<f32>(0.0, 0.0));
+    let b = hash21(i + vec2<f32>(1.0, 0.0));
+    let c = hash21(i + vec2<f32>(0.0, 1.0));
+    let d = hash21(i + vec2<f32>(1.0, 1.0));
+
+    let x1 = mix(a, b, u.x);
+    let x2 = mix(c, d, u.x);
+    return mix(x1, x2, u.y);
+}
+
+fn fbm2(p: vec2<f32>, octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    var f = 0.0;
+    var amp = 0.5;
+    var freq = 1.0;
+    var i = 0;
+    loop {
+        if (i >= octaves) { break; }
+        f = f + value_noise2(p * freq) * amp;
+        freq = freq * lacunarity;
+        amp = amp * gain;
+        i = i + 1;
+    }
+    return f;
+}
+
+fn fbm_ridge2(p: vec2<f32>, octaves: i32, lacunarity: f32, gain: f32) -> f32 {
+    // Ridged multifractal using absolute value and inversion
+    var f = 0.0;
+    var amp = 0.5;
+    var freq = 1.0;
+    var i = 0;
+    loop {
+        if (i >= octaves) { break; }
+        let n = value_noise2(p * freq);
+        let r = 1.0 - abs(n * 2.0 - 1.0);
+        f = f + r * amp;
+        freq = freq * lacunarity;
+        amp = amp * gain;
+        i = i + 1;
+    }
+    return f;
+}
+
+fn noise_grad2(p: vec2<f32>) -> vec2<f32> {
+    // Central differences gradient of value noise
+    let e = 0.001;
+    let dx = value_noise2(p + vec2<f32>(e, 0.0)) - value_noise2(p - vec2<f32>(e, 0.0));
+    let dy = value_noise2(p + vec2<f32>(0.0, e)) - value_noise2(p - vec2<f32>(0.0, e));
+    return vec2<f32>(dx, dy) / (2.0 * e);
+}
 
 // by biome (legacy)
 fn sample_set(biome: i32, uv: vec2<f32>) -> SampleSet {
@@ -3919,7 +4077,7 @@ fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_wid
 
     // Colors are already sampled in linear space (sRGB textures are linearized by the sampler),
     // so blend directly in linear space without manual gamma conversions
-    let col = a.c * wnorm.x + b.c * wnorm.y + c.c * wnorm.z;
+    var col = a.c * wnorm.x + b.c * wnorm.y + c.c * wnorm.z;
 
     // Enhanced normal blending with proper tangent space interpolation
     let na = normalize(a.n * 2.0 - 1.0);
@@ -3933,6 +4091,13 @@ fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_wid
     // MRA blending with material property preservation
     let mr = a.m * wnorm.x + b.m * wnorm.y + c.m * wnorm.z;
     
+    // Optional debug tint to validate material sampling bindings
+    if (u_debug.debug_tint == 1u) {
+        let tint_a = vec3<f32>(1.0, 0.0, 0.0);
+        let tint_b = vec3<f32>(0.0, 1.0, 0.0);
+        let tint_c = vec3<f32>(0.0, 0.0, 1.0);
+        col = col * 0.5 + (tint_a * wnorm.x + tint_b * wnorm.y + tint_c * wnorm.z) * 0.5;
+    }
     return SampleSet(col, nr, mr);
 }
 
@@ -3943,12 +4108,14 @@ fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: ve
     let uv_x = world_pos.zy * scale;
     let uv_y = world_pos.xz * scale; 
     let uv_z = world_pos.xy * scale;
-    
-    // Add micro-variation to break up tiling patterns
-    let variation = sin(world_pos * detail_scale) * 0.1;
-    let uv_x_varied = uv_x + variation.zy;
-    let uv_y_varied = uv_y + variation.xz;
-    let uv_z_varied = uv_z + variation.xy;
+    // Add micro-variation using FBM noise to break up tiling without grid artifacts
+    let n_xy = fbm2(world_pos.xy * detail_scale * 0.15, 4, 2.0, 0.5);
+    let n_yz = fbm2(world_pos.yz * detail_scale * 0.15, 4, 2.0, 0.5);
+    let n_zx = fbm2(world_pos.zx * detail_scale * 0.15, 4, 2.0, 0.5);
+    let v = 0.08; // variation strength
+    let uv_x_varied = uv_x + vec2<f32>(n_yz, n_zx) * v;
+    let uv_y_varied = uv_y + vec2<f32>(n_zx, n_xy) * v;
+    let uv_z_varied = uv_z + vec2<f32>(n_xy, n_yz) * v;
     
     // Sample each axis with variation
     let sample_x = sample_material(material_idx, uv_x_varied);
@@ -3957,7 +4124,7 @@ fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: ve
     
     // Enhanced weight calculation based on normal with smooth transitions
     let n_abs = abs(normal);
-    let weights = pow(n_abs, vec3<f32>(3.0)); // Sharper transitions
+    let weights = pow(n_abs, vec3<f32>(2.0)); // Slightly softer to reduce seams
     let weight_sum = max(weights.x + weights.y + weights.z, 1e-4);
     let wnorm = weights / weight_sum;
     
@@ -3967,30 +4134,23 @@ fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: ve
 
 // Detail mapping function for micro-surface variation
 fn apply_detail_mapping(base_color: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, detail_strength: f32) -> vec3<f32> {
-    // Create high-frequency detail pattern
-    let detail_uv = world_pos.xz * detail_scale;
-    let detail_noise = sin(detail_uv.x) * cos(detail_uv.y) + 
-                      sin(detail_uv.x * 2.0) * cos(detail_uv.y * 2.0) * 0.5 +
-                      sin(detail_uv.x * 4.0) * cos(detail_uv.y * 4.0) * 0.25;
-    
-    // Create variation pattern
-    let variation = (detail_noise * 0.5 + 0.5) * detail_strength;
-    
-    // Apply detail as subtle color variation
-    let detail_color = base_color * (1.0 + variation * 0.1);
-    
-    // Add some high-frequency color noise
-    let color_noise = sin(world_pos.x * 8.0 + world_pos.z * 8.0) * 0.02;
-    return detail_color + vec3<f32>(color_noise, color_noise * 0.8, color_noise * 0.6);
+    // FBM-based subtle albedo variation
+    let p = world_pos.xz * detail_scale;
+    let n = fbm2(p, 4, 2.0, 0.5);
+    let variation = (n - 0.5) * 2.0; // [-1,1]
+    let detail_color = base_color * (1.0 + variation * 0.06 * detail_strength);
+    return detail_color;
 }
 
 // Perturb the surface normal using a simple high-frequency procedural pattern
 fn perturb_normal(normal: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, strength: f32) -> vec3<f32> {
-    // Generate a small pseudo-normal variation using trigonometric noise
-    let nx = sin(world_pos.x * detail_scale) * cos(world_pos.z * detail_scale * 1.3);
-    let ny = sin(world_pos.z * detail_scale * 0.9) * cos(world_pos.x * detail_scale * 1.1);
-    let nz = sin((world_pos.x + world_pos.z) * detail_scale * 0.7);
-    let n_perturb = vec3<f32>(nx, ny, nz) * strength;
+    // Use gradient of FBM to perturb normal in a stable, non-grid way
+    let p = world_pos.xz * detail_scale;
+    let g = noise_grad2(p);
+    // Build tangent basis with up approximation; for terrain N is already close to up
+    let T = normalize(cross(normal, vec3<f32>(0.0, 1.0, 0.0)) + vec3<f32>(1e-4, 0.0, 0.0));
+    let B = normalize(cross(normal, T));
+    let n_perturb = (T * g.x + B * g.y) * strength;
     return normalize(normal + n_perturb);
 }
 
@@ -4112,106 +4272,53 @@ fn get_water_level(world_pos: vec2<f32>, time: f32) -> f32 {
 
 // Determine biome type based on world position
 fn get_biome_type(world_pos: vec2<f32>) -> i32 {
-  let biome_scale = 0.02;
-  let biome_pos = world_pos * biome_scale;
-  
-  // Enhanced biome detection with three distinct regions
-  let primary_noise = sin(biome_pos.x * 3.0) * cos(biome_pos.y * 2.0);
-  let secondary_noise = sin(biome_pos.x * 1.5 + 100.0) * cos(biome_pos.y * 1.8 + 200.0);
-  let combined_noise = primary_noise * 0.7 + secondary_noise * 0.3;
-  
-  if (combined_noise > 0.3) {
-    return 1; // Desert
-  } else if (combined_noise < -0.2) {
-    return 2; // Dense Forest
-  } else {
-    return 0; // Grassland
-  }
+    let biome_scale = 0.01;
+    let biome_pos = world_pos * biome_scale;
+    // Smooth FBM determines regions; thresholds split into 3 biomes
+    let n = fbm2(biome_pos, 5, 2.0, 0.5) * 2.0 - 1.0; // [-1,1]
+    if (n > 0.25) {
+        return 1; // Desert
+    } else if (n < -0.25) {
+        return 2; // Dense Forest
+    } else {
+        return 0; // Grassland
+    }
 }
 
 // Generate biome-specific terrain height with enhanced variation
 fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
-  // Enhanced base terrain generation using multiple octaves of noise
-  let base_scale = 0.005;  // Larger terrain features
-  let detail_scale = 0.02;  // Medium detail
-  let fine_scale = 0.15;   // Fine surface detail
-  let micro_scale = 0.8;   // Micro surface variation
-  
-  // Base elevation noise with more dramatic height
-  let base_noise = sin(world_pos.x * base_scale) * cos(world_pos.y * base_scale);
-  let detail_noise = sin(world_pos.x * detail_scale + 1.0) * cos(world_pos.y * detail_scale + 1.5);
-  let fine_noise = sin(world_pos.x * fine_scale + 2.0) * cos(world_pos.y * fine_scale + 2.5);
-  let micro_noise = sin(world_pos.x * micro_scale + 3.0) * cos(world_pos.y * micro_scale + 3.5);
-  
-  // Combine noise layers with stronger influence
-  let combined_noise = base_noise * 0.5 + detail_noise * 0.25 + fine_noise * 0.15 + micro_noise * 0.1;
-  
-  if (biome_type == 0) { // Grassland - rolling hills with valleys
-    let grassland_height = combined_noise * 4.0; // Increased from 2.0 for more dramatic terrain
-    
-    // Enhanced river valleys with meandering patterns
-    let river_x = sin(world_pos.x * 0.006) * 0.8;
-    let river_z = cos(world_pos.y * 0.004) * 0.6;
-    let river_noise = sin((world_pos.x + river_z * 20.0) * 0.008) * cos((world_pos.y + river_x * 15.0) * 0.01);
-    let valley_factor = 1.0 - river_noise;
-    let valley_depth = valley_factor * valley_factor * valley_factor * -3.0; // Deeper valleys
-    
-    // Add gentle rolling hills
-    let hill_pattern = sin(world_pos.x * 0.01) * cos(world_pos.y * 0.012) * 2.0;
-    
-    return grassland_height + valley_depth + hill_pattern;
-    
-  } else if (biome_type == 1) { // Desert - dramatic mesas and dunes
-    let desert_height = combined_noise * 5.0; // Increased from 3.0 for more dramatic terrain
-    
-    // Enhanced sand dune patterns with wind erosion
-    let dune_scale = 0.02;
-    let dune_noise = sin(world_pos.x * dune_scale) + cos(world_pos.y * dune_scale * 0.6);
-    let wind_direction = sin(world_pos.x * 0.001) * cos(world_pos.y * 0.0008);
-    let dune_height = (dune_noise + wind_direction * 0.5) * 2.5; // Larger dunes
-    
-    // More dramatic rocky mesa formations
-    let mesa_scale = 0.003;
-    let mesa_noise = sin(world_pos.x * mesa_scale) * cos(world_pos.y * mesa_scale);
-    let mesa_height = step(0.2, mesa_noise) * 8.0; // Taller mesas (increased from 4.0)
-    
-    // Add canyon effects
-    let canyon_noise = sin(world_pos.x * 0.008) * cos(world_pos.y * 0.006);
-    let canyon_depth = step(0.6, abs(canyon_noise)) * -4.0;
-    
-    return desert_height + dune_height + mesa_height + canyon_depth;
-    
-  } else if (biome_type == 2) { // Dense Forest - undulating hills with valleys
-    let forest_height = combined_noise * 3.5; // Moderate height variation
-    
-    // Gentle undulating hills characteristic of forest terrain
-    let hill_scale = 0.008;
-    let hill_noise = sin(world_pos.x * hill_scale) * cos(world_pos.y * hill_scale * 0.7);
-    let rolling_hills = hill_noise * 2.8;
-    
-    // Forest clearings and depressions
-    let clearing_scale = 0.015;
-    let clearing_noise = sin(world_pos.x * clearing_scale + 50.0) * cos(world_pos.y * clearing_scale + 30.0);
-    let clearing_depression = step(0.4, clearing_noise) * -1.5;
-    
-    // Ancient forest mounds (raised areas around old growth)
-    let mound_scale = 0.004;
-    let mound_noise = sin(world_pos.x * mound_scale + 100.0) * cos(world_pos.y * mound_scale + 200.0);
-    let mound_height = step(0.3, mound_noise) * 1.8;
-    
-    // Stream valleys cutting through forest
-    let stream_x = sin(world_pos.x * 0.007) * 0.6;
-    let stream_z = cos(world_pos.y * 0.005) * 0.4;
-    let stream_noise = sin((world_pos.x + stream_z * 15.0) * 0.01) * cos((world_pos.y + stream_x * 12.0) * 0.009);
-    let stream_factor = 1.0 - stream_noise;
-    let stream_depth = stream_factor * stream_factor * -2.0;
-    
-    return forest_height + rolling_hills + clearing_depression + mound_height + stream_depth;
-    
-  } else {
-    // Enhanced default fallback
-    return combined_noise * 3.0; // Increased from 1.5
-  }
+    // Base FBM terrain: smooth features with octave detail
+    let p = world_pos * 0.01;
+    let base = (fbm2(p, 5, 2.0, 0.5) * 2.0 - 1.0) * 3.5; // [-3.5,3.5]
+    let detail = (fbm2(p * 3.0, 3, 2.2, 0.5) - 0.5) * 1.5;
+    var h = base + detail;
+
+    if (biome_type == 0) { // Grassland - rolling hills with river valleys
+        // River mask via ridge FBM to carve shallow valleys
+        let river = fbm_ridge2(p * 0.9, 3, 2.0, 0.6);
+        let valleys = (river - 0.6) * 6.0; // negative mostly
+        h = h + clamp(valleys, -3.5, 0.0);
+        return h;
+
+    } else if (biome_type == 1) { // Desert - dunes and mesas
+        // Dunes via directional ridged noise along wind axis
+        let wind_dir = normalize(vec2<f32>(0.8, 0.6));
+        let d = dot(p * 6.0, wind_dir);
+        let dunes = (fbm_ridge2(vec2<f32>(d, d * 0.3), 4, 2.0, 0.55) - 0.5) * 3.0;
+        // Mesas via thresholded ridge noise
+        let mesas = step(0.7, fbm_ridge2(p * 0.7, 4, 2.0, 0.5)) * 6.0;
+        h = h + dunes + mesas;
+        return h;
+
+    } else if (biome_type == 2) { // Dense Forest - softer undulations with mounds
+        let soft = fbm2(p * 0.7, 4, 2.0, 0.5) * 2.0 - 1.0;
+        let mounds = step(0.65, fbm2(p * 1.3 + 12.3, 4, 2.0, 0.5)) * 1.6;
+        h = h * 0.9 + soft * 2.2 + mounds;
+        return h;
+
+    } else {
+        return h;
+    }
 }
 
 @fragment
@@ -4549,15 +4656,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         let shadow = sample_shadow(in.world_pos, N, L);
         var color = ambient + (diffuse + specular) * NdotL * (1.0 - shadow) + emissive;
 
-        // Enhanced detail patterns applied as subtle modulation
-        // Replace checkerboard artifact with multi-octave hash noise
-        let p = in.world_pos.xz * 0.15;
-        let n1 = fract(sin(dot(p, vec2<f32>(127.1, 311.7)) + time * 0.11) * 43758.5453);
-        let n2 = fract(sin(dot(p * 2.03 + 17.0, vec2<f32>(269.5, 183.3)) + time * 0.07) * 43758.5453);
-        let n3 = fract(sin(dot(p * 4.01 + 31.0, vec2<f32>(12.9, 78.2)) + time * 0.05) * 43758.5453);
-        let n = (n1 * 0.5 + n2 * 0.3 + n3 * 0.2);
-        let noise_mod = (n - 0.5) * 0.06; // ~[-0.03, 0.03]
-        color = color * (1.0 + noise_mod);
+    // Remove crosshatch-like overlay modulation; rely on material detail mapping above
 
         // Exponential height fog with simple Rayleigh/Mie approximation (apply pre-tone-map)
         let cam_height = 5.0; // TODO: pass actual camera height
@@ -4630,13 +4729,27 @@ fn build_physics_world() -> Physics {
     let mut bodies = r3::RigidBodySet::new();
     let mut colliders = r3::ColliderSet::new();
     let gravity = nalgebra::Vector3::new(0.0, -9.81, 0.0);
-    // Large ground plane for extensive biome coverage
+    // Ground collider that matches the rendered terrain using a TriMesh
+    // Generate the same terrain data used for rendering
+    let (terrain_vertices, terrain_indices) = generate_terrain_mesh(TERRAIN_SIZE, TERRAIN_SCALE);
+    // Convert to rapier types
+    let mut points: Vec<nalgebra::Point3<f32>> = Vec::with_capacity(terrain_vertices.len());
+    for v in &terrain_vertices {
+        points.push(nalgebra::Point3::new(v[0], v[1], v[2]));
+    }
+    let mut indices: Vec<[u32; 3]> = Vec::with_capacity(terrain_indices.len() / 3);
+    for tri in terrain_indices.chunks_exact(3) {
+        indices.push([tri[0], tri[1], tri[2]]);
+    }
     let ground = r3::RigidBodyBuilder::fixed()
-        .translation(nalgebra::Vector3::new(0.0, -2.0, 0.0))
+        .translation(nalgebra::Vector3::new(0.0, 0.0, 0.0))
         .user_data(0)
         .build();
     let g_handle = bodies.insert(ground);
-    let g_col = r3::ColliderBuilder::cuboid(500.0, 0.5, 500.0).build(); // Much larger ground
+    let g_col = r3::ColliderBuilder::trimesh(points, indices)
+        .friction(0.9)
+        .restitution(0.1)
+        .build();
     colliders.insert_with_parent(g_col, g_handle, &mut bodies);
     // Stack of boxes
     for y in 0..5 {

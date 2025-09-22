@@ -1,0 +1,3 @@
+# Python dependencies for PBR texture generator and importer
+numpy>=1.26
+Pillow>=10.0
