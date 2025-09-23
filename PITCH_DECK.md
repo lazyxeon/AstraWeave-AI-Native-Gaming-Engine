@@ -1,6 +1,9 @@
+
 # AstraWeave: Executive Pitch Deck
 
 > **🎯 The first AI-native game engine: Where artificial intelligence becomes genuinely intelligent gameplay**
+
+> **2024 Status:** Production-ready core (Phase 4 complete: SDK ABI, CI, Cinematics, UI). All core systems build and pass CI. SDK C ABI, header generation, C harness, and semantic versioning gate are implemented and validated. Cinematics timeline/sequencer and UI timeline load/save are smoke-tested in CI.
 
 ---
 
@@ -81,10 +84,15 @@
 
 ## 📊 Proof Points
 
-### ✅ **Working Technology**
 
-| Component | Status | Capability |
-|-----------|---------|------------|
+### ✅ **Proof Points (2024)**
+
+| Component/Feature | Status | Capability |
+|-------------------|--------|------------|
+| **SDK ABI & C Harness** | ✅ Complete | Stable C ABI, auto-generated header, C/CMake harness in CI |
+| **Semantic Versioning Gate** | ✅ Complete | CI enforces SDK version compatibility |
+| **Cinematics Timeline & Sequencer** | ✅ Complete | Timeline, camera/audio/FX tracks, timeline load/save in UI, smoke-tested in CI |
+| **UI Integration** | ✅ Complete | Cinematics, timeline, and accessibility panels in egui-based UI |
 | **hello_companion** | ✅ Working | AI planning and validation |
 | **adaptive_boss** | ✅ Working | Multi-phase boss AI |
 | **physics_demo3d** | ✅ Working | 3D movement with climb/swim |

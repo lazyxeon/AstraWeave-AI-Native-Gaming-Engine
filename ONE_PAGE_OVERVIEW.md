@@ -30,13 +30,18 @@ AstraWeave:  AI Agents ← Tool Validation ← Engine Authority
 **🌍 Emergent Gameplay**: Complex behaviors from simple tool combinations  
 **🎭 Living Worlds**: Games that genuinely learn and evolve with players  
 
-## **📊 Proof Points**
 
-✅ **Core Components Build Successfully** (8-15 second build time)  
-✅ **AI Planning Demo Working** (hello_companion shows intelligent behavior)  
-✅ **Multiplayer Validation** (Server-authoritative AI synchronization)  
-✅ **Cross-Platform Support** (Linux, macOS, Windows verified)  
-✅ **Performance Target Met** (60Hz deterministic simulation)  
+## **📊 Proof Points (2024)**
+
+✅ **Production-Ready Core**: All core engine systems build and pass CI (8–15s build time)
+✅ **SDK ABI & C Harness**: Stable C ABI, header auto-generated, validated by C/CMake harness in CI (Linux/Windows)
+✅ **Semantic Versioning Gate**: CI enforces SDK version compatibility between Rust and C consumers
+✅ **Cinematics Timeline & Sequencer**: Timeline, camera, audio, FX tracks; timeline load/save in UI; smoke-tested in CI
+✅ **UI Integration**: Cinematics, timeline, and accessibility panels in egui-based UI; timeline load/save and playback
+✅ **AI Planning Demo**: `hello_companion` shows intelligent, validated AI planning (expected LOS panic)
+✅ **Multiplayer Validation**: Server-authoritative AI synchronization (core net/IPC crates build and pass tests)
+✅ **Cross-Platform Support**: Linux, macOS, Windows (CI-verified)
+✅ **Performance Target Met**: 60Hz deterministic simulation, ECS, and physics
 
 ## **💰 Business Model**
 
@@ -68,4 +73,4 @@ AstraWeave:  AI Agents ← Tool Validation ← Engine Authority
 **🎮 AstraWeave: Where artificial intelligence becomes genuinely intelligent gameplay**
 
 *Repository*: `github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine`  
-*License*: MIT • *Language*: Rust • *Status*: Production-ready core
+*License*: MIT • *Language*: Rust • *Status*: Production-ready core (Phase 4 complete: SDK ABI, CI, Cinematics, UI)

@@ -6,7 +6,10 @@
 
 ## Executive Overview
 
+
 **AstraWeave** represents a paradigm shift in game engine architecture. Unlike traditional engines where AI is retrofitted as an afterthought, AstraWeave implements the core AI loop (**Perception → Reasoning → Planning → Action**) directly into the simulation foundation. This creates a new category of games where AI agents are **first-class citizens** capable of emergent, adaptive, and genuinely intelligent behavior.
+
+**2024 Status:** Production-ready core (Phase 4 complete: SDK ABI, CI, Cinematics, UI). All core systems build and pass CI. SDK C ABI, header generation, C harness, and semantic versioning gate are implemented and validated. Cinematics timeline/sequencer and UI timeline load/save are smoke-tested in CI.
 
 ### The Problem We Solve
 
@@ -95,10 +98,15 @@ Platform:     Linux, macOS, Windows (console hardware planned)
 
 ## Market Validation & Proof Points
 
-### ✅ **Working Technology**
 
-**Current Status**: Production-ready core with 23+ working demos
+### ✅ **Proof Points (2024)**
 
+**Current Status**: Production-ready core (Phase 4 complete)
+
+- **SDK ABI & C Harness**: Stable C ABI, auto-generated header, validated by C/CMake harness in CI (Linux/Windows)
+- **Semantic Versioning Gate**: CI enforces SDK version compatibility between Rust and C consumers
+- **Cinematics Timeline & Sequencer**: Timeline, camera, audio, FX tracks; timeline load/save in UI; smoke-tested in CI
+- **UI Integration**: Cinematics, timeline, and accessibility panels in egui-based UI; timeline load/save and playback
 - **hello_companion**: Demonstrates AI planning and validation (✓ Working)
 - **adaptive_boss**: Multi-phase boss AI that adapts strategies (✓ Working)  
 - **physics_demo3d**: Full 3D character movement with climb/swim states (✓ Working)
