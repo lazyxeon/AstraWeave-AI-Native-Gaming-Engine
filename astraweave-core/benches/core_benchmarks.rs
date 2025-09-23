@@ -1,5 +1,6 @@
 use astraweave_core::{IVec2, Team, World};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 
 fn bench_world_creation(c: &mut Criterion) {
     c.bench_function("world_creation", |b| b.iter(|| black_box(World::new())));

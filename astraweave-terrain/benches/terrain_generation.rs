@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use astraweave_terrain::*;
+use std::hint::black_box;
 
 fn benchmark_heightmap_generation(c: &mut Criterion) {
     let config = NoiseConfig::default();

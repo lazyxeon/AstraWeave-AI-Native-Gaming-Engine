@@ -115,19 +115,20 @@ When adding new benchmarks:
 Example benchmark structure:
 
 ```rust
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use my_crate::MyStruct;
 
 fn bench_my_operation(c: &mut Criterion) {
-    c.bench_function("my_operation", |b| {
-        b.iter(|| {
-            // Setup
-            let data = MyStruct::new();
+   c.bench_function("my_operation", |b| {
+      b.iter(|| {
+         // Setup
+         let data = MyStruct::new();
             
-            // Benchmark this operation
-            black_box(data.my_operation());
-        })
-    });
+         // Benchmark this operation
+         black_box(data.my_operation());
+      })
+   });
 }
 
 criterion_group!(benches, bench_my_operation);

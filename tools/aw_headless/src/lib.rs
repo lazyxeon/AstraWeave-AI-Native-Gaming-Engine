@@ -125,6 +125,27 @@ pub fn wrap_fs_into_fullscreen(module_body: &str) -> String {
     format!("{}\nstruct VSOut {{ @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> }};\n@vertex fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {{ var p = array<vec2<f32>,3>(vec2<f32>(-1.0,-3.0), vec2<f32>(3.0,1.0), vec2<f32>(-1.0,1.0)); var o: VSOut; o.pos=vec4<f32>(p[vid],0.0,1.0); o.uv=(p[vid]+vec2<f32>(1.0,1.0))*0.5; return o; }}\n", module_body)
 }
 
+/// Encode linear [0,1] component to sRGB 0..255.
+pub fn srgb_encode_u8(x: f32) -> u8 {
+    let x = x.clamp(0.0, 1.0);
+    let srgb = if x <= 0.003_130_8 { 12.92 * x } else { 1.055 * x.powf(1.0 / 2.4) - 0.055 };
+    (srgb * 255.0 + 0.5).floor().clamp(0.0, 255.0) as u8
+}
+
+/// Compute absolute and average delta between two RGBA8 buffers of same size.
+pub fn image_delta(a: &[u8], b: &[u8]) -> (u8, f32) {
+    assert_eq!(a.len(), b.len());
+    let mut sum = 0u64;
+    let mut maxd = 0u8;
+    for i in 0..a.len() {
+        let d = a[i].abs_diff(b[i]);
+        sum += d as u64;
+        if d > maxd { maxd = d; }
+    }
+    let avg = (sum as f32) / (a.len() as f32);
+    (maxd, avg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -135,5 +156,32 @@ mod tests {
         let img = pollster::block_on(render_wgsl_to_image(&wgsl, 32, 16)).expect("render");
         assert_eq!(img.len(), 32*16*4);
         assert!(img.iter().any(|&b| b != 0));
+    }
+
+    #[test]
+    fn golden_gradient_matches_with_tolerance() {
+        let w = 64u32; let h = 32u32;
+        let fs = r#"@fragment fn fs_main(i: VSOut) -> @location(0) vec4<f32> { return vec4<f32>(i.uv, 0.0, 1.0); }"#;
+        let wgsl = wrap_fs_into_fullscreen(fs);
+        let img = pollster::block_on(render_wgsl_to_image(&wgsl, w, h)).expect("render");
+        // Build expected sRGB RGBA8 gradient
+        let mut exp = vec![0u8; (w*h*4) as usize];
+        for y in 0..h {
+            for x in 0..w {
+                let u = x as f32 / (w as f32 - 1.0);
+                let v = y as f32 / (h as f32 - 1.0);
+                let r = srgb_encode_u8(u);
+                let g = srgb_encode_u8(v);
+                let idx = ((y*w + x) * 4) as usize;
+                exp[idx+0] = r;
+                exp[idx+1] = g;
+                exp[idx+2] = 0;
+                exp[idx+3] = 255;
+            }
+        }
+        let (maxd, avg) = image_delta(&img, &exp);
+        // Allow tiny rounding/tile differences
+        assert!(maxd <= 3, "max delta {} too high", maxd);
+        assert!(avg <= 0.5, "avg delta {} too high", avg);
     }
 }
