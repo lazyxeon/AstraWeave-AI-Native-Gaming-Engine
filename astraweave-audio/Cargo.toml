@@ -14,3 +14,10 @@ rand = { workspace = true }
 glam = { workspace = true }
 rodio = { workspace = true }
 astraweave-gameplay = { path = "../astraweave-gameplay" }
+
+[features]
+mock_tts = ["dep:hound"]
+
+[dependencies.hound]
+version = "3"
+optional = true

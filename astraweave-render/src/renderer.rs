@@ -1,5 +1,6 @@
 use anyhow::Result;
 use glam::{vec3, Mat4};
+use glam::Vec4Swizzles;
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
@@ -57,7 +58,7 @@ struct MainLightUbo {
     view_proj0: mat4x4<f32>,
     view_proj1: mat4x4<f32>,
     splits: vec2<f32>,
-    _pad: vec2<f32>,
+    extras: vec2<f32>, // x: pcf_radius_px, y: depth_bias; z: slope_scale in skinned path extras.x reused; keep 2 vec2s for alignment
 };
 @group(2) @binding(0) var<uniform> uLight: MainLightUbo;
 @group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
@@ -159,11 +160,24 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let ndc = lp.xyz / lp.w;
         let uv = ndc.xy * 0.5 + vec2<f32>(0.5, 0.5);
         let depth = ndc.z;
-        let bias = max(0.0008 * (1.0 - dot(N, L)), 0.00015);
+    let slope = max(0.0, 1.0 - dot(N, L));
+    let base_bias = uLight.extras.y;
+    let bias = max(base_bias /* + slope_scale * slope */ , 0.00001);
         var shadow: f32 = 1.0;
         if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
             let layer = i32(select(1, 0, use_c0));
-            shadow = textureSampleCompare(shadow_tex, shadow_sampler, uv, layer, depth - bias);
+            // PCF 3x3 (scaled by pcf radius in texels from extras.x)
+            let dims = vec2<f32>(textureDimensions(shadow_tex).xy);
+            let texel = 1.0 / dims;
+            let r = max(0.0, uLight.extras.x);
+            var sum = 0.0;
+            for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
+                for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
+                    let o = vec2<f32>(f32(dx), f32(dy)) * texel * r;
+                    sum = sum + textureSampleCompare(shadow_tex, shadow_sampler, uv + o, layer, depth - bias);
+                }
+            }
+            shadow = sum / 9.0;
         }
         // Optional debug visualization: use uMaterial._pad.x > 0.5 to tint by cascade
         if (uMaterial._pad.x > 0.5) {
@@ -258,6 +272,11 @@ pub struct Renderer {
     // Tunable cascade ortho extents (half-width/height)
     cascade0_extent: f32,
     cascade1_extent: f32,
+    // CSM tuning
+    cascade_lambda: f32, // split distribution (0..1)
+    shadow_pcf_radius_px: f32,
+    shadow_depth_bias: f32,
+    shadow_slope_scale: f32,
 
     // Simple material texture (albedo)
     albedo_tex: wgpu::Texture,
@@ -909,7 +928,7 @@ struct Camera { view_proj: mat4x4<f32>, light_dir: vec3<f32>, _pad: f32 };
 struct MaterialUbo { base_color: vec4<f32>, metallic: f32, roughness: f32, _pad: vec2<f32> };
 @group(1) @binding(0) var<uniform> uMaterial: MaterialUbo;
 
-struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, splits: vec2<f32>, _pad: vec2<f32> };
+struct MainLightUbo { view_proj0: mat4x4<f32>, view_proj1: mat4x4<f32>, splits: vec2<f32>, extras: vec2<f32> };
 @group(2) @binding(0) var<uniform> uLight: MainLightUbo;
 @group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
 @group(2) @binding(2) var shadow_sampler: sampler_comparison;
@@ -1018,11 +1037,22 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let ndc = lp.xyz / lp.w;
     let uv = ndc.xy * 0.5 + vec2<f32>(0.5, 0.5);
     let depth = ndc.z;
-    let bias = max(0.0008 * (1.0 - dot(N, L)), 0.00015);
+    let slope = max(0.0, 1.0 - dot(N, L));
+    let base_bias = uLight.extras.y;
+    let bias = max(base_bias /* + slope_scale * slope */ , 0.00001);
     var shadow: f32 = 1.0;
     if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
         let layer = i32(select(1, 0, use_c0));
-        shadow = textureSampleCompare(shadow_tex, shadow_sampler, uv, layer, depth - bias);
+        let dims = vec2<f32>(textureDimensions(shadow_tex).xy);
+        let texel = 1.0 / dims;
+        var sum = 0.0;
+        for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
+            for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
+                let o = vec2<f32>(f32(dx), f32(dy)) * texel * max(0.0, uLight.extras.x);
+                sum = sum + textureSampleCompare(shadow_tex, shadow_sampler, uv + o, layer, depth - bias);
+            }
+        }
+        shadow = sum / 9.0;
     }
     let lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.02;
     return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
@@ -1148,6 +1178,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             split1: 120.0,
             cascade0_extent: 40.0,
             cascade1_extent: 80.0,
+            cascade_lambda: 0.5,
+            shadow_pcf_radius_px: 1.0,
+            shadow_depth_bias: 0.0006,
+            shadow_slope_scale: 0.002,
         })
     }
 
@@ -1188,27 +1222,45 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.camera_ubo.light_dir_pad = [light_dir.x, light_dir.y, light_dir.z, 0.0];
         self.queue
             .write_buffer(&self.camera_buf, 0, bytemuck::bytes_of(&self.camera_ubo));
-        // Update cascaded light view-proj for shadow mapping (very simple splits by distance to origin)
+        // Compute splits from camera frustum with lambda blend
+        let n = camera.znear.max(0.01);
+        let f = camera.zfar.max(n + 0.1);
+        let c = 2.0; // cascades count (fixed to 2)
+        let i = 1.0f32; // boundary between 0 and 1
+        let u = n + (f - n) * (i / c);
+        let l = n * (f / n).powf(i / c);
+        let lambda = self.cascade_lambda.clamp(0.0, 1.0);
+        let split = l * lambda + u * (1.0 - lambda);
+        self.split0 = split;
+        self.split1 = f;
+
+        // Build frustum corners per range in world space
+        let frustum0 = frustum_corners_ws(camera, n, self.split0);
+        let frustum1 = frustum_corners_ws(camera, self.split0, f);
+        // Build a light view looking towards the cascade centers
         let up = glam::Vec3::Y;
-        let light_pos = -light_dir * 80.0; // position light looking at origin
-        let view = glam::Mat4::look_to_rh(light_pos, light_dir, up);
-        // Two cascades: tighter for near, wider for far (configurable extents)
-        let e0 = self.cascade0_extent.max(1.0);
-        let e1 = self.cascade1_extent.max(e0 + 1.0);
-        let proj0 = glam::Mat4::orthographic_rh(-e0, e0, -e0, e0, 0.1, 120.0);
-        let proj1 = glam::Mat4::orthographic_rh(-e1, e1, -e1, e1, 0.1, 220.0);
-        self.cascade0 = proj0 * view;
-        self.cascade1 = proj1 * view;
-        // splits retained as prior configured values
-        // Pack data for main pass buffer: [mat0, mat1, vec2(splits), vec2(pad)]
+        let center0 = frustum_center(&frustum0);
+        let center1 = frustum_center(&frustum1);
+        let light_dist = 80.0f32;
+        let view0 = glam::Mat4::look_to_rh(center0 - light_dir * light_dist, light_dir, up);
+        let view1 = glam::Mat4::look_to_rh(center1 - light_dir * light_dist, light_dir, up);
+        // Fit orthographic bounds to cascade frusta in light space
+        let (min0, max0) = aabb_in_view_space(&view0, &frustum0);
+        let (min1, max1) = aabb_in_view_space(&view1, &frustum1);
+        let margin = 5.0f32;
+        let proj0 = glam::Mat4::orthographic_rh(min0.x - margin, max0.x + margin, min0.y - margin, max0.y + margin, (-max0.z + 0.1).max(0.1), (-min0.z + margin + 0.1).max(1.0));
+        let proj1 = glam::Mat4::orthographic_rh(min1.x - margin, max1.x + margin, min1.y - margin, max1.y + margin, (-max1.z + 0.1).max(0.1), (-min1.z + margin + 0.1).max(1.0));
+        self.cascade0 = proj0 * view0;
+        self.cascade1 = proj1 * view1;
+    // Pack data for main pass buffer: [mat0, mat1, vec2(splits), vec2(extras)]
         let mut data: Vec<f32> = Vec::with_capacity(36);
         data.extend_from_slice(&self.cascade0.to_cols_array());
         data.extend_from_slice(&self.cascade1.to_cols_array());
         data.push(self.split0);
         data.push(self.split1);
-        // pad to 4 floats
-        data.push(0.0);
-        data.push(0.0);
+    // extras: pack pcf radius in x, depth_bias in y
+    data.push(self.shadow_pcf_radius_px);
+        data.push(self.shadow_depth_bias);
         self.queue.write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
     }
 
@@ -1220,6 +1272,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     pub fn set_cascade_extents(&mut self, extent0: f32, extent1: f32) {
         self.cascade0_extent = extent0.max(1.0);
         self.cascade1_extent = extent1.max(self.cascade0_extent + 1.0);
+    }
+
+    /// Controls the split distribution between uniform (0) and logarithmic (1)
+    pub fn set_cascade_lambda(&mut self, lambda: f32) { self.cascade_lambda = lambda.clamp(0.0, 1.0); }
+
+    /// Sets shadow filtering and bias values. radius is in texels for 3x3 PCF when >=1.
+    pub fn set_shadow_filter(&mut self, radius_px: f32, depth_bias: f32, slope_scale: f32) {
+        self.shadow_pcf_radius_px = radius_px.max(0.0);
+        self.shadow_depth_bias = depth_bias.max(0.0);
+        self.shadow_slope_scale = slope_scale.max(0.0);
     }
 
     pub fn set_material_params(&mut self, base_color: [f32;4], metallic: f32, roughness: f32) {
@@ -1421,8 +1483,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 data.extend_from_slice(&self.cascade1.to_cols_array());
                 data.push(self.split0);
                 data.push(self.split1);
-                data.push(0.0);
-                data.push(0.0);
+                data.push(self.shadow_pcf_radius_px);
+                data.push(self.shadow_depth_bias);
                 self.queue.write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
             }
 
@@ -1586,8 +1648,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             data.extend_from_slice(&self.cascade1.to_cols_array());
             data.push(self.split0);
             data.push(self.split1);
-            data.push(0.0);
-            data.push(0.0);
+            data.push(self.shadow_pcf_radius_px);
+            data.push(self.shadow_depth_bias);
             self.queue.write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
         }
 
@@ -1901,4 +1963,45 @@ impl Renderer {
         for m in mats { data.extend_from_slice(&m.to_cols_array()); }
         self.queue.write_buffer(&self.skin_palette_buf, 0, bytemuck::cast_slice(&data));
     }
+}
+
+// --- CSM utilities ---
+fn frustum_corners_ws(cam: &crate::camera::Camera, near: f32, far: f32) -> [glam::Vec3; 8] {
+    let dir = crate::camera::Camera::dir(cam.yaw, cam.pitch);
+    let right = dir.cross(glam::Vec3::Y).normalize();
+    let up = glam::Vec3::Y;
+    let h_near = (cam.fovy * 0.5).tan() * near;
+    let w_near = h_near * cam.aspect.max(0.01);
+    let h_far = (cam.fovy * 0.5).tan() * far;
+    let w_far = h_far * cam.aspect.max(0.01);
+    let c_near = cam.position + dir * near;
+    let c_far = cam.position + dir * far;
+    [
+        c_near + up * h_near - right * w_near, // near TL
+        c_near + up * h_near + right * w_near, // near TR
+        c_near - up * h_near - right * w_near, // near BL
+        c_near - up * h_near + right * w_near, // near BR
+        c_far + up * h_far - right * w_far,    // far TL
+        c_far + up * h_far + right * w_far,    // far TR
+        c_far - up * h_far - right * w_far,    // far BL
+        c_far - up * h_far + right * w_far,    // far BR
+    ]
+}
+
+fn frustum_center(corners: &[glam::Vec3; 8]) -> glam::Vec3 {
+    let mut acc = glam::Vec3::ZERO;
+    for c in corners.iter() { acc += *c; }
+    acc / 8.0
+}
+
+fn aabb_in_view_space(view: &glam::Mat4, corners_ws: &[glam::Vec3; 8]) -> (glam::Vec3, glam::Vec3) {
+    let mut min = glam::Vec3::splat(f32::INFINITY);
+    let mut max = glam::Vec3::splat(f32::NEG_INFINITY);
+    for &c in corners_ws.iter() {
+        let v = *view * glam::Vec4::new(c.x, c.y, c.z, 1.0);
+        let p = v.xyz();
+        min = min.min(p);
+        max = max.max(p);
+    }
+    (min, max)
 }

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use astraweave_audio::{AudioEngine, DialoguePlayer, VoiceBank};
+use astraweave_audio::{AudioEngine, DialoguePlayer, VoiceBank, SimpleSineTts};
 use astraweave_gameplay::dialogue::{Dialogue, DialogueState, Line, Node, Choice};
 
 fn main() -> Result<()> {
@@ -14,10 +14,12 @@ fn main() -> Result<()> {
     };
     let mut st = DialogueState::new(&dlg);
 
-    // Audio engine and a blank voice bank (will fall back to beeps)
+    // Audio engine and a voice bank with a TTS-capable speaker (mock)
     let mut audio = AudioEngine::new()?;
     audio.set_master_volume(1.0);
-    let bank = VoiceBank { speakers: Default::default() };
+    let mut speakers = std::collections::HashMap::new();
+    speakers.insert("ECHO".to_string(), astraweave_audio::VoiceSpec{ folder: "assets/voices/ECHO".into(), files: vec![], tts_voice: Some("echo_en".into())});
+    let bank = VoiceBank { speakers };
 
     let mut subtitles = |speaker: String, text: String| {
         println!("{}: {}", speaker, text);
@@ -25,7 +27,7 @@ fn main() -> Result<()> {
     let mut player = DialoguePlayer {
         audio: &mut audio,
         bank: &bank,
-        tts: None,
+    tts: Some(&SimpleSineTts::default()),
         overrides: None,
         subtitle_out: Some(&mut subtitles),
     };
