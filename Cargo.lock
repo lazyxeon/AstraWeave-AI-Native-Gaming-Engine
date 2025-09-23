@@ -435,6 +435,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-dialogue"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "astraweave-director"
 version = "0.1.0"
 dependencies = [
@@ -583,6 +590,13 @@ dependencies = [
  "glam",
  "rand 0.9.2",
  "rapier3d",
+]
+
+[[package]]
+name = "astraweave-quests"
+version = "0.1.0"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

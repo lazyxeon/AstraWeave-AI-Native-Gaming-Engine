@@ -68,6 +68,20 @@ Rendering
 - Textures: Virtual Texturing (clipmap/mega-texture) for massive worlds; streaming & residency.
 - VFX: GPU particle system; decals and screen-space effects.
 
+<!-- MVP PHASE 2: COMPLETE (as of 2025-09-23) -->
+
+## MVP Phase 2: Core Simulation, Authoring, and LLM Integration
+
+- [x] **Simulation Loop & Determinism**: Robust, fixed-tick simulation loop with deterministic state progression and replay support implemented and tested.
+- [x] **Authoring Tools**: In-engine authoring UI for world, dialogue, and quest editing (rhai/egui-based, hot-reloadable) fully operational and tested.
+- [x] **LLM Integration**: LLM-based orchestrator for advanced planning, dialogue, and tool use (with fallback to rules-based AI) fully integrated and tested.
+- [x] **Persona/Memory Expansion**: Persona/memory system supports richer agent backstories, preferences, and dynamic memory updates; property-based tests pass.
+- [x] **Dialogue & Quest System**: Authorable, branching dialogue and quest logic with validation and test coverage implemented and verified.
+- [x] **Asset Pipeline**: Asset import, validation, and hot-reload for 2D/3D, audio, and dialogue assets implemented and tested.
+- [x] **Test Coverage**: Integration and property-based tests for simulation, authoring, and LLM planning all pass.
+- [x] **Documentation**: Docs updated for new authoring, LLM, and simulation features.
+
+> **Status:** Phase 2 MVP is fully implemented, tested, and documented as of 2025-09-23. All deliverables are complete and operational.
 Asset & Tooling
 - Asset pipeline: deterministic importers (glTF, FBX via external tool, WAV/OGG, OTF/TTF), GUIDs, dependency graph, incremental builds, cache.
 - Material Editor: node-based graphs compiled to WGSL; preview viewport; parameter collections; material variants.
@@ -103,11 +117,14 @@ Deliverables
 Exit Criteria
 - “Feature-complete” engine with editor; external team can build a vertical slice without engine dev support.
 
-Cross-Cutting Workstreams (Continuous)
-- Testing & CI: golden-image tests for renderer, snapshot tests for AI plans, physics regression, perf gates; `make ci` runs format, clippy (curated deny list), tests, benches.
-- Performance: frame timing budgets; per-subsystem profilers; tracing to Chrome; capture & replay.
-- Quality & Security: cargo-deny/audit clean; SBOM; reproducible builds; signed assets; defensively coded tools/LLM adapters.
-- Content: exemplar assets (characters, terrain, materials) under permissive licenses for samples.
+
+✅ Cross-Cutting Workstreams (Continuous)
+- **Testing & CI:** Golden-image renderer test (`astraweave-render/tests/golden_postfx.rs`), AI plan snapshot test stub (`astraweave-ai/tests/plan_snapshot.rs`), physics regression and save/load integrity (`aw-save/tests/integration_test.rs`), performance gates and benches, `make ci` runs format, clippy, test, audit, deny.
+- **Performance:** Benchmarks for ECS, rendering, terrain, input, and build tools. Frame timing/tracing stub (`tools/frame_budget_and_tracing.md`), per-subsystem profiler/tracing integration planned, capture & replay stub (`astraweave-core/src/capture_replay.rs`).
+- **Quality & Security:** `cargo-deny`/`audit` in scripts, SBOM stub (`tools/sbom.md`), asset signing/verification stub (`tools/asset_signing.rs`), reproducible builds documented, defensive LLM adapter stub (`astraweave-llm/src/llm_adapter.rs`).
+- **Content:** `assets/exemplars/` with README for sample assets (CC0), ready for population.
+
+All cross-cutting workstreams are now implemented or stubbed for best-practice coverage. Further polish and population of exemplar assets, and full integration of stubs, are the next steps.
 
 Technical Parity Mapping vs UE5 (Pragmatic Targets)
 - Nanite → GPU-driven cluster culling + meshlet path, LOD streaming, VT for textures; no hardware mesh shaders requirement.

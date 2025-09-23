@@ -1,3 +1,33 @@
+#[derive(Clone, Serialize, Deserialize, Default)]
+struct DialogueDoc {
+    title: String,
+    nodes: Vec<DialogueNode>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Default)]
+struct DialogueNode {
+    id: String,
+    text: String,
+    responses: Vec<DialogueResponse>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Default)]
+struct DialogueResponse {
+    text: String,
+    next_id: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Default)]
+struct QuestDoc {
+    title: String,
+    steps: Vec<QuestStep>,
+}
+
+#[derive(Clone, Serialize, Deserialize, Default)]
+struct QuestStep {
+    description: String,
+    completed: bool,
+}
 use anyhow::Result;
 use eframe::egui;
 use serde::{Deserialize, Serialize};
@@ -109,6 +139,8 @@ struct EditorApp {
     level: LevelDoc,
     status: String,
     mat_doc: MaterialLiveDoc,
+    dialogue: DialogueDoc,
+    quest: QuestDoc,
 }
 
 impl Default for EditorApp {
@@ -127,6 +159,18 @@ impl Default for EditorApp {
             },
             status: "Ready".into(),
             mat_doc: MaterialLiveDoc{ base_color:[1.0,1.0,1.0,1.0], metallic:0.1, roughness:0.6, texture_path: None },
+            dialogue: DialogueDoc {
+                title: "Sample Dialogue".into(),
+                nodes: vec![DialogueNode {
+                    id: "start".into(),
+                    text: "Hello, traveler!".into(),
+                    responses: vec![DialogueResponse { text: "Hi!".into(), next_id: None }],
+                }],
+            },
+            quest: QuestDoc {
+                title: "Sample Quest".into(),
+                steps: vec![QuestStep { description: "Talk to the elder.".into(), completed: false }],
+            },
         }
     }
 }
@@ -224,6 +268,73 @@ impl eframe::App for EditorApp {
             ui.heading("Canvas (schematic)");
             ui.label("→ Here you can render a simple 2.5D grid preview later.");
             ui.separator();
+
+            ui.collapsing("Dialogue Editor", |ui| {
+                ui.text_edit_singleline(&mut self.dialogue.title);
+                for node in &mut self.dialogue.nodes {
+                    ui.group(|ui| {
+                        ui.text_edit_singleline(&mut node.id);
+                        ui.text_edit_multiline(&mut node.text);
+                        for resp in &mut node.responses {
+                            ui.horizontal(|ui| {
+                                ui.text_edit_singleline(&mut resp.text);
+                                ui.text_edit_singleline(resp.next_id.get_or_insert(String::new()));
+                            });
+                        }
+                        if ui.button("Add Response").clicked() {
+                            node.responses.push(DialogueResponse::default());
+                        }
+                    });
+                }
+                if ui.button("Add Node").clicked() {
+                    self.dialogue.nodes.push(DialogueNode::default());
+                }
+                if ui.button("Save Dialogue").clicked() {
+                    let dir = self.content_root.join("dialogue");
+                    let _ = fs::create_dir_all(&dir);
+                    let p = dir.join(format!("{}.dialogue.toml", self.dialogue.title.replace(' ', "_").to_lowercase()));
+                    match toml::to_string_pretty(&self.dialogue) {
+                        Ok(txt) => {
+                            if let Err(e) = fs::write(&p, txt) {
+                                self.status = format!("Save dialogue failed: {e}");
+                            } else {
+                                let _ = fs::write(self.content_root.join("reload.signal"), Uuid::new_v4().to_string());
+                                self.status = format!("Saved dialogue to {:?}", p);
+                            }
+                        }
+                        Err(e) => self.status = format!("Serialize dialogue failed: {e}"),
+                    }
+                }
+            });
+
+            ui.collapsing("Quest Editor", |ui| {
+                ui.text_edit_singleline(&mut self.quest.title);
+                for step in &mut self.quest.steps {
+                    ui.horizontal(|ui| {
+                        ui.text_edit_singleline(&mut step.description);
+                        ui.checkbox(&mut step.completed, "Completed");
+                    });
+                }
+                if ui.button("Add Step").clicked() {
+                    self.quest.steps.push(QuestStep::default());
+                }
+                if ui.button("Save Quest").clicked() {
+                    let dir = self.content_root.join("quests");
+                    let _ = fs::create_dir_all(&dir);
+                    let p = dir.join(format!("{}.quest.toml", self.quest.title.replace(' ', "_").to_lowercase()));
+                    match toml::to_string_pretty(&self.quest) {
+                        Ok(txt) => {
+                            if let Err(e) = fs::write(&p, txt) {
+                                self.status = format!("Save quest failed: {e}");
+                            } else {
+                                let _ = fs::write(self.content_root.join("reload.signal"), Uuid::new_v4().to_string());
+                                self.status = format!("Saved quest to {:?}", p);
+                            }
+                        }
+                        Err(e) => self.status = format!("Serialize quest failed: {e}"),
+                    }
+                }
+            });
             ui.collapsing("Material Inspector (Live)", |ui| {
                 ui.label("Adjust PBR params and write to assets/material_live.json");
                 ui.add(egui::Slider::new(&mut self.mat_doc.base_color[0], 0.0..=1.0).text("Base R"));

@@ -1,3 +1,5 @@
+pub mod capture_replay;
+pub use capture_replay::*;
 pub mod perception;
 pub mod schema;
 pub mod sim;
