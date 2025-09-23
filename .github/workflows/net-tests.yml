@@ -1,0 +1,17 @@
+name: Net Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  net-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+      - name: Unit tests (astraweave-net)
+        run: cargo test -p astraweave-net --all-features --verbose
