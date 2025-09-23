@@ -45,12 +45,15 @@
 - **Server-authoritative multiplayer** with AI agent synchronization
 - **Rapid prototyping** of AI-driven game concepts
 
+
 ### Why AstraWeave Matters
 
 🎯 **Market Opportunity**: Game engines ($2.8B market) lack true AI innovation  
 🚀 **First-Mover Advantage**: Only production-ready AI-native engine  
 🧠 **Technical Breakthrough**: Validation-first architecture prevents AI cheating  
-⚡ **Developer-Ready**: 23+ working examples with comprehensive documentation  
+⚡ **Developer-Ready**: 23+ working examples, production-ready core, and comprehensive documentation  
+🛠️ **SDK ABI & CI**: Stable C ABI, auto-generated headers, C harness, and semantic versioning gate in CI  
+🎬 **Cinematics & UI**: Timeline/sequencer, camera/audio/FX tracks, timeline load/save in UI, smoke-tested in CI  
 🌍 **Transformational Potential**: Enables entirely new categories of gaming experiences  
 
 ---
@@ -188,12 +191,16 @@ Every AI action is validated by the engine:
 
 AstraWeave includes 20+ examples demonstrating engine capabilities. Note that this is an active development project, so some examples may have compilation issues due to API evolution.
 
-### Core AI Examples (Working)
+
+### Core AI & Engine Examples (Working)
 ```bash
 # Basic AI companion with planning and validation  
 cargo run -p hello_companion --release
 # Demonstrates: AI perception, planning, tool validation
 # Expected: Shows AI plan generation, then panics on LOS logic (expected behavior)
+
+# Cinematics timeline/sequencer (timeline load/save, camera/audio/FX tracks)
+# (UI panel: open Cinematics window in working UI examples)
 
 # Adaptive boss with multi-phase behavior
 cargo run -p adaptive_boss --release
@@ -202,9 +209,10 @@ cargo run -p adaptive_boss --release
 cargo run -p companion_profile --release
 ```
 
+
 ### Working Core Engine Builds
 ```bash
-# Build stable core components
+# Build stable core components (Phase 4: SDK ABI, CI, Cinematics, UI)
 cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics \
             -p astraweave-nav -p astraweave-render -p hello_companion
 
@@ -212,13 +220,14 @@ cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics \
 cargo test -p astraweave-input
 ```
 
+
 ### Development Notes
 > **Note**: Some examples have compilation issues due to API evolution:
 > - Graphics examples (`visual_3d`, `ui_controls_demo`) have egui/winit API mismatches
 > - Some gameplay demos need dependency updates (`serde_json` missing)
 > - `astraweave-author` has rhai sync/send trait issues
-> 
-> Focus on the working core components and `hello_companion` for understanding the engine architecture.
+>
+> **Phase 4 Complete:** SDK ABI, C harness, CI semver gate, cinematics timeline/sequencer, and UI timeline load/save are all implemented and validated. Focus on the working core components and `hello_companion` for understanding the engine architecture.
 
 ---
 
@@ -239,7 +248,8 @@ cargo test -p astraweave-input
 
 ---
 
-## Platform Support
+
+## Platform Support & Status
 
 ### Tested Platforms
 - **Linux**: Ubuntu 20.04+, Arch Linux, Fedora
@@ -252,16 +262,18 @@ cargo test -p astraweave-input
 - **Metal** (macOS/iOS)
 - **WebGPU** (planned)
 
+
 ### Dependencies
 - **wgpu** 0.20 - Cross-platform GPU rendering
 - **Rapier3D** 0.22 - Physics simulation  
 - **rodio** 0.17 - Audio playback
-- **rhai** 1.17 - Scripting runtime
+- **rhai** 1.22 - Scripting runtime (AI scripting, some crates excluded)
 - **egui** 0.28 - Immediate-mode UI
 
 ---
 
-## 🗂️ Directory Structure
+
+## 🗂️ Directory Structure & Key Features
 
 ```
 astraweave-core/        # ECS world, validation, intent system
@@ -282,15 +294,22 @@ AI Engine/              # Detailed AstraWeave engine specifications
 
 ---
 
-## 🔒 Security & Quality Assurance
 
-AstraWeave implements enterprise-grade security and quality practices:
+## 🔒 Security, CI & Quality Assurance
 
-### Security Features
+
+AstraWeave implements enterprise-grade security, CI, and quality practices:
+
+
+### Security & CI Features
 - **Dependency Scanning**: Automated vulnerability detection with cargo-audit
 - **License Compliance**: Full dependency license verification
 - **Static Analysis**: Advanced CodeQL security analysis
 - **Deterministic Builds**: Reproducible compilation across platforms
+- **SDK ABI Validation**: C ABI, header generation, and C harness tested in CI (Linux/Windows)
+- **Semantic Versioning Gate**: CI enforces SDK version compatibility
+- **Cinematics Smoke Test**: Timeline/sequencer tested in CI
+
 
 ### Quality Assurance
 - **Cross-Platform CI**: Automated testing on Linux, Windows, macOS
@@ -298,12 +317,14 @@ AstraWeave implements enterprise-grade security and quality practices:
 - **Code Quality**: Enforced formatting with rustfmt and clippy analysis
 - **Documentation**: Automatically generated API documentation
 
+
 ### Compliance
 - **OpenSSF Scorecard**: Continuous security posture monitoring
 - **MIT License**: Permissive open-source licensing
 - **SECURITY.md**: Clear vulnerability reporting process
 
 ---
+
 
 ## Getting Involved
 
@@ -349,5 +370,8 @@ AstraWeave builds on the incredible Rust gamedev ecosystem:
 **[Documentation](docs/) • [Docs Index](docs/README-INDEX.md) • [Examples](examples/) • [Issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues) • [Discussions](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/discussions)**
 
 *Building the future of AI-native gaming*
+
+<br>
+<b>Status: Production-ready core (Phase 4 complete: SDK ABI, CI, Cinematics, UI)</b>
 
 </div>
