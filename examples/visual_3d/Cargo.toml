@@ -17,3 +17,6 @@ pollster = { workspace = true }
 image = "0.25"
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-render = { path = "../../astraweave-render" }
+egui = { workspace = true }
+egui-winit = { workspace = true }
+egui-wgpu = { workspace = true }

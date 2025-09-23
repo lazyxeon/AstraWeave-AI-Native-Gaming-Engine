@@ -95,6 +95,8 @@ pub struct Renderer {
     overlay: crate::overlay::OverlayFx,
     pub overlay_params: crate::overlay::OverlayParams,
     pub weather: crate::effects::WeatherFx,
+    // Environment & sky
+    sky: crate::environment::SkyRenderer,
 }
 
 impl Renderer {
@@ -230,7 +232,7 @@ impl Renderer {
             multiview: None,
         });
 
-        let overlay = crate::overlay::OverlayFx::new(&device, format);
+    let overlay = crate::overlay::OverlayFx::new(&device, format);
 
         let overlay_params = crate::overlay::OverlayParams {
             fade: 0.0,
@@ -277,8 +279,12 @@ impl Renderer {
             mapped_at_creation: false,
         });
 
-        // after instance_buf creation
+    // after instance_buf creation
         let weather = crate::effects::WeatherFx::new(&device, 800);
+
+    // Sky/environment
+    let mut sky = crate::environment::SkyRenderer::new(Default::default());
+    sky.init_gpu_resources(&device, format)?;
 
         Ok(Self {
             surface,
@@ -301,6 +307,7 @@ impl Renderer {
             overlay,
             overlay_params,
             weather,
+            sky,
         })
     }
 
@@ -316,6 +323,9 @@ impl Renderer {
 
     pub fn update_camera(&mut self, camera: &Camera) {
         self.camera_ubo.view_proj = camera.vp().to_cols_array_2d();
+        // Update light dir from time-of-day system (simple linkage for Phase 0)
+        let light_dir = self.sky.time_of_day().get_light_direction();
+        self.camera_ubo.light_dir_pad = [light_dir.x, light_dir.y, light_dir.z, 0.0];
         self.queue
             .write_buffer(&self.camera_buf, 0, bytemuck::bytes_of(&self.camera_ubo));
     }
@@ -346,6 +356,23 @@ impl Renderer {
         self.weather.update(&self.queue, dt);
     }
 
+    pub fn tick_environment(&mut self, dt: f32) {
+        // Advance time-of-day; derive sky params
+        self.sky.update(dt);
+    }
+
+    pub fn time_of_day_mut(&mut self) -> &mut crate::environment::TimeOfDay {
+        self.sky.time_of_day_mut()
+    }
+
+    pub fn sky_config(&self) -> crate::environment::SkyConfig {
+        self.sky.config().clone()
+    }
+
+    pub fn set_sky_config(&mut self, cfg: crate::environment::SkyConfig) {
+        self.sky.set_config(cfg);
+    }
+
     pub fn render(&mut self) -> Result<()> {
         let frame = self.surface.get_current_texture()?;
         let view = frame
@@ -373,6 +400,9 @@ impl Renderer {
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
+        // Render sky first
+        self.sky.render(&mut enc, &view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main pass"),
@@ -380,12 +410,8 @@ impl Renderer {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.05,
-                            g: 0.07,
-                            b: 0.10,
-                            a: 1.0,
-                        }),
+                        // Sky already wrote color; load and draw geometry on top
+                        load: wgpu::LoadOp::Load,
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -431,6 +457,68 @@ impl Renderer {
         Ok(())
     }
 
+    pub fn draw_into(&mut self, view: &wgpu::TextureView, enc: &mut wgpu::CommandEncoder) -> Result<()> {
+        // Sky
+        self.sky.render(enc, view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+
+        // Plane instance buffer
+        let plane_scale = glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
+        let plane_inst = Instance {
+            transform: plane_scale,
+            color: [0.1, 0.12, 0.14, 1.0],
+        }
+        .raw();
+        let plane_buf = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("plane inst"),
+                contents: bytemuck::bytes_of(&plane_inst),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        // Main pass (load color written by sky)
+        let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("main pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &self.depth.view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+
+        rp.set_pipeline(&self.pipeline);
+        rp.set_bind_group(0, &self.camera_bind_group, &[]);
+        // Ground plane
+        rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
+        rp.set_index_buffer(self.mesh_plane.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+        rp.set_vertex_buffer(1, plane_buf.slice(..));
+        rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
+        // Cubes
+        rp.set_vertex_buffer(0, self.mesh_cube.vertex_buf.slice(..));
+        rp.set_index_buffer(self.mesh_cube.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+        rp.set_vertex_buffer(1, self.instance_buf.slice(..));
+        let inst_count = self.instances.len() as u32;
+        if inst_count > 0 {
+            rp.draw_indexed(0..self.mesh_cube.index_count, 0, 0..inst_count);
+        }
+        drop(rp);
+
+        Ok(())
+    }
+
     pub fn surface_size(&self) -> (u32, u32) {
         (self.config.width, self.config.height)
     }
@@ -463,6 +551,10 @@ impl Renderer {
                 label: Some("encoder"),
             });
 
+        // First render the 3D scene into the frame
+        self.draw_into(&view, &mut enc)?;
+
+        // Then allow caller to composite additional passes (e.g., egui)
         f(
             &view,
             &mut enc,
