@@ -95,6 +95,8 @@ pub enum EngineError {
     LosBlocked,
     #[error("path not found")]
     NoPath,
+    #[error("resource missing: {0}")]
+    Resource(String),
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

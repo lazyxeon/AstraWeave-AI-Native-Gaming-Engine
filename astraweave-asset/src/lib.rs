@@ -1,4 +1,6 @@
 use anyhow::Result;
+use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 
 #[cfg(feature = "gltf")]
 pub mod gltf_loader {
@@ -438,5 +440,51 @@ impl AssetManifest {
     pub fn validate() -> Result<()> {
         // Placeholder: in Phase 0, no manifest; Phase 1 will add deterministic GUIDs
         Ok(())
+    }
+}
+
+// ---- Phase 2 foundations: deterministic GUIDs and cache ----
+
+/// Deterministic asset GUID using SHA-256 of canonicalized path.
+pub fn guid_for_path(path: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(path.replace('\\', "/").to_lowercase());
+    let out = hasher.finalize();
+    hex::encode(&out[0..16]) // 128-bit hex for brevity
+}
+
+#[derive(Default)]
+pub struct AssetCache<T> {
+    map: HashMap<String, T>,
+}
+
+impl<T> AssetCache<T> {
+    pub fn insert(&mut self, path: &str, val: T) -> String {
+        let id = guid_for_path(path);
+        self.map.insert(id.clone(), val);
+        id
+    }
+    pub fn get(&self, id: &str) -> Option<&T> { self.map.get(id) }
+    pub fn len(&self) -> usize { self.map.len() }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn guid_is_deterministic_and_case_insensitive() {
+        let a = guid_for_path("Assets/Characters/Hero.gltf");
+        let b = guid_for_path("assets/characters/hero.gltf");
+        let c = guid_for_path("assets\\characters\\hero.gltf");
+        assert_eq!(a, b);
+        assert_eq!(b, c);
+        assert_eq!(a.len(), 32);
+    }
+    #[test]
+    fn cache_inserts_and_retrieves() {
+        let mut c = AssetCache::<i32>::default();
+        let id = c.insert("assets/tex.png", 7);
+        assert_eq!(c.get(&id), Some(&7));
+        assert_eq!(c.len(), 1);
     }
 }

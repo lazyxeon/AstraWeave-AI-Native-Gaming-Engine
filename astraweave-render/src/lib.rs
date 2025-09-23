@@ -6,6 +6,8 @@ pub mod types;
 pub mod texture;
 pub mod terrain;
 pub mod environment;
+pub mod post; // compile-only WGSL placeholders & tests
+pub mod clustered; // clustered-lighting WGSL placeholders & tests
 
 pub use camera::{Camera, CameraController};
 pub use renderer::Renderer;

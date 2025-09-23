@@ -11,6 +11,8 @@ serde_json = { workspace = true }
 glam = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 base64 = "0.22"
+sha2 = "0.10"
+hex = "0.4"
 
 # Optional: glTF parsing (CPU side) – stub for Phase 0; wire actual loader later
 gltf = { version = "1.4", optional = true }

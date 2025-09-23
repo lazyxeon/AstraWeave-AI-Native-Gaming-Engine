@@ -23,6 +23,7 @@ members = [
   "examples/coop_server",     
   "examples/coop_client",    
   "astraweave-render",
+  "astraweave-materials",
   "astraweave-asset",
   "examples/visual_3d",
   "astraweave-physics",
@@ -52,12 +53,14 @@ members = [
   "examples/unified_showcase",
   "examples/terrain_demo",
   "examples/biome_showcase",
+  "examples/orchestrator_async_tick",
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
   "tools/aw_debug",
   "tools/aw_build",
   "tools/aw_texture_gen",
+  "tools/aw_headless",
   # persistence
   "persistence/aw-save",
   "tools/aw_save_cli",

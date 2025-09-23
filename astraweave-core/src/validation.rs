@@ -55,6 +55,10 @@ pub fn validate_and_execute(
                 if !los_clear(&w.obstacles, my, tgt) {
                     return Err(EngineError::LosBlocked);
                 }
+                // Ensure ammo present
+                if let Some(am) = w.ammo(actor) {
+                    if am.rounds <= 0 { return Err(EngineError::Resource("ammo".into())); }
+                }
                 // simulate: reduce target hp a bit depending on duration
                 if let Some(h) = w.health_mut(*target_id) {
                     let dmg = ((*duration) * 5.0) as i32;
@@ -87,6 +91,50 @@ fn fill_rect_obs(obs: &mut std::collections::HashSet<(i32, i32)>, r: Rect) {
         for y in r.y0.min(r.y1)..=r.y0.max(r.y1) {
             obs.insert((x, y));
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Team, World};
+
+    fn mk_world_clear() -> World { World::new() }
+
+    #[test]
+    fn cover_fire_requires_ammo() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("ally", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 0);
+        let enemy = w.spawn("enemy", IVec2 { x: 3, y: 0 }, Team { id: 2 }, 50, 0);
+        let intent = PlanIntent {
+            plan_id: "t".into(),
+            steps: vec![ActionStep::CoverFire { target_id: enemy, duration: 1.0 }],
+        };
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        match res { Err(EngineError::Resource(k)) => assert_eq!(k, "ammo"), _ => panic!("expected Resource(ammo)") }
+    }
+
+    #[test]
+    fn cover_fire_consumes_ammo_and_damages() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("ally", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", IVec2 { x: 2, y: 0 }, Team { id: 2 }, 50, 0);
+        let intent = PlanIntent {
+            plan_id: "t".into(),
+            steps: vec![ActionStep::CoverFire { target_id: enemy, duration: 1.0 }],
+        };
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let hp_before = w.health(enemy).unwrap().hp;
+        let ammo_before = w.ammo(actor).unwrap().rounds;
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+        let hp_after = w.health(enemy).unwrap().hp;
+        let ammo_after = w.ammo(actor).unwrap().rounds;
+        assert!(hp_after < hp_before, "enemy should take damage");
+        assert_eq!(ammo_after, (ammo_before - 3).max(0));
     }
 }
 fn draw_line_obs(obs: &mut std::collections::HashSet<(i32, i32)>, a: IVec2, b: IVec2) {
