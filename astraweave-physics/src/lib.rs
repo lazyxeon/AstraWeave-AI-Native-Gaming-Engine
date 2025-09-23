@@ -238,3 +238,20 @@ impl PhysicsWorld {
     #[allow(dead_code)]
     fn process_destructible_hits(&mut self) {}
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn character_moves_forward() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        for _ in 0..60 {
+            pw.control_character(char_id, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
+            pw.step();
+        }
+        let x = pw.body_transform(char_id).unwrap().w_axis.x;
+        assert!(x > 0.5, "character should have moved forward, x={}", x);
+    }
+}

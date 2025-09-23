@@ -1,0 +1,10 @@
+[package]
+name = "nav_physics_bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+glam = { workspace = true }
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-nav = { path = "../../astraweave-nav" }

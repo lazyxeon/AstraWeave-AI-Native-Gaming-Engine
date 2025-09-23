@@ -100,3 +100,36 @@ impl<'a> DialoguePlayer<'a> {
         Ok(true)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use astraweave_gameplay::dialogue::{Dialogue, Node, Line};
+
+    #[test]
+    fn speak_beep_fallback() -> Result<()> {
+        // Build minimal dialogue in memory
+        let dlg = Dialogue {
+            id: "test".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line { speaker: "Test".into(), text: "Hello there".into(), set_vars: vec![] }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let mut st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        let bank = VoiceBank { speakers: Default::default() };
+        let mut subs: Vec<(String, String)> = vec![];
+        {
+            let mut push_sub = |s: String, t: String| { subs.push((s, t)); };
+            let mut player = DialoguePlayer { audio: &mut audio, bank: &bank, tts: None, overrides: None, subtitle_out: Some(&mut push_sub) };
+            let ok = player.speak_current(&dlg, &st)?;
+            assert!(ok);
+        }
+        assert_eq!(subs.len(), 1);
+        Ok(())
+    }
+}
