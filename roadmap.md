@@ -17,6 +17,14 @@ Deliverables
 - AI Loop: Keep current `WorldSnapshot` / `PlanIntent`; unify `Orchestrator` API; CI example that runs end-to-end without panics.
 - Fix/green core: make check, minimal lint set; working examples curated; broken demos quarantined.
 
+DoD
+- Build flags: wgpu backends guarded via cfgs; shader features togglable.
+- Tests: snapshot tests for AI plans; renderer golden images for 2 scenes; importer round-trip tests.
+- Benches: Criterion for world tick and render submit; baseline committed.
+- Assets: sample PBR materials and a skinned character included under permissive license.
+- Docs: `docs/Interfaces.md`, `docs/Perf Budgets.md`, and `docs/Asset IDs & Cache.md` linked from README.
+- CI: `make ci` enforces fmt/clippy/tests/benches thresholds.
+
 Key Crates/Changes
 - New: `astraweave-scene`, `astraweave-materials`, `astraweave-anim`, `astraweave-asset` (importers), `astraweave-shaders` (WGSL).
 - Update: `astraweave-render` (PBR + shadows + post), `tools/aw_editor` (panelized), `examples/visual_3d` (MVP scene viewer).
@@ -38,11 +46,21 @@ Key Crates/Changes
 - New: `astraweave-behavior` (BT/HTN graphs), `astraweave-dialogue`, `astraweave-quests`.
 - Update: `astraweave-ai`, `astraweave-nav`, `astraweave-physics`, `astraweave-audio`, `tools/aw_editor` (graph editors).
 
+DoD
+- Tests: unit tests for Tool Sandbox error taxonomy; persona/memory serialization versioned.
+- Benches: AI fast-think ≤ 2 ms median; dialogue pipeline latency budget enforced.
+- Examples: `hello_companion_3d` runs to completion without panics; audio/dialogue CLI demo produces VO or text barks offline.
+- Docs: Behavior/quests pages, editor panel docs, error taxonomy referenced.
+
 Exit Criteria
 - Example “hello_companion_3d”: companion perceives, plans, and executes in a small 3D level; voice line triggers; player orders via UI.
 - Editor: author a simple quest + behavior graph and run it live.
 
 Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
+DoD
+- Golden images updated for new features; ΔE thresholds respected.
+- Benches: GPU frame ≤ 7 ms median on target GPU; shader compile cache hit-rate > 90%.
+- Tools: material editor round-trip tests for WGSL outputs.
 Rendering
 - PBR 2.0: Clearcoat, anisotropy, transmission; clustered/forward+ lighting; cascaded shadow maps; SSR, SSAO/ASSAO, SSGI (probe-based); bloom/DoF/motion blur.
 - GI: DDGI (probe volumes) + SDFGI fallback; lightmap baking path (GPU compute) for static scenes.
@@ -60,6 +78,9 @@ Exit Criteria
 - Editor: import a mid-complexity scene, edit materials, bake a light cache, profile frame breakdown.
 
 Phase 3 (12–18 months): Multiplayer, Determinism, and Scale
+DoD
+- Net sim soak test: 10-minute run without desync at 60 Hz; packet loss scenarios covered.
+- Replays deterministic across platforms; snapshot delta size within budget.
 Deliverables
 - Netcode: Server-authoritative with client prediction & reconciliation; snapshot delta encoding; interest management; region matchmaking; replay capture.
 - Deterministic Sim: audited fixed-tick path; lockstep option; authoritative tool validation across clients.
@@ -70,6 +91,9 @@ Exit Criteria
 - 4-player co-op demo in a medium-sized level with AI companions; 60 Hz sim; jitter-buffered voice/text; no desync under packet loss; stable replays.
 
 Phase 4 (18–24 months): Production Polish and Extensibility
+DoD
+- SDK headers generated and validated with a C harness; semantic versioning gates in CI.
+- Cinematics editor saves/loads timelines; smoke test in CI.
 Deliverables
 - Cinematics: Timeline, tracks (anim, camera, audio, FX), cutscene editor; sequencer API.
 - UI/UX: game UI framework (HUD, menus, inventory, map) with data-binding; accessibility options.

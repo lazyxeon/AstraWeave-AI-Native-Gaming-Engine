@@ -347,7 +347,7 @@ AstraWeave builds on the incredible Rust gamedev ecosystem:
 
 <div align="center">
 
-**[Documentation](docs/) • [Examples](examples/) • [Issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues) • [Discussions](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/discussions)**
+**[Documentation](docs/) • [Docs Index](docs/README-INDEX.md) • [Examples](examples/) • [Issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues) • [Discussions](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/discussions)**
 
 *Building the future of AI-native gaming*
 
