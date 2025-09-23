@@ -31,7 +31,7 @@ AstraWeave:  AI Agents ← Tool Validation ← Engine Authority
 **🎭 Living Worlds**: Games that genuinely learn and evolve with players  
 
 
-## **📊 Proof Points (2024)**
+## **📊 Proof Points (2025)**
 
 ✅ **Production-Ready Core**: All core engine systems build and pass CI (8–15s build time)
 ✅ **SDK ABI & C Harness**: Stable C ABI, header auto-generated, validated by C/CMake harness in CI (Linux/Windows)
