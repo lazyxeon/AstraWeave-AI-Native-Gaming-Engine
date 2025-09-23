@@ -1,0 +1,10 @@
+[package]
+name = "astraweave-scene"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+glam = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+anyhow = { workspace = true }

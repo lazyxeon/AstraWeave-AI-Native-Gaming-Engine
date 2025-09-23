@@ -1,0 +1,17 @@
+[package]
+name = "astraweave-asset"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+glam = { workspace = true }
+
+# Optional: glTF parsing (CPU side) – stub for Phase 0; wire actual loader later
+gltf = { version = "1.4", optional = true }
+
+[features]
+gltf = ["dep:gltf"]

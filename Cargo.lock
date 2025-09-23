@@ -367,6 +367,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-asset"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "glam",
+ "gltf",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "astraweave-audio"
 version = "0.1.0"
 dependencies = [
@@ -560,6 +571,15 @@ dependencies = [
  "serde",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "astraweave-scene"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "glam",
+ "serde",
 ]
 
 [[package]]
@@ -6792,6 +6812,9 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "astraweave-render",
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
  "glam",
  "image",
  "pollster",
