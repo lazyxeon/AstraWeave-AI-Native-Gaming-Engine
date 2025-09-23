@@ -8,7 +8,7 @@ Principles
 - Modular workspace: Isolated crates per system; clear public APIs; testable in isolation; minimal unsafe.
 - Dev velocity: Hot-reload where safe (scripts, assets, materials), fast iteration loops, strong instrumentation.
 
-Phase 0 (0–3 months): Stabilize Core and Ship a Visual Hello-World
+✅ Phase 0 (0–3 months): Stabilize Core and Ship a Visual Hello-World
 Deliverables
 - Rendering MVP: astraweave-render produces a lit scene (PBR, HDR, tonemapping, sky, shadows) via wgpu 0.20 (or latest compatible).
 - Scene I/O: glTF 2.0 import (meshes, materials, textures); simple scene graph; GPU resource manager; frustum culling; basic instancing.
@@ -33,7 +33,7 @@ Exit Criteria
 - Run: `cargo run -p visual_3d` shows a PBR scene with a skinned character at 60 FPS on mid-tier GPU.
 - Editor: can load a scene, tweak a material, toggle lights, and save.
 
-Phase 1 (3–6 months): AI-Native Gameplay and Authoring Tools
+✅ Phase 1 (3–6 months): AI-Native Gameplay and Authoring Tools
 Deliverables
 - AI Orchestrator Suite: Rule-based + Utility/GOAP + LLM orchestrator behind `Orchestrator` trait; switchable per agent.
 - Tool Sandbox v1: Formalized action verbs with validation categories (nav, physics, resources, visibility); comprehensive error taxonomy.
@@ -56,7 +56,7 @@ Exit Criteria
 - Example “hello_companion_3d”: companion perceives, plans, and executes in a small 3D level; voice line triggers; player orders via UI.
 - Editor: author a simple quest + behavior graph and run it live.
 
-Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
+✅ Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
 DoD
 - Golden images updated for new features; ΔE thresholds respected.
 - Benches: GPU frame ≤ 7 ms median on target GPU; shader compile cache hit-rate > 90%.
