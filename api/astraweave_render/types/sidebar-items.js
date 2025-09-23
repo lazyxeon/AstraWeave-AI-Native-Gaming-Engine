@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Instance","InstanceRaw","Material","Mesh","SkinnedVertex","Vertex"]};
+window.SIDEBAR_ITEMS = {"fn":["cluster_index"],"struct":["ClusterDims","Instance","InstanceRaw","Material","Mesh","SkinnedVertex","Vertex"]};

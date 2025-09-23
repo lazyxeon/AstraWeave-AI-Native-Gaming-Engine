@@ -162,4 +162,40 @@
 <a href=#162 id=162 data-nosnippet>162</a>        <span class="kw">let </span>transform = Mat4::from_scale_rotation_translation(scale, glam::Quat::IDENTITY, pos);
 <a href=#163 id=163 data-nosnippet>163</a>        <span class="self">Self </span>{ transform, color }
 <a href=#164 id=164 data-nosnippet>164</a>    }
-<a href=#165 id=165 data-nosnippet>165</a>}</code></pre></div></section></main></body></html>
+<a href=#165 id=165 data-nosnippet>165</a>}
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a><span class="comment">// ---- Phase 2 foundations: clustered lighting binning helpers ----
+<a href=#168 id=168 data-nosnippet>168</a></span><span class="attr">#[derive(Clone, Copy, Debug)]
+<a href=#169 id=169 data-nosnippet>169</a></span><span class="kw">pub struct </span>ClusterDims { <span class="kw">pub </span>x: u32, <span class="kw">pub </span>y: u32, <span class="kw">pub </span>z: u32 }
+<a href=#170 id=170 data-nosnippet>170</a>
+<a href=#171 id=171 data-nosnippet>171</a><span class="doccomment">/// Compute cluster index for a screen-space pixel and linear depth in view space.
+<a href=#172 id=172 data-nosnippet>172</a>/// Inputs:
+<a href=#173 id=173 data-nosnippet>173</a>/// - screen coords in [0,width) x [0,height)
+<a href=#174 id=174 data-nosnippet>174</a>/// - near/far planes
+<a href=#175 id=175 data-nosnippet>175</a>/// - dims: number of clusters in x/y/z
+<a href=#176 id=176 data-nosnippet>176</a></span><span class="kw">pub fn </span>cluster_index(px: u32, py: u32, width: u32, height: u32, depth: f32, near: f32, far: f32, dims: ClusterDims) -&gt; u32 {
+<a href=#177 id=177 data-nosnippet>177</a>    <span class="kw">let </span>sx = (px <span class="kw">as </span>f32 * dims.x <span class="kw">as </span>f32 / width <span class="kw">as </span>f32).clamp(<span class="number">0.0</span>, dims.x <span class="kw">as </span>f32 - <span class="number">1.0</span>) <span class="kw">as </span>u32;
+<a href=#178 id=178 data-nosnippet>178</a>    <span class="kw">let </span>sy = (py <span class="kw">as </span>f32 * dims.y <span class="kw">as </span>f32 / height <span class="kw">as </span>f32).clamp(<span class="number">0.0</span>, dims.y <span class="kw">as </span>f32 - <span class="number">1.0</span>) <span class="kw">as </span>u32;
+<a href=#179 id=179 data-nosnippet>179</a>    <span class="comment">// Logarithmic z slicing improves distribution
+<a href=#180 id=180 data-nosnippet>180</a>    </span><span class="kw">let </span>z_lin = ((depth - near) / (far - near)).clamp(<span class="number">0.0</span>, <span class="number">0.99999</span>);
+<a href=#181 id=181 data-nosnippet>181</a>    <span class="kw">let </span>z_log = (z_lin * (dims.z <span class="kw">as </span>f32)).floor() <span class="kw">as </span>u32;
+<a href=#182 id=182 data-nosnippet>182</a>    sx + sy * dims.x + z_log * dims.x * dims.y
+<a href=#183 id=183 data-nosnippet>183</a>}
+<a href=#184 id=184 data-nosnippet>184</a>
+<a href=#185 id=185 data-nosnippet>185</a><span class="attr">#[cfg(test)]
+<a href=#186 id=186 data-nosnippet>186</a></span><span class="kw">mod </span>tests_cluster {
+<a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#188 id=188 data-nosnippet>188</a>    <span class="attr">#[test]
+<a href=#189 id=189 data-nosnippet>189</a>    </span><span class="kw">fn </span>bins_within_bounds() {
+<a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">let </span>dims = ClusterDims{ x: <span class="number">16</span>, y: <span class="number">9</span>, z: <span class="number">24 </span>};
+<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>idx = cluster_index(<span class="number">100</span>, <span class="number">50</span>, <span class="number">1920</span>, <span class="number">1080</span>, <span class="number">5.0</span>, <span class="number">0.1</span>, <span class="number">100.0</span>, dims);
+<a href=#192 id=192 data-nosnippet>192</a>        <span class="macro">assert!</span>(idx &lt; dims.x * dims.y * dims.z);
+<a href=#193 id=193 data-nosnippet>193</a>    }
+<a href=#194 id=194 data-nosnippet>194</a>    <span class="attr">#[test]
+<a href=#195 id=195 data-nosnippet>195</a>    </span><span class="kw">fn </span>corners_map_to_edges() {
+<a href=#196 id=196 data-nosnippet>196</a>        <span class="kw">let </span>d = ClusterDims{ x: <span class="number">8</span>, y: <span class="number">8</span>, z: <span class="number">8 </span>};
+<a href=#197 id=197 data-nosnippet>197</a>        <span class="kw">let </span>i0 = cluster_index(<span class="number">0</span>, <span class="number">0</span>, <span class="number">800</span>, <span class="number">800</span>, <span class="number">0.1</span>, <span class="number">0.1</span>, <span class="number">100.0</span>, d);
+<a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">let </span>i1 = cluster_index(<span class="number">799</span>, <span class="number">799</span>, <span class="number">800</span>, <span class="number">800</span>, <span class="number">99.9</span>, <span class="number">0.1</span>, <span class="number">100.0</span>, d);
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="macro">assert_ne!</span>(i0, i1);
+<a href=#200 id=200 data-nosnippet>200</a>    }
+<a href=#201 id=201 data-nosnippet>201</a>}</code></pre></div></section></main></body></html>

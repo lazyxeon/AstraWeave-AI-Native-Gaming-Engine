@@ -95,41 +95,43 @@
 <a href=#95 id=95 data-nosnippet>95</a>    </span>LosBlocked,
 <a href=#96 id=96 data-nosnippet>96</a>    <span class="attr">#[error(<span class="string">"path not found"</span>)]
 <a href=#97 id=97 data-nosnippet>97</a>    </span>NoPath,
-<a href=#98 id=98 data-nosnippet>98</a>}
-<a href=#99 id=99 data-nosnippet>99</a>
-<a href=#100 id=100 data-nosnippet>100</a><span class="attr">#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-<a href=#101 id=101 data-nosnippet>101</a></span><span class="kw">pub struct </span>Rect {
-<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">pub </span>x0: i32,
-<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">pub </span>y0: i32,
-<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">pub </span>x1: i32,
-<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">pub </span>y1: i32,
-<a href=#106 id=106 data-nosnippet>106</a>}
-<a href=#107 id=107 data-nosnippet>107</a>
-<a href=#108 id=108 data-nosnippet>108</a><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-<a href=#109 id=109 data-nosnippet>109</a>#[serde(tag = <span class="string">"op"</span>)]
-<a href=#110 id=110 data-nosnippet>110</a></span><span class="kw">pub enum </span>DirectorOp {
-<a href=#111 id=111 data-nosnippet>111</a>    Fortify {
-<a href=#112 id=112 data-nosnippet>112</a>        rect: Rect,
-<a href=#113 id=113 data-nosnippet>113</a>    }, <span class="comment">// add obstacles
-<a href=#114 id=114 data-nosnippet>114</a>    </span>SpawnWave {
-<a href=#115 id=115 data-nosnippet>115</a>        archetype: String,
-<a href=#116 id=116 data-nosnippet>116</a>        count: u32,
-<a href=#117 id=117 data-nosnippet>117</a>        origin: IVec2,
-<a href=#118 id=118 data-nosnippet>118</a>    },
-<a href=#119 id=119 data-nosnippet>119</a>    Collapse {
-<a href=#120 id=120 data-nosnippet>120</a>        a: IVec2,
-<a href=#121 id=121 data-nosnippet>121</a>        b: IVec2,
-<a href=#122 id=122 data-nosnippet>122</a>    }, <span class="comment">// line of obstacles ("bridge down")
-<a href=#123 id=123 data-nosnippet>123</a></span>}
-<a href=#124 id=124 data-nosnippet>124</a>
-<a href=#125 id=125 data-nosnippet>125</a><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-<a href=#126 id=126 data-nosnippet>126</a></span><span class="kw">pub struct </span>DirectorBudget {
-<a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">pub </span>traps: i32,
-<a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">pub </span>terrain_edits: i32,
-<a href=#129 id=129 data-nosnippet>129</a>    <span class="kw">pub </span>spawns: i32,
-<a href=#130 id=130 data-nosnippet>130</a>}
-<a href=#131 id=131 data-nosnippet>131</a>
-<a href=#132 id=132 data-nosnippet>132</a><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
-<a href=#133 id=133 data-nosnippet>133</a></span><span class="kw">pub struct </span>DirectorPlan {
-<a href=#134 id=134 data-nosnippet>134</a>    <span class="kw">pub </span>ops: Vec&lt;DirectorOp&gt;,
-<a href=#135 id=135 data-nosnippet>135</a>}</code></pre></div></section></main></body></html>
+<a href=#98 id=98 data-nosnippet>98</a>    <span class="attr">#[error(<span class="string">"resource missing: {0}"</span>)]
+<a href=#99 id=99 data-nosnippet>99</a>    </span>Resource(String),
+<a href=#100 id=100 data-nosnippet>100</a>}
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a><span class="attr">#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+<a href=#103 id=103 data-nosnippet>103</a></span><span class="kw">pub struct </span>Rect {
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">pub </span>x0: i32,
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="kw">pub </span>y0: i32,
+<a href=#106 id=106 data-nosnippet>106</a>    <span class="kw">pub </span>x1: i32,
+<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">pub </span>y1: i32,
+<a href=#108 id=108 data-nosnippet>108</a>}
+<a href=#109 id=109 data-nosnippet>109</a>
+<a href=#110 id=110 data-nosnippet>110</a><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<a href=#111 id=111 data-nosnippet>111</a>#[serde(tag = <span class="string">"op"</span>)]
+<a href=#112 id=112 data-nosnippet>112</a></span><span class="kw">pub enum </span>DirectorOp {
+<a href=#113 id=113 data-nosnippet>113</a>    Fortify {
+<a href=#114 id=114 data-nosnippet>114</a>        rect: Rect,
+<a href=#115 id=115 data-nosnippet>115</a>    }, <span class="comment">// add obstacles
+<a href=#116 id=116 data-nosnippet>116</a>    </span>SpawnWave {
+<a href=#117 id=117 data-nosnippet>117</a>        archetype: String,
+<a href=#118 id=118 data-nosnippet>118</a>        count: u32,
+<a href=#119 id=119 data-nosnippet>119</a>        origin: IVec2,
+<a href=#120 id=120 data-nosnippet>120</a>    },
+<a href=#121 id=121 data-nosnippet>121</a>    Collapse {
+<a href=#122 id=122 data-nosnippet>122</a>        a: IVec2,
+<a href=#123 id=123 data-nosnippet>123</a>        b: IVec2,
+<a href=#124 id=124 data-nosnippet>124</a>    }, <span class="comment">// line of obstacles ("bridge down")
+<a href=#125 id=125 data-nosnippet>125</a></span>}
+<a href=#126 id=126 data-nosnippet>126</a>
+<a href=#127 id=127 data-nosnippet>127</a><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<a href=#128 id=128 data-nosnippet>128</a></span><span class="kw">pub struct </span>DirectorBudget {
+<a href=#129 id=129 data-nosnippet>129</a>    <span class="kw">pub </span>traps: i32,
+<a href=#130 id=130 data-nosnippet>130</a>    <span class="kw">pub </span>terrain_edits: i32,
+<a href=#131 id=131 data-nosnippet>131</a>    <span class="kw">pub </span>spawns: i32,
+<a href=#132 id=132 data-nosnippet>132</a>}
+<a href=#133 id=133 data-nosnippet>133</a>
+<a href=#134 id=134 data-nosnippet>134</a><span class="attr">#[derive(Clone, Debug, Serialize, Deserialize)]
+<a href=#135 id=135 data-nosnippet>135</a></span><span class="kw">pub struct </span>DirectorPlan {
+<a href=#136 id=136 data-nosnippet>136</a>    <span class="kw">pub </span>ops: Vec&lt;DirectorOp&gt;,
+<a href=#137 id=137 data-nosnippet>137</a>}</code></pre></div></section></main></body></html>

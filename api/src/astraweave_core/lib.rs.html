@@ -16,4 +16,18 @@
 <a href=#16 id=16 data-nosnippet>16</a>};
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub use </span>tool_sandbox::<span class="kw-2">*</span>;
 <a href=#18 id=18 data-nosnippet>18</a><span class="kw">pub use </span>validation::<span class="kw-2">*</span>;
-<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub use </span>world::<span class="kw-2">*</span>;</code></pre></div></section></main></body></html>
+<a href=#19 id=19 data-nosnippet>19</a><span class="kw">pub use </span>world::<span class="kw-2">*</span>;
+<a href=#20 id=20 data-nosnippet>20</a>
+<a href=#21 id=21 data-nosnippet>21</a><span class="doccomment">/// Construct a default ToolRegistry matching MVP verbs.
+<a href=#22 id=22 data-nosnippet>22</a></span><span class="kw">pub fn </span>default_tool_registry() -&gt; ToolRegistry {
+<a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">use </span>std::collections::BTreeMap;
+<a href=#24 id=24 data-nosnippet>24</a>    ToolRegistry {
+<a href=#25 id=25 data-nosnippet>25</a>        tools: <span class="macro">vec!</span>[
+<a href=#26 id=26 data-nosnippet>26</a>            ToolSpec { name: <span class="string">"move_to"</span>.into(), args: BTreeMap::from([(<span class="string">"x"</span>.into(), <span class="string">"i32"</span>.into()), (<span class="string">"y"</span>.into(), <span class="string">"i32"</span>.into())]) },
+<a href=#27 id=27 data-nosnippet>27</a>            ToolSpec { name: <span class="string">"throw"</span>.into(), args: BTreeMap::from([(<span class="string">"item"</span>.into(), <span class="string">"enum[smoke,grenade]"</span>.into()), (<span class="string">"x"</span>.into(), <span class="string">"i32"</span>.into()), (<span class="string">"y"</span>.into(), <span class="string">"i32"</span>.into())]) },
+<a href=#28 id=28 data-nosnippet>28</a>            ToolSpec { name: <span class="string">"cover_fire"</span>.into(), args: BTreeMap::from([(<span class="string">"target_id"</span>.into(), <span class="string">"u32"</span>.into()), (<span class="string">"duration"</span>.into(), <span class="string">"f32"</span>.into())]) },
+<a href=#29 id=29 data-nosnippet>29</a>            ToolSpec { name: <span class="string">"revive"</span>.into(), args: BTreeMap::from([(<span class="string">"ally_id"</span>.into(), <span class="string">"u32"</span>.into())]) },
+<a href=#30 id=30 data-nosnippet>30</a>        ],
+<a href=#31 id=31 data-nosnippet>31</a>        constraints: Constraints { enforce_cooldowns: <span class="bool-val">true</span>, enforce_los: <span class="bool-val">true</span>, enforce_stamina: <span class="bool-val">true </span>},
+<a href=#32 id=32 data-nosnippet>32</a>    }
+<a href=#33 id=33 data-nosnippet>33</a>}</code></pre></div></section></main></body></html>

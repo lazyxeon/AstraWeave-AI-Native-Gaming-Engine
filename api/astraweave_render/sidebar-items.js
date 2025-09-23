@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["camera","depth","effects","environment","overlay","primitives","renderer","terrain","texture","types"]};
+window.SIDEBAR_ITEMS = {"mod":["camera","clustered","depth","effects","environment","overlay","post","primitives","renderer","terrain","texture","types"]};

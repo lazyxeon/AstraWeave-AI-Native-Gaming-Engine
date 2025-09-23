@@ -1,0 +1,337 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `astraweave-render/src/clustered.rs`."><title>clustered.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="astraweave_render" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">astraweave_render/</div>clustered.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="comment">// Clustered lighting: CPU reference binning + WGSL placeholder compute kernel and compile-only tests.
+<a href=#2 id=2 data-nosnippet>2</a>// CPU path is unit-tested; WGSL is syntax-checked via naga for now.
+<a href=#3 id=3 data-nosnippet>3</a>
+<a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span>glam::Vec3;
+<a href=#5 id=5 data-nosnippet>5</a>
+<a href=#6 id=6 data-nosnippet>6</a><span class="attr">#[derive(Clone, Copy, Debug)]
+<a href=#7 id=7 data-nosnippet>7</a></span><span class="kw">pub struct </span>CpuLight { <span class="kw">pub </span>pos: Vec3, <span class="kw">pub </span>radius: f32 }
+<a href=#8 id=8 data-nosnippet>8</a>
+<a href=#9 id=9 data-nosnippet>9</a><span class="attr">#[derive(Clone, Copy, Debug)]
+<a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">pub struct </span>ClusterDims { <span class="kw">pub </span>x: u32, <span class="kw">pub </span>y: u32, <span class="kw">pub </span>z: u32 }
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">fn </span>clamp_u32(v: i32, lo: i32, hi: i32) -&gt; u32 { v.max(lo).min(hi) <span class="kw">as </span>u32 }
+<a href=#13 id=13 data-nosnippet>13</a>
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">fn </span>cluster_index(ix: u32, iy: u32, iz: u32, dims: ClusterDims) -&gt; usize {
+<a href=#15 id=15 data-nosnippet>15</a>    (ix + iy * dims.x + iz * (dims.x * dims.y)) <span class="kw">as </span>usize
+<a href=#16 id=16 data-nosnippet>16</a>}
+<a href=#17 id=17 data-nosnippet>17</a>
+<a href=#18 id=18 data-nosnippet>18</a><span class="doccomment">/// Compute per-cluster light lists on CPU using simple sphere-screen bounds.
+<a href=#19 id=19 data-nosnippet>19</a>/// Inputs:
+<a href=#20 id=20 data-nosnippet>20</a>/// - lights: positions are in camera/view space with +Z forward and in meters
+<a href=#21 id=21 data-nosnippet>21</a>/// - screen: (width,height)
+<a href=#22 id=22 data-nosnippet>22</a>/// - near/far: camera near/far planes (positive distances)
+<a href=#23 id=23 data-nosnippet>23</a>/// - fov_y: vertical field of view in radians
+<a href=#24 id=24 data-nosnippet>24</a>/// Returns: (counts, indices, offsets) where offsets is exclusive scan over counts
+<a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">pub fn </span>bin_lights_cpu(
+<a href=#26 id=26 data-nosnippet>26</a>    lights: <span class="kw-2">&amp;</span>[CpuLight],
+<a href=#27 id=27 data-nosnippet>27</a>    dims: ClusterDims,
+<a href=#28 id=28 data-nosnippet>28</a>    screen: (u32, u32),
+<a href=#29 id=29 data-nosnippet>29</a>    near: f32,
+<a href=#30 id=30 data-nosnippet>30</a>    far: f32,
+<a href=#31 id=31 data-nosnippet>31</a>    fov_y: f32,
+<a href=#32 id=32 data-nosnippet>32</a>) -&gt; (Vec&lt;u32&gt;, Vec&lt;u32&gt;, Vec&lt;u32&gt;) {
+<a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">let </span>(width, height) = screen;
+<a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">let </span>aspect = width.max(<span class="number">1</span>) <span class="kw">as </span>f32 / height.max(<span class="number">1</span>) <span class="kw">as </span>f32;
+<a href=#35 id=35 data-nosnippet>35</a>    <span class="kw">let </span>fy = <span class="number">1.0 </span>/ (<span class="number">0.5 </span>* fov_y).tan();
+<a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">let </span>fx = fy / aspect;
+<a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">let </span>tile_w = (width <span class="kw">as </span>f32 / dims.x <span class="kw">as </span>f32).max(<span class="number">1.0</span>);
+<a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">let </span>tile_h = (height <span class="kw">as </span>f32 / dims.y <span class="kw">as </span>f32).max(<span class="number">1.0</span>);
+<a href=#39 id=39 data-nosnippet>39</a>
+<a href=#40 id=40 data-nosnippet>40</a>    <span class="kw">let </span>clusters = (dims.x * dims.y * dims.z) <span class="kw">as </span>usize;
+<a href=#41 id=41 data-nosnippet>41</a>    <span class="kw">let </span><span class="kw-2">mut </span>counts = <span class="macro">vec!</span>[<span class="number">0u32</span>; clusters];
+<a href=#42 id=42 data-nosnippet>42</a>
+<a href=#43 id=43 data-nosnippet>43</a>    <span class="comment">// First pass: counts
+<a href=#44 id=44 data-nosnippet>44</a>    </span><span class="kw">for </span>l <span class="kw">in </span>lights.iter() {
+<a href=#45 id=45 data-nosnippet>45</a>        <span class="kw">let </span>z = l.pos.z.max(near + <span class="number">1e-4</span>);
+<a href=#46 id=46 data-nosnippet>46</a>        <span class="kw">if </span>z - l.radius &gt; far { <span class="kw">continue</span>; }
+<a href=#47 id=47 data-nosnippet>47</a>        <span class="comment">// Project center to NDC
+<a href=#48 id=48 data-nosnippet>48</a>        </span><span class="kw">let </span>ndc_x = (l.pos.x / z) * fx;
+<a href=#49 id=49 data-nosnippet>49</a>        <span class="kw">let </span>ndc_y = (l.pos.y / z) * fy;
+<a href=#50 id=50 data-nosnippet>50</a>        <span class="comment">// Convert to pixel space
+<a href=#51 id=51 data-nosnippet>51</a>        </span><span class="kw">let </span>px = (ndc_x * <span class="number">0.5 </span>+ <span class="number">0.5</span>) * width <span class="kw">as </span>f32;
+<a href=#52 id=52 data-nosnippet>52</a>        <span class="kw">let </span>py = (ndc_y * <span class="number">0.5 </span>+ <span class="number">0.5</span>) * height <span class="kw">as </span>f32;
+<a href=#53 id=53 data-nosnippet>53</a>        <span class="comment">// Screen-space radius in pixels (approx)
+<a href=#54 id=54 data-nosnippet>54</a>        </span><span class="kw">let </span>rpx_x = (l.radius / z) * fx * (width <span class="kw">as </span>f32 * <span class="number">0.5</span>);
+<a href=#55 id=55 data-nosnippet>55</a>        <span class="kw">let </span>rpx_y = (l.radius / z) * fy * (height <span class="kw">as </span>f32 * <span class="number">0.5</span>);
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>min_px = (px - rpx_x).floor() <span class="kw">as </span>i32;
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span>max_px = (px + rpx_x).ceil() <span class="kw">as </span>i32;
+<a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">let </span>min_py = (py - rpx_y).floor() <span class="kw">as </span>i32;
+<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>max_py = (py + rpx_y).ceil() <span class="kw">as </span>i32;
+<a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">let </span>ix0 = clamp_u32(min_px / tile_w <span class="kw">as </span>i32, <span class="number">0</span>, dims.x <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#61 id=61 data-nosnippet>61</a>        <span class="kw">let </span>ix1 = clamp_u32(max_px / tile_w <span class="kw">as </span>i32, <span class="number">0</span>, dims.x <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#62 id=62 data-nosnippet>62</a>        <span class="kw">let </span>iy0 = clamp_u32(min_py / tile_h <span class="kw">as </span>i32, <span class="number">0</span>, dims.y <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">let </span>iy1 = clamp_u32(max_py / tile_h <span class="kw">as </span>i32, <span class="number">0</span>, dims.y <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#64 id=64 data-nosnippet>64</a>        <span class="comment">// Z slices
+<a href=#65 id=65 data-nosnippet>65</a>        </span><span class="kw">let </span>zmin = (z - l.radius).max(near);
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>zmax = (z + l.radius).min(far);
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">if </span>zmin &gt;= zmax { <span class="kw">continue</span>; }
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>iz0 = (((zmin - near) / (far - near)) * dims.z <span class="kw">as </span>f32).floor().clamp(<span class="number">0.0</span>, dims.z <span class="kw">as </span>f32 - <span class="number">1.0</span>) <span class="kw">as </span>u32;
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>iz1 = (((zmax - near) / (far - near)) * dims.z <span class="kw">as </span>f32).floor().clamp(<span class="number">0.0</span>, dims.z <span class="kw">as </span>f32 - <span class="number">1.0</span>) <span class="kw">as </span>u32;
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">for </span>iz <span class="kw">in </span>iz0..=iz1 {
+<a href=#71 id=71 data-nosnippet>71</a>            <span class="kw">for </span>iy <span class="kw">in </span>iy0..=iy1 {
+<a href=#72 id=72 data-nosnippet>72</a>                <span class="kw">for </span>ix <span class="kw">in </span>ix0..=ix1 {
+<a href=#73 id=73 data-nosnippet>73</a>                    <span class="kw">let </span>ci = cluster_index(ix, iy, iz, dims);
+<a href=#74 id=74 data-nosnippet>74</a>                    counts[ci] += <span class="number">1</span>;
+<a href=#75 id=75 data-nosnippet>75</a>                }
+<a href=#76 id=76 data-nosnippet>76</a>            }
+<a href=#77 id=77 data-nosnippet>77</a>        }
+<a href=#78 id=78 data-nosnippet>78</a>    }
+<a href=#79 id=79 data-nosnippet>79</a>
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="comment">// Exclusive scan to offsets
+<a href=#81 id=81 data-nosnippet>81</a>    </span><span class="kw">let </span><span class="kw-2">mut </span>offsets = <span class="macro">vec!</span>[<span class="number">0u32</span>; clusters + <span class="number">1</span>];
+<a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..clusters { offsets[i + <span class="number">1</span>] = offsets[i] + counts[i]; }
+<a href=#83 id=83 data-nosnippet>83</a>
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="comment">// Second pass: fill indices using running write cursors
+<a href=#85 id=85 data-nosnippet>85</a>    </span><span class="kw">let </span>total = offsets[clusters] <span class="kw">as </span>usize;
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">let </span><span class="kw-2">mut </span>indices = <span class="macro">vec!</span>[<span class="number">0u32</span>; total];
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">let </span><span class="kw-2">mut </span>cursors = <span class="macro">vec!</span>[<span class="number">0u32</span>; clusters];
+<a href=#88 id=88 data-nosnippet>88</a>    <span class="kw">for </span>(li, l) <span class="kw">in </span>lights.iter().enumerate() {
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>z = l.pos.z.max(near + <span class="number">1e-4</span>);
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">if </span>z - l.radius &gt; far { <span class="kw">continue</span>; }
+<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span>ndc_x = (l.pos.x / z) * fx;
+<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span>ndc_y = (l.pos.y / z) * fy;
+<a href=#93 id=93 data-nosnippet>93</a>        <span class="kw">let </span>px = (ndc_x * <span class="number">0.5 </span>+ <span class="number">0.5</span>) * width <span class="kw">as </span>f32;
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="kw">let </span>py = (ndc_y * <span class="number">0.5 </span>+ <span class="number">0.5</span>) * height <span class="kw">as </span>f32;
+<a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span>rpx_x = (l.radius / z) * fx * (width <span class="kw">as </span>f32 * <span class="number">0.5</span>);
+<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>rpx_y = (l.radius / z) * fy * (height <span class="kw">as </span>f32 * <span class="number">0.5</span>);
+<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>min_px = (px - rpx_x).floor() <span class="kw">as </span>i32;
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>max_px = (px + rpx_x).ceil() <span class="kw">as </span>i32;
+<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">let </span>min_py = (py - rpx_y).floor() <span class="kw">as </span>i32;
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>max_py = (py + rpx_y).ceil() <span class="kw">as </span>i32;
+<a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>ix0 = clamp_u32(min_px / tile_w <span class="kw">as </span>i32, <span class="number">0</span>, dims.x <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>ix1 = clamp_u32(max_px / tile_w <span class="kw">as </span>i32, <span class="number">0</span>, dims.x <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span>iy0 = clamp_u32(min_py / tile_h <span class="kw">as </span>i32, <span class="number">0</span>, dims.y <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>iy1 = clamp_u32(max_py / tile_h <span class="kw">as </span>i32, <span class="number">0</span>, dims.y <span class="kw">as </span>i32 - <span class="number">1</span>);
+<a href=#105 id=105 data-nosnippet>105</a>        <span class="kw">let </span>zmin = (z - l.radius).max(near);
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>zmax = (z + l.radius).min(far);
+<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">if </span>zmin &gt;= zmax { <span class="kw">continue</span>; }
+<a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>iz0 = (((zmin - near) / (far - near)) * dims.z <span class="kw">as </span>f32).floor().clamp(<span class="number">0.0</span>, dims.z <span class="kw">as </span>f32 - <span class="number">1.0</span>) <span class="kw">as </span>u32;
+<a href=#109 id=109 data-nosnippet>109</a>        <span class="kw">let </span>iz1 = (((zmax - near) / (far - near)) * dims.z <span class="kw">as </span>f32).floor().clamp(<span class="number">0.0</span>, dims.z <span class="kw">as </span>f32 - <span class="number">1.0</span>) <span class="kw">as </span>u32;
+<a href=#110 id=110 data-nosnippet>110</a>        <span class="kw">for </span>iz <span class="kw">in </span>iz0..=iz1 {
+<a href=#111 id=111 data-nosnippet>111</a>            <span class="kw">for </span>iy <span class="kw">in </span>iy0..=iy1 {
+<a href=#112 id=112 data-nosnippet>112</a>                <span class="kw">for </span>ix <span class="kw">in </span>ix0..=ix1 {
+<a href=#113 id=113 data-nosnippet>113</a>                    <span class="kw">let </span>ci = cluster_index(ix, iy, iz, dims);
+<a href=#114 id=114 data-nosnippet>114</a>                    <span class="kw">let </span>off = offsets[ci] + cursors[ci];
+<a href=#115 id=115 data-nosnippet>115</a>                    indices[off <span class="kw">as </span>usize] = li <span class="kw">as </span>u32;
+<a href=#116 id=116 data-nosnippet>116</a>                    cursors[ci] += <span class="number">1</span>;
+<a href=#117 id=117 data-nosnippet>117</a>                }
+<a href=#118 id=118 data-nosnippet>118</a>            }
+<a href=#119 id=119 data-nosnippet>119</a>        }
+<a href=#120 id=120 data-nosnippet>120</a>    }
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a>    (counts, indices, offsets)
+<a href=#123 id=123 data-nosnippet>123</a>}
+<a href=#124 id=124 data-nosnippet>124</a>
+<a href=#125 id=125 data-nosnippet>125</a><span class="kw">pub const </span>WGSL_CLUSTER_BIN: <span class="kw-2">&amp;</span>str = <span class="string">r#"
+<a href=#126 id=126 data-nosnippet>126</a>struct Light { pos_radius: vec4&lt;f32&gt; };
+<a href=#127 id=127 data-nosnippet>127</a>struct Params { screen: vec2&lt;u32&gt;, clusters: vec3&lt;u32&gt;, near: f32, far: f32, fov_y: f32 };
+<a href=#128 id=128 data-nosnippet>128</a>@group(0) @binding(0) var&lt;storage, read&gt; lights: array&lt;Light&gt;;
+<a href=#129 id=129 data-nosnippet>129</a>@group(0) @binding(1) var&lt;uniform&gt; params: Params;
+<a href=#130 id=130 data-nosnippet>130</a>// Offsets: length = clusters+1 (exclusive scan). Counts: length = clusters. Indices: variable length
+<a href=#131 id=131 data-nosnippet>131</a>@group(0) @binding(2) var&lt;storage, read&gt; offsets: array&lt;u32&gt;;
+<a href=#132 id=132 data-nosnippet>132</a>@group(0) @binding(3) var&lt;storage, read_write&gt; counts: array&lt;atomic&lt;u32&gt;&gt;;
+<a href=#133 id=133 data-nosnippet>133</a>@group(0) @binding(4) var&lt;storage, read_write&gt; indices: array&lt;u32&gt;;
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a>fn cluster_index(ix: u32, iy: u32, iz: u32, dims: vec3&lt;u32&gt;) -&gt; u32 {
+<a href=#136 id=136 data-nosnippet>136</a>    return ix + iy * dims.x + iz * (dims.x * dims.y);
+<a href=#137 id=137 data-nosnippet>137</a>}
+<a href=#138 id=138 data-nosnippet>138</a>
+<a href=#139 id=139 data-nosnippet>139</a>@compute @workgroup_size(1,1,1)
+<a href=#140 id=140 data-nosnippet>140</a>fn cs_main(@builtin(global_invocation_id) gid: vec3&lt;u32&gt;) {
+<a href=#141 id=141 data-nosnippet>141</a>    // One invocation per light
+<a href=#142 id=142 data-nosnippet>142</a>    let li = gid.x;
+<a href=#143 id=143 data-nosnippet>143</a>    if (li &gt;= arrayLength(&amp;lights)) { return; }
+<a href=#144 id=144 data-nosnippet>144</a>    let L = lights[li].pos_radius;
+<a href=#145 id=145 data-nosnippet>145</a>    let pos = L.xyz;
+<a href=#146 id=146 data-nosnippet>146</a>    let radius = L.w;
+<a href=#147 id=147 data-nosnippet>147</a>    let width = f32(params.screen.x);
+<a href=#148 id=148 data-nosnippet>148</a>    let height = f32(params.screen.y);
+<a href=#149 id=149 data-nosnippet>149</a>    let aspect = width / max(height, 1.0);
+<a href=#150 id=150 data-nosnippet>150</a>    let fy = 1.0 / tan(0.5 * params.fov_y);
+<a href=#151 id=151 data-nosnippet>151</a>    let fx = fy / aspect;
+<a href=#152 id=152 data-nosnippet>152</a>    let z = max(pos.z, params.near + 1e-4);
+<a href=#153 id=153 data-nosnippet>153</a>    if (z - radius &gt; params.far) { return; }
+<a href=#154 id=154 data-nosnippet>154</a>    let ndc_x = (pos.x / z) * fx;
+<a href=#155 id=155 data-nosnippet>155</a>    let ndc_y = (pos.y / z) * fy;
+<a href=#156 id=156 data-nosnippet>156</a>    let px = (ndc_x * 0.5 + 0.5) * width;
+<a href=#157 id=157 data-nosnippet>157</a>    let py = (ndc_y * 0.5 + 0.5) * height;
+<a href=#158 id=158 data-nosnippet>158</a>    let rpx_x = (radius / z) * fx * (width * 0.5);
+<a href=#159 id=159 data-nosnippet>159</a>    let rpx_y = (radius / z) * fy * (height * 0.5);
+<a href=#160 id=160 data-nosnippet>160</a>    let tile_w = max(1.0, width / f32(params.clusters.x));
+<a href=#161 id=161 data-nosnippet>161</a>    let tile_h = max(1.0, height / f32(params.clusters.y));
+<a href=#162 id=162 data-nosnippet>162</a>    let min_px = floor(px - rpx_x);
+<a href=#163 id=163 data-nosnippet>163</a>    let max_px = ceil(px + rpx_x);
+<a href=#164 id=164 data-nosnippet>164</a>    let min_py = floor(py - rpx_y);
+<a href=#165 id=165 data-nosnippet>165</a>    let max_py = ceil(py + rpx_y);
+<a href=#166 id=166 data-nosnippet>166</a>    let ix0 = u32(clamp(min_px / tile_w, 0.0, f32(params.clusters.x - 1u)));
+<a href=#167 id=167 data-nosnippet>167</a>    let ix1 = u32(clamp(max_px / tile_w, 0.0, f32(params.clusters.x - 1u)));
+<a href=#168 id=168 data-nosnippet>168</a>    let iy0 = u32(clamp(min_py / tile_h, 0.0, f32(params.clusters.y - 1u)));
+<a href=#169 id=169 data-nosnippet>169</a>    let iy1 = u32(clamp(max_py / tile_h, 0.0, f32(params.clusters.y - 1u)));
+<a href=#170 id=170 data-nosnippet>170</a>    let zmin = max(z - radius, params.near);
+<a href=#171 id=171 data-nosnippet>171</a>    let zmax = min(z + radius, params.far);
+<a href=#172 id=172 data-nosnippet>172</a>    if (zmin &gt;= zmax) { return; }
+<a href=#173 id=173 data-nosnippet>173</a>    let iz0 = u32(clamp(floor(((zmin - params.near) / (params.far - params.near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
+<a href=#174 id=174 data-nosnippet>174</a>    let iz1 = u32(clamp(floor(((zmax - params.near) / (params.far - params.near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
+<a href=#175 id=175 data-nosnippet>175</a>    for (var iz: u32 = iz0; iz &lt;= iz1; iz = iz + 1u) {
+<a href=#176 id=176 data-nosnippet>176</a>        for (var iy: u32 = iy0; iy &lt;= iy1; iy = iy + 1u) {
+<a href=#177 id=177 data-nosnippet>177</a>            for (var ix: u32 = ix0; ix &lt;= ix1; ix = ix + 1u) {
+<a href=#178 id=178 data-nosnippet>178</a>                let ci = cluster_index(ix, iy, iz, params.clusters);
+<a href=#179 id=179 data-nosnippet>179</a>                let write_idx = offsets[ci] + atomicAdd(&amp;counts[ci], 1u);
+<a href=#180 id=180 data-nosnippet>180</a>                indices[write_idx] = li;
+<a href=#181 id=181 data-nosnippet>181</a>            }
+<a href=#182 id=182 data-nosnippet>182</a>        }
+<a href=#183 id=183 data-nosnippet>183</a>    }
+<a href=#184 id=184 data-nosnippet>184</a>}
+<a href=#185 id=185 data-nosnippet>185</a>"#</span>;
+<a href=#186 id=186 data-nosnippet>186</a>
+<a href=#187 id=187 data-nosnippet>187</a><span class="attr">#[cfg(test)]
+<a href=#188 id=188 data-nosnippet>188</a></span><span class="kw">mod </span>tests {
+<a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#190 id=190 data-nosnippet>190</a>    <span class="kw">use </span>rand::SeedableRng;
+<a href=#191 id=191 data-nosnippet>191</a>    <span class="attr">#[cfg(feature = <span class="string">"gpu-tests"</span>)]
+<a href=#192 id=192 data-nosnippet>192</a>    </span><span class="kw">use </span>wgpu::util::DeviceExt;
+<a href=#193 id=193 data-nosnippet>193</a>    <span class="attr">#[test]
+<a href=#194 id=194 data-nosnippet>194</a>    </span><span class="kw">fn </span>parse_cluster_cs() {
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>module = naga::front::wgsl::parse_str(WGSL_CLUSTER_BIN).expect(<span class="string">"WGSL cluster should parse"</span>);
+<a href=#196 id=196 data-nosnippet>196</a>        <span class="macro">assert!</span>(module.entry_points.iter().any(|e| e.name == <span class="string">"cs_main"</span>));
+<a href=#197 id=197 data-nosnippet>197</a>    }
+<a href=#198 id=198 data-nosnippet>198</a>
+<a href=#199 id=199 data-nosnippet>199</a>    <span class="attr">#[test]
+<a href=#200 id=200 data-nosnippet>200</a>    </span><span class="kw">fn </span>cpu_binning_produces_consistent_counts() {
+<a href=#201 id=201 data-nosnippet>201</a>        <span class="kw">let </span>dims = ClusterDims{ x: <span class="number">8</span>, y: <span class="number">4</span>, z: <span class="number">8 </span>};
+<a href=#202 id=202 data-nosnippet>202</a>        <span class="kw">let </span>(w,h) = (<span class="number">640u32</span>, <span class="number">360u32</span>);
+<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">let </span>near = <span class="number">0.1f32</span>; <span class="kw">let </span>far = <span class="number">100.0f32</span>; <span class="kw">let </span>fov_y = std::f32::consts::FRAC_PI_3; <span class="comment">// 60 deg
+<a href=#204 id=204 data-nosnippet>204</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>rng = rand::rngs::StdRng::seed_from_u64(<span class="number">42</span>);
+<a href=#205 id=205 data-nosnippet>205</a>        <span class="kw">let </span><span class="kw-2">mut </span>lights = Vec::new();
+<a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">64 </span>{
+<a href=#207 id=207 data-nosnippet>207</a>            <span class="kw">let </span>x = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, -<span class="number">10.0</span>..<span class="number">10.0</span>);
+<a href=#208 id=208 data-nosnippet>208</a>            <span class="kw">let </span>y = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, -<span class="number">5.0</span>..<span class="number">5.0</span>);
+<a href=#209 id=209 data-nosnippet>209</a>            <span class="kw">let </span>z = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, <span class="number">1.0</span>..<span class="number">50.0</span>);
+<a href=#210 id=210 data-nosnippet>210</a>            <span class="kw">let </span>r = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, <span class="number">0.25</span>..<span class="number">3.0</span>);
+<a href=#211 id=211 data-nosnippet>211</a>            lights.push(CpuLight{ pos: Vec3::new(x,y,z), radius: r });
+<a href=#212 id=212 data-nosnippet>212</a>        }
+<a href=#213 id=213 data-nosnippet>213</a>        <span class="kw">let </span>(counts, indices, offsets) = bin_lights_cpu(<span class="kw-2">&amp;</span>lights, dims, (w,h), near, far, fov_y);
+<a href=#214 id=214 data-nosnippet>214</a>        <span class="comment">// Basic invariants
+<a href=#215 id=215 data-nosnippet>215</a>        </span><span class="macro">assert_eq!</span>(offsets.last().copied().unwrap_or(<span class="number">0</span>), indices.len() <span class="kw">as </span>u32);
+<a href=#216 id=216 data-nosnippet>216</a>        <span class="macro">assert_eq!</span>(counts.iter().map(|<span class="kw-2">&amp;</span>c| c <span class="kw">as </span>usize).sum::&lt;usize&gt;(), indices.len());
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="comment">// Re-derive counts from indices vector
+<a href=#218 id=218 data-nosnippet>218</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>rec = <span class="macro">vec!</span>[<span class="number">0u32</span>; (dims.x * dims.y * dims.z) <span class="kw">as </span>usize];
+<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">for </span>iz <span class="kw">in </span><span class="number">0</span>..dims.z { <span class="kw">for </span>iy <span class="kw">in </span><span class="number">0</span>..dims.y { <span class="kw">for </span>ix <span class="kw">in </span><span class="number">0</span>..dims.x {
+<a href=#220 id=220 data-nosnippet>220</a>            <span class="kw">let </span>ci = cluster_index(ix, iy, iz, dims);
+<a href=#221 id=221 data-nosnippet>221</a>            rec[ci] = offsets[ci+<span class="number">1</span>] - offsets[ci];
+<a href=#222 id=222 data-nosnippet>222</a>        } } }
+<a href=#223 id=223 data-nosnippet>223</a>        <span class="macro">assert_eq!</span>(rec, counts);
+<a href=#224 id=224 data-nosnippet>224</a>    }
+<a href=#225 id=225 data-nosnippet>225</a>
+<a href=#226 id=226 data-nosnippet>226</a>    <span class="attr">#[test]
+<a href=#227 id=227 data-nosnippet>227</a>    </span><span class="kw">fn </span>cpu_binning_indices_valid() {
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>dims = ClusterDims{ x: <span class="number">4</span>, y: <span class="number">4</span>, z: <span class="number">4 </span>};
+<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">let </span>lights = <span class="macro">vec!</span>[
+<a href=#230 id=230 data-nosnippet>230</a>            CpuLight{ pos: Vec3::new(<span class="number">0.0</span>,<span class="number">0.0</span>,<span class="number">5.0</span>), radius: <span class="number">1.0 </span>},
+<a href=#231 id=231 data-nosnippet>231</a>            CpuLight{ pos: Vec3::new(<span class="number">1.0</span>,<span class="number">0.0</span>,<span class="number">7.0</span>), radius: <span class="number">2.0 </span>},
+<a href=#232 id=232 data-nosnippet>232</a>        ];
+<a href=#233 id=233 data-nosnippet>233</a>        <span class="kw">let </span>(counts, indices, offsets) = bin_lights_cpu(<span class="kw-2">&amp;</span>lights, dims, (<span class="number">320</span>,<span class="number">180</span>), <span class="number">0.1</span>, <span class="number">50.0</span>, std::f32::consts::FRAC_PI_3);
+<a href=#234 id=234 data-nosnippet>234</a>        <span class="comment">// Offsets monotonic and last equals indices length
+<a href=#235 id=235 data-nosnippet>235</a>        </span><span class="macro">assert!</span>(offsets.windows(<span class="number">2</span>).all(|w| w[<span class="number">1</span>] &gt;= w[<span class="number">0</span>]));
+<a href=#236 id=236 data-nosnippet>236</a>        <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>offsets.last().unwrap() <span class="kw">as </span>usize, indices.len());
+<a href=#237 id=237 data-nosnippet>237</a>        <span class="comment">// Indices in range
+<a href=#238 id=238 data-nosnippet>238</a>        </span><span class="kw">for </span><span class="kw-2">&amp;</span>idx <span class="kw">in </span><span class="kw-2">&amp;</span>indices { <span class="macro">assert!</span>((idx <span class="kw">as </span>usize) &lt; lights.len()); }
+<a href=#239 id=239 data-nosnippet>239</a>        <span class="comment">// Counts match offsets delta
+<a href=#240 id=240 data-nosnippet>240</a>        </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..(counts.len()) {
+<a href=#241 id=241 data-nosnippet>241</a>            <span class="macro">assert_eq!</span>(counts[i], offsets[i+<span class="number">1</span>] - offsets[i]);
+<a href=#242 id=242 data-nosnippet>242</a>        }
+<a href=#243 id=243 data-nosnippet>243</a>    }
+<a href=#244 id=244 data-nosnippet>244</a>
+<a href=#245 id=245 data-nosnippet>245</a>    <span class="attr">#[cfg(feature = <span class="string">"gpu-tests"</span>)]
+<a href=#246 id=246 data-nosnippet>246</a>    #[test]
+<a href=#247 id=247 data-nosnippet>247</a>    </span><span class="kw">fn </span>gpu_cpu_counts_parity() {
+<a href=#248 id=248 data-nosnippet>248</a>        <span class="comment">// Setup test data
+<a href=#249 id=249 data-nosnippet>249</a>        </span><span class="kw">let </span>dims = ClusterDims{ x: <span class="number">8</span>, y: <span class="number">4</span>, z: <span class="number">8 </span>};
+<a href=#250 id=250 data-nosnippet>250</a>        <span class="kw">let </span>(w,h) = (<span class="number">320u32</span>, <span class="number">180u32</span>);
+<a href=#251 id=251 data-nosnippet>251</a>        <span class="kw">let </span>near = <span class="number">0.1f32</span>; <span class="kw">let </span>far = <span class="number">50.0f32</span>; <span class="kw">let </span>fov_y = std::f32::consts::FRAC_PI_3;
+<a href=#252 id=252 data-nosnippet>252</a>        <span class="kw">let </span><span class="kw-2">mut </span>rng = rand::rngs::StdRng::seed_from_u64(<span class="number">7</span>);
+<a href=#253 id=253 data-nosnippet>253</a>        <span class="kw">let </span><span class="kw-2">mut </span>lights = Vec::new();
+<a href=#254 id=254 data-nosnippet>254</a>        <span class="kw">for _ in </span><span class="number">0</span>..<span class="number">48 </span>{
+<a href=#255 id=255 data-nosnippet>255</a>            <span class="kw">let </span>x = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, -<span class="number">8.0</span>..<span class="number">8.0</span>);
+<a href=#256 id=256 data-nosnippet>256</a>            <span class="kw">let </span>y = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, -<span class="number">4.0</span>..<span class="number">4.0</span>);
+<a href=#257 id=257 data-nosnippet>257</a>            <span class="kw">let </span>z = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, <span class="number">1.0</span>..<span class="number">40.0</span>);
+<a href=#258 id=258 data-nosnippet>258</a>            <span class="kw">let </span>r = rand::Rng::random_range(<span class="kw-2">&amp;mut </span>rng, <span class="number">0.2</span>..<span class="number">2.5</span>);
+<a href=#259 id=259 data-nosnippet>259</a>            lights.push(CpuLight{ pos: Vec3::new(x,y,z), radius: r });
+<a href=#260 id=260 data-nosnippet>260</a>        }
+<a href=#261 id=261 data-nosnippet>261</a>        <span class="kw">let </span>(counts_cpu, _indices_cpu, offsets_cpu) = bin_lights_cpu(<span class="kw-2">&amp;</span>lights, dims, (w,h), near, far, fov_y);
+<a href=#262 id=262 data-nosnippet>262</a>
+<a href=#263 id=263 data-nosnippet>263</a>        <span class="comment">// Flatten lights for GPU
+<a href=#264 id=264 data-nosnippet>264</a>        </span><span class="attr">#[repr(C)]
+<a href=#265 id=265 data-nosnippet>265</a>        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+<a href=#266 id=266 data-nosnippet>266</a>        </span><span class="kw">struct </span>GpuLight { pos_radius: [f32;<span class="number">4</span>] }
+<a href=#267 id=267 data-nosnippet>267</a>        <span class="attr">#[repr(C)]
+<a href=#268 id=268 data-nosnippet>268</a>        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+<a href=#269 id=269 data-nosnippet>269</a>        </span><span class="kw">struct </span>Params { screen: [u32;<span class="number">2</span>], clusters: [u32;<span class="number">3</span>], near: f32, far: f32, fov_y: f32 }
+<a href=#270 id=270 data-nosnippet>270</a>        <span class="kw">let </span>glights: Vec&lt;GpuLight&gt; = lights.iter().map(|l| GpuLight{ pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius]}).collect();
+<a href=#271 id=271 data-nosnippet>271</a>        <span class="kw">let </span>params = Params{ screen: [w,h], clusters: [dims.x,dims.y,dims.z], near, far, fov_y };
+<a href=#272 id=272 data-nosnippet>272</a>        <span class="kw">let </span>clusters = (dims.x * dims.y * dims.z) <span class="kw">as </span>usize;
+<a href=#273 id=273 data-nosnippet>273</a>        <span class="kw">let </span>offsets = offsets_cpu.clone();
+<a href=#274 id=274 data-nosnippet>274</a>    <span class="kw">let </span>counts_zero = <span class="macro">vec!</span>[<span class="number">0u32</span>; clusters];
+<a href=#275 id=275 data-nosnippet>275</a>        <span class="kw">let </span>n_indices = <span class="kw-2">*</span>offsets_cpu.last().unwrap() <span class="kw">as </span>usize;
+<a href=#276 id=276 data-nosnippet>276</a>        <span class="kw">let </span>indices_zero = <span class="macro">vec!</span>[<span class="number">0u32</span>; n_indices];
+<a href=#277 id=277 data-nosnippet>277</a>
+<a href=#278 id=278 data-nosnippet>278</a>        <span class="comment">// WGPU setup
+<a href=#279 id=279 data-nosnippet>279</a>        </span><span class="kw">let </span>instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+<a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>adapter = pollster::block_on(instance.request_adapter(<span class="kw-2">&amp;</span>wgpu::RequestAdapterOptions{ power_preference: wgpu::PowerPreference::LowPower, compatible_surface: <span class="prelude-val">None</span>, force_fallback_adapter: <span class="bool-val">false </span>})).expect(<span class="string">"adapter"</span>);
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>(device, queue) = pollster::block_on(adapter.request_device(<span class="kw-2">&amp;</span>wgpu::DeviceDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"compute device"</span>), required_features: wgpu::Features::empty(), required_limits: wgpu::Limits::default() }, <span class="prelude-val">None</span>)).expect(<span class="string">"device"</span>);
+<a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"cluster bin"</span>), source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(WGSL_CLUSTER_BIN)) });
+<a href=#283 id=283 data-nosnippet>283</a>        <span class="kw">let </span>bgl = device.create_bind_group_layout(<span class="kw-2">&amp;</span>wgpu::BindGroupLayoutDescriptor{
+<a href=#284 id=284 data-nosnippet>284</a>            label: <span class="prelude-val">Some</span>(<span class="string">"bgl"</span>),
+<a href=#285 id=285 data-nosnippet>285</a>            entries: <span class="kw-2">&amp;</span>[
+<a href=#286 id=286 data-nosnippet>286</a>                wgpu::BindGroupLayoutEntry{ binding:<span class="number">0</span>, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: <span class="bool-val">true </span>}, has_dynamic_offset: <span class="bool-val">false</span>, min_binding_size: <span class="prelude-val">None </span>}, count: <span class="prelude-val">None </span>},
+<a href=#287 id=287 data-nosnippet>287</a>                wgpu::BindGroupLayoutEntry{ binding:<span class="number">1</span>, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: <span class="bool-val">false</span>, min_binding_size: <span class="prelude-val">None </span>}, count: <span class="prelude-val">None </span>},
+<a href=#288 id=288 data-nosnippet>288</a>                wgpu::BindGroupLayoutEntry{ binding:<span class="number">2</span>, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: <span class="bool-val">true </span>}, has_dynamic_offset: <span class="bool-val">false</span>, min_binding_size: <span class="prelude-val">None </span>}, count: <span class="prelude-val">None </span>},
+<a href=#289 id=289 data-nosnippet>289</a>                wgpu::BindGroupLayoutEntry{ binding:<span class="number">3</span>, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: <span class="bool-val">false </span>}, has_dynamic_offset: <span class="bool-val">false</span>, min_binding_size: <span class="prelude-val">None </span>}, count: <span class="prelude-val">None </span>},
+<a href=#290 id=290 data-nosnippet>290</a>                wgpu::BindGroupLayoutEntry{ binding:<span class="number">4</span>, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: <span class="bool-val">false </span>}, has_dynamic_offset: <span class="bool-val">false</span>, min_binding_size: <span class="prelude-val">None </span>}, count: <span class="prelude-val">None </span>},
+<a href=#291 id=291 data-nosnippet>291</a>            ]
+<a href=#292 id=292 data-nosnippet>292</a>        });
+<a href=#293 id=293 data-nosnippet>293</a>        <span class="kw">let </span>pl = device.create_pipeline_layout(<span class="kw-2">&amp;</span>wgpu::PipelineLayoutDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"pl"</span>), bind_group_layouts: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>bgl], push_constant_ranges: <span class="kw-2">&amp;</span>[] });
+<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>pipeline = device.create_compute_pipeline(<span class="kw-2">&amp;</span>wgpu::ComputePipelineDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"cluster"</span>), layout: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>pl), module: <span class="kw-2">&amp;</span>shader, entry_point: <span class="string">"cs_main"</span>, compilation_options: wgpu::PipelineCompilationOptions::default() });
+<a href=#295 id=295 data-nosnippet>295</a>
+<a href=#296 id=296 data-nosnippet>296</a>        <span class="comment">// Buffers
+<a href=#297 id=297 data-nosnippet>297</a>        </span><span class="kw">let </span>buf_lights = device.create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"lights"</span>), contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>glights), usage: wgpu::BufferUsages::STORAGE });
+<a href=#298 id=298 data-nosnippet>298</a>        <span class="kw">let </span>buf_params = device.create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"params"</span>), contents: bytemuck::bytes_of(<span class="kw-2">&amp;</span>params), usage: wgpu::BufferUsages::UNIFORM });
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="kw">let </span>buf_offsets = device.create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"offsets"</span>), contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>offsets), usage: wgpu::BufferUsages::STORAGE });
+<a href=#300 id=300 data-nosnippet>300</a>        <span class="kw">let </span>buf_counts = device.create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"counts"</span>), contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>counts_zero), usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC });
+<a href=#301 id=301 data-nosnippet>301</a>        <span class="kw">let </span>buf_indices = device.create_buffer_init(<span class="kw-2">&amp;</span>wgpu::util::BufferInitDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"indices"</span>), contents: bytemuck::cast_slice(<span class="kw-2">&amp;</span>indices_zero), usage: wgpu::BufferUsages::STORAGE });
+<a href=#302 id=302 data-nosnippet>302</a>        <span class="kw">let </span>bg = device.create_bind_group(<span class="kw-2">&amp;</span>wgpu::BindGroupDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"bg"</span>), layout: <span class="kw-2">&amp;</span>bgl, entries: <span class="kw-2">&amp;</span>[
+<a href=#303 id=303 data-nosnippet>303</a>            wgpu::BindGroupEntry{ binding:<span class="number">0</span>, resource: buf_lights.as_entire_binding() },
+<a href=#304 id=304 data-nosnippet>304</a>            wgpu::BindGroupEntry{ binding:<span class="number">1</span>, resource: buf_params.as_entire_binding() },
+<a href=#305 id=305 data-nosnippet>305</a>            wgpu::BindGroupEntry{ binding:<span class="number">2</span>, resource: buf_offsets.as_entire_binding() },
+<a href=#306 id=306 data-nosnippet>306</a>            wgpu::BindGroupEntry{ binding:<span class="number">3</span>, resource: buf_counts.as_entire_binding() },
+<a href=#307 id=307 data-nosnippet>307</a>            wgpu::BindGroupEntry{ binding:<span class="number">4</span>, resource: buf_indices.as_entire_binding() },
+<a href=#308 id=308 data-nosnippet>308</a>        ]});
+<a href=#309 id=309 data-nosnippet>309</a>
+<a href=#310 id=310 data-nosnippet>310</a>        <span class="comment">// Dispatch: one thread per light
+<a href=#311 id=311 data-nosnippet>311</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>enc = device.create_command_encoder(<span class="kw-2">&amp;</span>wgpu::CommandEncoderDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"enc"</span>) });
+<a href=#312 id=312 data-nosnippet>312</a>        {
+<a href=#313 id=313 data-nosnippet>313</a>            <span class="kw">let </span><span class="kw-2">mut </span>cpass = enc.begin_compute_pass(<span class="kw-2">&amp;</span>wgpu::ComputePassDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"pass"</span>), timestamp_writes: <span class="prelude-val">None </span>});
+<a href=#314 id=314 data-nosnippet>314</a>            cpass.set_pipeline(<span class="kw-2">&amp;</span>pipeline);
+<a href=#315 id=315 data-nosnippet>315</a>            cpass.set_bind_group(<span class="number">0</span>, <span class="kw-2">&amp;</span>bg, <span class="kw-2">&amp;</span>[]);
+<a href=#316 id=316 data-nosnippet>316</a>            cpass.dispatch_workgroups(glights.len() <span class="kw">as </span>u32, <span class="number">1</span>, <span class="number">1</span>);
+<a href=#317 id=317 data-nosnippet>317</a>        }
+<a href=#318 id=318 data-nosnippet>318</a>        <span class="comment">// Copy counts to a mappable buffer
+<a href=#319 id=319 data-nosnippet>319</a>        </span><span class="kw">let </span>buf_counts_read = device.create_buffer(<span class="kw-2">&amp;</span>wgpu::BufferDescriptor{ label: <span class="prelude-val">Some</span>(<span class="string">"counts read"</span>), size: (clusters * std::mem::size_of::&lt;u32&gt;()) <span class="kw">as </span>u64, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: <span class="bool-val">false </span>});
+<a href=#320 id=320 data-nosnippet>320</a>        enc.copy_buffer_to_buffer(<span class="kw-2">&amp;</span>buf_counts, <span class="number">0</span>, <span class="kw-2">&amp;</span>buf_counts_read, <span class="number">0</span>, (clusters * std::mem::size_of::&lt;u32&gt;()) <span class="kw">as </span>u64);
+<a href=#321 id=321 data-nosnippet>321</a>        queue.submit(<span class="prelude-val">Some</span>(enc.finish()));
+<a href=#322 id=322 data-nosnippet>322</a>        device.poll(wgpu::Maintain::Wait);
+<a href=#323 id=323 data-nosnippet>323</a>        <span class="comment">// Map and compare
+<a href=#324 id=324 data-nosnippet>324</a>    </span><span class="kw">let </span>slice = buf_counts_read.slice(..);
+<a href=#325 id=325 data-nosnippet>325</a>    <span class="kw">let </span>(tx, rx) = std::sync::mpsc::sync_channel(<span class="number">1</span>);
+<a href=#326 id=326 data-nosnippet>326</a>    slice.map_async(wgpu::MapMode::Read, <span class="kw">move </span>|res| { <span class="kw">let _ </span>= tx.send(res); });
+<a href=#327 id=327 data-nosnippet>327</a>    device.poll(wgpu::Maintain::Wait);
+<a href=#328 id=328 data-nosnippet>328</a>    <span class="kw">let _ </span>= rx.recv().expect(<span class="string">"map result"</span>).expect(<span class="string">"map ok"</span>);
+<a href=#329 id=329 data-nosnippet>329</a>    <span class="kw">let </span>data = slice.get_mapped_range();
+<a href=#330 id=330 data-nosnippet>330</a>        <span class="kw">let </span>counts_gpu: Vec&lt;u32&gt; = bytemuck::cast_slice(<span class="kw-2">&amp;</span>data).to_vec();
+<a href=#331 id=331 data-nosnippet>331</a>        drop(data);
+<a href=#332 id=332 data-nosnippet>332</a>        buf_counts_read.unmap();
+<a href=#333 id=333 data-nosnippet>333</a>
+<a href=#334 id=334 data-nosnippet>334</a>        <span class="macro">assert_eq!</span>(counts_gpu.len(), counts_cpu.len());
+<a href=#335 id=335 data-nosnippet>335</a>        <span class="macro">assert_eq!</span>(counts_gpu, counts_cpu);
+<a href=#336 id=336 data-nosnippet>336</a>    }
+<a href=#337 id=337 data-nosnippet>337</a>}</code></pre></div></section></main></body></html>
