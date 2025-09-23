@@ -17,3 +17,4 @@ serde_json = { workspace = true }
 
 astraweave-input = { path = "../astraweave-input" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }
+astraweave-cinematics = { path = "../astraweave-cinematics" }

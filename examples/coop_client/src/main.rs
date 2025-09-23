@@ -6,6 +6,11 @@ use tokio_tungstenite::tungstenite::Message;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let mut policy = "radius".to_string();
+    for w in args.windows(2) {
+        if w[0] == "--policy" { policy = w[1].clone(); }
+    }
     let (ws, _) = tokio_tungstenite::connect_async("ws://127.0.0.1:9090").await?;
     let (mut tx, mut rx) = ws.split();
 
@@ -13,7 +18,7 @@ async fn main() -> Result<()> {
     tx.send(Message::Text(serde_json::to_string(&Msg::ClientHello {
         name: "player1".into(),
         token: Some("dev".into()),
-        policy: Some("radius".into()),
+        policy: Some(policy),
     })?.into()))
     .await?;
 

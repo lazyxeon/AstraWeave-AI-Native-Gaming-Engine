@@ -17,6 +17,10 @@ astraweave-terrain = { path = "../astraweave-terrain" }
 astraweave-materials = { path = "../astraweave-materials" }
 image = { version = "0.25", optional = true }
 
+# Cinematics for camera/timeline control
+astraweave-cinematics = { path = "../astraweave-cinematics" }
+serde_json = "1"
+
 [features]
 default = ["textures"]
 textures = ["image"]

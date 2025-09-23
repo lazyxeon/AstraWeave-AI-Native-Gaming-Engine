@@ -1,6 +1,6 @@
 [package]
 name = "astraweave-sdk"
-version = "0.1.0"
+version = "0.4.0"
 license.workspace = true
 edition = "2021"
 
@@ -9,3 +9,15 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+astraweave-core = { path = "../astraweave-core" }
+
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[dev-dependencies]
+cbindgen = "0.27"
+
+[package.metadata.cbindgen]
+language = "C"
+header = "// AstraWeave SDK — generated header\n// Do not edit manually\n"
+include-version = true
