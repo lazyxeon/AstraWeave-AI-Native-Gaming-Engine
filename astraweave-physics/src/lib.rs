@@ -28,6 +28,9 @@ pub enum CharState {
 pub struct CharacterController {
     pub state: CharState,
     pub max_climb_angle_deg: f32,
+    pub radius: f32,
+    pub height: f32,
+    pub max_step: f32,
 }
 
 pub struct PhysicsWorld {
@@ -163,27 +166,64 @@ impl PhysicsWorld {
             .build();
         self.colliders.insert_with_parent(coll, h, &mut self.bodies);
         let id = self.tag_body(h, ActorKind::Character);
-        self.char_map.insert(
-            id,
-            CharacterController {
-                state: CharState::Grounded,
-                max_climb_angle_deg: 70.0,
-            },
-        );
+        self.char_map.insert(id, CharacterController { state: CharState::Grounded, max_climb_angle_deg: 70.0, radius: half.x.max(half.z), height: half.y * 2.0, max_step: 0.4 });
         id
     }
 
     pub fn control_character(&mut self, id: BodyId, desired_move: Vec3, dt: f32, _climb: bool) {
-        if let Some(_ctrl) = self.char_map.get_mut(&id) {
-            if let Some(h) = self.handle_of(id) {
-                if let Some(rb) = self.bodies.get_mut(h) {
-                    let mut p = *rb.position();
-                    p.translation.x += desired_move.x * dt;
-                    p.translation.y += desired_move.y * dt;
-                    p.translation.z += desired_move.z * dt;
-                    rb.set_position(p, true);
-                }
+    let Some(ctrl) = self.char_map.get(&id).copied() else { return; };
+        let Some(h) = self.handle_of(id) else { return; };
+        let Some(rb) = self.bodies.get(h) else { return; };
+    let pos = *rb.position();
+        let start = glam::Vec3::new(pos.translation.x, pos.translation.y, pos.translation.z);
+        let mut d = desired_move * dt;
+        if d.length_squared() < 1e-6 { return; }
+
+        // Basic obstacle avoidance: raycast forward; slide along hit normal
+        let dir = d.normalize();
+        let ray_origin = start + glam::Vec3::Y * (ctrl.height * 0.5);
+        let ray = rapier3d::prelude::Ray::new(point![ray_origin.x, ray_origin.y, ray_origin.z], vector![dir.x, dir.y, dir.z]);
+        let filter = QueryFilter::default();
+        if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(&self.bodies, &self.colliders, &ray, d.length() + ctrl.radius + 0.05, true, filter) {
+            // Deflect movement along tangent plane
+            let n = glam::Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z).normalize();
+            d = d - n * d.dot(n);
+        }
+
+        // Tentative horizontal move
+        let mut new_pos = start + glam::Vec3::new(d.x, 0.0, d.z);
+
+        // Step/slope correction: raycast down from above feet
+        let cast_origin = new_pos + glam::Vec3::Y * (ctrl.height);
+        let ray_down = rapier3d::prelude::Ray::new(point![cast_origin.x, cast_origin.y, cast_origin.z], vector![0.0, -1.0, 0.0]);
+        if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(&self.bodies, &self.colliders, &ray_down, ctrl.height + ctrl.max_step + 1.0, true, QueryFilter::default()) {
+            let ground_normal = glam::Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z).normalize();
+            let slope = ground_normal.dot(glam::Vec3::Y).acos().to_degrees();
+            // Compute ground height at hit
+            let ground_y = cast_origin.y - hit.time_of_impact;
+            // Allow stepping up small ledges and restrict slope
+            if slope <= ctrl.max_climb_angle_deg + 1e-2 {
+                // If we need to step up more than max_step, clamp to max_step
+                let desired_y = (ground_y + ctrl.radius).max(start.y - 0.1);
+                let climb = desired_y - start.y;
+                let clamp_climb = climb.clamp(-ctrl.max_step, ctrl.max_step);
+                new_pos.y = start.y + clamp_climb;
+            } else {
+                // Too steep; cancel vertical change
+                new_pos.y = start.y;
             }
+        } else {
+            // No ground: keep current height
+            new_pos.y = start.y;
+        }
+
+        // Commit move
+        let mut p = pos;
+        p.translation.x = new_pos.x;
+        p.translation.y = new_pos.y;
+        p.translation.z = new_pos.z;
+        if let Some(rbmut) = self.bodies.get_mut(h) {
+            rbmut.set_position(p, true);
         }
     }
 

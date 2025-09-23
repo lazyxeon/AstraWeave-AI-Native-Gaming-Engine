@@ -259,10 +259,13 @@ impl AudioEngine {
         let src = Decoder::new(BufReader::new(file))?;
         // duck music during voice
         self.music.duck(self.duck_factor);
+        // Prefer decoder-reported total duration when available
         if let Some(sec) = approximate_sec {
             self.duck_timer = sec.max(0.1);
+        } else if let Some(d) = src.total_duration() {
+            self.duck_timer = d.as_secs_f32().clamp(0.1, 30.0);
         } else {
-            // fallback: estimate from samples/ rate if available
+            // fallback heuristic
             self.duck_timer = 2.5;
         }
         self.voice.append(src);

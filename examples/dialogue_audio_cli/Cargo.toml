@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = { workspace = true }
-astraweave-audio = { path = "../../astraweave-audio" }
+astraweave-audio = { path = "../../astraweave-audio", features = ["mock_tts"] }
 astraweave-gameplay = { path = "../../astraweave-gameplay" }
