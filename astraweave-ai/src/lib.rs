@@ -1,3 +1,5 @@
+pub mod orchestrator;
+pub mod tool_sandbox;
 use astraweave_core::{ActionStep, IVec2, PlanIntent, WorldSnapshot};
 #[cfg(feature = "llm_orchestrator")]
 use astraweave_core::{ToolRegistry, default_tool_registry};

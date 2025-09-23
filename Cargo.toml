@@ -59,6 +59,8 @@ members = [
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
+  "astraweave-dialogue",
+  "astraweave-quests",
   "tools/aw_debug",
   "tools/aw_build",
   "tools/aw_texture_gen",

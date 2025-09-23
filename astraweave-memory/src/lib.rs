@@ -7,6 +7,10 @@ pub struct Persona {
     pub risk: String,
     pub humor: String,
     pub voice: String,
+    pub backstory: String,
+    pub likes: Vec<String>,
+    pub dislikes: Vec<String>,
+    pub goals: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -45,12 +49,16 @@ pub struct CompanionProfile {
 impl CompanionProfile {
     pub fn new_default() -> Self {
         Self {
-            version: "1.0.0".into(),
+            version: "1.1.0".into(),
             persona: Persona {
                 tone: "dry".into(),
                 risk: "medium".into(),
                 humor: "light".into(),
                 voice: "v01".into(),
+                backstory: "Raised in the shadow of the old forest, loyal to the player.".into(),
+                likes: vec!["stealth missions".into(), "ancient ruins".into()],
+                dislikes: vec!["loud noises".into()],
+                goals: vec!["protect the player".into(), "uncover lost secrets".into()],
             },
             player_prefs: serde_json::json!({"stealth_bias":0.5,"loot_greed":0.2}),
             facts: vec![],

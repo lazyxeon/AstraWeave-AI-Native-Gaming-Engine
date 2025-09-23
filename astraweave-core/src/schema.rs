@@ -1,3 +1,59 @@
+// Default implementations for test scaffolding
+impl Default for PlayerState {
+    fn default() -> Self {
+        PlayerState {
+            hp: 100,
+            pos: IVec2 { x: 0, y: 0 },
+            stance: "stand".to_string(),
+            orders: vec![],
+        }
+    }
+}
+
+impl Default for CompanionState {
+    fn default() -> Self {
+        CompanionState {
+            ammo: 10,
+            cooldowns: BTreeMap::new(),
+            morale: 1.0,
+            pos: IVec2 { x: 0, y: 0 },
+        }
+    }
+}
+
+impl Default for EnemyState {
+    fn default() -> Self {
+        EnemyState {
+            id: 0,
+            pos: IVec2 { x: 0, y: 0 },
+            hp: 100,
+            cover: "none".to_string(),
+            last_seen: 0.0,
+        }
+    }
+}
+
+impl Default for Poi {
+    fn default() -> Self {
+        Poi {
+            k: "poi".to_string(),
+            pos: IVec2 { x: 0, y: 0 },
+        }
+    }
+}
+
+impl Default for WorldSnapshot {
+    fn default() -> Self {
+        WorldSnapshot {
+            t: 0.0,
+            player: PlayerState::default(),
+            me: CompanionState::default(),
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+        }
+    }
+}
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -50,7 +106,7 @@ pub struct Poi {
     pub pos: IVec2,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct PlanIntent {
     pub plan_id: String,
     pub steps: Vec<ActionStep>,
