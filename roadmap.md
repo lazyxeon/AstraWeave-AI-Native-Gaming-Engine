@@ -77,7 +77,7 @@ Exit Criteria
 - Visual benchmark scene parity: lighting/features comparable to a mid-level UE5 scene (no Nanite/Lumen yet) at 60 FPS 1080p on a mid-tier GPU.
 - Editor: import a mid-complexity scene, edit materials, bake a light cache, profile frame breakdown.
 
-Phase 3 (12–18 months): Multiplayer, Determinism, and Scale
+✅ Phase 3 (12–18 months): Multiplayer, Determinism, and Scale
 DoD
 - Net sim soak test: 10-minute run without desync at 60 Hz; packet loss scenarios covered.
 - Replays deterministic across platforms; snapshot delta size within budget.
