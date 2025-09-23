@@ -1,0 +1,12 @@
+[package]
+name = "sdk_c_harness"
+version = "0.1.0"
+license.workspace = true
+edition = "2021"
+
+[dependencies]
+libc = "0.2"
+astraweave-sdk = { path = "../../astraweave-sdk" }
+
+[build-dependencies]
+cc = "1"

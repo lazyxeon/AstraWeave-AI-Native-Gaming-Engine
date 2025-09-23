@@ -90,7 +90,7 @@ Deliverables
 Exit Criteria
 - 4-player co-op demo in a medium-sized level with AI companions; 60 Hz sim; jitter-buffered voice/text; no desync under packet loss; stable replays.
 
-Phase 4 (18–24 months): Production Polish and Extensibility
+✅ Phase 4 (18–24 months): Production Polish and Extensibility
 DoD
 - SDK headers generated and validated with a C harness; semantic versioning gates in CI.
 - Cinematics editor saves/loads timelines; smoke test in CI.

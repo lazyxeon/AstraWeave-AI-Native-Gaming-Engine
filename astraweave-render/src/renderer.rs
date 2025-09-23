@@ -7,6 +7,7 @@ use wgpu::util::DeviceExt;
 use crate::post::{WGSL_SSR, WGSL_SSAO, WGSL_SSGI};
 
 use crate::camera::Camera;
+use astraweave_cinematics as awc;
 use crate::depth::Depth;
 use crate::primitives;
 use crate::types::{Instance, InstanceRaw, Mesh};
@@ -456,6 +457,11 @@ pub struct Renderer {
     timestamp_query_set: wgpu::QuerySet,
     #[cfg(feature = "gpu-tests")]
     timestamp_buf: wgpu::Buffer,
+
+    // Cinematics integration
+    cin_tl: Option<awc::Timeline>,
+    cin_seq: awc::Sequencer,
+    cin_playing: bool,
 }
 
 impl Renderer {
@@ -1565,6 +1571,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             timestamp_query_set,
             #[cfg(feature = "gpu-tests")]
             timestamp_buf,
+            // Cinematics
+            cin_tl: None,
+            cin_seq: awc::Sequencer::new(),
+            cin_playing: false,
             cascade0: Mat4::IDENTITY,
             cascade1: Mat4::IDENTITY,
             split0: 60.0,
@@ -1610,6 +1620,59 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             #[cfg(feature = "postfx")]
             post_fx_bind_group,
         })
+    }
+
+    // --- Cinematics wiring ---
+    fn apply_camera_key(cam: &mut Camera, k: &awc::CameraKey) {
+        let pos = glam::Vec3::new(k.pos.0, k.pos.1, k.pos.2);
+        let look = glam::Vec3::new(k.look_at.0, k.look_at.1, k.look_at.2);
+        let dir = (look - pos).normalize_or_zero();
+        let yaw = dir.z.atan2(dir.x);
+        let pitch = dir.y.clamp(-1.0, 1.0).asin();
+        cam.position = pos;
+        cam.yaw = yaw;
+        cam.pitch = pitch;
+        cam.fovy = k.fov_deg.to_radians();
+    }
+
+    pub fn load_timeline_json(&mut self, json: &str) -> Result<()> {
+        let tl: awc::Timeline = serde_json::from_str(json)?;
+        self.cin_tl = Some(tl);
+        self.cin_seq.seek(awc::Time(0.0));
+        Ok(())
+    }
+
+    pub fn save_timeline_json(&self) -> Option<String> {
+        self.cin_tl.as_ref().and_then(|tl| serde_json::to_string_pretty(tl).ok())
+    }
+
+    pub fn play_timeline(&mut self) { self.cin_playing = true; }
+    pub fn stop_timeline(&mut self) { self.cin_playing = false; }
+    pub fn seek_timeline(&mut self, t: f32) { self.cin_seq.seek(awc::Time(t)); }
+
+    /// Step the sequencer and apply camera keys; returns emitted events (for audio/FX handling by caller)
+    pub fn tick_cinematics(&mut self, dt: f32, camera: &mut Camera) -> Vec<awc::SequencerEvent> {
+        let mut out = Vec::new();
+        if !self.cin_playing { return out; }
+        if let Some(tl) = self.cin_tl.as_ref() {
+            if let Ok(evs) = self.cin_seq.step(dt, tl) {
+                for e in &evs {
+                    match e {
+                        awc::SequencerEvent::CameraKey(k) => Self::apply_camera_key(camera, k),
+                        awc::SequencerEvent::FxTrigger { name, params } => {
+                            // Minimal FX: support fade-in by instantly clearing letterbox/fade
+                            if name == "fade-in" {
+                                let _ = params; // reserved
+                                self.overlay_params.fade = 0.0;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                out = evs;
+            }
+        }
+        out
     }
 
     pub fn resize(&mut self, new_w: u32, new_h: u32) {
