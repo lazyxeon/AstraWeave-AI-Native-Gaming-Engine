@@ -21,6 +21,7 @@ image = { version = "0.25", optional = true }
 default = ["textures"]
 textures = ["image"]
 gpu-tests = []
+postfx = []
 
 [dev-dependencies]
 naga = "0.20"

@@ -3,6 +3,8 @@ use glam::{vec3, Mat4};
 use glam::Vec4Swizzles;
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
+#[cfg(feature = "postfx")]
+use crate::post::{WGSL_SSR, WGSL_SSAO, WGSL_SSGI};
 
 use crate::camera::Camera;
 use crate::depth::Depth;
@@ -10,6 +12,7 @@ use crate::primitives;
 use crate::types::{Instance, InstanceRaw, Mesh};
 use crate::types::SkinnedVertex;
 use astraweave_materials::MaterialPackage;
+use crate::clustered::{WGSL_CLUSTER_BIN, CpuLight, ClusterDims, bin_lights_cpu};
 
 const SHADER_SRC: &str = r#"
 struct VSIn {
@@ -73,6 +76,15 @@ struct MainLightUbo {
 @group(4) @binding(1) var mr_samp: sampler;
 @group(4) @binding(2) var normal_tex: texture_2d<f32>;  // tangent-space normal in RGB
 @group(4) @binding(3) var normal_samp: sampler;
+
+// Clustered lighting resources
+struct CParams { screen: vec2<u32>, clusters: vec3<u32>, near: f32, far: f32, fov_y: f32 };
+struct PLight { pos_radius: vec4<f32> };
+@group(5) @binding(0) var<uniform> uCParams: CParams;
+@group(5) @binding(1) var<storage, read> cLights: array<PLight>;
+@group(5) @binding(2) var<storage, read> cOffsets: array<u32>;
+@group(5) @binding(3) var<storage, read> cCounts: array<u32>;
+@group(5) @binding(4) var<storage, read> cIndices: array<u32>;
 
 @vertex
 fn vs(input: VSIn) -> VSOut {
@@ -151,16 +163,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let kd = (vec3<f32>(1.0,1.0,1.0) - F) * (1.0 - metallic);
     let diffuse = kd * base_color / 3.14159;
 
-    let radiance = vec3<f32>(1.0, 0.98, 0.9); // light color
+    let radiance = vec3<f32>(1.0, 0.98, 0.9); // dir light color
         // Shadow sampling
         // Cascaded shadow mapping (2 cascades)
-        let dist = length(input.world_pos);
+    let dist = length(input.world_pos);
         let use_c0 = dist < uLight.splits.x;
         let lvp = select(uLight.view_proj1, uLight.view_proj0, use_c0);
         let lp = lvp * vec4<f32>(input.world_pos, 1.0);
-        let ndc = lp.xyz / lp.w;
-        let uv = ndc.xy * 0.5 + vec2<f32>(0.5, 0.5);
-        let depth = ndc.z;
+    let ndc_shadow = lp.xyz / lp.w;
+    let uv = ndc_shadow.xy * 0.5 + vec2<f32>(0.5, 0.5);
+    let depth = ndc_shadow.z;
     let slope = max(0.0, 1.0 - dot(N, L));
     let base_bias = uLight.extras.y;
     let bias = max(base_bias /* + slope_scale * slope */ , 0.00001);
@@ -185,7 +197,37 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let tint = select(vec3<f32>(0.0, 0.2, 1.0), vec3<f32>(1.0, 0.3, 0.0), use_c0);
             base_color = mix(base_color, tint, 0.35);
         }
-        let lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.02; // tiny ambient
+        var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.02; // tiny ambient
+        // Clustered point lights accumulation (Lambert + simple attenuation)
+    let width = f32(uCParams.screen.x); let height = f32(uCParams.screen.y);
+        let aspect = width / max(height, 1.0);
+        let fy = 1.0 / tan(0.5 * uCParams.fov_y);
+        let fx = fy / aspect;
+    let clip = (uCamera.view_proj * vec4<f32>(input.world_pos, 1.0));
+    let ndc = clip.xyz / clip.w; // proper perspective divide
+    let ndcz = ndc.z;
+        let tile_w = max(1.0, width / f32(uCParams.clusters.x));
+        let tile_h = max(1.0, height / f32(uCParams.clusters.y));
+        let px = input.uv.x * width; // approximated from uv
+        let py = input.uv.y * height;
+        let ix = u32(clamp(floor(px / tile_w), 0.0, f32(uCParams.clusters.x - 1u)));
+        let iy = u32(clamp(floor(py / tile_h), 0.0, f32(uCParams.clusters.y - 1u)));
+        let iz = u32(clamp(floor(((ndcz - uCParams.near) / (uCParams.far - uCParams.near)) * f32(uCParams.clusters.z)), 0.0, f32(uCParams.clusters.z - 1u)));
+        let ci = ix + iy * uCParams.clusters.x + iz * (uCParams.clusters.x * uCParams.clusters.y);
+        let start = cOffsets[ci];
+        let count = cCounts[ci];
+        let maxL = min(count, 64u);
+        for (var i: u32 = 0u; i < maxL; i = i + 1u) {
+            let li = cIndices[start + i];
+            let Ld = cLights[li].pos_radius;
+            let Lpos = Ld.xyz; let Lrad = Ld.w;
+            let Lvec = Lpos - input.world_pos;
+            let dist = length(Lvec) + 1e-5;
+            let Lnorm = Lvec / dist;
+            let atten = clamp(1.0 - dist / Lrad, 0.0, 1.0);
+            let NdotLp = max(dot(N, Lnorm), 0.0);
+            lit_color = lit_color + base_color * NdotLp * atten;
+        }
         let color = lit_color;
     return vec4<f32>(color, uMaterial.base_color.a * input.color.a);
 }
@@ -226,6 +268,45 @@ fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
 }
 "#;
 
+#[cfg(feature = "postfx")]
+const POST_SHADER_FX: &str = r#"
+struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
+    var pos = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -3.0),
+        vec2<f32>( 3.0,  1.0),
+        vec2<f32>(-1.0,  1.0)
+    );
+    var out: VSOut;
+    out.pos = vec4<f32>(pos[vid], 0.0, 1.0);
+    out.uv = (pos[vid] + vec2<f32>(1.0,1.0)) * 0.5;
+    return out;
+}
+
+@group(0) @binding(0) var hdr_tex: texture_2d<f32>;
+@group(0) @binding(1) var ao_tex: texture_2d<f32>;
+@group(0) @binding(2) var gi_tex: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@fragment
+fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
+    let hdr = textureSampleLevel(hdr_tex, samp, in.uv, 0.0).rgb;
+    let ao = textureSampleLevel(ao_tex, samp, in.uv, 0.0).r;
+    let gi = textureSampleLevel(gi_tex, samp, in.uv, 0.0).rgb;
+    let ao_strength = 0.6;
+    let gi_strength = 0.2;
+    let comp = hdr * (1.0 - ao * ao_strength) + gi * gi_strength;
+    let mapped = aces_tonemap(comp);
+    return vec4<f32>(mapped, 1.0);
+}
+"#;
+
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct CameraUBO {
@@ -251,6 +332,40 @@ pub struct Renderer {
     hdr_tex: wgpu::Texture,
     hdr_view: wgpu::TextureView,
     hdr_sampler: wgpu::Sampler,
+    #[cfg(feature = "postfx")]
+    hdr_aux: wgpu::Texture,
+    #[cfg(feature = "postfx")]
+    hdr_aux_view: wgpu::TextureView,
+    #[cfg(feature = "postfx")]
+    fx_gi: wgpu::Texture,
+    #[cfg(feature = "postfx")]
+    fx_gi_view: wgpu::TextureView,
+    #[cfg(feature = "postfx")]
+    fx_ao: wgpu::Texture,
+    #[cfg(feature = "postfx")]
+    fx_ao_view: wgpu::TextureView,
+    #[cfg(feature = "postfx")]
+    ssr_bgl: wgpu::BindGroupLayout,
+    #[cfg(feature = "postfx")]
+    ssr_bind_group: wgpu::BindGroup,
+    #[cfg(feature = "postfx")]
+    ssr_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    ssao_bgl: wgpu::BindGroupLayout,
+    #[cfg(feature = "postfx")]
+    ssao_bind_group: wgpu::BindGroup,
+    #[cfg(feature = "postfx")]
+    ssao_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    ssgi_bgl: wgpu::BindGroupLayout,
+    #[cfg(feature = "postfx")]
+    ssgi_bind_group: wgpu::BindGroup,
+    #[cfg(feature = "postfx")]
+    ssgi_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    post_fx_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    post_fx_bind_group: wgpu::BindGroup,
     // Shadow resources
     #[allow(dead_code)]
     shadow_tex: wgpu::Texture,
@@ -320,6 +435,27 @@ pub struct Renderer {
     skin_palette_buf: wgpu::Buffer,
     skinned_pipeline: wgpu::RenderPipeline,
     skinned_mesh: Option<(wgpu::Buffer, wgpu::Buffer, u32)>, // (vbuf, ibuf, index_count)
+
+    // Clustered lighting resources
+    clustered_dims: ClusterDims,
+    clustered_params_buf: wgpu::Buffer,
+    clustered_lights_buf: wgpu::Buffer,
+    clustered_offsets_buf: wgpu::Buffer,
+    clustered_counts_buf: wgpu::Buffer,
+    #[allow(dead_code)]
+    clustered_indices_buf: wgpu::Buffer,
+    #[allow(dead_code)]
+    clustered_bgl: wgpu::BindGroupLayout,
+    clustered_bg: wgpu::BindGroup,
+    #[allow(dead_code)]
+    clustered_comp_bgl: wgpu::BindGroupLayout,
+    clustered_comp_bg: wgpu::BindGroup,
+    clustered_comp_pipeline: wgpu::ComputePipeline,
+    point_lights: Vec<CpuLight>,
+    #[cfg(feature = "gpu-tests")]
+    timestamp_query_set: wgpu::QuerySet,
+    #[cfg(feature = "gpu-tests")]
+    timestamp_buf: wgpu::Buffer,
 }
 
 impl Renderer {
@@ -362,7 +498,13 @@ impl Renderer {
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: Some("device"),
-                    required_features: wgpu::Features::empty(),
+                    required_features: {
+                        let f = wgpu::Features::empty();
+                        #[cfg(feature = "gpu-tests")]
+                        { wgpu::Features::TIMESTAMP_QUERY }
+                        #[cfg(not(feature = "gpu-tests"))]
+                        { f }
+                    },
                     required_limits: wgpu::Limits::default(),
                 },
                 None,
@@ -388,7 +530,12 @@ impl Renderer {
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
-        surface.configure(&device, &config);
+    surface.configure(&device, &config);
+
+    #[cfg(feature = "gpu-tests")]
+    let timestamp_query_set = device.create_query_set(&wgpu::QuerySetDescriptor{ label: Some("timestamps"), ty: wgpu::QueryType::Timestamp, count: 2 });
+    #[cfg(feature = "gpu-tests")]
+    let timestamp_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("ts readback"), size: 16, usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ, mapped_at_creation: false });
 
         // Depth
         let depth = crate::depth::Depth::create(&device, &config);
@@ -479,6 +626,28 @@ impl Renderer {
             ..Default::default()
         });
 
+        #[cfg(feature = "postfx")]
+        let hdr_aux = device.create_texture(&wgpu::TextureDescriptor{
+            label: Some("hdr aux tex"),
+            size: wgpu::Extent3d{ width: config.width, height: config.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        #[cfg(feature = "postfx")]
+        let hdr_aux_view = hdr_aux.create_view(&wgpu::TextureViewDescriptor::default());
+    #[cfg(feature = "postfx")]
+    let fx_gi = device.create_texture(&wgpu::TextureDescriptor{ label: Some("fx gi tex"), size: wgpu::Extent3d{ width: config.width, height: config.height, depth_or_array_layers: 1 }, mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2, format: wgpu::TextureFormat::Rgba16Float, usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, view_formats: &[] });
+    #[cfg(feature = "postfx")]
+    let fx_gi_view = fx_gi.create_view(&wgpu::TextureViewDescriptor::default());
+    #[cfg(feature = "postfx")]
+    let fx_ao = device.create_texture(&wgpu::TextureDescriptor{ label: Some("fx ao tex"), size: wgpu::Extent3d{ width: config.width, height: config.height, depth_or_array_layers: 1 }, mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2, format: wgpu::TextureFormat::Rgba16Float, usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, view_formats: &[] });
+    #[cfg(feature = "postfx")]
+    let fx_ao_view = fx_ao.create_view(&wgpu::TextureViewDescriptor::default());
+
         // Postprocess pipeline
         let post_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{
             label: Some("post shader"),
@@ -509,10 +678,131 @@ impl Renderer {
             label: Some("post bg"),
             layout: &post_bgl,
             entries: &[
+                #[cfg(not(feature = "postfx"))]
                 wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&hdr_view)},
+                #[cfg(feature = "postfx")]
+                wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&hdr_aux_view)},
                 wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::Sampler(&hdr_sampler)},
             ],
         });
+
+        // Feature-gated SSR pass (passthrough using color + depth)
+        #[cfg(feature = "postfx")]
+        let ssr_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{
+            label: Some("ssr shader"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(WGSL_SSR)),
+        });
+        #[cfg(feature = "postfx")]
+        let ssr_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("ssr bgl"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{ // color_tex
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry{ // depth_tex
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Depth, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry{ // sampler
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+        #[cfg(feature = "postfx")]
+        let ssr_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+            label: Some("ssr bg"),
+            layout: &ssr_bgl,
+            entries: &[
+                wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&hdr_view)},
+                wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&depth.view)},
+                wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::Sampler(&hdr_sampler)},
+            ],
+        });
+        #[cfg(feature = "postfx")]
+        let ssr_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{
+            label: Some("ssr layout"),
+            bind_group_layouts: &[&ssr_bgl],
+            push_constant_ranges: &[],
+        });
+        #[cfg(feature = "postfx")]
+        let ssr_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{
+            label: Some("ssr pipeline"),
+            layout: Some(&ssr_pl),
+            vertex: wgpu::VertexState{ module: &ssr_shader, entry_point: "vs_main", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() },
+            fragment: Some(wgpu::FragmentState{ module: &ssr_shader, entry_point: "fs_main", targets: &[Some(wgpu::ColorTargetState{ format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })], compilation_options: wgpu::PipelineCompilationOptions::default() }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
+
+        // SSAO
+        #[cfg(feature = "postfx")]
+        let ssao_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{ label: Some("ssao shader"), source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(WGSL_SSAO)) });
+        #[cfg(feature = "postfx")]
+        let ssao_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{ label: Some("ssao bgl"), entries: &[
+            wgpu::BindGroupLayoutEntry{ binding:1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Depth, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+        ]});
+        #[cfg(feature = "postfx")]
+        let ssao_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("ssao bg"), layout: &ssao_bgl, entries: &[
+            wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&depth.view)},
+            wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::Sampler(&hdr_sampler)},
+        ]});
+        #[cfg(feature = "postfx")]
+        let ssao_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{ label: Some("ssao layout"), bind_group_layouts: &[&ssao_bgl], push_constant_ranges: &[] });
+        #[cfg(feature = "postfx")]
+        let ssao_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{ label: Some("ssao pipeline"), layout: Some(&ssao_pl), vertex: wgpu::VertexState{ module: &ssao_shader, entry_point: "vs_main", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() }, fragment: Some(wgpu::FragmentState{ module: &ssao_shader, entry_point: "fs_main", targets: &[Some(wgpu::ColorTargetState{ format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })], compilation_options: wgpu::PipelineCompilationOptions::default() }), primitive: wgpu::PrimitiveState::default(), depth_stencil: None, multisample: wgpu::MultisampleState::default(), multiview: None });
+
+        // SSGI
+        #[cfg(feature = "postfx")]
+        let ssgi_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{ label: Some("ssgi shader"), source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(WGSL_SSGI)) });
+        #[cfg(feature = "postfx")]
+        let ssgi_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{ label: Some("ssgi bgl"), entries: &[
+            wgpu::BindGroupLayoutEntry{ binding:0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Depth, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+        ]});
+        #[cfg(feature = "postfx")]
+        let ssgi_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("ssgi bg"), layout: &ssgi_bgl, entries: &[
+            wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&normal_view)},
+            wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&depth.view)},
+            wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::Sampler(&hdr_sampler)},
+        ]});
+        #[cfg(feature = "postfx")]
+        let ssgi_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{ label: Some("ssgi layout"), bind_group_layouts: &[&ssgi_bgl], push_constant_ranges: &[] });
+        #[cfg(feature = "postfx")]
+        let ssgi_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{ label: Some("ssgi pipeline"), layout: Some(&ssgi_pl), vertex: wgpu::VertexState{ module: &ssgi_shader, entry_point: "vs_main", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() }, fragment: Some(wgpu::FragmentState{ module: &ssgi_shader, entry_point: "fs_main", targets: &[Some(wgpu::ColorTargetState{ format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })], compilation_options: wgpu::PipelineCompilationOptions::default() }), primitive: wgpu::PrimitiveState::default(), depth_stencil: None, multisample: wgpu::MultisampleState::default(), multiview: None });
+
+        // Post-fx composition pipeline
+        #[cfg(feature = "postfx")]
+        let post_fx_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{ label: Some("post fx shader"), source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER_FX)) });
+        #[cfg(feature = "postfx")]
+        let post_fx_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{ label: Some("post fx bgl"), entries: &[
+            wgpu::BindGroupLayoutEntry{ binding:0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture{ sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+        ]});
+        #[cfg(feature = "postfx")]
+        let post_fx_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("post fx bg"), layout: &post_fx_bgl, entries: &[
+            wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&hdr_aux_view)},
+            wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&fx_ao_view)},
+            wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::TextureView(&fx_gi_view)},
+            wgpu::BindGroupEntry{ binding:3, resource: wgpu::BindingResource::Sampler(&hdr_sampler)},
+        ]});
+        #[cfg(feature = "postfx")]
+        let post_fx_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{ label: Some("post fx layout"), bind_group_layouts: &[&post_fx_bgl], push_constant_ranges: &[] });
+        #[cfg(feature = "postfx")]
+        let post_fx_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{ label: Some("post fx pipeline"), layout: Some(&post_fx_pl), vertex: wgpu::VertexState{ module: &post_fx_shader, entry_point: "vs_main", buffers: &[], compilation_options: wgpu::PipelineCompilationOptions::default() }, fragment: Some(wgpu::FragmentState{ module: &post_fx_shader, entry_point: "fs_main", targets: &[Some(wgpu::ColorTargetState{ format, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })], compilation_options: wgpu::PipelineCompilationOptions::default() }), primitive: wgpu::PrimitiveState::default(), depth_stencil: None, multisample: wgpu::MultisampleState::default(), multiview: None });
 
         // Shadow bind group layout (declared early so we can include it in main pipeline layout)
         let shadow_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
@@ -577,9 +867,21 @@ impl Renderer {
             ]
         });
 
+        // Clustered lighting bind group layout (fragment reads)
+        let clustered_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("clustered bgl (frag)"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{ binding:0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset:false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry{ binding:1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry{ binding:2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry{ binding:3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry{ binding:4, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+            ]
+        });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("pipeline layout"),
-            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &extra_tex_bgl],
+            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &extra_tex_bgl, &clustered_bgl],
             push_constant_ranges: &[],
         });
 
@@ -912,7 +1214,7 @@ fn vs(input: VSIn) -> VSOut {
         // Skinned pipeline (adds group 4 for skin palette, uses SkinnedVertex layout)
                 let skinned_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{
             label: Some("skinned pipeline layout"),
-                        bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &skin_bgl, &extra_tex_bgl],
+                                bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl, &skin_bgl, &extra_tex_bgl, &clustered_bgl],
             push_constant_ranges: &[],
         });
         let skinned_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{
@@ -1137,6 +1439,46 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             wgpu::BindGroupEntry{ binding:3, resource: wgpu::BindingResource::Sampler(&normal_sampler)},
         ]});
 
+        // Clustered resources default allocs
+        let clustered_dims = ClusterDims{ x: 8, y: 4, z: 8 };
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        struct CParams { screen: [u32;2], clusters: [u32;3], near: f32, far: f32, fov_y: f32 }
+        let cparams_init = CParams{ screen: [config.width.max(1), config.height.max(1)], clusters: [clustered_dims.x, clustered_dims.y, clustered_dims.z], near: 0.1, far: 200.0, fov_y: std::f32::consts::FRAC_PI_3 };
+        let clustered_params_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{ label: Some("cparams"), contents: bytemuck::bytes_of(&cparams_init), usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST });
+        let clustered_lights_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("clights"), size: 64 * 16, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let clusters_total = (clustered_dims.x * clustered_dims.y * clustered_dims.z) as usize;
+        let clustered_offsets_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("coffsets"), size: ((clusters_total+1) * 4) as u64, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let clustered_counts_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("ccounts"), size: (clusters_total * 4) as u64, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        // Reserve indices buffer capacity: lights * 64 as an upper bound placeholder
+        let clustered_indices_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("cindices"), size: (64 * 64 * 4) as u64, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        let clustered_bg = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("clustered bg"), layout: &clustered_bgl, entries: &[
+            wgpu::BindGroupEntry{ binding:0, resource: clustered_params_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:1, resource: clustered_lights_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:2, resource: clustered_offsets_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:3, resource: clustered_counts_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:4, resource: clustered_indices_buf.as_entire_binding() },
+        ]});
+
+        // Compute pipeline for clustered binning
+        let clustered_comp_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{ label: Some("clustered comp"), source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(WGSL_CLUSTER_BIN))});
+        let clustered_comp_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{ label: Some("clustered comp bgl"), entries: &[
+            wgpu::BindGroupLayoutEntry{ binding:0, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:1, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset:false, min_binding_size: None }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:2, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: true }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:3, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+            wgpu::BindGroupLayoutEntry{ binding:4, visibility: wgpu::ShaderStages::COMPUTE, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Storage { read_only: false }, has_dynamic_offset:false, min_binding_size: None }, count: None },
+        ]});
+        let clustered_comp_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{ label: Some("clustered comp pl"), bind_group_layouts: &[&clustered_comp_bgl], push_constant_ranges: &[] });
+        let clustered_comp_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor{ label: Some("clustered comp pipeline"), layout: Some(&clustered_comp_pl), module: &clustered_comp_shader, entry_point: "cs_main", compilation_options: wgpu::PipelineCompilationOptions::default() });
+        let clustered_comp_bg = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("clustered comp bg"), layout: &clustered_comp_bgl, entries: &[
+            wgpu::BindGroupEntry{ binding:0, resource: clustered_lights_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:1, resource: clustered_params_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:2, resource: clustered_offsets_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:3, resource: clustered_counts_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:4, resource: clustered_indices_buf.as_entire_binding() },
+        ]});
+
         Ok(Self {
             surface,
             device,
@@ -1153,6 +1495,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             hdr_tex,
             hdr_view,
             hdr_sampler,
+            #[cfg(feature = "postfx")]
+            hdr_aux,
+            #[cfg(feature = "postfx")]
+            hdr_aux_view,
+            #[cfg(feature = "postfx")]
+            ssr_bgl,
+            #[cfg(feature = "postfx")]
+            ssr_bind_group,
+            #[cfg(feature = "postfx")]
+            post_fx_bgl,
+            #[cfg(feature = "postfx")]
+            ssr_pipeline,
             shadow_tex,
             shadow_view,
             shadow_layer0_view,
@@ -1195,6 +1549,22 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             skin_palette_buf,
             skinned_pipeline,
             skinned_mesh: None,
+            clustered_dims,
+            clustered_params_buf,
+            clustered_lights_buf,
+            clustered_offsets_buf,
+            clustered_counts_buf,
+            clustered_indices_buf,
+            clustered_bgl,
+            clustered_bg,
+            clustered_comp_bgl,
+            clustered_comp_bg,
+            clustered_comp_pipeline,
+            point_lights: Vec::new(),
+            #[cfg(feature = "gpu-tests")]
+            timestamp_query_set,
+            #[cfg(feature = "gpu-tests")]
+            timestamp_buf,
             cascade0: Mat4::IDENTITY,
             cascade1: Mat4::IDENTITY,
             split0: 60.0,
@@ -1205,6 +1575,40 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             shadow_pcf_radius_px: 1.0,
             shadow_depth_bias: 0.0006,
             shadow_slope_scale: 0.002,
+            #[cfg(feature = "postfx")]
+            hdr_aux,
+            #[cfg(feature = "postfx")]
+            hdr_aux_view,
+            #[cfg(feature = "postfx")]
+            fx_gi,
+            #[cfg(feature = "postfx")]
+            fx_gi_view,
+            #[cfg(feature = "postfx")]
+            fx_ao,
+            #[cfg(feature = "postfx")]
+            fx_ao_view,
+            #[cfg(feature = "postfx")]
+            ssr_bgl,
+            #[cfg(feature = "postfx")]
+            ssr_bind_group,
+            #[cfg(feature = "postfx")]
+            ssr_pipeline,
+            #[cfg(feature = "postfx")]
+            ssao_bgl,
+            #[cfg(feature = "postfx")]
+            ssao_bind_group,
+            #[cfg(feature = "postfx")]
+            ssao_pipeline,
+            #[cfg(feature = "postfx")]
+            ssgi_bgl,
+            #[cfg(feature = "postfx")]
+            ssgi_bind_group,
+            #[cfg(feature = "postfx")]
+            ssgi_pipeline,
+            #[cfg(feature = "postfx")]
+            post_fx_pipeline,
+            #[cfg(feature = "postfx")]
+            post_fx_bind_group,
         })
     }
 
@@ -1228,14 +1632,65 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             view_formats: &[],
         });
         self.hdr_view = self.hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        #[cfg(feature = "postfx")]
+        {
+            // Recreate aux HDR and FX targets and bind groups
+            self.hdr_aux = self.device.create_texture(&wgpu::TextureDescriptor{
+                label: Some("hdr aux tex"),
+                size: wgpu::Extent3d{ width: new_w, height: new_h, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba16Float,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                view_formats: &[],
+            });
+            self.hdr_aux_view = self.hdr_aux.create_view(&wgpu::TextureViewDescriptor::default());
+            self.fx_gi = self.device.create_texture(&wgpu::TextureDescriptor{ label: Some("fx gi tex"), size: wgpu::Extent3d{ width: new_w, height: new_h, depth_or_array_layers: 1 }, mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2, format: wgpu::TextureFormat::Rgba16Float, usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, view_formats: &[] });
+            self.fx_gi_view = self.fx_gi.create_view(&wgpu::TextureViewDescriptor::default());
+            self.fx_ao = self.device.create_texture(&wgpu::TextureDescriptor{ label: Some("fx ao tex"), size: wgpu::Extent3d{ width: new_w, height: new_h, depth_or_array_layers: 1 }, mip_level_count: 1, sample_count: 1, dimension: wgpu::TextureDimension::D2, format: wgpu::TextureFormat::Rgba16Float, usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, view_formats: &[] });
+            self.fx_ao_view = self.fx_ao.create_view(&wgpu::TextureViewDescriptor::default());
+            self.ssr_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor{
+                label: Some("ssr bg"), layout: &self.ssr_bgl,
+                entries: &[
+                    wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&self.hdr_view)},
+                    wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&self.depth.view)},
+                    wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::Sampler(&self.hdr_sampler)},
+                ],
+            });
+            self.ssao_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("ssao bg"), layout: &self.ssao_bgl, entries: &[
+                wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&self.depth.view)},
+                wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::Sampler(&self.hdr_sampler)},
+            ]});
+            self.ssgi_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("ssgi bg"), layout: &self.ssgi_bgl, entries: &[
+                wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&self.normal_view)},
+                wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&self.depth.view)},
+                wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::Sampler(&self.hdr_sampler)},
+            ]});
+            self.post_fx_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("post fx bg"), layout: &self.post_fx_bgl, entries: &[
+                wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&self.hdr_aux_view)},
+                wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::TextureView(&self.fx_ao_view)},
+                wgpu::BindGroupEntry{ binding:2, resource: wgpu::BindingResource::TextureView(&self.fx_gi_view)},
+                wgpu::BindGroupEntry{ binding:3, resource: wgpu::BindingResource::Sampler(&self.hdr_sampler)},
+            ]});
+        }
         self.post_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor{
             label: Some("post bg"),
             layout: &self.post_bgl,
             entries: &[
+                #[cfg(not(feature = "postfx"))]
                 wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&self.hdr_view)},
+                #[cfg(feature = "postfx")]
+                wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&self.hdr_aux_view)},
                 wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::Sampler(&self.hdr_sampler)},
             ],
         });
+        // Update clustered params screen size
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        struct CParams { screen: [u32;2], clusters: [u32;3], near: f32, far: f32, fov_y: f32 }
+    let data: CParams = CParams{ screen: [new_w.max(1), new_h.max(1)], clusters: [self.clustered_dims.x, self.clustered_dims.y, self.clustered_dims.z], near: 0.1, far: 200.0, fov_y: std::f32::consts::FRAC_PI_3 };
+    self.queue.write_buffer(&self.clustered_params_buf, 0, bytemuck::bytes_of(&data));
     }
 
     pub fn update_camera(&mut self, camera: &Camera) {
@@ -1447,6 +1902,40 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     self.sky.render(&mut enc, &self.hdr_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         {
+            // Prepare clustered lighting for this frame: simple demo lights around origin
+            if self.point_lights.is_empty() {
+                self.point_lights.push(CpuLight{ pos: glam::Vec3::new(2.0, 2.0, 3.0), radius: 6.0 });
+                self.point_lights.push(CpuLight{ pos: glam::Vec3::new(-3.0, 1.0, 8.0), radius: 5.0 });
+            }
+            // CPU pre-pass builds offsets array (exclusive scan) we share to GPU
+            let (_counts_cpu, _indices_cpu, offsets_cpu) = bin_lights_cpu(&self.point_lights, self.clustered_dims, (self.config.width, self.config.height), 0.1, 200.0, std::f32::consts::FRAC_PI_3);
+            // Upload lights and offsets; zero counts and indices
+            #[repr(C)]
+            #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+            struct GpuLight { pos_radius: [f32;4] }
+            let glights: Vec<GpuLight> = self.point_lights.iter().map(|l| GpuLight{ pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius] }).collect();
+            if !glights.is_empty() {
+                self.queue.write_buffer(&self.clustered_lights_buf, 0, bytemuck::cast_slice(&glights));
+            }
+            self.queue.write_buffer(&self.clustered_offsets_buf, 0, bytemuck::cast_slice(&offsets_cpu));
+            // Zero counts
+            let clusters = (self.clustered_dims.x * self.clustered_dims.y * self.clustered_dims.z) as usize;
+            let zero_counts = vec![0u32; clusters];
+            self.queue.write_buffer(&self.clustered_counts_buf, 0, bytemuck::cast_slice(&zero_counts));
+            // Run compute to fill counts/indices
+            #[cfg(feature = "gpu-tests")]
+            { enc.write_timestamp(&self.timestamp_query_set, 0); }
+            let mut cpass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor{ label: Some("cluster bin"), timestamp_writes: None });
+            cpass.set_pipeline(&self.clustered_comp_pipeline);
+            cpass.set_bind_group(0, &self.clustered_comp_bg, &[]);
+            cpass.dispatch_workgroups(glights.len() as u32, 1, 1);
+            drop(cpass);
+            #[cfg(feature = "gpu-tests")]
+            {
+                enc.write_timestamp(&self.timestamp_query_set, 1);
+                enc.resolve_query_set(&self.timestamp_query_set, 0..2, &self.timestamp_buf, 0);
+            }
+        }
             // Prepare external mesh single-instance buffer if needed
             let ext_ibuf: Option<wgpu::Buffer> = if self.mesh_external.is_some() {
                 let inst = Instance{ transform: Mat4::IDENTITY, color: [1.0,1.0,1.0,1.0] }.raw();
@@ -1511,6 +2000,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 self.queue.write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
             }
 
+            {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -1540,6 +2030,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(2, &self.light_bg, &[]);
             rp.set_bind_group(3, &self.tex_bg, &[]);
             rp.set_bind_group(4, &self.extra_tex_bg, &[]);
+            rp.set_bind_group(5, &self.clustered_bg, &[]);
 
             // Ground plane (scaled)
             rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
@@ -1569,6 +2060,34 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 rp.set_vertex_buffer(1, ibuf.slice(..));
                 rp.draw_indexed(0..mesh.index_count, 0, 0..1);
             }
+            }
+
+        // Optional feature-gated post chain
+        #[cfg(feature = "postfx")]
+        {
+            let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor{
+                label: Some("ssr pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &self.hdr_aux_view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            ssp.set_pipeline(&self.ssr_pipeline);
+            ssp.set_bind_group(0, &self.ssr_bind_group, &[]);
+            ssp.draw(0..3, 0..1);
+            drop(ssp);
+            // SSAO
+            let mut ao = enc.begin_render_pass(&wgpu::RenderPassDescriptor{ label: Some("ssao pass"), color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &self.fx_ao_view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })], depth_stencil_attachment: None, timestamp_writes: None, occlusion_query_set: None });
+            ao.set_pipeline(&self.ssao_pipeline);
+            ao.set_bind_group(0, &self.ssao_bind_group, &[]);
+            ao.draw(0..3, 0..1);
+            drop(ao);
+            // SSGI
+            let mut gi = enc.begin_render_pass(&wgpu::RenderPassDescriptor{ label: Some("ssgi pass"), color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &self.fx_gi_view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })], depth_stencil_attachment: None, timestamp_writes: None, occlusion_query_set: None });
+            gi.set_pipeline(&self.ssgi_pipeline);
+            gi.set_bind_group(0, &self.ssgi_bind_group, &[]);
+            gi.draw(0..3, 0..1);
+            drop(gi);
         }
 
         // Postprocess HDR to surface
@@ -1584,8 +2103,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            pp.set_pipeline(&self.post_pipeline);
-            pp.set_bind_group(0, &self.post_bind_group, &[]);
+            #[cfg(feature = "postfx")]
+            {
+                pp.set_pipeline(&self.post_fx_pipeline);
+                pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+            }
+            #[cfg(not(feature = "postfx"))]
+            {
+                pp.set_pipeline(&self.post_pipeline);
+                pp.set_bind_group(0, &self.post_bind_group, &[]);
+            }
             pp.draw(0..3, 0..1);
         }
 
@@ -1623,6 +2150,28 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 usage: wgpu::BufferUsages::VERTEX,
             }))
         } else { None };
+
+        // Prepare clustered lighting for this frame (same as render())
+        if self.point_lights.is_empty() {
+            self.point_lights.push(CpuLight{ pos: glam::Vec3::new(2.0, 2.0, 3.0), radius: 6.0 });
+            self.point_lights.push(CpuLight{ pos: glam::Vec3::new(-3.0, 1.0, 8.0), radius: 5.0 });
+        }
+        let (_counts_cpu, _indices_cpu, offsets_cpu) = bin_lights_cpu(&self.point_lights, self.clustered_dims, (self.config.width, self.config.height), 0.1, 200.0, std::f32::consts::FRAC_PI_3);
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        struct GpuLight { pos_radius: [f32;4] }
+        let glights: Vec<GpuLight> = self.point_lights.iter().map(|l| GpuLight{ pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius] }).collect();
+        if !glights.is_empty() { self.queue.write_buffer(&self.clustered_lights_buf, 0, bytemuck::cast_slice(&glights)); }
+        self.queue.write_buffer(&self.clustered_offsets_buf, 0, bytemuck::cast_slice(&offsets_cpu));
+        let clusters = (self.clustered_dims.x * self.clustered_dims.y * self.clustered_dims.z) as usize;
+        let zero_counts = vec![0u32; clusters];
+        self.queue.write_buffer(&self.clustered_counts_buf, 0, bytemuck::cast_slice(&zero_counts));
+        {
+            let mut cpass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor{ label: Some("cluster bin"), timestamp_writes: None });
+            cpass.set_pipeline(&self.clustered_comp_pipeline);
+            cpass.set_bind_group(0, &self.clustered_comp_bg, &[]);
+            cpass.dispatch_workgroups(glights.len() as u32, 1, 1);
+        }
 
         // Frustum cull
         let (vis_raws, vis_count) = self.build_visible_instances();
@@ -1714,6 +2263,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     rp.set_bind_group(2, &self.light_bg, &[]);
     rp.set_bind_group(3, &self.tex_bg, &[]);
     rp.set_bind_group(4, &self.extra_tex_bg, &[]);
+    rp.set_bind_group(5, &self.clustered_bg, &[]);
         // Ground plane
         rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
         rp.set_index_buffer(self.mesh_plane.index_buf.slice(..), wgpu::IndexFormat::Uint32);
@@ -1744,12 +2294,39 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(3, &self.tex_bg, &[]);
             rp.set_bind_group(4, &self.skin_bg, &[]);
             rp.set_bind_group(5, &self.extra_tex_bg, &[]);
+            rp.set_bind_group(6, &self.clustered_bg, &[]);
             rp.set_vertex_buffer(0, vbuf.slice(..));
             rp.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
             rp.set_vertex_buffer(1, sk_inst.slice(..));
             rp.draw_indexed(0..*index_count, 0, 0..1);
         }
         drop(rp);
+
+        // Optional postfx chain
+        #[cfg(feature = "postfx")]
+        {
+            let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor{
+                label: Some("ssr pass (external)"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &self.hdr_aux_view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            ssp.set_pipeline(&self.ssr_pipeline);
+            ssp.set_bind_group(0, &self.ssr_bind_group, &[]);
+            ssp.draw(0..3, 0..1);
+            drop(ssp);
+            let mut ao = enc.begin_render_pass(&wgpu::RenderPassDescriptor{ label: Some("ssao pass (external)"), color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &self.fx_ao_view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })], depth_stencil_attachment: None, timestamp_writes: None, occlusion_query_set: None });
+            ao.set_pipeline(&self.ssao_pipeline);
+            ao.set_bind_group(0, &self.ssao_bind_group, &[]);
+            ao.draw(0..3, 0..1);
+            drop(ao);
+            let mut gi = enc.begin_render_pass(&wgpu::RenderPassDescriptor{ label: Some("ssgi pass (external)"), color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &self.fx_gi_view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store } })], depth_stencil_attachment: None, timestamp_writes: None, occlusion_query_set: None });
+            gi.set_pipeline(&self.ssgi_pipeline);
+            gi.set_bind_group(0, &self.ssgi_bind_group, &[]);
+            gi.draw(0..3, 0..1);
+            drop(gi);
+        }
 
         // Post to surface view provided
         let mut pp = enc.begin_render_pass(&wgpu::RenderPassDescriptor{
@@ -1763,8 +2340,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        pp.set_pipeline(&self.post_pipeline);
-        pp.set_bind_group(0, &self.post_bind_group, &[]);
+        #[cfg(feature = "postfx")]
+        {
+            pp.set_pipeline(&self.post_fx_pipeline);
+            pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+        }
+        #[cfg(not(feature = "postfx"))]
+        {
+            pp.set_pipeline(&self.post_pipeline);
+            pp.set_bind_group(0, &self.post_bind_group, &[]);
+        }
         pp.draw(0..3, 0..1);
 
         Ok(())

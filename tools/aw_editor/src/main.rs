@@ -3,7 +3,6 @@ use eframe::egui;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 struct LevelDoc {
