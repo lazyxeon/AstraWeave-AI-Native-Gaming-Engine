@@ -1,4 +1,12 @@
 use astraweave_core::{ActionStep, IVec2, PlanIntent, WorldSnapshot};
+#[cfg(feature = "llm_orchestrator")]
+use astraweave_core::{ToolRegistry, default_tool_registry};
+
+#[async_trait::async_trait]
+pub trait OrchestratorAsync {
+    async fn plan(&self, snap: WorldSnapshot, budget_ms: u32) -> PlanIntent;
+    fn name(&self) -> &'static str { std::any::type_name::<Self>() }
+}
 
 pub trait Orchestrator {
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent;
@@ -69,6 +77,11 @@ impl Orchestrator for RuleOrchestrator {
     }
 }
 
+#[async_trait::async_trait]
+impl OrchestratorAsync for RuleOrchestrator {
+    async fn plan(&self, snap: WorldSnapshot, _budget_ms: u32) -> PlanIntent { self.propose_plan(&snap) }
+}
+
 /// Utility-based orchestrator: scores a few candidate plans deterministically.
 /// Heuristics:
 /// - Prefer throwing smoke if an enemy exists and cooldown is ready
@@ -110,6 +123,11 @@ impl Orchestrator for UtilityOrchestrator {
     }
 }
 
+#[async_trait::async_trait]
+impl OrchestratorAsync for UtilityOrchestrator {
+    async fn plan(&self, snap: WorldSnapshot, _budget_ms: u32) -> PlanIntent { self.propose_plan(&snap) }
+}
+
 /// Minimal GOAP-style orchestrator for MoveTo -> CoverFire chain towards first enemy.
 /// Preconditions: enemy exists. Goal: be within 2 cells and apply CoverFire for 1.5s.
 pub struct GoapOrchestrator;
@@ -133,11 +151,37 @@ impl Orchestrator for GoapOrchestrator {
     }
 }
 
+#[async_trait::async_trait]
+impl OrchestratorAsync for GoapOrchestrator {
+    async fn plan(&self, snap: WorldSnapshot, _budget_ms: u32) -> PlanIntent { self.propose_plan(&snap) }
+}
+
+#[cfg(feature = "llm_orchestrator")]
+pub struct LlmOrchestrator<C> { pub client: C, pub registry: ToolRegistry }
+
+#[cfg(feature = "llm_orchestrator")]
+impl<C> LlmOrchestrator<C> { pub fn new(client: C, registry: Option<ToolRegistry>) -> Self { Self { client, registry: registry.unwrap_or_else(default_tool_registry) } } }
+
+#[cfg(feature = "llm_orchestrator")]
+#[async_trait::async_trait]
+impl<C> OrchestratorAsync for LlmOrchestrator<C>
+where C: astraweave_llm::LlmClient + Send + Sync {
+    async fn plan(&self, snap: WorldSnapshot, _budget_ms: u32) -> PlanIntent {
+        match astraweave_llm::plan_from_llm(&self.client, &snap, &self.registry).await { Ok(p) => p, Err(_) => PlanIntent{ plan_id: "llm-fallback".into(), steps: vec![] } }
+    }
+    fn name(&self) -> &'static str { "LlmOrchestrator" }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use astraweave_core::{CompanionState, EnemyState, PlayerState, WorldSnapshot};
     use std::collections::BTreeMap;
+    use futures::executor::block_on;
+    #[cfg(feature = "llm_orchestrator")]
+    use astraweave_llm::MockLlm;
+    #[cfg(feature = "llm_orchestrator")]
+    use astraweave_core::default_tool_registry;
 
     fn snap_basic(px: i32, py: i32, ex: i32, ey: i32, smoke_cd: f32) -> WorldSnapshot {
         WorldSnapshot{
@@ -167,5 +211,39 @@ mod tests {
         let s_close = snap_basic(0,0, 1,0, 10.0);
         let plan2 = goap.propose_plan(&s_close);
         assert!(matches!(plan2.steps.first(), Some(ActionStep::CoverFire{..})));
+    }
+
+    #[test]
+    fn async_trait_adapter_returns_same_plan() {
+        let s = snap_basic(0,0, 3,0, 0.0);
+        let rule = RuleOrchestrator;
+        let plan_sync = rule.propose_plan(&s);
+        let plan_async = block_on(rule.plan(s, 2));
+        assert_eq!(plan_sync.steps.len(), plan_async.steps.len());
+    }
+
+    #[cfg(feature = "llm_orchestrator")]
+    #[test]
+    fn llm_orchestrator_with_mock_produces_plan() {
+        let s = snap_basic(0,0, 6,2, 0.0);
+        let client = MockLlm;
+        let orch = crate::LlmOrchestrator::new(client, Some(default_tool_registry()));
+        let plan = block_on(orch.plan(s, 10));
+        assert_eq!(plan.plan_id, "llm-mock");
+        assert!(!plan.steps.is_empty());
+    }
+
+    #[cfg(feature = "llm_orchestrator")]
+    #[test]
+    fn llm_orchestrator_disallowed_tools_fallbacks_empty() {
+        let s = snap_basic(0,0, 6,2, 0.0);
+        let client = MockLlm;
+        // Empty registry to force parse failure
+        let mut reg = default_tool_registry();
+        reg.tools.clear();
+        let orch = crate::LlmOrchestrator::new(client, Some(reg));
+        let plan = block_on(orch.plan(s, 10));
+        assert_eq!(plan.plan_id, "llm-fallback");
+        assert!(plan.steps.is_empty());
     }
 }

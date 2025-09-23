@@ -1,0 +1,36 @@
+[package]
+name = "aw_headless"
+version = "0.1.0"
+authors = ["AstraWeave Contributors"]
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+wgpu = { workspace = true }
+winit = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+astraweave-materials = { package = "astraweave-materials", path = "../../astraweave-materials" }
+image = "0.25"
+
+[dev-dependencies]
+naga = "0.20"
+
+[lib]
+name = "aw_headless"
+path = "src/lib.rs"
+
+test = true
+
+doctest = false
+
+[features]
+default = []
+gpu-tests = []
+
+[[bin]]
+name = "aw_headless_cli"
+path = "src/main.rs"

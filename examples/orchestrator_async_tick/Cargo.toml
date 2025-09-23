@@ -1,0 +1,10 @@
+[package]
+name = "orchestrator_async_tick"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-ai = { path = "../../astraweave-ai", features=["llm_orchestrator"] }
+astraweave-llm = { path = "../../astraweave-llm" }
+async-std = { version = "1", features=["attributes"] }

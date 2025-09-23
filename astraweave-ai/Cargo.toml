@@ -9,3 +9,15 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
+async-trait = "0.1"
+
+[features]
+default = []
+llm_orchestrator = ["astraweave-llm"]
+
+[dependencies.astraweave-llm]
+path = "../astraweave-llm"
+optional = true
+
+[dev-dependencies]
+futures = "0.3"

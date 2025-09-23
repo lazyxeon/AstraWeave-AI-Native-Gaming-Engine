@@ -1,0 +1,139 @@
+use anyhow::Result;
+
+/// Renders a full-screen quad using a WGSL snippet (expects a `vs_main` and `fs_main`) into an RGBA8 image.
+pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Result<Vec<u8>> {
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        })
+        .await
+        .ok_or_else(|| anyhow::anyhow!("No adapter"))?;
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("aw_headless device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            },
+            None,
+        )
+        .await?;
+
+    // Create a simple RGBA8 target texture with COPY_SRC so we can read it back
+    let tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("offscreen"),
+        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+        view_formats: &[],
+    });
+    let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{
+        label: Some("headless shader"),
+        source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(wgsl_src)),
+    });
+    let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{
+        label: Some("layout"),
+        bind_group_layouts: &[],
+        push_constant_ranges: &[],
+    });
+    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{
+        label: Some("pipeline"),
+        layout: Some(&layout),
+        vertex: wgpu::VertexState{
+            module: &shader,
+            entry_point: "vs_main",
+            buffers: &[],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        },
+        fragment: Some(wgpu::FragmentState{
+            module: &shader,
+            entry_point: "fs_main",
+            targets: &[Some(wgpu::ColorTargetState{ format: wgpu::TextureFormat::Rgba8UnormSrgb, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+    });
+
+    let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor{ label: Some("enc") });
+    {
+        let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor{
+            label: Some("rp"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment{ view: &view, resolve_target: None, ops: wgpu::Operations{ load: wgpu::LoadOp::Clear(wgpu::Color::BLACK), store: wgpu::StoreOp::Store }})],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        rp.set_pipeline(&pipeline);
+        rp.draw(0..3, 0..1);
+    }
+
+    // Readback buffer
+    let bytes_per_pixel = 4u64;
+    let row_bytes = width as u64 * bytes_per_pixel;
+    let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as u64;
+    let padded_row_bytes = ((row_bytes + align - 1) / align) * align;
+    let buf = device.create_buffer(&wgpu::BufferDescriptor{
+        label: Some("readback"),
+        size: padded_row_bytes * height as u64,
+        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    enc.copy_texture_to_buffer(
+        wgpu::ImageCopyTexture{ texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        wgpu::ImageCopyBuffer{ buffer: &buf, layout: wgpu::ImageDataLayout{ offset: 0, bytes_per_row: Some(padded_row_bytes as u32), rows_per_image: Some(height) } },
+        wgpu::Extent3d{ width, height, depth_or_array_layers: 1 }
+    );
+
+    queue.submit(Some(enc.finish()));
+    device.poll(wgpu::Maintain::Wait);
+
+    let slice = buf.slice(..);
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    slice.map_async(wgpu::MapMode::Read, move |res| { let _ = tx.send(res); });
+    device.poll(wgpu::Maintain::Wait);
+    rx.recv().expect("map result").expect("ok");
+    let data = slice.get_mapped_range();
+
+    // Unpad rows
+    let mut img = vec![0u8; (width * height * 4) as usize];
+    for y in 0..height as usize {
+        let src_off = y as u64 * padded_row_bytes;
+        let dst_off = y as usize * width as usize * 4;
+        img[dst_off..dst_off + (width as usize * 4)].copy_from_slice(&data[src_off as usize..(src_off + row_bytes) as usize]);
+    }
+    drop(data);
+    buf.unmap();
+
+    Ok(img)
+}
+
+/// Minimal full-screen triangle shader boilerplate around a fragment body.
+pub fn wrap_fs_into_fullscreen(module_body: &str) -> String {
+    format!("{}\nstruct VSOut {{ @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> }};\n@vertex fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {{ var p = array<vec2<f32>,3>(vec2<f32>(-1.0,-3.0), vec2<f32>(3.0,1.0), vec2<f32>(-1.0,1.0)); var o: VSOut; o.pos=vec4<f32>(p[vid],0.0,1.0); o.uv=(p[vid]+vec2<f32>(1.0,1.0))*0.5; return o; }}\n", module_body)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn renders_gradient() {
+        let fs = r#"@fragment fn fs_main(i: VSOut) -> @location(0) vec4<f32> { return vec4<f32>(i.uv, 0.0, 1.0); }"#;
+        let wgsl = wrap_fs_into_fullscreen(fs);
+        let img = pollster::block_on(render_wgsl_to_image(&wgsl, 32, 16)).expect("render");
+        assert_eq!(img.len(), 32*16*4);
+        assert!(img.iter().any(|&b| b != 0));
+    }
+}

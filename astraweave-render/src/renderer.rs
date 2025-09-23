@@ -9,6 +9,7 @@ use crate::depth::Depth;
 use crate::primitives;
 use crate::types::{Instance, InstanceRaw, Mesh};
 use crate::types::SkinnedVertex;
+use astraweave_materials::MaterialPackage;
 
 const SHADER_SRC: &str = r#"
 struct VSIn {
@@ -322,6 +323,28 @@ pub struct Renderer {
 }
 
 impl Renderer {
+    /// Compose a standalone fragment shader from a `MaterialPackage` for validation/pipeline creation.
+    /// Returns a `ShaderModule` ready to be used in a pipeline (caller wires layouts/bindings).
+    pub fn shader_from_material_package(&self, pkg: &MaterialPackage) -> wgpu::ShaderModule {
+        // Declare group(0) bindings based on `bindings` ids collected by the compiler (tex/sampler pairs)
+        let mut decls = String::new();
+        let mut idx = 0u32;
+        for id in pkg.bindings.iter() {
+            decls.push_str(&format!("@group(0) @binding({}) var tex_{}: texture_2d<f32>;\n", idx, id));
+            idx += 1;
+            decls.push_str(&format!("@group(0) @binding({}) var samp_{}: sampler;\n", idx, id));
+            idx += 1;
+        }
+        // Compose WGSL: eval_material + a tiny VS/FS pair.
+        let full = format!(
+            "{}\n{}\nstruct VSOut {{ @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> }};\n@vertex fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {{\n  var pos = array<vec2<f32>,3>(vec2<f32>(-1.0,-3.0), vec2<f32>(3.0,1.0), vec2<f32>(-1.0,1.0));\n  var o: VSOut; o.pos = vec4<f32>(pos[vid], 0.0, 1.0); o.uv = (pos[vid]+vec2<f32>(1.0,1.0))*0.5; return o; }}\n@fragment fn fs_main(i: VSOut) -> @location(0) vec4<f32> {{ let m = eval_material(i.uv); return vec4<f32>(m.base, 1.0); }}\n",
+            decls, pkg.wgsl
+        );
+        self.device.create_shader_module(wgpu::ShaderModuleDescriptor{
+            label: Some("material composed shader"),
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Owned(full)),
+        })
+    }
     pub async fn new(window: std::sync::Arc<winit::window::Window>) -> Result<Self> {
         // WGPU init
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
@@ -1794,6 +1817,100 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.queue.submit(std::iter::once(enc.finish()));
         frame.present();
         Ok(())
+    }
+
+    /// Create a bind group layout deriving entries from a `MaterialPackage` bindings list.
+    pub fn bgl_from_material_package(&self, pkg: &MaterialPackage) -> wgpu::BindGroupLayout {
+        let mut entries: Vec<wgpu::BindGroupLayoutEntry> = Vec::new();
+        let mut binding = 0u32;
+        for _id in pkg.bindings.iter() {
+            entries.push(wgpu::BindGroupLayoutEntry{
+                binding,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture{
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                count: None,
+            });
+            binding += 1;
+            entries.push(wgpu::BindGroupLayoutEntry{
+                binding,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                count: None,
+            });
+            binding += 1;
+        }
+        self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("material bgl (derived)"),
+            entries: &entries,
+        })
+    }
+
+    /// Create a simple full-screen pipeline from a `MaterialPackage` (for previews or tests).
+    pub fn pipeline_from_material_package(
+        &self,
+        pkg: &MaterialPackage,
+        format: wgpu::TextureFormat,
+    ) -> wgpu::RenderPipeline {
+        let shader = self.shader_from_material_package(pkg);
+        let bgl = self.bgl_from_material_package(pkg);
+        let layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{
+            label: Some("material pipeline layout"),
+            bind_group_layouts: &[&bgl],
+            push_constant_ranges: &[],
+        });
+        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{
+            label: Some("material preview pipeline"),
+            layout: Some(&layout),
+            vertex: wgpu::VertexState{
+                module: &shader,
+                entry_point: "vs_main",
+                buffers: &[],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState{
+                module: &shader,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState{ format, blend: None, write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        })
+    }
+}
+
+#[cfg(test)]
+mod mat_integration_tests {
+    use astraweave_materials::{Graph, Node, MaterialPackage};
+
+    #[test]
+    fn material_package_composes_valid_shader() {
+        let mut nodes = std::collections::BTreeMap::new();
+        nodes.insert("uv".into(), Node::Constant3{ value: [0.0,0.0,0.0]});
+        nodes.insert("base_tex".into(), Node::Texture2D{ id: "albedo".into(), uv: "uv".into() });
+        let g = Graph{ nodes, base_color: "base_tex".into(), mr: None, normal: None, clearcoat: None, anisotropy: None, transmission: None };
+        let pkg = MaterialPackage::from_graph(&g).expect("compile");
+        // Compose shader text and validate via naga
+        let mut decls = String::new();
+        let mut idx = 0u32;
+        for id in pkg.bindings.iter() {
+            decls.push_str(&format!("@group(0) @binding({}) var tex_{}: texture_2d<f32>;\n", idx, id));
+            idx += 1;
+            decls.push_str(&format!("@group(0) @binding({}) var samp_{}: sampler;\n", idx, id));
+            idx += 1;
+        }
+        let full = format!(
+            "{}\n{}\n@fragment fn fs_main(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {{ let m = eval_material(uv); return vec4<f32>(m.base,1.0); }}\n",
+            decls, pkg.wgsl
+        );
+        let res = naga::front::wgsl::parse_str(&full);
+        assert!(res.is_ok(), "Material-composed WGSL failed to parse: {:?}", res.err());
     }
 }
 

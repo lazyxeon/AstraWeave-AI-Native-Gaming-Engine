@@ -53,7 +53,7 @@ checksum = "09f46c18d99ba61ad7123dd13eeb0c104436ab6af1df6a1cd8c11054ed394a08"
 dependencies = [
  "accesskit",
  "accesskit_consumer",
- "async-channel",
+ "async-channel 2.5.0",
  "async-once-cell",
  "atspi",
  "futures-lite 1.13.0",
@@ -362,6 +362,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-core",
+ "astraweave-llm",
+ "async-trait",
+ "futures",
  "serde",
  "serde_json",
 ]
@@ -374,9 +377,11 @@ dependencies = [
  "base64 0.22.1",
  "glam",
  "gltf",
+ "hex",
  "image",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]
@@ -489,6 +494,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-materials"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "naga",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "astraweave-memory"
 version = "0.1.0"
 dependencies = [
@@ -565,10 +580,13 @@ name = "astraweave-render"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-materials",
  "astraweave-terrain",
  "bytemuck",
+ "criterion",
  "glam",
  "image",
+ "naga",
  "pollster",
  "rand 0.9.2",
  "serde",
@@ -627,11 +645,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-attributes"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "async-broadcast"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7c48ccdbf6ca6b121e0f586cbc0e73ae440e56c67c30fa0873b4e110d9c26d2b"
 dependencies = [
+ "event-listener 2.5.3",
+ "futures-core",
+]
+
+[[package]]
+name = "async-channel"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
+dependencies = [
+ "concurrent-queue",
  "event-listener 2.5.3",
  "futures-core",
 ]
@@ -672,6 +711,21 @@ dependencies = [
  "autocfg",
  "blocking",
  "futures-lite 1.13.0",
+]
+
+[[package]]
+name = "async-global-executor"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05b1b633a2115cd122d73b955eadd9916c18c8f510ec9cd1686404c60ad1c29c"
+dependencies = [
+ "async-channel 2.5.0",
+ "async-executor",
+ "async-io 2.5.0",
+ "async-lock 3.4.1",
+ "blocking",
+ "futures-lite 2.6.1",
+ "once_cell",
 ]
 
 [[package]]
@@ -782,6 +836,33 @@ dependencies = [
  "signal-hook-registry",
  "slab",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "async-std"
+version = "1.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c8e079a4ab67ae52b7403632e4618815d6db36d2a010cfe41b02c1b1578f93b"
+dependencies = [
+ "async-attributes",
+ "async-channel 1.9.0",
+ "async-global-executor",
+ "async-io 2.5.0",
+ "async-lock 3.4.1",
+ "crossbeam-utils",
+ "futures-channel",
+ "futures-core",
+ "futures-io",
+ "futures-lite 2.6.1",
+ "gloo-timers",
+ "kv-log-macro",
+ "log",
+ "memchr",
+ "once_cell",
+ "pin-project-lite",
+ "pin-utils",
+ "slab",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -1050,6 +1131,22 @@ dependencies = [
  "thiserror 2.0.16",
  "toml",
  "uuid",
+]
+
+[[package]]
+name = "aw_headless"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-materials",
+ "bytemuck",
+ "image",
+ "naga",
+ "pollster",
+ "serde",
+ "serde_json",
+ "wgpu",
+ "winit",
 ]
 
 [[package]]
@@ -1324,7 +1421,7 @@ version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e83f8d02be6967315521be875afa792a316e28d57b5a2d401897e2a7921b7f21"
 dependencies = [
- "async-channel",
+ "async-channel 2.5.0",
  "async-task",
  "futures-io",
  "futures-lite 2.6.1",
@@ -2916,6 +3013,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
 
 [[package]]
+name = "gloo-timers"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
+dependencies = [
+ "futures-channel",
+ "futures-core",
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "glow"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3735,6 +3844,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kv-log-macro"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0de8b303297635ad57c9f5059fd9cee7a47f8e8daa09df0fcd07dd39fb22977f"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3902,6 +4020,9 @@ name = "log"
 version = "0.4.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
+dependencies = [
+ "value-bag",
+]
 
 [[package]]
 name = "loop9"
@@ -4725,6 +4846,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba0b26cec2e24f08ed8bb31519a9333140a6599b867dac464bb150bdb796fd43"
 dependencies = [
  "libredox",
+]
+
+[[package]]
+name = "orchestrator_async_tick"
+version = "0.1.0"
+dependencies = [
+ "astraweave-ai",
+ "astraweave-core",
+ "astraweave-llm",
+ "async-std",
 ]
 
 [[package]]
@@ -6796,6 +6927,12 @@ name = "valuable"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
+
+[[package]]
+name = "value-bag"
+version = "1.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "943ce29a8a743eb10d6082545d861b24f9d1b160b7d741e0f2cdf726bec909c5"
 
 [[package]]
 name = "vcpkg"

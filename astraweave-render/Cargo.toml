@@ -14,8 +14,14 @@ pollster = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
 astraweave-terrain = { path = "../astraweave-terrain" }
+astraweave-materials = { path = "../astraweave-materials" }
 image = { version = "0.25", optional = true }
 
 [features]
 default = ["textures"]
 textures = ["image"]
+gpu-tests = []
+
+[dev-dependencies]
+naga = "0.20"
+criterion = { workspace = true }
