@@ -85,7 +85,7 @@
 ## 📊 Proof Points
 
 
-### ✅ **Proof Points (2024)**
+### ✅ **Proof Points (2025)**
 
 | Component/Feature | Status | Capability |
 |-------------------|--------|------------|
