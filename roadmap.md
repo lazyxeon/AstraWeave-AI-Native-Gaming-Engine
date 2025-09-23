@@ -56,7 +56,7 @@ Exit Criteria
 - Example “hello_companion_3d”: companion perceives, plans, and executes in a small 3D level; voice line triggers; player orders via UI.
 - Editor: author a simple quest + behavior graph and run it live.
 
-Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
+✅ Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
 DoD
 - Golden images updated for new features; ΔE thresholds respected.
 - Benches: GPU frame ≤ 7 ms median on target GPU; shader compile cache hit-rate > 90%.
