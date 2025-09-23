@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["perception","schema","sim","tools","util","validation","world"]};
+window.SIDEBAR_ITEMS = {"mod":["perception","schema","sim","tool_sandbox","tools","util","validation","world"]};

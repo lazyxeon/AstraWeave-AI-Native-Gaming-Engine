@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Instance","InstanceRaw","Material","Mesh","Vertex"]};
+window.SIDEBAR_ITEMS = {"struct":["Instance","InstanceRaw","Material","Mesh","SkinnedVertex","Vertex"]};
