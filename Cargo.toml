@@ -40,6 +40,7 @@ members = [
   "astraweave-audio",
   "examples/audio_spatial_demo",
   "examples/dialogue_voice_demo",
+  "examples/dialogue_audio_cli",
   "examples/nav_physics_bridge",
   "astraweave-npc",
   "examples/npc_town_demo",

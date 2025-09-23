@@ -2136,6 +2136,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dialogue_audio_cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-audio",
+ "astraweave-gameplay",
+]
+
+[[package]]
 name = "dialogue_voice_demo"
 version = "0.1.0"
 dependencies = [

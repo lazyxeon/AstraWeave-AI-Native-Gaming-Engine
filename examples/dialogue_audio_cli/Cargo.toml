@@ -1,0 +1,9 @@
+[package]
+name = "dialogue_audio_cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+astraweave-audio = { path = "../../astraweave-audio" }
+astraweave-gameplay = { path = "../../astraweave-gameplay" }

@@ -1,0 +1,43 @@
+use anyhow::Result;
+use astraweave_audio::{AudioEngine, DialoguePlayer, VoiceBank};
+use astraweave_gameplay::dialogue::{Dialogue, DialogueState, Line, Node, Choice};
+
+fn main() -> Result<()> {
+    // Construct a minimal dialogue in code
+    let dlg = Dialogue {
+        id: "cli_demo".into(),
+        start: "n0".into(),
+        nodes: vec![
+            Node { id: "n0".into(), line: Some(Line{ speaker: "ECHO".into(), text: "Hello, Traveler.".into(), set_vars: vec![] }), choices: vec![Choice{ text: "Continue".into(), go_to: "n1".into(), require: vec![] }], end: false },
+            Node { id: "n1".into(), line: Some(Line{ speaker: "ECHO".into(), text: "The path ahead awaits.".into(), set_vars: vec![] }), choices: vec![], end: true },
+        ],
+    };
+    let mut st = DialogueState::new(&dlg);
+
+    // Audio engine and a blank voice bank (will fall back to beeps)
+    let mut audio = AudioEngine::new()?;
+    audio.set_master_volume(1.0);
+    let bank = VoiceBank { speakers: Default::default() };
+
+    let mut subtitles = |speaker: String, text: String| {
+        println!("{}: {}", speaker, text);
+    };
+    let mut player = DialoguePlayer {
+        audio: &mut audio,
+        bank: &bank,
+        tts: None,
+        overrides: None,
+        subtitle_out: Some(&mut subtitles),
+    };
+
+    println!("-- Dialogue Audio CLI --");
+    loop {
+        player.speak_current(&dlg, &st)?;
+        let node = st.current(&dlg);
+        if node.end { break; }
+        // move to next node (linear)
+        st.choose(&dlg, 0); // if there were choices, we’d pick index here
+    }
+    println!("-- End --");
+    Ok(())
+}
