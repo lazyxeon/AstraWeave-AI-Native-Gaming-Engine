@@ -1,0 +1,13 @@
+[package]
+name = "net_headless_sim"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+
+astraweave-net = { path = "../../astraweave-net" }
+astraweave-core = { path = "../../astraweave-core" }
