@@ -3,6 +3,7 @@ use eframe::egui;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use uuid::Uuid;
+use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 struct LevelDoc {
@@ -108,6 +109,7 @@ struct EditorApp {
     content_root: PathBuf,
     level: LevelDoc,
     status: String,
+    mat_doc: MaterialLiveDoc,
 }
 
 impl Default for EditorApp {
@@ -125,8 +127,17 @@ impl Default for EditorApp {
                 ..Default::default()
             },
             status: "Ready".into(),
+            mat_doc: MaterialLiveDoc{ base_color:[1.0,1.0,1.0,1.0], metallic:0.1, roughness:0.6, texture_path: None },
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct MaterialLiveDoc {
+    base_color: [f32;4],
+    metallic: f32,
+    roughness: f32,
+    texture_path: Option<String>,
 }
 
 impl eframe::App for EditorApp {
@@ -214,6 +225,32 @@ impl eframe::App for EditorApp {
             ui.heading("Canvas (schematic)");
             ui.label("→ Here you can render a simple 2.5D grid preview later.");
             ui.separator();
+            ui.collapsing("Material Inspector (Live)", |ui| {
+                ui.label("Adjust PBR params and write to assets/material_live.json");
+                ui.add(egui::Slider::new(&mut self.mat_doc.base_color[0], 0.0..=1.0).text("Base R"));
+                ui.add(egui::Slider::new(&mut self.mat_doc.base_color[1], 0.0..=1.0).text("Base G"));
+                ui.add(egui::Slider::new(&mut self.mat_doc.base_color[2], 0.0..=1.0).text("Base B"));
+                ui.add(egui::Slider::new(&mut self.mat_doc.metallic, 0.0..=1.0).text("Metallic"));
+                ui.add(egui::Slider::new(&mut self.mat_doc.roughness, 0.04..=1.0).text("Roughness"));
+                let tex_ref = self.mat_doc.texture_path.get_or_insert(String::new());
+                ui.horizontal(|ui| {
+                    ui.label("Texture path:");
+                    ui.text_edit_singleline(tex_ref);
+                });
+                if ui.button("Save Live Material").clicked() {
+                    let _ = fs::create_dir_all("assets");
+                    match serde_json::to_string_pretty(&self.mat_doc) {
+                        Ok(s) => {
+                            if fs::write("assets/material_live.json", s).is_ok() {
+                                self.status = "Saved assets/material_live.json".into();
+                            } else {
+                                self.status = "Failed to write material_live.json".into();
+                            }
+                        }
+                        Err(e) => { self.status = format!("Serialize error: {e}"); }
+                    }
+                }
+            });
             ui.collapsing("Obstacles", |ui| {
                 let mut to_remove = None;
                 for (i, obstacle) in self.level.obstacles.iter_mut().enumerate() {

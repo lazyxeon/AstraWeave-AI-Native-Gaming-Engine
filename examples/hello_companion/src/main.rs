@@ -40,7 +40,9 @@ fn main() -> anyhow::Result<()> {
     };
 
     println!("--- TICK 0, world time {:.2}", w.t);
-    validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log).unwrap();
+    if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+        println!("Plan validation/execution failed: {e}. Continuing without panic.");
+    }
 
     // Progress a few seconds to simulate cooldowns & time
     for _ in 0..20 {

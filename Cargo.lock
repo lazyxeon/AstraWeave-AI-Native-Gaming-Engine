@@ -371,8 +371,10 @@ name = "astraweave-asset"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "glam",
  "gltf",
+ "image",
  "serde",
  "serde_json",
 ]
@@ -4130,6 +4132,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "nav_physics_bridge"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-nav",
+ "astraweave-physics",
+ "glam",
+]
+
+[[package]]
 name = "navmesh_demo"
 version = "0.1.0"
 dependencies = [
@@ -6810,6 +6822,7 @@ name = "visual_3d"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-asset",
  "astraweave-core",
  "astraweave-render",
  "egui",
@@ -6818,6 +6831,8 @@ dependencies = [
  "glam",
  "image",
  "pollster",
+ "serde",
+ "serde_json",
  "wgpu",
  "winit",
 ]

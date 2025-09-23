@@ -5,6 +5,7 @@ pub mod tools;
 pub mod util;
 pub mod validation;
 pub mod world;
+pub mod tool_sandbox;
 
 pub use perception::*;
 pub use schema::*;
@@ -13,5 +14,6 @@ pub use sim::*;
 pub use tools::{
     astar_path, find_cover_positions, glam_to_schema, los_clear, path_exists, schema_to_glam,
 };
+pub use tool_sandbox::*;
 pub use validation::*;
 pub use world::*;

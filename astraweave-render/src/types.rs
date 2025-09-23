@@ -6,19 +6,58 @@ use glam::{Mat4, Vec3};
 pub struct Vertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
+    pub tangent: [f32; 4],
+    pub uv: [f32; 2],
 }
 
 impl Vertex {
-    pub const ATTRS: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
-        0 => Float32x3, // position
-        1 => Float32x3, // normal
-    ];
-
     pub fn layout<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem::size_of;
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRS,
+            attributes: &[
+                // position
+                wgpu::VertexAttribute { offset: 0, shader_location: 0, format: wgpu::VertexFormat::Float32x3 },
+                // normal
+                wgpu::VertexAttribute { offset: 12, shader_location: 1, format: wgpu::VertexFormat::Float32x3 },
+                // tangent at location 12 (to match skinned variant convention)
+                wgpu::VertexAttribute { offset: 24, shader_location: 12, format: wgpu::VertexFormat::Float32x4 },
+                // uv at location 13
+                wgpu::VertexAttribute { offset: 40, shader_location: 13, format: wgpu::VertexFormat::Float32x2 },
+            ],
+        }
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
+pub struct SkinnedVertex {
+    pub position: [f32; 3],
+    pub normal: [f32; 3],
+    pub tangent: [f32; 4],
+    pub joints: [u16; 4],
+    pub weights: [f32; 4],
+}
+
+impl SkinnedVertex {
+    pub fn layout<'a>() -> wgpu::VertexBufferLayout<'a> {
+        use std::mem::size_of;
+        wgpu::VertexBufferLayout {
+            array_stride: size_of::<SkinnedVertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                // position
+                wgpu::VertexAttribute { offset: 0, shader_location: 0, format: wgpu::VertexFormat::Float32x3 },
+                // normal
+                wgpu::VertexAttribute { offset: 12, shader_location: 1, format: wgpu::VertexFormat::Float32x3 },
+                // tangent (xyz, w = handedness)
+                wgpu::VertexAttribute { offset: 24, shader_location: 12, format: wgpu::VertexFormat::Float32x4 },
+                // joints
+                wgpu::VertexAttribute { offset: 40, shader_location: 10, format: wgpu::VertexFormat::Uint16x4 },
+                // weights
+                wgpu::VertexAttribute { offset: 48, shader_location: 11, format: wgpu::VertexFormat::Float32x4 },
+            ],
         }
     }
 }
