@@ -9,12 +9,11 @@
 
 📊 **[Executive Summary](EXECUTIVE_SUMMARY.md)** • 🎯 **[Pitch Deck](PITCH_DECK.md)** • ⚡ **[One-Page Overview](ONE_PAGE_OVERVIEW.md)**
 
-[![CI](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
+[![Code Size](https://img.shields.io/github/languages/code-size/lazyxeon/Genesis-Code-Protocol)](https://github.com/lazyxeon/Genesis-Code-Protocol)
 [![Cross Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
 [![Rust Version](https://img.shields.io/badge/rust-1.89.0-orange.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/rust-toolchain.toml)
 [![Documentation](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/docs.yml/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/docs.yml)
 
-[![Security Audit](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/security-audit.yml/badge.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/security-audit.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lazyxeon/Veilweaver-Threads-of-Eternity/badge)](https://scorecard.dev/viewer/?uri=github.com/lazyxeon/Veilweaver-Threads-of-Eternity)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/LICENSE)
 [![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/blob/main/Cargo.toml)
