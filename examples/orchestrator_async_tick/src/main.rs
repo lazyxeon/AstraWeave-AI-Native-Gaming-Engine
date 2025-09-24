@@ -1,4 +1,4 @@
-use astraweave_ai::{GoapOrchestrator, OrchestratorAsync, RuleOrchestrator, UtilityOrchestrator};
+use astraweave_ai::{GoapOrchestrator, OrchestratorAsync, RuleOrchestrator, UtilityOrchestrator, LlmOrchestrator};
 use astraweave_core::{default_tool_registry, map_engine_error, validation::validate_and_execute, validation::ValidateCfg, ActionStep, Entity, IVec2, PlanIntent, World, WorldSnapshot};
 use astraweave_llm::MockLlm;
 
@@ -32,7 +32,7 @@ async fn main() {
     let goap = GoapOrchestrator;
 
     // Optional LLM orch (mock)
-    let llm = crate::astraweave_ai::LlmOrchestrator::new(MockLlm, Some(default_tool_registry()));
+    let llm = LlmOrchestrator::new(MockLlm, Some(default_tool_registry()));
 
     for tick in 0..5 {
         w.tick(0.1);

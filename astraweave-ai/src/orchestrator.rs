@@ -9,7 +9,7 @@ pub trait Orchestrator {
 /// Rule-based orchestrator stub
 pub struct RuleOrchestrator;
 impl Orchestrator for RuleOrchestrator {
-    fn plan(&self, agent_id: u32, snapshot: &crate::WorldSnapshot) -> crate::PlanIntent {
+    fn plan(&self, _agent_id: u32, _snapshot: &crate::WorldSnapshot) -> crate::PlanIntent {
         // TODO: Implement rule-based planning
         crate::PlanIntent::default()
     }
@@ -18,7 +18,7 @@ impl Orchestrator for RuleOrchestrator {
 /// Utility/GOAP orchestrator stub
 pub struct UtilityOrchestrator;
 impl Orchestrator for UtilityOrchestrator {
-    fn plan(&self, agent_id: u32, snapshot: &crate::WorldSnapshot) -> crate::PlanIntent {
+    fn plan(&self, _agent_id: u32, _snapshot: &crate::WorldSnapshot) -> crate::PlanIntent {
         // TODO: Implement utility/GOAP planning
         crate::PlanIntent::default()
     }
@@ -27,7 +27,7 @@ impl Orchestrator for UtilityOrchestrator {
 /// LLM orchestrator stub
 pub struct LlmOrchestrator;
 impl Orchestrator for LlmOrchestrator {
-    fn plan(&self, agent_id: u32, snapshot: &crate::WorldSnapshot) -> crate::PlanIntent {
+    fn plan(&self, _agent_id: u32, _snapshot: &crate::WorldSnapshot) -> crate::PlanIntent {
         // TODO: Call LLM for plan
         crate::PlanIntent::default()
     }
