@@ -57,9 +57,9 @@ impl fmt::Display for ToolError {
 
 /// Validate a tool action for an agent in the world
 pub fn validate_tool_action(
-    agent_id: u32,
-    verb: ToolVerb,
-    world: &crate::WorldSnapshot,
+    _agent_id: u32,
+    _verb: ToolVerb,
+    _world: &crate::WorldSnapshot,
 ) -> Result<(), ToolError> {
     // TODO: Implement validation logic per verb/category
     Ok(())
