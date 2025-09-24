@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["GoapOrchestrator","RuleOrchestrator","UtilityOrchestrator"],"trait":["Orchestrator","OrchestratorAsync"]};
+window.SIDEBAR_ITEMS = {"mod":["orchestrator","tool_sandbox"],"struct":["GoapOrchestrator","RuleOrchestrator","UtilityOrchestrator"],"trait":["Orchestrator","OrchestratorAsync"]};

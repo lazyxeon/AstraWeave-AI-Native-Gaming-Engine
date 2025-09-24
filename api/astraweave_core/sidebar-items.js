@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["default_tool_registry"],"mod":["perception","schema","sim","tool_sandbox","tools","util","validation","world"]};
+window.SIDEBAR_ITEMS = {"fn":["default_tool_registry"],"mod":["capture_replay","perception","schema","sim","tool_sandbox","tools","util","validation","world"]};
