@@ -1,5 +1,6 @@
 use astraweave_core::*;
-use astraweave_llm::{plan_from_llm, LocalHttpClient, MockLlm, OllamaClient};
+use astraweave_llm::{plan_from_llm, LocalHttpClient, MockLlm};
+use astraweave_llm::LlmClient;
 use std::env;
 
 /// Comprehensive LLM integration example demonstrating multiple client types
@@ -23,14 +24,20 @@ async fn main() -> anyhow::Result<()> {
     println!("--------------------------");
     test_mock_client(&world_snapshot, &tool_registry).await?;
 
-    // 2. Test Ollama (if URL provided)
-    if let Ok(ollama_url) = env::var("OLLAMA_URL") {
-        println!("\n2. Testing Ollama Client");
-        println!("-------------------------");
-        test_ollama_client(&world_snapshot, &tool_registry, &ollama_url).await?;
-    } else {
-        println!("\n2. Ollama Client (Skipped - set OLLAMA_URL environment variable to test)");
+    // 2. Test Ollama Chat client (prefer local Ollama at http://127.0.0.1:11434)
+    let ollama_url = env::var("OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
+    println!("\n2. Testing Ollama Chat Client at {}", ollama_url);
+    println!("-------------------------");
+
+    // Quick health check: GET /api/tags is a safe, browser-friendly endpoint that lists available models.
+    // Note: /api/chat and /api/generate are POST-only endpoints. Clicking a browser link to them will
+    // perform a GET and typically return HTTP 405 Method Not Allowed. To inspect models, open the /api/tags URL.
+    if let Err(e) = probe_ollama_tags(&ollama_url).await {
+        println!("Warning: failed to probe Ollama /api/tags: {}", e);
+        println!("Proceeding to attempt a POST to the chat endpoint; this may fail if the model is not loaded.");
     }
+
+    test_ollama_client(&world_snapshot, &tool_registry, &ollama_url).await?;
 
     // 3. Test LocalHttpClient (if URL provided)
     if let Ok(local_url) = env::var("LOCAL_LLM_URL") {
@@ -70,20 +77,88 @@ async fn test_ollama_client(
     reg: &ToolRegistry,
     url: &str,
 ) -> anyhow::Result<()> {
-    let model = env::var("OLLAMA_MODEL").unwrap_or_else(|_| "llama2".to_string());
-    let client = OllamaClient {
-        url: url.to_string(),
-        model,
+    // Choose a model: prefer OLLAMA_MODEL env var; if not set, query /api/tags and pick the first model.
+    let model = match env::var("OLLAMA_MODEL") {
+        Ok(m) => m,
+        Err(_) => {
+            // Try to pick the first available model from /api/tags
+            let tags_url = format!("{}/api/tags", url.trim_end_matches('/'));
+            let client = reqwest::Client::new();
+            match client.get(&tags_url).timeout(std::time::Duration::from_secs(5)).send().await {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        if let Ok(body) = resp.text().await {
+                            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&body) {
+                                if let Some(models) = v.get("models").and_then(|m| m.as_array()) {
+                                    if let Some(first) = models.get(0) {
+                                        if let Some(name) = first.get("name").and_then(|n| n.as_str()) {
+                                            name.to_string()
+                                        } else if let Some(model) = first.get("model").and_then(|n| n.as_str()) {
+                                            model.to_string()
+                                        } else {
+                                            "llama2".to_string()
+                                        }
+                                    } else {
+                                        "llama2".to_string()
+                                    }
+                                } else {
+                                    "llama2".to_string()
+                                }
+                            } else {
+                                "llama2".to_string()
+                            }
+                        } else {
+                            "llama2".to_string()
+                        }
+                    } else {
+                        println!("Warning: /api/tags returned {} - falling back to default model llama2", resp.status());
+                        "llama2".to_string()
+                    }
+                }
+                Err(e) => {
+                    println!("Warning: failed to fetch /api/tags to select a model: {}. Using default 'llama2'", e);
+                    "llama2".to_string()
+                }
+            }
+        }
     };
+    println!("Using Ollama model: {}", model);
+    let client = astraweave_llm::OllamaChatClient::new(url.to_string(), model);
 
+    // Helpful link guidance: GET /api/tags is safe to open in a browser and will list models.
+    // The chat endpoint (/api/chat) requires POST and clicking it in a browser (GET) will return 405 Method Not Allowed.
     println!("Connecting to Ollama at: {}", url);
-    match plan_from_llm(&client, snap, reg).await {
-        Ok(plan) => {
-            println!("✓ Ollama generated plan:");
-            println!("{}", serde_json::to_string_pretty(&plan)?);
+    println!(" - Inspect available models (safe to open in browser): {}/api/tags", url.trim_end_matches('/'));
+    println!(" - Chat endpoint (POST-only, will return 405 if opened with GET): {}/api/chat", url.trim_end_matches('/'));
+    // Always fetch and print the raw response first so we can inspect Ollama output
+    match client.complete(&astraweave_llm::build_prompt(snap, reg)).await {
+        Ok(raw) => {
+            println!("--- Raw Ollama response start ---");
+            println!("{}", raw);
+            println!("--- Raw Ollama response end ---");
+            // Now attempt to parse/convert into PlanIntent
+            match astraweave_llm::parse_llm_plan(&raw, reg) {
+                Ok(plan) => {
+                    println!("✓ Ollama produced a valid plan (direct parse):");
+                    println!("{}", serde_json::to_string_pretty(&plan)?);
+                }
+                Err(_) => {
+                    // Fall back to the full plan_from_llm which includes extraction/recovery steps
+                    match astraweave_llm::plan_from_llm(&client, snap, reg).await {
+                        Ok(plan) => {
+                            println!("✓ Ollama generated plan (via plan_from_llm):");
+                            println!("{}", serde_json::to_string_pretty(&plan)?);
+                        }
+                        Err(e) => {
+                            println!("✗ Ollama failed parsing into PlanIntent: {}", e);
+                            println!("  Make sure Ollama is running and the model is available");
+                        }
+                    }
+                }
+            }
         }
         Err(e) => {
-            println!("✗ Ollama failed: {}", e);
+            println!("✗ Failed to fetch raw response from Ollama: {}", e);
             println!("  Make sure Ollama is running and the model is available");
         }
     }
@@ -115,6 +190,28 @@ async fn test_local_http_client(
             );
         }
     }
+    Ok(())
+}
+
+async fn probe_ollama_tags(base_url: &str) -> anyhow::Result<()> {
+    let url = format!("{}/api/tags", base_url.trim_end_matches('/'));
+    println!("Probing Ollama for available models at: {} (GET)", url);
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(&url)
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to reach Ollama /api/tags: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let txt = resp.text().await.unwrap_or_default();
+        return Err(anyhow::anyhow!("Ollama /api/tags returned {}: {}", status, txt));
+    }
+
+    let body = resp.text().await.unwrap_or_default();
+    println!("Ollama /api/tags response: {}", body);
     Ok(())
 }
 

@@ -75,6 +75,387 @@ impl LlmClient for OllamaClient {
     }
 }
 
+// New Ollama chat client that targets the local Ollama chat endpoint (e.g. http://127.0.0.1:11434/api/chat)
+// This client is resilient to a couple of response shapes returned by different Ollama versions.
+#[cfg(feature = "ollama")]
+pub struct OllamaChatClient {
+    pub url: String,
+    pub model: String,
+}
+
+#[cfg(feature = "ollama")]
+impl OllamaChatClient {
+    pub fn new(url: String, model: String) -> Self {
+        Self { url, model }
+    }
+}
+
+#[cfg(feature = "ollama")]
+#[async_trait::async_trait]
+impl LlmClient for OllamaChatClient {
+    async fn complete(&self, prompt: &str) -> Result<String> {
+        #[derive(serde::Serialize)]
+        struct Msg<'a> {
+            role: &'a str,
+            content: &'a str,
+        }
+
+        #[derive(serde::Serialize)]
+        struct Req<'a> {
+            model: &'a str,
+            messages: Vec<Msg<'a>>,
+            stream: bool,
+        }
+
+        // Common response shapes:
+        // 1) { "response": "..." }
+        #[derive(serde::Deserialize)]
+        struct RespAlt {
+            response: Option<String>,
+        }
+
+        // 2) { "choices": [ { "message": { "role":"assistant", "content":"..." } } ] }
+        #[derive(serde::Deserialize)]
+        struct Choice {
+            message: Message,
+        }
+        #[derive(serde::Deserialize)]
+        struct Message {
+            role: Option<String>,
+            content: Option<String>,
+        }
+        #[derive(serde::Deserialize)]
+        struct ChatResp {
+            choices: Option<Vec<Choice>>,
+        }
+
+        let body = Req {
+            model: &self.model,
+            messages: vec![Msg {
+                role: "user",
+                content: prompt,
+            }],
+            stream: false,
+        };
+
+        let client = reqwest::Client::new();
+        // Build a non-chunked JSON body string and set Connection: close so the server
+        // will finish the response and close the connection (avoids some streaming behaviors).
+    // Build a JSON body for non-streaming attempts. Use `.json()` on the request so
+    // reqwest sets proper headers and Content-Length.
+
+        // Some Ollama setups can take a long time to load a model initially (minutes) or
+        // will stream responses. Allow a long configurable timeout and fall back to a
+        // streaming read if a non-stream response isn't available.
+        let default_timeout = std::env::var("OLLAMA_TIMEOUT_SECS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(180u64);
+
+        // First try a non-streaming request with a long timeout so we get a buffered JSON
+        // response if the server supports it and the model responds within the window.
+        let mut text = String::new();
+        let chat_url = format!("{}/api/chat", self.url.trim_end_matches('/'));
+        // Try a quick non-streaming request first (short timeout) so we can get a buffered
+        // JSON response when the model is already warmed. If it takes too long (model loading),
+        // fall back to streaming which can handle longer loads.
+        let mut non_stream_ok = false;
+        let mut attempt = 0u32;
+        while attempt < 3 && !non_stream_ok {
+            attempt += 1;
+            let backoff = std::time::Duration::from_millis(250 * (1 << (attempt - 1)));
+            println!("[ollama] non-stream attempt {}/3 to {} (short timeout 10s)", attempt, chat_url);
+            // Use .json() so reqwest sets Content-Length and proper headers. Some servers
+            // close the connection or reject raw bodies without length which can cause
+            // "error sending request" failures; using .json() is more reliable here.
+            match client
+                .post(&chat_url)
+                .header("Accept", "application/json")
+                .timeout(std::time::Duration::from_secs(10))
+                .json(&body)
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    println!("[ollama] non-streaming request returned status {}", resp.status());
+                    if resp.status().is_success() {
+                        // Try to read as text (this will complete if the server returns a full body)
+                        match resp.text().await {
+                            Ok(t) if !t.trim().is_empty() => {
+                                println!("[ollama] received non-empty buffered body ({} bytes)", t.len());
+                                text = t;
+                                non_stream_ok = true;
+                            }
+                            Ok(_) => {
+                                println!("[ollama] buffered body was empty on attempt {}, will retry/fallback", attempt);
+                            }
+                            Err(e) => {
+                                println!("[ollama] error reading non-streaming response text: {:?}", e);
+                            }
+                        }
+                    } else {
+                        // Read response body for diagnostics
+                        let status = resp.status();
+                        let b = resp.text().await.unwrap_or_default();
+                        println!(
+                            "[ollama] non-streaming request returned non-success status: {}: {}",
+                            status, b
+                        );
+                    }
+                }
+                Err(e) => {
+                    // Print full debug info for the error to aid diagnosis
+                    println!(
+                        "[ollama] non-streaming request failed on attempt {}: {:?}",
+                        attempt, e
+                    );
+                }
+            }
+
+            if !non_stream_ok {
+                // small backoff before retrying
+                tokio::time::sleep(backoff).await;
+            }
+        }
+
+        // If we didn't get a usable buffered body, attempt a streaming read where we
+        // accumulate incoming bytes and try to extract the assistant content as it arrives.
+        if text.trim().is_empty() {
+            // Build a streaming request (request the server to stream if it supports it)
+            let stream_body = serde_json::json!({ "model": &self.model, "messages": [{ "role": "user", "content": prompt }], "stream": true });
+
+            // Total streaming timeout to avoid hangs when the model never responds
+            let total_stream_timeout = std::time::Duration::from_secs(default_timeout * 2);
+            let start = std::time::Instant::now();
+
+            let stream_url = format!("{}/api/chat", self.url.trim_end_matches('/'));
+            println!("[ollama] initiating streaming POST to {}", stream_url);
+            let resp = client
+                .post(&stream_url)
+                .header("Accept", "application/json")
+                .header("Content-Type", "application/json")
+                .header("Connection", "close")
+                .json(&stream_body)
+                .send()
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to initiate streaming request to Ollama: {}", e))?;
+
+            println!("[ollama] streaming request returned status {}", resp.status());
+
+            // Determine which response we'll stream from: prefer /api/chat, but fall back to /api/generate
+            let mut resp_for_stream: Option<reqwest::Response> = None;
+            if resp.status().is_success() {
+                resp_for_stream = Some(resp);
+            } else {
+                let status = resp.status();
+                if status.as_u16() == 404 || status.as_u16() == 405 {
+                    println!("[ollama] /api/chat returned {}, attempting /api/generate as fallback", status);
+                    let gen_url = format!("{}/api/generate", self.url.trim_end_matches('/'));
+                    let gen_resp = client
+                        .post(&gen_url)
+                        .header("Accept", "application/json")
+                        .header("Content-Type", "application/json")
+                        .json(&stream_body)
+                        .send()
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Failed to initiate streaming request to Ollama /api/generate: {}", e))?;
+
+                    println!("[ollama] /api/generate returned status {}", gen_resp.status());
+                    if gen_resp.status().is_success() {
+                        resp_for_stream = Some(gen_resp);
+                    } else {
+                        let s = gen_resp.status();
+                        let b = gen_resp.text().await.unwrap_or_default();
+                        bail!("Ollama /api/generate returned error status {}: {}", s, b);
+                    }
+                } else {
+                    let txt = resp.text().await.unwrap_or_default();
+                    bail!("Ollama chat API returned error status {}: {}", status, txt);
+                }
+            }
+
+            // Now unwrap the response we will stream from
+            let resp = resp_for_stream.ok_or_else(|| anyhow::anyhow!("No streaming response available"))?;
+
+            // Use the bytes_stream to receive chunks as they arrive. Ollama streams envelope JSON
+            // objects per-line where assistant tokens are nested inside `message.content`.
+            // We must parse each line, extract `message.content` fragments, concatenate them,
+            // and then attempt to extract the final JSON object.
+            let mut stream = resp.bytes_stream();
+            use futures_util::StreamExt;
+
+            let mut buf = String::new();
+            let mut assistant_acc = String::new();
+            let mut done_flag = false;
+
+            // We'll periodically flush partial assembled assistant output to disk so
+            // an interrupted run can still be inspected. Track last flush size.
+            let mut last_flush = 0usize;
+            while let Some(item) = tokio::time::timeout(std::time::Duration::from_secs(10), stream.next()).await.ok().flatten() {
+                match item {
+                    Ok(chunk) => {
+                        if let Ok(schunk) = std::str::from_utf8(&chunk) {
+                            buf.push_str(schunk);
+
+                            // Process complete newline-terminated records
+                            while let Some(pos) = buf.find('\n') {
+                                let line = buf[..pos].trim();
+                                let rest = buf[pos + 1..].to_string();
+
+                                if !line.is_empty() {
+                                    // Try to parse the envelope JSON line
+                                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(line) {
+                                        // Extract nested message.content if present
+                                        if let Some(msg) = v.get("message") {
+                                            if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                                                assistant_acc.push_str(content);
+                                            }
+                                        }
+
+                                        // Some Ollama variants may include a top-level "response" or choices
+                                        if let Some(resp_txt) = v.get("response").and_then(|r| r.as_str()) {
+                                            assistant_acc.push_str(resp_txt);
+                                        }
+
+                                        if let Some(choices) = v.get("choices").and_then(|c| c.as_array()) {
+                                            if let Some(first) = choices.get(0) {
+                                                if let Some(msg) = first.get("message") {
+                                                    if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                                                        assistant_acc.push_str(content);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if v.get("done").and_then(|d| d.as_bool()) == Some(true) {
+                                            done_flag = true;
+                                        }
+                                    } else {
+                                        // Not valid JSON line; append raw
+                                        assistant_acc.push_str(line);
+                                    }
+                                }
+
+                                buf = rest;
+                                // Periodically persist partial output so it's available if the
+                                // process is interrupted.
+                                if assistant_acc.len().saturating_sub(last_flush) > 1024 {
+                                    if let Err(e) = std::fs::write("target/ollama_assistant_acc.txt", &assistant_acc) {
+                                        println!("[ollama][debug] partial write failed: {}", e);
+                                    } else {
+                                        last_flush = assistant_acc.len();
+                                        println!("[ollama][debug] flushed {} bytes of assistant_acc to disk", last_flush);
+                                    }
+                                }
+                            }
+                        }
+
+                        // If we've accumulated something that looks like a JSON object, try to extract it
+                        if let Some(obj) = extract_json_object(&assistant_acc) {
+                            text = obj;
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        // Non-fatal: keep trying until total timeout
+                        if start.elapsed() > total_stream_timeout {
+                            bail!("Streaming read timed out: {}", e);
+                        }
+                    }
+                }
+
+                if done_flag || start.elapsed() > total_stream_timeout {
+                    break;
+                }
+            }
+
+            if text.trim().is_empty() {
+                // If streaming collected something but we couldn't parse JSON, try to salvage text.
+                // Some Ollama variants deliver the assistant output as a quoted JSON string (i.e. a
+                // JSON string literal containing another JSON object). Detect and unquote that.
+                if !assistant_acc.trim().is_empty() {
+                    let mut candidate = assistant_acc.clone();
+                    // If the assistant_acc looks like a quoted JSON string, unescape it
+                    let t = candidate.trim();
+                    if t.starts_with('"') && t.ends_with('"') {
+                        if let Ok(unq) = serde_json::from_str::<String>(t) {
+                            candidate = unq;
+                        }
+                    }
+
+                    // Debug: persist the assembled assistant output to a file for offline inspection
+                    println!("[ollama][debug] assembled assistant_acc length = {}", candidate.len());
+                    if candidate.len() > 500 {
+                        println!("[ollama][debug] assembled snippet (start): {}", &candidate[..200.min(candidate.len())]);
+                        println!("[ollama][debug] assembled snippet (end): {}", &candidate[candidate.len().saturating_sub(200)..]);
+                    } else {
+                        println!("[ollama][debug] assembled content: {}", candidate);
+                    }
+                    if let Err(e) = std::fs::write("target/ollama_assistant_acc.txt", &candidate) {
+                        println!("[ollama][debug] failed to write assistant_acc to file: {}", e);
+                    } else {
+                        println!("[ollama][debug] wrote assembled assistant_acc to target/ollama_assistant_acc.txt");
+                    }
+
+                    if let Some(obj) = extract_last_json_object(&candidate).or_else(|| extract_json_object(&candidate)) {
+                        println!("[ollama][debug] extracted JSON object (len={})", obj.len());
+                        text = obj;
+                    } else {
+                        text = strip_code_fences(&candidate);
+                    }
+                } else if let Ok(s) = std::str::from_utf8(&buf.as_bytes()) {
+                    if let Some(obj) = extract_json_object(s) {
+                        text = obj;
+                    } else {
+                        text = strip_code_fences(s);
+                    }
+                }
+            }
+
+            if text.trim().is_empty() {
+                bail!("Ollama chat did not return a usable response within timeout. Check `ollama ps` and model readiness.");
+            }
+        }
+
+        // `text` now contains the response body retrieved via retry/backoff above.
+
+        // Try parsing as JSON value to extract common shapes
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+            // 1) { "response": "..." }
+            if let Some(resp) = v.get("response").and_then(|r| r.as_str()) {
+                return Ok(resp.to_string());
+            }
+
+            // 2) { "message": { "content": "..." } }
+            if let Some(msg) = v.get("message") {
+                if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                    // If content contains a fenced code block or an embedded JSON object,
+                    // try to extract and return that JSON directly to simplify downstream parsing.
+                    if let Some(obj) = extract_json_object(content) {
+                        return Ok(obj);
+                    }
+                    let stripped = strip_code_fences(content);
+                    return Ok(stripped);
+                }
+            }
+
+            // 3) { "choices": [ { "message": { "content": "..." } } ] }
+            if let Some(choices) = v.get("choices").and_then(|c| c.as_array()) {
+                if let Some(first) = choices.get(0) {
+                    if let Some(msg) = first.get("message") {
+                        if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                            return Ok(content.to_string());
+                        }
+                    }
+                }
+            }
+        }
+
+        // If no recognized JSON shape matched, return the raw text as a last resort
+        Ok(text)
+    }
+}
+
 /// A simple local HTTP LLM client that can work with any OpenAI-compatible API
 /// This includes local services like text-generation-webui, LocalAI, etc.
 #[cfg(feature = "ollama")]
@@ -216,8 +597,121 @@ Snapshot (redacted):
 
 /// Parse and validate that the produced steps are in the allowed registry (structural check).
 pub fn parse_llm_plan(json_text: &str, reg: &ToolRegistry) -> Result<PlanIntent> {
-    let plan: PlanIntent = serde_json::from_str(json_text.trim())?;
-    // basic allowlist check
+    // Try direct parse first
+    if let Ok(plan) = serde_json::from_str::<PlanIntent>(json_text.trim()) {
+        validate_plan(&plan, reg)?;
+        return Ok(plan);
+    }
+
+    // Strip common code fences and try again
+    let cleaned = strip_code_fences(json_text);
+    // If there's fenced JSON like ```json { ... } ``` try to extract inner JSON first
+    if let Some(fenced) = extract_json_from_fenced(json_text) {
+        if let Ok(plan) = serde_json::from_str::<PlanIntent>(fenced.trim()) {
+            validate_plan(&plan, reg)?;
+            return Ok(plan);
+        }
+        // try cleaned fenced
+        if let Some(inner_clean) = extract_json_from_fenced(&cleaned) {
+            if let Ok(plan) = serde_json::from_str::<PlanIntent>(inner_clean.trim()) {
+                validate_plan(&plan, reg)?;
+                return Ok(plan);
+            }
+        }
+    }
+    if let Ok(plan) = serde_json::from_str::<PlanIntent>(cleaned.as_str()) {
+        validate_plan(&plan, reg)?;
+        return Ok(plan);
+    }
+
+    // Attempt to extract the first JSON object from the text and parse it
+    if let Some(obj) = extract_json_object(&cleaned) {
+        if let Ok(plan) = serde_json::from_str::<PlanIntent>(obj.trim()) {
+            validate_plan(&plan, reg)?;
+            return Ok(plan);
+        }
+    }
+
+    // Parse as generic Value and coerce tolerant fields
+    let v: serde_json::Value = serde_json::from_str(cleaned.as_str())?;
+
+    // Try to locate a nested JSON inside `message.content` or `response`
+    if let Some(msg) = v.get("message") {
+        if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+            if let Some(obj2) = extract_json_object(content) {
+                if let Ok(plan) = serde_json::from_str::<PlanIntent>(obj2.trim()) {
+                    validate_plan(&plan, reg)?;
+                    return Ok(plan);
+                }
+            }
+        }
+    }
+
+    if let Some(resp_txt) = v.get("response").and_then(|r| r.as_str()) {
+        if let Some(obj2) = extract_json_object(resp_txt) {
+            if let Ok(plan) = serde_json::from_str::<PlanIntent>(obj2.trim()) {
+                validate_plan(&plan, reg)?;
+                return Ok(plan);
+            }
+        }
+    }
+
+    // Coerce tolerant PlanIntent: accept alternative keys and ensure steps exist
+    let plan_id = (|| {
+        // common accepted keys
+        let candidates = ["plan_id", "plan_eid", "id", "plan_no", "plan_num", "planNumber", "plan_n°", "plan_n"];
+        for &k in &candidates {
+            if let Some(vv) = v.get(k) {
+                if let Some(s) = vv.as_str() {
+                    return Some(s.to_string());
+                }
+            }
+        }
+
+        // Try to find any key that, when normalized, matches "planid" or similar
+        if let Some(obj) = v.as_object() {
+            for (k, vv) in obj.iter() {
+                let norm: String = k.chars().filter(|c| c.is_alphanumeric()).collect::<String>().to_lowercase();
+                if norm == "planid" || norm == "plann" || norm == "planno" || norm == "plannumber" {
+                    if let Some(s) = vv.as_str() {
+                        return Some(s.to_string());
+                    }
+                }
+            }
+        }
+
+        None
+    })()
+    .unwrap_or_else(|| {
+        // Fallback id using timestamp
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis().to_string())
+            .unwrap_or_else(|_| "0".to_string());
+        format!("llm-{}", now)
+    });
+
+    let steps_val = v.get("steps").cloned().unwrap_or(serde_json::Value::Array(vec![]));
+    let steps_json = serde_json::to_string(&steps_val)?;
+    let steps: Vec<ActionStep> = serde_json::from_str(&steps_json)?;
+
+    let plan = PlanIntent { plan_id, steps };
+    validate_plan(&plan, reg)?;
+    Ok(plan)
+}
+
+fn strip_code_fences(s: &str) -> String {
+    // Remove triple backtick code fences and return inner content if found
+    if let Some(start) = s.find("```") {
+        if let Some(end_rel) = s[start + 3..].find("```") {
+            let inner = &s[start + 3..start + 3 + end_rel];
+            return inner.trim().to_string();
+        }
+    }
+    s.to_string()
+}
+
+fn validate_plan(plan: &PlanIntent, reg: &ToolRegistry) -> Result<()> {
     for s in &plan.steps {
         match s {
             ActionStep::MoveTo { .. } => {
@@ -242,7 +736,7 @@ pub fn parse_llm_plan(json_text: &str, reg: &ToolRegistry) -> Result<PlanIntent>
             }
         }
     }
-    Ok(plan)
+    Ok(())
 }
 
 /// End-to-end: build prompt → LLM → parse → PlanIntent.
@@ -253,8 +747,137 @@ pub async fn plan_from_llm(
 ) -> Result<PlanIntent> {
     let prompt = build_prompt(snap, reg);
     let text = client.complete(&prompt).await?;
-    let plan = parse_llm_plan(&text, reg)?;
-    Ok(plan)
+    // First attempt to parse the raw text
+    match parse_llm_plan(&text, reg) {
+        Ok(plan) => return Ok(plan),
+        Err(e) => {
+            // Try to recover by extracting a JSON object from the text in case the model
+            // added explanation or other commentary around the JSON block.
+            if let Some(json_only) = extract_json_object(&text) {
+                match parse_llm_plan(&json_only, reg) {
+                    Ok(plan) => return Ok(plan),
+                    Err(inner) => {
+                        return Err(anyhow::anyhow!(
+                            "Failed to parse LLM output: {}. Tried extracting JSON and failed: {}. Full response: {}",
+                            e,
+                            inner,
+                            text
+                        ));
+                    }
+                }
+            }
+
+            // If we couldn't extract JSON, attempt a one-shot recovery by asking the LLM
+            // to return ONLY the JSON matching the PlanIntent schema from its previous reply.
+            // This calls the same client again with a short corrective prompt.
+            let fixer = format!(
+                "The model returned the following text which did not conform to the required JSON schema.\n\n---\n{}\n---\n\nPlease extract and return ONLY the JSON object that matches this schema (no commentary):\n{}",
+                text,
+                r#"{ "plan_id": "string", "steps": [ {"act":"MoveTo"|"Throw"|"CoverFire"|"Revive", ...} ] }"#
+            );
+
+            // Try to ask the model to extract/produce the JSON. If the client call fails or
+            // parsing still fails, return the original error with full response for debugging.
+            if let Ok(fixed_text) = client.complete(&fixer).await {
+                if let Ok(plan) = parse_llm_plan(&fixed_text, reg) {
+                    return Ok(plan);
+                } else if let Some(json_only2) = extract_json_object(&fixed_text) {
+                    if let Ok(plan) = parse_llm_plan(&json_only2, reg) {
+                        return Ok(plan);
+                    }
+                }
+                return Err(anyhow::anyhow!(
+                    "Failed to parse LLM output even after asking it to extract JSON. Original error: {}. Full original response: {}. Attempted fixer response: {}",
+                    e,
+                    text,
+                    fixed_text
+                ));
+            }
+
+            return Err(anyhow::anyhow!("Failed to parse LLM output: {}. Full response: {}", e, text));
+        }
+    }
+}
+
+/// Attempt to extract the first JSON object from a text blob by finding a balanced
+/// '{' ... '}' region. Returns `Some(String)` if a balanced JSON-like block is found.
+fn extract_json_object(s: &str) -> Option<String> {
+    let bytes = s.as_bytes();
+    let mut start = None;
+    let mut depth: i32 = 0;
+    for (i, &b) in bytes.iter().enumerate() {
+        if b == b'{' {
+            if start.is_none() {
+                start = Some(i);
+            }
+            depth += 1;
+        } else if b == b'}' {
+            if depth > 0 {
+                depth -= 1;
+                if depth == 0 {
+                    if let Some(s_idx) = start {
+                        // safe to slice because indices are on byte boundaries for UTF-8 ASCII braces
+                        if let Ok(sub) = std::str::from_utf8(&bytes[s_idx..=i]) {
+                            return Some(sub.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Extract the last balanced JSON object in a string, if any.
+fn extract_last_json_object(s: &str) -> Option<String> {
+    let bytes = s.as_bytes();
+    let mut start: Option<usize> = None;
+    let mut depth: i32 = 0;
+    let mut last_range: Option<(usize, usize)> = None;
+    for (i, &b) in bytes.iter().enumerate() {
+        if b == b'{' {
+            if start.is_none() {
+                start = Some(i);
+            }
+            depth += 1;
+        } else if b == b'}' {
+            if depth > 0 {
+                depth -= 1;
+                if depth == 0 {
+                    if let Some(s_idx) = start {
+                        last_range = Some((s_idx, i));
+                        // continue scanning to prefer the last complete object
+                        start = None;
+                    }
+                }
+            }
+        }
+    }
+    if let Some((s_idx, e_idx)) = last_range {
+        if let Ok(sub) = std::str::from_utf8(&bytes[s_idx..=e_idx]) {
+            return Some(sub.to_string());
+        }
+    }
+    None
+}
+
+/// Find JSON inside fenced code blocks (```json ... ``` or ``` ... ```) and return inner content
+fn extract_json_from_fenced(s: &str) -> Option<String> {
+    // look for ```json first
+    if let Some(start) = s.find("```json") {
+        if let Some(end_rel) = s[start + 7..].find("```") {
+            let inner = &s[start + 7..start + 7 + end_rel];
+            return Some(inner.trim().to_string());
+        }
+    }
+    // fallback to any ``` block
+    if let Some(start) = s.find("```") {
+        if let Some(end_rel) = s[start + 3..].find("```") {
+            let inner = &s[start + 3..start + 3 + end_rel];
+            return Some(inner.trim().to_string());
+        }
+    }
+    None
 }
 
 #[cfg(test)]
