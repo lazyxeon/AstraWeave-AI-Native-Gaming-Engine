@@ -17,6 +17,7 @@ members = [
   "examples/debug_overlay",
   "examples/llm_toolcall",    
   "examples/llm_integration",    
+  "examples/ollama_probe",
   "examples/phase_director",  
   "examples/persona_loader",  
   "examples/rhai_authoring",  
@@ -65,6 +66,7 @@ members = [
   "tools/aw_build",
   "tools/aw_texture_gen",
   "tools/aw_headless",
+  "tools/ollama_probe",
   # persistence
   "persistence/aw-save",
   "tools/aw_save_cli",
@@ -108,7 +110,7 @@ tungstenite = "0.27"
 tokio-tungstenite = "0.27"
 egui = "0.28"
 eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.30", features = ["serde"] }
 wgpu = "0.20"
