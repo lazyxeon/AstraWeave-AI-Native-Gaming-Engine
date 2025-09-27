@@ -157,10 +157,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let radiance = vec3<f32>(1.0, 0.98, 0.9); // dir light color
         // Shadow sampling
         // Cascaded shadow mapping (2 cascades)
-        let dist = length(input.world_pos);
-        let use_c0 = dist < uLight.splits.x;
-        var lvp: mat4x4<f32>;
-        if (use_c0) { lvp = uLight.view_proj0; } else { lvp = uLight.view_proj1; }
+    let dist = length(input.world_pos);
+    let use_c0 = dist < uLight.splits.x;
+    var lvp: mat4x4<f32>;
+    if (use_c0) { lvp = uLight.view_proj0; } else { lvp = uLight.view_proj1; }
         let lp = lvp * vec4<f32>(input.world_pos, 1.0);
     let ndc_shadow = lp.xyz / lp.w;
     let uv = ndc_shadow.xy * 0.5 + vec2<f32>(0.5, 0.5);
@@ -191,7 +191,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             if (use_c0) { tint = vec3<f32>(1.0, 0.3, 0.0); } else { tint = vec3<f32>(0.0, 0.2, 1.0); }
             base_color = mix(base_color, tint, 0.35);
         }
-        var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.02; // tiny ambient
+    // Add a modest ambient lift to avoid overly dark scene when sun is low
+    var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.08;
         // Clustered point lights accumulation (Lambert + simple attenuation)
     // Clustered lighting disabled for this example build; use lit_color directly
     return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
@@ -293,7 +294,11 @@ pub struct Renderer {
     material_bg: wgpu::BindGroup,
     post_pipeline: wgpu::RenderPipeline,
     post_bind_group: wgpu::BindGroup,
+    #[allow(dead_code)]
     post_bgl: wgpu::BindGroupLayout,
+    hdr_tex: wgpu::Texture,
+    hdr_view: wgpu::TextureView,
+    hdr_sampler: wgpu::Sampler,
     #[allow(dead_code)]
     shadow_tex: wgpu::Texture,
     #[allow(dead_code)]
@@ -305,6 +310,9 @@ pub struct Renderer {
     shadow_pipeline: wgpu::RenderPipeline,
     light_buf: wgpu::Buffer,
     light_bg: wgpu::BindGroup,
+    // Bind group used only during shadow depth passes (binds light buffer only) to avoid sampling the
+    // shadow depth texture while it's being written.
+    light_bg_shadow: wgpu::BindGroup,
     #[allow(dead_code)]
     shadow_bgl: wgpu::BindGroupLayout,
     // Cascade data cached on CPU for shadow passes
@@ -343,6 +351,7 @@ pub struct Renderer {
     camera_bind_group: wgpu::BindGroup,
 
     mesh_cube: Mesh,
+    mesh_sphere: Mesh,
     mesh_plane: Mesh,
     mesh_external: Option<Mesh>,
 
@@ -359,6 +368,7 @@ pub struct Renderer {
     // Skinning (v0)
     #[allow(dead_code)]
     skin_bgl: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     skin_bg: wgpu::BindGroup,
     skin_palette_buf: wgpu::Buffer,
     skinned_pipeline: wgpu::RenderPipeline,
@@ -374,6 +384,7 @@ pub struct Renderer {
     clustered_indices_buf: wgpu::Buffer,
     #[allow(dead_code)]
     clustered_bgl: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     clustered_bg: wgpu::BindGroup,
     #[allow(dead_code)]
     clustered_comp_bgl: wgpu::BindGroupLayout,
@@ -530,6 +541,9 @@ impl Renderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        // Seed the material buffer with a bright-ish default so geometry renders visibly out of the box.
+        let default_material: [f32; 8] = [0.85, 0.78, 0.72, 1.0, 0.05, 0.6, 0.0, 0.0];
+        queue.write_buffer(&material_buf, 0, bytemuck::cast_slice(&default_material));
         let material_bg = device.create_bind_group(&wgpu::BindGroupDescriptor{
             label: Some("material bg"),
             layout: &material_bgl,
@@ -945,6 +959,15 @@ impl Renderer {
             ],
         });
 
+        // Minimal layout for shadow-only pass: only the light uniform buffer (binding 0).
+        let shadow_bgl_light = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor{
+            label: Some("shadow bgl light-only"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry{ binding: 0, visibility: wgpu::ShaderStages::VERTEX, ty: wgpu::BindingType::Buffer{ ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset:false, min_binding_size: None }, count: None },
+            ]
+        });
+        let light_bg_shadow = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("light bg shadow-only"), layout: &shadow_bgl_light, entries: &[ wgpu::BindGroupEntry{ binding:0, resource: light_buf.as_entire_binding() } ] });
+
                 // Shadow map pipeline (depth-only)
                                 let shadow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{
             label: Some("shadow shader"),
@@ -972,9 +995,11 @@ fn vs(input: VSIn) -> VSOut {
 @fragment fn fs() { }
 "#))
         });
+        // Shadow-only pipeline uses a light-only bind group layout so the
+        // depth-only pass doesn't require bindings for the shadow texture/sampler.
         let shadow_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor{
             label: Some("shadow layout"),
-            bind_group_layouts: &[&shadow_bgl],
+            bind_group_layouts: &[&shadow_bgl_light],
             push_constant_ranges: &[],
         });
         let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor{
@@ -1027,6 +1052,13 @@ fn vs(input: VSIn) -> VSOut {
             mipmap_filter: wgpu::FilterMode::Nearest,
             ..Default::default()
         });
+        // Initialize albedo with a 1x1 white texel so sampling yields visible color
+        queue.write_texture(
+            wgpu::ImageCopyTexture{ texture: &albedo_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &[255u8, 255u8, 255u8, 255u8],
+            wgpu::ImageDataLayout{ offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+            wgpu::Extent3d{ width: 1, height: 1, depth_or_array_layers: 1 }
+        );
         // Skin palette storage buffer (max 64 bones) - create before bind group so it can be referenced
         let skin_palette_buf = device.create_buffer(&wgpu::BufferDescriptor{
             label: Some("skin palette"),
@@ -1118,7 +1150,6 @@ struct VSOut {
     @location(3) tbn0: vec3<f32>,
     @location(4) tbn1: vec3<f32>,
     @location(5) tbn2: vec3<f32>,
-        @location(6) uv: vec2<f32>,
   @location(2) color: vec4<f32>,
 };
 
@@ -1170,7 +1201,6 @@ fn vs(input: VSIn) -> VSOut {
     out.tbn0 = Tw;
     out.tbn1 = Bw;
     out.tbn2 = Nw;
-        out.uv = input.uv;
   out.color = input.color;
   return out;
 }
@@ -1202,20 +1232,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let L = normalize(-uCamera.light_dir);
     let H = normalize(V + L);
     var N = normalize(input.normal);
-    // Normal map
-    let nrm_rgb = textureSample(normal_tex, normal_samp, input.uv).rgb;
-    let nrm_ts = normalize(nrm_rgb * 2.0 - vec3<f32>(1.0,1.0,1.0));
-    let T = input.tbn0; let B = input.tbn1; let NN = input.tbn2;
-    N = normalize(T * nrm_ts.x + B * nrm_ts.y + NN * nrm_ts.z);
+    // Normal mapping disabled in skinned path for now; use vertex normal transformed to world.
     let NdotL = max(dot(N, L), 0.0);
     var base_color = (uMaterial.base_color.rgb * input.color.rgb);
-    let tex = textureSample(albedo_tex, albedo_samp, input.uv);
-    base_color = base_color * tex.rgb;
     var metallic = clamp(uMaterial.metallic, 0.0, 1.0);
     var roughness = clamp(uMaterial.roughness, 0.04, 1.0);
-    let mr = textureSample(mr_tex, mr_samp, input.uv);
-    metallic = clamp(max(metallic, mr.r), 0.0, 1.0);
-    roughness = clamp(min(roughness, max(mr.g, 0.04)), 0.04, 1.0);
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
     let F = fresnel_schlick(max(dot(H, V), 0.0), F0);
     let D = distribution_ggx(N, H, roughness);
@@ -1229,7 +1250,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     // Cascaded shadow sampling (same as static path)
     let dist = length(input.world_pos);
     let use_c0 = dist < uLight.splits.x;
-    let lvp = if use_c0 { uLight.view_proj0 } else { uLight.view_proj1 };
+    var lvp: mat4x4<f32>;
+    if (use_c0) { lvp = uLight.view_proj0; } else { lvp = uLight.view_proj1; }
     let lp = lvp * vec4<f32>(input.world_pos, 1.0);
     let ndc = lp.xyz / lp.w;
     let uv = ndc.xy * 0.5 + vec2<f32>(0.5, 0.5);
@@ -1251,7 +1273,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         shadow = sum / 9.0;
     }
-    let lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.02;
+    // Match ambient lift with static pipeline
+    let lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.08;
     return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
 }
 "#)),
@@ -1307,38 +1330,44 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     // extra_tex_bg removed; MR/normal are in combined tex_bg
 
         // Clustered resources default allocs
-        // Dummy mesh_cube
-        let mesh_cube = Mesh {
-            vertex_buf: device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("dummy mesh_cube vertex_buf"),
-                size: 4,
-                usage: wgpu::BufferUsages::VERTEX,
-                mapped_at_creation: false,
-            }),
-            index_buf: device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("dummy mesh_cube index_buf"),
-                size: 4,
-                usage: wgpu::BufferUsages::INDEX,
-                mapped_at_creation: false,
-            }),
-            index_count: 0,
-        };
-        // Dummy mesh_plane
-        let mesh_plane = Mesh {
-            vertex_buf: device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("dummy mesh_plane vertex_buf"),
-                size: 4,
-                usage: wgpu::BufferUsages::VERTEX,
-                mapped_at_creation: false,
-            }),
-            index_buf: device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("dummy mesh_plane index_buf"),
-                size: 4,
-                usage: wgpu::BufferUsages::INDEX,
-                mapped_at_creation: false,
-            }),
-            index_count: 0,
-        };
+    // Create real meshes from built-in primitives
+    let (cube_v, cube_i) = crate::primitives::cube();
+    let (sphere_v, sphere_i) = crate::primitives::sphere(24, 24, 1.0);
+        let cube_vb = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
+            label: Some("mesh_cube vertex_buf"),
+            contents: bytemuck::cast_slice(&cube_v),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let cube_ib = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
+            label: Some("mesh_cube index_buf"),
+            contents: bytemuck::cast_slice(&cube_i),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let mesh_cube = Mesh { vertex_buf: cube_vb, index_buf: cube_ib, index_count: cube_i.len() as u32 };
+        let sphere_vb = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
+            label: Some("mesh_sphere vertex_buf"),
+            contents: bytemuck::cast_slice(&sphere_v),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let sphere_ib = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
+            label: Some("mesh_sphere index_buf"),
+            contents: bytemuck::cast_slice(&sphere_i),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let mesh_sphere = Mesh { vertex_buf: sphere_vb, index_buf: sphere_ib, index_count: sphere_i.len() as u32 };
+
+        let (plane_v, plane_i) = crate::primitives::plane();
+        let plane_vb = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
+            label: Some("mesh_plane vertex_buf"),
+            contents: bytemuck::cast_slice(&plane_v),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let plane_ib = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{
+            label: Some("mesh_plane index_buf"),
+            contents: bytemuck::cast_slice(&plane_i),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        let mesh_plane = Mesh { vertex_buf: plane_vb, index_buf: plane_ib, index_count: plane_i.len() as u32 };
         // Dummy instance buffer
         let instance_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("dummy instance_buf"),
@@ -1347,10 +1376,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             mapped_at_creation: false,
         });
         let clustered_dims = ClusterDims{ x: 8, y: 4, z: 8 };
-        #[repr(C)]
-        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-        struct CParams { screen: [u32;2], clusters: [u32;3], near: f32, far: f32, fov_y: f32 }
-        let cparams_init = CParams{ screen: [config.width.max(1), config.height.max(1)], clusters: [clustered_dims.x, clustered_dims.y, clustered_dims.z], near: 0.1, far: 200.0, fov_y: std::f32::consts::FRAC_PI_3 };
+    #[repr(C)]
+    #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+    // Use explicit 16-byte slots to match WGSL uniform layout: three vec4-sized slots = 48 bytes
+    struct CParams { screen: [u32;4], clusters: [u32;4], params: [f32;4] }
+    let cparams_init = CParams{ screen: [config.width.max(1), config.height.max(1), 0, 0], clusters: [clustered_dims.x, clustered_dims.y, clustered_dims.z, 0], params: [0.1, 200.0, std::f32::consts::FRAC_PI_3, 0.0] };
         let clustered_params_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor{ label: Some("cparams"), contents: bytemuck::bytes_of(&cparams_init), usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST });
         let clustered_lights_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("clights"), size: 64 * 16, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
         let clusters_total = (clustered_dims.x * clustered_dims.y * clustered_dims.z) as usize;
@@ -1358,12 +1388,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let clustered_counts_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("ccounts"), size: (clusters_total * 4) as u64, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
         // Reserve indices buffer capacity: lights * 64 as an upper bound placeholder
         let clustered_indices_buf = device.create_buffer(&wgpu::BufferDescriptor{ label: Some("cindices"), size: (64 * 64 * 4) as u64, usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST, mapped_at_creation: false });
+        // Fragment path doesn't use clustered data in this build; create a minimal bind group matching the layout (binding 4 as uniform).
         let clustered_bg = device.create_bind_group(&wgpu::BindGroupDescriptor{ label: Some("clustered bg"), layout: &clustered_bgl, entries: &[
-            wgpu::BindGroupEntry{ binding:0, resource: clustered_params_buf.as_entire_binding() },
-            wgpu::BindGroupEntry{ binding:1, resource: clustered_lights_buf.as_entire_binding() },
-            wgpu::BindGroupEntry{ binding:2, resource: clustered_offsets_buf.as_entire_binding() },
-            wgpu::BindGroupEntry{ binding:3, resource: clustered_counts_buf.as_entire_binding() },
-            wgpu::BindGroupEntry{ binding:4, resource: clustered_indices_buf.as_entire_binding() },
+            wgpu::BindGroupEntry{ binding:4, resource: clustered_params_buf.as_entire_binding() },
         ]});
 
         // Compute pipeline for clustered binning
@@ -1402,6 +1429,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             post_pipeline,
             post_bind_group,
             post_bgl,
+            hdr_tex,
+            hdr_view,
+            hdr_sampler,
             shadow_tex,
             shadow_view,
             shadow_layer0_view,
@@ -1411,6 +1441,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             light_buf,
             light_bg,
             shadow_bgl,
+            light_bg_shadow,
             cascade0: glam::Mat4::IDENTITY,
             cascade1: glam::Mat4::IDENTITY,
             split0: 60.0,
@@ -1440,6 +1471,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             camera_buf,
             camera_bind_group,
             mesh_cube,
+            mesh_sphere,
             mesh_plane,
             mesh_external: None,
             instances: Vec::new(),
@@ -1512,7 +1544,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 for e in evs.iter() {
                     match e {
                         &awc::SequencerEvent::CameraKey(ref k) => Self::apply_camera_key(camera, k),
-                        &awc::SequencerEvent::FxTrigger { name: ref name, params: ref params } => {
+                        &awc::SequencerEvent::FxTrigger { ref name, ref params } => {
                             // Minimal FX: support fade-in by instantly clearing letterbox/fade
                             if name == "fade-in" {
                                 let _ = params; // reserved
@@ -1536,15 +1568,32 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.config.height = new_h;
         self.surface.configure(&self.device, &self.config);
         self.depth = crate::depth::Depth::create(&self.device, &self.config);
-        // Recreate HDR targets and post bind group
-        // No more hdr_tex/hdr_view/hdr_sampler. Post-processing textures and samplers should be managed via bespoke fields as needed.
-        // If postfx is enabled, manage post-processing textures/samplers here, otherwise use the main color target.
-        // (Implementation of post-processing textures/samplers should be added here as needed.)
+
+        // Recreate HDR target and refresh the post-processing bind group.
+        self.hdr_tex = self.device.create_texture(&wgpu::TextureDescriptor{
+            label: Some("hdr tex"),
+            size: wgpu::Extent3d{ width: self.config.width, height: self.config.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        self.hdr_view = self.hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        self.post_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("post bg"),
+            layout: &self.post_bgl,
+            entries: &[
+                wgpu::BindGroupEntry{ binding:0, resource: wgpu::BindingResource::TextureView(&self.hdr_view)},
+                wgpu::BindGroupEntry{ binding:1, resource: wgpu::BindingResource::Sampler(&self.hdr_sampler)},
+            ],
+        });
         // Update clustered params screen size
         #[repr(C)]
         #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-        struct CParams { screen: [u32;2], clusters: [u32;3], near: f32, far: f32, fov_y: f32 }
-    let data: CParams = CParams{ screen: [new_w.max(1), new_h.max(1)], clusters: [self.clustered_dims.x, self.clustered_dims.y, self.clustered_dims.z], near: 0.1, far: 200.0, fov_y: std::f32::consts::FRAC_PI_3 };
+        struct CParams { screen: [u32;4], clusters: [u32;4], params: [f32;4] }
+    let data: CParams = CParams{ screen: [new_w.max(1), new_h.max(1), 0, 0], clusters: [self.clustered_dims.x, self.clustered_dims.y, self.clustered_dims.z, 0], params: [0.1, 200.0, std::f32::consts::FRAC_PI_3, 0.0] };
     self.queue.write_buffer(&self.clustered_params_buf, 0, bytemuck::bytes_of(&data));
     }
 
@@ -1739,9 +1788,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             });
 
         // Create plane buffer before render pass
-        let plane_scale = glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
+        // Slightly lower the ground plane to avoid z-fighting with terrain at y=0
+        let plane_xform = glam::Mat4::from_translation(vec3(0.0, -0.2, 0.0)) * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
-            transform: plane_scale,
+            transform: plane_xform,
             color: [0.1, 0.12, 0.14, 1.0],
         }
         .raw();
@@ -1824,18 +1874,20 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                     occlusion_query_set: None,
                 });
                 sp.set_pipeline(&self.shadow_pipeline);
-                sp.set_bind_group(0, &self.light_bg, &[]);
+                // Use the shadow-only bind group here so the shadow depth texture
+                // isn't bound for sampling while we're writing to it.
+                sp.set_bind_group(0, &self.light_bg_shadow, &[]);
                 // Draw plane
                 sp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
                 sp.set_index_buffer(self.mesh_plane.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 sp.set_vertex_buffer(1, plane_buf.slice(..));
                 sp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
-                // Draw cubes
-                sp.set_vertex_buffer(0, self.mesh_cube.vertex_buf.slice(..));
-                sp.set_index_buffer(self.mesh_cube.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                // Draw tokens as spheres in shadow pass
+                sp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
+                sp.set_index_buffer(self.mesh_sphere.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 sp.set_vertex_buffer(1, self.instance_buf.slice(..));
                 let inst_count = vis_count as u32;
-                if inst_count > 0 { sp.draw_indexed(0..self.mesh_cube.index_count, 0, 0..inst_count); }
+                if inst_count > 0 { sp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count); }
                 // External mesh
                 if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, ext_ibuf.as_ref()) {
                     sp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
@@ -1856,11 +1908,19 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 self.queue.write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
             }
 
+            // Render sky first into HDR target so we can layer geometry on top
+            self.sky.render(&mut enc, &self.hdr_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+
             {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main pass"),
-                // TODO: Replace with the correct color target view for main pass (e.g., self.albedo_view or postprocess output)
-                color_attachments: &[], // Placeholder: must be replaced with a valid color attachment
+                // Render the main scene into the HDR color target; a post-pass will tonemap to the surface.
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.hdr_view,
+                    resolve_target: None,
+                        // Preserve sky color drawn earlier
+                        ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
+                })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.depth.view,
                     depth_ops: Some(wgpu::Operations {
@@ -1888,16 +1948,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_vertex_buffer(1, plane_buf.slice(..));
             rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
 
-            // Cubes (instances)
-            rp.set_vertex_buffer(0, self.mesh_cube.vertex_buf.slice(..));
+            // Tokens as lit spheres (instances)
+            rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
             rp.set_index_buffer(
-                self.mesh_cube.index_buf.slice(..),
+                self.mesh_sphere.index_buf.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
             rp.set_vertex_buffer(1, self.instance_buf.slice(..));
             let inst_count = vis_count as u32;
             if inst_count > 0 {
-                rp.draw_indexed(0..self.mesh_cube.index_count, 0, 0..inst_count);
+                rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
             }
 
             // External mesh if present
@@ -1969,13 +2029,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     pub fn draw_into(&mut self, view: &wgpu::TextureView, enc: &mut wgpu::CommandEncoder) -> Result<()> {
-    // Render sky/scene into the provided color target
-    self.sky.render(enc, view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+    // Render sky into HDR target first
+    self.sky.render(enc, &self.hdr_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         // Plane instance buffer
-        let plane_scale = glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
+        let plane_xform = glam::Mat4::from_translation(vec3(0.0, -0.2, 0.0)) * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
-            transform: plane_scale,
+            transform: plane_xform,
             color: [0.1, 0.12, 0.14, 1.0],
         }
         .raw();
@@ -2043,16 +2103,17 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 occlusion_query_set: None,
             });
             sp.set_pipeline(&self.shadow_pipeline);
-            sp.set_bind_group(0, &self.light_bg, &[]);
+            // Use the shadow-only bind group here as well for external draw_into path
+            sp.set_bind_group(0, &self.light_bg_shadow, &[]);
             sp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
             sp.set_index_buffer(self.mesh_plane.index_buf.slice(..), wgpu::IndexFormat::Uint32);
             sp.set_vertex_buffer(1, plane_buf.slice(..));
             sp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
-            sp.set_vertex_buffer(0, self.mesh_cube.vertex_buf.slice(..));
-            sp.set_index_buffer(self.mesh_cube.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+            sp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
+            sp.set_index_buffer(self.mesh_sphere.index_buf.slice(..), wgpu::IndexFormat::Uint32);
             sp.set_vertex_buffer(1, self.instance_buf.slice(..));
             let inst_count = vis_count as u32;
-            if inst_count > 0 { sp.draw_indexed(0..self.mesh_cube.index_count, 0, 0..inst_count); }
+            if inst_count > 0 { sp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count); }
             if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, ext_ibuf.as_ref()) {
                 sp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
                 sp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
@@ -2085,7 +2146,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("main pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view,
+                view: &self.hdr_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
@@ -2114,13 +2175,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         rp.set_index_buffer(self.mesh_plane.index_buf.slice(..), wgpu::IndexFormat::Uint32);
         rp.set_vertex_buffer(1, plane_buf.slice(..));
         rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
-        // Cubes
-        rp.set_vertex_buffer(0, self.mesh_cube.vertex_buf.slice(..));
-        rp.set_index_buffer(self.mesh_cube.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+        // Tokens as spheres
+        rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
+        rp.set_index_buffer(self.mesh_sphere.index_buf.slice(..), wgpu::IndexFormat::Uint32);
         rp.set_vertex_buffer(1, self.instance_buf.slice(..));
         let inst_count = vis_count as u32;
         if inst_count > 0 {
-            rp.draw_indexed(0..self.mesh_cube.index_count, 0, 0..inst_count);
+            rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
         }
 
         // External mesh

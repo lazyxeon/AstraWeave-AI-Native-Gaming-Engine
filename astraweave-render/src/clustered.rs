@@ -264,11 +264,11 @@ mod tests {
         #[repr(C)]
         #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
         struct GpuLight { pos_radius: [f32;4] }
-        #[repr(C)]
-        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-        struct Params { screen: [u32;2], clusters: [u32;3], near: f32, far: f32, fov_y: f32 }
-        let glights: Vec<GpuLight> = lights.iter().map(|l| GpuLight{ pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius]}).collect();
-        let params = Params{ screen: [w,h], clusters: [dims.x,dims.y,dims.z], near, far, fov_y };
+    #[repr(C)]
+    #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+    struct Params { screen: [u32;4], clusters: [u32;4], params: [f32;4] }
+    let glights: Vec<GpuLight> = lights.iter().map(|l| GpuLight{ pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius]}).collect();
+    let params = Params{ screen: [w,h,0,0], clusters: [dims.x,dims.y,dims.z, 0], params: [near, far, fov_y, 0.0] };
         let clusters = (dims.x * dims.y * dims.z) as usize;
         let offsets = offsets_cpu.clone();
     let counts_zero = vec![0u32; clusters];

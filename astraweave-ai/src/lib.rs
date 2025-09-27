@@ -3,6 +3,8 @@ pub mod tool_sandbox;
 use astraweave_core::{ActionStep, IVec2, PlanIntent, WorldSnapshot};
 #[cfg(feature = "llm_orchestrator")]
 use astraweave_core::{ToolRegistry, default_tool_registry};
+#[cfg(feature = "llm_orchestrator")]
+// use astraweave_llm::LlmClient; // not needed directly; trait bound referenced via fully-qualified path
 
 #[async_trait::async_trait]
 pub trait OrchestratorAsync {
@@ -172,6 +174,70 @@ where C: astraweave_llm::LlmClient + Send + Sync {
         match astraweave_llm::plan_from_llm(&self.client, &snap, &self.registry).await { Ok(p) => p, Err(_) => PlanIntent{ plan_id: "llm-fallback".into(), steps: vec![] } }
     }
     fn name(&self) -> &'static str { "LlmOrchestrator" }
+}
+
+/// System-wide wiring utilities for choosing an orchestrator at runtime.
+/// Set ASTRAWEAVE_USE_LLM=1 to select the local LLM (phi3:medium by default) if compiled with the llm_orchestrator feature.
+#[derive(Clone, Debug)]
+pub struct SystemOrchestratorConfig {
+    pub use_llm: bool,
+    pub ollama_url: String,
+    pub ollama_model: String,
+}
+
+impl Default for SystemOrchestratorConfig {
+    fn default() -> Self {
+        let use_llm = std::env::var("ASTRAWEAVE_USE_LLM").map(|v| v == "1" || v.eq_ignore_ascii_case("true")).unwrap_or(false);
+        let ollama_url = std::env::var("OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
+        // Default model to phi3:medium as requested
+        let ollama_model = std::env::var("OLLAMA_MODEL").unwrap_or_else(|_| "phi3:medium".to_string());
+        Self { use_llm, ollama_url, ollama_model }
+    }
+}
+
+/// Create a boxed orchestrator chosen by config/env.
+/// - If use_llm is true and llm_orchestrator is compiled, constructs LlmOrchestrator with Ollama chat client.
+/// - Otherwise falls back to UtilityOrchestrator.
+pub fn make_system_orchestrator(cfg: Option<SystemOrchestratorConfig>) -> Box<dyn OrchestratorAsync + Send + Sync> {
+    let cfg = cfg.unwrap_or_default();
+    #[cfg(all(feature = "llm_orchestrator"))]
+    {
+        if cfg.use_llm {
+            // Build an Ollama-backed orchestrator (ollama feature is enabled via Cargo.toml feature wiring)
+            let client = astraweave_llm::OllamaChatClient::new(cfg.ollama_url.clone(), cfg.ollama_model.clone());
+            // Optionally warm up model in the background to minimize first-token latency
+            let do_warm = std::env::var("OLLAMA_WARMUP").map(|v| v == "1" || v.eq_ignore_ascii_case("true")).unwrap_or(true);
+            if do_warm {
+                let client_clone = client.clone();
+                let warm_secs: u64 = std::env::var("OLLAMA_WARMUP_TIMEOUT_SECS").ok().and_then(|s| s.parse().ok()).unwrap_or(30);
+                // Prefer spawning on Tokio if available; otherwise use a thread
+                #[cfg(feature = "llm_orchestrator")]
+                {
+                    // We cannot assume tokio is always compiled in this crate; call into a helper function only if tokio exists.
+                }
+                // Try to use tokio if linked, else fallback
+                #[cfg(any())]
+                {
+                    let _ = (client_clone, warm_secs); // placeholder for conditional compilation
+                }
+                // Fallback: spawn a thread and perform a blocking warmup with a mini runtime if tokio is available in dependencies
+                std::thread::spawn(move || {
+                    // If tokio is linked, use a small runtime; else, do nothing (can't warmup without async runtime)
+                    #[cfg(feature = "llm_orchestrator")]
+                    {
+                        // Try building a current-thread runtime; ignore errors silently
+                        if let Ok(rt) = tokio::runtime::Builder::new_current_thread().enable_all().build() {
+                            let _ = rt.block_on(client_clone.warmup(warm_secs));
+                        }
+                    }
+                });
+            }
+            let orch = crate::LlmOrchestrator::new(client, Some(default_tool_registry()));
+            return Box::new(orch);
+        }
+    }
+    // Default safe fallback
+    Box::new(UtilityOrchestrator)
 }
 
 #[cfg(test)]

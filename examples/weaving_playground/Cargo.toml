@@ -16,3 +16,4 @@ astraweave-render = { path = "../../astraweave-render" }
 astraweave-physics = { path = "../../astraweave-physics" }
 astraweave-nav = { path = "../../astraweave-nav" }
 astraweave-gameplay = { path = "../../astraweave-gameplay" }
+astraweave-terrain = { path = "../../astraweave-terrain" }

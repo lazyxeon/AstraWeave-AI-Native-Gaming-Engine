@@ -70,3 +70,56 @@ pub fn plane() -> (Vec<Vertex>, Vec<u32>) {
     let i = vec![0, 1, 2, 0, 2, 3];
     (v, i)
 }
+
+/// UV sphere centered at origin
+pub fn sphere(stacks: u32, slices: u32, radius: f32) -> (Vec<Vertex>, Vec<u32>) {
+    let stacks = stacks.max(3);
+    let slices = slices.max(3);
+    let mut verts: Vec<Vertex> = Vec::with_capacity(((stacks + 1) * (slices + 1)) as usize);
+    let mut indices: Vec<u32> = Vec::with_capacity((stacks * slices * 6) as usize);
+
+    for i in 0..=stacks {
+        let v = i as f32 / stacks as f32; // [0,1]
+        let phi = v * std::f32::consts::PI; // [0, PI]
+        let sin_phi = phi.sin();
+        let cos_phi = phi.cos();
+        for j in 0..=slices {
+            let u = j as f32 / slices as f32; // [0,1]
+            let theta = u * std::f32::consts::PI * 2.0; // [0, 2PI]
+            let sin_theta = theta.sin();
+            let cos_theta = theta.cos();
+
+            let nx = sin_phi * cos_theta;
+            let ny = cos_phi;
+            let nz = sin_phi * sin_theta;
+            let px = radius * nx;
+            let py = radius * ny;
+            let pz = radius * nz;
+            // Tangent is derivative w.r.t. theta on the sphere, approximate along longitude
+            let tx = -sin_theta;
+            let ty = 0.0;
+            let tz = cos_theta;
+            let tangent = [tx, ty, tz, 1.0];
+            let uv = [u, 1.0 - v];
+            verts.push(Vertex {
+                position: [px, py, pz],
+                normal: [nx, ny, nz],
+                tangent,
+                uv,
+            });
+        }
+    }
+
+    let row = slices + 1;
+    for i in 0..stacks {
+        for j in 0..slices {
+            let a = i * row + j;
+            let b = a + 1;
+            let c = (i + 1) * row + j;
+            let d = c + 1;
+            indices.extend_from_slice(&[a, c, b, b, c, d]);
+        }
+    }
+
+    (verts, indices)
+}

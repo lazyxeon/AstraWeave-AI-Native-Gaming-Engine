@@ -367,6 +367,7 @@ dependencies = [
  "futures",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -7602,6 +7603,7 @@ dependencies = [
  "astraweave-nav",
  "astraweave-physics",
  "astraweave-render",
+ "astraweave-terrain",
  "glam",
  "pollster",
  "wgpu",
