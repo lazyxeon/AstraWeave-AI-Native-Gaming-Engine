@@ -10,10 +10,12 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
 async-trait = "0.1"
+tokio = { workspace = true, optional = true }
 
 [features]
 default = []
-llm_orchestrator = ["astraweave-llm"]
+# Enabling llm_orchestrator will also enable the Ollama client in astraweave-llm and a tokio runtime for background warmup
+llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio"]
 
 [dependencies.astraweave-llm]
 path = "../astraweave-llm"

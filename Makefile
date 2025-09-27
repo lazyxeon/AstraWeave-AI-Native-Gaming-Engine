@@ -25,6 +25,7 @@ help:
 	@echo ""
 	@echo "Examples:"
 	@echo "  example     - Run hello_companion example"
+	@echo "  gfx-check   - Check renderer and graphics examples"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  status      - Show project status"
@@ -76,6 +77,17 @@ status:
 
 update:
 	@./scripts/dev.sh update
+
+# Graphics pillar check: keep renderer and demos green
+.PHONY: gfx-check
+gfx-check:
+	@cargo check -p astraweave-render
+	@cargo check -p visual_3d
+	@cargo check -p weaving_playground
+	@cargo check -p physics_demo3d
+	@cargo check -p terrain_demo
+	@cargo check -p cutscene_render_demo
+	@cargo check -p unified_showcase
 
 # Cargo aliases (for convenience)
 build-core:

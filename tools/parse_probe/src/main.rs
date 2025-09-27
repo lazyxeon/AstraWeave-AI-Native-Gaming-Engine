@@ -5,8 +5,14 @@ use std::fs;
 use std::collections::BTreeMap;
 
 fn main() -> Result<()> {
-    let path = "target/ollama_probe_assistant_acc.txt";
-    let s = fs::read_to_string(path).expect("Failed to read assembled assistant file");
+    // Prefer the integration-assembled file, fall back to probe output
+    let path_primary = "target/ollama_assistant_acc.txt";
+    let path_fallback = "target/ollama_probe_assistant_acc.txt";
+    let s = if std::path::Path::new(path_primary).exists() {
+        fs::read_to_string(path_primary).expect("Failed to read target/ollama_assistant_acc.txt")
+    } else {
+        fs::read_to_string(path_fallback).expect("Failed to read target/ollama_probe_assistant_acc.txt")
+    };
     println!("Assembled assistant file content:\n---\n{}\n---", s);
 
     // Build a minimal ToolRegistry matching the example's registry shape to validate parsing
