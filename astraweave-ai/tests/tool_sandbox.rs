@@ -1,4 +1,3 @@
-
 // Unit test for Tool Sandbox error taxonomy and validation
 use astraweave_ai::tool_sandbox::*;
 use astraweave_core::WorldSnapshot;

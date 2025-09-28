@@ -83,12 +83,8 @@ impl ClimateMap {
     /// Sample temperature at a world position
     pub fn sample_temperature(&self, x: f64, z: f64, height: f32) -> f32 {
         // Base temperature from noise
-        let mut temperature = self.sample_noise_fbm(
-            &self.temperature_noise,
-            &self.config.temperature,
-            x,
-            z,
-        );
+        let mut temperature =
+            self.sample_noise_fbm(&self.temperature_noise, &self.config.temperature, x, z);
 
         // Apply height gradient (cooler at higher elevations)
         temperature += height * self.config.temperature_height_gradient;
@@ -104,12 +100,7 @@ impl ClimateMap {
     /// Sample moisture at a world position
     pub fn sample_moisture(&self, x: f64, z: f64, height: f32) -> f32 {
         // Base moisture from noise
-        let mut moisture = self.sample_noise_fbm(
-            &self.moisture_noise,
-            &self.config.moisture,
-            x,
-            z,
-        );
+        let mut moisture = self.sample_noise_fbm(&self.moisture_noise, &self.config.moisture, x, z);
 
         // Reduce moisture at higher elevations (rain shadow effect)
         let height_factor = (height * 0.01).clamp(0.0, 1.0);
@@ -146,11 +137,11 @@ impl ClimateMap {
             for x in 0..resolution {
                 let world_x = world_origin.x + x as f32 * step;
                 let world_z = world_origin.z + z as f32 * step;
-                
+
                 // We need height data to calculate climate properly
                 // For now, use a simple height estimation based on position
                 let estimated_height = self.estimate_height(world_x as f64, world_z as f64);
-                
+
                 let climate = self.sample_climate(world_x as f64, world_z as f64, estimated_height);
                 climate_data.push(climate);
             }
@@ -258,13 +249,10 @@ pub mod utils {
                 let world_x = x as f32 * step;
                 let world_z = z as f32 * step;
                 let height = climate.estimate_height(world_x as f64, world_z as f64);
-                
-                let (temperature, moisture) = climate.sample_climate(
-                    world_x as f64,
-                    world_z as f64,
-                    height,
-                );
-                
+
+                let (temperature, moisture) =
+                    climate.sample_climate(world_x as f64, world_z as f64, height);
+
                 temperatures.push(temperature);
                 moistures.push(moisture);
             }
@@ -287,13 +275,10 @@ pub mod utils {
                 let world_x = x as f32 * step;
                 let world_z = z as f32 * step;
                 let height = climate.estimate_height(world_x as f64, world_z as f64);
-                
-                let (temperature, moisture) = climate.sample_climate(
-                    world_x as f64,
-                    world_z as f64,
-                    height,
-                );
-                
+
+                let (temperature, moisture) =
+                    climate.sample_climate(world_x as f64, world_z as f64, height);
+
                 let biome = classify_whittaker_biome(temperature, moisture);
                 biomes.push(biome);
             }
@@ -313,7 +298,7 @@ pub mod utils {
     ) -> ClimateStats {
         let mut temperatures = Vec::new();
         let mut moistures = Vec::new();
-        
+
         let step_x = (max_x - min_x) / samples as f64;
         let step_z = (max_z - min_z) / samples as f64;
 
@@ -322,7 +307,7 @@ pub mod utils {
                 let x = min_x + i as f64 * step_x;
                 let z = min_z + j as f64 * step_z;
                 let height = climate.estimate_height(x, z);
-                
+
                 let (temperature, moisture) = climate.sample_climate(x, z, height);
                 temperatures.push(temperature);
                 moistures.push(moisture);
@@ -331,7 +316,10 @@ pub mod utils {
 
         ClimateStats {
             temperature_min: temperatures.iter().copied().fold(f32::INFINITY, f32::min),
-            temperature_max: temperatures.iter().copied().fold(f32::NEG_INFINITY, f32::max),
+            temperature_max: temperatures
+                .iter()
+                .copied()
+                .fold(f32::NEG_INFINITY, f32::max),
             temperature_avg: temperatures.iter().sum::<f32>() / temperatures.len() as f32,
             moisture_min: moistures.iter().copied().fold(f32::INFINITY, f32::min),
             moisture_max: moistures.iter().copied().fold(f32::NEG_INFINITY, f32::max),
@@ -367,7 +355,7 @@ mod tests {
     fn test_climate_map_creation() {
         let config = ClimateConfig::default();
         let climate = ClimateMap::new(&config, 12345);
-        
+
         let (temperature, moisture) = climate.sample_climate(100.0, 100.0, 10.0);
         assert!(temperature >= 0.0 && temperature <= 1.0);
         assert!(moisture >= 0.0 && moisture <= 1.0);
@@ -377,10 +365,10 @@ mod tests {
     fn test_height_gradient() {
         let config = ClimateConfig::default();
         let climate = ClimateMap::new(&config, 12345);
-        
+
         let temp_low = climate.sample_temperature(100.0, 100.0, 0.0);
         let temp_high = climate.sample_temperature(100.0, 100.0, 100.0);
-        
+
         // Higher elevation should be cooler
         assert!(temp_high < temp_low);
     }
@@ -389,10 +377,10 @@ mod tests {
     fn test_chunk_sampling() {
         let config = ClimateConfig::default();
         let climate = ClimateMap::new(&config, 12345);
-        
+
         let chunk_id = ChunkId::new(0, 0);
         let climate_data = climate.sample_chunk(chunk_id, 256.0, 32).unwrap();
-        
+
         assert_eq!(climate_data.len(), 32 * 32);
         for (temp, moisture) in climate_data {
             assert!(temp >= 0.0 && temp <= 1.0);
@@ -405,10 +393,10 @@ mod tests {
         let config = ClimateConfig::default();
         let climate1 = ClimateMap::new(&config, 12345);
         let climate2 = ClimateMap::new(&config, 12345);
-        
+
         let (temp1, moisture1) = climate1.sample_climate(100.0, 100.0, 10.0);
         let (temp2, moisture2) = climate2.sample_climate(100.0, 100.0, 10.0);
-        
+
         assert_eq!(temp1, temp2);
         assert_eq!(moisture1, moisture2);
     }
@@ -426,9 +414,9 @@ mod tests {
     fn test_climate_preview() {
         let config = ClimateConfig::default();
         let climate = ClimateMap::new(&config, 12345);
-        
+
         let (temperatures, moistures) = utils::generate_climate_preview(&climate, 16, 256.0);
-        
+
         assert_eq!(temperatures.len(), 16 * 16);
         assert_eq!(moistures.len(), 16 * 16);
     }
@@ -437,9 +425,9 @@ mod tests {
     fn test_biome_classification_map() {
         let config = ClimateConfig::default();
         let climate = ClimateMap::new(&config, 12345);
-        
+
         let biomes = utils::generate_biome_classification_map(&climate, 16, 256.0);
-        
+
         assert_eq!(biomes.len(), 16 * 16);
         assert!(biomes.iter().all(|b| BiomeType::all().contains(b)));
     }

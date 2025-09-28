@@ -1,6 +1,6 @@
 //! Terrain chunk management and streaming
 
-use crate::{Heightmap, BiomeType};
+use crate::{BiomeType, Heightmap};
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -27,11 +27,7 @@ impl ChunkId {
 
     /// Get the world position of the chunk's origin (bottom-left corner)
     pub fn to_world_pos(self, chunk_size: f32) -> Vec3 {
-        Vec3::new(
-            self.x as f32 * chunk_size,
-            0.0,
-            self.z as f32 * chunk_size,
-        )
+        Vec3::new(self.x as f32 * chunk_size, 0.0, self.z as f32 * chunk_size)
     }
 
     /// Get the center world position of the chunk
@@ -48,10 +44,7 @@ impl ChunkId {
         let radius = radius as i32;
         for dx in -radius..=radius {
             for dz in -radius..=radius {
-                chunks.push(ChunkId::new(
-                    center_chunk.x + dx,
-                    center_chunk.z + dz,
-                ));
+                chunks.push(ChunkId::new(center_chunk.x + dx, center_chunk.z + dz));
             }
         }
 
@@ -124,8 +117,11 @@ impl TerrainChunk {
         let local_pos = world_pos - chunk_origin;
 
         // Check if position is within chunk bounds
-        if local_pos.x < 0.0 || local_pos.x >= chunk_size || 
-           local_pos.z < 0.0 || local_pos.z >= chunk_size {
+        if local_pos.x < 0.0
+            || local_pos.x >= chunk_size
+            || local_pos.z < 0.0
+            || local_pos.z >= chunk_size
+        {
             return None;
         }
 
@@ -143,8 +139,11 @@ impl TerrainChunk {
         let local_pos = world_pos - chunk_origin;
 
         // Check if position is within chunk bounds
-        if local_pos.x < 0.0 || local_pos.x >= chunk_size || 
-           local_pos.z < 0.0 || local_pos.z >= chunk_size {
+        if local_pos.x < 0.0
+            || local_pos.x >= chunk_size
+            || local_pos.z < 0.0
+            || local_pos.z >= chunk_size
+        {
             return None;
         }
 
@@ -220,7 +219,8 @@ impl ChunkManager {
         let center_chunk = ChunkId::from_world_pos(center, self.chunk_size);
         let max_distance = max_radius as f32;
 
-        let to_remove: Vec<ChunkId> = self.chunks
+        let to_remove: Vec<ChunkId> = self
+            .chunks
             .keys()
             .filter(|&&chunk_id| chunk_id.distance_to(center_chunk) > max_distance)
             .copied()
@@ -270,10 +270,10 @@ mod tests {
     fn test_chunk_id_conversion() {
         let world_pos = Vec3::new(100.0, 0.0, 200.0);
         let chunk_size = 256.0;
-        
+
         let chunk_id = ChunkId::from_world_pos(world_pos, chunk_size);
         let back_to_world = chunk_id.to_world_pos(chunk_size);
-        
+
         assert_eq!(chunk_id, ChunkId::new(0, 0));
         assert_eq!(back_to_world, Vec3::new(0.0, 0.0, 0.0));
     }
@@ -282,7 +282,7 @@ mod tests {
     fn test_chunk_radius() {
         let center = Vec3::new(128.0, 0.0, 128.0);
         let chunks = ChunkId::get_chunks_in_radius(center, 1, 256.0);
-        
+
         assert_eq!(chunks.len(), 9); // 3x3 grid
         assert!(chunks.contains(&ChunkId::new(0, 0)));
         assert!(chunks.contains(&ChunkId::new(-1, -1)));
@@ -292,14 +292,14 @@ mod tests {
     #[test]
     fn test_chunk_manager() {
         let mut manager = ChunkManager::new(256.0, 64);
-        
+
         let chunk_id = ChunkId::new(0, 0);
         let heightmap = Heightmap::new(HeightmapConfig::default()).unwrap();
         let biome_map = vec![BiomeType::Grassland; 64 * 64];
         let chunk = TerrainChunk::new(chunk_id, heightmap, biome_map);
-        
+
         manager.add_chunk(chunk);
-        
+
         assert!(manager.has_chunk(chunk_id));
         assert_eq!(manager.chunk_count(), 1);
     }

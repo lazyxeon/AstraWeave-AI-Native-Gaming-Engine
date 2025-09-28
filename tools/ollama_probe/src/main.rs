@@ -3,7 +3,9 @@ use reqwest::blocking::Client;
 use serde_json::Value;
 
 fn main() -> Result<()> {
-    let client = Client::builder().timeout(std::time::Duration::from_secs(15)).build()?;
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()?;
     let url = "http://127.0.0.1:11434/api/chat";
     let body = serde_json::json!({
         "model": "phi3:medium",

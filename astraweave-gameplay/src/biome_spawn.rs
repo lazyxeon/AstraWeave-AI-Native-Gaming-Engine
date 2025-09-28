@@ -1,8 +1,8 @@
-use glam::Vec3;
-use rand::{Rng, SeedableRng};
-use crate::{ResourceKind};
 use crate::harvesting::ResourceNode;
 use crate::types::WeaveConsequence;
+use crate::ResourceKind;
+use glam::Vec3;
+use rand::{Rng, SeedableRng};
 
 #[derive(Clone, Debug)]
 pub struct BiomeRule {
@@ -21,7 +21,7 @@ pub fn spawn_resources(
     weave: Option<&WeaveConsequence>,
 ) -> Vec<ResourceNode> {
     let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
-    let sum: f32 = biome.weights.iter().map(|(_,w)| *w).sum::<f32>().max(1e-6);
+    let sum: f32 = biome.weights.iter().map(|(_, w)| *w).sum::<f32>().max(1e-6);
     let mut out = vec![];
     for _ in 0..count {
         let r = rng.random::<f32>() * sum;
@@ -29,7 +29,10 @@ pub fn spawn_resources(
         let mut chosen = biome.weights[0].0;
         for (k, w) in &biome.weights {
             acc += *w;
-            if r <= acc { chosen = *k; break; }
+            if r <= acc {
+                chosen = *k;
+                break;
+            }
         }
         let amt_rng = rng.random_range(biome.base_amount.0..=biome.base_amount.1);
         let mul = weave.map(|w| w.drop_multiplier).unwrap_or(1.0);
@@ -41,7 +44,13 @@ pub fn spawn_resources(
             rng.random_range(area_min.z..area_max.z),
         );
         let resp = rng.random_range(biome.respawn.0..=biome.respawn.1);
-        out.push(ResourceNode { kind: chosen, pos, amount, respawn_time: resp, timer: 0.0 });
+        out.push(ResourceNode {
+            kind: chosen,
+            pos,
+            amount,
+            respawn_time: resp,
+            timer: 0.0,
+        });
     }
     out
 }

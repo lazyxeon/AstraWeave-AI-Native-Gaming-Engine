@@ -147,15 +147,13 @@ impl Default for BiomeVegetation {
     fn default() -> Self {
         Self {
             density: 0.1,
-            vegetation_types: vec![
-                VegetationType {
-                    name: "grass".to_string(),
-                    weight: 1.0,
-                    model_path: "assets/models/grass.glb".to_string(),
-                    scale_range: (0.8, 1.2),
-                    slope_tolerance: 45.0,
-                },
-            ],
+            vegetation_types: vec![VegetationType {
+                name: "grass".to_string(),
+                weight: 1.0,
+                model_path: "assets/models/grass.glb".to_string(),
+                scale_range: (0.8, 1.2),
+                slope_tolerance: 45.0,
+            }],
             size_variation: (0.8, 1.5),
             random_rotation: true,
         }
@@ -480,7 +478,9 @@ impl BiomeConfig {
         }
 
         // Temperature score
-        if temperature >= self.conditions.temperature_range.0 && temperature <= self.conditions.temperature_range.1 {
+        if temperature >= self.conditions.temperature_range.0
+            && temperature <= self.conditions.temperature_range.1
+        {
             score += 1.0;
         } else {
             let temp_distance = if temperature < self.conditions.temperature_range.0 {
@@ -492,7 +492,9 @@ impl BiomeConfig {
         }
 
         // Moisture score
-        if moisture >= self.conditions.moisture_range.0 && moisture <= self.conditions.moisture_range.1 {
+        if moisture >= self.conditions.moisture_range.0
+            && moisture <= self.conditions.moisture_range.1
+        {
             score += 1.0;
         } else {
             let moisture_distance = if moisture < self.conditions.moisture_range.0 {
@@ -576,13 +578,13 @@ mod tests {
     #[test]
     fn test_biome_scoring() {
         let grassland = BiomeConfig::grassland();
-        
+
         // Perfect conditions
         let score1 = grassland.score_conditions(25.0, 0.5, 0.6);
-        
+
         // Poor conditions
         let score2 = grassland.score_conditions(100.0, 0.1, 0.1);
-        
+
         assert!(score1 > score2);
     }
 
@@ -598,7 +600,7 @@ mod tests {
         let forest_config = BiomeConfig::forest();
         let biome = Biome::new(BiomeType::Forest, forest_config);
         let biome_rule = biome.to_biome_rule();
-        
+
         assert_eq!(biome_rule.name, "Dense Forest");
         assert!(!biome_rule.weights.is_empty());
     }
@@ -611,7 +613,7 @@ mod tests {
             BiomeConfig::forest(),
             BiomeConfig::mountain(),
         ];
-        
+
         for biome in biomes {
             assert!(!biome.name.is_empty());
             assert!(!biome.description.is_empty());

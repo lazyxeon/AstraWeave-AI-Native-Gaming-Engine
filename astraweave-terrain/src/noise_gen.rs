@@ -1,7 +1,7 @@
 //! Noise generation for terrain heightmaps
 
 use crate::{ChunkId, Heightmap, HeightmapConfig};
-use noise::{NoiseFn, Perlin, RidgedMulti, Fbm, Billow};
+use noise::{Billow, Fbm, NoiseFn, Perlin, RidgedMulti};
 use serde::{Deserialize, Serialize};
 
 /// Configuration for noise generation
@@ -108,14 +108,9 @@ impl TerrainNoise {
     }
 
     /// Create a noise function based on configuration
-    fn create_noise_fn(
-        layer: &NoiseLayer,
-        seed: u64,
-    ) -> Box<dyn NoiseFn<f64, 3> + Send + Sync> {
+    fn create_noise_fn(layer: &NoiseLayer, seed: u64) -> Box<dyn NoiseFn<f64, 3> + Send + Sync> {
         match layer.noise_type {
-            NoiseType::Perlin => {
-                Box::new(Perlin::new(seed as u32))
-            }
+            NoiseType::Perlin => Box::new(Perlin::new(seed as u32)),
             NoiseType::RidgedNoise => {
                 let mut noise = RidgedMulti::<Perlin>::new(seed as u32);
                 noise.octaves = layer.octaves;
@@ -225,11 +220,7 @@ pub mod utils {
     use super::*;
 
     /// Generate a preview heightmap for visualization
-    pub fn generate_preview(
-        noise: &TerrainNoise,
-        size: u32,
-        scale: f32,
-    ) -> Vec<f32> {
+    pub fn generate_preview(noise: &TerrainNoise, size: u32, scale: f32) -> Vec<f32> {
         let mut heights = Vec::with_capacity((size * size) as usize);
         let step = scale / size as f32;
 
@@ -271,12 +262,7 @@ pub mod utils {
     }
 
     /// Create a falloff mask for island generation
-    pub fn create_island_mask(
-        size: u32,
-        center_x: f32,
-        center_z: f32,
-        radius: f32,
-    ) -> Vec<f32> {
+    pub fn create_island_mask(size: u32, center_x: f32, center_z: f32, radius: f32) -> Vec<f32> {
         let mut mask = Vec::with_capacity((size * size) as usize);
 
         for z in 0..size {
@@ -284,13 +270,13 @@ pub mod utils {
                 let dx = x as f32 - center_x;
                 let dz = z as f32 - center_z;
                 let distance = (dx * dx + dz * dz).sqrt();
-                
+
                 let falloff = if distance < radius {
                     1.0 - (distance / radius).powf(2.0)
                 } else {
                     0.0
                 };
-                
+
                 mask.push(falloff.clamp(0.0, 1.0));
             }
         }
@@ -315,7 +301,7 @@ mod tests {
     fn test_terrain_noise_creation() {
         let config = NoiseConfig::default();
         let noise = TerrainNoise::new(&config, 12345);
-        
+
         let height = noise.sample_height(100.0, 100.0);
         assert!(height >= 0.0); // Should be non-negative
     }
@@ -324,10 +310,10 @@ mod tests {
     fn test_heightmap_generation() {
         let config = NoiseConfig::default();
         let noise = TerrainNoise::new(&config, 12345);
-        
+
         let chunk_id = ChunkId::new(0, 0);
         let heightmap = noise.generate_heightmap(chunk_id, 256.0, 64).unwrap();
-        
+
         assert_eq!(heightmap.resolution(), 64);
         assert!(heightmap.max_height() >= heightmap.min_height());
     }
@@ -337,10 +323,10 @@ mod tests {
         let config = NoiseConfig::default();
         let noise1 = TerrainNoise::new(&config, 12345);
         let noise2 = TerrainNoise::new(&config, 12345);
-        
+
         let height1 = noise1.sample_height(100.0, 100.0);
         let height2 = noise2.sample_height(100.0, 100.0);
-        
+
         assert_eq!(height1, height2); // Should be deterministic
     }
 
@@ -349,10 +335,10 @@ mod tests {
         let config = NoiseConfig::default();
         let noise1 = TerrainNoise::new(&config, 12345);
         let noise2 = TerrainNoise::new(&config, 54321);
-        
+
         let height1 = noise1.sample_height(100.0, 100.0);
         let height2 = noise2.sample_height(100.0, 100.0);
-        
+
         assert_ne!(height1, height2); // Different seeds should give different results
     }
 
@@ -360,7 +346,7 @@ mod tests {
     fn test_preview_generation() {
         let config = NoiseConfig::default();
         let noise = TerrainNoise::new(&config, 12345);
-        
+
         let preview = utils::generate_preview(&noise, 32, 256.0);
         assert_eq!(preview.len(), 32 * 32);
     }
@@ -369,7 +355,7 @@ mod tests {
     fn test_height_normalization() {
         let mut heights = vec![10.0, 20.0, 30.0, 40.0, 50.0];
         utils::normalize_heights(&mut heights);
-        
+
         assert_eq!(heights[0], 0.0);
         assert_eq!(heights[4], 1.0);
         assert!(heights[2] > 0.0 && heights[2] < 1.0);
@@ -379,11 +365,11 @@ mod tests {
     fn test_island_mask() {
         let mask = utils::create_island_mask(64, 32.0, 32.0, 20.0);
         assert_eq!(mask.len(), 64 * 64);
-        
+
         // Center should have high value
         let center_idx = 32 * 64 + 32;
         assert!(mask[center_idx] > 0.8);
-        
+
         // Edges should have low value
         assert!(mask[0] < 0.2);
     }

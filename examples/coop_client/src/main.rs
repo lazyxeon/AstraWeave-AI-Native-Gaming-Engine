@@ -9,17 +9,22 @@ async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let mut policy = "radius".to_string();
     for w in args.windows(2) {
-        if w[0] == "--policy" { policy = w[1].clone(); }
+        if w[0] == "--policy" {
+            policy = w[1].clone();
+        }
     }
     let (ws, _) = tokio_tungstenite::connect_async("ws://127.0.0.1:9090").await?;
     let (mut tx, mut rx) = ws.split();
 
     // say hello
-    tx.send(Message::Text(serde_json::to_string(&Msg::ClientHello {
-        name: "player1".into(),
-        token: Some("dev".into()),
-        policy: Some(policy),
-    })?.into()))
+    tx.send(Message::Text(
+        serde_json::to_string(&Msg::ClientHello {
+            name: "player1".into(),
+            token: Some("dev".into()),
+            policy: Some(policy),
+        })?
+        .into(),
+    ))
     .await?;
 
     // propose a plan for actor_id=2 (companion in our server)
@@ -45,18 +50,25 @@ async fn main() -> Result<()> {
     let mut history: Vec<(u32, PlanIntent)> = Vec::new();
     let actor_id: u32 = 2;
     // Send as ClientInput (prediction-ready)
-    tx.send(Message::Text(serde_json::to_string(&Msg::ClientInput {
-        seq,
-        tick: 0,
-        actor_id,
-        intent: plan.clone(),
-    })?.into()))
+    tx.send(Message::Text(
+        serde_json::to_string(&Msg::ClientInput {
+            seq,
+            tick: 0,
+            actor_id,
+            intent: plan.clone(),
+        })?
+        .into(),
+    ))
     .await?;
     history.push((seq, plan.clone()));
     seq = seq.wrapping_add(1);
     // Naive local prediction for MoveTo: adjust actor position if we have a snapshot
     let predicted_target = plan.steps.iter().find_map(|s| {
-        if let ActionStep::MoveTo { x, y } = s { Some(IVec2 { x: *x, y: *y }) } else { None }
+        if let ActionStep::MoveTo { x, y } = s {
+            Some(IVec2 { x: *x, y: *y })
+        } else {
+            None
+        }
     });
 
     // Process a few server messages and reconcile
@@ -72,7 +84,10 @@ async fn main() -> Result<()> {
                             let mut s = snap.clone();
                             if let Some(e) = s.entities.iter_mut().find(|e| e.id == actor_id) {
                                 e.pos = pred;
-                                println!("predicted pos for actor {} -> ({},{})", actor_id, pred.x, pred.y);
+                                println!(
+                                    "predicted pos for actor {} -> ({},{})",
+                                    actor_id, pred.x, pred.y
+                                );
                             }
                             local = Some(s);
                         } else {
@@ -83,13 +98,23 @@ async fn main() -> Result<()> {
                         if let Some(ref mut base) = local {
                             if base.tick == delta.base_tick {
                                 apply_delta(base, &delta);
-                                println!("reconciled to tick {} (hash={})", base.tick, base.world_hash);
+                                println!(
+                                    "reconciled to tick {} (hash={})",
+                                    base.tick, base.world_hash
+                                );
                                 // Re-apply unacked inputs (very simplified; assumes instantaneous intent effects)
-                                let pending: Vec<_> = history.iter().filter(|(s, _)| *s > last_acked).cloned().collect();
+                                let pending: Vec<_> = history
+                                    .iter()
+                                    .filter(|(s, _)| *s > last_acked)
+                                    .cloned()
+                                    .collect();
                                 for (_s, intent) in pending {
                                     // At this level, we don't have a local physics sim; we could re-run naive prediction if desired
-                                    if let Some(ActionStep::MoveTo { x, y }) = intent.steps.first() {
-                                        if let Some(e) = base.entities.iter_mut().find(|e| e.id == actor_id) {
+                                    if let Some(ActionStep::MoveTo { x, y }) = intent.steps.first()
+                                    {
+                                        if let Some(e) =
+                                            base.entities.iter_mut().find(|e| e.id == actor_id)
+                                        {
                                             e.pos = IVec2 { x: *x, y: *y };
                                         }
                                     }

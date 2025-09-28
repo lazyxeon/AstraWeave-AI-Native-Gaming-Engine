@@ -1,6 +1,6 @@
 // Integration test for LLM orchestrator fallback logic
-use astraweave_ai::orchestrator::{LlmOrchestrator, RuleOrchestrator, Orchestrator};
-use astraweave_core::{WorldSnapshot, PlanIntent};
+use astraweave_ai::orchestrator::{LlmOrchestrator, Orchestrator, RuleOrchestrator};
+use astraweave_core::{PlanIntent, WorldSnapshot};
 
 #[test]
 fn test_llm_orchestrator_fallback_to_rule() {
@@ -11,6 +11,10 @@ fn test_llm_orchestrator_fallback_to_rule() {
     let plan_llm = llm.plan(0, &snap);
     let plan_rule = rule.plan(0, &snap);
     // Fallback: if LLM returns default, use rule-based
-    let plan = if plan_llm.steps.is_empty() { plan_rule } else { plan_llm };
+    let plan = if plan_llm.steps.is_empty() {
+        plan_rule
+    } else {
+        plan_llm
+    };
     assert_eq!(plan.steps, plan_rule.steps);
 }

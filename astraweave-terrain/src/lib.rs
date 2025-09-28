@@ -1,24 +1,26 @@
 //! AstraWeave Terrain Generation Module
-//! 
+//!
 //! This module provides procedural terrain generation using noise functions,
 //! heightmaps, and biome classification for the AstraWeave engine.
 
-pub mod chunk;
-pub mod heightmap;
-pub mod noise_gen;
 pub mod biome;
+pub mod chunk;
 pub mod climate;
 pub mod erosion;
+pub mod heightmap;
+pub mod noise_gen;
 pub mod scatter;
 pub mod structures;
 
-pub use chunk::{TerrainChunk, ChunkId, ChunkManager};
+pub use biome::{Biome, BiomeConfig, BiomeType};
+pub use chunk::{ChunkId, ChunkManager, TerrainChunk};
+pub use climate::{ClimateConfig, ClimateMap};
 pub use heightmap::{Heightmap, HeightmapConfig};
 pub use noise_gen::{NoiseConfig, TerrainNoise};
-pub use biome::{Biome, BiomeType, BiomeConfig};
-pub use climate::{ClimateMap, ClimateConfig};
-pub use scatter::{VegetationScatter, VegetationInstance, ScatterConfig, ScatterResult};
-pub use structures::{StructureType, StructureConfig, StructureInstance, StructureResult, StructureGenerator};
+pub use scatter::{ScatterConfig, ScatterResult, VegetationInstance, VegetationScatter};
+pub use structures::{
+    StructureConfig, StructureGenerator, StructureInstance, StructureResult, StructureType,
+};
 
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
@@ -80,7 +82,7 @@ impl WorldGenerator {
         let mut structure_config = config.structures.clone();
         structure_config.seed = config.seed + 2; // Offset seed for structures
         let structure_generator = structures::StructureGenerator::new(structure_config);
-        
+
         Self {
             config,
             noise,
@@ -91,35 +93,41 @@ impl WorldGenerator {
     }
 
     /// Generate a terrain chunk at the given world position with vegetation and resources
-    pub fn generate_chunk_with_scatter(&mut self, chunk_id: ChunkId) -> anyhow::Result<(TerrainChunk, ScatterResult)> {
+    pub fn generate_chunk_with_scatter(
+        &mut self,
+        chunk_id: ChunkId,
+    ) -> anyhow::Result<(TerrainChunk, ScatterResult)> {
         // Generate the basic terrain chunk
         let chunk = self.generate_chunk(chunk_id)?;
-        
+
         // Generate scatter for the chunk
         let scatter_result = self.scatter_chunk_content(&chunk)?;
-        
+
         Ok((chunk, scatter_result))
     }
 
     /// Generate scatter content (vegetation and resources) for an existing chunk
     pub fn scatter_chunk_content(&mut self, chunk: &TerrainChunk) -> anyhow::Result<ScatterResult> {
         let mut result = ScatterResult::new(chunk.id());
-        
+
         // Create scatter system
         let scatter_config = ScatterConfig::default();
         let scatter = VegetationScatter::new(scatter_config);
-        
+
         // Sample the biome at the chunk center to determine configuration
         let chunk_center = chunk.id().to_center_pos(self.config.chunk_size);
-        let center_biome = chunk.get_biome_at_world_pos(chunk_center, self.config.chunk_size)
+        let center_biome = chunk
+            .get_biome_at_world_pos(chunk_center, self.config.chunk_size)
             .unwrap_or(BiomeType::Grassland);
-        
+
         // Find the biome configuration
-        let biome_config = self.config.biomes
+        let biome_config = self
+            .config
+            .biomes
             .iter()
             .find(|b| b.biome_type == center_biome)
             .unwrap_or(&self.config.biomes[0]);
-        
+
         // Generate vegetation
         result.vegetation = scatter.scatter_vegetation(
             chunk,
@@ -127,7 +135,7 @@ impl WorldGenerator {
             biome_config,
             self.config.seed + chunk.id().x as u64 * 1000 + chunk.id().z as u64,
         )?;
-        
+
         // Generate resources
         result.resources = scatter.scatter_resources(
             chunk,
@@ -135,7 +143,7 @@ impl WorldGenerator {
             biome_config,
             self.config.seed + chunk.id().x as u64 * 2000 + chunk.id().z as u64,
         )?;
-        
+
         // Generate structures
         let structure_result = self.structure_generator.generate_structures(
             chunk,
@@ -143,22 +151,22 @@ impl WorldGenerator {
             center_biome,
         )?;
         result.structures = structure_result.structures;
-        
+
         Ok(result)
     }
     pub fn generate_chunk(&mut self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
         // Generate heightmap for this chunk
         let heightmap = self.noise.generate_heightmap(
-            chunk_id, 
-            self.config.chunk_size, 
-            self.config.heightmap_resolution
+            chunk_id,
+            self.config.chunk_size,
+            self.config.heightmap_resolution,
         )?;
 
         // Generate climate data for biome assignment
         let climate_data = self.climate.sample_chunk(
             chunk_id,
             self.config.chunk_size,
-            self.config.heightmap_resolution
+            self.config.heightmap_resolution,
         )?;
 
         // Assign biomes based on height and climate
@@ -195,16 +203,17 @@ impl WorldGenerator {
 
         // Unload chunks that are too far away
         let unload_radius = radius + 2; // Keep a buffer
-        self.chunk_manager.unload_distant_chunks(center, unload_radius);
+        self.chunk_manager
+            .unload_distant_chunks(center, unload_radius);
 
         Ok(loaded)
     }
 
     /// Assign biomes to heightmap points based on climate data
     fn assign_biomes(
-        &self, 
-        heightmap: &Heightmap, 
-        climate_data: &[(f32, f32)] // (temperature, moisture) pairs
+        &self,
+        heightmap: &Heightmap,
+        climate_data: &[(f32, f32)], // (temperature, moisture) pairs
     ) -> anyhow::Result<Vec<BiomeType>> {
         let mut biome_map = Vec::with_capacity(climate_data.len());
 
@@ -254,13 +263,13 @@ mod tests {
     fn test_chunk_generation() -> anyhow::Result<()> {
         let config = WorldConfig::default();
         let mut generator = WorldGenerator::new(config);
-        
+
         let chunk_id = ChunkId::new(0, 0);
         let chunk = generator.generate_chunk(chunk_id)?;
-        
+
         assert_eq!(chunk.id(), chunk_id);
         assert!(chunk.heightmap().max_height() >= chunk.heightmap().min_height());
-        
+
         Ok(())
     }
 
@@ -268,12 +277,12 @@ mod tests {
     fn test_chunk_streaming() -> anyhow::Result<()> {
         let config = WorldConfig::default();
         let mut generator = WorldGenerator::new(config);
-        
+
         let center = Vec3::new(128.0, 0.0, 128.0);
         let loaded_chunks = generator.stream_chunks(center, 2)?;
-        
+
         assert!(!loaded_chunks.is_empty());
-        
+
         Ok(())
     }
 }

@@ -1,5 +1,5 @@
 // Integration test for simulation determinism and replay
-use astraweave_core::{World, SimConfig, step, capture_replay};
+use astraweave_core::{capture_replay, step, SimConfig, World};
 
 #[test]
 fn test_simulation_determinism() {

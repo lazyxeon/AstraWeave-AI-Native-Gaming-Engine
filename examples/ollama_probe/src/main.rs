@@ -42,7 +42,11 @@ Return ONLY JSON with no commentary.
     );
 
     let body = serde_json::json!({ "model": model, "messages": [{ "role": "user", "content": prompt }], "stream": true });
-    let resp = client.post(format!("{}/api/chat", url.trim_end_matches('/'))).json(&body).send().await?;
+    let resp = client
+        .post(format!("{}/api/chat", url.trim_end_matches('/')))
+        .json(&body)
+        .send()
+        .await?;
     println!("status {}", resp.status());
     let mut stream = resp.bytes_stream();
     let mut buf = String::new();
@@ -72,7 +76,9 @@ Return ONLY JSON with no commentary.
                     }
                 }
             }
-            Err(e) => { println!("stream err: {}", e); }
+            Err(e) => {
+                println!("stream err: {}", e);
+            }
         }
     }
     println!("acc len {}", acc.len());

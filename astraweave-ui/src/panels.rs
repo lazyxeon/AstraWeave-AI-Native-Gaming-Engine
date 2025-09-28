@@ -191,67 +191,114 @@ pub fn draw_ui(
     }
 
     // Simple Cinematics panel (dev-only)
-    egui::Window::new("Cinematics").resizable(true).show(ctx, |ui| {
-        use std::sync::{Mutex, OnceLock};
-        static TL: OnceLock<Mutex<Option<awc::Timeline>>> = OnceLock::new();
-        static SEQ: OnceLock<Mutex<Option<awc::Sequencer>>> = OnceLock::new();
-        static FILENAME: OnceLock<Mutex<String>> = OnceLock::new();
-        let tl = TL.get_or_init(|| Mutex::new(None));
-        let seq = SEQ.get_or_init(|| Mutex::new(None));
-        let filename = FILENAME.get_or_init(|| Mutex::new("assets/cinematics/cutscene.json".to_string()));
-        let mut load_demo = false;
-        ui.horizontal(|ui| {
-            if ui.button("Load Demo").clicked() { load_demo = true; }
-            if ui.button("Save JSON").clicked() {
-                if let Some(ref tlv) = *tl.lock().unwrap() { let s = serde_json::to_string_pretty(tlv).unwrap(); ui.output_mut(|o| o.copied_text = s); }
-            }
-            // Load/Save to assets
-            {
-                let mut name = filename.lock().unwrap();
-                ui.text_edit_singleline(&mut *name);
-                if ui.button("Load File").clicked() {
-                    match std::fs::read_to_string(&*name) {
-                        Ok(s) => match serde_json::from_str::<awc::Timeline>(&s) {
-                            Ok(new_tl) => { *tl.lock().unwrap() = Some(new_tl); *seq.lock().unwrap() = Some(awc::Sequencer::new()); }
-                            Err(e) => { ui.label(format!("Parse error: {}", e)); }
-                        },
-                        Err(e) => { ui.label(format!("IO error: {}", e)); }
+    egui::Window::new("Cinematics")
+        .resizable(true)
+        .show(ctx, |ui| {
+            use std::sync::{Mutex, OnceLock};
+            static TL: OnceLock<Mutex<Option<awc::Timeline>>> = OnceLock::new();
+            static SEQ: OnceLock<Mutex<Option<awc::Sequencer>>> = OnceLock::new();
+            static FILENAME: OnceLock<Mutex<String>> = OnceLock::new();
+            let tl = TL.get_or_init(|| Mutex::new(None));
+            let seq = SEQ.get_or_init(|| Mutex::new(None));
+            let filename =
+                FILENAME.get_or_init(|| Mutex::new("assets/cinematics/cutscene.json".to_string()));
+            let mut load_demo = false;
+            ui.horizontal(|ui| {
+                if ui.button("Load Demo").clicked() {
+                    load_demo = true;
+                }
+                if ui.button("Save JSON").clicked() {
+                    if let Some(ref tlv) = *tl.lock().unwrap() {
+                        let s = serde_json::to_string_pretty(tlv).unwrap();
+                        ui.output_mut(|o| o.copied_text = s);
                     }
                 }
-                if ui.button("Save File").clicked() {
-                    if let Some(ref tlv) = *tl.lock().unwrap() {
-                        match serde_json::to_string_pretty(tlv) {
-                            Ok(s) => { let _ = std::fs::create_dir_all("assets/cinematics"); let path = (*name).clone(); let _ = std::fs::write(path, s); }
-                            Err(e) => { ui.label(format!("Serialize error: {}", e)); }
+                // Load/Save to assets
+                {
+                    let mut name = filename.lock().unwrap();
+                    ui.text_edit_singleline(&mut *name);
+                    if ui.button("Load File").clicked() {
+                        match std::fs::read_to_string(&*name) {
+                            Ok(s) => match serde_json::from_str::<awc::Timeline>(&s) {
+                                Ok(new_tl) => {
+                                    *tl.lock().unwrap() = Some(new_tl);
+                                    *seq.lock().unwrap() = Some(awc::Sequencer::new());
+                                }
+                                Err(e) => {
+                                    ui.label(format!("Parse error: {}", e));
+                                }
+                            },
+                            Err(e) => {
+                                ui.label(format!("IO error: {}", e));
+                            }
+                        }
+                    }
+                    if ui.button("Save File").clicked() {
+                        if let Some(ref tlv) = *tl.lock().unwrap() {
+                            match serde_json::to_string_pretty(tlv) {
+                                Ok(s) => {
+                                    let _ = std::fs::create_dir_all("assets/cinematics");
+                                    let path = (*name).clone();
+                                    let _ = std::fs::write(path, s);
+                                }
+                                Err(e) => {
+                                    ui.label(format!("Serialize error: {}", e));
+                                }
+                            }
                         }
                     }
                 }
-            }
-            if ui.button("Play").clicked() {
-                let mut seq_guard = seq.lock().unwrap();
-                if seq_guard.is_none() { *seq_guard = Some(awc::Sequencer::new()); }
-            }
-            if ui.button("Step 0.5s").clicked() {
-                let mut seq_guard = seq.lock().unwrap();
-                if let (Some(ref mut seqv), Some(ref tlv)) = (seq_guard.as_mut(), tl.lock().unwrap().as_ref()) {
-                    if let Ok(evs) = seqv.step(0.5, tlv) {
-                        for e in evs { ui.label(format!("{:4.1}s: {:?}", seqv.t.0, e)); }
+                if ui.button("Play").clicked() {
+                    let mut seq_guard = seq.lock().unwrap();
+                    if seq_guard.is_none() {
+                        *seq_guard = Some(awc::Sequencer::new());
                     }
                 }
+                if ui.button("Step 0.5s").clicked() {
+                    let mut seq_guard = seq.lock().unwrap();
+                    if let (Some(ref mut seqv), Some(ref tlv)) =
+                        (seq_guard.as_mut(), tl.lock().unwrap().as_ref())
+                    {
+                        if let Ok(evs) = seqv.step(0.5, tlv) {
+                            for e in evs {
+                                ui.label(format!("{:4.1}s: {:?}", seqv.t.0, e));
+                            }
+                        }
+                    }
+                }
+            });
+            if load_demo {
+                let mut new_tl = awc::Timeline::new("cutscene", 5.0);
+                new_tl.tracks.push(awc::Track::Camera {
+                    keyframes: vec![
+                        awc::CameraKey {
+                            t: awc::Time(1.0),
+                            pos: (0.0, 1.5, 3.0),
+                            look_at: (0.0, 1.0, 0.0),
+                            fov_deg: 60.0,
+                        },
+                        awc::CameraKey {
+                            t: awc::Time(3.0),
+                            pos: (2.0, 2.0, 3.0),
+                            look_at: (0.0, 1.0, 0.0),
+                            fov_deg: 55.0,
+                        },
+                    ],
+                });
+                new_tl.tracks.push(awc::Track::Audio {
+                    clip: "music:start".into(),
+                    start: awc::Time(0.2),
+                    volume: 0.7,
+                });
+                new_tl.tracks.push(awc::Track::Fx {
+                    name: "fade-in".into(),
+                    start: awc::Time(0.0),
+                    params: serde_json::json!({"duration": 0.5}),
+                });
+                *tl.lock().unwrap() = Some(new_tl);
+                *seq.lock().unwrap() = Some(awc::Sequencer::new());
             }
         });
-        if load_demo {
-            let mut new_tl = awc::Timeline::new("cutscene", 5.0);
-            new_tl.tracks.push(awc::Track::Camera { keyframes: vec![
-                awc::CameraKey { t: awc::Time(1.0), pos:(0.0,1.5,3.0), look_at:(0.0,1.0,0.0), fov_deg:60.0 },
-                awc::CameraKey { t: awc::Time(3.0), pos:(2.0,2.0,3.0), look_at:(0.0,1.0,0.0), fov_deg:55.0 },
-            ]});
-            new_tl.tracks.push(awc::Track::Audio { clip: "music:start".into(), start: awc::Time(0.2), volume: 0.7 });
-            new_tl.tracks.push(awc::Track::Fx { name: "fade-in".into(), start: awc::Time(0.0), params: serde_json::json!({"duration": 0.5}) });
-            *tl.lock().unwrap() = Some(new_tl);
-            *seq.lock().unwrap() = Some(awc::Sequencer::new());
-        }
-    });
 
     out
 }

@@ -1,7 +1,7 @@
 //! Vegetation and object scatter system
 
-use crate::{Biome, BiomeConfig, TerrainChunk, ChunkId};
-use astraweave_gameplay::{ResourceNode, spawn_resources};
+use crate::{Biome, BiomeConfig, ChunkId, TerrainChunk};
+use astraweave_gameplay::{spawn_resources, ResourceNode};
 use glam::Vec3;
 use rand::{Rng, SeedableRng};
 use serde::{Deserialize, Serialize};
@@ -69,7 +69,7 @@ impl VegetationScatter {
     ) -> anyhow::Result<Vec<VegetationInstance>> {
         let mut instances = Vec::new();
         let _chunk_origin = chunk.id().to_world_pos(chunk_size);
-        
+
         if biome_config.vegetation.vegetation_types.is_empty() {
             return Ok(instances);
         }
@@ -117,7 +117,7 @@ impl VegetationScatter {
         let mut instances = Vec::new();
         let chunk_origin = chunk.id().to_world_pos(chunk_size);
         let min_dist = self.config.min_distance;
-        
+
         // Simple Poisson disk sampling using rejection method
         let max_attempts = target_count * 30; // Safety limit
         let mut attempts = 0;
@@ -128,11 +128,7 @@ impl VegetationScatter {
             // Generate random position
             let local_x = rng.random::<f32>() * chunk_size;
             let local_z = rng.random::<f32>() * chunk_size;
-            let mut world_pos = Vec3::new(
-                chunk_origin.x + local_x,
-                0.0,
-                chunk_origin.z + local_z,
-            );
+            let mut world_pos = Vec3::new(chunk_origin.x + local_x, 0.0, chunk_origin.z + local_z);
 
             // Get height and biome at this position
             if let Some(height) = chunk.get_height_at_world_pos(world_pos, chunk_size) {
@@ -162,12 +158,9 @@ impl VegetationScatter {
                 }
 
                 // Select vegetation type
-                if let Some(vegetation_instance) = self.create_vegetation_instance(
-                    world_pos,
-                    biome_config,
-                    rng,
-                    slope,
-                )? {
+                if let Some(vegetation_instance) =
+                    self.create_vegetation_instance(world_pos, biome_config, rng, slope)?
+                {
                     instances.push(vegetation_instance);
                 }
             }
@@ -192,11 +185,7 @@ impl VegetationScatter {
             // Generate random position
             let local_x = rng.random::<f32>() * chunk_size;
             let local_z = rng.random::<f32>() * chunk_size;
-            let mut world_pos = Vec3::new(
-                chunk_origin.x + local_x,
-                0.0,
-                chunk_origin.z + local_z,
-            );
+            let mut world_pos = Vec3::new(chunk_origin.x + local_x, 0.0, chunk_origin.z + local_z);
 
             // Get height and biome at this position
             if let Some(height) = chunk.get_height_at_world_pos(world_pos, chunk_size) {
@@ -216,12 +205,9 @@ impl VegetationScatter {
                 }
 
                 // Create vegetation instance
-                if let Some(vegetation_instance) = self.create_vegetation_instance(
-                    world_pos,
-                    biome_config,
-                    rng,
-                    slope,
-                )? {
+                if let Some(vegetation_instance) =
+                    self.create_vegetation_instance(world_pos, biome_config, rng, slope)?
+                {
                     instances.push(vegetation_instance);
                 }
             }
@@ -231,28 +217,21 @@ impl VegetationScatter {
     }
 
     /// Estimate slope at a position using nearby height samples
-    fn estimate_slope(
-        &self,
-        chunk: &TerrainChunk,
-        world_pos: Vec3,
-        chunk_size: f32,
-    ) -> f32 {
+    fn estimate_slope(&self, chunk: &TerrainChunk, world_pos: Vec3, chunk_size: f32) -> f32 {
         let offset = 1.0; // Sample distance
-        
+
         let height_center = world_pos.y;
-        let height_x = chunk.get_height_at_world_pos(
-            world_pos + Vec3::new(offset, 0.0, 0.0),
-            chunk_size,
-        ).unwrap_or(height_center);
-        let height_z = chunk.get_height_at_world_pos(
-            world_pos + Vec3::new(0.0, 0.0, offset),
-            chunk_size,
-        ).unwrap_or(height_center);
+        let height_x = chunk
+            .get_height_at_world_pos(world_pos + Vec3::new(offset, 0.0, 0.0), chunk_size)
+            .unwrap_or(height_center);
+        let height_z = chunk
+            .get_height_at_world_pos(world_pos + Vec3::new(0.0, 0.0, offset), chunk_size)
+            .unwrap_or(height_center);
 
         let dx = height_x - height_center;
         let dz = height_z - height_center;
         let slope_radians = (dx * dx + dz * dz).sqrt().atan2(offset);
-        
+
         slope_radians.to_degrees()
     }
 
@@ -265,7 +244,9 @@ impl VegetationScatter {
         slope: f32,
     ) -> anyhow::Result<Option<VegetationInstance>> {
         // Filter vegetation types by slope tolerance
-        let suitable_types: Vec<_> = biome_config.vegetation.vegetation_types
+        let suitable_types: Vec<_> = biome_config
+            .vegetation
+            .vegetation_types
             .iter()
             .filter(|veg_type| slope <= veg_type.slope_tolerance)
             .collect();
@@ -326,7 +307,7 @@ impl VegetationScatter {
         let chunk_origin = chunk.id().to_world_pos(chunk_size);
         let area_min = chunk_origin;
         let area_max = chunk_origin + Vec3::new(chunk_size, 0.0, chunk_size);
-        
+
         // Calculate resource count based on biome density
         let chunk_area = chunk_size * chunk_size;
         let base_count = (chunk_area * biome_config.vegetation.density * 0.1) as usize; // 10% of vegetation density
@@ -383,7 +364,7 @@ impl ScatterResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Heightmap, HeightmapConfig, BiomeConfig, BiomeType};
+    use crate::{BiomeConfig, BiomeType, Heightmap, HeightmapConfig};
 
     #[test]
     fn test_vegetation_scatter_creation() {
@@ -395,40 +376,46 @@ mod tests {
     #[test]
     fn test_scatter_generation() -> anyhow::Result<()> {
         let scatter = VegetationScatter::new(ScatterConfig::default());
-        
+
         // Create a simple test chunk
         let chunk_id = ChunkId::new(0, 0);
-        let heightmap_config = HeightmapConfig { resolution: 32, ..Default::default() };
+        let heightmap_config = HeightmapConfig {
+            resolution: 32,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(heightmap_config)?;
         let biome_map = vec![BiomeType::Grassland; 32 * 32];
         let chunk = TerrainChunk::new(chunk_id, heightmap, biome_map);
-        
+
         let biome_config = BiomeConfig::grassland();
         let vegetation = scatter.scatter_vegetation(&chunk, 256.0, &biome_config, 12345)?;
-        
+
         // Should generate some vegetation for grassland
         assert!(!vegetation.is_empty());
-        
+
         Ok(())
     }
 
     #[test]
     fn test_resource_scattering() -> anyhow::Result<()> {
         let scatter = VegetationScatter::new(ScatterConfig::default());
-        
+
         // Create a test chunk
         let chunk_id = ChunkId::new(0, 0);
-        let heightmap_config = HeightmapConfig { resolution: 32, ..Default::default() };
+        let heightmap_config = HeightmapConfig {
+            resolution: 32,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(heightmap_config)?;
         let biome_map = vec![BiomeType::Forest; 32 * 32];
         let chunk = TerrainChunk::new(chunk_id, heightmap, biome_map);
-        
+
         let biome_config = BiomeConfig::forest();
         let resources = scatter.scatter_resources(&chunk, 256.0, &biome_config, 12345)?;
-        
+
         // Forest should have resources
         assert!(!resources.is_empty());
-        
+
         Ok(())
     }
 
@@ -438,25 +425,28 @@ mod tests {
             max_slope: 30.0,
             ..Default::default()
         });
-        
+
         // Create chunk with varying heights
         let chunk_id = ChunkId::new(0, 0);
-        let heightmap_config = HeightmapConfig { resolution: 16, ..Default::default() };
+        let heightmap_config = HeightmapConfig {
+            resolution: 16,
+            ..Default::default()
+        };
         let mut heightmap = Heightmap::new(heightmap_config).unwrap();
-        
+
         // Create a steep slope
         for x in 0..16 {
             for z in 0..16 {
                 heightmap.set_height(x, z, x as f32 * 10.0); // Very steep
             }
         }
-        
+
         let biome_map = vec![BiomeType::Mountain; 16 * 16];
         let chunk = TerrainChunk::new(chunk_id, heightmap, biome_map);
-        
+
         let test_pos = Vec3::new(64.0, 50.0, 64.0);
         let slope = scatter.estimate_slope(&chunk, test_pos, 256.0);
-        
+
         // Should detect steep slope
         assert!(slope > 30.0);
     }
@@ -466,7 +456,7 @@ mod tests {
         let mut result = ScatterResult::new(ChunkId::new(0, 0));
         assert!(result.is_empty());
         assert_eq!(result.total_count(), 0);
-        
+
         result.vegetation.push(VegetationInstance {
             position: Vec3::ZERO,
             rotation: 0.0,
@@ -474,7 +464,7 @@ mod tests {
             vegetation_type: "test".to_string(),
             model_path: "test.glb".to_string(),
         });
-        
+
         assert!(!result.is_empty());
         assert_eq!(result.total_count(), 1);
     }

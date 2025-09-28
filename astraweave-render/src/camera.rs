@@ -101,7 +101,9 @@ impl CameraController {
     }
 
     /// Is the right-mouse look active?
-    pub fn is_dragging(&self) -> bool { self.dragging }
+    pub fn is_dragging(&self) -> bool {
+        self.dragging
+    }
 
     pub fn process_keyboard(&mut self, key: winit::keyboard::KeyCode, pressed: bool) {
         let v = if pressed { 1.0 } else { 0.0 };
@@ -137,7 +139,9 @@ impl CameraController {
     pub fn process_mouse_move(&mut self, camera: &mut Camera, pos: Vec2) {
         if self.dragging {
             // If raw deltas already consumed this frame, skip absolute to avoid double-apply
-            if self.raw_used_this_frame { return; }
+            if self.raw_used_this_frame {
+                return;
+            }
             if let Some(last) = self.last_mouse {
                 let delta = (pos - last) * self.sensitivity;
                 // Update smooth targets (actual camera moves toward these in update_camera)
@@ -265,7 +269,7 @@ impl CameraController {
                 target_vel += forward * (self.fwd - self.back);
                 target_vel += right * (self.right - self.left);
                 target_vel += up * (self.up - self.down);
-                
+
                 if target_vel.length_squared() > 0.0 {
                     self.orbit_target += target_vel.normalize() * eff_speed * dt;
                     self.update_orbit_position(camera);
@@ -320,7 +324,7 @@ mod tests {
         // Test keyboard input processing
         controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         assert_eq!(controller.fwd, 1.0);
-        
+
         controller.process_keyboard(winit::keyboard::KeyCode::KeyW, false);
         assert_eq!(controller.fwd, 0.0);
 
@@ -328,7 +332,7 @@ mod tests {
         controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
         let initial_pos = camera.position;
         controller.update_camera(&mut camera, 0.1);
-        
+
         // Camera should have moved forward
         assert!(camera.position != initial_pos);
     }
@@ -347,11 +351,11 @@ mod tests {
         };
 
         let initial_fov = camera.fovy;
-        
+
         // Test zoom in
         controller.process_scroll(&mut camera, 1.0);
         assert!(camera.fovy < initial_fov);
-        
+
         // Test zoom out
         controller.process_scroll(&mut camera, -1.0);
         assert!(camera.fovy > initial_fov - 0.1);
@@ -398,12 +402,12 @@ mod tests {
 
         // Switch to orbit mode
         controller.toggle_mode(&mut camera);
-        
+
         // Test orbit distance zoom
         let initial_distance = controller.orbit_distance;
         controller.process_scroll(&mut camera, 1.0);
         assert!(controller.orbit_distance < initial_distance);
-        
+
         // Test orbit target movement
         let initial_target = controller.orbit_target;
         controller.process_keyboard(winit::keyboard::KeyCode::KeyW, true);
@@ -427,11 +431,11 @@ mod tests {
         // Test that mouse delta processing works without dragging
         let initial_yaw = camera.yaw;
         let initial_pitch = camera.pitch;
-    controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
-    // Without dragging, targets won't update and camera won't change on update
-    controller.update_camera(&mut camera, 0.016);
-    assert!((camera.yaw - initial_yaw).abs() < 1e-6);
-    assert!((camera.pitch - initial_pitch).abs() < 1e-6);
+        controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
+        // Without dragging, targets won't update and camera won't change on update
+        controller.update_camera(&mut camera, 0.016);
+        assert!((camera.yaw - initial_yaw).abs() < 1e-6);
+        assert!((camera.pitch - initial_pitch).abs() < 1e-6);
 
         // Enable dragging
         controller.process_mouse_button(winit::event::MouseButton::Right, true);
@@ -439,14 +443,14 @@ mod tests {
         // Test mouse delta processing with dragging
         let initial_yaw = camera.yaw;
         let initial_pitch = camera.pitch;
-    controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
-    // Apply update to realize smoothed motion
-    controller.update_camera(&mut camera, 0.016);
-    // Yaw should decrease (negative delta.x)
-    assert!(camera.yaw < initial_yaw);
-    // Pitch should decrease (negative delta.y)
-    assert!(camera.pitch < initial_pitch);
-        
+        controller.process_mouse_delta(&mut camera, Vec2::new(10.0, 5.0));
+        // Apply update to realize smoothed motion
+        controller.update_camera(&mut camera, 0.016);
+        // Yaw should decrease (negative delta.x)
+        assert!(camera.yaw < initial_yaw);
+        // Pitch should decrease (negative delta.y)
+        assert!(camera.pitch < initial_pitch);
+
         // Test orbit mode delta processing
         controller.toggle_mode(&mut camera);
         let initial_pos = camera.position;
