@@ -374,3 +374,34 @@ Appendix: Proposed Crates/Dirs
 - `examples/visual_3d/`, `examples/hello_companion_3d/`
 
 This roadmap is intentionally staged: ship a viewable, editable, and AI-playable core quickly; iterate toward UE5-class rendering, tools, and multiplayer scale while preserving AstraWeave’s AI-native edge.
+
+## Unified Showcase Visual Fidelity Gap Report (2025-09-28)
+
+### Issues Identified in Current Implementation
+- **Texture source quality is synthetic or fallback-only.** `create_material_array_textures` in `examples/unified_showcase/src/main.rs` collapses to 1×1 solid-color RGBA images whenever a named material asset is missing, which is the common path today. The ground, foliage, and structure surfaces therefore sample flat colors instead of authored PBR textures.
+- **Sky and environment lighting lack physically based inputs.** The renderer no longer binds a real sky cubemap (the `sky_texture` field was removed) and the shader derives atmospheric color procedurally. Sun direction is pegged to `let time = 100.0` inside `fs_main`, so day/night lighting never changes and there is no IBL contribution.
+- **Procedural terrain uses a single five-layer material stack.** Array textures expose only grass/dirt/stone/sand/forest indices and those layers get re-used for trees, rocks, and buildings. That forces foliage and structures to inherit ground textures and blocks biome-specific lookdev.
+- **Geometry is extremely low poly.** Tree, house, character, and rock meshes are literal hard-coded vertex arrays (for example `TREE_VERTICES` and `HOUSE_VERTICES`) with <40 vertices and no UV metadata. Every instance reuses the same primitive, producing visibly blocky repetition.
+- **Material pipeline is disconnected.** `material.rs` and `texture_manager.rs` define richer Material/TextureAtlas systems but `main.rs` never loads or binds them. The scene ignores authored material JSON/TOML and falls back to code-defined defaults.
+- **Shadow/lighting tuning is placeholder.** Shadow map size is fixed at 2048 without cascades or contact-hardening, specular/ambient terms ignore environment reflections/SSAO, and fog/atmospherics are purely procedural, yielding flat lighting.
+- **Performance/LOD hooks are unimplemented.** Comments promise GPU-driven batching, but there is no LOD selection, impostors, or density falloff, so distant assets stay low-detail yet still cost draw calls.
+- **Numerous TODOs remain at runtime.** The shader still notes `// TODO: Pass actual time as uniform`, and camera logic hardcodes `cam_height = 5.0`, leaving lighting and fog disconnected from real simulation state.
+
+### Missing Systems/Features Needed for High-Fidelity Rendering
+- Author-grade PBR asset pipeline covering tiling ground materials, foliage atlases, structure trim sheets (albedo/normal/roughness/metal/AO) with mip-corrected sampling.
+- Biome-aware material assignment (terrain splat maps, virtual texturing, or per-biome atlases) so trees, rocks, and structures pull unique assets instead of the shared five-layer array.
+- Mesh diversity and LODs: imported or generated meshes for vegetation/structures with UVs, vertex colors, wind data, and LOD chains.
+- Lighting upgrades: sky cubemap/atmospheric scattering, ACES tonemapping tuned for HDR inputs, cascaded shadows, SSAO/SSGI, and ambient probe sampling.
+- Vegetation system: GPU-instanced foliage with wind sway, density/variation maps, and billboards for distance rendering.
+- Streaming & residency budgets for textures and meshes to sustain high-resolution assets without stalls.
+- Tooling wiring: connect `TextureManager`, `MaterialLibrary`, and the array-texture upload path to data-driven packs (TOML/JSON) with hot reload and validation.
+- Diagnostics: visualizers for material layer weights, terrain splat masks, shadow coverage, and texture residency to guide lookdev.
+
+### Placeholders That Must Be Replaced
+- Procedural geometry constants (`TREE_VERTICES`, `HOUSE_VERTICES`, `CHARACTER_VERTICES`) need authored meshes or procedural generators with UVs, normals, and LODs.
+- Placeholder texture generation in `texture_utils.rs` (checkerboard “X” grid) should only run in tooling; runtime should fail loudly or surface diagnostics when assets are missing.
+- Hard-coded biome material IDs (`MATERIAL_LAYER_NAMES` et al.) must give way to data-driven packs referencing real texture sets.
+- Dummy uniforms (constant time, fixed camera height, fake AO toggles) require proper bindings from the simulation/post stack.
+- The current single-directional light path should evolve toward authorable lighting rigs with cascades, volumetrics, and reflection captures.
+
+> **Next Steps:** Stand up an end-to-end PBR asset pipeline for `unified_showcase`, wire the material/texture management crates into the renderer, replace hard-coded meshes with authored assets (including LODs), and introduce biome-aware shading + lighting improvements before chasing advanced features like virtual texturing or GI.
