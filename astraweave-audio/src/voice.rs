@@ -3,9 +3,9 @@ use serde::Deserialize;
 use std::{collections::HashMap, fs};
 
 #[cfg(feature = "mock_tts")]
-use std::{f32::consts::PI, path::Path};
-#[cfg(feature = "mock_tts")]
 use hound::{SampleFormat, WavSpec, WavWriter};
+#[cfg(feature = "mock_tts")]
+use std::{f32::consts::PI, path::Path};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct VoiceSpec {
@@ -49,7 +49,10 @@ pub struct SimpleSineTts {
 #[cfg(feature = "mock_tts")]
 impl Default for SimpleSineTts {
     fn default() -> Self {
-        Self { sample_rate: 22_050, base_hz: 220.0 }
+        Self {
+            sample_rate: 22_050,
+            base_hz: 220.0,
+        }
     }
 }
 
@@ -61,9 +64,16 @@ impl TtsAdapter for SimpleSineTts {
         let total_samples = (secs * self.sample_rate as f32) as u32;
         // Write a mono 16-bit WAV
         if let Some(dir) = Path::new(out_path).parent() {
-            if !dir.exists() { std::fs::create_dir_all(dir)?; }
+            if !dir.exists() {
+                std::fs::create_dir_all(dir)?;
+            }
         }
-        let spec = WavSpec { channels: 1, sample_rate: self.sample_rate, bits_per_sample: 16, sample_format: SampleFormat::Int };
+        let spec = WavSpec {
+            channels: 1,
+            sample_rate: self.sample_rate,
+            bits_per_sample: 16,
+            sample_format: SampleFormat::Int,
+        };
         let mut writer = WavWriter::create(out_path, spec)?;
         let mut phase = 0.0f32;
         let dt = 1.0f32 / self.sample_rate as f32;

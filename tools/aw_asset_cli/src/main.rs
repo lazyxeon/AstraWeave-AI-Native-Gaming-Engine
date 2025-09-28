@@ -77,22 +77,23 @@ fn main() -> Result<()> {
 
 fn globwalk(root: &str, pat: &str) -> Result<Vec<PathBuf>> {
     let mut v = vec![];
-    
+
     // Handle brace expansion like *.{png,jpg,jpeg}
     let patterns = if pat.contains('{') && pat.contains('}') {
         let start = pat.find('{').unwrap();
         let end = pat.find('}').unwrap();
         let prefix = &pat[..start];
-        let suffix = &pat[end+1..];
-        let extensions = &pat[start+1..end];
-        
-        extensions.split(',')
+        let suffix = &pat[end + 1..];
+        let extensions = &pat[start + 1..end];
+
+        extensions
+            .split(',')
             .map(|ext| format!("{}{}{}", prefix, ext, suffix))
             .collect::<Vec<_>>()
     } else {
         vec![pat.to_string()]
     };
-    
+
     for pattern_str in patterns {
         for e in WalkDir::new(root) {
             let e = e?;

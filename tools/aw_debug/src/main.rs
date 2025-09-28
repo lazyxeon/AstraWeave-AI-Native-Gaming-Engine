@@ -39,7 +39,7 @@ impl DebugApp {
 
     fn simulate_frame(&mut self) {
         let mut rng = rand::rng();
-        
+
         // Simulate some changing system times
         for (_, time) in &mut self.system_times {
             *time += (rng.random::<f32>() - 0.5) * 0.2;

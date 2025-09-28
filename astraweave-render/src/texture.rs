@@ -12,7 +12,11 @@ pub struct Texture {
 
 impl Texture {
     /// Create a 1x1 white texture as a default/fallback
-    pub fn create_default_white(device: &wgpu::Device, queue: &wgpu::Queue, label: &str) -> Result<Self> {
+    pub fn create_default_white(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        label: &str,
+    ) -> Result<Self> {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size: wgpu::Extent3d {
@@ -59,7 +63,11 @@ impl Texture {
     }
 
     /// Create a 1x1 normal map texture pointing upward (0, 0, 1)
-    pub fn create_default_normal(device: &wgpu::Device, queue: &wgpu::Queue, label: &str) -> Result<Self> {
+    pub fn create_default_normal(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        label: &str,
+    ) -> Result<Self> {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size: wgpu::Extent3d {
@@ -107,15 +115,14 @@ impl Texture {
 
     /// Load a texture from a file (requires "textures" feature)
     #[cfg(feature = "textures")]
-    pub fn from_file(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        path: &Path,
-    ) -> Result<Self> {
+    pub fn from_file(device: &wgpu::Device, queue: &wgpu::Queue, path: &Path) -> Result<Self> {
         println!("Loading texture from: {}", path.display());
-        
+
         if !path.exists() {
-            return Err(anyhow::anyhow!("Texture file not found: {}", path.display()));
+            return Err(anyhow::anyhow!(
+                "Texture file not found: {}",
+                path.display()
+            ));
         }
 
         let bytes = std::fs::read(path)?;
@@ -134,7 +141,10 @@ impl Texture {
         let rgba = img.to_rgba8();
         let dimensions = img.dimensions();
 
-        println!("Loaded texture '{}': {}x{} pixels", label, dimensions.0, dimensions.1);
+        println!(
+            "Loaded texture '{}': {}x{} pixels",
+            label, dimensions.0, dimensions.1
+        );
 
         let size = wgpu::Extent3d {
             width: dimensions.0,
@@ -192,9 +202,9 @@ impl Texture {
 #[cfg(feature = "textures")]
 pub fn validate_texture_assets(asset_paths: &[&str]) -> Result<()> {
     println!("🎨 Validating texture assets...");
-    
+
     let mut valid_count = 0;
-    
+
     for texture_path in asset_paths {
         if std::path::Path::new(texture_path).exists() {
             match image::open(texture_path) {
@@ -211,9 +221,13 @@ pub fn validate_texture_assets(asset_paths: &[&str]) -> Result<()> {
             println!("  ❌ {}: File not found", texture_path);
         }
     }
-    
-    println!("📊 Texture validation: {}/{} textures valid", valid_count, asset_paths.len());
-    
+
+    println!(
+        "📊 Texture validation: {}/{} textures valid",
+        valid_count,
+        asset_paths.len()
+    );
+
     if valid_count > 0 {
         println!("✅ Found valid textures for rendering!");
         Ok(())

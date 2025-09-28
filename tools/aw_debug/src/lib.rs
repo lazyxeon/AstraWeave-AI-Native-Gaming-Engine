@@ -2,10 +2,7 @@ use anyhow::Result;
 use egui::{self, Color32};
 use egui_plot::{Line, Plot, PlotPoints};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
-use std::{
-    path::PathBuf,
-    time::Instant,
-};
+use std::{path::PathBuf, time::Instant};
 use tracing_subscriber::prelude::*;
 
 /// Simple perf HUD state

@@ -48,7 +48,12 @@ pub fn cube() -> (Vec<Vertex>, Vec<u32>) {
             2 => [1.0, 1.0],
             _ => [0.0, 1.0],
         };
-        v.push(Vertex { position: *p, normal: *n, tangent, uv });
+        v.push(Vertex {
+            position: *p,
+            normal: *n,
+            tangent,
+            uv,
+        });
         if idx % 4 == 3 {
             let base = idx as u32 - 3;
             i.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
@@ -62,10 +67,30 @@ pub fn plane() -> (Vec<Vertex>, Vec<u32>) {
     let n = [0.0, 1.0, 0.0];
     let t = [1.0, 0.0, 0.0, 1.0];
     let v = vec![
-        Vertex { position: [-1.0, 0.0, -1.0], normal: n, tangent: t, uv: [0.0, 0.0] },
-        Vertex { position: [ 1.0, 0.0, -1.0], normal: n, tangent: t, uv: [1.0, 0.0] },
-        Vertex { position: [ 1.0, 0.0,  1.0], normal: n, tangent: t, uv: [1.0, 1.0] },
-        Vertex { position: [-1.0, 0.0,  1.0], normal: n, tangent: t, uv: [0.0, 1.0] },
+        Vertex {
+            position: [-1.0, 0.0, -1.0],
+            normal: n,
+            tangent: t,
+            uv: [0.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 0.0, -1.0],
+            normal: n,
+            tangent: t,
+            uv: [1.0, 0.0],
+        },
+        Vertex {
+            position: [1.0, 0.0, 1.0],
+            normal: n,
+            tangent: t,
+            uv: [1.0, 1.0],
+        },
+        Vertex {
+            position: [-1.0, 0.0, 1.0],
+            normal: n,
+            tangent: t,
+            uv: [0.0, 1.0],
+        },
     ];
     let i = vec![0, 1, 2, 0, 2, 3];
     (v, i)

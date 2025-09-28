@@ -1,7 +1,7 @@
 // Test for asset pipeline manifest and deterministic output
+use serde_json::Value;
 use std::fs;
 use std::path::Path;
-use serde_json::Value;
 
 #[test]
 fn test_manifest_is_deterministic() {

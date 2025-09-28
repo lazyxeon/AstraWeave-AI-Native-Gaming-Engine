@@ -1,7 +1,7 @@
 //! Terrain rendering integration for astraweave-render
 
-use astraweave_terrain::{TerrainChunk, WorldGenerator, WorldConfig, ScatterResult};
-use glam::{Vec3, Mat4};
+use astraweave_terrain::{ScatterResult, TerrainChunk, WorldConfig, WorldGenerator};
+use glam::{Mat4, Vec3};
 use wgpu::util::DeviceExt;
 
 /// A simple terrain mesh for rendering
@@ -34,7 +34,7 @@ impl TerrainRenderer {
     pub fn new(world_config: WorldConfig) -> Self {
         let chunk_size = world_config.chunk_size;
         let world_generator = WorldGenerator::new(world_config);
-        
+
         Self {
             world_generator,
             loaded_meshes: std::collections::HashMap::new(),
@@ -81,21 +81,24 @@ impl TerrainRenderer {
                 let world_x = chunk_origin.x + x as f32 * step;
                 let world_z = chunk_origin.z + z as f32 * step;
                 let height = heightmap.get_height(x, z);
-                
+
                 let position = [world_x, height, world_z];
-                
+
                 // Calculate normal
                 let normal = heightmap.calculate_normal(x, z, step);
                 let normal_array = [normal.x, normal.y, normal.z];
-                
+
                 // UV coordinates
                 let u = x as f32 / (resolution - 1) as f32;
                 let v = z as f32 / (resolution - 1) as f32;
                 let uv = [u, v];
-                
+
                 // Get biome at this position
                 let biome_index = z as usize * resolution as usize + x as usize;
-                let biome = chunk.biome_map().get(biome_index).copied()
+                let biome = chunk
+                    .biome_map()
+                    .get(biome_index)
+                    .copied()
                     .unwrap_or(astraweave_terrain::BiomeType::Grassland);
                 let biome_id = Self::biome_to_id(biome);
 
@@ -138,11 +141,8 @@ impl TerrainRenderer {
         center: Vec3,
         radius: u32,
     ) -> anyhow::Result<Vec<astraweave_terrain::ChunkId>> {
-        let chunks_needed = astraweave_terrain::ChunkId::get_chunks_in_radius(
-            center,
-            radius,
-            self.chunk_size,
-        );
+        let chunks_needed =
+            astraweave_terrain::ChunkId::get_chunks_in_radius(center, radius, self.chunk_size);
 
         // Generate all needed chunks first
         for chunk_id in &chunks_needed {
@@ -180,18 +180,24 @@ impl TerrainRenderer {
     }
 
     /// Create simple cube instances for vegetation (placeholder until proper models)
-    pub fn create_vegetation_instances(scatter_result: &ScatterResult) -> Vec<VegetationRenderInstance> {
-        scatter_result.vegetation.iter().map(|veg| {
-            let transform_matrix = Mat4::from_scale_rotation_translation(
-                Vec3::splat(veg.scale),
-                glam::Quat::from_rotation_y(veg.rotation),
-                veg.position,
-            );
-            VegetationRenderInstance {
-                transform: transform_matrix.to_cols_array(),
-                vegetation_type: Self::vegetation_type_to_id(&veg.vegetation_type),
-            }
-        }).collect()
+    pub fn create_vegetation_instances(
+        scatter_result: &ScatterResult,
+    ) -> Vec<VegetationRenderInstance> {
+        scatter_result
+            .vegetation
+            .iter()
+            .map(|veg| {
+                let transform_matrix = Mat4::from_scale_rotation_translation(
+                    Vec3::splat(veg.scale),
+                    glam::Quat::from_rotation_y(veg.rotation),
+                    veg.position,
+                );
+                VegetationRenderInstance {
+                    transform: transform_matrix.to_cols_array(),
+                    vegetation_type: Self::vegetation_type_to_id(&veg.vegetation_type),
+                }
+            })
+            .collect()
     }
 
     /// Convert vegetation type name to numeric ID
@@ -218,7 +224,7 @@ impl TerrainRenderer {
         &self.world_generator
     }
 
-    /// Get mutable access to world generator 
+    /// Get mutable access to world generator
     pub fn world_generator_mut(&mut self) -> &mut WorldGenerator {
         &mut self.world_generator
     }
@@ -241,10 +247,10 @@ pub fn generate_terrain_preview(
     let mut generator = WorldGenerator::new(world_config.clone());
     let chunk_id = astraweave_terrain::ChunkId::from_world_pos(center, world_config.chunk_size);
     let chunk = generator.generate_chunk(chunk_id)?;
-    
+
     let heightmap = chunk.heightmap();
     let mut preview = Vec::with_capacity((size * size) as usize);
-    
+
     let step = world_config.chunk_size / size as f32;
     for z in 0..size {
         for x in 0..size {
@@ -254,14 +260,14 @@ pub fn generate_terrain_preview(
             preview.push(height);
         }
     }
-    
+
     Ok(preview)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_terrain::{WorldConfig, ChunkId};
+    use astraweave_terrain::{ChunkId, WorldConfig};
 
     #[test]
     fn test_terrain_renderer_creation() {
@@ -274,14 +280,14 @@ mod tests {
     fn test_mesh_generation() -> anyhow::Result<()> {
         let config = WorldConfig::default();
         let mut renderer = TerrainRenderer::new(config);
-        
+
         let chunk_id = ChunkId::new(0, 0);
         let mesh = renderer.get_or_generate_chunk_mesh(chunk_id)?;
-        
+
         assert_eq!(mesh.chunk_id, chunk_id);
         assert!(!mesh.vertices.is_empty());
         assert!(!mesh.indices.is_empty());
-        
+
         Ok(())
     }
 
@@ -289,17 +295,17 @@ mod tests {
     fn test_chunk_radius_loading() -> anyhow::Result<()> {
         let config = WorldConfig::default();
         let mut renderer = TerrainRenderer::new(config);
-        
+
         let center = Vec3::new(128.0, 0.0, 128.0);
         let chunk_ids = renderer.get_chunks_in_radius(center, 1)?;
-        
+
         assert!(!chunk_ids.is_empty());
-        
+
         // Check that meshes were actually loaded
         for chunk_id in chunk_ids {
             assert!(renderer.get_loaded_mesh(chunk_id).is_some());
         }
-        
+
         Ok(())
     }
 
@@ -307,18 +313,27 @@ mod tests {
     fn test_terrain_preview() -> anyhow::Result<()> {
         let config = WorldConfig::default();
         let center = Vec3::new(128.0, 0.0, 128.0);
-        
+
         let preview = generate_terrain_preview(&config, center, 32)?;
         assert_eq!(preview.len(), 32 * 32);
-        
+
         Ok(())
     }
 
     #[test]
     fn test_biome_id_conversion() {
-        assert_eq!(TerrainRenderer::biome_to_id(astraweave_terrain::BiomeType::Grassland), 0);
-        assert_eq!(TerrainRenderer::biome_to_id(astraweave_terrain::BiomeType::Desert), 1);
-        assert_eq!(TerrainRenderer::biome_to_id(astraweave_terrain::BiomeType::Forest), 2);
+        assert_eq!(
+            TerrainRenderer::biome_to_id(astraweave_terrain::BiomeType::Grassland),
+            0
+        );
+        assert_eq!(
+            TerrainRenderer::biome_to_id(astraweave_terrain::BiomeType::Desert),
+            1
+        );
+        assert_eq!(
+            TerrainRenderer::biome_to_id(astraweave_terrain::BiomeType::Forest),
+            2
+        );
     }
 
     #[test]

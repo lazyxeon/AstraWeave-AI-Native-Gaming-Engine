@@ -4,14 +4,14 @@
 //! featuring sky/weather, vegetation, structures, and environmental effects.
 
 use anyhow::Result;
-use astraweave_terrain::*;
 use astraweave_render::*;
+use astraweave_terrain::*;
 use clap::Parser;
 use glam::Vec3;
 use std::time::Instant;
 use winit::{
-    event::{Event, WindowEvent, ElementState},
-    event_loop::{EventLoop, ControlFlow},
+    event::{ElementState, Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
     window::WindowBuilder,
 };
@@ -125,7 +125,7 @@ impl BiomeShowcase {
         // Create sky renderer
         let sky_config = SkyConfig::default();
         let mut sky_renderer = SkyRenderer::new(sky_config);
-        
+
         // Set initial time of day
         sky_renderer.time_of_day_mut().current_time = args.time;
 
@@ -174,14 +174,15 @@ impl BiomeShowcase {
     /// Generate the world chunks
     fn generate_world(&mut self, grid_size: u32) -> Result<()> {
         println!("Generating {}x{} chunk world...", grid_size, grid_size);
-        
+
         for x in 0..grid_size {
             for z in 0..grid_size {
                 let chunk_id = ChunkId::new(x as i32, z as i32);
-                
+
                 // Generate chunk with all content
-                let (mesh, scatter_result) = self.terrain_renderer.generate_chunk_complete(chunk_id)?;
-                
+                let (mesh, scatter_result) =
+                    self.terrain_renderer.generate_chunk_complete(chunk_id)?;
+
                 // Update statistics
                 self.stats.total_vertices += mesh.vertices.len();
                 self.stats.total_triangles += mesh.indices.len() / 3;
@@ -197,14 +198,24 @@ impl BiomeShowcase {
 
                 // Track structure distribution
                 for structure in &scatter_result.structures {
-                    *self.stats.structure_distribution.entry(structure.structure_type).or_insert(0) += 1;
+                    *self
+                        .stats
+                        .structure_distribution
+                        .entry(structure.structure_type)
+                        .or_insert(0) += 1;
                 }
 
                 self.generated_chunks.push(chunk_id);
-                
-                println!("  Chunk ({}, {}): {} vertices, {} vegetation, {} resources, {} structures", 
-                    x, z, mesh.vertices.len(), scatter_result.vegetation.len(), 
-                    scatter_result.resources.len(), scatter_result.structures.len());
+
+                println!(
+                    "  Chunk ({}, {}): {} vertices, {} vegetation, {} resources, {} structures",
+                    x,
+                    z,
+                    mesh.vertices.len(),
+                    scatter_result.vegetation.len(),
+                    scatter_result.resources.len(),
+                    scatter_result.structures.len()
+                );
             }
         }
 
@@ -223,12 +234,17 @@ impl BiomeShowcase {
         println!("  Vegetation: {}", self.stats.total_vegetation);
         println!("  Resources: {}", self.stats.total_resources);
         println!("  Structures: {}", self.stats.total_structures);
-        
+
         println!();
         println!("Biome Distribution:");
         for (biome_type, count) in &self.stats.biome_distribution {
             let percentage = (*count as f32 / self.stats.total_vertices as f32) * 100.0;
-            println!("  {}: {} vertices ({:.1}%)", biome_type.as_str(), count, percentage);
+            println!(
+                "  {}: {} vertices ({:.1}%)",
+                biome_type.as_str(),
+                count,
+                percentage
+            );
         }
 
         if !self.stats.structure_distribution.is_empty() {
@@ -243,7 +259,8 @@ impl BiomeShowcase {
     /// Update the application state
     fn update(&mut self, delta_time: f32) {
         // Update camera
-        self.camera_controller.update_camera(&mut self.camera, delta_time);
+        self.camera_controller
+            .update_camera(&mut self.camera, delta_time);
 
         // Update sky and time of day
         self.sky_renderer.update(delta_time);
@@ -252,7 +269,8 @@ impl BiomeShowcase {
         self.weather_system.update(delta_time);
 
         // Update weather particles
-        self.weather_particles.update(delta_time, self.camera.position, &self.weather_system);
+        self.weather_particles
+            .update(delta_time, self.camera.position, &self.weather_system);
     }
 
     /// Handle keyboard input
@@ -272,22 +290,22 @@ impl BiomeShowcase {
                 };
                 self.weather_system.set_weather(next, 3.0);
                 println!("Weather changing to: {:?}", next);
-            },
+            }
             (KeyCode::KeyT, ElementState::Pressed) => {
                 // Advance time by 2 hours
                 let time = &mut self.sky_renderer.time_of_day_mut().current_time;
                 *time = (*time + 2.0) % 24.0;
                 println!("Time: {:.1}:00", time);
-            },
+            }
             _ => {
-                self.camera_controller.process_keyboard(key, state == ElementState::Pressed);
+                self.camera_controller
+                    .process_keyboard(key, state == ElementState::Pressed);
             }
         }
     }
 
     /// Export world data and statistics
     fn export_data(&self, filename_prefix: &str) -> Result<()> {
-
         // Export statistics
         let stats_file = format!("{}_stats.json", filename_prefix);
         let mut stats_data = serde_json::json!({
@@ -302,14 +320,20 @@ impl BiomeShowcase {
         // Add biome distribution
         let mut biome_dist = serde_json::Map::new();
         for (biome, count) in &self.stats.biome_distribution {
-            biome_dist.insert(biome.as_str().to_string(), serde_json::Value::Number((*count).into()));
+            biome_dist.insert(
+                biome.as_str().to_string(),
+                serde_json::Value::Number((*count).into()),
+            );
         }
         stats_data["biome_distribution"] = serde_json::Value::Object(biome_dist);
 
         // Add structure distribution
         let mut struct_dist = serde_json::Map::new();
         for (structure, count) in &self.stats.structure_distribution {
-            struct_dist.insert(format!("{:?}", structure), serde_json::Value::Number((*count).into()));
+            struct_dist.insert(
+                format!("{:?}", structure),
+                serde_json::Value::Number((*count).into()),
+            );
         }
         stats_data["structure_distribution"] = serde_json::Value::Object(struct_dist);
 
@@ -435,7 +459,7 @@ fn main() -> Result<()> {
                             showcase.handle_keyboard(key_code, event.state);
                         }
                     }
-                },
+                }
                 WindowEvent::RedrawRequested => {
                     let now = Instant::now();
                     let delta_time = (now - last_frame).as_secs_f32();
@@ -453,12 +477,12 @@ fn main() -> Result<()> {
                     // 6. Rendering UI overlays
 
                     window.request_redraw();
-                },
+                }
                 _ => {}
             },
             Event::AboutToWait => {
                 window.request_redraw();
-            },
+            }
             _ => {}
         }
     })?;

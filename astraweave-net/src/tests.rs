@@ -1,7 +1,9 @@
 #![cfg(test)]
 
-use crate::{apply_delta, build_snapshot, diff_snapshots, filter_snapshot_for_viewer, FullInterest};
 use crate::Interest;
+use crate::{
+    apply_delta, build_snapshot, diff_snapshots, filter_snapshot_for_viewer, FullInterest,
+};
 use astraweave_core::{IVec2, Team, World};
 
 fn make_world() -> World {
@@ -27,9 +29,15 @@ fn delta_roundtrip() {
     let mut w = make_world();
     let a = build_snapshot(&w, 1, 0);
     // mutate world
-    if let Some(p) = w.pose_mut(1) { p.pos.x += 1; }
-    if let Some(h) = w.health_mut(2) { h.hp -= 5; }
-    if let Some(a) = w.ammo_mut(3) { a.rounds += 2; }
+    if let Some(p) = w.pose_mut(1) {
+        p.pos.x += 1;
+    }
+    if let Some(h) = w.health_mut(2) {
+        h.hp -= 5;
+    }
+    if let Some(a) = w.ammo_mut(3) {
+        a.rounds += 2;
+    }
     let b = build_snapshot(&w, 2, 1);
     let viewer = a.entities.first().cloned().unwrap();
     let d = diff_snapshots(&a, &b, &FullInterest, &viewer);
@@ -55,13 +63,18 @@ fn delta_removal_on_interest_change() {
     let viewer = a.entities.iter().find(|e| e.team == 0).cloned().unwrap();
     // Identify an enemy and move it far away so it drops out of interest
     let enemy_id = a.entities.iter().find(|e| e.team == 2).unwrap().id;
-    if let Some(p) = w.pose_mut(enemy_id) { p.pos = IVec2 { x: 50, y: 50 }; }
+    if let Some(p) = w.pose_mut(enemy_id) {
+        p.pos = IVec2 { x: 50, y: 50 };
+    }
     let b = build_snapshot(&w, 2, 1);
     let policy = RadiusTeamInterest { radius: 5 };
     let base_f = filter_snapshot_for_viewer(&a, &policy, &viewer);
     let head_f = filter_snapshot_for_viewer(&b, &policy, &viewer);
     let d = diff_snapshots(&base_f, &head_f, &FullInterest, &viewer);
-    assert!(d.removed.contains(&enemy_id), "enemy should be removed when it leaves interest");
+    assert!(
+        d.removed.contains(&enemy_id),
+        "enemy should be removed when it leaves interest"
+    );
     let mut x = base_f.clone();
     apply_delta(&mut x, &d);
     assert_eq!(x.tick, head_f.tick);
@@ -72,10 +85,34 @@ fn delta_removal_on_interest_change() {
 #[test]
 fn interest_filter_basic() {
     use crate::{EntityState, RadiusTeamInterest};
-    let viewer = EntityState { id: 1, pos: IVec2 { x: 0, y: 0 }, hp: 100, team: 0, ammo: 0 };
-    let ally = EntityState { id: 2, pos: IVec2 { x: 100, y: 100 }, hp: 100, team: 0, ammo: 0 };
-    let near_enemy = EntityState { id: 3, pos: IVec2 { x: 2, y: 2 }, hp: 100, team: 1, ammo: 0 };
-    let far_enemy = EntityState { id: 4, pos: IVec2 { x: 20, y: 20 }, hp: 100, team: 1, ammo: 0 };
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let ally = EntityState {
+        id: 2,
+        pos: IVec2 { x: 100, y: 100 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let near_enemy = EntityState {
+        id: 3,
+        pos: IVec2 { x: 2, y: 2 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let far_enemy = EntityState {
+        id: 4,
+        pos: IVec2 { x: 20, y: 20 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
     let policy = RadiusTeamInterest { radius: 5 };
     assert!(policy.include(&viewer, &ally), "allies always included");
     assert!(policy.include(&viewer, &near_enemy), "near enemy included");
@@ -98,8 +135,26 @@ fn replay_determinism() {
     let _e2 = w2.spawn("E", IVec2 { x: 7, y: 2 }, Team { id: 2 }, 60, 0);
 
     let evs = vec![
-        ReplayEvent { tick: 5, seq: 0, actor_id: c1, intent: PlanIntent { plan_id: "mv".into(), steps: vec![ActionStep::MoveTo { x: 4, y: 2 }] }, world_hash: 0 },
-        ReplayEvent { tick: 10, seq: 0, actor_id: p1, intent: PlanIntent { plan_id: "mv".into(), steps: vec![ActionStep::MoveTo { x: 3, y: 2 }] }, world_hash: 0 },
+        ReplayEvent {
+            tick: 5,
+            seq: 0,
+            actor_id: c1,
+            intent: PlanIntent {
+                plan_id: "mv".into(),
+                steps: vec![ActionStep::MoveTo { x: 4, y: 2 }],
+            },
+            world_hash: 0,
+        },
+        ReplayEvent {
+            tick: 10,
+            seq: 0,
+            actor_id: p1,
+            intent: PlanIntent {
+                plan_id: "mv".into(),
+                steps: vec![ActionStep::MoveTo { x: 3, y: 2 }],
+            },
+            world_hash: 0,
+        },
     ];
     let h1 = replay_from(w1, &evs).unwrap();
     let h2 = replay_from(w2, &evs).unwrap();
@@ -108,12 +163,22 @@ fn replay_determinism() {
 
 #[test]
 fn multi_client_consistency_filtered_hash() {
-    use crate::{RadiusTeamInterest, subset_hash};
+    use crate::{subset_hash, RadiusTeamInterest};
     // Setup world and two viewers
     let mut w = make_world();
     let snap0 = build_snapshot(&w, 0, 0);
-    let viewer_a = snap0.entities.iter().find(|e| e.team == 0).cloned().unwrap();
-    let viewer_b = snap0.entities.iter().find(|e| e.team == 1).cloned().unwrap();
+    let viewer_a = snap0
+        .entities
+        .iter()
+        .find(|e| e.team == 0)
+        .cloned()
+        .unwrap();
+    let viewer_b = snap0
+        .entities
+        .iter()
+        .find(|e| e.team == 1)
+        .cloned()
+        .unwrap();
     let policy = RadiusTeamInterest { radius: 6 };
 
     // Each client keeps its own filtered base and hash history
@@ -125,7 +190,11 @@ fn multi_client_consistency_filtered_hash() {
     // Advance world a few ticks and broadcast filtered snapshots; apply deltas on each client
     for tick in 1..=10u64 {
         // simple world change: move team 2 enemy to the right each tick
-        if let Some(enemy) = w.all_of_team(2).first().cloned() { if let Some(p) = w.pose_mut(enemy) { p.pos.x += 1; } }
+        if let Some(enemy) = w.all_of_team(2).first().cloned() {
+            if let Some(p) = w.pose_mut(enemy) {
+                p.pos.x += 1;
+            }
+        }
         let snap = build_snapshot(&w, tick, tick as u32);
         let head_a = filter_snapshot_for_viewer(&snap, &policy, &viewer_a);
         let head_b = filter_snapshot_for_viewer(&snap, &policy, &viewer_b);
@@ -146,14 +215,43 @@ fn multi_client_consistency_filtered_hash() {
 fn fov_los_interest_blocks_through_wall() {
     use crate::{EntityState, FovLosInterest};
     // Viewer at (0,0) facing +X with 45deg half-angle and radius 10
-    let viewer = EntityState { id: 1, pos: IVec2 { x: 0, y: 0 }, hp: 100, team: 0, ammo: 0 };
-    let enemy_visible = EntityState { id: 2, pos: IVec2 { x: 5, y: 0 }, hp: 100, team: 1, ammo: 0 };
-    let enemy_blocked = EntityState { id: 3, pos: IVec2 { x: 5, y: 2 }, hp: 100, team: 1, ammo: 0 };
+    let viewer = EntityState {
+        id: 1,
+        pos: IVec2 { x: 0, y: 0 },
+        hp: 100,
+        team: 0,
+        ammo: 0,
+    };
+    let enemy_visible = EntityState {
+        id: 2,
+        pos: IVec2 { x: 5, y: 0 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
+    let enemy_blocked = EntityState {
+        id: 3,
+        pos: IVec2 { x: 5, y: 2 },
+        hp: 100,
+        team: 1,
+        ammo: 0,
+    };
     let mut obstacles = std::collections::BTreeSet::new();
     // Wall at x=3 for y in [1..3]
     obstacles.insert((3, 1));
     obstacles.insert((3, 2));
-    let policy = FovLosInterest { radius: 10, half_angle_deg: 45.0, facing: IVec2 { x: 1, y: 0 }, obstacles };
-    assert!(policy.include(&viewer, &enemy_visible), "enemy directly ahead with LOS should be included");
-    assert!(!policy.include(&viewer, &enemy_blocked), "enemy behind wall should be excluded by LOS");
+    let policy = FovLosInterest {
+        radius: 10,
+        half_angle_deg: 45.0,
+        facing: IVec2 { x: 1, y: 0 },
+        obstacles,
+    };
+    assert!(
+        policy.include(&viewer, &enemy_visible),
+        "enemy directly ahead with LOS should be included"
+    );
+    assert!(
+        !policy.include(&viewer, &enemy_blocked),
+        "enemy behind wall should be excluded by LOS"
+    );
 }

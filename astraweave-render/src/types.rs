@@ -18,13 +18,29 @@ impl Vertex {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 // position
-                wgpu::VertexAttribute { offset: 0, shader_location: 0, format: wgpu::VertexFormat::Float32x3 },
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
                 // normal
-                wgpu::VertexAttribute { offset: 12, shader_location: 1, format: wgpu::VertexFormat::Float32x3 },
+                wgpu::VertexAttribute {
+                    offset: 12,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
                 // tangent at location 12 (to match skinned variant convention)
-                wgpu::VertexAttribute { offset: 24, shader_location: 12, format: wgpu::VertexFormat::Float32x4 },
+                wgpu::VertexAttribute {
+                    offset: 24,
+                    shader_location: 12,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
                 // uv at location 13
-                wgpu::VertexAttribute { offset: 40, shader_location: 13, format: wgpu::VertexFormat::Float32x2 },
+                wgpu::VertexAttribute {
+                    offset: 40,
+                    shader_location: 13,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
             ],
         }
     }
@@ -48,15 +64,35 @@ impl SkinnedVertex {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 // position
-                wgpu::VertexAttribute { offset: 0, shader_location: 0, format: wgpu::VertexFormat::Float32x3 },
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
                 // normal
-                wgpu::VertexAttribute { offset: 12, shader_location: 1, format: wgpu::VertexFormat::Float32x3 },
+                wgpu::VertexAttribute {
+                    offset: 12,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x3,
+                },
                 // tangent (xyz, w = handedness)
-                wgpu::VertexAttribute { offset: 24, shader_location: 12, format: wgpu::VertexFormat::Float32x4 },
+                wgpu::VertexAttribute {
+                    offset: 24,
+                    shader_location: 12,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
                 // joints
-                wgpu::VertexAttribute { offset: 40, shader_location: 10, format: wgpu::VertexFormat::Uint16x4 },
+                wgpu::VertexAttribute {
+                    offset: 40,
+                    shader_location: 10,
+                    format: wgpu::VertexFormat::Uint16x4,
+                },
                 // weights
-                wgpu::VertexAttribute { offset: 48, shader_location: 11, format: wgpu::VertexFormat::Float32x4 },
+                wgpu::VertexAttribute {
+                    offset: 48,
+                    shader_location: 11,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
             ],
         }
     }
@@ -166,14 +202,27 @@ impl Instance {
 
 // ---- Phase 2 foundations: clustered lighting binning helpers ----
 #[derive(Clone, Copy, Debug)]
-pub struct ClusterDims { pub x: u32, pub y: u32, pub z: u32 }
+pub struct ClusterDims {
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
+}
 
 /// Compute cluster index for a screen-space pixel and linear depth in view space.
 /// Inputs:
 /// - screen coords in [0,width) x [0,height)
 /// - near/far planes
 /// - dims: number of clusters in x/y/z
-pub fn cluster_index(px: u32, py: u32, width: u32, height: u32, depth: f32, near: f32, far: f32, dims: ClusterDims) -> u32 {
+pub fn cluster_index(
+    px: u32,
+    py: u32,
+    width: u32,
+    height: u32,
+    depth: f32,
+    near: f32,
+    far: f32,
+    dims: ClusterDims,
+) -> u32 {
     let sx = (px as f32 * dims.x as f32 / width as f32).clamp(0.0, dims.x as f32 - 1.0) as u32;
     let sy = (py as f32 * dims.y as f32 / height as f32).clamp(0.0, dims.y as f32 - 1.0) as u32;
     // Logarithmic z slicing improves distribution
@@ -187,13 +236,13 @@ mod tests_cluster {
     use super::*;
     #[test]
     fn bins_within_bounds() {
-        let dims = ClusterDims{ x: 16, y: 9, z: 24 };
+        let dims = ClusterDims { x: 16, y: 9, z: 24 };
         let idx = cluster_index(100, 50, 1920, 1080, 5.0, 0.1, 100.0, dims);
         assert!(idx < dims.x * dims.y * dims.z);
     }
     #[test]
     fn corners_map_to_edges() {
-        let d = ClusterDims{ x: 8, y: 8, z: 8 };
+        let d = ClusterDims { x: 8, y: 8, z: 8 };
         let i0 = cluster_index(0, 0, 800, 800, 0.1, 0.1, 100.0, d);
         let i1 = cluster_index(799, 799, 800, 800, 99.9, 0.1, 100.0, d);
         assert_ne!(i0, i1);

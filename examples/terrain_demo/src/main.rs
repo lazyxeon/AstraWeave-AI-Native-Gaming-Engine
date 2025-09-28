@@ -1,11 +1,11 @@
 //! Simple terrain generation demo
-//! 
+//!
 //! This example demonstrates the AstraWeave terrain generation system
 //! by generating terrain chunks and outputting statistics about them.
 
 use anyhow::Result;
-use astraweave_terrain::*;
 use astraweave_render::terrain::*;
+use astraweave_terrain::*;
 use clap::Parser;
 
 #[derive(Parser)]
@@ -87,10 +87,10 @@ fn main() -> Result<()> {
     for x in 0..args.grid_size {
         for z in 0..args.grid_size {
             let chunk_id = ChunkId::new(x as i32, z as i32);
-            
+
             if args.vegetation {
                 let (mesh, scatter_result) = terrain_renderer.generate_chunk_complete(chunk_id)?;
-                
+
                 total_vertices += mesh.vertices.len();
                 total_triangles += mesh.indices.len() / 3;
                 total_vegetation += scatter_result.vegetation.len();
@@ -102,8 +102,14 @@ fn main() -> Result<()> {
                     *biome_counts.entry(biome_id).or_insert(0) += 1;
                 }
 
-                println!("  Chunk ({}, {}): {} vertices, {} vegetation, {} resources", 
-                    x, z, mesh.vertices.len(), scatter_result.vegetation.len(), scatter_result.resources.len());
+                println!(
+                    "  Chunk ({}, {}): {} vertices, {} vegetation, {} resources",
+                    x,
+                    z,
+                    mesh.vertices.len(),
+                    scatter_result.vegetation.len(),
+                    scatter_result.resources.len()
+                );
 
                 if args.export {
                     export_chunk_data(&mesh, &scatter_result, &format!("chunk_{}_{}", x, z))?;
@@ -138,14 +144,14 @@ fn main() -> Result<()> {
         println!("  Vegetation: {}", total_vegetation);
         println!("  Resources: {}", total_resources);
     }
-    
+
     println!();
     println!("Biome Distribution:");
     for (biome_id, count) in biome_counts {
         let biome_name = match biome_id {
             0 => "Grassland",
             1 => "Desert",
-            2 => "Forest", 
+            2 => "Forest",
             3 => "Mountain",
             4 => "Tundra",
             5 => "Swamp",
@@ -167,11 +173,11 @@ fn main() -> Result<()> {
     println!("Generating terrain preview...");
     let center = glam::Vec3::new(args.chunk_size * 0.5, 0.0, args.chunk_size * 0.5);
     let preview = generate_terrain_preview(&world_config, center, 32)?;
-    
+
     let min_height = preview.iter().copied().fold(f32::INFINITY, f32::min);
     let max_height = preview.iter().copied().fold(f32::NEG_INFINITY, f32::max);
     let avg_height = preview.iter().sum::<f32>() / preview.len() as f32;
-    
+
     println!("Height Statistics:");
     println!("  Min: {:.2}", min_height);
     println!("  Max: {:.2}", max_height);
@@ -183,64 +189,87 @@ fn main() -> Result<()> {
 
 fn export_mesh_data(mesh: &TerrainMesh, filename: &str) -> Result<()> {
     use std::io::Write;
-    
+
     let mut file = std::fs::File::create(format!("{}_mesh.txt", filename))?;
-    
+
     writeln!(file, "# Terrain Mesh Data for chunk {:?}", mesh.chunk_id)?;
     writeln!(file, "# Vertices: {}", mesh.vertices.len())?;
     writeln!(file, "# Triangles: {}", mesh.indices.len() / 3)?;
     writeln!(file)?;
-    
+
     writeln!(file, "# Vertices (x, y, z, nx, ny, nz, u, v, biome_id)")?;
     for vertex in &mesh.vertices {
-        writeln!(file, "{:.3} {:.3} {:.3} {:.3} {:.3} {:.3} {:.3} {:.3} {}", 
-            vertex.position[0], vertex.position[1], vertex.position[2],
-            vertex.normal[0], vertex.normal[1], vertex.normal[2],
-            vertex.uv[0], vertex.uv[1],
-            vertex.biome_id)?;
+        writeln!(
+            file,
+            "{:.3} {:.3} {:.3} {:.3} {:.3} {:.3} {:.3} {:.3} {}",
+            vertex.position[0],
+            vertex.position[1],
+            vertex.position[2],
+            vertex.normal[0],
+            vertex.normal[1],
+            vertex.normal[2],
+            vertex.uv[0],
+            vertex.uv[1],
+            vertex.biome_id
+        )?;
     }
-    
+
     writeln!(file)?;
     writeln!(file, "# Indices (triangles)")?;
     for triangle in mesh.indices.chunks(3) {
         writeln!(file, "{} {} {}", triangle[0], triangle[1], triangle[2])?;
     }
-    
+
     Ok(())
 }
 
 fn export_chunk_data(mesh: &TerrainMesh, scatter: &ScatterResult, filename: &str) -> Result<()> {
     use std::io::Write;
-    
+
     // Export mesh data
     export_mesh_data(mesh, filename)?;
-    
+
     // Export vegetation data
     let mut veg_file = std::fs::File::create(format!("{}_vegetation.txt", filename))?;
     writeln!(veg_file, "# Vegetation Data for chunk {:?}", mesh.chunk_id)?;
     writeln!(veg_file, "# Count: {}", scatter.vegetation.len())?;
     writeln!(veg_file)?;
-    writeln!(veg_file, "# Vegetation (x, y, z, rotation, scale, type_name, model_path)")?;
-    
+    writeln!(
+        veg_file,
+        "# Vegetation (x, y, z, rotation, scale, type_name, model_path)"
+    )?;
+
     for veg in &scatter.vegetation {
-        writeln!(veg_file, "{:.3} {:.3} {:.3} {:.3} {:.3} {} {}", 
-            veg.position.x, veg.position.y, veg.position.z,
-            veg.rotation, veg.scale,
-            veg.vegetation_type, veg.model_path)?;
+        writeln!(
+            veg_file,
+            "{:.3} {:.3} {:.3} {:.3} {:.3} {} {}",
+            veg.position.x,
+            veg.position.y,
+            veg.position.z,
+            veg.rotation,
+            veg.scale,
+            veg.vegetation_type,
+            veg.model_path
+        )?;
     }
-    
+
     // Export resource data
     let mut res_file = std::fs::File::create(format!("{}_resources.txt", filename))?;
     writeln!(res_file, "# Resource Data for chunk {:?}", mesh.chunk_id)?;
     writeln!(res_file, "# Count: {}", scatter.resources.len())?;
     writeln!(res_file)?;
-    writeln!(res_file, "# Resources (x, y, z, kind, amount, respawn_time)")?;
-    
+    writeln!(
+        res_file,
+        "# Resources (x, y, z, kind, amount, respawn_time)"
+    )?;
+
     for res in &scatter.resources {
-        writeln!(res_file, "{:.3} {:.3} {:.3} {:?} {} {:.2}", 
-            res.pos.x, res.pos.y, res.pos.z,
-            res.kind, res.amount, res.respawn_time)?;
+        writeln!(
+            res_file,
+            "{:.3} {:.3} {:.3} {:?} {} {:.2}",
+            res.pos.x, res.pos.y, res.pos.z, res.kind, res.amount, res.respawn_time
+        )?;
     }
-    
+
     Ok(())
 }

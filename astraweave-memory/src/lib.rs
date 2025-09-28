@@ -120,7 +120,9 @@ impl CompanionProfile {
     /// Guardrail: ensure version matches expected major.minor (patch allowed to vary)
     pub fn version_compatible(&self, expected_major: u32, expected_minor: u32) -> bool {
         let parts: Vec<&str> = self.version.split('.').collect();
-        if parts.len() < 2 { return false; }
+        if parts.len() < 2 {
+            return false;
+        }
         let maj = parts[0].parse::<u32>().unwrap_or(0);
         let min = parts[1].parse::<u32>().unwrap_or(0);
         maj == expected_major && min == expected_minor
@@ -134,13 +136,18 @@ mod tests {
     #[test]
     fn roundtrip_and_verify() {
         let mut p = CompanionProfile::new_default();
-        p.episodes.push(Episode{ title:"A".into(), summary:"Did thing".into(), tags:vec!["x".into()], ts:"t0".into()});
+        p.episodes.push(Episode {
+            title: "A".into(),
+            summary: "Did thing".into(),
+            tags: vec!["x".into()],
+            ts: "t0".into(),
+        });
         p.distill();
         p.sign();
         assert!(p.verify());
         let s = serde_json::to_string(&p).unwrap();
         let p2: CompanionProfile = serde_json::from_str(&s).unwrap();
         assert!(p2.verify());
-        assert!(p2.version_compatible(1,0));
+        assert!(p2.version_compatible(1, 0));
     }
 }

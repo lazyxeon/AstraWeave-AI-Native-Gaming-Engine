@@ -166,25 +166,52 @@ impl PhysicsWorld {
             .build();
         self.colliders.insert_with_parent(coll, h, &mut self.bodies);
         let id = self.tag_body(h, ActorKind::Character);
-        self.char_map.insert(id, CharacterController { state: CharState::Grounded, max_climb_angle_deg: 70.0, radius: half.x.max(half.z), height: half.y * 2.0, max_step: 0.4 });
+        self.char_map.insert(
+            id,
+            CharacterController {
+                state: CharState::Grounded,
+                max_climb_angle_deg: 70.0,
+                radius: half.x.max(half.z),
+                height: half.y * 2.0,
+                max_step: 0.4,
+            },
+        );
         id
     }
 
     pub fn control_character(&mut self, id: BodyId, desired_move: Vec3, dt: f32, _climb: bool) {
-    let Some(ctrl) = self.char_map.get(&id).copied() else { return; };
-        let Some(h) = self.handle_of(id) else { return; };
-        let Some(rb) = self.bodies.get(h) else { return; };
-    let pos = *rb.position();
+        let Some(ctrl) = self.char_map.get(&id).copied() else {
+            return;
+        };
+        let Some(h) = self.handle_of(id) else {
+            return;
+        };
+        let Some(rb) = self.bodies.get(h) else {
+            return;
+        };
+        let pos = *rb.position();
         let start = glam::Vec3::new(pos.translation.x, pos.translation.y, pos.translation.z);
         let mut d = desired_move * dt;
-        if d.length_squared() < 1e-6 { return; }
+        if d.length_squared() < 1e-6 {
+            return;
+        }
 
         // Basic obstacle avoidance: raycast forward; slide along hit normal
         let dir = d.normalize();
         let ray_origin = start + glam::Vec3::Y * (ctrl.height * 0.5);
-        let ray = rapier3d::prelude::Ray::new(point![ray_origin.x, ray_origin.y, ray_origin.z], vector![dir.x, dir.y, dir.z]);
+        let ray = rapier3d::prelude::Ray::new(
+            point![ray_origin.x, ray_origin.y, ray_origin.z],
+            vector![dir.x, dir.y, dir.z],
+        );
         let filter = QueryFilter::default();
-        if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(&self.bodies, &self.colliders, &ray, d.length() + ctrl.radius + 0.05, true, filter) {
+        if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(
+            &self.bodies,
+            &self.colliders,
+            &ray,
+            d.length() + ctrl.radius + 0.05,
+            true,
+            filter,
+        ) {
             // Deflect movement along tangent plane
             let n = glam::Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z).normalize();
             d = d - n * d.dot(n);
@@ -195,9 +222,20 @@ impl PhysicsWorld {
 
         // Step/slope correction: raycast down from above feet
         let cast_origin = new_pos + glam::Vec3::Y * (ctrl.height);
-        let ray_down = rapier3d::prelude::Ray::new(point![cast_origin.x, cast_origin.y, cast_origin.z], vector![0.0, -1.0, 0.0]);
-        if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(&self.bodies, &self.colliders, &ray_down, ctrl.height + ctrl.max_step + 1.0, true, QueryFilter::default()) {
-            let ground_normal = glam::Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z).normalize();
+        let ray_down = rapier3d::prelude::Ray::new(
+            point![cast_origin.x, cast_origin.y, cast_origin.z],
+            vector![0.0, -1.0, 0.0],
+        );
+        if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(
+            &self.bodies,
+            &self.colliders,
+            &ray_down,
+            ctrl.height + ctrl.max_step + 1.0,
+            true,
+            QueryFilter::default(),
+        ) {
+            let ground_normal =
+                glam::Vec3::new(hit.normal.x, hit.normal.y, hit.normal.z).normalize();
             let slope = ground_normal.dot(glam::Vec3::Y).acos().to_degrees();
             // Compute ground height at hit
             let ground_y = cast_origin.y - hit.time_of_impact;

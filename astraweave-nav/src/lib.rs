@@ -200,13 +200,25 @@ mod tests {
         // Two triangles forming a square on XZ plane
         let tris = vec![
             // Winding chosen so normals point +Y
-            Triangle { a: Vec3::new(0.0,0.0,0.0), b: Vec3::new(0.0,0.0,1.0), c: Vec3::new(1.0,0.0,0.0) },
-            Triangle { a: Vec3::new(1.0,0.0,0.0), b: Vec3::new(0.0,0.0,1.0), c: Vec3::new(1.0,0.0,1.0) },
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 0.0),
+            },
+            Triangle {
+                a: Vec3::new(1.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 1.0),
+            },
         ];
         let nav = NavMesh::bake(&tris, 0.4, 60.0);
         // Use start and goal in same triangle for deterministic minimal path
         let path = nav.find_path(Vec3::new(0.1, 0.0, 0.1), Vec3::new(0.45, 0.0, 0.45));
-        assert!(path.len() >= 2, "expected at least start+goal, got {:?}", path);
+        assert!(
+            path.len() >= 2,
+            "expected at least start+goal, got {:?}",
+            path
+        );
         assert!((path.first().unwrap().x - 0.1).abs() < 1e-3);
         assert!((path.last().unwrap().x - 0.45).abs() < 1e-3);
     }

@@ -65,7 +65,9 @@ pub trait Interest: Send + Sync {
 
 pub struct FullInterest;
 impl Interest for FullInterest {
-    fn include(&self, _viewer: &EntityState, _e: &EntityState) -> bool { true }
+    fn include(&self, _viewer: &EntityState, _e: &EntityState) -> bool {
+        true
+    }
 }
 
 pub struct RadiusTeamInterest {
@@ -73,10 +75,12 @@ pub struct RadiusTeamInterest {
 }
 impl Interest for RadiusTeamInterest {
     fn include(&self, viewer: &EntityState, e: &EntityState) -> bool {
-        if viewer.team == e.team { return true; }
+        if viewer.team == e.team {
+            return true;
+        }
         let dx = e.pos.x - viewer.pos.x;
         let dy = e.pos.y - viewer.pos.y;
-        (dx*dx + dy*dy) <= self.radius * self.radius
+        (dx * dx + dy * dy) <= self.radius * self.radius
     }
 }
 
@@ -87,18 +91,26 @@ pub struct FovInterest {
 }
 impl Interest for FovInterest {
     fn include(&self, viewer: &EntityState, e: &EntityState) -> bool {
-        if viewer.team == e.team { return true; }
+        if viewer.team == e.team {
+            return true;
+        }
         let dx = (e.pos.x - viewer.pos.x) as f32;
         let dy = (e.pos.y - viewer.pos.y) as f32;
-        let dist2 = dx*dx + dy*dy;
-        if dist2 > (self.radius * self.radius) as f32 { return false; }
+        let dist2 = dx * dx + dy * dy;
+        if dist2 > (self.radius * self.radius) as f32 {
+            return false;
+        }
         let fx = self.facing.x as f32;
         let fy = self.facing.y as f32;
-        let fmag = (fx*fx + fy*fy).sqrt();
-        if fmag == 0.0 { return true; }
+        let fmag = (fx * fx + fy * fy).sqrt();
+        if fmag == 0.0 {
+            return true;
+        }
         let vmag = (dist2).sqrt();
-        if vmag == 0.0 { return true; }
-        let dot = fx*dx + fy*dy;
+        if vmag == 0.0 {
+            return true;
+        }
+        let dot = fx * dx + fy * dy;
         let cos_theta = dot / (fmag * vmag);
         let cos_half = (self.half_angle_deg.to_radians()).cos();
         cos_theta >= cos_half
@@ -122,31 +134,50 @@ fn has_los(a: IVec2, b: IVec2, obstacles: &BTreeSet<(i32, i32)>) -> bool {
     let sy = if y0 < y1 { 1 } else { -1 };
     let mut err = dx + dy;
     loop {
-        if !(x0 == a.x && y0 == a.y) { // skip the starting cell occupied by viewer
-            if obstacles.contains(&(x0, y0)) { return false; }
+        if !(x0 == a.x && y0 == a.y) {
+            // skip the starting cell occupied by viewer
+            if obstacles.contains(&(x0, y0)) {
+                return false;
+            }
         }
-        if x0 == x1 && y0 == y1 { break; }
+        if x0 == x1 && y0 == y1 {
+            break;
+        }
         let e2 = 2 * err;
-        if e2 >= dy { err += dy; x0 += sx; }
-        if e2 <= dx { err += dx; y0 += sy; }
+        if e2 >= dy {
+            err += dy;
+            x0 += sx;
+        }
+        if e2 <= dx {
+            err += dx;
+            y0 += sy;
+        }
     }
     true
 }
 
 impl Interest for FovLosInterest {
     fn include(&self, viewer: &EntityState, e: &EntityState) -> bool {
-        if viewer.team == e.team { return true; }
+        if viewer.team == e.team {
+            return true;
+        }
         let dx = (e.pos.x - viewer.pos.x) as f32;
         let dy = (e.pos.y - viewer.pos.y) as f32;
-        let dist2 = dx*dx + dy*dy;
-        if dist2 > (self.radius * self.radius) as f32 { return false; }
+        let dist2 = dx * dx + dy * dy;
+        if dist2 > (self.radius * self.radius) as f32 {
+            return false;
+        }
         let fx = self.facing.x as f32;
         let fy = self.facing.y as f32;
-        let fmag = (fx*fx + fy*fy).sqrt();
-        if fmag == 0.0 { return has_los(viewer.pos, e.pos, &self.obstacles); }
+        let fmag = (fx * fx + fy * fy).sqrt();
+        if fmag == 0.0 {
+            return has_los(viewer.pos, e.pos, &self.obstacles);
+        }
         let vmag = (dist2).sqrt();
-        if vmag == 0.0 { return true; }
-        let dot = fx*dx + fy*dy;
+        if vmag == 0.0 {
+            return true;
+        }
+        let dot = fx * dx + fy * dy;
         let cos_theta = dot / (fmag * vmag);
         let cos_half = (self.half_angle_deg.to_radians()).cos();
         cos_theta >= cos_half && has_los(viewer.pos, e.pos, &self.obstacles)
@@ -155,9 +186,19 @@ impl Interest for FovLosInterest {
 
 #[derive(Clone, Debug)]
 pub enum InterestPolicy {
-    Radius { radius: i32 },
-    Fov { radius: i32, half_angle_deg: f32, facing: IVec2 },
-    FovLos { radius: i32, half_angle_deg: f32, facing: IVec2 },
+    Radius {
+        radius: i32,
+    },
+    Fov {
+        radius: i32,
+        half_angle_deg: f32,
+        facing: IVec2,
+    },
+    FovLos {
+        radius: i32,
+        half_angle_deg: f32,
+        facing: IVec2,
+    },
 }
 
 fn stable_hash_snapshot(ents: &[EntityState], obstacles: &BTreeSet<(i32, i32)>) -> u64 {
@@ -208,7 +249,13 @@ fn world_to_entities(w: &World) -> Vec<EntityState> {
             let hp = w.health(id)?.hp;
             let team = w.team(id)?.id;
             let ammo = w.ammo(id)?.rounds;
-            Some(EntityState { id, pos, hp, team, ammo })
+            Some(EntityState {
+                id,
+                pos,
+                hp,
+                team,
+                ammo,
+            })
         })
         .collect()
 }
@@ -221,10 +268,21 @@ pub fn build_snapshot(world: &World, tick: u64, seq: u32) -> Snapshot {
     let entities = world_to_entities(world);
     let obstacles = world_obstacles_btree(world);
     let world_hash = stable_hash_snapshot(&entities, &obstacles);
-    Snapshot { version: SNAPSHOT_VERSION, tick, t: world.t, seq, world_hash, entities }
+    Snapshot {
+        version: SNAPSHOT_VERSION,
+        tick,
+        t: world.t,
+        seq,
+        world_hash,
+        entities,
+    }
 }
 
-pub fn filter_snapshot_for_viewer(head: &Snapshot, interest: &(impl Interest + ?Sized), viewer: &EntityState) -> Snapshot {
+pub fn filter_snapshot_for_viewer(
+    head: &Snapshot,
+    interest: &(impl Interest + ?Sized),
+    viewer: &EntityState,
+) -> Snapshot {
     let entities: Vec<EntityState> = head
         .entities
         .iter()
@@ -237,13 +295,22 @@ pub fn filter_snapshot_for_viewer(head: &Snapshot, interest: &(impl Interest + ?
     snap
 }
 
-pub fn diff_snapshots(base: &Snapshot, head: &Snapshot, interest: &impl Interest, viewer: &EntityState) -> Delta {
+pub fn diff_snapshots(
+    base: &Snapshot,
+    head: &Snapshot,
+    interest: &impl Interest,
+    viewer: &EntityState,
+) -> Delta {
     let mut base_map: BTreeMap<u32, &EntityState> = BTreeMap::new();
-    for e in &base.entities { base_map.insert(e.id, e); }
+    for e in &base.entities {
+        base_map.insert(e.id, e);
+    }
     let mut changed = Vec::new();
     let mut present: BTreeSet<u32> = BTreeSet::new();
     for e in &head.entities {
-        if !interest.include(viewer, e) { continue; }
+        if !interest.include(viewer, e) {
+            continue;
+        }
         present.insert(e.id);
         let mut mask = 0u8;
         let mut pos = None;
@@ -252,36 +319,100 @@ pub fn diff_snapshots(base: &Snapshot, head: &Snapshot, interest: &impl Interest
         let mut ammo = None;
         match base_map.get(&e.id) {
             Some(prev) => {
-                if prev.pos != e.pos { mask |= EntityDeltaMask::POS; pos = Some(e.pos); }
-                if prev.hp != e.hp { mask |= EntityDeltaMask::HP; hp = Some(e.hp); }
-                if prev.team != e.team { mask |= EntityDeltaMask::TEAM; team = Some(e.team); }
-                if prev.ammo != e.ammo { mask |= EntityDeltaMask::AMMO; ammo = Some(e.ammo); }
+                if prev.pos != e.pos {
+                    mask |= EntityDeltaMask::POS;
+                    pos = Some(e.pos);
+                }
+                if prev.hp != e.hp {
+                    mask |= EntityDeltaMask::HP;
+                    hp = Some(e.hp);
+                }
+                if prev.team != e.team {
+                    mask |= EntityDeltaMask::TEAM;
+                    team = Some(e.team);
+                }
+                if prev.ammo != e.ammo {
+                    mask |= EntityDeltaMask::AMMO;
+                    ammo = Some(e.ammo);
+                }
             }
             None => {
                 // treat as full entity update
-                mask = EntityDeltaMask::POS | EntityDeltaMask::HP | EntityDeltaMask::TEAM | EntityDeltaMask::AMMO;
-                pos = Some(e.pos); hp = Some(e.hp); team = Some(e.team); ammo = Some(e.ammo);
+                mask = EntityDeltaMask::POS
+                    | EntityDeltaMask::HP
+                    | EntityDeltaMask::TEAM
+                    | EntityDeltaMask::AMMO;
+                pos = Some(e.pos);
+                hp = Some(e.hp);
+                team = Some(e.team);
+                ammo = Some(e.ammo);
             }
         }
-        if mask != 0 { changed.push(EntityDelta { id: e.id, mask, pos, hp, team, ammo }); }
+        if mask != 0 {
+            changed.push(EntityDelta {
+                id: e.id,
+                mask,
+                pos,
+                hp,
+                team,
+                ammo,
+            });
+        }
     }
-    let removed: Vec<u32> = base_map.keys().filter(|id| !present.contains(id)).cloned().collect();
+    let removed: Vec<u32> = base_map
+        .keys()
+        .filter(|id| !present.contains(id))
+        .cloned()
+        .collect();
     let head_hash = subset_hash(&head.entities);
-    Delta { base_tick: base.tick, tick: head.tick, changed, removed, head_hash }
+    Delta {
+        base_tick: base.tick,
+        tick: head.tick,
+        changed,
+        removed,
+        head_hash,
+    }
 }
 
 pub fn apply_delta(base: &mut Snapshot, delta: &Delta) {
-    if base.tick != delta.base_tick { return; }
-    let mut map: BTreeMap<u32, EntityState> = base.entities.iter().cloned().map(|e| (e.id, e)).collect();
+    if base.tick != delta.base_tick {
+        return;
+    }
+    let mut map: BTreeMap<u32, EntityState> =
+        base.entities.iter().cloned().map(|e| (e.id, e)).collect();
     for d in &delta.changed {
-        let mut e = map.remove(&d.id).unwrap_or(EntityState { id: d.id, pos: IVec2{ x: 0, y: 0 }, hp: 0, team: 0, ammo: 0 });
-        if d.mask & EntityDeltaMask::POS != 0 { if let Some(v) = d.pos { e.pos = v; } }
-        if d.mask & EntityDeltaMask::HP != 0 { if let Some(v) = d.hp { e.hp = v; } }
-        if d.mask & EntityDeltaMask::TEAM != 0 { if let Some(v) = d.team { e.team = v; } }
-        if d.mask & EntityDeltaMask::AMMO != 0 { if let Some(v) = d.ammo { e.ammo = v; } }
+        let mut e = map.remove(&d.id).unwrap_or(EntityState {
+            id: d.id,
+            pos: IVec2 { x: 0, y: 0 },
+            hp: 0,
+            team: 0,
+            ammo: 0,
+        });
+        if d.mask & EntityDeltaMask::POS != 0 {
+            if let Some(v) = d.pos {
+                e.pos = v;
+            }
+        }
+        if d.mask & EntityDeltaMask::HP != 0 {
+            if let Some(v) = d.hp {
+                e.hp = v;
+            }
+        }
+        if d.mask & EntityDeltaMask::TEAM != 0 {
+            if let Some(v) = d.team {
+                e.team = v;
+            }
+        }
+        if d.mask & EntityDeltaMask::AMMO != 0 {
+            if let Some(v) = d.ammo {
+                e.ammo = v;
+            }
+        }
         map.insert(e.id, e);
     }
-    for id in &delta.removed { map.remove(id); }
+    for id in &delta.removed {
+        map.remove(id);
+    }
     base.entities = map.into_values().collect();
     base.tick = delta.tick;
     base.world_hash = delta.head_hash;
@@ -290,14 +421,38 @@ pub fn apply_delta(base: &mut Snapshot, delta: &Delta) {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum Msg {
-    ClientHello { name: String, token: Option<String>, policy: Option<String> },
-    ServerWelcome { id: u32 },
-    ServerSnapshot { snap: Snapshot },
-    ServerDelta { delta: Delta },
-    ClientProposePlan { actor_id: u32, intent: PlanIntent },
-    ClientInput { seq: u32, tick: u64, actor_id: u32, intent: PlanIntent },
-    ServerApplyResult { ok: bool, err: Option<String> },
-    ServerAck { seq: u32, tick_applied: u64 },
+    ClientHello {
+        name: String,
+        token: Option<String>,
+        policy: Option<String>,
+    },
+    ServerWelcome {
+        id: u32,
+    },
+    ServerSnapshot {
+        snap: Snapshot,
+    },
+    ServerDelta {
+        delta: Delta,
+    },
+    ClientProposePlan {
+        actor_id: u32,
+        intent: PlanIntent,
+    },
+    ClientInput {
+        seq: u32,
+        tick: u64,
+        actor_id: u32,
+        intent: PlanIntent,
+    },
+    ServerApplyResult {
+        ok: bool,
+        err: Option<String>,
+    },
+    ServerAck {
+        seq: u32,
+        tick_applied: u64,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -315,7 +470,7 @@ pub struct GameServer {
     pub tx: broadcast::Sender<ServerEvent>,
     pub tick: AtomicU64,
     pub replay: Mutex<Vec<ReplayEvent>>,
-    pub obstacles: std::sync::Arc<Mutex<BTreeSet<(i32, i32)>>> ,
+    pub obstacles: std::sync::Arc<Mutex<BTreeSet<(i32, i32)>>>,
 }
 
 impl Default for GameServer {
@@ -360,7 +515,9 @@ impl GameServer {
             let mut next = Instant::now();
             loop {
                 let now = Instant::now();
-                if now < next { sleep(next - now).await; }
+                if now < next {
+                    sleep(next - now).await;
+                }
                 next += Duration::from_micros(16_666);
                 let tick = me.tick.fetch_add(1, Ordering::Relaxed) + 1;
                 {
@@ -401,15 +558,17 @@ impl GameServer {
         let mut rx_bcast = self.tx.subscribe();
 
         // send welcome (id will be updated after ClientHello)
-        tx.send(Message::Text(serde_json::to_string(&Msg::ServerWelcome { id: 1 })?.into()))
+        tx.send(Message::Text(
+            serde_json::to_string(&Msg::ServerWelcome { id: 1 })?.into(),
+        ))
         .await?;
 
         // spawn a task to push snapshots
         let viewer_id = std::sync::Arc::new(Mutex::new(self.player_id)); // updated on ClientHello
         let policy = std::sync::Arc::new(Mutex::new(InterestPolicy::Radius { radius: 6 }));
-    let writer_viewer = viewer_id.clone();
-    let writer_policy = policy.clone();
-    let obstacles_ref = self.obstacles.clone();
+        let writer_viewer = viewer_id.clone();
+        let writer_policy = policy.clone();
+        let obstacles_ref = self.obstacles.clone();
         tokio::spawn(async move {
             let mut last_sent: Option<Snapshot> = None;
             while let Ok(evt) = rx_bcast.recv().await {
@@ -422,16 +581,38 @@ impl GameServer {
                             let interest_obj: Box<dyn Interest> = {
                                 let pol = writer_policy.lock().await.clone();
                                 match pol {
-                                    InterestPolicy::Radius { radius } => Box::new(RadiusTeamInterest { radius }) as Box<dyn Interest>,
-                                    InterestPolicy::Fov { radius, half_angle_deg, facing } => Box::new(FovInterest { radius, half_angle_deg, facing }) as Box<dyn Interest>,
-                                    InterestPolicy::FovLos { radius, half_angle_deg, facing } => {
+                                    InterestPolicy::Radius { radius } => {
+                                        Box::new(RadiusTeamInterest { radius }) as Box<dyn Interest>
+                                    }
+                                    InterestPolicy::Fov {
+                                        radius,
+                                        half_angle_deg,
+                                        facing,
+                                    } => Box::new(FovInterest {
+                                        radius,
+                                        half_angle_deg,
+                                        facing,
+                                    })
+                                        as Box<dyn Interest>,
+                                    InterestPolicy::FovLos {
+                                        radius,
+                                        half_angle_deg,
+                                        facing,
+                                    } => {
                                         let obs = obstacles_ref.lock().await.clone();
-                                        Box::new(FovLosInterest { radius, half_angle_deg, facing, obstacles: obs }) as Box<dyn Interest>
+                                        Box::new(FovLosInterest {
+                                            radius,
+                                            half_angle_deg,
+                                            facing,
+                                            obstacles: obs,
+                                        })
+                                            as Box<dyn Interest>
                                     }
                                 }
                             };
                             // Filter the snapshot to the viewer's interest
-                            let filtered = filter_snapshot_for_viewer(&snap, &*interest_obj, &viewer);
+                            let filtered =
+                                filter_snapshot_for_viewer(&snap, &*interest_obj, &viewer);
                             if let Some(base) = &last_sent {
                                 let delta = diff_snapshots(base, &filtered, &FullInterest, &viewer);
                                 if delta.changed.is_empty() && delta.removed.is_empty() {
@@ -439,12 +620,18 @@ impl GameServer {
                                 }
                                 let msg = Msg::ServerDelta { delta };
                                 let _ = tx
-                                    .send(Message::Text(serde_json::to_string(&msg).unwrap().into()))
+                                    .send(Message::Text(
+                                        serde_json::to_string(&msg).unwrap().into(),
+                                    ))
                                     .await;
                             } else {
-                                let msg = Msg::ServerSnapshot { snap: filtered.clone() };
+                                let msg = Msg::ServerSnapshot {
+                                    snap: filtered.clone(),
+                                };
                                 let _ = tx
-                                    .send(Message::Text(serde_json::to_string(&msg).unwrap().into()))
+                                    .send(Message::Text(
+                                        serde_json::to_string(&msg).unwrap().into(),
+                                    ))
                                     .await;
                             }
                             last_sent = Some(filtered);
@@ -459,12 +646,20 @@ impl GameServer {
                     }
                     ServerEvent::ApplyResult { ok, err } => {
                         let _ = tx
-                            .send(Message::Text(serde_json::to_string(&Msg::ServerApplyResult { ok, err }).unwrap().into()))
+                            .send(Message::Text(
+                                serde_json::to_string(&Msg::ServerApplyResult { ok, err })
+                                    .unwrap()
+                                    .into(),
+                            ))
                             .await;
                     }
                     ServerEvent::Ack { seq, tick_applied } => {
                         let _ = tx
-                            .send(Message::Text(serde_json::to_string(&Msg::ServerAck { seq, tick_applied }).unwrap().into()))
+                            .send(Message::Text(
+                                serde_json::to_string(&Msg::ServerAck { seq, tick_applied })
+                                    .unwrap()
+                                    .into(),
+                            ))
                             .await;
                     }
                 }
@@ -477,7 +672,11 @@ impl GameServer {
                 let text = msg.into_text()?;
                 let m: Msg = serde_json::from_str(&text)?;
                 match m {
-                    Msg::ClientHello { name, token, policy: pol } => {
+                    Msg::ClientHello {
+                        name,
+                        token,
+                        policy: pol,
+                    } => {
                         println!("Hello from {name}");
                         if let Some(tok) = token {
                             if tok != "dev" {
@@ -499,8 +698,16 @@ impl GameServer {
                             let mut p = policy.lock().await;
                             *p = match kind {
                                 "radius" => InterestPolicy::Radius { radius: 6 },
-                                "fov" => InterestPolicy::Fov { radius: 6, half_angle_deg: 60.0, facing: IVec2 { x: 1, y: 0 } },
-                                "fovlos" => InterestPolicy::FovLos { radius: 6, half_angle_deg: 60.0, facing: IVec2 { x: 1, y: 0 } },
+                                "fov" => InterestPolicy::Fov {
+                                    radius: 6,
+                                    half_angle_deg: 60.0,
+                                    facing: IVec2 { x: 1, y: 0 },
+                                },
+                                "fovlos" => InterestPolicy::FovLos {
+                                    radius: 6,
+                                    half_angle_deg: 60.0,
+                                    facing: IVec2 { x: 1, y: 0 },
+                                },
                                 _ => InterestPolicy::Radius { radius: 6 },
                             };
                         }
@@ -523,13 +730,24 @@ impl GameServer {
                         let snap = build_snapshot(&w, tick, 0);
                         {
                             let mut rec = self.replay.lock().await;
-                            rec.push(ReplayEvent { tick, seq: 0, actor_id, intent: intent.clone(), world_hash: snap.world_hash });
+                            rec.push(ReplayEvent {
+                                tick,
+                                seq: 0,
+                                actor_id,
+                                intent: intent.clone(),
+                                world_hash: snap.world_hash,
+                            });
                         }
                         // Broadcast snapshot; per-connection task will produce deltas
                         let _ = self.tx.send(ServerEvent::Snapshot(snap));
                         let _ = self.tx.send(ServerEvent::ApplyResult { ok, err });
                     }
-                    Msg::ClientInput { actor_id, intent, seq, .. } => {
+                    Msg::ClientInput {
+                        actor_id,
+                        intent,
+                        seq,
+                        ..
+                    } => {
                         let mut w = self.world.lock().await;
                         let mut log = |s: String| println!("{}", s);
                         let vcfg = ValidateCfg {
@@ -543,13 +761,22 @@ impl GameServer {
                         let snap = build_snapshot(&w, tick, 0);
                         {
                             let mut rec = self.replay.lock().await;
-                            rec.push(ReplayEvent { tick, seq: 0, actor_id, intent: intent.clone(), world_hash: snap.world_hash });
+                            rec.push(ReplayEvent {
+                                tick,
+                                seq: 0,
+                                actor_id,
+                                intent: intent.clone(),
+                                world_hash: snap.world_hash,
+                            });
                         }
                         // Broadcast snapshot; per-connection task will produce deltas
                         let _ = self.tx.send(ServerEvent::Snapshot(snap));
                         let _ = self.tx.send(ServerEvent::ApplyResult { ok, err });
                         // Ack this input to help client reconcile prediction history
-                        let _ = self.tx.send(ServerEvent::Ack { seq, tick_applied: tick });
+                        let _ = self.tx.send(ServerEvent::Ack {
+                            seq,
+                            tick_applied: tick,
+                        });
                     }
                     Msg::ServerWelcome { .. }
                     | Msg::ServerSnapshot { .. }
@@ -588,8 +815,12 @@ pub fn replay_from(mut world: World, events: &[ReplayEvent]) -> Result<u64> {
             world.tick(dt);
             current_tick += 1;
         }
-        let mut log = |s: String| { let _ = s; };
-        let vcfg = ValidateCfg { world_bounds: (0, 0, 19, 9) };
+        let mut log = |s: String| {
+            let _ = s;
+        };
+        let vcfg = ValidateCfg {
+            world_bounds: (0, 0, 19, 9),
+        };
         let _ = validate_and_execute(&mut world, e.actor_id, &e.intent, &vcfg, &mut log);
     }
     let snap = build_snapshot(&world, current_tick, 0);

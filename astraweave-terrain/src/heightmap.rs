@@ -111,7 +111,7 @@ impl Heightmap {
         }
         let index = (z * self.resolution + x) as usize;
         self.data[index] = height;
-        
+
         // Update min/max
         self.min_height = self.min_height.min(height);
         self.max_height = self.max_height.max(height);
@@ -143,10 +143,26 @@ impl Heightmap {
 
     /// Calculate the normal vector at a given grid coordinate
     pub fn calculate_normal(&self, x: u32, z: u32, scale: f32) -> Vec3 {
-        let left = if x > 0 { self.get_height(x - 1, z) } else { self.get_height(x, z) };
-        let right = if x < self.resolution - 1 { self.get_height(x + 1, z) } else { self.get_height(x, z) };
-        let up = if z > 0 { self.get_height(x, z - 1) } else { self.get_height(x, z) };
-        let down = if z < self.resolution - 1 { self.get_height(x, z + 1) } else { self.get_height(x, z) };
+        let left = if x > 0 {
+            self.get_height(x - 1, z)
+        } else {
+            self.get_height(x, z)
+        };
+        let right = if x < self.resolution - 1 {
+            self.get_height(x + 1, z)
+        } else {
+            self.get_height(x, z)
+        };
+        let up = if z > 0 {
+            self.get_height(x, z - 1)
+        } else {
+            self.get_height(x, z)
+        };
+        let down = if z < self.resolution - 1 {
+            self.get_height(x, z + 1)
+        } else {
+            self.get_height(x, z)
+        };
 
         let dx = (right - left) / (2.0 * scale);
         let dz = (down - up) / (2.0 * scale);
@@ -177,7 +193,7 @@ impl Heightmap {
             for z in 1..(self.resolution - 1) {
                 for x in 1..(self.resolution - 1) {
                     let idx = (z * self.resolution + x) as usize;
-                    
+
                     let height = self.data[idx];
                     let water_height = water[idx];
                     let total_height = height + water_height;
@@ -185,12 +201,16 @@ impl Heightmap {
                     // Calculate height differences to neighbors
                     let left_height = self.data[idx - 1] + water[idx - 1];
                     let right_height = self.data[idx + 1] + water[idx + 1];
-                    let up_height = self.data[idx - self.resolution as usize] + water[idx - self.resolution as usize];
-                    let down_height = self.data[idx + self.resolution as usize] + water[idx + self.resolution as usize];
+                    let up_height = self.data[idx - self.resolution as usize]
+                        + water[idx - self.resolution as usize];
+                    let down_height = self.data[idx + self.resolution as usize]
+                        + water[idx + self.resolution as usize];
 
                     // Calculate velocity
-                    velocity_x[idx] += dt * (left_height - total_height + right_height - total_height) / 2.0;
-                    velocity_z[idx] += dt * (up_height - total_height + down_height - total_height) / 2.0;
+                    velocity_x[idx] +=
+                        dt * (left_height - total_height + right_height - total_height) / 2.0;
+                    velocity_z[idx] +=
+                        dt * (up_height - total_height + down_height - total_height) / 2.0;
 
                     // Apply velocity damping
                     velocity_x[idx] *= 0.99;
@@ -202,9 +222,11 @@ impl Heightmap {
             for z in 1..(self.resolution - 1) {
                 for x in 1..(self.resolution - 1) {
                     let idx = (z * self.resolution + x) as usize;
-                    
-                    let speed = (velocity_x[idx] * velocity_x[idx] + velocity_z[idx] * velocity_z[idx]).sqrt();
-                    
+
+                    let speed = (velocity_x[idx] * velocity_x[idx]
+                        + velocity_z[idx] * velocity_z[idx])
+                        .sqrt();
+
                     if speed > min_slope {
                         // Erosion
                         let erosion_amount = speed * deposition * strength * 0.1;
@@ -238,7 +260,7 @@ impl Heightmap {
                 let world_x = offset.x + x as f32 * step;
                 let world_z = offset.z + z as f32 * step;
                 let height = self.get_height(x, z);
-                
+
                 vertices.push(Vec3::new(world_x, height, world_z));
             }
         }
@@ -249,16 +271,16 @@ impl Heightmap {
     /// Generate triangle indices for rendering
     pub fn generate_indices(&self) -> Vec<u32> {
         let mut indices = Vec::new();
-        
+
         for z in 0..(self.resolution - 1) {
             for x in 0..(self.resolution - 1) {
                 let base = z * self.resolution + x;
-                
+
                 // First triangle
                 indices.push(base);
                 indices.push(base + 1);
                 indices.push(base + self.resolution);
-                
+
                 // Second triangle
                 indices.push(base + 1);
                 indices.push(base + self.resolution + 1);
@@ -273,24 +295,24 @@ impl Heightmap {
     pub fn smooth(&mut self, iterations: u32) {
         for _ in 0..iterations {
             let mut new_data = self.data.clone();
-            
+
             for z in 1..(self.resolution - 1) {
                 for x in 1..(self.resolution - 1) {
                     let idx = (z * self.resolution + x) as usize;
-                    
-                    let sum = self.data[idx - 1] +
-                              self.data[idx + 1] +
-                              self.data[idx - self.resolution as usize] +
-                              self.data[idx + self.resolution as usize] +
-                              self.data[idx] * 4.0;
-                    
+
+                    let sum = self.data[idx - 1]
+                        + self.data[idx + 1]
+                        + self.data[idx - self.resolution as usize]
+                        + self.data[idx + self.resolution as usize]
+                        + self.data[idx] * 4.0;
+
                     new_data[idx] = sum / 8.0;
                 }
             }
-            
+
             self.data = new_data;
         }
-        
+
         // Recalculate min/max heights
         self.min_height = self.data.iter().copied().fold(f32::INFINITY, f32::min);
         self.max_height = self.data.iter().copied().fold(f32::NEG_INFINITY, f32::max);
@@ -305,7 +327,7 @@ mod tests {
     fn test_heightmap_creation() {
         let config = HeightmapConfig::default();
         let heightmap = Heightmap::new(config).unwrap();
-        
+
         assert_eq!(heightmap.resolution(), 128);
         assert_eq!(heightmap.data().len(), 128 * 128);
     }
@@ -314,7 +336,7 @@ mod tests {
     fn test_heightmap_get_set() {
         let config = HeightmapConfig::default();
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         heightmap.set_height(0, 0, 10.0);
         assert_eq!(heightmap.get_height(0, 0), 10.0);
         assert_eq!(heightmap.max_height(), 10.0);
@@ -322,44 +344,56 @@ mod tests {
 
     #[test]
     fn test_bilinear_sampling() {
-        let config = HeightmapConfig { resolution: 3, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 3,
+            ..Default::default()
+        };
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         heightmap.set_height(0, 0, 0.0);
         heightmap.set_height(1, 0, 10.0);
         heightmap.set_height(0, 1, 0.0);
         heightmap.set_height(1, 1, 10.0);
-        
+
         let interpolated = heightmap.sample_bilinear(0.5, 0.5);
         assert_eq!(interpolated, 5.0);
     }
 
     #[test]
     fn test_normal_calculation() {
-        let config = HeightmapConfig { resolution: 3, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 3,
+            ..Default::default()
+        };
         let mut heightmap = Heightmap::new(config).unwrap();
-        
+
         heightmap.set_height(1, 1, 10.0);
         let normal = heightmap.calculate_normal(1, 1, 1.0);
-        
+
         // Should point upward since surrounding heights are 0
         assert!(normal.y > 0.0);
     }
 
     #[test]
     fn test_vertex_generation() {
-        let config = HeightmapConfig { resolution: 3, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 3,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(config).unwrap();
-        
+
         let vertices = heightmap.generate_vertices(256.0, Vec3::ZERO);
         assert_eq!(vertices.len(), 9); // 3x3 grid
     }
 
     #[test]
     fn test_index_generation() {
-        let config = HeightmapConfig { resolution: 3, ..Default::default() };
+        let config = HeightmapConfig {
+            resolution: 3,
+            ..Default::default()
+        };
         let heightmap = Heightmap::new(config).unwrap();
-        
+
         let indices = heightmap.generate_indices();
         assert_eq!(indices.len(), 24); // 4 quads * 2 triangles * 3 vertices
     }

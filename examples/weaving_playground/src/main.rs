@@ -3,9 +3,9 @@ use astraweave_gameplay::biome::generate_island_room;
 use astraweave_gameplay::*;
 use astraweave_nav::NavMesh;
 use astraweave_physics::PhysicsWorld;
-use astraweave_render::{Camera, CameraController, Instance, Renderer};
 use astraweave_render::TerrainRenderer as RenderTerrainRenderer; // rename to avoid conflict
-use astraweave_terrain::{WorldConfig, ChunkId, TerrainChunk};
+use astraweave_render::{Camera, CameraController, Instance, Renderer};
+use astraweave_terrain::{ChunkId, TerrainChunk, WorldConfig};
 use glam::{vec3, Vec2};
 use std::sync::Arc;
 use std::time::Instant;
@@ -65,10 +65,13 @@ fn main() -> anyhow::Result<()> {
     let mut terr_renderer = RenderTerrainRenderer::new(terr_cfg.clone());
     let center_chunk_id = ChunkId::new(0, 0);
     // Generate chunk and mesh
-    let chunk = terr_renderer.world_generator_mut().generate_chunk(center_chunk_id)?;
+    let chunk = terr_renderer
+        .world_generator_mut()
+        .generate_chunk(center_chunk_id)?;
 
     // Build GPU mesh for the chunk and set it on the renderer
-    let (_terrain_mesh, terrain_gpu_init) = build_and_upload_terrain_mesh(&mut terr_renderer, &chunk, &renderer)?;
+    let (_terrain_mesh, terrain_gpu_init) =
+        build_and_upload_terrain_mesh(&mut terr_renderer, &chunk, &renderer)?;
     renderer.set_external_mesh(terrain_gpu_init);
 
     // Track current editable chunk in scope for weave edits
@@ -106,11 +109,27 @@ fn main() -> anyhow::Result<()> {
                         let mut log = |s: String| println!("{}", s);
                         match code {
                             // Time of day tweaks for troubleshooting lighting
-                            KeyCode::BracketLeft => { renderer.time_of_day_mut().current_time = (renderer.time_of_day_mut().current_time - 0.5 + 24.0) % 24.0; println!("Time: {:.2}h", renderer.time_of_day_mut().current_time); }
-                            KeyCode::BracketRight => { renderer.time_of_day_mut().current_time = (renderer.time_of_day_mut().current_time + 0.5) % 24.0; println!("Time: {:.2}h", renderer.time_of_day_mut().current_time); }
+                            KeyCode::BracketLeft => {
+                                renderer.time_of_day_mut().current_time =
+                                    (renderer.time_of_day_mut().current_time - 0.5 + 24.0) % 24.0;
+                                println!("Time: {:.2}h", renderer.time_of_day_mut().current_time);
+                            }
+                            KeyCode::BracketRight => {
+                                renderer.time_of_day_mut().current_time =
+                                    (renderer.time_of_day_mut().current_time + 0.5) % 24.0;
+                                println!("Time: {:.2}h", renderer.time_of_day_mut().current_time);
+                            }
                             // Runtime camera speed adjust: - to slow down, =/+ to speed up
-                            KeyCode::Minus => { speed_scale = (speed_scale * 0.9).max(0.05); cam_ctl.speed = base_cam_speed * speed_scale; println!("Speed: {:.2}", cam_ctl.speed); }
-                            KeyCode::Equal => { speed_scale = (speed_scale * 1.1).min(20.0); cam_ctl.speed = base_cam_speed * speed_scale; println!("Speed: {:.2}", cam_ctl.speed); }
+                            KeyCode::Minus => {
+                                speed_scale = (speed_scale * 0.9).max(0.05);
+                                cam_ctl.speed = base_cam_speed * speed_scale;
+                                println!("Speed: {:.2}", cam_ctl.speed);
+                            }
+                            KeyCode::Equal => {
+                                speed_scale = (speed_scale * 1.1).min(20.0);
+                                cam_ctl.speed = base_cam_speed * speed_scale;
+                                println!("Speed: {:.2}", cam_ctl.speed);
+                            }
                             KeyCode::Digit1 => {
                                 let op = WeaveOp {
                                     kind: WeaveOpKind::ReinforcePath,
@@ -131,10 +150,22 @@ fn main() -> anyhow::Result<()> {
                                         cons.drop_multiplier, cons.faction_disposition
                                     );
                                     // Visual: raise/smooth terrain locally around point A
-                                    apply_height_edit(&mut current_chunk, op.a, 3.0, 1.5, terr_cfg.chunk_size);
+                                    apply_height_edit(
+                                        &mut current_chunk,
+                                        op.a,
+                                        3.0,
+                                        1.5,
+                                        terr_cfg.chunk_size,
+                                    );
                                     // Rebuild GPU mesh
-                                    match build_and_upload_terrain_mesh(&mut terr_renderer, &current_chunk, &renderer) {
-                                        Ok((_cpu, mesh_gpu)) => renderer.set_external_mesh(mesh_gpu),
+                                    match build_and_upload_terrain_mesh(
+                                        &mut terr_renderer,
+                                        &current_chunk,
+                                        &renderer,
+                                    ) {
+                                        Ok((_cpu, mesh_gpu)) => {
+                                            renderer.set_external_mesh(mesh_gpu)
+                                        }
                                         Err(e) => eprintln!("terrain rebuild failed: {}", e),
                                     }
                                 }
@@ -156,9 +187,22 @@ fn main() -> anyhow::Result<()> {
                                 );
                                 // Visual: lower a line between A -> B
                                 if let Some(b) = op.b {
-                                    apply_line_height_edit(&mut current_chunk, op.a, b, 2.0, -1.2, terr_cfg.chunk_size);
-                                    match build_and_upload_terrain_mesh(&mut terr_renderer, &current_chunk, &renderer) {
-                                        Ok((_cpu, mesh_gpu)) => renderer.set_external_mesh(mesh_gpu),
+                                    apply_line_height_edit(
+                                        &mut current_chunk,
+                                        op.a,
+                                        b,
+                                        2.0,
+                                        -1.2,
+                                        terr_cfg.chunk_size,
+                                    );
+                                    match build_and_upload_terrain_mesh(
+                                        &mut terr_renderer,
+                                        &current_chunk,
+                                        &renderer,
+                                    ) {
+                                        Ok((_cpu, mesh_gpu)) => {
+                                            renderer.set_external_mesh(mesh_gpu)
+                                        }
                                         Err(e) => eprintln!("terrain rebuild failed: {}", e),
                                     }
                                 }
@@ -195,8 +239,18 @@ fn main() -> anyhow::Result<()> {
                                     &mut log,
                                 );
                                 // Visual: slightly lower center basin
-                                apply_height_edit(&mut current_chunk, op.a, 5.0, -1.0, terr_cfg.chunk_size);
-                                match build_and_upload_terrain_mesh(&mut terr_renderer, &current_chunk, &renderer) {
+                                apply_height_edit(
+                                    &mut current_chunk,
+                                    op.a,
+                                    5.0,
+                                    -1.0,
+                                    terr_cfg.chunk_size,
+                                );
+                                match build_and_upload_terrain_mesh(
+                                    &mut terr_renderer,
+                                    &current_chunk,
+                                    &renderer,
+                                ) {
                                     Ok((_cpu, mesh_gpu)) => renderer.set_external_mesh(mesh_gpu),
                                     Err(e) => eprintln!("terrain rebuild failed: {}", e),
                                 }
@@ -224,7 +278,9 @@ fn main() -> anyhow::Result<()> {
                     // Keep existing scroll functionality
                     let scroll = match delta {
                         winit::event::MouseScrollDelta::LineDelta(_, y) => y,
-                        winit::event::MouseScrollDelta::PixelDelta(p) => (p.y as f32 / 120.0) as f32,
+                        winit::event::MouseScrollDelta::PixelDelta(p) => {
+                            (p.y as f32 / 120.0) as f32
+                        }
                     };
                     cam_ctl.process_scroll(&mut camera, scroll);
                 }
@@ -242,7 +298,10 @@ fn main() -> anyhow::Result<()> {
             // Use DeviceEvent for raw deltas when available
             Event::DeviceEvent { event, .. } => {
                 if let winit::event::DeviceEvent::MouseMotion { delta } = event {
-                    cam_ctl.process_mouse_delta(&mut camera, Vec2::new(delta.0 as f32, delta.1 as f32));
+                    cam_ctl.process_mouse_delta(
+                        &mut camera,
+                        Vec2::new(delta.0 as f32, delta.1 as f32),
+                    );
                 }
             }
             Event::AboutToWait => {
@@ -304,7 +363,10 @@ fn build_and_upload_terrain_mesh(
     terr_renderer: &mut RenderTerrainRenderer,
     chunk: &TerrainChunk,
     renderer: &Renderer,
-) -> anyhow::Result<(astraweave_render::TerrainMesh, astraweave_render::types::Mesh)> {
+) -> anyhow::Result<(
+    astraweave_render::TerrainMesh,
+    astraweave_render::types::Mesh,
+)> {
     // Build CPU mesh using TerrainRenderer utilities
     let cpu_mesh = {
         // Recreate using internal helper: create_terrain_mesh is private, so rebuild equivalent
@@ -312,11 +374,13 @@ fn build_and_upload_terrain_mesh(
         let hm = chunk.heightmap();
         let res = hm.resolution();
         let step = terr_renderer.world_generator().config().chunk_size / (res - 1) as f32;
-        let origin = chunk.id().to_world_pos(terr_renderer.world_generator().config().chunk_size);
-        let mut positions: Vec<[f32;3]> = Vec::with_capacity((res*res) as usize);
-        let mut normals: Vec<[f32;3]> = Vec::with_capacity((res*res) as usize);
-        let mut tangents: Vec<[f32;4]> = Vec::with_capacity((res*res) as usize);
-        let mut uvs: Vec<[f32;2]> = Vec::with_capacity((res*res) as usize);
+        let origin = chunk
+            .id()
+            .to_world_pos(terr_renderer.world_generator().config().chunk_size);
+        let mut positions: Vec<[f32; 3]> = Vec::with_capacity((res * res) as usize);
+        let mut normals: Vec<[f32; 3]> = Vec::with_capacity((res * res) as usize);
+        let mut tangents: Vec<[f32; 4]> = Vec::with_capacity((res * res) as usize);
+        let mut uvs: Vec<[f32; 2]> = Vec::with_capacity((res * res) as usize);
         for z in 0..res {
             for x in 0..res {
                 let world_x = origin.x + x as f32 * step;
@@ -334,10 +398,15 @@ fn build_and_upload_terrain_mesh(
         }
         let indices = hm.generate_indices();
         // Upload via renderer helper
-        let gpu = renderer.create_mesh_from_full_arrays(&positions, &normals, &tangents, &uvs, &indices);
+        let gpu =
+            renderer.create_mesh_from_full_arrays(&positions, &normals, &tangents, &uvs, &indices);
         // Return a lightweight TerrainMesh placeholder (not used by renderer directly here)
         (
-            astraweave_render::TerrainMesh { vertices: vec![], indices, chunk_id: chunk.id() },
+            astraweave_render::TerrainMesh {
+                vertices: vec![],
+                indices,
+                chunk_id: chunk.id(),
+            },
             gpu,
         )
     };
@@ -345,7 +414,13 @@ fn build_and_upload_terrain_mesh(
 }
 
 // Apply a radial height delta around a world-space center on the given chunk
-fn apply_height_edit(chunk: &mut TerrainChunk, center: glam::Vec3, radius: f32, delta: f32, chunk_size: f32) {
+fn apply_height_edit(
+    chunk: &mut TerrainChunk,
+    center: glam::Vec3,
+    radius: f32,
+    delta: f32,
+    chunk_size: f32,
+) {
     let hm_res = chunk.heightmap().resolution();
     let origin = chunk.id().to_world_pos(chunk_size);
     let step = chunk_size / (hm_res - 1) as f32;
@@ -357,9 +432,12 @@ fn apply_height_edit(chunk: &mut TerrainChunk, center: glam::Vec3, radius: f32, 
     let mut hm = chunk.heightmap().clone();
     for dz in -r..=r {
         for dx in -r..=r {
-            let x = cx + dx; let z = cz + dz;
-            if x < 0 || x >= w || z < 0 || z >= h { continue; }
-            let dist = ((dx*dx + dz*dz) as f32).sqrt();
+            let x = cx + dx;
+            let z = cz + dz;
+            if x < 0 || x >= w || z < 0 || z >= h {
+                continue;
+            }
+            let dist = ((dx * dx + dz * dz) as f32).sqrt();
             if dist <= r as f32 {
                 let falloff = 1.0 - (dist / r as f32);
                 let h0 = hm.get_height(x as u32, z as u32);
@@ -374,7 +452,14 @@ fn apply_height_edit(chunk: &mut TerrainChunk, center: glam::Vec3, radius: f32, 
 }
 
 // Apply a line-based height delta along segment A->B on the chunk
-fn apply_line_height_edit(chunk: &mut TerrainChunk, a: glam::Vec3, b: glam::Vec3, radius: f32, delta: f32, chunk_size: f32) {
+fn apply_line_height_edit(
+    chunk: &mut TerrainChunk,
+    a: glam::Vec3,
+    b: glam::Vec3,
+    radius: f32,
+    delta: f32,
+    chunk_size: f32,
+) {
     let hm_res = chunk.heightmap().resolution();
     let origin = chunk.id().to_world_pos(chunk_size);
     let step = chunk_size / (hm_res - 1) as f32;
@@ -383,20 +468,26 @@ fn apply_line_height_edit(chunk: &mut TerrainChunk, a: glam::Vec3, b: glam::Vec3
     let ra = radius.max(step);
     let ra2 = ra * ra;
     // Iterate grid, move points near the infinite line segment
-    for z in 0..hm_res { for x in 0..hm_res {
-        let wx = origin.x + x as f32 * step; let wz = origin.z + z as f32 * step;
-        let p = glam::Vec2::new(wx, wz);
-        let a2 = glam::Vec2::new(a.x, a.z); let b2 = glam::Vec2::new(b.x, b.z);
-        let ab = b2 - a2; let ab_len2 = ab.length_squared().max(1e-4);
-        let t = ((p - a2).dot(ab) / ab_len2).clamp(0.0, 1.0);
-        let proj = a2 + ab * t;
-        let d2 = (p - proj).length_squared();
-        if d2 <= ra2 { // within influence
-            let falloff = 1.0 - (d2 / ra2);
-            let h0 = hm.get_height(x, z);
-            hm.set_height(x, z, h0 + delta * falloff);
+    for z in 0..hm_res {
+        for x in 0..hm_res {
+            let wx = origin.x + x as f32 * step;
+            let wz = origin.z + z as f32 * step;
+            let p = glam::Vec2::new(wx, wz);
+            let a2 = glam::Vec2::new(a.x, a.z);
+            let b2 = glam::Vec2::new(b.x, b.z);
+            let ab = b2 - a2;
+            let ab_len2 = ab.length_squared().max(1e-4);
+            let t = ((p - a2).dot(ab) / ab_len2).clamp(0.0, 1.0);
+            let proj = a2 + ab * t;
+            let d2 = (p - proj).length_squared();
+            if d2 <= ra2 {
+                // within influence
+                let falloff = 1.0 - (d2 / ra2);
+                let h0 = hm.get_height(x, z);
+                hm.set_height(x, z, h0 + delta * falloff);
+            }
         }
-    }}
+    }
     let id = chunk.id();
     let biome = chunk.biome_map().to_vec();
     *chunk = TerrainChunk::new(id, hm, biome);

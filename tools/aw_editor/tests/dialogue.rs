@@ -1,8 +1,8 @@
 // Test for editor serialization and hot-reload signaling
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Default)]
 struct DialogueDoc {
@@ -28,7 +28,10 @@ fn test_dialogue_serialization_and_reload_signal() {
         nodes: vec![DialogueNode {
             id: "start".into(),
             text: "Hello!".into(),
-            responses: vec![DialogueResponse { text: "Bye".into(), next_id: None }],
+            responses: vec![DialogueResponse {
+                text: "Bye".into(),
+                next_id: None,
+            }],
         }],
     };
     let dir = PathBuf::from("test_content/dialogue");

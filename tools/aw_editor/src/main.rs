@@ -158,18 +158,29 @@ impl Default for EditorApp {
                 ..Default::default()
             },
             status: "Ready".into(),
-            mat_doc: MaterialLiveDoc{ base_color:[1.0,1.0,1.0,1.0], metallic:0.1, roughness:0.6, texture_path: None },
+            mat_doc: MaterialLiveDoc {
+                base_color: [1.0, 1.0, 1.0, 1.0],
+                metallic: 0.1,
+                roughness: 0.6,
+                texture_path: None,
+            },
             dialogue: DialogueDoc {
                 title: "Sample Dialogue".into(),
                 nodes: vec![DialogueNode {
                     id: "start".into(),
                     text: "Hello, traveler!".into(),
-                    responses: vec![DialogueResponse { text: "Hi!".into(), next_id: None }],
+                    responses: vec![DialogueResponse {
+                        text: "Hi!".into(),
+                        next_id: None,
+                    }],
                 }],
             },
             quest: QuestDoc {
                 title: "Sample Quest".into(),
-                steps: vec![QuestStep { description: "Talk to the elder.".into(), completed: false }],
+                steps: vec![QuestStep {
+                    description: "Talk to the elder.".into(),
+                    completed: false,
+                }],
             },
         }
     }
@@ -177,7 +188,7 @@ impl Default for EditorApp {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct MaterialLiveDoc {
-    base_color: [f32;4],
+    base_color: [f32; 4],
     metallic: f32,
     roughness: f32,
     texture_path: Option<String>,
@@ -663,6 +674,7 @@ fn main() -> Result<()> {
         "AstraWeave Level & Encounter Editor",
         options,
         Box::new(|_| Ok(Box::<EditorApp>::default())),
-    ).map_err(|e| anyhow::anyhow!("Failed to run eframe: {}", e))?;
+    )
+    .map_err(|e| anyhow::anyhow!("Failed to run eframe: {}", e))?;
     Ok(())
 }

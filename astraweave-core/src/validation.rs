@@ -57,7 +57,9 @@ pub fn validate_and_execute(
                 }
                 // Ensure ammo present
                 if let Some(am) = w.ammo(actor) {
-                    if am.rounds <= 0 { return Err(EngineError::Resource("ammo".into())); }
+                    if am.rounds <= 0 {
+                        return Err(EngineError::Resource("ammo".into()));
+                    }
                 }
                 // simulate: reduce target hp a bit depending on duration
                 if let Some(h) = w.health_mut(*target_id) {
@@ -99,7 +101,9 @@ mod tests {
     use super::*;
     use crate::{Team, World};
 
-    fn mk_world_clear() -> World { World::new() }
+    fn mk_world_clear() -> World {
+        World::new()
+    }
 
     #[test]
     fn cover_fire_requires_ammo() {
@@ -108,12 +112,20 @@ mod tests {
         let enemy = w.spawn("enemy", IVec2 { x: 3, y: 0 }, Team { id: 2 }, 50, 0);
         let intent = PlanIntent {
             plan_id: "t".into(),
-            steps: vec![ActionStep::CoverFire { target_id: enemy, duration: 1.0 }],
+            steps: vec![ActionStep::CoverFire {
+                target_id: enemy,
+                duration: 1.0,
+            }],
         };
-        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
         let mut log = |_s: String| {};
         let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
-        match res { Err(EngineError::Resource(k)) => assert_eq!(k, "ammo"), _ => panic!("expected Resource(ammo)") }
+        match res {
+            Err(EngineError::Resource(k)) => assert_eq!(k, "ammo"),
+            _ => panic!("expected Resource(ammo)"),
+        }
     }
 
     #[test]
@@ -123,9 +135,14 @@ mod tests {
         let enemy = w.spawn("enemy", IVec2 { x: 2, y: 0 }, Team { id: 2 }, 50, 0);
         let intent = PlanIntent {
             plan_id: "t".into(),
-            steps: vec![ActionStep::CoverFire { target_id: enemy, duration: 1.0 }],
+            steps: vec![ActionStep::CoverFire {
+                target_id: enemy,
+                duration: 1.0,
+            }],
         };
-        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
         let mut log = |_s: String| {};
         let hp_before = w.health(enemy).unwrap().hp;
         let ammo_before = w.ammo(actor).unwrap().rounds;

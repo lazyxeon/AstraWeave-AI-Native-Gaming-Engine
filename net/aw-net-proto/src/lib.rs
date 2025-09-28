@@ -20,7 +20,9 @@ impl SessionKey {
 /// Simple wire messages (focus on MVP end-to-end).
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ClientToServer {
-    Hello { protocol: u16 },
+    Hello {
+        protocol: u16,
+    },
     /// Ask matchmaker for (or create) a room in a region.
     FindOrCreate {
         region: String,
@@ -42,15 +44,24 @@ pub enum ClientToServer {
         sig: [u8; 16],
     },
     /// Reliable pings for RTT estimate
-    Ping { nano: u128 },
+    Ping {
+        nano: u128,
+    },
     /// Client acknowledges snapshot / reconciliation id
-    Ack { last_snapshot_id: u32 },
+    Ack {
+        last_snapshot_id: u32,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ServerToClient {
-    HelloAck { protocol: u16 },
-    MatchResult { room_id: String, session_key_hint: [u8; 8] },
+    HelloAck {
+        protocol: u16,
+    },
+    MatchResult {
+        room_id: String,
+        session_key_hint: [u8; 8],
+    },
     JoinAccepted {
         room_id: String,
         player_id: String,
@@ -70,10 +81,14 @@ pub enum ServerToClient {
         input_seq_ack: u32,
         corrected_state_hash: u64,
     },
-    Pong { nano: u128 },
+    Pong {
+        nano: u128,
+    },
     /// Basic moderation / anti-cheat feedback
     RateLimited,
-    ProtocolError { msg: String },
+    ProtocolError {
+        msg: String,
+    },
 }
 
 #[derive(Debug, Error)]
@@ -99,27 +114,31 @@ pub fn encode_msg(codec: Codec, msg: &impl Serialize) -> Vec<u8> {
             lz4_flex::compress_prepend_size(&raw)
         }
         Codec::Bincode => {
-            use bincode::serde::{encode_to_vec};
             use bincode::config::standard;
+            use bincode::serde::encode_to_vec;
             encode_to_vec(msg, standard()).expect("serialize")
-        },
+        }
     }
 }
 
-pub fn decode_msg<T: for<'de> Deserialize<'de>>(codec: Codec, bytes: &[u8]) -> Result<T, WireError> {
+pub fn decode_msg<T: for<'de> Deserialize<'de>>(
+    codec: Codec,
+    bytes: &[u8],
+) -> Result<T, WireError> {
     match codec {
         Codec::PostcardLz4 => {
             let decompressed = lz4_flex::decompress_size_prepended(bytes)
                 .map_err(|e| WireError::Decode(format!("lz4: {e}")))?;
-            postcard::from_bytes(&decompressed).map_err(|e| WireError::Decode(format!("postcard: {e}")))
+            postcard::from_bytes(&decompressed)
+                .map_err(|e| WireError::Decode(format!("postcard: {e}")))
         }
         Codec::Bincode => {
-            use bincode::serde::{decode_from_slice};
             use bincode::config::standard;
+            use bincode::serde::decode_from_slice;
             let (val, _len) = decode_from_slice(bytes, standard())
                 .map_err(|e| WireError::Decode(format!("bincode: {e}")))?;
             Ok(val)
-        },
+        }
     }
 }
 

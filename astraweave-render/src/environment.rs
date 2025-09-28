@@ -1,13 +1,13 @@
 //! Environmental rendering systems including sky, weather, and time-of-day
-//! 
+//!
 //! This module provides rendering for atmospheric and environmental effects
 //! that enhance the biome experience in AstraWeave.
 
 use anyhow::Result;
-use glam::{vec3, Vec3, Mat4};
+use glam::{vec3, Mat4, Vec3};
 use serde::{Deserialize, Serialize};
-use std::time::Instant;
 use std::borrow::Cow;
+use std::time::Instant;
 use wgpu::util::DeviceExt;
 
 /// Time of day system that manages sun/moon position and lighting
@@ -59,11 +59,11 @@ impl TimeOfDay {
         let sun_angle = (self.current_time - 6.0) * std::f32::consts::PI / 12.0;
         let sun_height = sun_angle.sin();
         let sun_azimuth = (self.current_time - 12.0) * std::f32::consts::PI / 12.0;
-        
+
         // At noon (12:00), sun should be nearly overhead (0, 1, 0)
         // At sunrise/sunset (6:00/18:00), sun should be at horizon
         // At midnight (0:00), sun should be below horizon (0, -1, 0)
-        
+
         if sun_height.abs() < 0.01 {
             // Near horizon, avoid division by zero
             vec3(sun_azimuth.sin(), 0.0, sun_azimuth.cos()).normalize()
@@ -73,7 +73,8 @@ impl TimeOfDay {
                 sun_azimuth.sin() * horizontal_distance,
                 sun_height,
                 sun_azimuth.cos() * horizontal_distance,
-            ).normalize()
+            )
+            .normalize()
         }
     }
 
@@ -95,7 +96,7 @@ impl TimeOfDay {
     /// Get the light color based on time of day
     pub fn get_light_color(&self) -> Vec3 {
         let sun_height = self.get_sun_position().y;
-        
+
         if sun_height > 0.2 {
             // Daytime - warm yellow/white sunlight
             let intensity = (sun_height - 0.2) / 0.8;
@@ -113,7 +114,7 @@ impl TimeOfDay {
     /// Get ambient light color
     pub fn get_ambient_color(&self) -> Vec3 {
         let sun_height = self.get_sun_position().y;
-        
+
         if sun_height > 0.0 {
             // Day ambient - bright blue sky
             let intensity = sun_height.min(1.0);
@@ -209,17 +210,21 @@ impl SkyRenderer {
         let vertices = self.create_skybox_vertices();
         let indices = self.create_skybox_indices();
 
-        self.skybox_vertices = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Skybox Vertices"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
-        }));
+        self.skybox_vertices = Some(
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Skybox Vertices"),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX,
+            }),
+        );
 
-        self.skybox_indices = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Skybox Indices"),
-            contents: bytemuck::cast_slice(&indices),
-            usage: wgpu::BufferUsages::INDEX,
-        }));
+        self.skybox_indices = Some(
+            device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Skybox Indices"),
+                contents: bytemuck::cast_slice(&indices),
+                usage: wgpu::BufferUsages::INDEX,
+            }),
+        );
 
         // Create uniform buffer for sky parameters
         self.uniform_buffer = Some(device.create_buffer(&wgpu::BufferDescriptor {
@@ -232,29 +237,25 @@ impl SkyRenderer {
         // Create bind group layout and bind group
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Sky Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
                 },
-            ],
+                count: None,
+            }],
         });
 
         self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Sky Bind Group"),
             layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: self.uniform_buffer.as_ref().unwrap().as_entire_binding(),
-                },
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: self.uniform_buffer.as_ref().unwrap().as_entire_binding(),
+            }],
         }));
 
         // Create render pipeline
@@ -269,44 +270,46 @@ impl SkyRenderer {
             push_constant_ranges: &[],
         });
 
-        self.skybox_pipeline = Some(device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Sky Pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                buffers: &[SkyVertex::desc()],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
+        self.skybox_pipeline = Some(device.create_render_pipeline(
+            &wgpu::RenderPipelineDescriptor {
+                label: Some("Sky Pipeline"),
+                layout: Some(&pipeline_layout),
+                vertex: wgpu::VertexState {
+                    module: &shader,
+                    entry_point: "vs_main",
+                    buffers: &[SkyVertex::desc()],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &shader,
+                    entry_point: "fs_main",
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState {
+                    topology: wgpu::PrimitiveTopology::TriangleList,
+                    strip_index_format: None,
+                    front_face: wgpu::FrontFace::Ccw,
+                    cull_mode: None, // No culling for skybox
+                    polygon_mode: wgpu::PolygonMode::Fill,
+                    unclipped_depth: false,
+                    conservative: false,
+                },
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: wgpu::TextureFormat::Depth32Float,
+                    depth_write_enabled: false, // Skybox should not write depth
+                    depth_compare: wgpu::CompareFunction::LessEqual,
+                    stencil: wgpu::StencilState::default(),
+                    bias: wgpu::DepthBiasState::default(),
+                }),
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
             },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: None, // No culling for skybox
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: false, // Skybox should not write depth
-                depth_compare: wgpu::CompareFunction::LessEqual,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        }));
+        ));
 
         Ok(())
     }
@@ -325,9 +328,19 @@ impl SkyRenderer {
         camera_view_proj: Mat4,
         queue: &wgpu::Queue,
     ) -> Result<()> {
-        if let (Some(pipeline), Some(vertices), Some(indices), Some(uniform_buffer), Some(bind_group)) = 
-            (&self.skybox_pipeline, &self.skybox_vertices, &self.skybox_indices, &self.uniform_buffer, &self.bind_group) {
-            
+        if let (
+            Some(pipeline),
+            Some(vertices),
+            Some(indices),
+            Some(uniform_buffer),
+            Some(bind_group),
+        ) = (
+            &self.skybox_pipeline,
+            &self.skybox_vertices,
+            &self.skybox_indices,
+            &self.uniform_buffer,
+            &self.bind_group,
+        ) {
             // Update uniform buffer
             let uniforms = self.create_sky_uniforms(camera_view_proj);
             queue.write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
@@ -386,37 +399,48 @@ impl SkyRenderer {
     }
 
     // Private helper methods
-    
+
     fn create_skybox_vertices(&self) -> Vec<SkyVertex> {
         // Create a large cube that encompasses the entire view
         let size = 1.0f32;
         vec![
             // Front face
-            SkyVertex { position: [-size, -size,  size] },
-            SkyVertex { position: [ size, -size,  size] },
-            SkyVertex { position: [ size,  size,  size] },
-            SkyVertex { position: [-size,  size,  size] },
+            SkyVertex {
+                position: [-size, -size, size],
+            },
+            SkyVertex {
+                position: [size, -size, size],
+            },
+            SkyVertex {
+                position: [size, size, size],
+            },
+            SkyVertex {
+                position: [-size, size, size],
+            },
             // Back face
-            SkyVertex { position: [-size, -size, -size] },
-            SkyVertex { position: [-size,  size, -size] },
-            SkyVertex { position: [ size,  size, -size] },
-            SkyVertex { position: [ size, -size, -size] },
+            SkyVertex {
+                position: [-size, -size, -size],
+            },
+            SkyVertex {
+                position: [-size, size, -size],
+            },
+            SkyVertex {
+                position: [size, size, -size],
+            },
+            SkyVertex {
+                position: [size, -size, -size],
+            },
         ]
     }
 
     fn create_skybox_indices(&self) -> Vec<u16> {
         vec![
             // Front
-            0, 1, 2, 2, 3, 0,
-            // Back
-            4, 5, 6, 6, 7, 4,
-            // Left
-            4, 0, 3, 3, 5, 4,
-            // Right
-            1, 7, 6, 6, 2, 1,
-            // Top
-            3, 2, 6, 6, 5, 3,
-            // Bottom
+            0, 1, 2, 2, 3, 0, // Back
+            4, 5, 6, 6, 7, 4, // Left
+            4, 0, 3, 3, 5, 4, // Right
+            1, 7, 6, 6, 2, 1, // Top
+            3, 2, 6, 6, 5, 3, // Bottom
             4, 7, 1, 1, 0, 4,
         ]
     }
@@ -424,7 +448,7 @@ impl SkyRenderer {
     fn create_sky_uniforms(&self, view_proj: Mat4) -> SkyUniforms {
         let sun_pos = self.time_of_day.get_sun_position();
         let moon_pos = self.time_of_day.get_moon_position();
-        
+
         // Interpolate sky colors based on time of day
         let (top_color, horizon_color) = if self.time_of_day.is_day() {
             (self.config.day_color_top, self.config.day_color_horizon)
@@ -435,9 +459,15 @@ impl SkyRenderer {
             let sun_height = sun_pos.y;
             let t = (sun_height + 0.1) / 0.2; // Map -0.1 to 0.1 -> 0.0 to 1.0
             let t = t.clamp(0.0, 1.0);
-            
-            let top = self.config.sunset_color_top.lerp(self.config.day_color_top, t);
-            let horizon = self.config.sunset_color_horizon.lerp(self.config.day_color_horizon, t);
+
+            let top = self
+                .config
+                .sunset_color_top
+                .lerp(self.config.day_color_top, t);
+            let horizon = self
+                .config
+                .sunset_color_horizon
+                .lerp(self.config.day_color_horizon, t);
             (top, horizon)
         };
 
@@ -467,13 +497,11 @@ impl SkyVertex {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<SkyVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
-                },
-            ],
+            attributes: &[wgpu::VertexAttribute {
+                offset: 0,
+                shader_location: 0,
+                format: wgpu::VertexFormat::Float32x3,
+            }],
         }
     }
 }
@@ -586,11 +614,11 @@ mod tests {
         let mut time = TimeOfDay::new(12.0, 1.0); // Noon
         let sun_pos = time.get_sun_position();
         assert!(sun_pos.y > 0.9); // Should be high in sky at noon
-        
+
         time.current_time = 6.0; // Sunrise
         let sun_pos = time.get_sun_position();
         assert!(sun_pos.y < 0.1); // Should be at horizon
-        
+
         time.current_time = 0.0; // Midnight
         let sun_pos = time.get_sun_position();
         assert!(sun_pos.y < 0.0); // Should be below horizon
@@ -601,11 +629,11 @@ mod tests {
         let mut time = TimeOfDay::new(12.0, 1.0);
         assert!(time.is_day());
         assert!(!time.is_night());
-        
+
         time.current_time = 0.0; // Midnight
         assert!(!time.is_day());
         assert!(time.is_night());
-        
+
         time.current_time = 6.0; // Sunrise
         assert!(time.is_twilight());
     }
@@ -621,7 +649,7 @@ mod tests {
     fn test_weather_system() {
         let mut weather = WeatherSystem::new();
         assert_eq!(weather.current_weather(), WeatherType::Clear);
-        
+
         weather.set_weather(WeatherType::Rain, 0.0);
         assert_eq!(weather.current_weather(), WeatherType::Rain);
         assert!(weather.get_rain_intensity() > 0.0);
@@ -685,7 +713,7 @@ impl WeatherSystem {
         // Update transition if needed
         if self.current_weather != self.target_weather {
             self.transition_progress += delta_time / self.transition_duration;
-            
+
             if self.transition_progress >= 1.0 {
                 self.current_weather = self.target_weather;
                 self.transition_progress = 1.0;
@@ -701,7 +729,8 @@ impl WeatherSystem {
             (1.0 + wind_variation).cos(),
             0.0,
             (1.0 + wind_variation).sin(),
-        ).normalize();
+        )
+        .normalize();
     }
 
     /// Set target weather with transition duration
@@ -758,7 +787,8 @@ impl WeatherSystem {
 
     /// Check if it's currently raining
     pub fn is_raining(&self) -> bool {
-        matches!(self.current_weather, WeatherType::Rain | WeatherType::Storm) && self.rain_intensity > 0.1
+        matches!(self.current_weather, WeatherType::Rain | WeatherType::Storm)
+            && self.rain_intensity > 0.1
     }
 
     /// Check if it's currently snowing
@@ -779,8 +809,12 @@ impl WeatherSystem {
             WeatherType::Rain | WeatherType::Storm => {
                 // Wet terrain is darker
                 let wetness = self.rain_intensity * 0.7;
-                vec3(1.0 - wetness * 0.3, 1.0 - wetness * 0.2, 1.0 - wetness * 0.1)
-            },
+                vec3(
+                    1.0 - wetness * 0.3,
+                    1.0 - wetness * 0.2,
+                    1.0 - wetness * 0.1,
+                )
+            }
             WeatherType::Snow => {
                 // Snow makes terrain whiter
                 let snow_cover = self.snow_intensity * 0.8;
@@ -789,7 +823,7 @@ impl WeatherSystem {
                     1.0 + snow_cover * 0.5,
                     1.0 + snow_cover * 0.6,
                 )
-            },
+            }
             WeatherType::Fog => vec3(0.9, 0.9, 1.0),
             WeatherType::Sandstorm => vec3(1.0, 0.8, 0.6),
         }
@@ -811,14 +845,16 @@ impl WeatherSystem {
     /// Get suggested biome-appropriate weather for the given biome
     pub fn get_biome_appropriate_weather(biome: astraweave_terrain::BiomeType) -> Vec<WeatherType> {
         use astraweave_terrain::BiomeType;
-        
+
         match biome {
             BiomeType::Desert => vec![WeatherType::Clear, WeatherType::Sandstorm],
             BiomeType::Tundra => vec![WeatherType::Snow, WeatherType::Clear, WeatherType::Fog],
             BiomeType::Forest => vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Fog],
             BiomeType::Swamp => vec![WeatherType::Fog, WeatherType::Rain, WeatherType::Cloudy],
             BiomeType::Mountain => vec![WeatherType::Clear, WeatherType::Snow, WeatherType::Storm],
-            BiomeType::Grassland => vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Cloudy],
+            BiomeType::Grassland => {
+                vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Cloudy]
+            }
             BiomeType::Beach => vec![WeatherType::Clear, WeatherType::Storm, WeatherType::Fog],
             BiomeType::River => vec![WeatherType::Clear, WeatherType::Rain, WeatherType::Fog],
         }
@@ -828,7 +864,7 @@ impl WeatherSystem {
 
     fn update_weather_parameters(&mut self) {
         let t = self.transition_progress;
-        
+
         // Calculate target parameters for current weather
         let (target_rain, target_snow, target_fog, target_wind) = match self.target_weather {
             WeatherType::Clear => (0.0, 0.0, 0.0, 0.1),
@@ -920,9 +956,14 @@ impl WeatherParticles {
 
     // Private helper methods
 
-    fn update_rain_particles(&mut self, delta_time: f32, camera_pos: Vec3, weather: &WeatherSystem) {
+    fn update_rain_particles(
+        &mut self,
+        delta_time: f32,
+        camera_pos: Vec3,
+        weather: &WeatherSystem,
+    ) {
         let target_count = (self.max_particles as f32 * weather.get_rain_intensity()) as usize;
-        
+
         // Spawn new particles if needed
         while self.rain_particles.len() < target_count {
             let offset = Vec3::new(
@@ -930,9 +971,9 @@ impl WeatherParticles {
                 rand::random::<f32>() * 50.0 + 20.0, // Spawn above camera
                 (rand::random::<f32>() - 0.5) * self.particle_area,
             );
-            
+
             let wind = weather.get_wind_direction() * weather.get_wind_strength();
-            
+
             self.rain_particles.push(WeatherParticle {
                 position: camera_pos + offset,
                 velocity: vec3(wind.x * 2.0, -15.0, wind.z * 2.0), // Fast downward motion
@@ -946,16 +987,21 @@ impl WeatherParticles {
         self.rain_particles.retain_mut(|particle| {
             particle.life += delta_time;
             particle.position += particle.velocity * delta_time;
-            
+
             // Remove particles that are too old or too far from camera
-            particle.life < particle.max_life && 
-                (particle.position - camera_pos).length() < self.particle_area * 0.6
+            particle.life < particle.max_life
+                && (particle.position - camera_pos).length() < self.particle_area * 0.6
         });
     }
 
-    fn update_snow_particles(&mut self, delta_time: f32, camera_pos: Vec3, weather: &WeatherSystem) {
+    fn update_snow_particles(
+        &mut self,
+        delta_time: f32,
+        camera_pos: Vec3,
+        weather: &WeatherSystem,
+    ) {
         let target_count = (self.max_particles as f32 * weather.get_snow_intensity()) as usize;
-        
+
         // Spawn new particles if needed
         while self.snow_particles.len() < target_count {
             let offset = Vec3::new(
@@ -963,9 +1009,9 @@ impl WeatherParticles {
                 rand::random::<f32>() * 30.0 + 15.0, // Spawn above camera
                 (rand::random::<f32>() - 0.5) * self.particle_area,
             );
-            
+
             let wind = weather.get_wind_direction() * weather.get_wind_strength();
-            
+
             self.snow_particles.push(WeatherParticle {
                 position: camera_pos + offset,
                 velocity: vec3(wind.x, -2.0, wind.z), // Slower, more drifting motion
@@ -979,14 +1025,14 @@ impl WeatherParticles {
         self.snow_particles.retain_mut(|particle| {
             particle.life += delta_time;
             particle.position += particle.velocity * delta_time;
-            
+
             // Add some randomness to snow movement
             particle.velocity.x += (rand::random::<f32>() - 0.5) * 0.1;
             particle.velocity.z += (rand::random::<f32>() - 0.5) * 0.1;
-            
+
             // Remove particles that are too old or too far from camera
-            particle.life < particle.max_life && 
-                (particle.position - camera_pos).length() < self.particle_area * 0.6
+            particle.life < particle.max_life
+                && (particle.position - camera_pos).length() < self.particle_area * 0.6
         });
     }
 }
