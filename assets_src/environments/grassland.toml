@@ -27,3 +27,38 @@ light_color = [1.0, 0.95, 0.8]
 light_intensity = 0.6
 fog_color = [0.8, 0.85, 0.9]
 fog_density = 0.02
+
+[materials.tree_bark]
+albedo = "materials/tree_bark.png"
+normal = "materials/tree_bark_n.png"
+mra = "materials/tree_bark_mra.png"
+
+[materials.tree_leaves]
+albedo = "materials/tree_leaves.png"
+normal = "materials/tree_leaves_n.png"
+mra = "materials/tree_leaves_mra.png"
+
+[materials.rock_lichen]
+albedo = "materials/rock_lichen.png"
+normal = "materials/rock_lichen_n.png"
+mra = "materials/rock_lichen_mra.png"
+
+[materials.rock_slate]
+albedo = "materials/rock_slate.png"
+normal = "materials/rock_slate_n.png"
+mra = "materials/rock_slate_mra.png"
+
+[materials.plaster]
+albedo = "materials/plaster.png"
+normal = "materials/plaster_n.png"
+mra = "materials/plaster_mra.png"
+
+[materials.roof_tile]
+albedo = "materials/roof_tile.png"
+normal = "materials/roof_tile_n.png"
+mra = "materials/roof_tile_mra.png"
+
+[materials.cloth]
+albedo = "materials/cloth.png"
+normal = "materials/cloth_n.png"
+mra = "materials/cloth_mra.png"
