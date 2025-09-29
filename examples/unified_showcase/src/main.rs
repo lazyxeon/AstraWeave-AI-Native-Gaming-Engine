@@ -400,6 +400,92 @@ fn generate_house_mesh(seed: u32) -> MeshData {
     builder.build(false)
 }
 
+fn generate_tree_impostor_mesh() -> MeshData {
+    let mut builder = MeshBuilder::new();
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 1.8, 0.0),
+        Vec2::new(2.8, 4.2),
+        0.0,
+    );
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 1.8, 0.0),
+        Vec2::new(2.8, 4.2),
+        PI * 0.25,
+    );
+    add_box(
+        &mut builder,
+        Vec3::new(-0.2, -0.5, -0.2),
+        Vec3::new(0.2, 0.8, 0.2),
+        Vec2::splat(0.5),
+    );
+    builder.build(false)
+}
+
+fn generate_house_impostor_mesh() -> MeshData {
+    let mut builder = MeshBuilder::new();
+    add_box(
+        &mut builder,
+        Vec3::new(-1.2, -0.5, -1.0),
+        Vec3::new(1.2, 0.6, 1.0),
+        Vec2::new(1.5, 1.0),
+    );
+    add_box(
+        &mut builder,
+        Vec3::new(-1.0, 0.6, -0.8),
+        Vec3::new(1.0, 1.2, 0.8),
+        Vec2::new(1.2, 0.8),
+    );
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 0.9, 0.0),
+        Vec2::new(2.6, 1.2),
+        0.0,
+    );
+    builder.build(false)
+}
+
+fn generate_rock_impostor_mesh() -> MeshData {
+    let mut builder = MeshBuilder::new();
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 0.4, 0.0),
+        Vec2::new(1.6, 1.2),
+        0.0,
+    );
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 0.4, 0.0),
+        Vec2::new(1.6, 1.2),
+        PI * 0.25,
+    );
+    add_box(
+        &mut builder,
+        Vec3::new(-0.9, -0.4, -0.7),
+        Vec3::new(0.9, 0.2, 0.7),
+        Vec2::splat(1.0),
+    );
+    builder.build(false)
+}
+
+fn generate_character_impostor_mesh() -> MeshData {
+    let mut builder = MeshBuilder::new();
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 1.0, 0.0),
+        Vec2::new(0.9, 2.2),
+        0.0,
+    );
+    add_billboard_cross(
+        &mut builder,
+        Vec3::new(0.0, 1.0, 0.0),
+        Vec2::new(0.9, 2.2),
+        PI * 0.25,
+    );
+    builder.build(false)
+}
+
 fn generate_rock_mesh(seed: u32) -> MeshData {
     let mut rng = SimpleRng::new(seed as u64 + 0x524f434b);
     let perlin = Perlin::new(seed);
@@ -1838,6 +1924,8 @@ struct RenderStuff {
     shadow_sampler: wgpu::Sampler,
     shadow_pipeline: wgpu::RenderPipeline,
     shadow_size: u32,
+    shadow_params_buf: wgpu::Buffer,
+    shadow_bg_layout: wgpu::BindGroupLayout,
     light_ub: wgpu::Buffer,
     light_bg: wgpu::BindGroup,
     shadow_bg: wgpu::BindGroup,
@@ -1902,12 +1990,23 @@ struct SceneParams {
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct ShadowParams {
+    resolution: f32,
+    cascade_count: u32,
+    softness: f32,
+    bias: f32,
+    cascade_splits: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct InstanceRaw {
     model: [[f32; 4]; 4],
     color: [f32; 4],
     mesh_category: u32,
     mesh_variant: u32,
-    _padding: [u32; 2],
+    lod_flags: u32,
+    _padding: u32,
 }
 
 struct MeshData {
@@ -2283,10 +2382,21 @@ struct UiState {
     current_texture_pack: String,
     available_texture_packs: Vec<String>,
     debug_material_tint: bool,
+    lod_profiles: HashMap<String, BiomeLodSettings>,
+    active_lod_category: LodCategory,
+    lod_step_near: f32,
+    lod_step_far: f32,
+    lod_step_keep: f32,
+    frustum_culling: bool,
 }
 
 impl Default for UiState {
     fn default() -> Self {
+        let mut lod_profiles = HashMap::new();
+        lod_profiles.insert("grassland".to_string(), BiomeLodSettings::grassland());
+        lod_profiles.insert("desert".to_string(), BiomeLodSettings::desert());
+        lod_profiles.insert("forest".to_string(), BiomeLodSettings::forest());
+
         Self {
             show_grid: true,
             show_navmesh: true,
@@ -2302,9 +2412,83 @@ impl Default for UiState {
             fps_text: String::new(),
             info_text: "AstraWeave Unified Showcase".to_string(),
             current_texture_pack: "grassland".to_string(),
-            available_texture_packs: vec!["grassland".to_string(), "desert".to_string()],
+            available_texture_packs: vec![
+                "grassland".to_string(),
+                "desert".to_string(),
+                "forest".to_string(),
+            ],
             debug_material_tint: false,
+            lod_profiles,
+            active_lod_category: LodCategory::Trees,
+            lod_step_near: 5.0,
+            lod_step_far: 10.0,
+            lod_step_keep: 0.05,
+            frustum_culling: true,
         }
+    }
+}
+
+impl UiState {
+    fn ensure_lod_profile(&mut self, biome: &str) {
+        if !self.lod_profiles.contains_key(biome) {
+            let profile = match biome {
+                "desert" => BiomeLodSettings::desert(),
+                "forest" => BiomeLodSettings::forest(),
+                _ => BiomeLodSettings::grassland(),
+            };
+            self.lod_profiles
+                .insert(biome.to_string(), profile);
+        }
+    }
+
+    fn active_lod_settings(&self) -> &BiomeLodSettings {
+        let fallback = self
+            .lod_profiles
+            .get("grassland")
+            .expect("Grassland profile must exist");
+        self.lod_profiles
+            .get(&self.current_texture_pack)
+            .unwrap_or(fallback)
+    }
+
+    fn active_lod_settings_mut(&mut self) -> &mut BiomeLodSettings {
+        let biome = self.current_texture_pack.as_str();
+        self.ensure_lod_profile(biome);
+        self.lod_profiles
+            .get_mut(biome)
+            .expect("LOD profile must exist for active biome")
+    }
+
+    fn cycle_lod_category(&mut self) {
+        self.active_lod_category = self.active_lod_category.next();
+    }
+
+    fn adjust_near(&mut self, delta: f32) {
+        let settings = self.active_lod_settings_mut().for_category_mut(self.active_lod_category);
+        settings.adjust_near(delta);
+    }
+
+    fn adjust_far(&mut self, delta: f32) {
+        let settings = self.active_lod_settings_mut().for_category_mut(self.active_lod_category);
+        settings.adjust_far(delta);
+    }
+
+    fn adjust_keep(&mut self, delta: f32) {
+        let settings = self.active_lod_settings_mut().for_category_mut(self.active_lod_category);
+        settings.adjust_keep(delta);
+    }
+
+    fn refresh_info_text(&mut self, character_count: usize) {
+        let profile = self.active_lod_settings().for_category(self.active_lod_category);
+        self.info_text = format!(
+            "Environment: {} ({} characters)\nLOD {} → near {:.0}m / far {:.0}m / keep {:.2}",
+            self.current_texture_pack,
+            character_count,
+            self.active_lod_category.label(),
+            profile.near,
+            profile.far,
+            profile.keep,
+        );
     }
 }
 
@@ -2330,6 +2514,17 @@ enum CharacterType {
     Guard,
     Merchant,
     Animal,
+}
+
+impl CharacterType {
+    fn as_u32(self) -> u32 {
+        match self {
+            CharacterType::Villager => 0,
+            CharacterType::Guard => 1,
+            CharacterType::Merchant => 2,
+            CharacterType::Animal => 3,
+        }
+    }
 }
 
 impl Character {
@@ -3008,6 +3203,89 @@ fn switch_biome(
         new_objects.len()
     );
     Ok(new_objects)
+}
+
+struct ShadowRuntimeSettings {
+    resolution: u32,
+    cascade_count: u32,
+    softness: f32,
+    bias: f32,
+    cascade_splits: [f32; 4],
+}
+
+fn compute_shadow_runtime_settings(camera_height: f32) -> ShadowRuntimeSettings {
+    let resolution = if camera_height > 60.0 {
+        4096
+    } else if camera_height > 30.0 {
+        2048
+    } else {
+        1024
+    };
+
+    let softness = if camera_height > 60.0 {
+        2.0
+    } else if camera_height > 30.0 {
+        1.6
+    } else {
+        1.2
+    };
+
+    let base_bias = 0.0004 + (camera_height * 0.00001);
+
+    let cascade_count = if camera_height > 55.0 {
+        4
+    } else if camera_height > 35.0 {
+        3
+    } else if camera_height > 18.0 {
+        2
+    } else {
+        1
+    };
+
+    let splits = [25.0, 80.0, 160.0, 320.0];
+
+    ShadowRuntimeSettings {
+        resolution,
+        cascade_count,
+        softness,
+        bias: base_bias,
+        cascade_splits: splits,
+    }
+}
+
+fn recreate_shadow_resources(render: &mut RenderStuff, resolution: u32) {
+    let shadow_tex = render.device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("shadow-map"),
+        size: wgpu::Extent3d {
+            width: resolution,
+            height: resolution,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+
+    render.shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    render.shadow_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("shadow-bg"),
+        layout: &render.shadow_bg_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&render.shadow_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&render.shadow_sampler),
+            },
+        ],
+    });
+
+    render.shadow_size = resolution;
 }
 
 fn generate_environment_objects(physics: &mut Physics, texture_pack_name: &str) -> Vec<Character> {
@@ -4131,6 +4409,23 @@ async fn run() -> Result<()> {
                         // Update camera with controller
                         camera_controller.update_camera(&mut camera, dt.as_secs_f32());
 
+                        let shadow_runtime = compute_shadow_runtime_settings(camera.position.y);
+                        if shadow_runtime.resolution != render.shadow_size {
+                            recreate_shadow_resources(&mut render, shadow_runtime.resolution);
+                        }
+                        let shadow_uniform = ShadowParams {
+                            resolution: render.shadow_size as f32,
+                            cascade_count: shadow_runtime.cascade_count,
+                            softness: shadow_runtime.softness,
+                            bias: shadow_runtime.bias,
+                            cascade_splits: shadow_runtime.cascade_splits,
+                        };
+                        render.queue.write_buffer(
+                            &render.shadow_params_buf,
+                            0,
+                            bytemuck::bytes_of(&shadow_uniform),
+                        );
+
                         // Update characters
                         for character in &mut characters {
                             character.update(dt.as_secs_f32());
@@ -4656,6 +4951,114 @@ struct InstanceBatch {
     mesh_key: MeshKey,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct CategoryLod {
+    near: f32,
+    far: f32,
+    keep: f32,
+}
+
+impl CategoryLod {
+    fn new(near: f32, far: f32, keep: f32) -> Self {
+        Self { near, far, keep }
+    }
+
+    fn adjust_near(&mut self, delta: f32) {
+        self.near = (self.near + delta).clamp(5.0, self.far - 5.0);
+    }
+
+    fn adjust_far(&mut self, delta: f32) {
+        self.far = (self.far + delta).max(self.near + 5.0);
+    }
+
+    fn adjust_keep(&mut self, delta: f32) {
+        self.keep = (self.keep + delta).clamp(0.05, 1.0);
+    }
+}
+
+#[derive(Clone, Debug)]
+struct BiomeLodSettings {
+    tree: CategoryLod,
+    house: CategoryLod,
+    rock: CategoryLod,
+    character: CategoryLod,
+}
+
+impl BiomeLodSettings {
+    fn grassland() -> Self {
+        Self {
+            tree: CategoryLod::new(60.0, 160.0, 0.35),
+            house: CategoryLod::new(80.0, 200.0, 0.6),
+            rock: CategoryLod::new(50.0, 140.0, 0.3),
+            character: CategoryLod::new(40.0, 120.0, 0.2),
+        }
+    }
+
+    fn desert() -> Self {
+        Self {
+            tree: CategoryLod::new(55.0, 140.0, 0.25),
+            house: CategoryLod::new(90.0, 220.0, 0.55),
+            rock: CategoryLod::new(45.0, 150.0, 0.25),
+            character: CategoryLod::new(45.0, 130.0, 0.25),
+        }
+    }
+
+    fn forest() -> Self {
+        Self {
+            tree: CategoryLod::new(50.0, 150.0, 0.5),
+            house: CategoryLod::new(70.0, 180.0, 0.65),
+            rock: CategoryLod::new(45.0, 120.0, 0.35),
+            character: CategoryLod::new(35.0, 110.0, 0.25),
+        }
+    }
+
+    fn for_category(&self, category: LodCategory) -> &CategoryLod {
+        match category {
+            LodCategory::Trees => &self.tree,
+            LodCategory::Houses => &self.house,
+            LodCategory::Rocks => &self.rock,
+            LodCategory::Characters => &self.character,
+        }
+    }
+
+    fn for_category_mut(&mut self, category: LodCategory) -> &mut CategoryLod {
+        match category {
+            LodCategory::Trees => &mut self.tree,
+            LodCategory::Houses => &mut self.house,
+            LodCategory::Rocks => &mut self.rock,
+            LodCategory::Characters => &mut self.character,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum LodCategory {
+    Trees,
+    Houses,
+    Rocks,
+    Characters,
+}
+
+impl LodCategory {
+    fn next(self) -> Self {
+        match self {
+            LodCategory::Trees => LodCategory::Houses,
+            LodCategory::Houses => LodCategory::Rocks,
+            LodCategory::Rocks => LodCategory::Characters,
+            LodCategory::Characters => LodCategory::Trees,
+        }
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            LodCategory::Trees => "Trees",
+            LodCategory::Houses => "Structures",
+            LodCategory::Rocks => "Rocks",
+            LodCategory::Characters => "Characters",
+        }
+    }
+}
+
 // Shared terrain parameters used by both rendering and physics so visuals and collisions match
 const TERRAIN_SIZE: usize = 256; // grid resolution along one axis
 const TERRAIN_SCALE: f32 = 6.0; // world units between vertices
@@ -4665,6 +5068,13 @@ const HOUSE_VARIANT_COUNT: u32 = 3;
 const ROCK_VARIANT_COUNT: u32 = 6;
 const CHARACTER_VARIANT_COUNT: u32 = 4;
 const PRIMITIVE_VARIANT_COUNT: u32 = 1;
+const MAX_INSTANCE_COUNT: usize = 512;
+const TREE_IMPOSTOR_VARIANT: u32 = TREE_VARIANT_COUNT;
+const HOUSE_IMPOSTOR_VARIANT: u32 = HOUSE_VARIANT_COUNT;
+const ROCK_IMPOSTOR_VARIANT: u32 = ROCK_VARIANT_COUNT;
+const CHARACTER_IMPOSTOR_VARIANT: u32 = CHARACTER_VARIANT_COUNT;
+const DENSITY_BUCKET_METERS: f32 = 10.0;
+const LOD_FLAG_IMPOSTOR: u32 = 0x1;
 
 #[derive(Clone, Copy)]
 struct SimpleRng {
@@ -4956,6 +5366,10 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshKey
             create_mesh(device, generate_tree_mesh(variant)),
         );
     }
+    meshes.insert(
+        MeshKey::new(MeshCategory::Tree, TREE_IMPOSTOR_VARIANT),
+        create_mesh(device, generate_tree_impostor_mesh()),
+    );
 
     for variant in 0..HOUSE_VARIANT_COUNT {
         meshes.insert(
@@ -4963,6 +5377,10 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshKey
             create_mesh(device, generate_house_mesh(variant)),
         );
     }
+    meshes.insert(
+        MeshKey::new(MeshCategory::House, HOUSE_IMPOSTOR_VARIANT),
+        create_mesh(device, generate_house_impostor_mesh()),
+    );
 
     for variant in 0..ROCK_VARIANT_COUNT {
         meshes.insert(
@@ -4970,6 +5388,10 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshKey
             create_mesh(device, generate_rock_mesh(variant)),
         );
     }
+    meshes.insert(
+        MeshKey::new(MeshCategory::Rock, ROCK_IMPOSTOR_VARIANT),
+        create_mesh(device, generate_rock_impostor_mesh()),
+    );
 
     for variant in 0..CHARACTER_VARIANT_COUNT {
         meshes.insert(
@@ -4977,6 +5399,13 @@ fn create_all_meshes(device: &wgpu::Device) -> std::collections::HashMap<MeshKey
             create_mesh(device, generate_character_mesh(variant)),
         );
     }
+    meshes.insert(
+        MeshKey::new(
+            MeshCategory::Character,
+            CHARACTER_IMPOSTOR_VARIANT,
+        ),
+        create_mesh(device, generate_character_impostor_mesh()),
+    );
 
     meshes
 }
@@ -5149,6 +5578,18 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         contents: bytemuck::bytes_of(&scene_params_init),
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
+    let shadow_params_init = ShadowParams {
+        resolution: 2048.0,
+        cascade_count: 1,
+        softness: 1.5,
+        bias: 0.0005,
+        cascade_splits: [25.0, 80.0, 160.0, 320.0],
+    };
+    let shadow_params_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("shadow-params-ub"),
+        contents: bytemuck::bytes_of(&shadow_params_init),
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+    });
     let camera_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("camera-layout"),
         entries: &[
@@ -5226,16 +5667,30 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     });
     let light_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("light-layout"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
             },
-            count: None,
-        }],
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: wgpu::BufferSize::new(
+                        std::mem::size_of::<ShadowParams>() as u64,
+                    ),
+                },
+                count: None,
+            },
+        ],
     });
     let light_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("light-bg"),
@@ -5243,6 +5698,9 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: light_ub.as_entire_binding(),
+        }, wgpu::BindGroupEntry {
+            binding: 1,
+            resource: shadow_params_buf.as_entire_binding(),
         }],
     });
 
@@ -5673,8 +6131,8 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         ],
     });
 
-    // Instance buffer (increased size for enhanced environment objects)
-    let max_instances = 200; // Increased from 100 to accommodate more objects
+    // Instance buffer sized to the LOD-managed instance cap
+    let max_instances = MAX_INSTANCE_COUNT;
     let instance_vb = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("instance-buffer"),
         size: (std::mem::size_of::<InstanceRaw>() * max_instances) as u64,
@@ -5900,6 +6358,8 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         shadow_sampler,
         shadow_pipeline,
         shadow_size,
+        shadow_params_buf,
+        shadow_bg_layout,
         light_ub,
         light_bg,
         shadow_bg,
@@ -6015,6 +6475,14 @@ struct MaterialUniform {
     _pad: vec3<u32>,
 };
 
+struct ShadowParams {
+    resolution: f32,
+    cascade_count: u32,
+    softness: f32,
+    bias: f32,
+    cascade_splits: array<f32, 4>,
+};
+
 @group(0) @binding(0) var<uniform> u_camera: Camera;
 @group(0) @binding(1) var<uniform> u_post: PostParams;
 @group(0) @binding(2) var<uniform> u_scene: SceneParams;
@@ -6046,6 +6514,7 @@ const MATERIAL_CLOTH: i32 = 11;
 @group(2) @binding(0) var shadow_map: texture_depth_2d;
 @group(2) @binding(1) var shadow_sampler: sampler_comparison;
 @group(3) @binding(0) var<uniform> u_light: Camera;
+@group(3) @binding(1) var<uniform> u_shadow_params: ShadowParams;
 
 // Helper struct and functions for triplanar sampling across texture sets
 struct SampleSet { c: vec3<f32>, n: vec3<f32>, m: vec4<f32> };
@@ -6143,13 +6612,26 @@ fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
     // Transform from NDC (-1..1) to 0..1
     let uv = proj.xy * 0.5 + vec2<f32>(0.5, 0.5);
     let depth = proj.z * 0.5 + 0.5;
-    // Receiver bias to reduce acne (slightly angle-dependent)
-    let bias = max(0.0005 * (1.0 - dot(N, L)), 0.0005);
+    let cascade_count = max(u_shadow_params.cascade_count, 1u);
+    var cascade_idx: u32 = 0u;
+    for (var i: u32 = 0u; i < cascade_count; i = i + 1u) {
+        if (depth <= u_shadow_params.cascade_splits[i]) {
+            cascade_idx = i;
+            break;
+        }
+        cascade_idx = i;
+    }
+    cascade_idx = min(cascade_idx, cascade_count - 1u);
+
+    let cascade_factor = 1.0 + f32(cascade_idx) * 0.35;
+    let texel = 1.0 / max(u_shadow_params.resolution, 1.0);
+    let base_bias = max(u_shadow_params.bias, 1e-5);
+    let bias = max(base_bias * (1.0 - dot(N, L)), base_bias * 0.5);
     // Early out if outside light frustum
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { return 0.0; }
 
     // Rotated Poisson-disk PCF (16 taps)
-    let texel = 1.0 / 2048.0; // matches shadow map size
+    let softness = u_shadow_params.softness;
 
     // Random rotation per-fragment derived from UV to reduce banding
     let rnd = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -6159,7 +6641,7 @@ fn sample_shadow(world_pos: vec3<f32>, N: vec3<f32>, L: vec3<f32>) -> f32 {
     let rot = mat2x2<f32>(vec2<f32>(c, s), vec2<f32>(-s, c)); // [ [c,-s],[s,c] ] in column form
 
     // Filter radius: slightly wider at grazing angles to hide stair-steps
-    let radius = (2.0 + (1.0 - clamp(dot(N, L), 0.0, 1.0)) * 2.0) * texel;
+    let radius = (softness * cascade_factor + (1.0 - clamp(dot(N, L), 0.0, 1.0)) * 2.0) * texel;
 
     // Unrolled 16 Poisson taps to avoid dynamic array indexing restrictions
     var occl: f32 = 0.0;
@@ -7023,19 +7505,194 @@ fn teleport_sphere_to(p: &mut Physics, pos: Vec3) {
     }
 }
 
+#[derive(Clone, Copy)]
+struct LodDecision {
+    skip: bool,
+    variant_override: Option<u32>,
+    scale_multiplier: f32,
+}
+
+impl LodDecision {
+    fn keep() -> Self {
+        Self {
+            skip: false,
+            variant_override: None,
+            scale_multiplier: 1.0,
+        }
+    }
+
+    fn skip() -> Self {
+        Self {
+            skip: true,
+            variant_override: None,
+            scale_multiplier: 1.0,
+        }
+    }
+
+    fn with_impostor(variant: u32, scale_multiplier: f32) -> Self {
+        Self {
+            skip: false,
+            variant_override: Some(variant),
+            scale_multiplier,
+        }
+    }
+}
+
+fn lod_decision_for(
+    category: MeshCategory,
+    distance: f32,
+    seed: u64,
+    settings: &BiomeLodSettings,
+) -> LodDecision {
+    match category {
+        MeshCategory::Tree => {
+            let tree = &settings.tree;
+            if distance > tree.far {
+                if should_skip_far(seed, distance, tree.keep) {
+                    LodDecision::skip()
+                } else {
+                    LodDecision::with_impostor(TREE_IMPOSTOR_VARIANT, 1.1)
+                }
+            } else if distance > tree.near {
+                LodDecision::with_impostor(TREE_IMPOSTOR_VARIANT, 1.05)
+            } else {
+                LodDecision::keep()
+            }
+        }
+        MeshCategory::House => {
+            let house = &settings.house;
+            if distance > house.far {
+                if should_skip_far(seed, distance, house.keep) {
+                    LodDecision::skip()
+                } else {
+                    LodDecision::with_impostor(HOUSE_IMPOSTOR_VARIANT, 1.0)
+                }
+            } else if distance > house.near {
+                LodDecision::with_impostor(HOUSE_IMPOSTOR_VARIANT, 1.0)
+            } else {
+                LodDecision::keep()
+            }
+        }
+        MeshCategory::Rock => {
+            let rock = &settings.rock;
+            if distance > rock.far {
+                if should_skip_far(seed, distance, rock.keep) {
+                    LodDecision::skip()
+                } else {
+                    LodDecision::with_impostor(ROCK_IMPOSTOR_VARIANT, 1.0)
+                }
+            } else if distance > rock.near {
+                LodDecision::with_impostor(ROCK_IMPOSTOR_VARIANT, 0.95)
+            } else {
+                LodDecision::keep()
+            }
+        }
+        MeshCategory::Character => {
+            let character = &settings.character;
+            if distance > character.far {
+                if should_skip_far(seed, distance, character.keep) {
+                    LodDecision::skip()
+                } else {
+                    LodDecision::with_impostor(CHARACTER_IMPOSTOR_VARIANT, 0.8)
+                }
+            } else if distance > character.near {
+                LodDecision::with_impostor(CHARACTER_IMPOSTOR_VARIANT, 0.9)
+            } else {
+                LodDecision::keep()
+            }
+        }
+        _ => LodDecision::keep(),
+    }
+}
+
+fn should_skip_far(seed: u64, distance: f32, keep_probability: f32) -> bool {
+    if keep_probability >= 1.0 {
+        return false;
+    }
+    let bucket = distance_bucket(distance);
+    let sample = random_keep_probability(seed, bucket);
+    sample > keep_probability
+}
+
+fn random_keep_probability(seed: u64, bucket: u32) -> f32 {
+    let mut value = seed ^ ((bucket as u64) << 32);
+    value = value.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    value = (value ^ (value >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    value = (value ^ (value >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    value ^= value >> 31;
+    let bits = (value & 0xFFFF_FFFF) as u32;
+    bits as f32 / u32::MAX as f32
+}
+
+fn distance_bucket(distance: f32) -> u32 {
+    (distance / DENSITY_BUCKET_METERS).floor().max(0.0) as u32
+}
+
+fn classify_body(user_data: u128) -> ([f32; 4], MeshCategory, u32, f32) {
+    match user_data {
+        0 => ([0.95, 0.95, 0.95, 1.0], MeshCategory::Terrain, 0, 1.0),
+        1 => ([0.9, 0.6, 0.2, 1.0], MeshCategory::Primitive, 0, 1.0),
+        2 => ([0.2, 0.6, 0.9, 1.0], MeshCategory::Primitive, 0, 1.0),
+        10..=34 => (
+            [0.20, 0.80, 0.30, 1.0],
+            MeshCategory::Tree,
+            (user_data - 10) as u32,
+            8.0,
+        ),
+        35..=45 => (
+            [0.60, 0.60, 0.60, 1.0],
+            MeshCategory::House,
+            (user_data - 35) as u32,
+            6.0,
+        ),
+        60..=90 => (
+            [0.50, 0.50, 0.50, 1.0],
+            MeshCategory::Rock,
+            (user_data - 60) as u32,
+            3.0,
+        ),
+        100..=170 => (
+            [0.10, 0.50, 0.20, 1.0],
+            MeshCategory::Tree,
+            (user_data - 100) as u32,
+            4.0,
+        ),
+        200..=309 => (
+            [0.40, 0.40, 0.40, 1.0],
+            MeshCategory::Rock,
+            (user_data - 200) as u32,
+            2.5,
+        ),
+        400..=407 => (
+            [0.90, 0.80, 0.60, 1.0],
+            MeshCategory::Rock,
+            (user_data - 400) as u32,
+            2.0,
+        ),
+        500..=504 => (
+            [0.20, 0.70, 0.30, 1.0],
+            MeshCategory::Tree,
+            (user_data - 500) as u32,
+            10.0,
+        ),
+        _ => (
+            [0.80, 0.80, 0.80, 1.0],
+            MeshCategory::Primitive,
+            (user_data as u32) & 0xFFFF,
+            2.0,
+        ),
+    }
+}
+
 fn sync_instances_from_physics(
     p: &Physics,
     characters: &[Character],
     camera_pos: Vec3,
     out: &mut Vec<InstanceRaw>,
 ) {
-    // Resize output vector to accommodate all objects
     out.clear();
 
-    // Enhanced skybox instance - positioned to follow camera for optimal immersion
-    // Create a transform that follows the camera position to ensure the skybox
-    // always encompasses the view without creating depth buffer conflicts
-    let skybox_translation = Mat4::from_translation(camera_pos); // Position skybox at camera location
+    let skybox_translation = Mat4::from_translation(camera_pos);
     let skybox_instance = InstanceRaw {
         model: skybox_translation.to_cols_array_2d(),
         color: [0.8, 0.9, 1.0, 1.0],
@@ -7045,83 +7702,40 @@ fn sync_instances_from_physics(
     };
     out.push(skybox_instance);
 
-    // Add physics objects
     for (_h, body) in p.bodies.iter() {
-        // No skipping — we want the ground cube drawn so the ground shader branch runs.
+        if out.len() >= MAX_INSTANCE_COUNT {
+            break;
+        }
 
         let xf = body.position();
         let iso = xf.to_homogeneous();
         let base_m = Mat4::from_cols_array_2d(&iso.fixed_view::<4, 4>(0, 0).into());
+        let translation = base_m.w_axis.truncate();
+        let distance = (translation - camera_pos).length();
 
-        // Handle scaling for different object types
-        let model_m = if body.is_fixed() && body.user_data == 0 {
-            // Ground uses the terrain mesh which is already correctly sized - no scaling needed
+        let (color, category, variant_hint, base_scale) = classify_body(body.user_data);
+        let lower = body.user_data as u64;
+        let upper = (body.user_data >> 64) as u64;
+        let combined_seed = lower ^ upper.rotate_left(17);
+        let seed = if combined_seed == 0 {
+            lower.wrapping_add(0x9E37_79B9)
+        } else {
+            combined_seed
+        };
+        let lod = lod_decision_for(category, distance, seed);
+
+        if lod.skip {
+            continue;
+        }
+
+        let model_m = if category == MeshCategory::Terrain {
             base_m
         } else {
-            // Scale objects based on their type for better visibility
-            let object_scale = match body.user_data {
-                1..=2 => 1.0,      // Original demo objects - keep normal size
-                10..=34 => 8.0,    // Trees - scale up significantly
-                35..=45 => 6.0,    // Houses - scale up for visibility
-                60..=90 => 3.0,    // Rocks and boulders - moderate scaling
-                100..=170 => 4.0,  // Bushes and undergrowth - medium scale
-                200..=309 => 2.5,  // Stone circles and river banks
-                400..=407 => 2.0,  // Sand dunes
-                500..=504 => 10.0, // Oasis palms - very tall
-                _ => 2.0,          // Default moderate scaling
-            };
-            let scale_m = Mat4::from_scale(Vec3::splat(object_scale));
-            base_m * scale_m
+            let scale = (base_scale * lod.scale_multiplier).max(0.05);
+            base_m * Mat4::from_scale(Vec3::splat(scale))
         };
 
-        // Color and mesh type based on object type
-        let (color, category, variant_hint) = match body.user_data {
-            0 => ([0.95, 0.95, 0.95, 1.0], MeshCategory::Terrain, 0),
-            1 => ([0.9, 0.6, 0.2, 1.0], MeshCategory::Primitive, 0),
-            2 => ([0.2, 0.6, 0.9, 1.0], MeshCategory::Primitive, 0),
-            10..=34 => (
-                [0.20, 0.80, 0.30, 1.0],
-                MeshCategory::Tree,
-                (body.user_data - 10) as u32,
-            ),
-            35..=45 => (
-                [0.60, 0.60, 0.60, 1.0],
-                MeshCategory::House,
-                (body.user_data - 35) as u32,
-            ),
-            60..=90 => (
-                [0.50, 0.50, 0.50, 1.0],
-                MeshCategory::Rock,
-                (body.user_data - 60) as u32,
-            ),
-            100..=170 => (
-                [0.10, 0.50, 0.20, 1.0],
-                MeshCategory::Tree,
-                (body.user_data - 100) as u32,
-            ),
-            200..=309 => (
-                [0.40, 0.40, 0.40, 1.0],
-                MeshCategory::Rock,
-                (body.user_data - 200) as u32,
-            ),
-            400..=407 => (
-                [0.90, 0.80, 0.60, 1.0],
-                MeshCategory::Rock,
-                (body.user_data - 400) as u32,
-            ),
-            500..=504 => (
-                [0.20, 0.70, 0.30, 1.0],
-                MeshCategory::Tree,
-                (body.user_data - 500) as u32,
-            ),
-            _ => (
-                [0.80, 0.80, 0.80, 1.0],
-                MeshCategory::Primitive,
-                (body.user_data as u32) & 0xFFFF,
-            ),
-        };
-
-        let mesh_variant = match category {
+        let mesh_variant = lod.variant_override.unwrap_or_else(|| match category {
             MeshCategory::Terrain => 0,
             MeshCategory::Tree => variant_hint % TREE_VARIANT_COUNT,
             MeshCategory::House => variant_hint % HOUSE_VARIANT_COUNT,
@@ -7129,9 +7743,8 @@ fn sync_instances_from_physics(
             MeshCategory::Character => variant_hint % CHARACTER_VARIANT_COUNT,
             MeshCategory::Skybox => 0,
             MeshCategory::Primitive => variant_hint % PRIMITIVE_VARIANT_COUNT,
-        };
+        });
 
-        // Push instance for this physics body
         out.push(InstanceRaw {
             model: model_m.to_cols_array_2d(),
             color,
@@ -7141,30 +7754,49 @@ fn sync_instances_from_physics(
         });
     }
 
-    // Add character instances
-    for character in characters {
-        // Create a transform matrix for the character - scale up significantly for visibility
-        let scale = 5.0; // Characters need to be much larger to be visible on the terrain
+    for (idx, character) in characters.iter().enumerate() {
+        if out.len() >= MAX_INSTANCE_COUNT {
+            break;
+        }
+
+        let distance = (character.position - camera_pos).length();
+        let seed = ((idx as u64) << 32) | character.character_type.as_u32() as u64;
+        let lod = lod_decision_for(MeshCategory::Character, distance, seed);
+
+        if lod.skip {
+            continue;
+        }
+
+        let base_scale = 5.0;
+        let scale = (base_scale * lod.scale_multiplier).max(0.2);
         let translation = Mat4::from_translation(character.position);
-        let scaling = Mat4::from_scale(Vec3::splat(scale));
-
-        // Add some simple animation based on time
-        let bob_offset = (character.animation_time * 3.0).sin() * 0.1;
+        let bob_offset = if lod.variant_override.is_some() {
+            0.0
+        } else {
+            (character.animation_time * 3.0).sin() * 0.1
+        };
         let animation_transform = Mat4::from_translation(Vec3::new(0.0, bob_offset, 0.0));
-
+        let scaling = Mat4::from_scale(Vec3::splat(scale));
         let model_matrix = translation * animation_transform * scaling;
+
+        let mesh_variant = lod
+            .variant_override
+            .unwrap_or(character.character_type.as_u32() % CHARACTER_VARIANT_COUNT);
 
         out.push(InstanceRaw {
             model: model_matrix.to_cols_array_2d(),
             color: character.get_color(),
             mesh_category: MeshCategory::Character.as_u32(),
-            mesh_variant: (character.character_type as u32) % CHARACTER_VARIANT_COUNT,
+            mesh_variant,
             _padding: [0; 2],
         });
+    }
+
+    if out.len() > MAX_INSTANCE_COUNT {
+        out.truncate(MAX_INSTANCE_COUNT);
     }
 }
 
 fn build_show_instances() -> Vec<InstanceRaw> {
-    // Start with empty instances - they'll be populated by physics sync
-    Vec::new()
+    Vec::with_capacity(MAX_INSTANCE_COUNT)
 }
