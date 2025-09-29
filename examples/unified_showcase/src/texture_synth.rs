@@ -46,6 +46,62 @@ pub fn ensure_textures(out_dir: &str, seed: u32, force: bool) -> anyhow::Result<
         synth_forest_floor,
     )?;
     synth_mra_if_missing(out_dir, "forest_floor_mra.png", 0.9, 0.8, 0.0, force)?;
+    synth_if_missing(
+        out_dir,
+        "tree_bark.png",
+        seed.wrapping_add(606),
+        force,
+        synth_tree_bark,
+    )?;
+    synth_mra_if_missing(out_dir, "tree_bark_mra.png", 0.85, 0.65, 0.12, force)?;
+    synth_if_missing(
+        out_dir,
+        "tree_leaves.png",
+        seed.wrapping_add(707),
+        force,
+        synth_tree_leaves,
+    )?;
+    synth_mra_if_missing(out_dir, "tree_leaves_mra.png", 0.55, 0.35, 0.02, force)?;
+    synth_if_missing(
+        out_dir,
+        "rock_lichen.png",
+        seed.wrapping_add(808),
+        force,
+        synth_rock_lichen,
+    )?;
+    synth_mra_if_missing(out_dir, "rock_lichen_mra.png", 0.75, 0.6, 0.08, force)?;
+    synth_if_missing(
+        out_dir,
+        "rock_slate.png",
+        seed.wrapping_add(909),
+        force,
+        synth_rock_slate,
+    )?;
+    synth_mra_if_missing(out_dir, "rock_slate_mra.png", 0.65, 0.85, 0.12, force)?;
+    synth_if_missing(
+        out_dir,
+        "plaster.png",
+        seed.wrapping_add(1010),
+        force,
+        synth_plaster,
+    )?;
+    synth_mra_if_missing(out_dir, "plaster_mra.png", 0.95, 0.55, 0.02, force)?;
+    synth_if_missing(
+        out_dir,
+        "roof_tile.png",
+        seed.wrapping_add(1111),
+        force,
+        synth_roof_tile,
+    )?;
+    synth_mra_if_missing(out_dir, "roof_tile_mra.png", 0.7, 0.45, 0.18, force)?;
+    synth_if_missing(
+        out_dir,
+        "cloth.png",
+        seed.wrapping_add(1212),
+        force,
+        synth_cloth,
+    )?;
+    synth_mra_if_missing(out_dir, "cloth_mra.png", 0.6, 0.5, 0.05, force)?;
     Ok(())
 }
 
@@ -60,6 +116,9 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
     if force || !path.exists() {
         // Enhanced texture resolution for photorealistic 3D biome quality
         let img = f(4096, 4096, seed);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
         img.save(&path)?;
         // Enhanced normal map generation with improved quality
         if name.ends_with("grass.png")
@@ -67,6 +126,13 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
             || name.ends_with("sand.png")
             || name.ends_with("stone.png")
             || name.ends_with("forest_floor.png")
+            || name.ends_with("tree_bark.png")
+            || name.ends_with("tree_leaves.png")
+            || name.ends_with("rock_lichen.png")
+            || name.ends_with("rock_slate.png")
+            || name.ends_with("plaster.png")
+            || name.ends_with("roof_tile.png")
+            || name.ends_with("cloth.png")
         {
             let npath = Path::new(out_dir).join(name.replace(".png", "_n.png"));
             // Different strength values for different texture types
@@ -76,6 +142,13 @@ fn synth_if_missing<F: Fn(u32, u32, u32) -> ImageBuffer<Rgba<u8>, Vec<u8>>>(
                 n if n.ends_with("sand.png") => 1.5,         // Gentle for sand
                 n if n.ends_with("stone.png") => 3.0,        // Strong for stone
                 n if n.ends_with("forest_floor.png") => 2.5, // Rich detail for forest floor
+                n if n.ends_with("tree_bark.png") => 3.4,    // Deep grooves for bark
+                n if n.ends_with("tree_leaves.png") => 1.6,  // Softer leaf structure
+                n if n.ends_with("rock_lichen.png") => 2.8,  // Patchy lichen height
+                n if n.ends_with("rock_slate.png") => 3.2,   // Layered slate relief
+                n if n.ends_with("plaster.png") => 1.2,      // Subtle plaster bumps
+                n if n.ends_with("roof_tile.png") => 2.4,    // Tile bevels
+                n if n.ends_with("cloth.png") => 1.4,        // Fabric weave
                 _ => 2.5,
             };
             let normal = height_to_normal(&img, normal_strength);
@@ -518,6 +591,209 @@ fn synth_forest_floor(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8
             };
 
             img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_tree_bark(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let u = x as f32 / w as f32 * 18.0;
+            let v = y as f32 / h as f32 * 6.0;
+            let ridges = fbm(u * 2.4, v * 0.8, seed ^ 0xBAA5, 7, 2.0, 0.6);
+            let cracks = fbm(u * 4.5, v * 2.0, seed ^ 0xC0DE, 6, 2.2, 0.45);
+            let knots = fbm(u * 0.6, v * 0.8, seed ^ 0x77AA, 4, 2.0, 0.5);
+            let moss = fbm(u * 1.1, v * 3.0, seed ^ 0x1357, 5, 2.0, 0.4);
+
+            let height = (0.55 + 0.25 * ridges - 0.12 * cracks + 0.08 * knots).clamp(0.0, 1.0);
+            let moss_mask = (moss > 0.45) as i32 as f32 * 0.35;
+
+            let base_r = 96.0 + 60.0 * height;
+            let base_g = 62.0 + 38.0 * height;
+            let base_b = 42.0 + 30.0 * height;
+
+            let moss_r = 65.0 + 25.0 * height;
+            let moss_g = 110.0 + 50.0 * height;
+            let moss_b = 60.0 + 20.0 * height;
+
+            let r = (base_r * (1.0 - moss_mask) + moss_r * moss_mask).clamp(0.0, 255.0) as u8;
+            let g = (base_g * (1.0 - moss_mask) + moss_g * moss_mask).clamp(0.0, 255.0) as u8;
+            let b = (base_b * (1.0 - moss_mask) + moss_b * moss_mask).clamp(0.0, 255.0) as u8;
+
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_tree_leaves(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let u = x as f32 / w as f32 * 28.0;
+            let v = y as f32 / h as f32 * 28.0;
+            let canopy = fbm(u, v, seed ^ 0x5151, 8, 2.1, 0.5);
+            let veins = fbm(u * 3.6, v * 3.6, seed ^ 0xA1A1, 6, 2.0, 0.35);
+            let sun_bleach = fbm(u * 0.4, v * 0.4, seed ^ 0xFEED, 3, 2.0, 0.55);
+            let moisture = fbm(u * 1.5, v * 1.5, seed ^ 0xB00B, 5, 2.0, 0.45);
+
+            let height = (0.58 + 0.2 * canopy + 0.12 * veins + 0.05 * moisture).clamp(0.0, 1.0);
+            let highlight = (sun_bleach + 1.0) * 0.4 + 0.6;
+
+            let r = (46.0 + 45.0 * height * highlight + 12.0 * moisture).clamp(0.0, 255.0) as u8;
+            let g = (88.0 + 105.0 * height * highlight + 20.0 * moisture).clamp(0.0, 255.0) as u8;
+            let b = (42.0 + 60.0 * height * highlight).clamp(0.0, 255.0) as u8;
+
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_rock_lichen(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let u = x as f32 / w as f32 * 24.0;
+            let v = y as f32 / h as f32 * 24.0;
+            let rock = fbm(u * 1.4, v * 1.4, seed ^ 0x6D6D, 7, 2.0, 0.45);
+            let lichen = fbm(u * 3.8, v * 3.8, seed ^ 0xAB12, 6, 2.0, 0.35);
+            let speckles = fbm(u * 9.0, v * 9.0, seed ^ 0xCAFE, 5, 2.0, 0.3);
+            let moisture = fbm(u * 0.7, v * 0.7, seed ^ 0xF00D, 4, 2.0, 0.5);
+
+            let base_gray = 120.0 + 60.0 * rock;
+            let lichen_mask = (lichen > 0.15) as i32 as f32 * (0.5 + 0.35 * moisture.max(0.0));
+            let speckle_mask = (speckles > 0.55) as i32 as f32 * 0.2;
+
+            let lichen_r = 138.0 + 40.0 * moisture;
+            let lichen_g = 146.0 + 55.0 * moisture;
+            let lichen_b = 104.0 + 25.0 * moisture;
+
+            let r = (base_gray * (1.0 - lichen_mask) + lichen_r * lichen_mask + 25.0 * speckle_mask)
+                .clamp(0.0, 255.0) as u8;
+            let g = (base_gray * (1.0 - lichen_mask) + lichen_g * lichen_mask + 20.0 * speckle_mask)
+                .clamp(0.0, 255.0) as u8;
+            let b = (base_gray * (1.0 - lichen_mask) + lichen_b * lichen_mask + 18.0 * speckle_mask)
+                .clamp(0.0, 255.0) as u8;
+
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_rock_slate(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let u = x as f32 / w as f32 * 20.0;
+            let v = y as f32 / h as f32 * 20.0;
+            let layering = fbm(v * 2.8, u * 0.6, seed ^ 0x4242, 8, 2.1, 0.5);
+            let fractures = fbm(u * 3.2, v * 3.2, seed ^ 0x8181, 6, 2.0, 0.38);
+            let mineral = fbm(u * 1.5, v * 1.0, seed ^ 0x3434, 5, 2.0, 0.45);
+
+            let height = (0.6 + 0.2 * layering - 0.1 * fractures).clamp(0.0, 1.0);
+            let mineral_tint = (mineral + 1.0) * 0.5;
+
+            let r = (88.0 + 80.0 * height + 30.0 * mineral_tint).clamp(0.0, 255.0) as u8;
+            let g = (94.0 + 70.0 * height + 20.0 * mineral_tint).clamp(0.0, 255.0) as u8;
+            let b = (112.0 + 65.0 * height + 25.0 * mineral_tint).clamp(0.0, 255.0) as u8;
+
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_plaster(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let u = x as f32 / w as f32 * 8.0;
+            let v = y as f32 / h as f32 * 8.0;
+            let base = fbm(u, v, seed ^ 0x1919, 5, 2.0, 0.5);
+            let cracks = fbm(u * 3.2, v * 3.2, seed ^ 0x3232, 6, 2.0, 0.4);
+            let stains = fbm(u * 1.1, v * 1.1, seed ^ 0x4545, 4, 2.0, 0.45);
+
+            let base_color = 205.0 + 18.0 * base;
+            let crack_dark = (cracks > 0.55) as i32 as f32 * 18.0;
+            let stain_tint = stains * 12.0;
+
+            let r = (base_color - crack_dark + stain_tint).clamp(0.0, 255.0) as u8;
+            let g = (base_color - crack_dark + stain_tint * 0.6).clamp(0.0, 255.0) as u8;
+            let b = (base_color - crack_dark * 1.2 + stain_tint * 0.4).clamp(0.0, 255.0) as u8;
+
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_roof_tile(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let tile_w = 256;
+    let tile_h = 180;
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let tile_x = x as i32 / tile_w;
+            let tile_y = y as i32 / tile_h;
+            let local_x = (x % tile_w as u32) as f32 / tile_w as f32;
+            let local_y = (y % tile_h as u32) as f32 / tile_h as f32;
+
+            let arch = (-((local_x - 0.5).powi(2)) * 12.0 + 1.0).clamp(0.0, 1.0);
+            let overlap = (local_y < 0.18) as i32 as f32 * 0.3;
+            let ridge = ((local_x - 0.5).abs() < 0.08) as i32 as f32 * 0.4;
+
+            let color_variation = fbm(
+                (tile_x as f32 + local_x) * 1.2,
+                (tile_y as f32 + local_y) * 1.2,
+                seed ^ 0xDEAD,
+                4,
+                2.0,
+                0.5,
+            );
+
+            let base_r = 150.0 + 52.0 * arch + 25.0 * color_variation - 18.0 * overlap;
+            let base_g = 66.0 + 32.0 * arch + 20.0 * color_variation - 12.0 * overlap;
+            let base_b = 52.0 + 22.0 * arch + 18.0 * color_variation - 10.0 * overlap;
+
+            let ridge_highlight = ridge * 35.0;
+
+            let r = (base_r + ridge_highlight).clamp(0.0, 255.0) as u8;
+            let g = (base_g + ridge_highlight * 0.7).clamp(0.0, 255.0) as u8;
+            let b = (base_b + ridge_highlight * 0.5).clamp(0.0, 255.0) as u8;
+
+            img.put_pixel(x, y, Rgba([r, g, b, 255]));
+        }
+    }
+    img
+}
+
+fn synth_cloth(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut img = ImageBuffer::new(w, h);
+    for y in 0..h {
+        for x in 0..w {
+            let weave_u = x as f32 / w as f32 * 80.0;
+            let weave_v = y as f32 / h as f32 * 80.0;
+
+            let warp = ((weave_u.sin() * 0.5 + 0.5) + fbm(weave_u, weave_v, seed ^ 0x1A2B, 3, 2.0, 0.5) * 0.2).clamp(0.0, 1.0);
+            let weft = ((weave_v.cos() * 0.5 + 0.5) + fbm(weave_v, weave_u, seed ^ 0x3C4D, 3, 2.0, 0.5) * 0.2).clamp(0.0, 1.0);
+
+            let sheen = fbm(weave_u * 0.4, weave_v * 0.4, seed ^ 0x5E6F, 4, 2.0, 0.45).max(0.0);
+            let thread_mix = (warp * 0.6 + weft * 0.4).clamp(0.0, 1.0);
+
+            let base_r = 130.0 + 45.0 * thread_mix + 30.0 * sheen;
+            let base_g = 78.0 + 35.0 * thread_mix + 22.0 * sheen;
+            let base_b = 150.0 + 50.0 * thread_mix + 35.0 * sheen;
+
+            img.put_pixel(x, y, Rgba([
+                base_r.clamp(0.0, 255.0) as u8,
+                base_g.clamp(0.0, 255.0) as u8,
+                base_b.clamp(0.0, 255.0) as u8,
+                255,
+            ]));
         }
     }
     img
