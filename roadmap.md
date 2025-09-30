@@ -110,6 +110,33 @@ Remaining Phase 1 work (next iterations):
 
 ---
 
+### Phase 2 progress update (Sep 2025)
+
+What’s landed in this iteration:
+
+- Render graph scaffolding [Done]
+	- Introduced a minimal, deterministic render graph in `astraweave-render::graph` (nodes, context, linear executor).
+	- Added a headless unit test `astraweave-render/tests/graph_smoke.rs` that exercises node insertion/execution order.
+	- Exported from `astraweave-render::lib` for downstream use.
+	- Added typed `ResourceTable` with `Texture`, `TextureView`, and `Buffer` entries. [Done]
+	- Added adapter nodes: `ClearNode` and `RendererMainNode` (validation). [Done]
+	- Added `graph_adapter::run_graph_on_renderer` that drives a graph via `Renderer::render_with` without altering renderer internals. [Done]
+
+How to try it locally:
+
+```powershell
+cargo test -p astraweave-render --tests
+```
+
+Next steps (Phase 2 follow-ups):
+- Model transient graph resources (e.g., HDR target, depth, shadow maps) and bindgroup layouts in the graph `ResourceTable`.
+- Add headless GPU validation and golden images behind a CI-friendly backend.
+- Begin ECS scene graph wiring for hierarchical transforms and instance submission.
+
+Notes:
+- The graph currently runs within `Renderer::render_with`; the built-in 3D scene render (`draw_into`) executes before custom graph nodes, providing a stable, deterministic integration point. Full pass migration to nodes (shadow → main → post) can follow iteratively.
+
+
 ## Phase 3 (6–8 months): Asset Pipeline & Data Management
 **Objectives:** deliver a deterministic asset database akin to Godot/Bevy asset servers.
 
