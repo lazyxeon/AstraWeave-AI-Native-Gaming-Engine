@@ -69,6 +69,25 @@ pub struct MaterialLoadStats {
     pub gpu_memory_bytes: u64,
 }
 
+impl MaterialLoadStats {
+    /// Returns a concise single-line summary suitable for logs/telemetry.
+    pub fn concise_summary(&self) -> String {
+        format!(
+            "[materials] biome={} layers={} | albedo L/S={}/{} | normal L/S={}/{} | mra L+P/S={}+{}/{} | gpu={:.2} MiB",
+            self.biome,
+            self.layers_total,
+            self.albedo_loaded,
+            self.albedo_substituted,
+            self.normal_loaded,
+            self.normal_substituted,
+            self.mra_loaded,
+            self.mra_packed,
+            self.mra_substituted,
+            (self.gpu_memory_bytes as f64) / (1024.0 * 1024.0)
+        )
+    }
+}
+
 pub struct MaterialManager {
     // Keep strong refs to textures so views remain valid
     _albedo_tex: Option<wgpu::Texture>,
@@ -77,8 +96,17 @@ pub struct MaterialManager {
 }
 
 impl MaterialManager {
-    pub fn new() -> Self { Self { _albedo_tex: None, _normal_tex: None, _mra_tex: None } }
+    pub fn new() -> Self {
+        Self {
+            _albedo_tex: None,
+            _normal_tex: None,
+            _mra_tex: None,
+        }
+    }
+}
 
+#[cfg(feature = "textures")]
+impl MaterialManager {
     /// Load a pack from authored TOML files under assets/materials/{biome}
     pub async fn load_pack_from_toml(
         &mut self,
@@ -96,7 +124,9 @@ impl MaterialManager {
             layer: Vec<MaterialLayerToml>,
         }
         #[derive(Deserialize)]
-        struct BiomeHeader { name: String }
+        struct BiomeHeader {
+            name: String,
+        }
         #[derive(Deserialize, Default)]
         struct MaterialLayerToml {
             key: String,
@@ -106,12 +136,18 @@ impl MaterialManager {
             metallic: Option<String>,
             roughness: Option<String>,
             ao: Option<String>,
-            #[serde(default = "default_tiling")] tiling: [f32; 2],
-            #[serde(default = "default_triplanar")] triplanar_scale: f32,
+            #[serde(default = "default_tiling")]
+            tiling: [f32; 2],
+            #[serde(default = "default_triplanar")]
+            triplanar_scale: f32,
             atlas: Option<String>,
         }
-        fn default_tiling() -> [f32; 2] { [1.0, 1.0] }
-        fn default_triplanar() -> f32 { 16.0 }
+        fn default_tiling() -> [f32; 2] {
+            [1.0, 1.0]
+        }
+        fn default_triplanar() -> f32 {
+            16.0
+        }
 
         let mats_src = std::fs::read_to_string(materials_toml)
             .with_context(|| format!("read {}", materials_toml.display()))?;
@@ -120,7 +156,9 @@ impl MaterialManager {
 
         // Parse arrays.toml mapping
         #[derive(Deserialize)]
-        struct ArraysDoc { layers: HashMap<String, u32> }
+        struct ArraysDoc {
+            layers: HashMap<String, u32>,
+        }
         let arrays_src = std::fs::read_to_string(arrays_toml)
             .with_context(|| format!("read {}", arrays_toml.display()))?;
         let arrays: ArraysDoc = toml::from_str(&arrays_src)
@@ -129,8 +167,16 @@ impl MaterialManager {
         let mut layers: Vec<(String, MaterialLayerDesc)> = Vec::new();
         let mut skipped = 0usize;
         for l in doc.layer {
-            if !arrays.layers.contains_key(&l.key) { skipped += 1; eprintln!("[materials] arrays.toml missing key '{}' → skip layer", l.key); continue; }
-            let to_path = |s: Option<String>| -> Option<PathBuf> { s.map(|p| base_dir.join(p).normalize()) };
+            if !arrays.layers.contains_key(&l.key) {
+                skipped += 1;
+                eprintln!(
+                    "[materials] arrays.toml missing key '{}' → skip layer",
+                    l.key
+                );
+                continue;
+            }
+            let to_path =
+                |s: Option<String>| -> Option<PathBuf> { s.map(|p| base_dir.join(p).normalize()) };
             let desc = MaterialLayerDesc {
                 key: l.key.clone(),
                 albedo: to_path(l.albedo),
@@ -151,14 +197,23 @@ impl MaterialManager {
 
         // Upload into texture arrays (delegated to helper in this module)
         let (gpu, stats, albedo_tex, normal_tex, mra_tex) =
-            crate::material_loader::material_loader_impl::build_arrays(device, queue, &layers, &arrays.layers, &doc.biome.name)?;
+            crate::material_loader::material_loader_impl::build_arrays(
+                device,
+                queue,
+                &layers,
+                &arrays.layers,
+                &doc.biome.name,
+            )?;
 
         self._albedo_tex = Some(albedo_tex);
         self._normal_tex = Some(normal_tex);
         self._mra_tex = Some(mra_tex);
 
         if skipped > 0 {
-            eprintln!("[materials] skipped {} layers not present in arrays.toml", skipped);
+            eprintln!(
+                "[materials] skipped {} layers not present in arrays.toml",
+                skipped
+            );
         }
 
         Ok((gpu, stats))
@@ -171,8 +226,35 @@ impl MaterialManager {
     }
 }
 
+#[cfg(not(feature = "textures"))]
+impl MaterialManager {
+    pub async fn load_pack_from_toml(
+        &mut self,
+        _device: &wgpu::Device,
+        _queue: &wgpu::Queue,
+        _base_dir: &std::path::Path,
+        _materials_toml: &std::path::Path,
+        _arrays_toml: &std::path::Path,
+    ) -> anyhow::Result<(MaterialGpuArrays, MaterialLoadStats)> {
+        Err(anyhow::anyhow!(
+            "textures feature is disabled; material packs are unavailable"
+        ))
+    }
+
+    pub fn unload_current(&mut self) { /* no-op */
+    }
+}
+
 // Small helper to normalize PathBuf joins (remove .. etc.)
-trait NormalizePath { fn normalize(self) -> PathBuf; }
+trait NormalizePath {
+    fn normalize(self) -> PathBuf;
+}
 impl NormalizePath for PathBuf {
-    fn normalize(self) -> PathBuf { std::path::Path::new(".").join(self).components().as_path().to_path_buf() }
+    fn normalize(self) -> PathBuf {
+        std::path::Path::new(".")
+            .join(self)
+            .components()
+            .as_path()
+            .to_path_buf()
+    }
 }

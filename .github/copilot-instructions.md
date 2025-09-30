@@ -164,7 +164,52 @@ assets/                 # Sample data files
 ## When Working with This Codebase
 
 1. **Start with core libraries**: Focus on astraweave-core, astraweave-ai, astraweave-physics
-2. **Fix one crate at a time**: Don't attempt workspace-wide fixes
-3. **Use release builds** for faster iteration when testing examples
-4. **Check individual crate dependencies** before building examples
-5. **ALWAYS validate changes** with the working core components first
+````instructions
+# AstraWeave: AI‑Native Game Engine — Copilot Instructions (concise)
+
+Purpose: Help agents work productively in a large Rust workspace where AI is first‑class. Prefer precise edits, crate‑by‑crate validation, and deterministic behavior.
+
+Build & Run
+- Toolchain: Rust 1.89+ via rust-toolchain.toml. Windows/macOS/Linux supported (PowerShell on Windows).
+- Quick start (core crates):
+  - make setup; make build  (or see DEVELOPMENT_SETUP.md)
+  - cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-render -p hello_companion
+- Validate fast:
+  - cargo test -p astraweave-input
+  - cargo run -p hello_companion --release  (AI planning demo; may panic on LOS validation)
+- Code quality: cargo fmt --all; cargo clippy -p astraweave-core -p hello_companion --all-features -- -D warnings
+- Security (optional): cargo audit; cargo deny check
+- Note: Initial builds are heavy (graphics), do not cancel long compiles.
+
+Architecture (what matters)
+- AI‑first loop is core everywhere: Perception → Reasoning → Planning → Action.
+- World/ECS: deterministic fixed‑tick (target 60Hz). Use WorldSnapshot for filtered perception. Validate PlanIntent/ActionStep via engine rules before execution.
+- Orchestrators abstract AI planning (rule‑based vs LLM). Prefer explicit data contracts and anyhow::Result.
+
+Rendering & Assets (shared patterns)
+- astraweave-render is wgpu‑based; common utilities: IblManager, MeshRegistry, Texture helpers.
+- Materials are authored (TOML) and packed into GPU D2 array textures with stable indices:
+  - Path pattern: assets/materials/<biome>/{materials.toml, arrays.toml}
+  - Array bindings in WGSL (group=1):
+    - 0: albedo D2Array (RGBA8 sRGB), 1: sampler
+    - 2: normal D2Array (RG8; Z reconstructed), 3: linear sampler
+    - 4: MRA D2Array (RGBA8: R=metal, G=roughness, B=AO)
+- Prefer the shared MaterialManager (astraweave-render) over per‑example loaders; preserve layer index stability from arrays.toml.
+
+Conventions
+- Public APIs are exposed at each crate’s lib.rs; workspace deps centralized in root Cargo.toml.
+- Error handling: anyhow::Result with context; avoid panics in core crates.
+- Features: astraweave-render uses feature flags (e.g., textures, assets) to gate loaders.
+
+Work effectively
+- Change one crate at a time; run cargo check/test for that crate.
+- For examples: many are demos/experimental; favor hello_companion and core libraries for validation.
+- If a graphics or UI example fails due to API drift, align wgpu/winit/egui versions with astraweave-render or exclude from workspace checks.
+
+Where to look
+- Core ECS/intent/validation: astraweave-core/
+- AI orchestration & planning: astraweave-ai/
+- Rendering/IBL/material arrays: astraweave-render/ (see lib.rs, material.rs)
+- Physics & nav: astraweave-physics/, astraweave-nav/
+- Examples (integration patterns): examples/* (unified_showcase, hello_companion)
+````
