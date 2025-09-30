@@ -108,7 +108,7 @@ tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 tungstenite = "0.28"
 tokio-tungstenite = "0.28"
-egui = "0.28"
+egui = "0.32"
 eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
 bytemuck = { version = "1", features = ["derive"] }
