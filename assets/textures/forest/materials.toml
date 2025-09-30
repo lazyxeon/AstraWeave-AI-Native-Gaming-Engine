@@ -1,0 +1,32 @@
+# assets/textures/forest/materials.toml
+
+[biome]
+name = "forest"
+
+[[layer]]
+key = "forest_floor"
+albedo   = "forest_floor/albedo.png"
+normal   = "forest_floor/normal.png"
+mra      = "forest_floor/mra.png"
+
+[[layer]]
+key = "tree_bark"
+albedo   = "trees/bark/albedo.png"
+normal   = "trees/bark/normal.png"
+metallic = "trees/bark/metallic.png"
+roughness= "trees/bark/roughness.png"
+ao       = "trees/bark/ao.png"
+
+[[layer]]
+key = "tree_leaves"
+albedo   = "trees/leaves/albedo.png"
+normal   = "trees/leaves/normal.png"
+mra      = "trees/leaves/mra.png"
+
+[[layer]]
+key = "rock_lichen"
+albedo   = "rocks/lichen/albedo.png"
+normal   = "rocks/lichen/normal.png"
+metallic = "rocks/lichen/metallic.png"
+roughness= "rocks/lichen/roughness.png"
+ao       = "rocks/lichen/ao.png"

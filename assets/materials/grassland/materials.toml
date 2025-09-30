@@ -1,0 +1,42 @@
+[biome]
+name = "grassland"
+
+[[layer]]
+key = "grass"
+albedo = "../../grass.png"
+normal = "../../grass_n.png"
+mra    = "../../grass_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 24.0
+
+[[layer]]
+key = "rock_smooth"
+albedo = "../../rock_slate.png"
+normal = "../../rock_slate_n.png"
+mra    = "../../rock_slate_mra.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 18.0
+
+[[layer]]
+key = "dirt"
+albedo = "../../dirt.png"
+normal = "../../dirt_n.png"
+mra    = "../../dirt_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "sand"
+albedo = "../../sand.png"
+normal = "../../sand_n.png"
+mra    = "../../sand_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "moss"
+albedo = "../../rock_lichen.png"
+normal = "../../rock_lichen_n.png"
+mra    = "../../rock_lichen_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 22.0

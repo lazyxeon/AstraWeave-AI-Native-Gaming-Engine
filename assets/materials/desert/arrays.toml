@@ -1,0 +1,6 @@
+[layers]
+sand = 0
+rock_smooth = 1
+stone = 2
+plaster = 3
+cloth = 4

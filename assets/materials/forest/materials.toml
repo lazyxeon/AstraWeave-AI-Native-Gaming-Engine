@@ -1,0 +1,42 @@
+[biome]
+name = "forest"
+
+[[layer]]
+key = "forest_floor"
+albedo = "../../forest_floor.png"
+normal = "../../forest_floor_n.png"
+mra    = "../../forest_floor_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+
+[[layer]]
+key = "tree_bark"
+albedo = "../../tree_bark.png"
+normal = "../../tree_bark_n.png"
+mra    = "../../tree_bark_mra.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 10.0
+
+[[layer]]
+key = "tree_leaves"
+albedo = "../../tree_leaves.png"
+normal = "../../tree_leaves_n.png"
+mra    = "../../tree_leaves_mra.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 8.0
+
+[[layer]]
+key = "rock_lichen"
+albedo = "../../rock_lichen.png"
+normal = "../../rock_lichen_n.png"
+mra    = "../../rock_lichen_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 18.0
+
+[[layer]]
+key = "rock_smooth"
+albedo = "../../rock_slate.png"
+normal = "../../rock_slate_n.png"
+mra    = "../../rock_slate_mra.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 18.0

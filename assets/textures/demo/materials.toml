@@ -1,0 +1,91 @@
+# assets/textures/demo/materials.toml
+# Demo biome material mapping for array layers.
+# Paths are relative to this TOML file.
+
+[biome]
+name = "demo"
+# default_ext = "png"
+
+[[layer]]
+key = "grass"
+albedo   = "grass/albedo.png"
+normal   = "grass/normal.png"
+mra      = "grass/mra.png"
+
+[[layer]]
+key = "dirt"
+albedo   = "dirt/albedo.png"
+normal   = "dirt/normal.png"
+metallic = "dirt/metallic.png"
+roughness= "dirt/roughness.png"
+ao       = "dirt/ao.png"
+
+[[layer]]
+key = "stone"
+albedo   = "stone/albedo.png"
+normal   = "stone/normal.png"
+mra      = "stone/mra.png"
+
+[[layer]]
+key = "sand"
+albedo   = "sand/albedo.png"
+normal   = "sand/normal.png"
+metallic = "sand/metallic.png"
+roughness= "sand/roughness.png"
+ao       = "sand/ao.png"
+
+[[layer]]
+key = "forest_floor"
+albedo   = "forest_floor/albedo.png"
+normal   = "forest_floor/normal.png"
+mra      = "forest_floor/mra.png"
+
+[[layer]]
+key = "tree_bark"
+albedo   = "trees/bark/albedo.png"
+normal   = "trees/bark/normal.png"
+metallic = "trees/bark/metallic.png"
+roughness= "trees/bark/roughness.png"
+ao       = "trees/bark/ao.png"
+
+[[layer]]
+key = "tree_leaves"
+albedo   = "trees/leaves/albedo.png"
+normal   = "trees/leaves/normal.png"
+mra      = "trees/leaves/mra.png"
+
+[[layer]]
+key = "rock_lichen"
+albedo   = "rocks/lichen/albedo.png"
+normal   = "rocks/lichen/normal.png"
+metallic = "rocks/lichen/metallic.png"
+roughness= "rocks/lichen/roughness.png"
+ao       = "rocks/lichen/ao.png"
+
+[[layer]]
+key = "rock_slate"
+albedo   = "rocks/slate/albedo.png"
+normal   = "rocks/slate/normal.png"
+mra      = "rocks/slate/mra.png"
+
+[[layer]]
+key = "plaster"
+albedo   = "buildings/plaster/albedo.png"
+normal   = "buildings/plaster/normal.png"
+metallic = "buildings/plaster/metallic.png"
+roughness= "buildings/plaster/roughness.png"
+ao       = "buildings/plaster/ao.png"
+
+[[layer]]
+key = "roof_tile"
+albedo   = "buildings/roof_tile/albedo.png"
+normal   = "buildings/roof_tile/normal.png"
+mra      = "buildings/roof_tile/mra.png"
+
+[[layer]]
+key = "cloth"
+albedo   = "characters/cloth/albedo.png"
+normal   = "characters/cloth/normal.png"
+metallic = "characters/cloth/metallic.png"
+roughness= "characters/cloth/roughness.png"
+ao       = "characters/cloth/ao.png"
