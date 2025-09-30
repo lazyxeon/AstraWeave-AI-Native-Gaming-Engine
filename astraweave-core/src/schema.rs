@@ -59,7 +59,7 @@ use std::collections::BTreeMap;
 
 pub type Entity = u32;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct IVec2 {
     pub x: i32,
     pub y: i32,

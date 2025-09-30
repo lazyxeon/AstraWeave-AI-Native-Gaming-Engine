@@ -16,9 +16,16 @@ fn test_simulation_determinism() {
 }
 
 #[test]
-fn test_capture_and_replay_stub() {
-    let res = capture_replay::capture_state(0, "test.snap");
-    assert!(res.is_err());
-    let res = capture_replay::replay_state("test.snap");
-    assert!(res.is_err());
+fn test_capture_and_replay_minimal() {
+    let mut world = World::default();
+    world.obstacles.insert((1, 2));
+    world.obstacles.insert((2, 3));
+    let path = "test.snap";
+    capture_replay::capture_state(5, path, &world).expect(&format!("failed to capture state (seed: {}, path: {})", 5, path));
+    let cfg = SimConfig { dt: 0.016 };
+    let w2 = capture_replay::replay_state(path, 3, &cfg).expect(&format!("failed to replay state (seed: {}, path: {})", 3, path));
+    // Basic invariants: replay doesn't drop obstacles order-independently
+    assert!(w2.obstacles.contains(&(1, 2)), "replayed state missing obstacle (1,2): {:?}", w2.obstacles);
+    assert!(w2.obstacles.contains(&(2, 3)), "replayed state missing obstacle (2,3): {:?}", w2.obstacles);
+    std::fs::remove_file(path).ok();
 }

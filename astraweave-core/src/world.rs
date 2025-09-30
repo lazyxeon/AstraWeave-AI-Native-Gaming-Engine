@@ -121,6 +121,10 @@ impl World {
     pub fn pos_of(&self, e: Entity) -> Option<IVec2> {
         self.poses.get(&e).map(|p| p.pos)
     }
+    /// Return a list of all entity ids currently present in the world.
+    pub fn entities(&self) -> Vec<Entity> {
+        self.poses.keys().copied().collect()
+    }
     pub fn obstacle(&self, p: IVec2) -> bool {
         self.obstacles.contains(&(p.x, p.y))
     }

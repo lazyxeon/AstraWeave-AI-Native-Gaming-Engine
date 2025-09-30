@@ -1,5 +1,5 @@
 // Asset signing and verification (Phase 0): Ed25519 signature over SHA-256 hash of file contents
-use ed25519_dalek::{Signature, SigningKey, VerifyingKey, SECRET_KEY_LENGTH};
+use ed25519_dalek::{Signature, SigningKey, VerifyingKey, SECRET_KEY_LENGTH, Signer};
 use sha2::{Digest, Sha256};
 
 fn hash_file(path: &str) -> Result<[u8; 32], String> {

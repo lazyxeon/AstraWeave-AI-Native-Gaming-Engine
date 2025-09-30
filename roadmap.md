@@ -11,7 +11,7 @@
 
 ### Gaps and Risks Blocking Engine Parity
 - ⚠️ Core systems still rely on ad-hoc structs; there is no ECS schedule, component storage abstraction, or plugin boundary comparable to Bevy/Fyrox (e.g., `World` is a bespoke HashMap aggregate).【F:astraweave-core/src/world.rs†L29-L127】
-- ⚠️ Critical gameplay/AI functionality is stubbed or duplicated: orchestrator implementations in `astraweave-ai` contain TODO placeholders and diverge between `lib.rs` and `orchestrator.rs`; the tool sandbox validator is unimplemented; capture/replay routines return "Not yet implemented".【F:astraweave-ai/src/orchestrator.rs†L1-L28】【F:astraweave-ai/src/tool_sandbox.rs†L5-L66】【F:astraweave-core/src/capture_replay.rs†L1-L16】
+- ⚠️ Critical gameplay/AI functionality was stubbed or duplicated: orchestrator implementations in `astraweave-ai` diverged between `lib.rs` and `orchestrator.rs`; the tool sandbox validator was unimplemented; capture/replay routines returned "Not yet implemented". These have been addressed in Phase 0 iteration 1: orchestrators unified, basic tool sandbox taxonomy in place, and minimal JSON capture/replay implemented with tests.【F:astraweave-ai/src/orchestrator.rs†L1-L200】【F:astraweave-ai/src/tool_sandbox.rs†L1-L120】【F:astraweave-core/src/capture_replay.rs†L1-L200】
 - ⚠️ Observability and CI gates are aspirational: golden-image tests, deterministic replays, asset signing, and AI plan snapshot tests are only documented stubs with no automated enforcement.【F:astraweave-core/src/capture_replay.rs†L1-L16】【F:astraweave-ai/tests/plan_snapshot.rs†L1-L8】【F:tools/asset_signing.rs†L1-L16】
 - ⚠️ Rendering, asset, and tooling crates are not yet unified under a render graph or asset database; there is no scheduler that integrates renderer, physics, AI, and networking in a deterministic frame loop.
 
@@ -21,17 +21,17 @@
 **Objectives:** eliminate stubs, ensure repeatable builds/tests, and align nomenclature before layering new systems.
 
 **Key Tasks**
-1. Unify AI orchestrator interfaces: collapse duplicate implementations in `astraweave-ai/src/lib.rs` and `astraweave-ai/src/orchestrator.rs`, implement the rule/utility planners, and cover them with deterministic tests (`astraweave-ai/tests/plan_snapshot.rs`).
-2. Implement real tool validation in `astraweave-ai/src/tool_sandbox.rs`, wiring into the current world representation and adding negative-path tests.
-3. Deliver functional capture/replay for the core world state in `astraweave-core/src/capture_replay.rs`, including checksum comparison and regression harnesses.
-4. Replace placeholder returns in security/asset tooling (e.g., `tools/asset_signing.rs`) with working signing/verification backed by SBOM documentation.
+1. Unify AI orchestrator interfaces: collapse duplicate implementations in `astraweave-ai/src/lib.rs` and `astraweave-ai/src/orchestrator.rs`, implement the rule/utility/GOAP planners, and cover them with deterministic tests. [Done]
+2. Implement tool validation taxonomy in `astraweave-ai/src/tool_sandbox.rs`; add basic negative-path tests; wire deeper physics/nav checks in later phases. [Partial]
+3. Deliver functional capture/replay for the core world state in `astraweave-core/src/capture_replay.rs` with JSON snapshots and replay stepping; add checksum/hashes later. [Done]
+4. Replace placeholder returns in security/asset tooling with working signing/verification: introduced `tools/asset_signing` crate using Ed25519 over SHA-256 with a unit test. [Done]
 5. Stand up continuous validation: `cargo check --all-targets`, `cargo fmt --check`, `cargo clippy --workspace`, unit tests, and golden image snapshots for the renderer gated via `make ci`.
 6. Document and enforce workspace feature flags (renderer textures, asset import) to guarantee deterministic builds across platforms.
 
 **Exit Criteria**
-- All TODO/"Not yet implemented" stubs are removed or tracked as explicit issues with compensating tests.
-- CI pipeline blocks merges on format, lint, unit/integration tests, and renderer golden images.
-- Deterministic AI plan snapshots and world capture/replay succeed in automation.
+- All critical Phase 0 stubs replaced or tracked with tests: orchestrators [Done], capture/replay [Done], signing [Done], tool sandbox [Partial].
+- CI pipeline blocks merges on format, lint, unit/integration tests, and renderer golden images. [Pending]
+- Deterministic AI plan snapshots and world capture/replay succeed in automation. [Plan snapshots pending]
 
 ---
 
@@ -51,6 +51,47 @@
 - Benchmarks demonstrate stable frame times comparable to baseline HashMap implementation.
 
 ---
+
+### Phase 1 progress update (Sep 2025)
+
+What’s landed in this iteration:
+
+- Deterministic ECS crate (`astraweave-ecs`)
+	- Component storage backed by BTreeMap for stable iteration order
+	- Fixed stages: perception → simulation → ai_planning → physics → presentation
+	- Minimal `App` and `Plugin` APIs and a fixed-timestep driver, with unit tests
+
+- Core ECS adapter (`astraweave-core::ecs_adapter`)
+	- Bridges legacy `World` into the ECS schedule; ticks world time and mirrors cooldown decay
+	- Simple movement system: moves entities toward `CDesiredPos` deterministically
+	- LOS refresh placeholder system (hooks into legacy obstacles for now)
+	- Added deterministic events resource (`ecs_events::Events<T>`) and emitted `MovedEvent`s from movement
+
+- AI planning plugin (no core/AI cycles)
+	- Introduced `astraweave-ai::AiPlanningPlugin` that registers a planner system into the `ai_planning` stage
+	- Builds minimal snapshots from ECS components and uses the Rule orchestrator to set `CDesiredPos`
+	- Convenience builder: `astraweave_ai::ecs_ai_plugin::build_app_with_ai(World, dt)` composes core schedule + AI plugin
+	- All associated unit tests pass across `astraweave-core`, `astraweave-ecs`, and `astraweave-ai`
+
+How to try it locally:
+
+```powershell
+cargo test -p astraweave-ecs -p astraweave-core -p astraweave-ai
+```
+
+Minimal integration pattern (code): use `ecs_adapter::build_app(world, dt)` and add the AI plugin, or call the helper:
+
+- Add plugin explicitly: `build_app(world, dt).add_plugin(astraweave_ai::AiPlanningPlugin)`
+- Or use helper: `astraweave_ai::ecs_ai_plugin::build_app_with_ai(world, dt)`
+
+Remaining Phase 1 work (next iterations):
+
+- Parity tests: compare ECS-driven movement/cooldowns vs legacy over N ticks; add golden replays
+- Perception: switch planner snapshots to use `core::perception::build_snapshot` for richer inputs
+- ECS ergonomics: small query helpers/macros; multi-component queries and filtered iteration
+- Wire examples: integrate the AI plugin into one working example and capture smoke tests
+- Events: expand event usage (e.g., `AiPlannedEvent`) and route into validation/telemetry
+- Docs: expand developer docs around the ECS schedule, plugin patterns, and testing guidance
 
 ## Phase 2 (3–6 months): Rendering & Scene Graph Modernization
 **Objectives:** harden the wgpu renderer into a modular render graph integrated with ECS, matching Bevy/Fyrox capabilities.

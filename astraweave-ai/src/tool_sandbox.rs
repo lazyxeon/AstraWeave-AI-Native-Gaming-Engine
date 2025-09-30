@@ -1,6 +1,7 @@
 //! Tool Sandbox: Validated action verbs and error taxonomy
 
 use anyhow::Result;
+use astraweave_core::WorldSnapshot;
 
 /// Enumeration of all validated action verbs
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -56,13 +57,31 @@ impl fmt::Display for ToolError {
 }
 
 /// Validate a tool action for an agent in the world
+/// Phase 0: lightweight validation using only the WorldSnapshot (no path/LOS data yet).
+/// - Throw: fails on cooldown
+/// - CoverFire: fails on missing ammo
+/// - MoveTo/others: always OK for now (deeper checks in core validator)
 pub fn validate_tool_action(
     _agent_id: u32,
-    _verb: ToolVerb,
-    _world: &crate::WorldSnapshot,
-) -> Result<(), ToolError> {
-    // TODO: Implement validation logic per verb/category
-    Ok(())
+    verb: ToolVerb,
+    world: &WorldSnapshot,
+) -> Result<()> {
+    match verb {
+        ToolVerb::Throw => {
+            let cd = world.me.cooldowns.get(&crate::cooldowns::CooldownKey::from("throw:smoke")).copied().unwrap_or(0.0);
+            if cd > 0.0 {
+                return Err(anyhow::anyhow!("action blocked: cooldown (throw:smoke)") );
+            }
+            Ok(())
+        }
+        ToolVerb::CoverFire => {
+            if world.me.ammo <= 0 {
+                return Err(anyhow::anyhow!("action blocked: insufficient ammo for cover fire") );
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }
 
 #[cfg(test)]
