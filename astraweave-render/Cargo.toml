@@ -38,5 +38,5 @@ gpu-tests = []
 postfx = []
 
 [dev-dependencies]
-naga = "0.20"
+naga = "26.0"
 criterion = { workspace = true }
