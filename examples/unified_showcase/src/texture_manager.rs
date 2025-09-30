@@ -2,7 +2,7 @@
 // This module handles texture loading, atlas management, and texture configuration
 
 use anyhow::Result;
-use image::{DynamicImage, GenericImageView, ImageBuffer, RgbaImage};
+use image::{DynamicImage, ImageBuffer, RgbaImage};
 use serde::Deserialize;
 use std::{collections::HashMap, fs, path::Path};
 
@@ -62,7 +62,7 @@ impl TextureManager {
 
         // Parse texture entries from the config
         let mut textures = HashMap::new();
-        let mut loaded_images = HashMap::new();
+    let loaded_images = HashMap::new();
 
         // Process each section in the config that isn't "atlas"
         for (section_key, section_value) in config.as_object().unwrap() {
@@ -229,8 +229,8 @@ impl TextureManager {
         }
 
         // Place each texture in its specified position
-        for (texture_id, entry) in &self.textures {
-            if let Some(image) = self.loaded_images.get(texture_id) {
+            for (_texture_id, entry) in &self.textures {
+            if let Some(image) = self.loaded_images.get(_texture_id) {
                 // Calculate pixel coordinates from normalized UV coordinates
                 let x = (entry.uv_rect.x * width as f32) as u32;
                 let y = (entry.uv_rect.y * height as f32) as u32;
@@ -266,7 +266,7 @@ impl TextureManager {
         }
 
         // Place each normal texture in its specified position
-        for (texture_id, entry) in &self.textures {
+    for (_texture_id, entry) in &self.textures {
             if let Some(normal_path) = &entry.normal_path {
                 let normal_full_path = Path::new("assets").join(normal_path);
 
