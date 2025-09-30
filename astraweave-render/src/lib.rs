@@ -13,6 +13,8 @@ pub mod texture;
 pub mod types; // clustered-lighting WGSL placeholders & tests // gpu upload & caching
                // See MATERIALS.md for canonical materials arrays and WGSL bindings
 pub mod material; // shared authored materials API + GPU arrays
+pub mod graph; // minimal render graph scaffolding (Phase 2)
+pub mod graph_adapter; // runs a graph on Renderer frames
 #[cfg(feature = "textures")]
 pub mod material_loader; // internal builder helpers
 #[cfg(any(feature = "gltf-assets", feature = "assets"))]
