@@ -196,8 +196,8 @@ impl MaterialManager {
         layers.sort_by_key(|(k, _)| arrays.layers.get(k).copied().unwrap_or(u32::MAX));
 
         // Upload into texture arrays (delegated to helper in this module)
-        let (gpu, stats, albedo_tex, normal_tex, mra_tex) =
-            crate::material_loader::material_loader_impl::build_arrays(
+            let (gpu, stats, albedo_tex, normal_tex, mra_tex) =
+                crate::material_loader::material_loader_impl::build_arrays(
                 device,
                 queue,
                 &layers,
@@ -256,5 +256,149 @@ impl NormalizePath for PathBuf {
             .components()
             .as_path()
             .to_path_buf()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_material_layer_desc_default() {
+        let desc = MaterialLayerDesc::default();
+        assert_eq!(desc.key, "");
+        assert!(desc.albedo.is_none());
+        assert_eq!(desc.tiling, [1.0, 1.0]);
+        assert_eq!(desc.triplanar_scale, 16.0);
+    }
+
+    #[test]
+    fn test_toml_parsing_basic() {
+        let toml_str = r#"
+[biome]
+name = "test_biome"
+
+[[layer]]
+key = "grass"
+albedo = "grass_albedo.png"
+normal = "grass_normal.png"
+mra = "grass_mra.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 8.0
+
+[[layer]]
+key = "dirt"
+albedo = "dirt_albedo.png"
+"#;
+        #[derive(serde::Deserialize)]
+        struct MaterialsDoc {
+            biome: BiomeHeader,
+            layer: Vec<MaterialLayerToml>,
+        }
+        #[derive(serde::Deserialize)]
+        struct BiomeHeader {
+            name: String,
+        }
+        #[derive(serde::Deserialize, Default)]
+        struct MaterialLayerToml {
+            key: String,
+            albedo: Option<String>,
+            normal: Option<String>,
+            mra: Option<String>,
+            metallic: Option<String>,
+            roughness: Option<String>,
+            ao: Option<String>,
+            tiling: Option<[f32; 2]>,
+            triplanar_scale: Option<f32>,
+            atlas: Option<String>,
+        }
+
+        let doc: MaterialsDoc = toml::from_str(toml_str).unwrap();
+        assert_eq!(doc.biome.name, "test_biome");
+        assert_eq!(doc.layer.len(), 2);
+        assert_eq!(doc.layer[0].key, "grass");
+        assert_eq!(doc.layer[0].albedo, Some("grass_albedo.png".to_string()));
+        assert_eq!(doc.layer[0].tiling, Some([2.0, 2.0]));
+        assert_eq!(doc.layer[1].key, "dirt");
+        assert_eq!(doc.layer[1].normal, None);
+    }
+
+    #[test]
+    fn test_arrays_toml_parsing() {
+        let toml_str = r#"
+[layers]
+grass = 0
+dirt = 1
+stone = 2
+"#;
+        #[derive(serde::Deserialize)]
+        struct ArraysDoc {
+            layers: std::collections::HashMap<String, u32>,
+        }
+        let arrays: ArraysDoc = toml::from_str(toml_str).unwrap();
+        assert_eq!(arrays.layers.get("grass"), Some(&0));
+        assert_eq!(arrays.layers.get("dirt"), Some(&1));
+        assert_eq!(arrays.layers.get("stone"), Some(&2));
+    }
+
+    #[test]
+    fn test_stable_layer_index_mapping() {
+        // Simulate layers and arrays mapping
+        let mut layers = vec![
+            ("stone".to_string(), MaterialLayerDesc { key: "stone".to_string(), ..Default::default() }),
+            ("grass".to_string(), MaterialLayerDesc { key: "grass".to_string(), ..Default::default() }),
+            ("dirt".to_string(), MaterialLayerDesc { key: "dirt".to_string(), ..Default::default() }),
+        ];
+        let arrays_layers = std::collections::HashMap::from([
+            ("grass".to_string(), 0),
+            ("dirt".to_string(), 1),
+            ("stone".to_string(), 2),
+        ]);
+
+        // Sort by index
+        layers.sort_by_key(|(k, _)| arrays_layers.get(k).copied().unwrap_or(u32::MAX));
+
+        assert_eq!(layers[0].0, "grass");
+        assert_eq!(layers[1].0, "dirt");
+        assert_eq!(layers[2].0, "stone");
+    }
+
+    #[test]
+    fn test_fallback_coverage() {
+        // Test that missing paths are handled
+        let desc = MaterialLayerDesc {
+            key: "test".to_string(),
+            albedo: None,
+            normal: Some(PathBuf::from("normal.png")),
+            mra: None,
+            ..Default::default()
+        };
+        // In real loading, fallbacks would be applied in build_arrays
+        // Here, just check the desc has None where expected
+        assert!(desc.albedo.is_none());
+        assert!(desc.mra.is_none());
+        assert!(desc.normal.is_some());
+    }
+
+    #[test]
+    fn test_material_load_stats_concise_summary() {
+        let stats = MaterialLoadStats {
+            biome: "forest".to_string(),
+            layers_total: 5,
+            albedo_loaded: 3,
+            albedo_substituted: 2,
+            normal_loaded: 4,
+            normal_substituted: 1,
+            mra_loaded: 2,
+            mra_packed: 1,
+            mra_substituted: 2,
+            gpu_memory_bytes: 1024 * 1024 * 10, // 10 MiB
+        };
+        let summary = stats.concise_summary();
+        assert!(summary.contains("biome=forest"));
+        assert!(summary.contains("layers=5"));
+        assert!(summary.contains("albedo L/S=3/2"));
+        assert!(summary.contains("gpu=10.00 MiB"));
     }
 }

@@ -8,3 +8,8 @@ license = "MIT"
 glam = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
+astraweave-ecs = { path = "../astraweave-ecs" }
+
+[features]
+default = []
+ecs = []
