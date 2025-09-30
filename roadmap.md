@@ -1,407 +1,155 @@
-﻿# AstraWeave Roadmap — From AI-Native Prototype to Production Engine (UE5-Class)
-
-Goal: Evolve AstraWeave into a full, production-grade, AI-native game engine on par with Unreal Engine 5—where AI is first-class (not a plugin), with a modern renderer, robust tooling, editor, and scalable runtime. All milestones below are scoped to the existing Rust + wgpu + rapier + egui stack.
-
-Principles
-- AI-first: Perception → Reasoning → Planning → Action is built-in and deterministic; tools are validated, no AI “cheating.”
-- Deterministic sim: Fixed-tick ECS with strong validation boundaries; multiplayer-friendly and replayable.
-- Modular workspace: Isolated crates per system; clear public APIs; testable in isolation; minimal unsafe.
-- Dev velocity: Hot-reload where safe (scripts, assets, materials), fast iteration loops, strong instrumentation.
-
-✅ Phase 0 (0–3 months): Stabilize Core and Ship a Visual Hello-World
-Deliverables
-- Rendering MVP: astraweave-render produces a lit scene (PBR, HDR, tonemapping, sky, shadows) via wgpu 0.20 (or latest compatible).
-- Scene I/O: glTF 2.0 import (meshes, materials, textures); simple scene graph; GPU resource manager; frustum culling; basic instancing.
-- Animation v0: Skeletal playback (simple blend, GPU skinning).
-- Editor Shell: `tools/aw_editor` rebuilt using eframe/egui with dockable panels (Scene, Hierarchy, Inspector, Console, Profiler); live reload of material/shader params.
-- AI Loop: Keep current `WorldSnapshot` / `PlanIntent`; unify `Orchestrator` API; CI example that runs end-to-end without panics.
-- Fix/green core: make check, minimal lint set; working examples curated; broken demos quarantined.
-
-DoD
-- Build flags: wgpu backends guarded via cfgs; shader features togglable.
-- Tests: snapshot tests for AI plans; renderer golden images for 2 scenes; importer round-trip tests.
-- Benches: Criterion for world tick and render submit; baseline committed.
-- Assets: sample PBR materials and a skinned character included under permissive license.
-- Docs: `docs/Interfaces.md`, `docs/Perf Budgets.md`, and `docs/Asset IDs & Cache.md` linked from README.
-- CI: `make ci` enforces fmt/clippy/tests/benches thresholds.
-
-Key Crates/Changes
-- New: `astraweave-scene`, `astraweave-materials`, `astraweave-anim`, `astraweave-asset` (importers), `astraweave-shaders` (WGSL).
-- Update: `astraweave-render` (PBR + shadows + post), `tools/aw_editor` (panelized), `examples/visual_3d` (MVP scene viewer).
-
-Exit Criteria
-- Run: `cargo run -p visual_3d` shows a PBR scene with a skinned character at 60 FPS on mid-tier GPU.
-- Editor: can load a scene, tweak a material, toggle lights, and save.
-
-✅ Phase 1 (3–6 months): AI-Native Gameplay and Authoring Tools
-Deliverables
-- AI Orchestrator Suite: Rule-based + Utility/GOAP + LLM orchestrator behind `Orchestrator` trait; switchable per agent.
-- Tool Sandbox v1: Formalized action verbs with validation categories (nav, physics, resources, visibility); comprehensive error taxonomy.
-- Persona/Memory v1: `astraweave-persona` + `astraweave-memory` stabilized (profiles, episodic facts, skills); deterministic serialization and versioning.
-- Nav & Physics: Rapier 3D character controller; navmesh baking (off-thread) + A*; cost layers; link with validation.
-- Dialogue & Audio v1: `astraweave-audio` spatial audio; dialogue runner with branching; TTS integration hook; subtitle system.
-- Authoring: Visual Behavior Graph (BT/HTN) panel in editor; Rhai hot-reload for behaviors; quest/dialogue graphs.
-
-Key Crates/Changes
-- New: `astraweave-behavior` (BT/HTN graphs), `astraweave-dialogue`, `astraweave-quests`.
-- Update: `astraweave-ai`, `astraweave-nav`, `astraweave-physics`, `astraweave-audio`, `tools/aw_editor` (graph editors).
-
-DoD
-- Tests: unit tests for Tool Sandbox error taxonomy; persona/memory serialization versioned.
-- Benches: AI fast-think ≤ 2 ms median; dialogue pipeline latency budget enforced.
-- Examples: `hello_companion_3d` runs to completion without panics; audio/dialogue CLI demo produces VO or text barks offline.
-- Docs: Behavior/quests pages, editor panel docs, error taxonomy referenced.
-
-Exit Criteria
-- Example “hello_companion_3d”: companion perceives, plans, and executes in a small 3D level; voice line triggers; player orders via UI.
-- Editor: author a simple quest + behavior graph and run it live.
-
-✅ Phase 2 (6–12 months): Modern Renderer and Asset Pipeline (UE5-Class Targets)
-DoD
-- Golden images updated for new features; ΔE thresholds respected.
-- Benches: GPU frame ≤ 7 ms median on target GPU; shader compile cache hit-rate > 90%.
-- Tools: material editor round-trip tests for WGSL outputs.
-Rendering
-- PBR 2.0: Clearcoat, anisotropy, transmission; clustered/forward+ lighting; cascaded shadow maps; SSR, SSAO/ASSAO, SSGI (probe-based); bloom/DoF/motion blur.
-- GI: DDGI (probe volumes) + SDFGI fallback; lightmap baking path (GPU compute) for static scenes.
-- Visibility: GPU-driven culled draws (compute binning) and meshlet/cluster culling; bindless resources where supported.
-- Textures: Virtual Texturing (clipmap/mega-texture) for massive worlds; streaming & residency.
-- VFX: GPU particle system; decals and screen-space effects.
-
-<!-- MVP PHASE 2: COMPLETE (as of 2025-09-23) -->
-
-## MVP Phase 2: Core Simulation, Authoring, and LLM Integration
-
-- [x] **Simulation Loop & Determinism**: Robust, fixed-tick simulation loop with deterministic state progression and replay support implemented and tested.
-- [x] **Authoring Tools**: In-engine authoring UI for world, dialogue, and quest editing (rhai/egui-based, hot-reloadable) fully operational and tested.
-- [x] **LLM Integration**: LLM-based orchestrator for advanced planning, dialogue, and tool use (with fallback to rules-based AI) fully integrated and tested.
-- [x] **Persona/Memory Expansion**: Persona/memory system supports richer agent backstories, preferences, and dynamic memory updates; property-based tests pass.
-- [x] **Dialogue & Quest System**: Authorable, branching dialogue and quest logic with validation and test coverage implemented and verified.
-- [x] **Asset Pipeline**: Asset import, validation, and hot-reload for 2D/3D, audio, and dialogue assets implemented and tested.
-- [x] **Test Coverage**: Integration and property-based tests for simulation, authoring, and LLM planning all pass.
-- [x] **Documentation**: Docs updated for new authoring, LLM, and simulation features.
-
-> **Status:** Phase 2 MVP is fully implemented, tested, and documented as of 2025-09-23. All deliverables are complete and operational.
-Asset & Tooling
-- Asset pipeline: deterministic importers (glTF, FBX via external tool, WAV/OGG, OTF/TTF), GUIDs, dependency graph, incremental builds, cache.
-- Material Editor: node-based graphs compiled to WGSL; preview viewport; parameter collections; material variants.
-- Animation 2.0: Retargeting, blend trees, IK (FABRIK/CCD), root motion; animation events.
-
-Exit Criteria
-- Visual benchmark scene parity: lighting/features comparable to a mid-level UE5 scene (no Nanite/Lumen yet) at 60 FPS 1080p on a mid-tier GPU.
-- Editor: import a mid-complexity scene, edit materials, bake a light cache, profile frame breakdown.
-
-✅ Phase 3 (12–18 months): Multiplayer, Determinism, and Scale
-DoD
-- Net sim soak test: 10-minute run without desync at 60 Hz; packet loss scenarios covered.
-- Replays deterministic across platforms; snapshot delta size within budget.
-Deliverables
-- Netcode: Server-authoritative with client prediction & reconciliation; snapshot delta encoding; interest management; region matchmaking; replay capture.
-- Deterministic Sim: audited fixed-tick path; lockstep option; authoritative tool validation across clients.
-- Save/Live Ops: robust save/versioning (`aw-save`), migration; asset patching and hotfix pipeline; crash reporting hooks.
-- Security: anti-cheat hooks (server-side validation + telemetry); sandboxing for scripting.
-
-Exit Criteria
-- 4-player co-op demo in a medium-sized level with AI companions; 60 Hz sim; jitter-buffered voice/text; no desync under packet loss; stable replays.
-
-✅ Phase 4 (18–24 months): Production Polish and Extensibility
-DoD
-- SDK headers generated and validated with a C harness; semantic versioning gates in CI.
-- Cinematics editor saves/loads timelines; smoke test in CI.
-Deliverables
-- Cinematics: Timeline, tracks (anim, camera, audio, FX), cutscene editor; sequencer API.
-- UI/UX: game UI framework (HUD, menus, inventory, map) with data-binding; accessibility options.
-- Marketplace-Ready SDK: stable public APIs; versioning policy; plugin system for third parties; sample packs.
-- Documentation & Samples: full docs site; 10+ polished sample projects (AI, networking, rendering, tools). 
-
-Exit Criteria
-- “Feature-complete” engine with editor; external team can build a vertical slice without engine dev support.
-
-
-✅ Cross-Cutting Workstreams (Continuous)
-- **Testing & CI:** Golden-image renderer test (`astraweave-render/tests/golden_postfx.rs`), AI plan snapshot test stub (`astraweave-ai/tests/plan_snapshot.rs`), physics regression and save/load integrity (`aw-save/tests/integration_test.rs`), performance gates and benches, `make ci` runs format, clippy, test, audit, deny.
-- **Performance:** Benchmarks for ECS, rendering, terrain, input, and build tools. Frame timing/tracing stub (`tools/frame_budget_and_tracing.md`), per-subsystem profiler/tracing integration planned, capture & replay stub (`astraweave-core/src/capture_replay.rs`).
-- **Quality & Security:** `cargo-deny`/`audit` in scripts, SBOM stub (`tools/sbom.md`), asset signing/verification stub (`tools/asset_signing.rs`), reproducible builds documented, defensive LLM adapter stub (`astraweave-llm/src/llm_adapter.rs`).
-- **Content:** `assets/exemplars/` with README for sample assets (CC0), ready for population.
-
-All cross-cutting workstreams are now implemented or stubbed for best-practice coverage. Further polish and population of exemplar assets, and full integration of stubs, are the next steps.
-
-Technical Parity Mapping vs UE5 (Pragmatic Targets)
-- Nanite → GPU-driven cluster culling + meshlet path, LOD streaming, VT for textures; no hardware mesh shaders requirement.
-- Lumen → DDGI + SDFGI hybrid; baked fallback; SSR/SSGI augment; editor GI volumes.
-- Blueprints → Visual Behavior/Graph editors backed by Rust/Rhai; node-based materials & animation graphs.
-- Sequencer → Timeline/cinematic tracks with camera rig and event binding.
-- Editor → eframe/egui-based multi-dock editor; later optional migration to winit multi-window if needed.
-
-Initial Backlog (actionable next sprints)
-- Render MVP: PBR BRDF (Disney-ish), CSM shadows, ACES tonemap; import glTF; draw submission with bindless-like structs.
-- Editor: scene tree, inspector, console/logger, live material param editing; file watcher & hot-reload for WGSL/materials.
-- AI: unify `Orchestrator` returning `PlanIntent`; validation error types; sample tool verbs + tests.
-- Nav/Physics: Rapier CC; bake navmesh from scene collider mesh; runtime A*; validation integration tests.
-- Audio: rodio 3D spatialization; mixer; event-driven cues.
-- CI: workspace check with curated excludes; renderer headless test renders; input unit tests.
-
-Resourcing & Risks
-- Team: 1 rendering, 1 tools/editor, 1 AI/gameplay, 1 networking/systems, 1 content TD (part-time). Grow as needed.
-- Risks: wgpu feature gaps (mesh shaders); mitigate with compute-based culling. LLM latency; mitigate with on-device 7B quantized + short-horizon planner.
-
-KPIs & Success Metrics
-- Editor cold start < 3s; hot reload < 500ms.
-- Visual demo 1080p60 on 3060-class GPU.
-- Co-op demo stable at 60Hz with < 120ms RTT; no desync over 10 min.
-- CI: green on core + examples; perf regression < 5% week-over-week.
-
-How To Track
-- Create GitHub Projects board with swimlanes matching phases/workstreams.
-- Each milestone produces: demo video, example crate, docs page, and CI validation.
-
-## Subsystem Design Plans (MVP)
-
-This section distills user requirements and aligns them with AstraWeave’s AI-first architecture. It defines per-subsystem goals, core structures, open decisions, and immediate next steps. Where relevant, see: `docs/engine-api.md`, `docs/ai-scripting.md`, `docs/networking.md`, `docs/persona-packs.md`, `docs/BUILD_QUICK_REFERENCE.md`, `SECURITY.md`, `SECURITY_AUDIT_GUIDE.md`, and crate-level READMEs.
-
-### 1. AI Cognition Stack
-Purpose
-- Agents perceive, reason, plan, and act via validated engine verbs. Companions should feel human, learn player preferences, and persist memory across sessions. No “cheats”: all actions are validated by the engine.
-
-Architecture
-- Perception Bus: broadcast filtered `WorldSnapshot`s to agents at a cadence. MVP target: ~15 Hz in combat (10–20 Hz bound), lower in exploration. Redact out-of-LOS info and inject noise for fairness. See `astraweave-core` world snapshot docs.
-- Planner: hybrid Utility/GOAP/HTN that decomposes goals into verb sequences; goals (assist, revive, cover fire, hide, rally, etc.) are scored by safety, progress, and player orders. “Deep-think” via LLM at low cadence (e.g., 2 Hz out of combat, once per large encounter) and “fast-think” via utility scoring each tick. See `astraweave-ai`.
-- Tool Sandbox: registry of validated verbs and constraints: `move_to`, `cover_fire`, `dodge`, `converse`, `interact`, `use_item`, `stay`, `wander_freely`, `hide`, `rally_on_player`. Engine validates nav/physics/resources/LOS. See `docs/engine-api.md` Tool Validation.
-- Behaviour Controller: merges planner output with cooldowns and player orders into atomic actions; enforces constraints and reparents failures to re-plan or fallbacks.
-- Memory Fabric: persona traits, semantic facts, episodic memories, skills. Persist playstyle preferences (aggression/stealth bias), encountered facts (safehouses, tactics), episodes (clutch revives), skill progression. See `astraweave-memory`, `astraweave-persona`.
-- Personas & Filters: presets (class clown, gritty outlaw, scholar, explorer) that shape tone/risk; apply rating filters (PG, PG-13, R) and toxicity/profanity filters to LLM outputs. See `docs/persona-packs.md`.
-
-Open Decisions & Next Steps
-- Finalize MVP verb registry (above). Define JSON/Protobuf schemas for snapshots and intents; ensure determinism and versioning.
-- Cadence policy: deep-think opportunistic in exploration and per large encounter; fast-think every tick; document budgets.
-- Implement persona presets and rating filters within the LLM adapter; add moderation gates in `astraweave-llm` when re-enabled.
-
-### 2. Simulation Kernel & ECS
-Purpose
-- Deterministic fixed-tick simulation driving physics, navigation, AI, animation, and audio; decoupled from rendering.
-
-Architecture
-- Tick Model: run sim at 60 Hz; variable-rate renderer. Job order: physics → navigation → perception → cognition → behaviour → animation/audio. See `docs/engine-api.md`.
-- Component Taxonomy (MVP):
-	- Transform (model), Camera (view), Projection
-	- Physics (velocity, mass, collider, layer/mask)
-	- Health, Faction, Threat
-	- Inventory & Abilities (items, cooldowns, stamina/resources)
-	- AIState (goal stack, behaviour node, timers)
-	- NavAgent (radius, height, path)
-- Determinism: session RNG seed; fixed time steps; record/replay hooks for reproduction.
-
-Open Decisions & Next Steps
-- Lock job ordering above; prototype internal concurrency and benchmark.
-- Use floating-point for positions/velocities with fixed-step determinism; revisit fixed-point if precision issues emerge.
-
-### 3. Rendering & Camera
-Purpose
-- Realistic visuals with first-/third-person cameras, dynamic lighting, post-effects, and debug overlays.
-
-Architecture
-- Renderer: wgpu-based forward-plus/clustered forward; PBR, dynamic shadows, tone mapping, bloom; linear workflow with gamma-correct output. See `astraweave-render` and `docs/engine-api.md`.
-- Camera Modes: free-fly (FPS), orbit (third-person), smooth transitions; camera shake; optional target cycling.
-- Debug Overlays: egui overlays for AI plan trees, utility heatmaps, navmesh visualization, LOS rays, perf graphs; toggle via hotkeys.
-
-Open Decisions & Next Steps
-- Confirm tonemapping/HDR path (ACES) and lighting pipeline details; keep compatibility with current wgpu targets.
-- Implement smooth camera mode switching and default keybinds; wire overlay toggles.
-
-### 4. Physics & Interaction
-Purpose
-- Collision, movement, and damage with layers/masks and a robust character controller.
-
-Architecture
-- Collision Layers/Masks: Player, AI, World (static), Triggers, Projectiles. Matrix: Player ↔ World/AI/Projectiles; AI ↔ World/Player/AI/Projectiles; World ↔ Player/AI/Projectiles; Triggers overlap only; Projectiles ↔ Player/AI/World.
-- Character Controller: walking, running, jumping, crouch/prone, step height ≈ 0.3 m, slope limit ≈ 45°. Capsule colliders; nav integration.
-- Damage System: hitscan (raycast) and projectiles; fall damage by impact velocity; friendly fire toggle (off by default). Ragdolls deferred.
-
-Open Decisions & Next Steps
-- Include crouch/prone for cover/stealth in MVP; defer climbing/swimming.
-- Define starter weapon categories and damage values; integrate with Tool Sandbox constraints.
-
-### 5. Navigation
-Purpose
-- AI and players traverse large, varied environments efficiently.
-
-Architecture
-- Navmesh Baking: tiled navmesh from world geometry (Recast/Detour style); parameters for cell size, agent radius/height; off-mesh links (ladders, jumps); runtime updates for dynamic obstacles (doors, destructibles).
-- Pathfinding: A* with optional hierarchical flow fields for large areas; cost modifiers for cover/hazard avoidance; path smoothing before feeding AI.
-- Local Steering: basic avoidance/arrival behaviors to reduce agent overlap.
-
-Open Decisions & Next Steps
-- Choose dynamic navmesh granularity for doors/collapsing bridges/movable obstacles.
-- Evaluate streaming/tiling for large worlds; implement only if needed.
-
-### 6. Audio & Dialogue
-Purpose
-- Immersive audio (weapons, footsteps, ambience, VO) and LLM-driven dialogue with tone/rating filters.
-
-Architecture
-- Audio Categories: channels for weapons, footsteps, ambience, water/FX, voice; spatialize 3D sounds; low-pass behind obstacles.
-- Music System: state machine crossfading between exploration, tension, and combat.
-- Dialogue: TTS integration (open-source or commercial), with LLM text generation; respect rating filters; provide offline text bark fallback. See `astraweave-audio` and `docs/ai-scripting.md`.
-
-Open Decisions & Next Steps
-- Evaluate open-source TTS (e.g., Coqui/VITS) for offline synthesis; confirm licensing/quality.
-- Decide on adaptive music stems vs simple crossfades post MVP shakeout.
-
-### 7. Input & UI
-Purpose
-- KB/M and gamepad input with a clean HUD and accessibility options.
-
-Architecture
-- Input: cross-platform abstraction; default bindings for KB/M and Xbox/PlayStation; rebinding + profile save. Map A/B/X/Y (Cross/Circle/Square/Triangle) to interact/use/dodge; triggers aim/fire; bumpers companion commands.
-- HUD: health, stamina, minimap, quest objectives, current item, inventory.
-- Accessibility: subtitles toggle, text scaling, color-blind palettes, remappable controls.
-
-Open Decisions & Next Steps
-- Finalize KB/M and controller mappings; user test early.
-- Consider radial menus or quick slots for inventory if usability improves.
-
-### 8. Networking & IPC
-Purpose
-- Co-op multiplayer with server authority and low-latency AI; model routing via IPC.
-
-Architecture
-- Authoritative Server: server runs simulation; clients send inputs/AI intents; server validates/broadcasts. Transport via WebSockets (default) or UDP/QUIC if latency warrants. Target <120 ms RTT for actions; if deep-think exceeds budget, fallback to micro-policies. See `docs/networking.md`.
-- Co-op Limits: MVP supports up to two human players and two companions each.
-- Model IPC: run LLM locally by default; optional cloud for deep reasoning; timeouts + fallbacks; message bus/shared memory for snapshot → plan intent.
-
-Open Decisions & Next Steps
-- Benchmark latency; set deep-think timeouts and fallback behaviors (e.g., take cover if delayed).
-- Confirm protocol default (WebSockets) and keep QUIC/UDP as an optimization path.
-
-### 9. Persistence & Profiles
-Purpose
-- Save player progress, companion memories, and world changes with integrity and privacy.
-
-Architecture
-- Save Format: encrypted, signed `.cprof` for companion profiles and separate world saves; include versioning and migration hooks. Use AES-GCM with per-user keys. See `SECURITY.md`.
-- What Persists: player stats, inventory, quests, world state (e.g., destroyed bridges), companion profiles; small vector index for fast memory lookup.
-- Data Quotas: soft limits (e.g., 10 MB per companion profile) with pruning beyond threshold.
-
-Open Decisions & Next Steps
-- Key management: OS secure storage (Keychain, Windows Credential Vault); plan key rotation/revocation; see `SECURITY_AUDIT_GUIDE.md`.
-- Compression: enable zstd for save files to reduce footprint.
-
-### 10. Editor & Tooling
-Purpose
-- Real-time insight into AI decisions, memory, and determinism.
-
-Architecture
-- Live Plan View: visualize plan tree, goal stack, utility scores; heatmaps/bars; timing and rationale.
-- Memory Inspector: persona attributes, facts, episodes, skills; manual pruning/distillation.
-- Deterministic Replays: record/replay at frame granularity; diff tools for run comparison.
-- Encounter Fuzzer: vary encounter layouts/enemy composition; record KPIs (time-to-clear, damage taken, assist rate).
-
-Open Decisions & Next Steps
-- Build plan view, memory inspector, deterministic replays, and fuzzer in egui; define logging for replay fidelity vs file size.
-
-### 11. SDK & Bindings
-Purpose
-- Expose engine via a stable C ABI and bindings for integration with other frameworks.
-
-Architecture
-- API Surface: C ABI for world creation, system registration, snapshots in, intents out, and state queries; callback hooks for scripts/UI.
-- Bindings: Rust primary; generate C headers (cbindgen); experimental Godot GDExtension; evaluate Unity/Unreal via C++ plugin later.
-- Schemas: Protobuf for snapshots/intents/profiles with backward compatibility.
-
-Open Decisions & Next Steps
-- FFI & scripting: adopt cbindgen; integrate Rhai for quest logic in MVP.
-
-### 12. Security, Privacy & Safety
-Purpose
-- Ensure fair play, protect data, and filter inappropriate content.
-
-Architecture
-- Action Validation: every AI action is validated against physics, LOS, cooldowns, and nav; invalid actions auto-repaired or rejected. Players and AI share systems. See `docs/engine-api.md`.
-- LLM Guardrails: prompt sanitization and response filters; align to chosen rating (PG, PG-13, R); moderation override to mute/adjust persona if boundaries are crossed.
-- Encrypted Saves & Profiles: encrypted and signed profiles with per-user keys; optional cloud sync.
-
-Open Decisions & Next Steps
-- Content moderation: select/build rating-aware classifier.
-- Key policies: define key rotation/revocation and audit trails.
-
-### 13. Performance, Benchmarks & CI
-Purpose
-- Meet performance targets and ensure cross-platform stability.
-
-Architecture
-- Perf Budgets per tick: physics + nav ≤ 1.5 ms; AI planner ≤ 2 ms (fast think) and ≤ 150 ms (deep think with fallback); rendering ≤ 7 ms for 60 FPS.
-- Benchmark Suites: Criterion.rs for world creation, entity spawning, world tick, and input ops; track in CI and alert on >200% regressions. See `docs/BENCHMARKING_GUIDE.md`.
-- CI Matrix: Linux/macOS/Windows; use `sccache` and multi-level caching to speed builds; see `docs/BUILD_QUICK_REFERENCE.md`.
-
-Open Decisions & Next Steps
-- AI & LLM benchmarks: add planning and LLM inference benchmarks; integrate into CI.
-- Runtime monitoring: choose profilers (Tracy, OpenTelemetry) for CPU/GPU metrics.
-
-### 14. Examples & Demo Roadmap
-Purpose
-- Polished examples to showcase features and serve as integration tests.
-
-Proposed MVP Demos
-- `hello_companion`: AI planning + validation; bring to green status.
-- `adaptive_boss`: multi-phase boss with dynamic tactics; validate nav + planner.
-- `navmesh_demo`: open-world pathfinding with dynamic obstacles; integrate camera + overlays.
-- `unified_showcase`: combined camera, physics, AI, navmesh, audio; includes plan viewer and memory inspector.
-
-Next Steps
-- Fix broken examples and update dependencies; ensure curated workspace checks pass.
-- Create a demo illustrating open-world manipulation with LLM-driven companions.
-
-### 15. Asset Pipeline & Modding (Post-MVP)
-Purpose
-- Enable artists/modders to import content and script behaviors.
-
-Guidelines
-- Importers: glTF/FBX for models, Ogg/Flac for audio, PNG/JPEG for textures; leverage offline tools (Assimp) for conversions.
-- Data-Driven Config: verbs, items, NPC stats, and quest logic in YAML/JSON; hot-reload in editor.
-- Modding: post-MVP, expose content packs with signed manifests to prevent cheating; provide safe LLM prompt/persona guidelines.
-
-Summary
-- These subsystem plans emphasize determinism, AI fairness, persistent companions, and cross-platform support. Open items include encryption, protocol choices, FFI, and editor UX; the proposals align with current engine docs and architecture.
-
-Appendix: Proposed Crates/Dirs
-- `astraweave-scene/` (scene graph, transforms, cameras)
-- `astraweave-asset/` (importers, GUIDs, dependency graph, cache)
-- `astraweave-shaders/` (WGSL modules, shaderlib)
-- `astraweave-materials/` (PBR, node graphs → WGSL compiler)
-- `astraweave-anim/` (skeletal/IK, blend trees)
-- `astraweave-behavior/` (BT/HTN graphs, runtime)
-- `astraweave-dialogue/`, `astraweave-quests/`
-- `examples/visual_3d/`, `examples/hello_companion_3d/`
-
-This roadmap is intentionally staged: ship a viewable, editable, and AI-playable core quickly; iterate toward UE5-class rendering, tools, and multiplayer scale while preserving AstraWeave’s AI-native edge.
-
-## Unified Showcase Visual Fidelity Gap Report (2025-09-28)
-
-### Issues Identified in Current Implementation
-- **Texture source quality is synthetic or fallback-only.** `create_material_array_textures` in `examples/unified_showcase/src/main.rs` collapses to 1×1 solid-color RGBA images whenever a named material asset is missing, which is the common path today. The ground, foliage, and structure surfaces therefore sample flat colors instead of authored PBR textures.
-- **Sky and environment lighting lack physically based inputs.** The renderer no longer binds a real sky cubemap (the `sky_texture` field was removed) and the shader derives atmospheric color procedurally. Sun direction is pegged to `let time = 100.0` inside `fs_main`, so day/night lighting never changes and there is no IBL contribution.
-- **Procedural terrain uses a single five-layer material stack.** Array textures expose only grass/dirt/stone/sand/forest indices and those layers get re-used for trees, rocks, and buildings. That forces foliage and structures to inherit ground textures and blocks biome-specific lookdev.
-- **Geometry is extremely low poly.** Tree, house, character, and rock meshes are literal hard-coded vertex arrays (for example `TREE_VERTICES` and `HOUSE_VERTICES`) with <40 vertices and no UV metadata. Every instance reuses the same primitive, producing visibly blocky repetition.
-- **Material pipeline is disconnected.** `material.rs` and `texture_manager.rs` define richer Material/TextureAtlas systems but `main.rs` never loads or binds them. The scene ignores authored material JSON/TOML and falls back to code-defined defaults.
-- **Shadow/lighting tuning is placeholder.** Shadow map size is fixed at 2048 without cascades or contact-hardening, specular/ambient terms ignore environment reflections/SSAO, and fog/atmospherics are purely procedural, yielding flat lighting.
-- **Performance/LOD hooks are unimplemented.** Comments promise GPU-driven batching, but there is no LOD selection, impostors, or density falloff, so distant assets stay low-detail yet still cost draw calls.
-- **Numerous TODOs remain at runtime.** The shader still notes `// TODO: Pass actual time as uniform`, and camera logic hardcodes `cam_height = 5.0`, leaving lighting and fog disconnected from real simulation state.
-
-### Missing Systems/Features Needed for High-Fidelity Rendering
-- Author-grade PBR asset pipeline covering tiling ground materials, foliage atlases, structure trim sheets (albedo/normal/roughness/metal/AO) with mip-corrected sampling.
-- Biome-aware material assignment (terrain splat maps, virtual texturing, or per-biome atlases) so trees, rocks, and structures pull unique assets instead of the shared five-layer array.
-- Mesh diversity and LODs: imported or generated meshes for vegetation/structures with UVs, vertex colors, wind data, and LOD chains.
-- Lighting upgrades: sky cubemap/atmospheric scattering, ACES tonemapping tuned for HDR inputs, cascaded shadows, SSAO/SSGI, and ambient probe sampling.
-- Vegetation system: GPU-instanced foliage with wind sway, density/variation maps, and billboards for distance rendering.
-- Streaming & residency budgets for textures and meshes to sustain high-resolution assets without stalls.
-- Tooling wiring: connect `TextureManager`, `MaterialLibrary`, and the array-texture upload path to data-driven packs (TOML/JSON) with hot reload and validation.
-- Diagnostics: visualizers for material layer weights, terrain splat masks, shadow coverage, and texture residency to guide lookdev.
-
-### Placeholders That Must Be Replaced
-- Procedural geometry constants (`TREE_VERTICES`, `HOUSE_VERTICES`, `CHARACTER_VERTICES`) need authored meshes or procedural generators with UVs, normals, and LODs.
-- Placeholder texture generation in `texture_utils.rs` (checkerboard “X” grid) should only run in tooling; runtime should fail loudly or surface diagnostics when assets are missing.
-- Hard-coded biome material IDs (`MATERIAL_LAYER_NAMES` et al.) must give way to data-driven packs referencing real texture sets.
-- Dummy uniforms (constant time, fixed camera height, fake AO toggles) require proper bindings from the simulation/post stack.
-- The current single-directional light path should evolve toward authorable lighting rigs with cascades, volumetrics, and reflection captures.
-
-> **Next Steps:** Stand up an end-to-end PBR asset pipeline for `unified_showcase`, wire the material/texture management crates into the renderer, replace hard-coded meshes with authored assets (including LODs), and introduce biome-aware shading + lighting improvements before chasing advanced features like virtual texturing or GI.
+# AstraWeave Roadmap — Aligning with Leading Rust Game Engines
+
+## Current Snapshot (Q2 2025)
+
+### Foundations Already in Place
+- ✅ Grid-based world, entity state, and deterministic tick scaffolding exist in `astraweave-core` (`World`, `Health`, `Team`, cooldown handling).【F:astraweave-core/src/world.rs†L1-L127】
+- ✅ Shared AI data contracts (`WorldSnapshot`, `PlanIntent`, tool registry metadata) are codified and serializable for orchestration layers.【F:astraweave-core/src/schema.rs†L45-L193】
+- ✅ A wgpu-based forward PBR prototype with cascaded shadows and normal mapping is implemented in `astraweave-render`, and the `visual_3d` example wires it to the current world state for interactive inspection.【F:astraweave-render/src/renderer.rs†L1-L200】【F:examples/visual_3d/src/main.rs†L1-L120】
+- ✅ Initial asset ingestion stubs for glTF/GLB meshes and materials are present in `astraweave-asset`, providing a starting point for a structured asset pipeline.【F:astraweave-asset/src/lib.rs†L1-L200】
+- ✅ Authoring/editor shell stubs (quest, dialogue, level docs) already exist in `tools/aw_editor`, anchoring future workflow tooling.【F:tools/aw_editor/src/main.rs†L1-L120】
+
+### Gaps and Risks Blocking Engine Parity
+- ⚠️ Core systems still rely on ad-hoc structs; there is no ECS schedule, component storage abstraction, or plugin boundary comparable to Bevy/Fyrox (e.g., `World` is a bespoke HashMap aggregate).【F:astraweave-core/src/world.rs†L29-L127】
+- ⚠️ Critical gameplay/AI functionality is stubbed or duplicated: orchestrator implementations in `astraweave-ai` contain TODO placeholders and diverge between `lib.rs` and `orchestrator.rs`; the tool sandbox validator is unimplemented; capture/replay routines return "Not yet implemented".【F:astraweave-ai/src/orchestrator.rs†L1-L28】【F:astraweave-ai/src/tool_sandbox.rs†L5-L66】【F:astraweave-core/src/capture_replay.rs†L1-L16】
+- ⚠️ Observability and CI gates are aspirational: golden-image tests, deterministic replays, asset signing, and AI plan snapshot tests are only documented stubs with no automated enforcement.【F:astraweave-core/src/capture_replay.rs†L1-L16】【F:astraweave-ai/tests/plan_snapshot.rs†L1-L8】【F:tools/asset_signing.rs†L1-L16】
+- ⚠️ Rendering, asset, and tooling crates are not yet unified under a render graph or asset database; there is no scheduler that integrates renderer, physics, AI, and networking in a deterministic frame loop.
+
+---
+
+## Phase 0 (0–1 months): Stabilize, Deduplicate, and Validate Baseline
+**Objectives:** eliminate stubs, ensure repeatable builds/tests, and align nomenclature before layering new systems.
+
+**Key Tasks**
+1. Unify AI orchestrator interfaces: collapse duplicate implementations in `astraweave-ai/src/lib.rs` and `astraweave-ai/src/orchestrator.rs`, implement the rule/utility planners, and cover them with deterministic tests (`astraweave-ai/tests/plan_snapshot.rs`).
+2. Implement real tool validation in `astraweave-ai/src/tool_sandbox.rs`, wiring into the current world representation and adding negative-path tests.
+3. Deliver functional capture/replay for the core world state in `astraweave-core/src/capture_replay.rs`, including checksum comparison and regression harnesses.
+4. Replace placeholder returns in security/asset tooling (e.g., `tools/asset_signing.rs`) with working signing/verification backed by SBOM documentation.
+5. Stand up continuous validation: `cargo check --all-targets`, `cargo fmt --check`, `cargo clippy --workspace`, unit tests, and golden image snapshots for the renderer gated via `make ci`.
+6. Document and enforce workspace feature flags (renderer textures, asset import) to guarantee deterministic builds across platforms.
+
+**Exit Criteria**
+- All TODO/"Not yet implemented" stubs are removed or tracked as explicit issues with compensating tests.
+- CI pipeline blocks merges on format, lint, unit/integration tests, and renderer golden images.
+- Deterministic AI plan snapshots and world capture/replay succeed in automation.
+
+---
+
+## Phase 1 (1–3 months): ECS & Simulation Core Parity
+**Objectives:** evolve the bespoke world into a modular ECS with scheduling, reflecting the architecture of Bevy/Fyrox/Amethyst.
+
+**Key Tasks**
+1. Introduce an `astraweave-ecs` crate providing archetype-based storage, command buffers, and deterministic scheduling (or adopt `bevy_ecs` via a compatibility layer) and migrate `astraweave-core::World` onto it.
+2. Define system stages (Perception → Simulation → AI Planning → Physics → Presentation) with explicit schedules and frame boundaries.
+3. Implement resource injection, events, and fixed-timestep drivers comparable to Bevy's `App`/`Schedule` API, exposing plugin registration points across crates.
+4. Port existing world interactions (spawning, cooldown ticks, LOS helpers) into ECS components/systems with coverage tests and benchmarks.
+5. Provide migration utilities bridging legacy HashMap-backed saves to the new ECS layout.
+
+**Exit Criteria**
+- Simulation runs through an ECS-driven schedule with deterministic hash-locked component order.
+- Plugins for AI, physics, rendering, and input register via a unified application builder.
+- Benchmarks demonstrate stable frame times comparable to baseline HashMap implementation.
+
+---
+
+## Phase 2 (3–6 months): Rendering & Scene Graph Modernization
+**Objectives:** harden the wgpu renderer into a modular render graph integrated with ECS, matching Bevy/Fyrox capabilities.
+
+**Key Tasks**
+1. Build a render graph abstraction in `astraweave-render` (graph nodes, resource handles, graph compiler) and integrate clustered lighting, shadowing, and post pipelines as graph passes.
+2. Implement GPU resource lifetime management (bindless-like material/mesh registries, streaming textures) tied into ECS resource events.
+3. Expand terrain, sky, and weather systems to operate through ECS components and renderer plugins.
+4. Add render doc tests: golden images for static scenes, shader compile caches, and automated shader validation.
+5. Wire ECS scene graph (`astraweave-scene`) into renderer instances, including hierarchical transforms and skinning uploads.
+
+**Exit Criteria**
+- Renderer runs headless golden-image tests with stable outputs across platforms.
+- ECS-driven scene graph produces renderable instances via the render graph.
+- Profiling captures (wgpu trace) integrated into CI for regression detection.
+
+---
+
+## Phase 3 (6–8 months): Asset Pipeline & Data Management
+**Objectives:** deliver a deterministic asset database akin to Godot/Bevy asset servers.
+
+**Key Tasks**
+1. Extend `astraweave-asset` with dependency graph tracking, GUID assignment, hot-reload watchers, and import pipelines for glTF, textures, audio, and dialogue.
+2. Introduce asset cooking/build steps (`tools/aw_asset_cli`) for offline processing, compression, and validation.
+3. Integrate asset streaming into renderer/material subsystems with residency tracking.
+4. Store asset metadata and hashes for reproducible builds; integrate signing/verification pipeline.
+5. Provide asset inspection UI in `tools/aw_editor` and command-line status reports.
+
+**Exit Criteria**
+- Assets load through a central database with hot reload and dependency invalidation.
+- CI verifies asset hashes, metadata completeness, and importer round-trip tests.
+- Editor displays asset metadata and previews via ECS-powered viewers.
+
+---
+
+## Phase 4 (8–11 months): Authoring Tools & Workflow Integration
+**Objectives:** evolve `tools/aw_editor` into a multi-dock authoring environment comparable to Godot/Bevy editors.
+
+**Key Tasks**
+1. Implement docking, scene hierarchy, inspector, console, and profiler panels in `aw_editor`, fed by ECS state snapshots.
+2. Embed graph editors for behavior trees, dialogue, and quests with live validation hooks into `astraweave-behavior`, `astraweave-dialogue`, and `astraweave-quests`.
+3. Enable live material/shader editing with hot reload via the asset pipeline and renderer graph.
+4. Integrate terrain/biome painting, navmesh baking controls, and simulation playback.
+5. Provide collaborative-friendly save formats and diff tooling for authored assets.
+
+**Exit Criteria**
+- Editor sessions can author a scene, save assets, adjust materials, and trigger AI validation without restarting.
+- Automated UI smoke tests (via wgpu headless backend) run in CI.
+
+---
+
+## Phase 5 (11–14 months): AI, Gameplay, and Systems Depth
+**Objectives:** achieve AI/gameplay feature parity with precedent engines' gameplay modules.
+
+**Key Tasks**
+1. Implement full tool validation categories (nav, physics, resources, visibility) and integrate with Rapier/navmesh data.
+2. Flesh out behavior trees/HTN in `astraweave-behavior`, hooking into ECS events and orchestrators.
+3. Expand persona/memory persistence with deterministic serialization and versioning.
+4. Integrate LLM planning with guardrails (schema validation, sandboxing) and fallback heuristics.
+5. Deliver gameplay modules (combat, crafting, quests) as ECS plugins with deterministic tests.
+
+**Exit Criteria**
+- AI agents operate through validated plans with deterministic outcomes across runs.
+- Tool sandbox enforces safety constraints and logs telemetry for debugging.
+- Gameplay feature tests (combat, quests, dialogue) pass in CI.
+
+---
+
+## Phase 6 (14–18 months): Networking, Persistence, and Scale
+**Objectives:** reach multiplayer-ready fidelity similar to Amethyst/Godot networking stacks.
+
+**Key Tasks**
+1. Finalize `aw-net` crates with server-authoritative snapshot/rollback, interest management, and secure serialization.
+2. Implement deterministic replay + save/load integration via `persistence/aw-save` tied to ECS state snapshots.
+3. Harden security: sandbox scripting, enforce anti-cheat hooks, and integrate telemetry exporters.
+4. Stress-test large scenes/AI loads; add automated soak tests for netcode and save systems.
+
+**Exit Criteria**
+- 4-player deterministic demo with AI companions runs without desync in CI soak tests.
+- Save/replay flows validated across platform targets with checksum verification.
+
+---
+
+## Phase 7 (18–24 months): Observability, Packaging, and Ecosystem
+**Objectives:** polish for production adoption and third-party extensibility.
+
+**Key Tasks**
+1. Establish observability stack (tracing, metrics, crash reporting) integrated into editor and runtime builds.
+2. Publish SDK artifacts (C ABI via `astraweave-sdk`), plugin templates, and documentation site.
+3. Provide sample projects demonstrating vertical slices, automation to build distributable demos, and marketing assets.
+4. Formalize semantic versioning, release automation, and long-term support cadence.
+
+**Exit Criteria**
+- External teams can author content using published SDK/docs without engine modifications.
+- Release pipelines produce signed binaries, documentation, and sample content automatically.
+
+---
+
+## Continuous Workstreams
+- **Quality & Security:** Maintain cargo-audit/deny, SBOM generation, secret scanning, and hardened LLM adapters.
+- **Performance & Observability:** Track ECS/renderer benchmarks, integrate tracing and frame capture tooling, and enforce performance budgets in CI.
+- **Documentation & Developer Experience:** Keep docs aligned with roadmap phases, publish migration guides, and provide reproducible setup scripts.
