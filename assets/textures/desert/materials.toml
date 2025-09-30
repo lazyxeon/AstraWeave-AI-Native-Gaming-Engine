@@ -1,0 +1,30 @@
+# assets/textures/desert/materials.toml
+
+[biome]
+name = "desert"
+
+[[layer]]
+key = "sand"
+albedo   = "sand/albedo.png"
+normal   = "sand/normal.png"
+mra      = "sand/mra.png"
+
+[[layer]]
+key = "rock_slate"
+albedo   = "rocks/slate/albedo.png"
+normal   = "rocks/slate/normal.png"
+mra      = "rocks/slate/mra.png"
+
+[[layer]]
+key = "stone"
+albedo   = "stone/albedo.png"
+normal   = "stone/normal.png"
+metallic = "stone/metallic.png"
+roughness= "stone/roughness.png"
+ao       = "stone/ao.png"
+
+[[layer]]
+key = "dirt"
+albedo   = "dirt/albedo.png"
+normal   = "dirt/normal.png"
+mra      = "dirt/mra.png"

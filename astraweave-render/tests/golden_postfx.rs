@@ -45,7 +45,8 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
     );
     var out: VSOut;
     out.pos = vec4<f32>(pos[vid], 0.0, 1.0);
-    out.uv = (pos[vid] + vec2<f32>(1.0,1.0)) * 0.5;
+    // Map NDC to UV with Y flipped so that v increases downward to match CPU reference
+    out.uv = vec2<f32>((pos[vid].x + 1.0) * 0.5, (1.0 - pos[vid].y) * 0.5);
     return out;
 }
 
@@ -181,6 +182,9 @@ fn golden_postfx_compose_matches_cpu() {
     queue.write_texture(hdr_tex.as_image_copy(), &hdr_bytes, layout, extent);
     queue.write_texture(ao_tex.as_image_copy(), &ao_bytes, layout, extent);
     queue.write_texture(gi_tex.as_image_copy(), &gi_bytes, layout, extent);
+    // Ensure writes are flushed before using these textures in a render pass
+    queue.submit(std::iter::empty());
+    device.poll(wgpu::Maintain::Wait);
 
     // Target texture (sRGB) for readback
     let target = device.create_texture(&wgpu::TextureDescriptor {

@@ -1,0 +1,29 @@
+[biome]
+name = "tests"
+
+# Layer A: packed MRA
+[[layer]]
+key = "test_a"
+albedo   = "a/albedo.png"
+normal   = "a/normal.png"
+mra      = "a/mra.png"
+
+# Layer B: separate MET/ROUGH/AO
+[[layer]]
+key = "test_b"
+albedo   = "b/albedo.png"
+normal   = "b/normal.png"
+metallic = "b/metallic.png"
+roughness= "b/roughness.png"
+ao       = "b/ao.png"
+
+# Layer C: missing normal -> neutral normal fallback
+[[layer]]
+key = "test_c"
+albedo   = "c/albedo.png"
+mra      = "c/mra.png"
+
+# Layer D: missing everything except albedo -> fallbacks for normal and MRA
+[[layer]]
+key = "test_d"
+albedo   = "d/albedo.png"

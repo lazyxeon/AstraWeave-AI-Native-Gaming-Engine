@@ -1,3 +1,44 @@
+# Unified Showcase
+
+A focused demo for testing AstraWeave's PBR material system, array textures, debug overlay, and a minimal Image-Based Lighting (IBL) pipeline.
+
+## What’s inside
+- Per-layer material arrays (albedo, normal RG8 with Z reconstruction, MRA) with robust fallbacks
+- Mipmap generation via render passes
+- Overlay grid to visualize material array layers (borders + index bar)
+- Baseline IBL driven by a procedural sky:
+  - Environment cubemap (Rgba16Float, mipmapped)
+  - Split-sum BRDF LUT (Rgba16Float)
+  - WGSL PBR integrates diffuse/specular IBL, toggleable at runtime
+
+## How to run (Windows PowerShell)
+- First-time setup may take a while due to dependencies; don’t cancel builds.
+- Run this example only (avoid broken crates):
+  - cargo run -p unified_showcase --release
+
+If you prefer a quick compile test without launching:
+- cargo check -p unified_showcase
+
+## Controls
+- I: Toggle IBL on/off
+- R: Recapture environment (procedural sky) and regenerate mipmaps
+- F9: Toggle the material layer debug overlay
+- WASD + Mouse: Move camera (standard controls)
+
+## Notes and limitations
+- Diffuse IBL is approximated using high mip sampling of the env cube (no separate irradiance map yet).
+- Specular IBL uses mip selection by roughness plus a precomputed BRDF LUT; a true GGX prefilter pass per mip is planned.
+- Sky capture currently uses a simple directional basis per face and may need refined face transforms for perfect alignment.
+- Normal maps are stored as RG8 (XY) with Z reconstructed in shader; BC5 compression is a future improvement.
+
+## Troubleshooting
+- If you see missing textures, the per-layer fallbacks will kick in. Check the console for which layers were substituted.
+- If you get linker/feature errors when building the entire workspace, build just this crate as shown above.
+
+## Next steps (future work)
+- Proper irradiance convolution and specular prefilter pipelines
+- Per-biome HDR environments and caching/throttling of IBL updates
+- Small UI for IBL quality and time-of-day
 # AstraWeave Unified Showcase Demo
 
 This demo showcases multiple AstraWeave engine features in one interactive 3D scene, demonstrating the integration of all core engine components.

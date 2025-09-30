@@ -1,0 +1,6 @@
+[layers]
+grass = 0
+rock_smooth = 1
+dirt = 2
+sand = 3
+moss = 4

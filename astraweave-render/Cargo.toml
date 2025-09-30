@@ -15,7 +15,14 @@ rand = { workspace = true }
 serde = { workspace = true }
 astraweave-terrain = { path = "../astraweave-terrain" }
 astraweave-materials = { path = "../astraweave-materials" }
-image = { version = "0.25", optional = true }
+image = { version = "0.25", optional = true, features = ["hdr"] }
+half = "2"
+toml = { workspace = true }
+
+# Optional asset loaders
+gltf = { version = "1.4", optional = true, features = ["import"] }
+mikktspace = { version = "0.3", optional = true }
+tobj = { version = "4", optional = true }
 
 # Cinematics for camera/timeline control
 astraweave-cinematics = { path = "../astraweave-cinematics" }
@@ -24,9 +31,15 @@ serde_json = "1"
 [features]
 default = ["textures"]
 textures = ["image"]
+# Asset pipeline feature flags
+gltf-assets = ["gltf", "mikktspace"]
+obj-assets = ["tobj"]
+assets = ["gltf-assets", "obj-assets"]
 gpu-tests = []
 postfx = []
 
 [dev-dependencies]
 naga = "0.20"
 criterion = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png"] }
+tempfile = "3"

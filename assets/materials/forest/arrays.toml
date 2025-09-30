@@ -1,0 +1,6 @@
+[layers]
+forest_floor = 0
+tree_bark = 1
+tree_leaves = 2
+rock_lichen = 3
+rock_smooth = 4
