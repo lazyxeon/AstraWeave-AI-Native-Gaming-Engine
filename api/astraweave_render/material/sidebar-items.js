@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["ArrayLayout","MaterialGpuArrays","MaterialLayerDesc","MaterialLoadStats","MaterialManager","MaterialPackDesc"]};

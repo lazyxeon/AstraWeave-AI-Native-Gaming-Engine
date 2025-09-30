@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["orchestrator","tool_sandbox"],"struct":["GoapOrchestrator","RuleOrchestrator","UtilityOrchestrator"],"trait":["Orchestrator","OrchestratorAsync"]};
+window.SIDEBAR_ITEMS = {"mod":["ecs_ai_plugin","orchestrator","tool_sandbox"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["cooldowns"],"struct":["CAiAgent","CAmmo","CCooldowns","CDesiredPos","CHealth","CLegacyId","CPos","CTeam"]};

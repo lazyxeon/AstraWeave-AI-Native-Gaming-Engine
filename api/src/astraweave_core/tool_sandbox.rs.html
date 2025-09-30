@@ -25,79 +25,136 @@
 <a href=#25 id=25 data-nosnippet>25</a>        ActionStep::Revive { .. } =&gt; <span class="string">"Revive"</span>,
 <a href=#26 id=26 data-nosnippet>26</a>    };
 <a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">match </span>err {
-<a href=#28 id=28 data-nosnippet>28</a>        EngineError::Cooldown(s) =&gt; ToolBlock { reason: ToolBlockReason::Cooldown, tool, msg: <span class="macro">format!</span>(<span class="string">"cooldown: {}"</span>, s) },
-<a href=#29 id=29 data-nosnippet>29</a>        EngineError::LosBlocked =&gt; ToolBlock { reason: ToolBlockReason::LineOfSight, tool, msg: <span class="string">"line of sight"</span>.into() },
-<a href=#30 id=30 data-nosnippet>30</a>        EngineError::NoPath =&gt; ToolBlock { reason: ToolBlockReason::PathBlocked, tool, msg: <span class="string">"no path"</span>.into() },
-<a href=#31 id=31 data-nosnippet>31</a>        EngineError::InvalidAction(m) =&gt; ToolBlock { reason: ToolBlockReason::Invalid, tool, msg: m.clone() },
-<a href=#32 id=32 data-nosnippet>32</a>        EngineError::Resource(k) =&gt; ToolBlock { reason: ToolBlockReason::Other, tool, msg: <span class="macro">format!</span>(<span class="string">"resource:{}"</span>, k) },
-<a href=#33 id=33 data-nosnippet>33</a>    }
-<a href=#34 id=34 data-nosnippet>34</a>}
-<a href=#35 id=35 data-nosnippet>35</a>
-<a href=#36 id=36 data-nosnippet>36</a><span class="attr">#[cfg(test)]
-<a href=#37 id=37 data-nosnippet>37</a></span><span class="kw">mod </span>tests {
-<a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">use crate</span>::{validation::{validate_and_execute, ValidateCfg}, world::World, IVec2, Team, PlanIntent};
-<a href=#40 id=40 data-nosnippet>40</a>    <span class="attr">#[test]
-<a href=#41 id=41 data-nosnippet>41</a>    </span><span class="kw">fn </span>taxonomy_maps_correctly() {
-<a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>step = ActionStep::MoveTo{ x: <span class="number">0</span>, y: <span class="number">0 </span>};
-<a href=#43 id=43 data-nosnippet>43</a>        <span class="kw">let </span>b = map_engine_error(<span class="kw-2">&amp;</span>step, <span class="kw-2">&amp;</span>EngineError::NoPath);
-<a href=#44 id=44 data-nosnippet>44</a>        <span class="macro">assert_eq!</span>(b.reason, ToolBlockReason::PathBlocked);
-<a href=#45 id=45 data-nosnippet>45</a>        <span class="macro">assert_eq!</span>(b.tool, <span class="string">"MoveTo"</span>);
-<a href=#46 id=46 data-nosnippet>46</a>        <span class="kw">let </span>b2 = map_engine_error(<span class="kw-2">&amp;</span>ActionStep::Throw{ item: <span class="string">"smoke"</span>.into(), x:<span class="number">0</span>, y:<span class="number">0 </span>}, <span class="kw-2">&amp;</span>EngineError::Cooldown(<span class="string">"throw:smoke"</span>.into()));
-<a href=#47 id=47 data-nosnippet>47</a>        <span class="macro">assert_eq!</span>(b2.reason, ToolBlockReason::Cooldown);
-<a href=#48 id=48 data-nosnippet>48</a>        <span class="macro">assert_eq!</span>(b2.tool, <span class="string">"Throw"</span>);
-<a href=#49 id=49 data-nosnippet>49</a>    }
-<a href=#50 id=50 data-nosnippet>50</a>
-<a href=#51 id=51 data-nosnippet>51</a>    <span class="attr">#[test]
-<a href=#52 id=52 data-nosnippet>52</a>    </span><span class="kw">fn </span>resource_maps_to_other() {
-<a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">let </span>step = ActionStep::CoverFire{ target_id: <span class="number">1</span>, duration: <span class="number">1.0 </span>};
-<a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span>b = map_engine_error(<span class="kw-2">&amp;</span>step, <span class="kw-2">&amp;</span>EngineError::Resource(<span class="string">"ammo"</span>.into()));
-<a href=#55 id=55 data-nosnippet>55</a>        <span class="macro">assert_eq!</span>(b.reason, ToolBlockReason::Other);
-<a href=#56 id=56 data-nosnippet>56</a>        <span class="macro">assert!</span>(b.msg.contains(<span class="string">"ammo"</span>));
-<a href=#57 id=57 data-nosnippet>57</a>    }
-<a href=#58 id=58 data-nosnippet>58</a>
-<a href=#59 id=59 data-nosnippet>59</a>    <span class="attr">#[test]
-<a href=#60 id=60 data-nosnippet>60</a>    </span><span class="kw">fn </span>los_and_cooldown_map_to_taxonomy() {
-<a href=#61 id=61 data-nosnippet>61</a>        <span class="comment">// World: two entities with an obstacle between
-<a href=#62 id=62 data-nosnippet>62</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>w = World::new();
-<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">let </span>a = w.spawn(<span class="string">"ally"</span>, IVec2{ x:<span class="number">0</span>, y:<span class="number">0 </span>}, Team{ id:<span class="number">1 </span>}, <span class="number">100</span>, <span class="number">10</span>);
-<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span>e = w.spawn(<span class="string">"enemy"</span>, IVec2{ x:<span class="number">2</span>, y:<span class="number">0 </span>}, Team{ id:<span class="number">2 </span>}, <span class="number">50</span>, <span class="number">0</span>);
-<a href=#65 id=65 data-nosnippet>65</a>        w.obstacles.insert((<span class="number">1</span>,<span class="number">0</span>)); <span class="comment">// blocks LOS
-<a href=#66 id=66 data-nosnippet>66</a>        </span><span class="kw">let </span>cfg = ValidateCfg{ world_bounds: (-<span class="number">10</span>,-<span class="number">10</span>,<span class="number">10</span>,<span class="number">10</span>) };
-<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span><span class="kw-2">mut </span>log = |_s: String|{};
-<a href=#68 id=68 data-nosnippet>68</a>        <span class="comment">// Try cover fire -&gt; expect LOS blocked
-<a href=#69 id=69 data-nosnippet>69</a>        </span><span class="kw">let </span>intent = PlanIntent{ plan_id: <span class="string">"p"</span>.into(), steps: <span class="macro">vec!</span>[ActionStep::CoverFire{ target_id: e, duration: <span class="number">1.0 </span>}] };
-<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>err = validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log).unwrap_err();
-<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">let </span>tb = map_engine_error(intent.steps.first().unwrap(), <span class="kw-2">&amp;</span>err);
-<a href=#72 id=72 data-nosnippet>72</a>        <span class="macro">assert_eq!</span>(tb.reason, ToolBlockReason::LineOfSight);
-<a href=#73 id=73 data-nosnippet>73</a>        <span class="comment">// Cooldown: prime a cooldown and verify mapping
-<a href=#74 id=74 data-nosnippet>74</a>        </span><span class="kw">let </span>intent = PlanIntent{ plan_id: <span class="string">"p2"</span>.into(), steps: <span class="macro">vec!</span>[ActionStep::Throw{ item: <span class="string">"smoke"</span>.into(), x:<span class="number">0</span>, y:<span class="number">0 </span>}] };
-<a href=#75 id=75 data-nosnippet>75</a>        <span class="comment">// First use sets cooldown
-<a href=#76 id=76 data-nosnippet>76</a>        </span>w.obstacles.clear();
-<a href=#77 id=77 data-nosnippet>77</a>        <span class="kw">let _ </span>= validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log);
-<a href=#78 id=78 data-nosnippet>78</a>        <span class="comment">// Second use should hit cooldown
-<a href=#79 id=79 data-nosnippet>79</a>        </span><span class="kw">let </span>err2 = validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log).unwrap_err();
-<a href=#80 id=80 data-nosnippet>80</a>        <span class="kw">let </span>tb2 = map_engine_error(intent.steps.first().unwrap(), <span class="kw-2">&amp;</span>err2);
-<a href=#81 id=81 data-nosnippet>81</a>        <span class="macro">assert_eq!</span>(tb2.reason, ToolBlockReason::Cooldown);
-<a href=#82 id=82 data-nosnippet>82</a>        <span class="macro">assert!</span>(tb2.msg.contains(<span class="string">"throw:smoke"</span>));
-<a href=#83 id=83 data-nosnippet>83</a>    }
-<a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="attr">#[test]
-<a href=#86 id=86 data-nosnippet>86</a>    </span><span class="kw">fn </span>partial_failure_multi_step_stops_on_error() {
-<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span><span class="kw-2">mut </span>w = World::new();
-<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>a = w.spawn(<span class="string">"ally"</span>, IVec2{ x:<span class="number">0</span>, y:<span class="number">0 </span>}, Team{ id:<span class="number">1 </span>}, <span class="number">100</span>, <span class="number">0</span>);
-<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>e = w.spawn(<span class="string">"enemy"</span>, IVec2{ x:<span class="number">3</span>, y:<span class="number">0 </span>}, Team{ id:<span class="number">2 </span>}, <span class="number">50</span>, <span class="number">0</span>);
-<a href=#90 id=90 data-nosnippet>90</a>        <span class="comment">// First step succeeds (move), second fails (cover_fire no ammo)
-<a href=#91 id=91 data-nosnippet>91</a>        </span><span class="kw">let </span>intent = PlanIntent{ plan_id: <span class="string">"p3"</span>.into(), steps: <span class="macro">vec!</span>[
-<a href=#92 id=92 data-nosnippet>92</a>            ActionStep::MoveTo{ x:<span class="number">1</span>, y:<span class="number">0 </span>},
-<a href=#93 id=93 data-nosnippet>93</a>            ActionStep::CoverFire{ target_id: e, duration: <span class="number">1.0 </span>},
-<a href=#94 id=94 data-nosnippet>94</a>            ActionStep::MoveTo{ x:<span class="number">2</span>, y:<span class="number">0 </span>}, <span class="comment">// should not execute
-<a href=#95 id=95 data-nosnippet>95</a>        </span>]};
-<a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>cfg = ValidateCfg{ world_bounds: (-<span class="number">10</span>,-<span class="number">10</span>,<span class="number">10</span>,<span class="number">10</span>) };
-<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span><span class="kw-2">mut </span>log = |_s: String|{};
-<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>res = validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log);
-<a href=#99 id=99 data-nosnippet>99</a>        <span class="macro">assert!</span>(<span class="macro">matches!</span>(res, <span class="prelude-val">Err</span>(EngineError::Resource(<span class="kw">_</span>))));
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="comment">// Ensure the first move happened, but not the last
-<a href=#101 id=101 data-nosnippet>101</a>        </span><span class="macro">assert_eq!</span>(w.pos_of(a).unwrap(), IVec2{ x:<span class="number">1</span>, y:<span class="number">0 </span>});
-<a href=#102 id=102 data-nosnippet>102</a>    }
-<a href=#103 id=103 data-nosnippet>103</a>}</code></pre></div></section></main></body></html>
+<a href=#28 id=28 data-nosnippet>28</a>        EngineError::Cooldown(s) =&gt; ToolBlock {
+<a href=#29 id=29 data-nosnippet>29</a>            reason: ToolBlockReason::Cooldown,
+<a href=#30 id=30 data-nosnippet>30</a>            tool,
+<a href=#31 id=31 data-nosnippet>31</a>            msg: <span class="macro">format!</span>(<span class="string">"cooldown: {}"</span>, s),
+<a href=#32 id=32 data-nosnippet>32</a>        },
+<a href=#33 id=33 data-nosnippet>33</a>        EngineError::LosBlocked =&gt; ToolBlock {
+<a href=#34 id=34 data-nosnippet>34</a>            reason: ToolBlockReason::LineOfSight,
+<a href=#35 id=35 data-nosnippet>35</a>            tool,
+<a href=#36 id=36 data-nosnippet>36</a>            msg: <span class="string">"line of sight"</span>.into(),
+<a href=#37 id=37 data-nosnippet>37</a>        },
+<a href=#38 id=38 data-nosnippet>38</a>        EngineError::NoPath =&gt; ToolBlock {
+<a href=#39 id=39 data-nosnippet>39</a>            reason: ToolBlockReason::PathBlocked,
+<a href=#40 id=40 data-nosnippet>40</a>            tool,
+<a href=#41 id=41 data-nosnippet>41</a>            msg: <span class="string">"no path"</span>.into(),
+<a href=#42 id=42 data-nosnippet>42</a>        },
+<a href=#43 id=43 data-nosnippet>43</a>        EngineError::InvalidAction(m) =&gt; ToolBlock {
+<a href=#44 id=44 data-nosnippet>44</a>            reason: ToolBlockReason::Invalid,
+<a href=#45 id=45 data-nosnippet>45</a>            tool,
+<a href=#46 id=46 data-nosnippet>46</a>            msg: m.clone(),
+<a href=#47 id=47 data-nosnippet>47</a>        },
+<a href=#48 id=48 data-nosnippet>48</a>        EngineError::Resource(k) =&gt; ToolBlock {
+<a href=#49 id=49 data-nosnippet>49</a>            reason: ToolBlockReason::Other,
+<a href=#50 id=50 data-nosnippet>50</a>            tool,
+<a href=#51 id=51 data-nosnippet>51</a>            msg: <span class="macro">format!</span>(<span class="string">"resource:{}"</span>, k),
+<a href=#52 id=52 data-nosnippet>52</a>        },
+<a href=#53 id=53 data-nosnippet>53</a>    }
+<a href=#54 id=54 data-nosnippet>54</a>}
+<a href=#55 id=55 data-nosnippet>55</a>
+<a href=#56 id=56 data-nosnippet>56</a><span class="attr">#[cfg(test)]
+<a href=#57 id=57 data-nosnippet>57</a></span><span class="kw">mod </span>tests {
+<a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">use crate</span>::{
+<a href=#60 id=60 data-nosnippet>60</a>        validation::{validate_and_execute, ValidateCfg},
+<a href=#61 id=61 data-nosnippet>61</a>        world::World,
+<a href=#62 id=62 data-nosnippet>62</a>        IVec2, PlanIntent, Team,
+<a href=#63 id=63 data-nosnippet>63</a>    };
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="attr">#[test]
+<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="kw">fn </span>taxonomy_maps_correctly() {
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>step = ActionStep::MoveTo { x: <span class="number">0</span>, y: <span class="number">0 </span>};
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>b = map_engine_error(<span class="kw-2">&amp;</span>step, <span class="kw-2">&amp;</span>EngineError::NoPath);
+<a href=#68 id=68 data-nosnippet>68</a>        <span class="macro">assert_eq!</span>(b.reason, ToolBlockReason::PathBlocked);
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="macro">assert_eq!</span>(b.tool, <span class="string">"MoveTo"</span>);
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>b2 = map_engine_error(
+<a href=#71 id=71 data-nosnippet>71</a>            <span class="kw-2">&amp;</span>ActionStep::Throw {
+<a href=#72 id=72 data-nosnippet>72</a>                item: <span class="string">"smoke"</span>.into(),
+<a href=#73 id=73 data-nosnippet>73</a>                x: <span class="number">0</span>,
+<a href=#74 id=74 data-nosnippet>74</a>                y: <span class="number">0</span>,
+<a href=#75 id=75 data-nosnippet>75</a>            },
+<a href=#76 id=76 data-nosnippet>76</a>            <span class="kw-2">&amp;</span>EngineError::Cooldown(<span class="string">"throw:smoke"</span>.into()),
+<a href=#77 id=77 data-nosnippet>77</a>        );
+<a href=#78 id=78 data-nosnippet>78</a>        <span class="macro">assert_eq!</span>(b2.reason, ToolBlockReason::Cooldown);
+<a href=#79 id=79 data-nosnippet>79</a>        <span class="macro">assert_eq!</span>(b2.tool, <span class="string">"Throw"</span>);
+<a href=#80 id=80 data-nosnippet>80</a>    }
+<a href=#81 id=81 data-nosnippet>81</a>
+<a href=#82 id=82 data-nosnippet>82</a>    <span class="attr">#[test]
+<a href=#83 id=83 data-nosnippet>83</a>    </span><span class="kw">fn </span>resource_maps_to_other() {
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>step = ActionStep::CoverFire {
+<a href=#85 id=85 data-nosnippet>85</a>            target_id: <span class="number">1</span>,
+<a href=#86 id=86 data-nosnippet>86</a>            duration: <span class="number">1.0</span>,
+<a href=#87 id=87 data-nosnippet>87</a>        };
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>b = map_engine_error(<span class="kw-2">&amp;</span>step, <span class="kw-2">&amp;</span>EngineError::Resource(<span class="string">"ammo"</span>.into()));
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="macro">assert_eq!</span>(b.reason, ToolBlockReason::Other);
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="macro">assert!</span>(b.msg.contains(<span class="string">"ammo"</span>));
+<a href=#91 id=91 data-nosnippet>91</a>    }
+<a href=#92 id=92 data-nosnippet>92</a>
+<a href=#93 id=93 data-nosnippet>93</a>    <span class="attr">#[test]
+<a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">fn </span>los_and_cooldown_map_to_taxonomy() {
+<a href=#95 id=95 data-nosnippet>95</a>        <span class="comment">// World: two entities with an obstacle between
+<a href=#96 id=96 data-nosnippet>96</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>w = World::new();
+<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>a = w.spawn(<span class="string">"ally"</span>, IVec2 { x: <span class="number">0</span>, y: <span class="number">0 </span>}, Team { id: <span class="number">1 </span>}, <span class="number">100</span>, <span class="number">10</span>);
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>e = w.spawn(<span class="string">"enemy"</span>, IVec2 { x: <span class="number">2</span>, y: <span class="number">0 </span>}, Team { id: <span class="number">2 </span>}, <span class="number">50</span>, <span class="number">0</span>);
+<a href=#99 id=99 data-nosnippet>99</a>        w.obstacles.insert((<span class="number">1</span>, <span class="number">0</span>)); <span class="comment">// blocks LOS
+<a href=#100 id=100 data-nosnippet>100</a>        </span><span class="kw">let </span>cfg = ValidateCfg {
+<a href=#101 id=101 data-nosnippet>101</a>            world_bounds: (-<span class="number">10</span>, -<span class="number">10</span>, <span class="number">10</span>, <span class="number">10</span>),
+<a href=#102 id=102 data-nosnippet>102</a>        };
+<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span><span class="kw-2">mut </span>log = |_s: String| {};
+<a href=#104 id=104 data-nosnippet>104</a>        <span class="comment">// Try cover fire -&gt; expect LOS blocked
+<a href=#105 id=105 data-nosnippet>105</a>        </span><span class="kw">let </span>intent = PlanIntent {
+<a href=#106 id=106 data-nosnippet>106</a>            plan_id: <span class="string">"p"</span>.into(),
+<a href=#107 id=107 data-nosnippet>107</a>            steps: <span class="macro">vec!</span>[ActionStep::CoverFire {
+<a href=#108 id=108 data-nosnippet>108</a>                target_id: e,
+<a href=#109 id=109 data-nosnippet>109</a>                duration: <span class="number">1.0</span>,
+<a href=#110 id=110 data-nosnippet>110</a>            }],
+<a href=#111 id=111 data-nosnippet>111</a>        };
+<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">let </span>err = validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log).unwrap_err();
+<a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">let </span>tb = map_engine_error(intent.steps.first().unwrap(), <span class="kw-2">&amp;</span>err);
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="macro">assert_eq!</span>(tb.reason, ToolBlockReason::LineOfSight);
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="comment">// Cooldown: prime a cooldown and verify mapping
+<a href=#116 id=116 data-nosnippet>116</a>        </span><span class="kw">let </span>intent = PlanIntent {
+<a href=#117 id=117 data-nosnippet>117</a>            plan_id: <span class="string">"p2"</span>.into(),
+<a href=#118 id=118 data-nosnippet>118</a>            steps: <span class="macro">vec!</span>[ActionStep::Throw {
+<a href=#119 id=119 data-nosnippet>119</a>                item: <span class="string">"smoke"</span>.into(),
+<a href=#120 id=120 data-nosnippet>120</a>                x: <span class="number">0</span>,
+<a href=#121 id=121 data-nosnippet>121</a>                y: <span class="number">0</span>,
+<a href=#122 id=122 data-nosnippet>122</a>            }],
+<a href=#123 id=123 data-nosnippet>123</a>        };
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="comment">// First use sets cooldown
+<a href=#125 id=125 data-nosnippet>125</a>        </span>w.obstacles.clear();
+<a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">let _ </span>= validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log);
+<a href=#127 id=127 data-nosnippet>127</a>        <span class="comment">// Second use should hit cooldown
+<a href=#128 id=128 data-nosnippet>128</a>        </span><span class="kw">let </span>err2 = validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log).unwrap_err();
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">let </span>tb2 = map_engine_error(intent.steps.first().unwrap(), <span class="kw-2">&amp;</span>err2);
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="macro">assert_eq!</span>(tb2.reason, ToolBlockReason::Cooldown);
+<a href=#131 id=131 data-nosnippet>131</a>        <span class="macro">assert!</span>(tb2.msg.contains(<span class="string">"throw:smoke"</span>));
+<a href=#132 id=132 data-nosnippet>132</a>    }
+<a href=#133 id=133 data-nosnippet>133</a>
+<a href=#134 id=134 data-nosnippet>134</a>    <span class="attr">#[test]
+<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">fn </span>partial_failure_multi_step_stops_on_error() {
+<a href=#136 id=136 data-nosnippet>136</a>        <span class="kw">let </span><span class="kw-2">mut </span>w = World::new();
+<a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">let </span>a = w.spawn(<span class="string">"ally"</span>, IVec2 { x: <span class="number">0</span>, y: <span class="number">0 </span>}, Team { id: <span class="number">1 </span>}, <span class="number">100</span>, <span class="number">0</span>);
+<a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">let </span>e = w.spawn(<span class="string">"enemy"</span>, IVec2 { x: <span class="number">3</span>, y: <span class="number">0 </span>}, Team { id: <span class="number">2 </span>}, <span class="number">50</span>, <span class="number">0</span>);
+<a href=#139 id=139 data-nosnippet>139</a>        <span class="comment">// First step succeeds (move), second fails (cover_fire no ammo)
+<a href=#140 id=140 data-nosnippet>140</a>        </span><span class="kw">let </span>intent = PlanIntent {
+<a href=#141 id=141 data-nosnippet>141</a>            plan_id: <span class="string">"p3"</span>.into(),
+<a href=#142 id=142 data-nosnippet>142</a>            steps: <span class="macro">vec!</span>[
+<a href=#143 id=143 data-nosnippet>143</a>                ActionStep::MoveTo { x: <span class="number">1</span>, y: <span class="number">0 </span>},
+<a href=#144 id=144 data-nosnippet>144</a>                ActionStep::CoverFire {
+<a href=#145 id=145 data-nosnippet>145</a>                    target_id: e,
+<a href=#146 id=146 data-nosnippet>146</a>                    duration: <span class="number">1.0</span>,
+<a href=#147 id=147 data-nosnippet>147</a>                },
+<a href=#148 id=148 data-nosnippet>148</a>                ActionStep::MoveTo { x: <span class="number">2</span>, y: <span class="number">0 </span>}, <span class="comment">// should not execute
+<a href=#149 id=149 data-nosnippet>149</a>            </span>],
+<a href=#150 id=150 data-nosnippet>150</a>        };
+<a href=#151 id=151 data-nosnippet>151</a>        <span class="kw">let </span>cfg = ValidateCfg {
+<a href=#152 id=152 data-nosnippet>152</a>            world_bounds: (-<span class="number">10</span>, -<span class="number">10</span>, <span class="number">10</span>, <span class="number">10</span>),
+<a href=#153 id=153 data-nosnippet>153</a>        };
+<a href=#154 id=154 data-nosnippet>154</a>        <span class="kw">let </span><span class="kw-2">mut </span>log = |_s: String| {};
+<a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">let </span>res = validate_and_execute(<span class="kw-2">&amp;mut </span>w, a, <span class="kw-2">&amp;</span>intent, <span class="kw-2">&amp;</span>cfg, <span class="kw-2">&amp;mut </span>log);
+<a href=#156 id=156 data-nosnippet>156</a>        <span class="macro">assert!</span>(<span class="macro">matches!</span>(res, <span class="prelude-val">Err</span>(EngineError::Resource(<span class="kw">_</span>))));
+<a href=#157 id=157 data-nosnippet>157</a>        <span class="comment">// Ensure the first move happened, but not the last
+<a href=#158 id=158 data-nosnippet>158</a>        </span><span class="macro">assert_eq!</span>(w.pos_of(a).unwrap(), IVec2 { x: <span class="number">1</span>, y: <span class="number">0 </span>});
+<a href=#159 id=159 data-nosnippet>159</a>    }
+<a href=#160 id=160 data-nosnippet>160</a>}</code></pre></div></section></main></body></html>

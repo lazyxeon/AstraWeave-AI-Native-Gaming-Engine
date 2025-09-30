@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AiPlannedEvent","EventReader","EventWriter","Events","MovedEvent"]};

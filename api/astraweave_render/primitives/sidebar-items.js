@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["cube","plane"]};
+window.SIDEBAR_ITEMS = {"fn":["cube","plane","sphere"]};
