@@ -349,6 +349,7 @@ pub struct Renderer {
     camera_buf: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 
+    #[allow(dead_code)]
     mesh_cube: Mesh,
     mesh_sphere: Mesh,
     mesh_plane: Mesh,

@@ -403,7 +403,6 @@ impl eframe::App for EditorApp {
                         }
                     });
                     ui.separator();
-                    
                     if to_remove.is_some() {
                         break;
                     }
@@ -442,7 +441,6 @@ impl eframe::App for EditorApp {
                         ui.text_edit_singleline(&mut npc.behavior);
                     });
                     ui.separator();
-                    
                     if to_remove.is_some() {
                         break;
                     }
@@ -487,7 +485,6 @@ impl eframe::App for EditorApp {
                                 }
                             }
                             ui.separator();
-                            
                             if trigger_to_remove.is_some() {
                                 break;
                             }
@@ -563,7 +560,6 @@ impl eframe::App for EditorApp {
                                 }
                             }
                             ui.separator();
-                            
                             if op_to_remove.is_some() {
                                 break;
                             }
@@ -592,7 +588,6 @@ impl eframe::App for EditorApp {
                         });
                     });
                     ui.separator();
-                    
                     if to_remove.is_some() {
                         break;
                     }

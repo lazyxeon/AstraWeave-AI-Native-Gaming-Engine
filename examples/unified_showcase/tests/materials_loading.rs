@@ -2,19 +2,30 @@
 // This allows tests to access pub(crate) helpers.
 #[path = "../src/main.rs"]
 mod main_src;
-use main_src::{pack_mra_from_planes, load_biome_toml};
+use main_src::{load_biome_toml, pack_mra_from_planes};
 
 #[test]
 fn mra_packing_from_planes() {
-    let w = 2u32; let h = 2u32; let px = (w*h*4) as usize;
+    let w = 2u32;
+    let h = 2u32;
+    let px = (w * h * 4) as usize;
     let mut m = vec![0u8; px];
     let mut r = vec![0u8; px];
     let mut a = vec![0u8; px];
     // Fill R channels with test pattern: M=10, R=200, AO=255; other channels differ to ensure we pick R channel
     for i in (0..px).step_by(4) {
-        m[i+0]=10; m[i+1]=11; m[i+2]=12; m[i+3]=13;
-        r[i+0]=200; r[i+1]=201; r[i+2]=202; r[i+3]=203;
-        a[i+0]=255; a[i+1]=100; a[i+2]=50; a[i+3]=7;
+        m[i + 0] = 10;
+        m[i + 1] = 11;
+        m[i + 2] = 12;
+        m[i + 3] = 13;
+        r[i + 0] = 200;
+        r[i + 1] = 201;
+        r[i + 2] = 202;
+        r[i + 3] = 203;
+        a[i + 0] = 255;
+        a[i + 1] = 100;
+        a[i + 2] = 50;
+        a[i + 3] = 7;
     }
     let out = pack_mra_from_planes(&m, &r, &a, w, h);
     assert_eq!(out.width(), w);
