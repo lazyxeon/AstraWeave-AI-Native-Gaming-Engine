@@ -25,7 +25,7 @@ noise = "0.9"
 # optional: for a quick path search sample
 pathfinding = "4"
 log = "0.4"
-env_logger = "0.10"
+env_logger = "0.11"
 
 [features]
 default = ["procedural_fallback"]
