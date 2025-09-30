@@ -26,6 +26,7 @@ members = [
   "astraweave-render",
   "astraweave-materials",
   "astraweave-asset",
+  "astraweave-ecs",
   "examples/visual_3d",
   "astraweave-physics",
   "astraweave-nav",
@@ -67,6 +68,7 @@ members = [
   "tools/aw_texture_gen",
   "tools/aw_headless",
   "tools/ollama_probe",
+  "tools/asset_signing",
   # persistence
   "persistence/aw-save",
   "tools/aw_save_cli",
@@ -102,6 +104,7 @@ toml = "0.8"
 zip = "5.1"
 rand = "0.9"
 sha2 = "0.10"
+ed25519-dalek = { version = "2", features = ["rand_core"] }
 hex = "0.4"
 rhai = "1.23"
 tokio = { version = "1", features = ["full"] }

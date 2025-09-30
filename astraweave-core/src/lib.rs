@@ -1,5 +1,9 @@
 pub mod capture_replay;
 pub use capture_replay::*;
+pub mod ecs_adapter;
+pub mod ecs_components;
+pub mod ecs_bridge;
+pub mod ecs_events;
 pub mod perception;
 pub mod schema;
 pub mod sim;
@@ -19,6 +23,7 @@ pub use tools::{
 };
 pub use validation::*;
 pub use world::*;
+pub use ecs_components::*;
 
 /// Construct a default ToolRegistry matching MVP verbs.
 pub fn default_tool_registry() -> ToolRegistry {

@@ -80,10 +80,10 @@ async fn main() {
         let snap = mk_snap_from_world(&w, me, player, enemy);
         // Choose orchestrator per tick
         let plan = match tick % 4 {
-            0 => rule.plan(snap.clone(), 2).await,
-            1 => util.plan(snap.clone(), 2).await,
-            2 => goap.plan(snap.clone(), 2).await,
-            _ => llm.plan(snap.clone(), 10).await,
+            0 => rule.plan(snap.clone(), 2).await.expect("rule.plan failed"),
+            1 => util.plan(snap.clone(), 2).await.expect("util.plan failed"),
+            2 => goap.plan(snap.clone(), 2).await.expect("goap.plan failed"),
+            _ => llm.plan(snap.clone(), 10).await.expect("llm.plan failed"),
         };
         println!("tick {}: {} steps", tick, plan.steps.len());
         if let Err(e) = run_plan_with_logging(&mut w, me, &plan, &cfg) {
