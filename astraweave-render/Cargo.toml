@@ -39,7 +39,7 @@ gpu-tests = []
 postfx = []
 
 [dev-dependencies]
-naga = "0.20"
+naga = "26.0"
 criterion = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png"] }
 tempfile = "3"

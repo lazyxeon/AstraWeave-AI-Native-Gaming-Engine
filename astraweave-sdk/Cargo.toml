@@ -15,7 +15,7 @@ astraweave-core = { path = "../astraweave-core" }
 crate-type = ["rlib", "cdylib", "staticlib"]
 
 [dev-dependencies]
-cbindgen = "0.27"
+cbindgen = "0.29"
 
 [package.metadata.cbindgen]
 language = "C"

@@ -17,7 +17,7 @@ astraweave-materials = { package = "astraweave-materials", path = "../../astrawe
 image = "0.25"
 
 [dev-dependencies]
-naga = "0.20"
+naga = "26.0"
 
 [lib]
 name = "aw_headless"
