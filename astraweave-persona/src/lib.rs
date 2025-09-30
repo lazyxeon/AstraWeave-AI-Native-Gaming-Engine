@@ -46,6 +46,10 @@ pub fn load_persona_zip(path: &str) -> Result<CompanionProfile> {
         risk: m.risk,
         humor: m.humor,
         voice: m.voice,
+        backstory: "Loaded from manifest".to_string(),
+        likes: vec![],
+        dislikes: vec![],
+        goals: vec![],
     };
     if let Some(js) = m.prefs_json {
         p.player_prefs = serde_json::from_str(&js)?;

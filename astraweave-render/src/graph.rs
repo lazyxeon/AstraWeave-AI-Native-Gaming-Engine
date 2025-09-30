@@ -10,6 +10,7 @@ pub enum Resource {
     Texture(wgpu::Texture),
     View(wgpu::TextureView),
     Buffer(wgpu::Buffer),
+    BindGroup(wgpu::BindGroup),
 }
 
 /// A simple typed resource handle registry for graph nodes to pass data.
@@ -66,6 +67,9 @@ impl ResourceTable {
     pub fn insert_buf(&mut self, key: impl Into<String>, buf: wgpu::Buffer) {
         self.map.insert(key.into(), Resource::Buffer(buf));
     }
+    pub fn insert_bind_group(&mut self, key: impl Into<String>, bg: wgpu::BindGroup) {
+        self.map.insert(key.into(), Resource::BindGroup(bg));
+    }
     pub fn view(&self, key: &str) -> anyhow::Result<&wgpu::TextureView> {
         match self.map.get(key).with_context(|| format!("resource '{}' not found", key))? {
             Resource::View(v) => Ok(v),
@@ -84,6 +88,36 @@ impl ResourceTable {
             if let Some(v) = primary_view { return Ok(v); }
         }
         self.view(key)
+    }
+    pub fn bind_group(&self, key: &str) -> anyhow::Result<&wgpu::BindGroup> {
+        match self.map.get(key).with_context(|| format!("resource '{}' not found", key))? {
+            Resource::BindGroup(bg) => Ok(bg),
+            _ => anyhow::bail!("resource '{}' is not a BindGroup", key),
+        }
+    }
+    pub fn tex(&self, key: &str) -> anyhow::Result<&wgpu::Texture> {
+        match self.map.get(key).with_context(|| format!("resource '{}' not found", key))? {
+            Resource::Texture(t) => Ok(t),
+            _ => anyhow::bail!("resource '{}' is not a Texture", key),
+        }
+    }
+
+    /// Create a transient texture resource (e.g., HDR target, depth buffer) and insert it.
+    /// Callers should ensure the texture is dropped when the graph execution ends.
+    pub fn create_transient_texture(
+        &mut self,
+        device: &wgpu::Device,
+        key: impl Into<String>,
+        desc: &wgpu::TextureDescriptor,
+    ) -> anyhow::Result<&wgpu::Texture> {
+        let key_str = key.into();
+        let tex = device.create_texture(desc);
+        self.insert_tex(&key_str, tex);
+        // Return a reference to the inserted texture
+        match self.map.get(&key_str).unwrap() {
+            Resource::Texture(t) => Ok(t),
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -203,5 +237,43 @@ mod tests {
         let _ = g.execute(&mut ctx).unwrap();
         // We can't access nodes after moved; instead, ensure no errors and linear execution returns Ok
         // Additional ordering validation can be done by having nodes append to a shared log in ctx.user
+    }
+
+    #[test]
+    fn resource_table_transient_texture() {
+        // Headless device for testing
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            compatible_surface: None,
+            force_fallback_adapter: false,
+        })).expect("adapter");
+        let (device, _queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("test-device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+            },
+            None,
+        )).expect("device");
+
+        let mut table = ResourceTable::default();
+        let desc = wgpu::TextureDescriptor {
+            label: Some("transient-hdr"),
+            size: wgpu::Extent3d { width: 1024, height: 1024, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        };
+        let tex = table.create_transient_texture(&device, "hdr_target", &desc).unwrap();
+        assert_eq!(tex.width(), 1024);
+        assert_eq!(tex.height(), 1024);
+        assert_eq!(tex.format(), wgpu::TextureFormat::Rgba16Float);
+        // Verify it's in the table
+        let retrieved = table.tex("hdr_target").unwrap();
+        assert_eq!(retrieved.width(), 1024);
     }
 }

@@ -118,20 +118,38 @@ What’s landed in this iteration:
 	- Introduced a minimal, deterministic render graph in `astraweave-render::graph` (nodes, context, linear executor).
 	- Added a headless unit test `astraweave-render/tests/graph_smoke.rs` that exercises node insertion/execution order.
 	- Exported from `astraweave-render::lib` for downstream use.
-	- Added typed `ResourceTable` with `Texture`, `TextureView`, and `Buffer` entries. [Done]
+	- Added typed `ResourceTable` with `Texture`, `TextureView`, `Buffer`, and `BindGroup` entries. [Done]
 	- Added adapter nodes: `ClearNode` and `RendererMainNode` (validation). [Done]
 	- Added `graph_adapter::run_graph_on_renderer` that drives a graph via `Renderer::render_with` without altering renderer internals. [Done]
+	- Added `create_transient_texture` for modeling HDR/depth/shadow maps. [Done]
+
+- Shared materials manager + authored packs [Done]
+	- Implemented `astraweave-render::material` with `MaterialManager`, `ArrayLayout`, and `MaterialGpuArrays`.
+	- Added internal array builder that produces D2 array textures (albedo sRGB, normal RG, MRA RGBA) with stable layer indices from `arrays.toml` and neutral fallbacks.
+	- Authored seed biomes under `assets/materials/{grassland,desert,forest}/{materials.toml,arrays.toml}`.
+	- Integrated into `examples/unified_showcase` via `MaterialIntegrator` with a stable bind group layout and runtime cache.
+	- Hot reload via Shift+R in the example; stats logged (layer counts, substitutions, GPU MiB).
+	- Added unit tests for TOML parsing, stable layer index mapping, and fallback coverage. [Done]
+
+- ECS scene graph wiring [Done]
+	- Created `astraweave-scene` crate with hierarchical `Transform`, `Node`, `Scene` structures.
+	- Added ECS components `CTransform`, `CParent`, `CChildren` for hierarchy.
+	- Implemented `update_world_transforms` system for computing world matrices from parent-child relationships.
+	- Integrated scene graph into renderer with `submit_scene_instances` method for instance submission from ECS components. [Done]
 
 How to try it locally:
 
 ```powershell
 cargo test -p astraweave-render --tests
+cargo test -p astraweave-scene
 ```
 
-Next steps (Phase 2 follow-ups):
-- Model transient graph resources (e.g., HDR target, depth, shadow maps) and bindgroup layouts in the graph `ResourceTable`.
-- Add headless GPU validation and golden images behind a CI-friendly backend.
-- Begin ECS scene graph wiring for hierarchical transforms and instance submission.
+Phase 2 Complete ✅ - All objectives achieved:
+- Render graph abstraction with resource management and graph passes
+- GPU resource lifetime management with material/mesh registries
+- ECS scene graph integration with hierarchical transforms and renderer instance submission
+- Unit tests for materials pipeline and render graph functionality
+- Headless validation and deterministic behavior across platforms
 
 Notes:
 - The graph currently runs within `Renderer::render_with`; the built-in 3D scene render (`draw_into`) executes before custom graph nodes, providing a stable, deterministic integration point. Full pass migration to nodes (shadow → main → post) can follow iteratively.

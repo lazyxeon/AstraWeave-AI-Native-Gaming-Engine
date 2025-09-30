@@ -663,6 +663,7 @@ name = "astraweave-scene"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-ecs",
  "glam",
  "serde",
 ]

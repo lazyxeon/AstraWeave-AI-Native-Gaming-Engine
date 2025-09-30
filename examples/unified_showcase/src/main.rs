@@ -674,14 +674,7 @@ fn create_solid_rgba_image(width: u32, height: u32, color: [u8; 4]) -> RgbaImage
     RgbaImage::from_fn(width, height, |_x, _y| image::Rgba(color))
 }
 
-// Reload authored materials pack (placeholder; integrator wiring TBD in event loop)
-fn reload_texture_pack(_render: &mut RenderStuff, texture_pack_name: &str) -> Result<()> {
-    println!(
-        "[materials] reload requested for biome pack: {}",
-        texture_pack_name
-    );
-    Ok(())
-}
+// Reload is handled via MaterialIntegrator::reload in the event loop
 
 fn create_flat_normal_image(width: u32, height: u32) -> RgbaImage {
     create_solid_rgba_image(width, height, [128, 128, 255, 255])
@@ -3973,9 +3966,9 @@ async fn run() -> Result<()> {
                                     KeyCode::KeyR => {
                                         if pressed {
                                             if shift_down {
-                                                // Hot-reload materials for current biome
+                                                // Hot-reload materials for current biome (Shift+R)
                                                 let biome = render.current_biome.clone();
-                                                match pollster::block_on(render.material_integrator.load(&render.device, &render.queue, &biome)) {
+                                                match pollster::block_on(render.material_integrator.reload(&render.device, &render.queue, &biome)) {
                                                     Ok(rt) => {
                                                         let new_bg = render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                                                             label: Some("materials-pack (hot-reload)"),

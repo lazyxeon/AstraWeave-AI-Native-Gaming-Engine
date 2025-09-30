@@ -204,8 +204,11 @@ impl MaterialIntegrator {
     }
 
     pub fn unload_current(&mut self) {
+        // Drop current biome's cached runtime to allow a true reload on next load()
+        if let Some(curr) = self.current_biome.take() {
+            self.cache.remove(&curr);
+        }
         self.manager.unload_current();
-        self.current_biome = None;
     }
 
     pub fn set_current(&mut self, biome: &str) {
@@ -218,5 +221,66 @@ impl MaterialIntegrator {
 
     pub fn current(&self) -> Option<&MaterialPackRuntime> {
         self.current_biome.as_ref().and_then(|b| self.cache.get(b))
+    }
+
+    /// Force-reload the specified biome pack, bypassing cache.
+    pub async fn reload(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        biome: &str,
+    ) -> Result<&MaterialPackRuntime> {
+        // Remove any existing cached pack for this biome and reset manager
+        self.cache.remove(biome);
+        self.manager.unload_current();
+
+        // Path resolution (same as in load)
+        let base_materials = PathBuf::from(format!("assets/materials/{biome}"));
+        let base_textures = PathBuf::from(format!("assets/textures/{biome}"));
+        let (base, mats, arrays) = if base_materials.exists() {
+            let mats = base_materials.join("materials.toml");
+            let arrays = base_materials.join("arrays.toml");
+            (base_materials, mats, arrays)
+        } else {
+            let mats = base_textures.join("materials.toml");
+            let arrays = base_textures.join("arrays.toml");
+            (base_textures, mats, arrays)
+        };
+
+        let (gpu, stats) = self
+            .manager
+            .load_pack_from_toml(device, queue, &base, &mats, &arrays)
+            .await?;
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("materials-pack"),
+            layout: &self.bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&gpu.albedo) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&gpu.sampler_albedo) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&gpu.normal) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&gpu.sampler_linear) },
+                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&gpu.mra) },
+            ],
+        });
+
+        println!(
+            "[materials] biome={} layers={} | albedo L/S={}/{} | normal L/S={}/{} | mra L+P/S={}+{}/{} | gpu={:.2} MiB",
+            stats.biome,
+            stats.layers_total,
+            stats.albedo_loaded,
+            stats.albedo_substituted,
+            stats.normal_loaded,
+            stats.normal_substituted,
+            stats.mra_loaded,
+            stats.mra_packed,
+            stats.mra_substituted,
+            (stats.gpu_memory_bytes as f64) / (1024.0*1024.0)
+        );
+
+        let runtime = MaterialPackRuntime { gpu, stats, last_loaded: Instant::now(), bind_group };
+        self.cache.insert(biome.to_string(), runtime);
+        self.set_current(biome);
+        Ok(self.cache.get(biome).unwrap())
     }
 }
