@@ -2,16 +2,18 @@ pub mod camera;
 pub mod clustered;
 pub mod depth;
 pub mod environment;
+pub mod ibl; // image-based lighting manager
+pub mod mesh; // cpu mesh structures + utils
+pub mod mesh_registry;
 pub mod post; // compile-only WGSL placeholders & tests
 pub mod primitives;
 pub mod renderer;
 pub mod terrain;
 pub mod texture;
-pub mod types; // clustered-lighting WGSL placeholders & tests
-pub mod ibl; // image-based lighting manager
-pub mod mesh; // cpu mesh structures + utils
-pub mod mesh_registry; // gpu upload & caching
+pub mod types; // clustered-lighting WGSL placeholders & tests // gpu upload & caching
+               // See MATERIALS.md for canonical materials arrays and WGSL bindings
 pub mod material; // shared authored materials API + GPU arrays
+#[cfg(feature = "textures")]
 pub mod material_loader; // internal builder helpers
 #[cfg(any(feature = "gltf-assets", feature = "assets"))]
 pub mod mesh_gltf; // glTF loader
@@ -31,8 +33,11 @@ pub mod effects; // NEW
 pub mod overlay; // NEW (for cutscene fades/letterbox later)
 
 pub use effects::{WeatherFx, WeatherKind};
-pub use overlay::{OverlayFx, OverlayParams};
 pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
+pub use material::{
+    ArrayLayout, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats, MaterialManager,
+    MaterialPackDesc,
+};
 pub use mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
 pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
-pub use material::{MaterialManager, MaterialGpuArrays, MaterialLoadStats, MaterialLayerDesc, MaterialPackDesc, ArrayLayout};
+pub use overlay::{OverlayFx, OverlayParams};

@@ -272,8 +272,10 @@ impl CameraController {
 
                 if target_vel.length_squared() > 0.0 {
                     self.orbit_target += target_vel.normalize() * eff_speed * dt;
-                    self.update_orbit_position(camera);
                 }
+                // Always recompute camera position from current yaw/pitch and orbit distance
+                // so that mouse look in Orbit mode rotates around the orbit target even without WASD input.
+                self.update_orbit_position(camera);
             }
         }
     }
@@ -455,6 +457,8 @@ mod tests {
         controller.toggle_mode(&mut camera);
         let initial_pos = camera.position;
         controller.process_mouse_delta(&mut camera, Vec2::new(5.0, 0.0));
+        // Apply update to realize orbit movement from accumulated deltas
+        controller.update_camera(&mut camera, 0.016);
         // Position should change due to orbit update
         assert!(camera.position != initial_pos);
     }

@@ -3,6 +3,7 @@
 
 use anyhow::Result;
 use image::{DynamicImage, ImageBuffer, RgbaImage};
+use log::warn;
 use serde::Deserialize;
 use std::{collections::HashMap, fs, path::Path};
 
@@ -50,9 +51,18 @@ impl TextureManager {
             config_path.display()
         );
         let config_str = fs::read_to_string(config_path)?;
-        let config: serde_json::Value = toml::from_str(&config_str)?;
+        // Parse TOML into a generic Value so we can iterate arbitrary sections
+        let config: toml::Value = toml::from_str(&config_str)?;
 
-        let atlas_config: TextureAtlasConfig = toml::from_str(&config_str)?;
+        // Support both nested [atlas] table and flat top-level fields
+        #[derive(Deserialize)]
+        struct AtlasRoot {
+            atlas: TextureAtlasConfig,
+        }
+        let atlas_config: TextureAtlasConfig = match toml::from_str::<AtlasRoot>(&config_str) {
+            Ok(root) => root.atlas,
+            Err(_) => toml::from_str::<TextureAtlasConfig>(&config_str)?,
+        };
 
         println!("Loaded texture atlas config: {}", atlas_config.name);
         println!(
@@ -62,18 +72,25 @@ impl TextureManager {
 
         // Parse texture entries from the config
         let mut textures = HashMap::new();
-    let loaded_images = HashMap::new();
+        let loaded_images = HashMap::new();
 
         // Process each section in the config that isn't "atlas"
-        for (section_key, section_value) in config.as_object().unwrap() {
+        let table = config.as_table().ok_or_else(|| {
+            anyhow::anyhow!(
+                "Expected TOML root to be a table in {}",
+                config_path.display()
+            )
+        })?;
+
+        for (section_key, section_value) in table {
             if section_key == "atlas" {
                 continue; // Skip the atlas section itself
             }
 
             // Process each texture in this section
-            if let Some(section_obj) = section_value.as_object() {
+            if let Some(section_obj) = section_value.as_table() {
                 for (texture_key, texture_value) in section_obj {
-                    if let Some(texture_obj) = texture_value.as_object() {
+                    if let Some(texture_obj) = texture_value.as_table() {
                         let texture_id = format!("{}.{}", section_key, texture_key);
 
                         // Extract texture properties
@@ -90,12 +107,12 @@ impl TextureManager {
 
                         let roughness = texture_obj
                             .get("roughness")
-                            .and_then(|v| v.as_f64())
+                            .and_then(|v| v.as_float().or_else(|| v.as_integer().map(|i| i as f64)))
                             .unwrap_or(0.5) as f32;
 
                         let metallic = texture_obj
                             .get("metallic")
-                            .and_then(|v| v.as_f64())
+                            .and_then(|v| v.as_float().or_else(|| v.as_integer().map(|i| i as f64)))
                             .unwrap_or(0.0) as f32;
 
                         let alpha_mask = texture_obj
@@ -104,19 +121,42 @@ impl TextureManager {
                             .unwrap_or(false);
 
                         // Extract UV coordinates
-                        let uv_rect = if let Some(uv_array) =
-                            texture_obj.get("uv_rect").and_then(|v| v.as_array())
-                        {
-                            if uv_array.len() >= 4 {
-                                UvRect {
-                                    x: uv_array[0].as_f64().unwrap_or(0.0) as f32
-                                        / atlas_config.dimensions[0] as f32,
-                                    y: uv_array[1].as_f64().unwrap_or(0.0) as f32
-                                        / atlas_config.dimensions[1] as f32,
-                                    width: uv_array[2].as_f64().unwrap_or(0.0) as f32
-                                        / atlas_config.dimensions[0] as f32,
-                                    height: uv_array[3].as_f64().unwrap_or(0.0) as f32
-                                        / atlas_config.dimensions[1] as f32,
+                        let uv_rect = if let Some(uv_array) = texture_obj.get("uv_rect") {
+                            if let Some(arr) = uv_array.as_array() {
+                                if arr.len() >= 4 {
+                                    UvRect {
+                                        x: arr[0]
+                                            .as_float()
+                                            .or_else(|| arr[0].as_integer().map(|i| i as f64))
+                                            .unwrap_or(0.0)
+                                            as f32
+                                            / atlas_config.dimensions[0] as f32,
+                                        y: arr[1]
+                                            .as_float()
+                                            .or_else(|| arr[1].as_integer().map(|i| i as f64))
+                                            .unwrap_or(0.0)
+                                            as f32
+                                            / atlas_config.dimensions[1] as f32,
+                                        width: arr[2]
+                                            .as_float()
+                                            .or_else(|| arr[2].as_integer().map(|i| i as f64))
+                                            .unwrap_or(0.0)
+                                            as f32
+                                            / atlas_config.dimensions[0] as f32,
+                                        height: arr[3]
+                                            .as_float()
+                                            .or_else(|| arr[3].as_integer().map(|i| i as f64))
+                                            .unwrap_or(0.0)
+                                            as f32
+                                            / atlas_config.dimensions[1] as f32,
+                                    }
+                                } else {
+                                    UvRect {
+                                        x: 0.0,
+                                        y: 0.0,
+                                        width: 1.0,
+                                        height: 1.0,
+                                    }
                                 }
                             } else {
                                 UvRect {
@@ -161,6 +201,14 @@ impl TextureManager {
         })
     }
 
+    // Create a small 4x4 neutral gray RGBA placeholder image used when texture loading fails.
+    // Returns an owned DynamicImage for insertion into the loaded_images map.
+    fn create_placeholder() -> DynamicImage {
+        DynamicImage::ImageRgba8(RgbaImage::from_fn(4, 4, |_, _| {
+            image::Rgba([200, 200, 200, 255])
+        }))
+    }
+
     /// Get all texture entries
     pub fn get_all_textures(&self) -> &HashMap<String, TextureEntry> {
         &self.textures
@@ -171,7 +219,16 @@ impl TextureManager {
         // Collect keys first to avoid borrowing self immutably and mutably at the same time
         let keys: Vec<String> = self.textures.keys().cloned().collect();
         for texture_id in keys.iter() {
-            self.load_texture(texture_id, base_path)?;
+            // Attempt to load; on failure insert a small placeholder and continue
+            if let Err(e) = self.load_texture(texture_id, base_path) {
+                warn!(
+                    "Warning: failed to load texture '{}': {}. Using placeholder.",
+                    texture_id, e
+                );
+                // Insert a 4x4 neutral gray RGBA placeholder (avoids loud magenta)
+                let placeholder = Self::create_placeholder();
+                self.loaded_images.insert(texture_id.clone(), placeholder);
+            }
         }
 
         println!("Preloaded {} textures", self.loaded_images.len());
@@ -188,19 +245,34 @@ impl TextureManager {
             let diffuse_path = base_path.join(&entry.diffuse_path);
 
             if diffuse_path.exists() {
-                let image = image::open(&diffuse_path)?;
-                self.loaded_images.insert(texture_id.to_string(), image);
-                println!("Loaded texture: {}", texture_id);
-                Ok(())
+                match image::open(&diffuse_path) {
+                    Ok(img) => {
+                        self.loaded_images.insert(texture_id.to_string(), img);
+                        println!("Loaded texture: {}", texture_id);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        warn!(
+                            "Error decoding {}: {}. Using placeholder.",
+                            diffuse_path.display(),
+                            e
+                        );
+                        let placeholder = Self::create_placeholder();
+                        self.loaded_images
+                            .insert(texture_id.to_string(), placeholder);
+                        Ok(())
+                    }
+                }
             } else {
-                println!(
+                warn!(
                     "Warning: Texture file not found: {}",
                     diffuse_path.display()
                 );
-                Err(anyhow::anyhow!(
-                    "Texture file not found: {}",
-                    diffuse_path.display()
-                ))
+                // Insert a small neutral gray placeholder image instead of failing
+                let placeholder = Self::create_placeholder();
+                self.loaded_images
+                    .insert(texture_id.to_string(), placeholder);
+                Ok(())
             }
         } else {
             Err(anyhow::anyhow!(
@@ -229,7 +301,7 @@ impl TextureManager {
         }
 
         // Place each texture in its specified position
-            for (_texture_id, entry) in &self.textures {
+        for (_texture_id, entry) in &self.textures {
             if let Some(image) = self.loaded_images.get(_texture_id) {
                 // Calculate pixel coordinates from normalized UV coordinates
                 let x = (entry.uv_rect.x * width as f32) as u32;
@@ -266,7 +338,7 @@ impl TextureManager {
         }
 
         // Place each normal texture in its specified position
-    for (_texture_id, entry) in &self.textures {
+        for (_texture_id, entry) in &self.textures {
             if let Some(normal_path) = &entry.normal_path {
                 let normal_full_path = Path::new("assets").join(normal_path);
 

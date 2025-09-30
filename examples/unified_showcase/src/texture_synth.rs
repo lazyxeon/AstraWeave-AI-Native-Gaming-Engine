@@ -778,8 +778,12 @@ fn synth_cloth(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let weave_u = x as f32 / w as f32 * 80.0;
             let weave_v = y as f32 / h as f32 * 80.0;
 
-            let warp = ((weave_u.sin() * 0.5 + 0.5) + fbm(weave_u, weave_v, seed ^ 0x1A2B, 3, 2.0, 0.5) * 0.2).clamp(0.0, 1.0);
-            let weft = ((weave_v.cos() * 0.5 + 0.5) + fbm(weave_v, weave_u, seed ^ 0x3C4D, 3, 2.0, 0.5) * 0.2).clamp(0.0, 1.0);
+            let warp = ((weave_u.sin() * 0.5 + 0.5)
+                + fbm(weave_u, weave_v, seed ^ 0x1A2B, 3, 2.0, 0.5) * 0.2)
+                .clamp(0.0, 1.0);
+            let weft = ((weave_v.cos() * 0.5 + 0.5)
+                + fbm(weave_v, weave_u, seed ^ 0x3C4D, 3, 2.0, 0.5) * 0.2)
+                .clamp(0.0, 1.0);
 
             let sheen = fbm(weave_u * 0.4, weave_v * 0.4, seed ^ 0x5E6F, 4, 2.0, 0.45).max(0.0);
             let thread_mix = (warp * 0.6 + weft * 0.4).clamp(0.0, 1.0);
@@ -788,12 +792,16 @@ fn synth_cloth(w: u32, h: u32, seed: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
             let base_g = 78.0 + 35.0 * thread_mix + 22.0 * sheen;
             let base_b = 150.0 + 50.0 * thread_mix + 35.0 * sheen;
 
-            img.put_pixel(x, y, Rgba([
-                base_r.clamp(0.0, 255.0) as u8,
-                base_g.clamp(0.0, 255.0) as u8,
-                base_b.clamp(0.0, 255.0) as u8,
-                255,
-            ]));
+            img.put_pixel(
+                x,
+                y,
+                Rgba([
+                    base_r.clamp(0.0, 255.0) as u8,
+                    base_g.clamp(0.0, 255.0) as u8,
+                    base_b.clamp(0.0, 255.0) as u8,
+                    255,
+                ]),
+            );
         }
     }
     img
