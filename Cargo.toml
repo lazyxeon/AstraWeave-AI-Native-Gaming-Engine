@@ -63,6 +63,7 @@ members = [
   "tools/aw_asset_cli",
   "astraweave-dialogue",
   "astraweave-quests",
+  "astraweave-behavior",
   "tools/aw_debug",
   "tools/aw_build",
   "tools/aw_texture_gen",
@@ -113,6 +114,9 @@ tungstenite = "0.28"
 tokio-tungstenite = "0.28"
 egui = "0.32"
 eframe = { version = "0.28", default-features = true, features = ["wgpu"] }
+egui_dock = "0.12"
+egui_graphs = "0.1"
+petgraph = "0.6"
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.30", features = ["serde"] }

@@ -7,6 +7,9 @@ license = "MIT"
 [dependencies]
 eframe = { workspace = true }
 egui = { workspace = true }
+egui_dock = { workspace = true }
+egui_graphs = { workspace = true }
+petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
@@ -16,6 +19,11 @@ thiserror = { workspace = true }
 image = "0.25"
 uuid = { version = "1", features = ["v4"] }
 rhai = { workspace = true }
+glam = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-author = { path = "../../astraweave-author" }
 astraweave-asset = { path = "../../astraweave-asset" }
+astraweave-behavior = { path = "../../astraweave-behavior" }
+astraweave-dialogue = { path = "../../astraweave-dialogue" }
+astraweave-quests = { path = "../../astraweave-quests" }
+astraweave-nav = { path = "../../astraweave-nav" }
