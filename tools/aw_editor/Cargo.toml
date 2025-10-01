@@ -27,3 +27,4 @@ astraweave-behavior = { path = "../../astraweave-behavior" }
 astraweave-dialogue = { path = "../../astraweave-dialogue" }
 astraweave-quests = { path = "../../astraweave-quests" }
 astraweave-nav = { path = "../../astraweave-nav" }
+astraweave-observability = { path = "../../astraweave-observability" }

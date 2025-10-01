@@ -1,0 +1,20 @@
+[package]
+name = "astraweave-observability"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tokio.workspace = true
+astraweave-ecs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
