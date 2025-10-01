@@ -2,7 +2,7 @@ use astraweave_core::{
     CompanionState, Constraints, EnemyState, IVec2, PlayerState, ToolRegistry, ToolSpec,
     WorldSnapshot,
 };
-use astraweave_llm::{parse_llm_plan, plan_from_llm, MockLlm};
+use astraweave_llm::{parse_llm_plan, plan_from_llm, MockLlm, PlanSource};
 use serde_json;
 
 /// Integration test for end-to-end LLM workflow
@@ -13,9 +13,11 @@ async fn test_llm_integration_workflow() {
 
     // Test that MockLlm produces valid output
     let client = MockLlm;
-    let plan = plan_from_llm(&client, &world_snapshot, &tool_registry)
-        .await
-        .expect("MockLlm should produce valid plan");
+    let plan_source = plan_from_llm(&client, &world_snapshot, &tool_registry).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+    };
 
     // Verify plan structure
     assert!(!plan.plan_id.is_empty());
@@ -98,8 +100,14 @@ async fn test_error_handling_scenarios() {
     }
 
     let bad_client = BadJsonClient;
-    let result = plan_from_llm(&bad_client, &world_snapshot, &tool_registry).await;
-    assert!(result.is_err());
+    let plan_source = plan_from_llm(&bad_client, &world_snapshot, &tool_registry).await;
+    // Should fallback to heuristic plan
+    match plan_source {
+        PlanSource::Llm(_) => panic!("Expected fallback"),
+        PlanSource::Fallback { plan, .. } => {
+            assert_eq!(plan.plan_id, "heuristic-fallback");
+        }
+    }
 
     // Test with client that returns JSON with disallowed tools
     struct DisallowedToolClient;
@@ -115,8 +123,14 @@ async fn test_error_handling_scenarios() {
     }
 
     let disallowed_client = DisallowedToolClient;
-    let result = plan_from_llm(&disallowed_client, &world_snapshot, &tool_registry).await;
-    assert!(result.is_err());
+    let plan_source = plan_from_llm(&disallowed_client, &world_snapshot, &tool_registry).await;
+    // Should fallback to heuristic plan
+    match plan_source {
+        PlanSource::Llm(_) => panic!("Expected fallback"),
+        PlanSource::Fallback { plan, .. } => {
+            assert_eq!(plan.plan_id, "heuristic-fallback");
+        }
+    }
 }
 
 /// Test validation with different tool registry configurations
@@ -200,6 +214,7 @@ fn create_complex_scenario() -> WorldSnapshot {
                 pos: IVec2 { x: 20, y: 25 },
             },
         ],
+        obstacles: vec![],
         objective: Some("Reach extraction zone while eliminating hostiles".into()),
     }
 }
@@ -222,8 +237,8 @@ fn create_comprehensive_registry() -> ToolRegistry {
                     ("y", "i32"),
                 ]
                 .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
             },
             ToolSpec {
                 name: "cover_fire".into(),
@@ -245,5 +260,230 @@ fn create_comprehensive_registry() -> ToolRegistry {
             enforce_los: true,
             enforce_stamina: true,
         },
+    }
+}
+
+/// Test obstacle handling with single obstacle blocking direct path
+#[tokio::test]
+async fn test_obstacle_single_blocking_path() {
+    let world_snapshot = create_scenario_with_single_obstacle();
+    let tool_registry = create_comprehensive_registry();
+
+    let client = MockLlm;
+    let plan_source = plan_from_llm(&client, &world_snapshot, &tool_registry).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+    };
+
+    // Plan should include movement steps that navigate around the obstacle
+    assert!(!plan.steps.is_empty());
+    assert!(plan.steps.iter().any(|step| matches!(step, astraweave_core::ActionStep::MoveTo { .. })));
+}
+
+/// Test obstacle handling with multiple obstacles creating a maze-like environment
+#[tokio::test]
+async fn test_obstacle_multiple_complex_layout() {
+    let world_snapshot = create_scenario_with_multiple_obstacles();
+    let tool_registry = create_comprehensive_registry();
+
+    let client = MockLlm;
+    let plan_source = plan_from_llm(&client, &world_snapshot, &tool_registry).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+    };
+
+    // Plan should be generated despite complex obstacle layout
+    assert!(!plan.steps.is_empty());
+}
+
+/// Test obstacle handling when obstacles surround the companion
+#[tokio::test]
+async fn test_obstacle_surrounded_companion() {
+    let world_snapshot = create_scenario_with_surrounding_obstacles();
+    let tool_registry = create_comprehensive_registry();
+
+    let client = MockLlm;
+    let plan_source = plan_from_llm(&client, &world_snapshot, &tool_registry).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+    };
+
+    // Plan should still be generated even with companion in confined space
+    assert!(!plan.steps.is_empty());
+}
+
+/// Test obstacle handling with obstacles at edge positions
+#[tokio::test]
+async fn test_obstacle_edge_positions() {
+    let world_snapshot = create_scenario_with_edge_obstacles();
+    let tool_registry = create_comprehensive_registry();
+
+    let client = MockLlm;
+    let plan_source = plan_from_llm(&client, &world_snapshot, &tool_registry).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+    };
+
+    // Plan should handle edge cases properly
+    assert!(!plan.steps.is_empty());
+}
+
+/// Test prompt generation includes obstacle information
+#[test]
+fn test_prompt_includes_obstacles() {
+    let world_snapshot = create_scenario_with_single_obstacle();
+    let tool_registry = create_comprehensive_registry();
+
+    let prompt = astraweave_llm::build_prompt(&world_snapshot, &tool_registry);
+
+    // Verify prompt contains obstacle information
+    assert!(prompt.contains("obstacles"));
+    assert!(prompt.contains("5")); // Should contain obstacle coordinates
+    assert!(prompt.contains("10"));
+}
+
+/// Test that obstacle scenarios don't break JSON parsing
+#[test]
+fn test_obstacle_scenario_json_parsing() {
+    let world_snapshot = create_scenario_with_multiple_obstacles();
+    let tool_registry = create_comprehensive_registry();
+
+    let json_output = r#"{"plan_id": "obstacle-test", "steps": [{"act": "MoveTo", "x": 15, "y": 20}]}"#;
+
+    let result = parse_llm_plan(json_output, &tool_registry);
+    assert!(result.is_ok());
+}
+fn create_scenario_with_single_obstacle() -> WorldSnapshot {
+    WorldSnapshot {
+        t: 10.0,
+        player: PlayerState {
+            hp: 100,
+            pos: IVec2 { x: 0, y: 0 },
+            stance: "stand".into(),
+            orders: vec![],
+        },
+        me: CompanionState {
+            ammo: 10,
+            cooldowns: Default::default(),
+            morale: 1.0,
+            pos: IVec2 { x: 0, y: 0 },
+        },
+        enemies: vec![EnemyState {
+            id: 1,
+            pos: IVec2 { x: 10, y: 0 },
+            hp: 100,
+            cover: "none".into(),
+            last_seen: 0.0,
+        }],
+        pois: vec![],
+        obstacles: vec![IVec2 { x: 5, y: 0 }], // Single obstacle blocking direct path
+        objective: Some("Reach enemy position".into()),
+    }
+}
+
+fn create_scenario_with_multiple_obstacles() -> WorldSnapshot {
+    WorldSnapshot {
+        t: 15.0,
+        player: PlayerState {
+            hp: 100,
+            pos: IVec2 { x: 0, y: 0 },
+            stance: "stand".into(),
+            orders: vec![],
+        },
+        me: CompanionState {
+            ammo: 10,
+            cooldowns: Default::default(),
+            morale: 1.0,
+            pos: IVec2 { x: 0, y: 0 },
+        },
+        enemies: vec![EnemyState {
+            id: 1,
+            pos: IVec2 { x: 20, y: 20 },
+            hp: 100,
+            cover: "none".into(),
+            last_seen: 0.0,
+        }],
+        pois: vec![],
+        obstacles: vec![
+            IVec2 { x: 5, y: 0 },   // Horizontal barrier
+            IVec2 { x: 5, y: 5 },   // Vertical extension
+            IVec2 { x: 10, y: 10 }, // Diagonal blocker
+            IVec2 { x: 15, y: 15 }, // Near target
+            IVec2 { x: 0, y: 10 },  // Side blocker
+        ],
+        objective: Some("Navigate complex obstacle field".into()),
+    }
+}
+
+fn create_scenario_with_surrounding_obstacles() -> WorldSnapshot {
+    WorldSnapshot {
+        t: 20.0,
+        player: PlayerState {
+            hp: 100,
+            pos: IVec2 { x: 10, y: 10 },
+            stance: "stand".into(),
+            orders: vec![],
+        },
+        me: CompanionState {
+            ammo: 10,
+            cooldowns: Default::default(),
+            morale: 1.0,
+            pos: IVec2 { x: 10, y: 10 }, // Companion at center
+        },
+        enemies: vec![EnemyState {
+            id: 1,
+            pos: IVec2 { x: 25, y: 25 },
+            hp: 100,
+            cover: "none".into(),
+            last_seen: 0.0,
+        }],
+        pois: vec![],
+        obstacles: vec![
+            IVec2 { x: 9, y: 10 },  // Left
+            IVec2 { x: 11, y: 10 }, // Right
+            IVec2 { x: 10, y: 9 },  // Up
+            IVec2 { x: 10, y: 11 }, // Down
+            IVec2 { x: 9, y: 9 },   // Diagonal
+            IVec2 { x: 11, y: 11 }, // Diagonal
+        ],
+        objective: Some("Escape confined space".into()),
+    }
+}
+
+fn create_scenario_with_edge_obstacles() -> WorldSnapshot {
+    WorldSnapshot {
+        t: 25.0,
+        player: PlayerState {
+            hp: 100,
+            pos: IVec2 { x: 0, y: 0 },
+            stance: "stand".into(),
+            orders: vec![],
+        },
+        me: CompanionState {
+            ammo: 10,
+            cooldowns: Default::default(),
+            morale: 1.0,
+            pos: IVec2 { x: 0, y: 0 },
+        },
+        enemies: vec![EnemyState {
+            id: 1,
+            pos: IVec2 { x: 50, y: 50 },
+            hp: 100,
+            cover: "none".into(),
+            last_seen: 0.0,
+        }],
+        pois: vec![],
+        obstacles: vec![
+            IVec2 { x: 0, y: 1 },   // Adjacent to companion
+            IVec2 { x: 49, y: 50 }, // Adjacent to enemy
+            IVec2 { x: 25, y: 25 }, // Center obstacle
+            IVec2 { x: 0, y: 50 },  // Corner position
+            IVec2 { x: 50, y: 0 },  // Opposite corner
+        ],
+        objective: Some("Handle edge case obstacles".into()),
     }
 }

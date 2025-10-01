@@ -1,5 +1,12 @@
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use semver::Version;
+use std::sync::OnceLock;
+
+const CURRENT_VERSION: &str = "1.1.0";
+
+static CURRENT_VERSION_PARSED: OnceLock<Version> = OnceLock::new();
+static SKILL_MIGRATION_VERSION_PARSED: OnceLock<Version> = OnceLock::new();
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Persona {
@@ -11,6 +18,21 @@ pub struct Persona {
     pub likes: Vec<String>,
     pub dislikes: Vec<String>,
     pub goals: Vec<String>,
+}
+
+impl Default for Persona {
+    fn default() -> Self {
+        Self {
+            tone: "neutral".into(),
+            risk: "low".into(),
+            humor: "none".into(),
+            voice: "default".into(),
+            backstory: "".into(),
+            likes: vec![],
+            dislikes: vec![],
+            goals: vec![],
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -100,7 +122,8 @@ impl CompanionProfile {
 
     pub fn load_from_file(path: &str) -> anyhow::Result<Self> {
         let s = std::fs::read_to_string(path)?;
-        let p: Self = serde_json::from_str(&s)?;
+        let mut p: Self = serde_json::from_str(&s)?;
+        p.migrate()?;
         Ok(p)
     }
 
@@ -123,9 +146,44 @@ impl CompanionProfile {
         if parts.len() < 2 {
             return false;
         }
-        let maj = parts[0].parse::<u32>().unwrap_or(0);
-        let min = parts[1].parse::<u32>().unwrap_or(0);
+        let Ok(maj) = parts[0].parse::<u32>() else {
+            return false;
+        };
+        let Ok(min) = parts[1].parse::<u32>() else {
+            return false;
+        };
         maj == expected_major && min == expected_minor
+    }
+}
+
+impl CompanionProfile {
+    /// Migrate profile to latest version
+    pub fn migrate(&mut self) -> anyhow::Result<()> {
+        let current_version = CURRENT_VERSION_PARSED.get_or_init(|| {
+            Version::parse(CURRENT_VERSION).expect("Failed to parse CURRENT_VERSION constant")
+        });
+        let profile_version = Version::parse(&self.version)?;
+
+        // If profile version is already at or above current, no migration needed
+        if profile_version >= *current_version {
+            return Ok(());
+        }
+
+        // Run skill-seeding migration only for versions < 1.1.0 and when skills is empty
+        let skill_migration_version = SKILL_MIGRATION_VERSION_PARSED.get_or_init(|| {
+            Version::parse("1.1.0").expect("Failed to parse skill migration version")
+        });
+        if profile_version < *skill_migration_version && self.skills.is_empty() {
+            self.skills.push(Skill {
+                name: "stealth".into(),
+                level: 1,
+                notes: "Basic training".into(),
+            });
+        }
+
+        self.version = CURRENT_VERSION.to_string();
+        self.sign();
+        Ok(())
     }
 }
 
@@ -148,6 +206,120 @@ mod tests {
         let s = serde_json::to_string(&p).unwrap();
         let p2: CompanionProfile = serde_json::from_str(&s).unwrap();
         assert!(p2.verify());
-        assert!(p2.version_compatible(1, 0));
+        assert!(p2.version_compatible(1, 1));
+    }
+
+    #[test]
+    fn migration_works() {
+        let mut p = CompanionProfile {
+            version: "1.0.0".into(),
+            persona: Persona::default(),
+            player_prefs: serde_json::json!({}),
+            facts: vec![],
+            episodes: vec![],
+            skills: vec![],
+            signature: None,
+        };
+        p.migrate().unwrap();
+        assert_eq!(p.version, "1.1.0");
+        assert!(!p.skills.is_empty());
+        assert!(p.verify());
+    }
+
+    #[test]
+    fn migration_noop_when_skills_present() {
+        let existing_skill = Skill {
+            name: "combat".into(),
+            level: 2,
+            notes: "Experienced".into(),
+        };
+        let mut p = CompanionProfile {
+            version: "1.0.0".into(),
+            persona: Persona::default(),
+            player_prefs: serde_json::json!({}),
+            facts: vec![],
+            episodes: vec![],
+            skills: vec![existing_skill.clone()],
+            signature: None,
+        };
+        p.migrate().unwrap();
+        assert_eq!(p.version, "1.1.0");
+        assert_eq!(p.skills.len(), 1);
+        assert_eq!(p.skills[0].name, "combat");
+        assert_eq!(p.skills[0].level, 2);
+        assert_eq!(p.skills[0].notes, "Experienced");
+        assert!(p.verify());
+    }
+
+    #[test]
+    fn migration_from_other_versions() {
+        // Test migrating from 0.9.0 (should add skill if empty)
+        let mut p_old = CompanionProfile {
+            version: "0.9.0".into(),
+            persona: Persona::default(),
+            player_prefs: serde_json::json!({}),
+            facts: vec![],
+            episodes: vec![],
+            skills: vec![],
+            signature: None,
+        };
+        p_old.migrate().unwrap();
+        assert_eq!(p_old.version, "1.1.0");
+        assert!(!p_old.skills.is_empty());
+        assert_eq!(p_old.skills[0].name, "stealth");
+
+        // Test migrating from 1.0.1 (should add skill if empty)
+        let mut p_patch = CompanionProfile {
+            version: "1.0.1".into(),
+            persona: Persona::default(),
+            player_prefs: serde_json::json!({}),
+            facts: vec![],
+            episodes: vec![],
+            skills: vec![],
+            signature: None,
+        };
+        p_patch.migrate().unwrap();
+        // Test migrating from 2.0.0 (future version, should not add skill)
+        let mut p_future = CompanionProfile {
+            version: "2.0.0".into(),
+            persona: Persona::default(),
+            player_prefs: serde_json::json!({}),
+            facts: vec![],
+            episodes: vec![],
+            skills: vec![],
+            signature: None,
+        };
+        // Future versions should not be downgraded
+        let result = p_future.migrate();
+        assert!(result.is_ok());
+        assert_eq!(p_future.version, "2.0.0");
+        assert!(p_future.skills.is_empty()); // No skill added for future versions
+    }
+
+    #[test]
+    fn load_from_file_applies_migrations_integration() {
+        use tempfile::NamedTempFile;
+        use std::io::Write;
+
+        let legacy_profile = CompanionProfile {
+            version: "1.0.0".into(),
+            persona: Persona::default(),
+            player_prefs: serde_json::json!({}),
+            facts: vec![],
+            episodes: vec![],
+            skills: vec![],
+            signature: None,
+        };
+        let json = serde_json::to_string_pretty(&legacy_profile).unwrap();
+
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(json.as_bytes()).unwrap();
+        let path = temp_file.path().to_str().unwrap();
+
+        let loaded = CompanionProfile::load_from_file(path).unwrap();
+        assert_eq!(loaded.version, "1.1.0");
+        assert!(!loaded.skills.is_empty());
+        assert_eq!(loaded.skills[0].name, "stealth");
+        assert!(loaded.verify());
     }
 }

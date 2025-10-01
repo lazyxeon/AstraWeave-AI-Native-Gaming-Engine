@@ -7,8 +7,21 @@ pub trait Component: 'static + Send + Sync {}
 impl<T: 'static + Send + Sync> Component for T {}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
 pub struct Entity(u64);
 
+impl Entity {
+    /// Get the raw entity ID. Use with caution.
+    pub fn id(&self) -> u64 {
+        self.0
+    }
+
+    /// # Safety
+    /// The caller must ensure the entity ID is valid in the target World.
+    pub unsafe fn from_raw(id: u64) -> Self {
+        Entity(id)
+    }
+}
 #[derive(Default)]
 pub struct World {
     next: u64,
@@ -169,8 +182,8 @@ impl App {
             .with_stage("presentation");
         Self { world: World::new(), schedule }
     }
-    pub fn add_system(mut self, stage: &'static str, sys: SystemFn) -> Self {
-        self.schedule.add_system(stage, sys); self
+    pub fn add_system(&mut self, stage: &'static str, sys: SystemFn) {
+        self.schedule.add_system(stage, sys);
     }
     pub fn insert_resource<T: 'static + Send + Sync>(mut self, r: T) -> Self { self.world.insert_resource(r); self }
     pub fn run_fixed(mut self, steps: u32) -> Self {
@@ -207,7 +220,7 @@ mod tests {
         let mut app = App::new();
         let e = app.world.spawn();
         app.world.insert(e, Pos { x: 0 });
-        app = app.add_system("simulation", sim);
+        app.add_system("simulation", sim);
         app = app.run_fixed(3);
         assert_eq!(app.world.get::<Pos>(e).unwrap().x, 3);
     }

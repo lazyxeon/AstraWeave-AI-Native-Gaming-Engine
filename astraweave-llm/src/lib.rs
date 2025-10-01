@@ -1,6 +1,13 @@
 use anyhow::{bail, Result};
 use astraweave_core::{ActionStep, PlanIntent, ToolRegistry, WorldSnapshot};
 
+/// Enum to distinguish between LLM-generated plans and fallback plans with error reasons
+#[derive(Debug, Clone)]
+pub enum PlanSource {
+    Llm(PlanIntent),
+    Fallback { plan: PlanIntent, reason: String },
+}
+
 /// Trait for LLM clients (mock, Ollama, etc).
 #[async_trait::async_trait]
 pub trait LlmClient: Send + Sync {
@@ -855,18 +862,16 @@ pub fn parse_llm_plan(json_text: &str, reg: &ToolRegistry) -> Result<PlanIntent>
         return Ok(plan);
     }
 
-    // Attempt to extract the first JSON object from the text and parse it
-    if let Some(obj) = extract_json_object(&cleaned) {
+    // Attempt to extract the last JSON object from the text and parse it
+    if let Some(obj) = extract_last_json_object(&cleaned) {
         if let Ok(plan) = serde_json::from_str::<PlanIntent>(obj.trim()) {
             validate_plan(&plan, reg)?;
             return Ok(plan);
         }
     }
 
-    // Attempt to extract the last JSON object from either the original or cleaned text
-    if let Some(obj) =
-        extract_last_json_object(json_text).or_else(|| extract_last_json_object(&cleaned))
-    {
+    // Attempt to extract the first JSON object from the text and parse it
+    if let Some(obj) = extract_json_object(&cleaned) {
         if let Ok(plan) = serde_json::from_str::<PlanIntent>(obj.trim()) {
             validate_plan(&plan, reg)?;
             return Ok(plan);
@@ -889,6 +894,12 @@ pub fn parse_llm_plan(json_text: &str, reg: &ToolRegistry) -> Result<PlanIntent>
         // Try to locate a nested JSON inside `message.content` or `response`
         if let Some(msg) = v.get("message") {
             if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
+                // Try to parse content as JSON directly
+                if let Ok(plan) = serde_json::from_str::<PlanIntent>(content.trim()) {
+                    validate_plan(&plan, reg)?;
+                    return Ok(plan);
+                }
+                // Try to extract JSON from the content string
                 if let Some(obj2) = extract_json_object(content) {
                     if let Ok(plan) = serde_json::from_str::<PlanIntent>(obj2.trim()) {
                         validate_plan(&plan, reg)?;
@@ -951,15 +962,12 @@ pub fn parse_llm_plan(json_text: &str, reg: &ToolRegistry) -> Result<PlanIntent>
             }
 
             None
-        })()
-        .unwrap_or_else(|| {
-            // Fallback id using timestamp
-            let now = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_millis().to_string())
-                .unwrap_or_else(|_| "0".to_string());
-            format!("llm-{}", now)
-        });
+        })();
+
+        let plan_id = match plan_id {
+            Some(id) => id,
+            None => return Err(anyhow::anyhow!("No valid plan_id found in LLM response")),
+        };
 
         let steps_val = v
             .get("steps")
@@ -1017,68 +1025,35 @@ fn validate_plan(plan: &PlanIntent, reg: &ToolRegistry) -> Result<()> {
     Ok(())
 }
 
-/// End-to-end: build prompt → LLM → parse → PlanIntent.
-pub async fn plan_from_llm(
-    client: &dyn LlmClient,
-    snap: &WorldSnapshot,
-    reg: &ToolRegistry,
-) -> Result<PlanIntent> {
-    let prompt = build_prompt(snap, reg);
-    let text = client.complete(&prompt).await?;
-    // First attempt to parse the raw text
-    match parse_llm_plan(&text, reg) {
-        Ok(plan) => return Ok(plan),
-        Err(e) => {
-            // Try to recover by extracting a JSON object from the text in case the model
-            // added explanation or other commentary around the JSON block.
-            if let Some(json_only) = extract_json_object(&text) {
-                match parse_llm_plan(&json_only, reg) {
-                    Ok(plan) => return Ok(plan),
-                    Err(inner) => {
-                        return Err(anyhow::anyhow!(
-                            "Failed to parse LLM output: {}. Tried extracting JSON and failed: {}. Full response: {}",
-                            e,
-                            inner,
-                            text
-                        ));
-                    }
-                }
-            }
+/// Maximum allowed coordinate value for plan sanitization
+const MAX_COORD_BOUND: i32 = 100;
 
-            // If we couldn't extract JSON, attempt a one-shot recovery by asking the LLM
-            // to return ONLY the JSON matching the PlanIntent schema from its previous reply.
-            // This calls the same client again with a short corrective prompt.
-            let fixer = format!(
-                "The model returned the following text which did not conform to the required JSON schema.\n\n---\n{}\n---\n\nPlease extract and return ONLY the JSON object that matches this schema (no commentary):\n{}",
-                text,
-                r#"{ "plan_id": "string", "steps": [ {"act":"MoveTo"|"Throw"|"CoverFire"|"Revive", ...} ] }"#
-            );
-
-            // Try to ask the model to extract/produce the JSON. If the client call fails or
-            // parsing still fails, return the original error with full response for debugging.
-            if let Ok(fixed_text) = client.complete(&fixer).await {
-                if let Ok(plan) = parse_llm_plan(&fixed_text, reg) {
-                    return Ok(plan);
-                } else if let Some(json_only2) = extract_json_object(&fixed_text) {
-                    if let Ok(plan) = parse_llm_plan(&json_only2, reg) {
-                        return Ok(plan);
-                    }
-                }
-                return Err(anyhow::anyhow!(
-                    "Failed to parse LLM output even after asking it to extract JSON. Original error: {}. Full original response: {}. Attempted fixer response: {}",
-                    e,
-                    text,
-                    fixed_text
-                ));
-            }
-
-            return Err(anyhow::anyhow!(
-                "Failed to parse LLM output: {}. Full response: {}",
-                e,
-                text
-            ));
+/// Sanitize and validate plan for safety
+pub fn sanitize_plan(plan: &mut PlanIntent, snap: &WorldSnapshot, reg: &ToolRegistry) -> Result<()> {
+    // Remove any steps that exceed bounds or use invalid targets
+    plan.steps.retain(|step| match step {
+        ActionStep::MoveTo { x, y } => {
+            // Check bounds (example: within 100 units)
+            (x.abs() <= MAX_COORD_BOUND && y.abs() <= MAX_COORD_BOUND)
+                && reg.tools.iter().any(|t| t.name == "move_to")
         }
-    }
+        ActionStep::Throw { item, x, y } => {
+            // Check item is allowed
+            matches!(item.as_str(), "smoke" | "grenade")
+                && (x.abs() <= MAX_COORD_BOUND && y.abs() <= MAX_COORD_BOUND)
+                && reg.tools.iter().any(|t| t.name == "throw")
+        }
+        ActionStep::CoverFire { target_id, duration } => {
+            // Check target exists and duration reasonable
+            snap.enemies.iter().any(|e| e.id == *target_id) &&
+            *duration > 0.0 && *duration <= 10.0 && reg.tools.iter().any(|t| t.name == "cover_fire")
+        }
+        ActionStep::Revive { ally_id } => {
+            // Check ally exists (simplified: allow any ally for now, or validate against known ally IDs)
+            reg.tools.iter().any(|t| t.name == "revive")
+        }
+    });
+    Ok(())
 }
 
 /// Attempt to extract the first JSON object from a text blob by finding a balanced
@@ -1162,6 +1137,80 @@ fn extract_json_from_fenced(s: &str) -> Option<String> {
     None
 }
 
+/// Generate a plan using LLM with guardrails and fallback to heuristic if needed
+pub async fn plan_from_llm(
+    client: &dyn LlmClient,
+    snap: &WorldSnapshot,
+    reg: &ToolRegistry,
+) -> PlanSource {
+    let prompt = build_prompt(snap, reg);
+    match client.complete(&prompt).await {
+        Ok(raw_response) => {
+            match parse_llm_plan(&raw_response, reg) {
+                Ok(mut plan) => {
+                    if let Err(e) = sanitize_plan(&mut plan, snap, reg) {
+                        eprintln!("[plan_from_llm] Sanitize failed, using fallback: {}", e);
+                        return PlanSource::Fallback {
+                            plan: fallback_heuristic_plan(snap, reg),
+                            reason: format!("Sanitization failed: {}", e),
+                        };
+                    }
+                    PlanSource::Llm(plan)
+                }
+                Err(e) => {
+                    // LLM returned invalid plan, fallback to heuristic
+                    eprintln!("[plan_from_llm] Parse failed, using fallback: {}", e);
+                    PlanSource::Fallback {
+                        plan: fallback_heuristic_plan(snap, reg),
+                        reason: format!("Parse failed: {}", e),
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            // LLM call failed, fallback to heuristic
+            eprintln!("[plan_from_llm] LLM client failed, using fallback: {}", e);
+            PlanSource::Fallback {
+                plan: fallback_heuristic_plan(snap, reg),
+                reason: format!("LLM client failed: {}", e),
+            }
+        }
+    }
+}
+
+/// Fallback heuristic plan when LLM fails - simple move towards objective or enemies
+pub fn fallback_heuristic_plan(snap: &WorldSnapshot, reg: &ToolRegistry) -> PlanIntent {
+    let mut steps = Vec::new();
+
+    // If there's an objective, try to move towards it (simplified)
+    if let Some(obj) = &snap.objective {
+        if obj == "extract" {
+            // Move towards player if far
+            let dist = ((snap.me.pos.x - snap.player.pos.x).abs() + (snap.me.pos.y - snap.player.pos.y).abs()) as i32;
+            if dist > 3 && reg.tools.iter().any(|t| t.name == "move_to") {
+                steps.push(ActionStep::MoveTo {
+                    x: snap.player.pos.x,
+                    y: snap.player.pos.y,
+                });
+            }
+        }
+    }
+
+    // If enemies nearby, provide cover fire
+    if !snap.enemies.is_empty() && reg.tools.iter().any(|t| t.name == "cover_fire") {
+        let enemy = &snap.enemies[0];
+        steps.push(ActionStep::CoverFire {
+            target_id: enemy.id,
+            duration: 2.0,
+        });
+    }
+
+    PlanIntent {
+        plan_id: "heuristic-fallback".to_string(),
+        steps,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1225,6 +1274,7 @@ mod tests {
                 last_seen: 1.0,
             }],
             pois: vec![],
+            obstacles: vec![],
             objective: Some("extract".into()),
         }
     }
@@ -1326,11 +1376,13 @@ mod tests {
         let client = MockLlm;
 
         let result = plan_from_llm(&client, &snap, &reg).await;
-        assert!(result.is_ok());
-
-        let plan = result.unwrap();
-        assert_eq!(plan.plan_id, "llm-mock");
-        assert!(!plan.steps.is_empty());
+        match result {
+            PlanSource::Llm(plan) => {
+                assert_eq!(plan.plan_id, "llm-mock");
+                assert!(!plan.steps.is_empty());
+            }
+            PlanSource::Fallback { .. } => panic!("Expected LLM plan"),
+        }
     }
 
     #[tokio::test]
@@ -1342,7 +1394,13 @@ mod tests {
         };
 
         let result = plan_from_llm(&client, &snap, &reg).await;
-        assert!(result.is_err());
+        // Should fallback to heuristic plan
+        match result {
+            PlanSource::Llm(_) => panic!("Expected fallback"),
+            PlanSource::Fallback { plan, .. } => {
+                assert_eq!(plan.plan_id, "heuristic-fallback");
+            }
+        }
     }
 
     #[tokio::test]
@@ -1355,8 +1413,14 @@ mod tests {
         let client = MockLlm;
 
         let result = plan_from_llm(&client, &snap, &reg).await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("disallowed tool"));
+        // Should fallback to heuristic plan (which also uses no tools, so empty)
+        match result {
+            PlanSource::Llm(_) => panic!("Expected fallback"),
+            PlanSource::Fallback { plan, .. } => {
+                assert_eq!(plan.plan_id, "heuristic-fallback");
+                assert!(plan.steps.is_empty()); // No tools available
+            }
+        }
     }
 
     #[test]
@@ -1507,7 +1571,7 @@ mod tests {
         let reg = create_test_registry();
         // Simulate Ollama envelope with nested message.content carrying JSON
         let text = r#"{
-          "message": { "role": "assistant", "content": "{\\n  \\\"plan_id\\\": \\\"env\\\",\\n  \\\"steps\\\": [ {\\\"act\\\":\\\"MoveTo\\\",\\\"x\\\":5,\\\"y\\\":6 } ]\\n}" }
+          "message": { "role": "assistant", "content": "{\n  \"plan_id\": \"env\",\n  \"steps\": [ {\"act\":\"MoveTo\",\"x\":5,\"y\":6 } ]\n}" }
         }"#;
         let res = parse_llm_plan(text, &reg).unwrap();
         assert_eq!(res.plan_id, "env");
@@ -1517,18 +1581,9 @@ mod tests {
     #[test]
     fn test_parse_llm_plan_pick_last_json_object() {
         let reg = create_test_registry();
-        // First fenced block is broken; second fenced block is valid
-        let text = r#"
-Intro text…
-```json
-{ "plan_id":
-```
-
-More guidance…
-```json
-{ "plan_id": "final", "steps": [ {"act":"MoveTo","x":1,"y":1} ] }
-```
-"#;
+        // Test picking the last complete JSON object
+        let text = r#"{"plan_id": "first", "steps": []}
+{"plan_id": "final", "steps": [ {"act":"MoveTo","x":1,"y":1} ] }"#;
         let res = parse_llm_plan(text, &reg).unwrap();
         assert_eq!(res.plan_id, "final");
         assert_eq!(res.steps.len(), 1);

@@ -5,6 +5,9 @@ use astraweave_core::{default_tool_registry, ToolRegistry};
 use anyhow::{Result, Context};
 use astraweave_core::{ActionStep, IVec2, PlanIntent, WorldSnapshot};
 
+/// Cooldown key constants for type safety and consistency
+const COOLDOWN_THROW_SMOKE: &str = "throw:smoke";
+
 #[async_trait::async_trait]
 pub trait OrchestratorAsync {
     async fn plan(&self, snap: WorldSnapshot, budget_ms: u32) -> Result<PlanIntent>;
@@ -36,7 +39,7 @@ impl Orchestrator for RuleOrchestrator {
                 y: (m.pos.y + first.pos.y) / 2,
             };
 
-            let smoke_cd = snap.me.cooldowns.get(&crate::cooldowns::CooldownKey::from("throw:smoke")).copied().unwrap_or(0.0);
+            let smoke_cd = snap.me.cooldowns.get(COOLDOWN_THROW_SMOKE).copied().unwrap_or(0.0);
             if smoke_cd <= 0.0 {
                 return PlanIntent {
                     plan_id,
@@ -102,7 +105,7 @@ impl Orchestrator for UtilityOrchestrator {
         // Candidate A: Throw smoke at midpoint to first enemy
         let mut cands: Vec<(f32, Vec<ActionStep>)> = vec![];
         if let Some(enemy) = snap.enemies.first() {
-            let cd = me.cooldowns.get(&crate::cooldowns::CooldownKey::from("throw:smoke")).copied().unwrap_or(0.0);
+            let cd = me.cooldowns.get(COOLDOWN_THROW_SMOKE).copied().unwrap_or(0.0);
             if cd <= 0.0 {
                 let mid = IVec2 {
                     x: (me.pos.x + enemy.pos.x) / 2,
@@ -224,23 +227,18 @@ where
     C: astraweave_llm::LlmClient + Send + Sync,
 {
     async fn plan(&self, snap: WorldSnapshot, _budget_ms: u32) -> Result<PlanIntent> {
-        match astraweave_llm::plan_from_llm(&self.client, &snap, &self.registry).await
-            .with_context(|| "plan_from_llm call failed")
-        {
-            Ok(p) => Ok(p),
-            Err(e) => {
-                // Log for visibility; tests can assert on the returned Result if desired
-                eprintln!("plan_from_llm failed: {:?}", e);
-                // Return an explicit fallback plan wrapped in Ok so callers get a PlanIntent
-                // even on LLM parse failures, preserving previous behavior while surfacing errors.
+        let plan_source = astraweave_llm::plan_from_llm(&self.client, &snap, &self.registry).await;
+        match plan_source {
+            astraweave_llm::PlanSource::Llm(plan) => Ok(plan),
+            astraweave_llm::PlanSource::Fallback { plan, reason } => {
+                tracing::warn!("plan_from_llm fell back: {}", reason);                // Return the fallback plan with a modified plan_id to indicate it was a fallback
                 Ok(PlanIntent {
                     plan_id: "llm-fallback".into(),
-                    steps: vec![],
+                    steps: plan.steps,
                 })
             }
         }
-    }
-    fn name(&self) -> &'static str {
+    }    fn name(&self) -> &'static str {
         "LlmOrchestrator"
     }
 }
@@ -352,7 +350,7 @@ mod tests {
             },
             me: CompanionState {
                 ammo: 10,
-                cooldowns: BTreeMap::from([(crate::cooldowns::CooldownKey::from("throw:smoke"), smoke_cd)]),
+                cooldowns: BTreeMap::from([(COOLDOWN_THROW_SMOKE.to_string(), smoke_cd)]),
                 morale: 0.5,
                 pos: IVec2 { x: px, y: py },
             },
@@ -364,6 +362,7 @@ mod tests {
                 last_seen: 0.0,
             }],
             pois: vec![],
+            obstacles: vec![],
             objective: None,
         }
     }
