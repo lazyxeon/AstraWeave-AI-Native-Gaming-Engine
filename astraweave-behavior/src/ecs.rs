@@ -1,7 +1,7 @@
 //! ECS integration for behavior trees
 
-use crate::{BehaviorGraph, BehaviorContext, BehaviorStatus};
-use astraweave_ecs::{Query};
+use crate::{BehaviorContext, BehaviorGraph, BehaviorStatus};
+use astraweave_ecs::Query;
 
 const SIMULATION_STAGE: &str = "simulation";
 
@@ -38,6 +38,9 @@ pub struct BehaviorPlugin;
 
 impl astraweave_ecs::Plugin for BehaviorPlugin {
     fn build(&self, app: &mut astraweave_ecs::App) {
-        app.add_system(SIMULATION_STAGE, behavior_tick_system as astraweave_ecs::SystemFn);
+        app.add_system(
+            SIMULATION_STAGE,
+            behavior_tick_system as astraweave_ecs::SystemFn,
+        );
     }
 }

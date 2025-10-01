@@ -1,5 +1,11 @@
 use anyhow::{Context, Result};
 use astraweave_asset::{AssetDatabase, AssetKind};
+use base64;
+use base64::Engine;
+use flate2::write::GzEncoder;
+use flate2::Compression;
+use ring::rand::SystemRandom;
+use ring::signature::Ed25519KeyPair;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -9,12 +15,6 @@ use std::{
 };
 use walkdir::WalkDir;
 use which::which;
-use flate2::write::GzEncoder;
-use flate2::Compression;
-use ring::signature::Ed25519KeyPair;
-use ring::rand::SystemRandom;
-use base64;
-use base64::Engine;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PipelineCfg {
@@ -42,7 +42,7 @@ struct ManifestEntry {
     out: String,
     sha256: String,
     kind: String,
-    guid: String, // new
+    guid: String,              // new
     dependencies: Vec<String>, // new
 }
 
@@ -171,12 +171,23 @@ fn register_asset(db: &mut AssetDatabase, src: &Path, kind: AssetKind) -> Result
     db.register_asset(src, kind, dependencies)
 }
 
-fn record(kind: &str, src: &Path, out: &Path, guid: &str, db: &AssetDatabase) -> Result<ManifestEntry> {
+fn record(
+    kind: &str,
+    src: &Path,
+    out: &Path,
+    guid: &str,
+    db: &AssetDatabase,
+) -> Result<ManifestEntry> {
     let mut f = fs::File::open(out)?;
     let mut hasher = Sha256::new();
     std::io::copy(&mut f, &mut hasher)?;
     let sha = hex::encode(hasher.finalize());
-    let dependencies = db.get_dependencies(guid).cloned().unwrap_or_default().into_iter().collect();
+    let dependencies = db
+        .get_dependencies(guid)
+        .cloned()
+        .unwrap_or_default()
+        .into_iter()
+        .collect();
     Ok(ManifestEntry {
         src: src.to_string_lossy().to_string(),
         out: out.to_string_lossy().to_string(),
@@ -191,7 +202,11 @@ fn process_texture(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf
     fs::create_dir_all(out_root)?;
     let stem = src.file_stem().unwrap().to_string_lossy();
     let out = Path::new(out_root).join(format!("{stem}.ktx2"));
-    let processed = if compress { out.with_extension("ktx2.gz") } else { out.clone() };
+    let processed = if compress {
+        out.with_extension("ktx2.gz")
+    } else {
+        out.clone()
+    };
     // Prefer toktx; fallback basisu; fallback copy
     if let Ok(toktx) = which("toktx") {
         // BasisU UASTC KTX2 with Zstd
@@ -240,7 +255,11 @@ fn process_model(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf> 
     fs::create_dir_all(out_root)?;
     let stem = src.file_stem().unwrap().to_string_lossy();
     let out = Path::new(out_root).join(format!("{stem}.meshbin"));
-    let processed = if compress { out.with_extension("meshbin.gz") } else { out.clone() };
+    let processed = if compress {
+        out.with_extension("meshbin.gz")
+    } else {
+        out.clone()
+    };
     if src.extension().map(|e| e.to_string_lossy().to_lowercase()) == Some("gltf".into())
         || src.extension().map(|e| e.to_string_lossy().to_lowercase()) == Some("glb".into())
     {
@@ -266,7 +285,11 @@ fn process_audio(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf> 
     fs::create_dir_all(out_root)?;
     let stem = src.file_stem().unwrap().to_string_lossy();
     let out = Path::new(out_root).join(format!("{stem}.ogg"));
-    let processed = if compress { out.with_extension("ogg.gz") } else { out.clone() };
+    let processed = if compress {
+        out.with_extension("ogg.gz")
+    } else {
+        out.clone()
+    };
     if let Ok(oggenc) = which("oggenc") {
         let status = Command::new(oggenc)
             .args([
@@ -287,7 +310,11 @@ fn process_audio(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf> 
     }
     // fallback: keep wav as-is
     let out_wav = Path::new(out_root).join(format!("{stem}.wav"));
-    let processed = if compress { out_wav.with_extension("wav.gz") } else { out_wav.clone() };
+    let processed = if compress {
+        out_wav.with_extension("wav.gz")
+    } else {
+        out_wav.clone()
+    };
     fs::copy(src, &out_wav)?;
     if compress {
         compress_file(&out_wav, &processed)?;
@@ -332,8 +359,10 @@ fn validate_assets(manifest: &[ManifestEntry], db: &AssetDatabase) -> Result<()>
 
 fn sign_manifest(manifest: &[ManifestEntry]) -> Result<SignedManifest> {
     let rng = SystemRandom::new();
-    let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng).map_err(|_| anyhow::anyhow!("Failed to generate key"))?;
-    let key_pair = Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref()).map_err(|_| anyhow::anyhow!("Invalid key"))?;
+    let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng)
+        .map_err(|_| anyhow::anyhow!("Failed to generate key"))?;
+    let key_pair = Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref())
+        .map_err(|_| anyhow::anyhow!("Invalid key"))?;
     let manifest_json = serde_json::to_string(manifest)?;
     let signature = key_pair.sign(manifest_json.as_bytes());
     Ok(SignedManifest {

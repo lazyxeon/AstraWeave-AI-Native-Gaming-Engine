@@ -30,9 +30,7 @@ pub struct ObservabilityState {
 
 impl ObservabilityState {
     pub fn new(config: ObservabilityConfig) -> Self {
-        Self {
-            config,
-        }
+        Self { config }
     }
 }
 
@@ -67,7 +65,8 @@ impl Plugin for ObservabilityPlugin {
         }
 
         // Add observability state as resource
-        app.world.insert_resource(ObservabilityState::new(self.config.clone()));
+        app.world
+            .insert_resource(ObservabilityState::new(self.config.clone()));
 
         // Add observability systems
         app.add_system("presentation", observability_system);
@@ -86,16 +85,13 @@ fn init_tracing(config: &ObservabilityConfig) -> Result<()> {
     };
 
     let subscriber = tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::from_default_env()
-                .add_directive(level.into())
-        )
+        .with(tracing_subscriber::EnvFilter::from_default_env().add_directive(level.into()))
         .with(
             tracing_subscriber::fmt::layer()
                 .json()
                 .with_target(false)
                 .with_thread_ids(true)
-                .with_thread_names(true)
+                .with_thread_names(true),
         );
 
     subscriber.init();
@@ -115,10 +111,7 @@ fn init_metrics(_config: &ObservabilityConfig) -> Result<()> {
 fn init_crash_reporting() {
     std::panic::set_hook(Box::new(|panic_info| {
         let backtrace = std::backtrace::Backtrace::capture();
-        error!(
-            "Panic occurred: {}\nBacktrace:\n{}",
-            panic_info, backtrace
-        );
+        error!("Panic occurred: {}\nBacktrace:\n{}", panic_info, backtrace);
 
         // In a real implementation, this would send to a crash reporting service
         // like Sentry, but for now we just log it

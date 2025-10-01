@@ -42,7 +42,10 @@ async fn main() -> anyhow::Result<()> {
     let reg = ToolRegistry {
         tools: vec![
             tool_spec("move_to", &[("x", "i32"), ("y", "i32")]),
-            tool_spec("throw", &[("item", "enum[smoke,grenade]"), ("x", "i32"), ("y", "i32")]),
+            tool_spec(
+                "throw",
+                &[("item", "enum[smoke,grenade]"), ("x", "i32"), ("y", "i32")],
+            ),
             tool_spec("cover_fire", &[("target_id", "u32"), ("duration", "f32")]),
         ],
         constraints: Constraints {

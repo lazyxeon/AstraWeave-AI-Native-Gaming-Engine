@@ -5,13 +5,13 @@ pub mod combat_physics;
 pub mod crafting;
 pub mod cutscenes;
 pub mod dialogue;
+pub mod ecs;
 pub mod harvesting;
 pub mod items;
 pub mod quests;
 pub mod stats;
 pub mod types;
 pub mod weaving;
-pub mod ecs;
 
 pub use biome::*;
 pub use biome_spawn::*;
@@ -20,15 +20,18 @@ pub use combat_physics::*;
 pub use crafting::*;
 pub use cutscenes::*;
 pub use dialogue::*;
+pub use ecs::*;
 pub use harvesting::*;
 pub use items::*;
 pub use quests::*;
 pub use stats::*;
 pub use types::*;
 pub use weaving::*;
-pub use ecs::*;
 
 pub mod weave_portals;
 pub mod weave_telemetry;
 pub use weave_portals::*;
 pub use weave_telemetry::*;
+
+#[cfg(test)]
+mod tests;

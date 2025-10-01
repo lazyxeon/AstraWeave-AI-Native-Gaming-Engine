@@ -256,11 +256,26 @@ impl MaterialIntegrator {
             label: Some("materials-pack"),
             layout: &self.bgl,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&gpu.albedo) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&gpu.sampler_albedo) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&gpu.normal) },
-                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&gpu.sampler_linear) },
-                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&gpu.mra) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&gpu.albedo),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&gpu.sampler_albedo),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&gpu.normal),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&gpu.sampler_linear),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&gpu.mra),
+                },
             ],
         });
 
@@ -278,7 +293,12 @@ impl MaterialIntegrator {
             (stats.gpu_memory_bytes as f64) / (1024.0*1024.0)
         );
 
-        let runtime = MaterialPackRuntime { gpu, stats, last_loaded: Instant::now(), bind_group };
+        let runtime = MaterialPackRuntime {
+            gpu,
+            stats,
+            last_loaded: Instant::now(),
+            bind_group,
+        };
         self.cache.insert(biome.to_string(), runtime);
         self.set_current(biome);
         Ok(self.cache.get(biome).unwrap())
