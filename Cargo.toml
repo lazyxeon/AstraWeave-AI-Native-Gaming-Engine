@@ -57,6 +57,7 @@ members = [
   "examples/terrain_demo",
   "examples/biome_showcase",
   "examples/orchestrator_async_tick",
+  "examples/phase6_integration_demo",
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
@@ -76,6 +77,10 @@ members = [
   "net/aw-net-proto",
   "net/aw-net-server",
   "net/aw-net-client",
+  "astraweave-net-ecs",
+  "astraweave-persistence-ecs",
+  "astraweave-stress-test",
+  "astraweave-security",
 ]
 resolver = "2"
 
@@ -133,6 +138,13 @@ criterion = "0.7"
 tempfile = "3"
 astraweave-ecs = { path = "astraweave-ecs" }
 astraweave-core = { path = "astraweave-core" }
+astraweave-ai = { path = "astraweave-ai" }
+astraweave-behavior = { path = "astraweave-behavior" }
 astraweave-memory = { path = "astraweave-memory" }
 astraweave-nav = { path = "astraweave-nav" }
 astraweave-llm = { path = "astraweave-llm" }
+astraweave-physics = { path = "astraweave-physics" }
+astraweave-net-ecs = { path = "astraweave-net-ecs" }
+astraweave-persistence-ecs = { path = "astraweave-persistence-ecs" }
+astraweave-stress-test = { path = "astraweave-stress-test" }
+astraweave-security = { path = "astraweave-security" }

@@ -1,0 +1,20 @@
+[package]
+name = "astraweave-security"
+version = "0.1.0"
+license.workspace = true
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+rhai = { workspace = true }
+astraweave-ecs = { workspace = true }
+astraweave-core = { workspace = true }
+astraweave-ai = { workspace = true }
+astraweave-llm = { workspace = true }

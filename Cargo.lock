@@ -611,6 +611,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-net-ecs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-core",
+ "astraweave-ecs",
+ "aw-net-proto",
+ "bincode 2.0.1",
+ "crc32fast",
+ "futures-util",
+ "glam",
+ "lz4_flex",
+ "postcard",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tokio-tungstenite",
+]
+
+[[package]]
 name = "astraweave-npc"
 version = "0.1.0"
 dependencies = [
@@ -624,6 +644,25 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.17",
  "toml",
+]
+
+[[package]]
+name = "astraweave-persistence-ecs"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-core",
+ "astraweave-ecs",
+ "astraweave-memory",
+ "aw-save",
+ "bincode 1.3.3",
+ "crc32fast",
+ "lz4_flex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "time",
+ "uuid",
 ]
 
 [[package]]
@@ -707,6 +746,45 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.17",
+]
+
+[[package]]
+name = "astraweave-security"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ai",
+ "astraweave-core",
+ "astraweave-ecs",
+ "astraweave-llm",
+ "ed25519-dalek",
+ "hex",
+ "rand 0.9.2",
+ "rhai",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tokio",
+]
+
+[[package]]
+name = "astraweave-stress-test"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ai",
+ "astraweave-behavior",
+ "astraweave-core",
+ "astraweave-ecs",
+ "astraweave-net-ecs",
+ "astraweave-persistence-ecs",
+ "aw-save",
+ "criterion",
+ "futures-util",
+ "rand 0.9.2",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -1111,7 +1189,7 @@ dependencies = [
 name = "aw-net-proto"
 version = "0.1.0"
 dependencies = [
- "bincode",
+ "bincode 2.0.1",
  "lz4_flex",
  "postcard",
  "rand 0.9.2",
@@ -1374,6 +1452,15 @@ name = "base64ct"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55248b47b0caf0546f7988906588779981c43bb1bc9d0c44087278f80cdb44ba"
+
+[[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "bincode"
@@ -5687,6 +5774,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "phase6_integration_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ai",
+ "astraweave-core",
+ "astraweave-ecs",
+ "astraweave-nav",
+ "astraweave-net-ecs",
+ "astraweave-persistence-ecs",
+ "astraweave-physics",
+ "astraweave-security",
+ "astraweave-stress-test",
+ "rand 0.9.2",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "phase_director"
 version = "0.1.0"
 dependencies = [
@@ -6596,7 +6703,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "aw-save",
- "bincode",
+ "bincode 2.0.1",
  "serde",
  "time",
  "uuid",
