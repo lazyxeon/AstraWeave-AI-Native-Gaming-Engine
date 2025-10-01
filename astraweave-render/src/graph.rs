@@ -1,8 +1,8 @@
 //! Minimal render graph scaffolding for Phase 2: establishes a deterministic, pluggable pass graph.
 //! This provides a Bevy/Fyrox-like pattern while staying optional and non-invasive to `Renderer`.
 
-use std::collections::BTreeMap;
 use anyhow::Context as _;
+use std::collections::BTreeMap;
 
 /// Typed GPU resources passed between graph nodes.
 /// Keep this minimal for now; extend as we integrate more passes.
@@ -35,7 +35,14 @@ pub struct GraphContext<'a> {
 
 impl<'a> GraphContext<'a> {
     pub fn new(user: &'a mut dyn std::any::Any) -> Self {
-        Self { user, resources: ResourceTable::default(), device: None, queue: None, encoder: None, primary_view: None }
+        Self {
+            user,
+            resources: ResourceTable::default(),
+            device: None,
+            queue: None,
+            encoder: None,
+            primary_view: None,
+        }
     }
 
     /// Attach GPU context for nodes that perform GPU work.
@@ -71,32 +78,54 @@ impl ResourceTable {
         self.map.insert(key.into(), Resource::BindGroup(bg));
     }
     pub fn view(&self, key: &str) -> anyhow::Result<&wgpu::TextureView> {
-        match self.map.get(key).with_context(|| format!("resource '{}' not found", key))? {
+        match self
+            .map
+            .get(key)
+            .with_context(|| format!("resource '{}' not found", key))?
+        {
             Resource::View(v) => Ok(v),
             _ => anyhow::bail!("resource '{}' is not a TextureView", key),
         }
     }
     pub fn view_mut(&mut self, key: &str) -> anyhow::Result<&mut wgpu::TextureView> {
-        match self.map.get_mut(key).with_context(|| format!("resource '{}' not found", key))? {
+        match self
+            .map
+            .get_mut(key)
+            .with_context(|| format!("resource '{}' not found", key))?
+        {
             Resource::View(v) => Ok(v),
             _ => anyhow::bail!("resource '{}' is not a TextureView", key),
         }
     }
     /// Get a target view by key, falling back to `primary_view` when the key is "surface".
-    pub fn target_view<'a>(&'a self, key: &str, primary_view: Option<&'a wgpu::TextureView>) -> anyhow::Result<&'a wgpu::TextureView> {
+    pub fn target_view<'a>(
+        &'a self,
+        key: &str,
+        primary_view: Option<&'a wgpu::TextureView>,
+    ) -> anyhow::Result<&'a wgpu::TextureView> {
         if key == "surface" {
-            if let Some(v) = primary_view { return Ok(v); }
+            if let Some(v) = primary_view {
+                return Ok(v);
+            }
         }
         self.view(key)
     }
     pub fn bind_group(&self, key: &str) -> anyhow::Result<&wgpu::BindGroup> {
-        match self.map.get(key).with_context(|| format!("resource '{}' not found", key))? {
+        match self
+            .map
+            .get(key)
+            .with_context(|| format!("resource '{}' not found", key))?
+        {
             Resource::BindGroup(bg) => Ok(bg),
             _ => anyhow::bail!("resource '{}' is not a BindGroup", key),
         }
     }
     pub fn tex(&self, key: &str) -> anyhow::Result<&wgpu::Texture> {
-        match self.map.get(key).with_context(|| format!("resource '{}' not found", key))? {
+        match self
+            .map
+            .get(key)
+            .with_context(|| format!("resource '{}' not found", key))?
+        {
             Resource::Texture(t) => Ok(t),
             _ => anyhow::bail!("resource '{}' is not a Texture", key),
         }
@@ -143,22 +172,36 @@ pub struct ClearNode {
 
 impl ClearNode {
     pub fn new(name: impl Into<String>, target_key: impl Into<String>, color: wgpu::Color) -> Self {
-        Self { name: name.into(), target_key: target_key.into(), color }
+        Self {
+            name: name.into(),
+            target_key: target_key.into(),
+            color,
+        }
     }
 }
 
 impl RenderNode for ClearNode {
-    fn name(&self) -> &str { &self.name }
+    fn name(&self) -> &str {
+        &self.name
+    }
     fn run(&mut self, ctx: &mut GraphContext) -> anyhow::Result<()> {
         let _device = ctx.device.context("ClearNode requires device")?;
-        let view = ctx.resources.target_view(&self.target_key, ctx.primary_view)?;
-        let enc = ctx.encoder.as_deref_mut().context("ClearNode requires encoder")?;
+        let view = ctx
+            .resources
+            .target_view(&self.target_key, ctx.primary_view)?;
+        let enc = ctx
+            .encoder
+            .as_deref_mut()
+            .context("ClearNode requires encoder")?;
         let rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some(&format!("clear:{}", self.name)),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,
-                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(self.color), store: wgpu::StoreOp::Store },
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(self.color),
+                    store: wgpu::StoreOp::Store,
+                },
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -177,35 +220,54 @@ pub struct RendererMainNode {
 
 impl RendererMainNode {
     pub fn new(name: impl Into<String>, target_key: impl Into<String>) -> Self {
-        Self { name: name.into(), target_key: target_key.into() }
+        Self {
+            name: name.into(),
+            target_key: target_key.into(),
+        }
     }
 }
 
 impl RenderNode for RendererMainNode {
-    fn name(&self) -> &str { &self.name }
+    fn name(&self) -> &str {
+        &self.name
+    }
     fn run(&mut self, ctx: &mut GraphContext) -> anyhow::Result<()> {
         // For now, just validate that the target exists; the main scene draw is handled
         // by the caller (e.g., Renderer::render_with). This keeps the node integration simple.
-        let _ = ctx.resources.target_view(&self.target_key, ctx.primary_view)?;
-        let _ = ctx.encoder.as_deref_mut().context("RendererMainNode requires encoder")?;
+        let _ = ctx
+            .resources
+            .target_view(&self.target_key, ctx.primary_view)?;
+        let _ = ctx
+            .encoder
+            .as_deref_mut()
+            .context("RendererMainNode requires encoder")?;
         Ok(())
     }
 }
 
 impl Default for RenderGraph {
-    fn default() -> Self { Self { nodes: Vec::new() } }
+    fn default() -> Self {
+        Self { nodes: Vec::new() }
+    }
 }
 
 impl RenderGraph {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-    pub fn add_node<N>(&mut self, node: N) where N: RenderNode + Send + Sync + 'static {
+    pub fn add_node<N>(&mut self, node: N)
+    where
+        N: RenderNode + Send + Sync + 'static,
+    {
         self.nodes.push(Box::new(node));
     }
 
     /// Execute nodes in insertion order. Deterministic by construction.
     pub fn execute(&mut self, ctx: &mut GraphContext) -> anyhow::Result<()> {
-        for n in self.nodes.iter_mut() { n.run(ctx)?; }
+        for n in self.nodes.iter_mut() {
+            n.run(ctx)?;
+        }
         Ok(())
     }
 }
@@ -214,9 +276,14 @@ impl RenderGraph {
 mod tests {
     use super::*;
 
-    struct TestNode { pub name: &'static str, pub log: Vec<&'static str> }
+    struct TestNode {
+        pub name: &'static str,
+        pub log: Vec<&'static str>,
+    }
     impl RenderNode for TestNode {
-        fn name(&self) -> &str { self.name }
+        fn name(&self) -> &str {
+            self.name
+        }
         fn run(&mut self, _ctx: &mut GraphContext) -> anyhow::Result<()> {
             self.log.push(self.name);
             Ok(())
@@ -225,9 +292,18 @@ mod tests {
 
     #[test]
     fn render_graph_runs_in_order() {
-    let a = TestNode { name: "shadow", log: vec![] };
-    let b = TestNode { name: "main", log: vec![] };
-    let c = TestNode { name: "post", log: vec![] };
+        let a = TestNode {
+            name: "shadow",
+            log: vec![],
+        };
+        let b = TestNode {
+            name: "main",
+            log: vec![],
+        };
+        let c = TestNode {
+            name: "post",
+            log: vec![],
+        };
         let mut g = RenderGraph::new();
         g.add_node(a);
         g.add_node(b);
@@ -247,7 +323,8 @@ mod tests {
             power_preference: wgpu::PowerPreference::LowPower,
             compatible_surface: None,
             force_fallback_adapter: false,
-        })).expect("adapter");
+        }))
+        .expect("adapter");
         let (device, _queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: Some("test-device"),
@@ -255,12 +332,17 @@ mod tests {
                 required_limits: wgpu::Limits::default(),
             },
             None,
-        )).expect("device");
+        ))
+        .expect("device");
 
         let mut table = ResourceTable::default();
         let desc = wgpu::TextureDescriptor {
             label: Some("transient-hdr"),
-            size: wgpu::Extent3d { width: 1024, height: 1024, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 1024,
+                height: 1024,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -268,7 +350,9 @@ mod tests {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
-        let tex = table.create_transient_texture(&device, "hdr_target", &desc).unwrap();
+        let tex = table
+            .create_transient_texture(&device, "hdr_target", &desc)
+            .unwrap();
         assert_eq!(tex.width(), 1024);
         assert_eq!(tex.height(), 1024);
         assert_eq!(tex.format(), wgpu::TextureFormat::Rgba16Float);

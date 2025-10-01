@@ -1,0 +1,11 @@
+[package]
+name = "core_loop_bt_demo"
+version = "0.1.0"
+license.workspace = true
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-ai = { path = "../../astraweave-ai" }
+rand = { workspace = true }

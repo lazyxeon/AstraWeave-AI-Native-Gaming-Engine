@@ -1,8 +1,8 @@
 pub mod capture_replay;
 pub use capture_replay::*;
 pub mod ecs_adapter;
-pub mod ecs_components;
 pub mod ecs_bridge;
+pub mod ecs_components;
 pub mod ecs_events;
 pub mod perception;
 pub mod schema;
@@ -17,13 +17,13 @@ pub use perception::*;
 pub use schema::*;
 pub use sim::*;
 // Note: tools::Poi and schema::Poi are different types - using qualified imports where needed
+pub use ecs_components::*;
 pub use tool_sandbox::*;
 pub use tools::{
     astar_path, find_cover_positions, glam_to_schema, los_clear, path_exists, schema_to_glam,
 };
 pub use validation::*;
 pub use world::*;
-pub use ecs_components::*;
 
 /// Construct a default ToolRegistry matching MVP verbs.
 pub fn default_tool_registry() -> ToolRegistry {

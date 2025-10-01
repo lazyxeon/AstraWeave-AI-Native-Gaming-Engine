@@ -1,6 +1,7 @@
-//! Behavior Graphs (BT/HTN) for AstraWeave AI
+//! Behavior Graphs (BT/HTN) and GOAP for AstraWeave AI
 
 pub mod ecs;
+pub mod goap;
 
 use std::collections::HashMap;
 
@@ -71,43 +72,41 @@ impl BehaviorNode {
                 }
                 BehaviorStatus::Failure
             }
-            BehaviorNode::Decorator(decorator, child) => {
-                match decorator {
-                    DecoratorType::Inverter => match child.tick(context) {
-                        BehaviorStatus::Success => BehaviorStatus::Failure,
-                        BehaviorStatus::Failure => BehaviorStatus::Success,
-                        r => r,
-                    },
-                    DecoratorType::Succeeder => {
-                        child.tick(context);
-                        BehaviorStatus::Success
-                    }
-                    DecoratorType::Failer => {
-                        child.tick(context);
-                        BehaviorStatus::Failure
-                    }
-                    DecoratorType::Repeat(max) => {
-                        for _ in 0..*max {
-                            match child.tick(context) {
-                                BehaviorStatus::Running => return BehaviorStatus::Running,
-                                BehaviorStatus::Success => continue,
-                                BehaviorStatus::Failure => return BehaviorStatus::Failure,
-                            }
-                        }
-                        BehaviorStatus::Success
-                    }
-                    DecoratorType::Retry(max) => {
-                        for _ in 0..*max {
-                            match child.tick(context) {
-                                BehaviorStatus::Running => return BehaviorStatus::Running,
-                                BehaviorStatus::Success => return BehaviorStatus::Success,
-                                BehaviorStatus::Failure => continue,
-                            }
-                        }
-                        BehaviorStatus::Failure
-                    }
+            BehaviorNode::Decorator(decorator, child) => match decorator {
+                DecoratorType::Inverter => match child.tick(context) {
+                    BehaviorStatus::Success => BehaviorStatus::Failure,
+                    BehaviorStatus::Failure => BehaviorStatus::Success,
+                    r => r,
+                },
+                DecoratorType::Succeeder => {
+                    child.tick(context);
+                    BehaviorStatus::Success
                 }
-            }
+                DecoratorType::Failer => {
+                    child.tick(context);
+                    BehaviorStatus::Failure
+                }
+                DecoratorType::Repeat(max) => {
+                    for _ in 0..*max {
+                        match child.tick(context) {
+                            BehaviorStatus::Running => return BehaviorStatus::Running,
+                            BehaviorStatus::Success => continue,
+                            BehaviorStatus::Failure => return BehaviorStatus::Failure,
+                        }
+                    }
+                    BehaviorStatus::Success
+                }
+                DecoratorType::Retry(max) => {
+                    for _ in 0..*max {
+                        match child.tick(context) {
+                            BehaviorStatus::Running => return BehaviorStatus::Running,
+                            BehaviorStatus::Success => return BehaviorStatus::Success,
+                            BehaviorStatus::Failure => continue,
+                        }
+                    }
+                    BehaviorStatus::Failure
+                }
+            },
             BehaviorNode::Parallel(children, threshold) => {
                 // Ensure the threshold is within sensible bounds
                 if *threshold == 0 {
@@ -196,7 +195,11 @@ impl BehaviorContext {
                 BehaviorStatus::Failure
             }
         } else {
-            debug_assert!(false, "Condition '{}' not registered in BehaviorContext", name);
+            debug_assert!(
+                false,
+                "Condition '{}' not registered in BehaviorContext",
+                name
+            );
             BehaviorStatus::Failure
         }
     }

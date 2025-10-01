@@ -1,8 +1,8 @@
 //! Orchestrator trait implementations and selection utilities for AstraWeave AI planning.
 
+use anyhow::{Context, Result};
 #[cfg(feature = "llm_orchestrator")]
 use astraweave_core::{default_tool_registry, ToolRegistry};
-use anyhow::{Result, Context};
 use astraweave_core::{ActionStep, IVec2, PlanIntent, WorldSnapshot};
 
 /// Cooldown key constants for type safety and consistency
@@ -39,7 +39,12 @@ impl Orchestrator for RuleOrchestrator {
                 y: (m.pos.y + first.pos.y) / 2,
             };
 
-            let smoke_cd = snap.me.cooldowns.get(COOLDOWN_THROW_SMOKE).copied().unwrap_or(0.0);
+            let smoke_cd = snap
+                .me
+                .cooldowns
+                .get(COOLDOWN_THROW_SMOKE)
+                .copied()
+                .unwrap_or(0.0);
             if smoke_cd <= 0.0 {
                 return PlanIntent {
                     plan_id,
@@ -105,7 +110,11 @@ impl Orchestrator for UtilityOrchestrator {
         // Candidate A: Throw smoke at midpoint to first enemy
         let mut cands: Vec<(f32, Vec<ActionStep>)> = vec![];
         if let Some(enemy) = snap.enemies.first() {
-            let cd = me.cooldowns.get(COOLDOWN_THROW_SMOKE).copied().unwrap_or(0.0);
+            let cd = me
+                .cooldowns
+                .get(COOLDOWN_THROW_SMOKE)
+                .copied()
+                .unwrap_or(0.0);
             if cd <= 0.0 {
                 let mid = IVec2 {
                     x: (me.pos.x + enemy.pos.x) / 2,
@@ -145,8 +154,8 @@ impl Orchestrator for UtilityOrchestrator {
             let score = 0.8 + (3.0 - dist).max(0.0) * 0.05;
             cands.push((score, steps));
         }
-    // Use total_cmp to provide a total ordering for f32 (handles NaN deterministically)
-    cands.sort_by(|a, b| b.0.total_cmp(&a.0));
+        // Use total_cmp to provide a total ordering for f32 (handles NaN deterministically)
+        cands.sort_by(|a, b| b.0.total_cmp(&a.0));
         let steps = cands.first().map(|c| c.1.clone()).unwrap_or_default();
         PlanIntent { plan_id, steps }
     }
@@ -231,14 +240,15 @@ where
         match plan_source {
             astraweave_llm::PlanSource::Llm(plan) => Ok(plan),
             astraweave_llm::PlanSource::Fallback { plan, reason } => {
-                tracing::warn!("plan_from_llm fell back: {}", reason);                // Return the fallback plan with a modified plan_id to indicate it was a fallback
+                tracing::warn!("plan_from_llm fell back: {}", reason); // Return the fallback plan with a modified plan_id to indicate it was a fallback
                 Ok(PlanIntent {
                     plan_id: "llm-fallback".into(),
                     steps: plan.steps,
                 })
             }
         }
-    }    fn name(&self) -> &'static str {
+    }
+    fn name(&self) -> &'static str {
         "LlmOrchestrator"
     }
 }
@@ -279,7 +289,7 @@ pub fn make_system_orchestrator(
     let _cfg = cfg.unwrap_or_default();
     #[cfg(all(feature = "llm_orchestrator"))]
     {
-    if _cfg.use_llm {
+        if _cfg.use_llm {
             // Build an Ollama-backed orchestrator (ollama feature is enabled via Cargo.toml feature wiring)
             let client = astraweave_llm::OllamaChatClient::new(
                 _cfg.ollama_url.clone(),
@@ -400,8 +410,8 @@ mod tests {
         let s = snap_basic(0, 0, 3, 0, 0.0);
         let rule = RuleOrchestrator;
         let plan_sync = rule.propose_plan(&s);
-    let plan_async = block_on(rule.plan(s, 2)).expect("rule.plan failed");
-    assert_eq!(plan_sync.steps.len(), plan_async.steps.len());
+        let plan_async = block_on(rule.plan(s, 2)).expect("rule.plan failed");
+        assert_eq!(plan_sync.steps.len(), plan_async.steps.len());
     }
 
     #[cfg(feature = "llm_orchestrator")]
@@ -410,9 +420,9 @@ mod tests {
         let s = snap_basic(0, 0, 6, 2, 0.0);
         let client = MockLlm;
         let orch = crate::LlmOrchestrator::new(client, Some(default_tool_registry()));
-    let plan = block_on(orch.plan(s, 10)).expect("llm mock plan failed");
-    assert_eq!(plan.plan_id, "llm-mock");
-    assert!(!plan.steps.is_empty());
+        let plan = block_on(orch.plan(s, 10)).expect("llm mock plan failed");
+        assert_eq!(plan.plan_id, "llm-mock");
+        assert!(!plan.steps.is_empty());
     }
 
     #[cfg(feature = "llm_orchestrator")]
@@ -424,8 +434,8 @@ mod tests {
         let mut reg = default_tool_registry();
         reg.tools.clear();
         let orch = crate::LlmOrchestrator::new(client, Some(reg));
-    let plan = block_on(orch.plan(s, 10)).expect("llm plan call failed");
-    assert_eq!(plan.plan_id, "llm-fallback");
-    assert!(plan.steps.is_empty());
+        let plan = block_on(orch.plan(s, 10)).expect("llm plan call failed");
+        assert_eq!(plan.plan_id, "llm-fallback");
+        assert!(plan.steps.is_empty());
     }
 }

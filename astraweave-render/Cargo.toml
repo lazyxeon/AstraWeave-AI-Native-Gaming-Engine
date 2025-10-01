@@ -31,17 +31,27 @@ serde_json = "1"
 tokio = { version = "1", features = ["sync"] }
 
 [features]
-default = ["textures"]
+default = ["textures", "skinning-cpu"]
 textures = ["image"]
 # Asset pipeline feature flags
 gltf-assets = ["gltf", "mikktspace"]
 obj-assets = ["tobj"]
 assets = ["gltf-assets", "obj-assets"]
+# Phase 2 Task 3: GPU-driven rendering
+gpu-culling = []
+indirect-draw = []
 gpu-tests = []
+# Phase 2 Task 4: IBL & Post-Processing
+ibl = ["textures"]
+bloom = []
 postfx = []
+# Phase 2 Task 5: Skeletal Animation
+skinning-cpu = [] # CPU skinning (default, CI-safe)
+skinning-gpu = [] # GPU skinning (optional, requires GPU for tests)
 
 [dev-dependencies]
 naga = "26.0"
 criterion = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png"] }
 tempfile = "3"
+pollster = { workspace = true }

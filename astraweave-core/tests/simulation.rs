@@ -21,11 +21,25 @@ fn test_capture_and_replay_minimal() {
     world.obstacles.insert((1, 2));
     world.obstacles.insert((2, 3));
     let path = "test.snap";
-    capture_replay::capture_state(5, path, &world).expect(&format!("failed to capture state (seed: {}, path: {})", 5, path));
+    capture_replay::capture_state(5, path, &world).expect(&format!(
+        "failed to capture state (seed: {}, path: {})",
+        5, path
+    ));
     let cfg = SimConfig { dt: 0.016 };
-    let w2 = capture_replay::replay_state(path, 3, &cfg).expect(&format!("failed to replay state (seed: {}, path: {})", 3, path));
+    let w2 = capture_replay::replay_state(path, 3, &cfg).expect(&format!(
+        "failed to replay state (seed: {}, path: {})",
+        3, path
+    ));
     // Basic invariants: replay doesn't drop obstacles order-independently
-    assert!(w2.obstacles.contains(&(1, 2)), "replayed state missing obstacle (1,2): {:?}", w2.obstacles);
-    assert!(w2.obstacles.contains(&(2, 3)), "replayed state missing obstacle (2,3): {:?}", w2.obstacles);
+    assert!(
+        w2.obstacles.contains(&(1, 2)),
+        "replayed state missing obstacle (1,2): {:?}",
+        w2.obstacles
+    );
+    assert!(
+        w2.obstacles.contains(&(2, 3)),
+        "replayed state missing obstacle (2,3): {:?}",
+        w2.obstacles
+    );
     std::fs::remove_file(path).ok();
 }

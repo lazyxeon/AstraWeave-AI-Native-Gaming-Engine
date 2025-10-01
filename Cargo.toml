@@ -49,6 +49,7 @@ members = [
   "astraweave-input",
   "astraweave-ui",
   "astraweave-cinematics",
+  "examples/skinning_demo",
   "examples/ui_controls_demo",
   "examples/debug_toolkit_demo",
   "examples/save_integration",
@@ -64,6 +65,8 @@ members = [
   "astraweave-dialogue",
   "astraweave-quests",
   "astraweave-behavior",
+  "astraweave-pcg",
+  "astraweave-weaving",
   "tools/aw_debug",
   "tools/aw_build",
   "tools/aw_texture_gen",
@@ -83,7 +86,12 @@ members = [
   "astraweave-persistence-ecs",
   "astraweave-stress-test",
   "astraweave-security",
-  "astraweave-observability", "examples/ecs_ai_demo",
+  "astraweave-observability",
+  "examples/ecs_ai_demo",
+  # Phase 3 demos
+  "examples/core_loop_bt_demo",
+  "examples/core_loop_goap_demo",
+  "examples/weaving_pcg_demo",
 ]
 resolver = "2"
 
@@ -111,6 +119,8 @@ serde_json = "1"
 toml = "0.8"
 zip = "5.1"
 rand = "0.9"
+rand_chacha = "0.3"
+approx = "0.5"
 sha2 = "0.10"
 ed25519-dalek = { version = "2", features = ["rand_core"] }
 hex = "0.4"

@@ -73,7 +73,8 @@ pub struct WorldSnapshot {
     pub me: CompanionState,
     pub enemies: Vec<EnemyState>,
     pub pois: Vec<Poi>,
-    pub obstacles: Vec<IVec2>,    pub objective: Option<String>,
+    pub obstacles: Vec<IVec2>,
+    pub objective: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

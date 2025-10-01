@@ -1,5 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use astraweave_stress_test::{generate_stress_entities, run_stress_test, StressTestConfig};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn persistence_stress_benchmark(c: &mut Criterion) {
     let config = StressTestConfig {

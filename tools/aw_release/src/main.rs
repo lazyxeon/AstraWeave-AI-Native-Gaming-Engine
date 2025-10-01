@@ -45,7 +45,10 @@ fn bump_version(component: &str) -> Result<()> {
     let root_cargo = fs::read_to_string("Cargo.toml")?;
     let mut cargo: toml::Value = toml::from_str(&root_cargo)?;
 
-    if let Some(package) = cargo.get_mut("workspace").and_then(|w| w.get_mut("package")) {
+    if let Some(package) = cargo
+        .get_mut("workspace")
+        .and_then(|w| w.get_mut("package"))
+    {
         if let Some(version) = package.get_mut("version") {
             if let Some(version_str) = version.as_str() {
                 let mut ver: Version = version_str.parse()?;
@@ -70,7 +73,10 @@ fn bump_version(component: &str) -> Result<()> {
     // Write back
     fs::write("Cargo.toml", toml::to_string_pretty(&cargo)?)?;
 
-    println!("Bumped version to {}", cargo["workspace"]["package"]["version"]);
+    println!(
+        "Bumped version to {}",
+        cargo["workspace"]["package"]["version"]
+    );
 
     Ok(())
 }
@@ -81,7 +87,13 @@ fn create_tag(version: &str) -> Result<()> {
 
     // Create annotated tag
     std::process::Command::new("git")
-        .args(&["tag", "-a", &format!("v{}", version), "-m", &format!("Release v{}", version)])
+        .args(&[
+            "tag",
+            "-a",
+            &format!("v{}", version),
+            "-m",
+            &format!("Release v{}", version),
+        ])
         .status()?;
 
     println!("Created tag v{}", version);

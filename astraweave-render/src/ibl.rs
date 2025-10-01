@@ -67,10 +67,11 @@ pub struct IblResources {
 
 /// Internal textures owned by the manager (kept to control lifetime)
 struct IblTextures {
-    _env: wgpu::Texture,
-    _irradiance: wgpu::Texture,
-    _specular: wgpu::Texture,
-    _brdf_lut: wgpu::Texture,
+    _env: wgpu::Texture, // Kept alive for views
+    irradiance: wgpu::Texture,
+    specular: wgpu::Texture,
+    brdf_lut: wgpu::Texture,
+    spec_mips: u32,
 }
 
 pub struct IblManager {
@@ -416,6 +417,75 @@ impl IblManager {
     }
     pub fn sampler(&self) -> &wgpu::Sampler {
         &self.sampler
+    }
+
+    /// Ensure BRDF LUT is baked (one-time cost)
+    /// Returns a stable TextureView for binding
+    #[cfg(feature = "ibl")]
+    pub fn ensure_brdf_lut(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        quality: IblQuality,
+    ) -> Result<wgpu::TextureView> {
+        // If textures are not baked, bake them
+        if self.textures.is_none() {
+            let _ = self.bake_environment(device, queue, quality)?;
+        }
+        let view = self
+            .textures
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?
+            .brdf_lut
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        Ok(view)
+    }
+
+    /// Ensure irradiance cubemap is baked from environment source
+    #[cfg(feature = "ibl")]
+    pub fn ensure_irradiance(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        quality: IblQuality,
+    ) -> Result<wgpu::TextureView> {
+        if self.textures.is_none() {
+            let _ = self.bake_environment(device, queue, quality)?;
+        }
+        let view = self
+            .textures
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?
+            .irradiance
+            .create_view(&wgpu::TextureViewDescriptor {
+                dimension: Some(wgpu::TextureViewDimension::Cube),
+                ..Default::default()
+            });
+        Ok(view)
+    }
+
+    /// Ensure prefiltered environment cubemap is baked
+    #[cfg(feature = "ibl")]
+    pub fn ensure_prefiltered_env(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        quality: IblQuality,
+    ) -> Result<wgpu::TextureView> {
+        if self.textures.is_none() {
+            let _ = self.bake_environment(device, queue, quality)?;
+        }
+        let textures = self
+            .textures
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?;
+        let view = textures.specular.create_view(&wgpu::TextureViewDescriptor {
+            dimension: Some(wgpu::TextureViewDimension::Cube),
+            base_mip_level: 0,
+            mip_level_count: Some(textures.spec_mips),
+            ..Default::default()
+        });
+        Ok(view)
     }
 
     /// Ensure environment and prefiltered outputs exist for the given mode/quality
@@ -765,9 +835,10 @@ impl IblManager {
         // Hold textures so views remain valid for the lifetime of the manager
         self.textures = Some(IblTextures {
             _env: env_tex,
-            _irradiance: irr_tex,
-            _specular: spec_tex,
-            _brdf_lut: brdf_tex,
+            irradiance: irr_tex,
+            specular: spec_tex,
+            brdf_lut: brdf_tex,
+            spec_mips,
         });
         let resources = IblResources {
             env_cube: env_view,
