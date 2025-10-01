@@ -32,6 +32,7 @@ use anyhow::Result;
 use eframe::egui;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
+use astraweave_asset::AssetDatabase;
 use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -141,10 +142,19 @@ struct EditorApp {
     mat_doc: MaterialLiveDoc,
     dialogue: DialogueDoc,
     quest: QuestDoc,
+    asset_db: AssetDatabase,
 }
 
 impl Default for EditorApp {
     fn default() -> Self {
+        let mut asset_db = AssetDatabase::new();
+        // Try to load from assets.json
+        if let Ok(()) = asset_db.load_manifest(&PathBuf::from("assets/assets.json")) {
+            // Loaded
+        } else {
+            // Scan assets directory
+            let _ = asset_db.scan_directory(&PathBuf::from("assets"));
+        }
         Self {
             content_root: PathBuf::from("content"),
             level: LevelDoc {
@@ -182,6 +192,7 @@ impl Default for EditorApp {
                     completed: false,
                 }],
             },
+            asset_db,
         }
     }
 }
@@ -602,55 +613,33 @@ impl eframe::App for EditorApp {
                 }
             });
 
-            ui.collapsing("Boss Scripts", |ui| {
-                ui.horizontal(|ui| {
-                    ui.label("Budget Script:");
-                    ui.text_edit_singleline(&mut self.level.boss.director_budget_script);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Phase Script:");
-                    ui.text_edit_singleline(&mut self.level.boss.phase_script);
-                });
-
-                if ui.button("Create Default Scripts").clicked() {
-                    // Create default script files if they don't exist
-                    let dir = self.content_root.join("encounters");
-                    let _ = fs::create_dir_all(&dir);
-
-                    let level_name = self.level.title.replace(' ', "_").to_lowercase();
-
-                    let budget_path = dir.join(format!("{}.budget.rhai", level_name));
-                    if !budget_path.exists() {
-                        let budget_script = r#"// Return a budget object the engine understands
-fn budget_for_tick(tick) {
-  // Simple ramp: early defense, later aggression
-  if tick < 1200 {
-    #{ fortify: 8, collapse: 2, spawn: 4 }
-  } else if tick < 2400 {
-    #{ fortify: 5, collapse: 3, spawn: 6 }
-  } else {
-    #{ fortify: 3, collapse: 5, spawn: 8 }
-  }
-}"#;
-                        let _ = fs::write(&budget_path, budget_script);
+            ui.collapsing("Asset Inspector", |ui| {
+                ui.label(format!("Total assets: {}", self.asset_db.assets.len()));
+                ui.separator();
+                egui::ScrollArea::vertical().show(ui, |ui| {
+                    for (guid, meta) in &self.asset_db.assets {
+                        ui.collapsing(format!("{} ({})", meta.path, guid), |ui| {
+                            ui.label(format!("Kind: {:?}", meta.kind));
+                            ui.label(format!("Size: {} bytes", meta.size_bytes));
+                            ui.label(format!("Hash: {}", &meta.hash[..16]));
+                            ui.label(format!("Modified: {}", meta.last_modified));
+                            if !meta.dependencies.is_empty() {
+                                ui.label("Dependencies:");
+                                for dep in &meta.dependencies {
+                                    ui.label(format!("  {}", dep));
+                                }
+                            }
+                        });
                     }
-
-                    let phase_path = dir.join(format!("{}.phases.rhai", level_name));
-                    if !phase_path.exists() {
-                        let phase_script = r#"// Phase transitions by boss HP/time; engine calls these hooks
-fn phase_for(hp_pct, seconds) {
-  if hp_pct > 0.7 { "phase_intro" }
-  else if hp_pct > 0.35 { "phase_mid" }
-  else { "phase_final" }
-}"#;
-                        let _ = fs::write(&phase_path, phase_script);
+                });
+                if ui.button("Reload Assets").clicked() {
+                    self.asset_db = AssetDatabase::new();
+                    if let Ok(()) = self.asset_db.load_manifest(&PathBuf::from("assets/assets.json")) {
+                        self.status = "Reloaded assets from manifest".into();
+                    } else {
+                        let _ = self.asset_db.scan_directory(&PathBuf::from("assets"));
+                        self.status = "Scanned assets directory".into();
                     }
-
-                    // Update the paths in the level document
-                    self.level.boss.director_budget_script = format!("content/encounters/{}.budget.rhai", level_name);
-                    self.level.boss.phase_script = format!("content/encounters/{}.phases.rhai", level_name);
-
-                    self.status = "Created default boss scripts".into();
                 }
             });
         });

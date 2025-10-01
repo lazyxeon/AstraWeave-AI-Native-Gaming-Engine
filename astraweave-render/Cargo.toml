@@ -26,7 +26,9 @@ tobj = { version = "4", optional = true }
 
 # Cinematics for camera/timeline control
 astraweave-cinematics = { path = "../astraweave-cinematics" }
+astraweave-asset = { path = "../astraweave-asset" }
 serde_json = "1"
+tokio = { version = "1", features = ["sync"] }
 
 [features]
 default = ["textures"]

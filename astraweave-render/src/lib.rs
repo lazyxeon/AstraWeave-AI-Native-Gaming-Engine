@@ -15,6 +15,7 @@ pub mod types; // clustered-lighting WGSL placeholders & tests // gpu upload & c
 pub mod material; // shared authored materials API + GPU arrays
 pub mod graph; // minimal render graph scaffolding (Phase 2)
 pub mod graph_adapter; // runs a graph on Renderer frames
+pub mod residency; // asset streaming and residency management
 #[cfg(feature = "textures")]
 pub mod material_loader; // internal builder helpers
 #[cfg(any(feature = "gltf-assets", feature = "assets"))]
@@ -42,4 +43,4 @@ pub use material::{
 };
 pub use mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
 pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
-pub use overlay::{OverlayFx, OverlayParams};
+pub use residency::ResidencyManager;

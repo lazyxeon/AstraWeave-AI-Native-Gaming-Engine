@@ -18,3 +18,4 @@ uuid = { version = "1", features = ["v4"] }
 rhai = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-author = { path = "../../astraweave-author" }
+astraweave-asset = { path = "../../astraweave-asset" }
