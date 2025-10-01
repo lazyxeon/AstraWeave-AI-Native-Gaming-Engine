@@ -1,0 +1,33 @@
+[package]
+name = "astraweave-stress-test"
+version = "0.1.0"
+license.workspace = true
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+futures-util = { workspace = true }
+criterion = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+aw-save = { path = "../persistence/aw-save" }
+astraweave-ecs = { workspace = true }
+astraweave-core = { workspace = true }
+astraweave-ai = { workspace = true }
+astraweave-behavior = { workspace = true }
+astraweave-net-ecs = { workspace = true }
+astraweave-persistence-ecs = { workspace = true }
+
+[[bench]]
+name = "ecs_performance"
+harness = false
+
+[[bench]]
+name = "network_stress"
+harness = false
+
+[[bench]]
+name = "persistence_stress"
+harness = false
