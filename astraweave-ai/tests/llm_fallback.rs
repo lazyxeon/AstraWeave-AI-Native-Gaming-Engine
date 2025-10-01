@@ -3,7 +3,7 @@
 use astraweave_ai::orchestrator::{LlmOrchestrator, OrchestratorAsync};
 use astraweave_core::{default_tool_registry, WorldSnapshot};
 
-#[tokio::test(flavor = "current_thread")] 
+#[tokio::test(flavor = "current_thread")]
 async fn test_llm_orchestrator_fallback_to_empty_on_error() {
     // Use a mock client from astraweave-llm to force an error then fallback
     let client = astraweave_llm::AlwaysErrMock;

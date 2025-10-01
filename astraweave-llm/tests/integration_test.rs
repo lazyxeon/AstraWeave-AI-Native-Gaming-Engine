@@ -237,8 +237,8 @@ fn create_comprehensive_registry() -> ToolRegistry {
                     ("y", "i32"),
                 ]
                 .into_iter()
-                    .map(|(k, v)| (k.into(), v.into()))
-                    .collect(),
+                .map(|(k, v)| (k.into(), v.into()))
+                .collect(),
             },
             ToolSpec {
                 name: "cover_fire".into(),
@@ -278,7 +278,10 @@ async fn test_obstacle_single_blocking_path() {
 
     // Plan should include movement steps that navigate around the obstacle
     assert!(!plan.steps.is_empty());
-    assert!(plan.steps.iter().any(|step| matches!(step, astraweave_core::ActionStep::MoveTo { .. })));
+    assert!(plan
+        .steps
+        .iter()
+        .any(|step| matches!(step, astraweave_core::ActionStep::MoveTo { .. })));
 }
 
 /// Test obstacle handling with multiple obstacles creating a maze-like environment
@@ -352,7 +355,8 @@ fn test_obstacle_scenario_json_parsing() {
     let world_snapshot = create_scenario_with_multiple_obstacles();
     let tool_registry = create_comprehensive_registry();
 
-    let json_output = r#"{"plan_id": "obstacle-test", "steps": [{"act": "MoveTo", "x": 15, "y": 20}]}"#;
+    let json_output =
+        r#"{"plan_id": "obstacle-test", "steps": [{"act": "MoveTo", "x": 15, "y": 20}]}"#;
 
     let result = parse_llm_plan(json_output, &tool_registry);
     assert!(result.is_ok());

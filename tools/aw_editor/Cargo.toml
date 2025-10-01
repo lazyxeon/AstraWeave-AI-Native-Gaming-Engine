@@ -4,6 +4,16 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 
+[features]
+default = ["editor-core"]
+editor-core = []
+editor-graphs = ["editor-core"]
+editor-materials = ["editor-core"]
+editor-terrain = ["editor-core"]
+editor-nav = ["editor-core"]
+editor-sim = ["editor-core"]
+editor-full = ["editor-graphs", "editor-materials", "editor-terrain", "editor-nav", "editor-sim"]
+
 [dependencies]
 eframe = { workspace = true }
 egui = { workspace = true }
@@ -21,6 +31,8 @@ uuid = { version = "1", features = ["v4"] }
 rhai = { workspace = true }
 glam = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
+astraweave-ecs = { path = "../../astraweave-ecs", optional = true }
+astraweave-render = { path = "../../astraweave-render", optional = true }
 astraweave-author = { path = "../../astraweave-author" }
 astraweave-asset = { path = "../../astraweave-asset" }
 astraweave-behavior = { path = "../../astraweave-behavior" }

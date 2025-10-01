@@ -1,12 +1,17 @@
 // Minimal headless smoke test for the render graph scaffolding
+use astraweave_render::graph::{ClearNode, RendererMainNode};
+use astraweave_render::graph::{GraphContext, RenderGraph, RenderNode};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
-use astraweave_render::graph::{GraphContext, RenderGraph, RenderNode};
-use astraweave_render::graph::{ClearNode, RendererMainNode};
 
-struct CountNode { name: &'static str, counter: Arc<AtomicUsize> }
+struct CountNode {
+    name: &'static str,
+    counter: Arc<AtomicUsize>,
+}
 impl RenderNode for CountNode {
-    fn name(&self) -> &str { self.name }
+    fn name(&self) -> &str {
+        self.name
+    }
     fn run(&mut self, _ctx: &mut GraphContext) -> anyhow::Result<()> {
         self.counter.fetch_add(1, Ordering::SeqCst);
         Ok(())
@@ -17,9 +22,18 @@ impl RenderNode for CountNode {
 fn graph_executes_all_nodes() {
     let count = Arc::new(AtomicUsize::new(0));
     let mut g = RenderGraph::new();
-    g.add_node(CountNode { name: "shadow", counter: count.clone() });
-    g.add_node(CountNode { name: "main", counter: count.clone() });
-    g.add_node(CountNode { name: "post", counter: count.clone() });
+    g.add_node(CountNode {
+        name: "shadow",
+        counter: count.clone(),
+    });
+    g.add_node(CountNode {
+        name: "main",
+        counter: count.clone(),
+    });
+    g.add_node(CountNode {
+        name: "post",
+        counter: count.clone(),
+    });
 
     let mut dummy = 0u32;
     let mut ctx = GraphContext::new(&mut dummy);

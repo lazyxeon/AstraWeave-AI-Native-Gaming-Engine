@@ -1,6 +1,6 @@
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use semver::Version;
 use std::sync::OnceLock;
 
 const CURRENT_VERSION: &str = "1.1.0";
@@ -298,8 +298,8 @@ mod tests {
 
     #[test]
     fn load_from_file_applies_migrations_integration() {
-        use tempfile::NamedTempFile;
         use std::io::Write;
+        use tempfile::NamedTempFile;
 
         let legacy_profile = CompanionProfile {
             version: "1.0.0".into(),

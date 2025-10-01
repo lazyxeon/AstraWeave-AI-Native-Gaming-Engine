@@ -4,7 +4,7 @@
 //! integrated into the ECS architecture.
 
 use astraweave_ecs::{App, Component, Entity, Plugin, Query, World};
-use aw_net_proto::{ClientToServer, ServerToClient, decode_msg, Codec};
+use aw_net_proto::{decode_msg, ClientToServer, Codec, ServerToClient};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::mpsc;
@@ -100,7 +100,8 @@ fn client_input_system(world: &mut World) {
 
     for (entity, mut client, mut prediction) in clients_to_update {
         // Simulate input processing
-        let input_sequence = client.last_acknowledged_input + client.pending_inputs.len() as u64 + 1;
+        let input_sequence =
+            client.last_acknowledged_input + client.pending_inputs.len() as u64 + 1;
 
         // Add to pending inputs
         client.pending_inputs.push(input_sequence);
@@ -139,7 +140,9 @@ fn client_reconciliation_system(world: &mut World) {
         prediction.prediction_error = prediction.predicted_position - glam::Vec3::ZERO; // Simplified
 
         // Remove acknowledged inputs
-        client.pending_inputs.retain(|input| *input > server_snapshot.server_tick);
+        client
+            .pending_inputs
+            .retain(|input| *input > server_snapshot.server_tick);
         client.last_acknowledged_input = server_snapshot.server_tick;
 
         // Update components
@@ -212,9 +215,9 @@ fn server_input_processing_system(world: &mut World) {
 pub async fn connect_to_server(
     server_addr: &str,
 ) -> Result<mpsc::UnboundedReceiver<ServerToClient>, Box<dyn std::error::Error>> {
-    use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
-    use tokio::net::TcpStream;
     use futures_util::stream::StreamExt;
+    use tokio::net::TcpStream;
+    use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
     let url = format!("ws://{}", server_addr);
     let (ws_stream, _) = connect_async(url).await?;
@@ -247,9 +250,9 @@ pub async fn connect_to_server(
 pub async fn start_network_server(
     bind_addr: &str,
 ) -> Result<mpsc::UnboundedReceiver<ClientToServer>, Box<dyn std::error::Error>> {
+    use futures_util::stream::StreamExt;
     use tokio::net::TcpListener;
     use tokio_tungstenite::accept_async;
-    use futures_util::stream::StreamExt;
 
     let listener = TcpListener::bind(bind_addr).await?;
     let (tx, rx) = mpsc::unbounded_channel();
@@ -264,7 +267,9 @@ pub async fn start_network_server(
                 while let Some(message) = read.next().await {
                     match message {
                         Ok(Message::Binary(data)) => {
-                            if let Ok(client_msg) = decode_msg::<ClientToServer>(Codec::Bincode, &data) {
+                            if let Ok(client_msg) =
+                                decode_msg::<ClientToServer>(Codec::Bincode, &data)
+                            {
                                 let _ = tx_clone.send(client_msg);
                             }
                         }
@@ -289,16 +294,22 @@ mod tests {
         let mut world = World::new();
         let entity = world.spawn();
 
-        world.insert(entity, CNetworkClient {
-            player_id: "test_player".to_string(),
-            last_acknowledged_input: 0,
-            pending_inputs: Vec::new(),
-        });
+        world.insert(
+            entity,
+            CNetworkClient {
+                player_id: "test_player".to_string(),
+                last_acknowledged_input: 0,
+                pending_inputs: Vec::new(),
+            },
+        );
 
-        world.insert(entity, CClientPrediction {
-            predicted_position: glam::Vec3::ZERO,
-            prediction_error: glam::Vec3::ZERO,
-        });
+        world.insert(
+            entity,
+            CClientPrediction {
+                predicted_position: glam::Vec3::ZERO,
+                prediction_error: glam::Vec3::ZERO,
+            },
+        );
 
         // Run client input system
         client_input_system(&mut world);
@@ -314,16 +325,22 @@ mod tests {
         let mut world = World::new();
         let entity = world.spawn();
 
-        world.insert(entity, CNetworkClient {
-            player_id: "test_player".to_string(),
-            last_acknowledged_input: 0,
-            pending_inputs: vec![1, 2, 3],
-        });
+        world.insert(
+            entity,
+            CNetworkClient {
+                player_id: "test_player".to_string(),
+                last_acknowledged_input: 0,
+                pending_inputs: vec![1, 2, 3],
+            },
+        );
 
-        world.insert(entity, CClientPrediction {
-            predicted_position: glam::Vec3::new(1.0, 0.0, 0.0),
-            prediction_error: glam::Vec3::ZERO,
-        });
+        world.insert(
+            entity,
+            CClientPrediction {
+                predicted_position: glam::Vec3::new(1.0, 0.0, 0.0),
+                prediction_error: glam::Vec3::ZERO,
+            },
+        );
 
         // Run reconciliation system
         client_reconciliation_system(&mut world);
@@ -343,10 +360,13 @@ mod tests {
         let mut connected_clients = HashMap::new();
         connected_clients.insert("test_client".to_string(), tx);
 
-        world.insert(entity, CNetworkAuthority {
-            authoritative_tick: 0,
-            connected_clients,
-        });
+        world.insert(
+            entity,
+            CNetworkAuthority {
+                authoritative_tick: 0,
+                connected_clients,
+            },
+        );
 
         // Run snapshot system
         server_snapshot_system(&mut world);
@@ -366,24 +386,33 @@ mod tests {
 
         // Create test entities
         let client_entity = app.world.spawn();
-        app.world.insert(client_entity, CNetworkClient {
-            player_id: "test_player".to_string(),
-            last_acknowledged_input: 0,
-            pending_inputs: Vec::new(),
-        });
-        app.world.insert(client_entity, CClientPrediction {
-            predicted_position: glam::Vec3::ZERO,
-            prediction_error: glam::Vec3::ZERO,
-        });
+        app.world.insert(
+            client_entity,
+            CNetworkClient {
+                player_id: "test_player".to_string(),
+                last_acknowledged_input: 0,
+                pending_inputs: Vec::new(),
+            },
+        );
+        app.world.insert(
+            client_entity,
+            CClientPrediction {
+                predicted_position: glam::Vec3::ZERO,
+                prediction_error: glam::Vec3::ZERO,
+            },
+        );
 
         let server_entity = app.world.spawn();
         let (tx, _rx) = mpsc::unbounded_channel();
         let mut connected_clients = HashMap::new();
         connected_clients.insert("test_player".to_string(), tx);
-        app.world.insert(server_entity, CNetworkAuthority {
-            authoritative_tick: 0,
-            connected_clients,
-        });
+        app.world.insert(
+            server_entity,
+            CNetworkAuthority {
+                authoritative_tick: 0,
+                connected_clients,
+            },
+        );
 
         // Run a few simulation steps
         app = app.run_fixed(3);

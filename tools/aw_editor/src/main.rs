@@ -29,15 +29,15 @@ struct QuestStep {
     completed: bool,
 }
 use anyhow::Result;
+use astraweave_asset::AssetDatabase;
+use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+use astraweave_core::{Health, IVec2, Team, World};
+use astraweave_dialogue::DialogueGraph;
+use astraweave_nav::NavMesh;
+use astraweave_quests::Quest;
 use eframe::egui;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
-use astraweave_asset::AssetDatabase;
-use astraweave_behavior::{BehaviorGraph, BehaviorNode};
-use astraweave_dialogue::DialogueGraph;
-use astraweave_quests::Quest;
-use astraweave_nav::NavMesh;
-use astraweave_core::{World, Team, Health, IVec2};
 use uuid::Uuid;
 
 #[derive(Clone, Serialize, Deserialize, Default)]
@@ -238,7 +238,11 @@ impl Default for EditorApp {
             terrain_grid: vec![vec!["grass".into(); 10]; 10],
             selected_biome: "grass".into(),
             last_sim_tick: std::time::Instant::now(),
-            nav_mesh: NavMesh { tris: vec![], max_step: 0.4, max_slope_deg: 60.0 },
+            nav_mesh: NavMesh {
+                tris: vec![],
+                max_step: 0.4,
+                max_slope_deg: 60.0,
+            },
             nav_max_step: 0.4,
             nav_max_slope_deg: 60.0,
             sim_world: None,
@@ -338,7 +342,8 @@ impl EditorApp {
 
         if ui.button("Validate Graph").clicked() {
             // TODO: Implement validation
-            self.console_logs.push("Behavior graph validation stub.".into());
+            self.console_logs
+                .push("Behavior graph validation stub.".into());
         }
     }
 
@@ -349,18 +354,21 @@ impl EditorApp {
         ui.horizontal(|ui| {
             if ui.button("Add Node").clicked() {
                 let new_id = format!("node_{}", self.dialogue_graph.nodes.len());
-                self.dialogue_graph.nodes.push(astraweave_dialogue::DialogueNode {
-                    id: new_id,
-                    text: "New dialogue text".into(),
-                    responses: vec![astraweave_dialogue::DialogueResponse {
-                        text: "Response".into(),
-                        next_id: None,
-                    }],
-                });
+                self.dialogue_graph
+                    .nodes
+                    .push(astraweave_dialogue::DialogueNode {
+                        id: new_id,
+                        text: "New dialogue text".into(),
+                        responses: vec![astraweave_dialogue::DialogueResponse {
+                            text: "Response".into(),
+                            next_id: None,
+                        }],
+                    });
             }
             if ui.button("Validate Dialogue").clicked() {
                 if let Err(e) = self.dialogue_graph.validate() {
-                    self.console_logs.push(format!("Dialogue validation error: {}", e));
+                    self.console_logs
+                        .push(format!("Dialogue validation error: {}", e));
                 } else {
                     self.console_logs.push("Dialogue validated.".into());
                 }
@@ -422,7 +430,8 @@ impl EditorApp {
             }
             if ui.button("Validate Quest").clicked() {
                 if let Err(e) = self.quest_graph.validate() {
-                    self.console_logs.push(format!("Quest validation error: {}", e));
+                    self.console_logs
+                        .push(format!("Quest validation error: {}", e));
                 } else {
                     self.console_logs.push("Quest validated.".into());
                 }
@@ -468,7 +477,9 @@ impl EditorApp {
                         self.status = "Failed to write material_live.json".into();
                     }
                 }
-                Err(e) => { self.status = format!("Serialize error: {e}"); }
+                Err(e) => {
+                    self.status = format!("Serialize error: {e}");
+                }
             }
         }
     }
@@ -501,7 +512,11 @@ impl EditorApp {
                         "water" => egui::Color32::BLUE,
                         _ => egui::Color32::WHITE,
                     };
-                    let response = ui.add(egui::Button::new("").fill(color).min_size(egui::Vec2::new(20.0, 20.0)));
+                    let response = ui.add(
+                        egui::Button::new("")
+                            .fill(color)
+                            .min_size(egui::Vec2::new(20.0, 20.0)),
+                    );
                     if response.clicked() {
                         *cell = self.selected_biome.clone();
                     }
@@ -548,7 +563,13 @@ impl EditorApp {
             for (y, row) in self.terrain_grid.iter().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if *cell == "grass" {
-                        self.level.biome_paints.push(BiomePaint::GrassDense { area: Circle { cx: x as i32 * 10, cz: y as i32 * 10, radius: 5 } });
+                        self.level.biome_paints.push(BiomePaint::GrassDense {
+                            area: Circle {
+                                cx: x as i32 * 10,
+                                cz: y as i32 * 10,
+                                radius: 5,
+                            },
+                        });
                     }
                     // Add others if needed
                 }
@@ -604,8 +625,12 @@ impl EditorApp {
                     }
                 }
             }
-            self.nav_mesh = astraweave_nav::NavMesh::bake(&tris, self.nav_max_step, self.nav_max_slope_deg);
-            self.console_logs.push(format!("Navmesh baked with {} triangles from level.", self.nav_mesh.tris.len()));
+            self.nav_mesh =
+                astraweave_nav::NavMesh::bake(&tris, self.nav_max_step, self.nav_max_slope_deg);
+            self.console_logs.push(format!(
+                "Navmesh baked with {} triangles from level.",
+                self.nav_mesh.tris.len()
+            ));
         }
 
         ui.label(format!("Triangles: {}", self.nav_mesh.tris.len()));
@@ -633,7 +658,10 @@ impl EditorApp {
         });
         if ui.button("Reload Assets").clicked() {
             self.asset_db = AssetDatabase::new();
-            if let Ok(()) = self.asset_db.load_manifest(&PathBuf::from("assets/assets.json")) {
+            if let Ok(()) = self
+                .asset_db
+                .load_manifest(&PathBuf::from("assets/assets.json"))
+            {
                 self.status = "Reloaded assets from manifest".into();
             } else {
                 let _ = self.asset_db.scan_directory(&PathBuf::from("assets"));
@@ -720,7 +748,10 @@ impl eframe::App for EditorApp {
                     ui.label("(Simulating...)");
                 }
                 if ui.button("Diff Assets").clicked() {
-                    match std::process::Command::new("git").args(&["diff", "assets"]).output() {
+                    match std::process::Command::new("git")
+                        .args(&["diff", "assets"])
+                        .output()
+                    {
                         Ok(output) => {
                             let stdout = String::from_utf8_lossy(&output.stdout);
                             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -746,8 +777,12 @@ impl eframe::App for EditorApp {
                 ui.collapsing("Inspector", |ui| self.show_inspector(ui));
                 ui.collapsing("Console", |ui| self.show_console(ui));
                 ui.collapsing("Profiler", |ui| self.show_profiler(ui));
-                ui.collapsing("Behavior Graph Editor", |ui| self.show_behavior_graph_editor(ui));
-                ui.collapsing("Dialogue Graph Editor", |ui| self.show_dialogue_graph_editor(ui));
+                ui.collapsing("Behavior Graph Editor", |ui| {
+                    self.show_behavior_graph_editor(ui)
+                });
+                ui.collapsing("Dialogue Graph Editor", |ui| {
+                    self.show_dialogue_graph_editor(ui)
+                });
                 ui.collapsing("Quest Graph Editor", |ui| self.show_quest_graph_editor(ui));
                 ui.collapsing("Material Editor", |ui| self.show_material_editor(ui));
                 ui.collapsing("Terrain Painter", |ui| self.show_terrain_painter(ui));
@@ -762,19 +797,26 @@ impl eframe::App for EditorApp {
                 let mut world = World::new();
                 // Add entities from level
                 for obs in &self.level.obstacles {
-                    let pos = IVec2 { x: obs.pos[0] as i32, y: obs.pos[2] as i32 };
+                    let pos = IVec2 {
+                        x: obs.pos[0] as i32,
+                        y: obs.pos[2] as i32,
+                    };
                     let entity = world.spawn("obstacle", pos, Team { id: 2 }, 100, 0);
                     world.obstacles.insert((pos.x, pos.y));
                 }
                 for npc in &self.level.npcs {
                     for _ in 0..npc.count {
-                        let pos = IVec2 { x: npc.spawn.pos[0] as i32, y: npc.spawn.pos[2] as i32 };
+                        let pos = IVec2 {
+                            x: npc.spawn.pos[0] as i32,
+                            y: npc.spawn.pos[2] as i32,
+                        };
                         world.spawn(&npc.archetype, pos, Team { id: 1 }, 50, 10);
                     }
                 }
                 self.sim_world = Some(world);
                 self.sim_tick_count = 0;
-                self.console_logs.push("Simulation started with entities from level.".into());
+                self.console_logs
+                    .push("Simulation started with entities from level.".into());
             }
             // Tick simulation
             let now = std::time::Instant::now();
@@ -786,8 +828,8 @@ impl eframe::App for EditorApp {
                 let ticks = (elapsed.as_millis() / 100) as u64;
                 for _ in 0..ticks {
                     if let Some(world) = &mut self.sim_world {
-                        world.tick(0.1);  // dt = 0.1s
-                        // Simple behavior: regenerate health
+                        world.tick(0.1); // dt = 0.1s
+                                         // Simple behavior: regenerate health
                         for entity in world.entities() {
                             if let Some(mut health) = world.health_mut(entity) {
                                 health.hp = (health.hp + 1).min(100);

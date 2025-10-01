@@ -1,7 +1,10 @@
 //! ECS AI planning plugin: registers a minimal planning system into the ai_planning stage.
-use astraweave_core::{ActionStep, CAmmo, CCooldowns, CDesiredPos, CPos, CTeam, CompanionState, EnemyState, IVec2, PlayerState, World, WorldSnapshot, PerceptionConfig, build_snapshot};
-use astraweave_core::ecs_events::{Events, AiPlannedEvent, AiPlanningFailedEvent};
 use astraweave_core::ecs_bridge::EntityBridge;
+use astraweave_core::ecs_events::{AiPlannedEvent, AiPlanningFailedEvent, Events};
+use astraweave_core::{
+    build_snapshot, ActionStep, CAmmo, CCooldowns, CDesiredPos, CPos, CTeam, CompanionState,
+    EnemyState, IVec2, PerceptionConfig, PlayerState, World, WorldSnapshot,
+};
 use astraweave_ecs as ecs;
 
 use crate::orchestrator::{Orchestrator, RuleOrchestrator};
@@ -44,15 +47,26 @@ fn sys_ai_planning(world: &mut ecs::World) {
     }
 
     // Cache ECS component views
-    let mut positions: std::collections::BTreeMap<ecs::Entity, IVec2> = std::collections::BTreeMap::new();
+    let mut positions: std::collections::BTreeMap<ecs::Entity, IVec2> =
+        std::collections::BTreeMap::new();
     let mut teams: std::collections::BTreeMap<ecs::Entity, u8> = std::collections::BTreeMap::new();
     {
         let q = ecs::Query::<CPos>::new(world);
-        for (e, p) in q { positions.insert(e, IVec2 { x: p.pos.x, y: p.pos.y }); }
+        for (e, p) in q {
+            positions.insert(
+                e,
+                IVec2 {
+                    x: p.pos.x,
+                    y: p.pos.y,
+                },
+            );
+        }
     }
     {
         let q = ecs::Query::<CTeam>::new(world);
-        for (e, t) in q { teams.insert(e, t.id); }
+        for (e, t) in q {
+            teams.insert(e, t.id);
+        }
     }
 
     let orch = RuleOrchestrator;
@@ -77,15 +91,31 @@ fn sys_ai_planning(world: &mut ecs::World) {
             );
             let plan = orch.propose_plan(&snap);
             if let Some(ActionStep::MoveTo { x, y }) = plan.steps.iter().find_map(|s| {
-                if let ActionStep::MoveTo { x, y } = s { Some(ActionStep::MoveTo { x: *x, y: *y }) } else { None }
+                if let ActionStep::MoveTo { x, y } = s {
+                    Some(ActionStep::MoveTo { x: *x, y: *y })
+                } else {
+                    None
+                }
             }) {
-                if let Some(mapped) = map_legacy_companion_to_ecs(&positions, &teams, &snap, comp, world) {
-                        updates.push((mapped, CDesiredPos { pos: IVec2 { x, y } }));
-                    planned_events.push(AiPlannedEvent { entity: mapped, target: IVec2 { x, y } });
+                if let Some(mapped) =
+                    map_legacy_companion_to_ecs(&positions, &teams, &snap, comp, world)
+                {
+                    updates.push((
+                        mapped,
+                        CDesiredPos {
+                            pos: IVec2 { x, y },
+                        },
+                    ));
+                    planned_events.push(AiPlannedEvent {
+                        entity: mapped,
+                        target: IVec2 { x, y },
+                    });
                 }
             } else {
                 // No valid move found
-                if let Some(mapped) = map_legacy_companion_to_ecs(&positions, &teams, &snap, comp, world) {
+                if let Some(mapped) =
+                    map_legacy_companion_to_ecs(&positions, &teams, &snap, comp, world)
+                {
                     failed_events.push(AiPlanningFailedEvent {
                         entity: mapped,
                         reason: "No valid actions in plan".to_string(),
@@ -94,14 +124,20 @@ fn sys_ai_planning(world: &mut ecs::World) {
             }
             // Early return after legacy-based planning for now (single companion minimal)
             if !updates.is_empty() {
-                for (e, d) in &updates { world.insert(*e, *d); }
+                for (e, d) in &updates {
+                    world.insert(*e, *d);
+                }
                 if let Some(ev) = world.resource_mut::<Events<AiPlannedEvent>>() {
                     let mut w = ev.writer();
-                    for pe in planned_events { w.send(pe); }
+                    for pe in planned_events {
+                        w.send(pe);
+                    }
                 }
                 if let Some(ev) = world.resource_mut::<Events<AiPlanningFailedEvent>>() {
                     let mut w = ev.writer();
-                    for fe in failed_events { w.send(fe); }
+                    for fe in failed_events {
+                        w.send(fe);
+                    }
                 }
                 return;
             }
@@ -109,29 +145,75 @@ fn sys_ai_planning(world: &mut ecs::World) {
     }
 
     // Fallback: ECS-only snapshot composition
-    let player = PlayerState { hp: 100, pos: IVec2 { x: 0, y: 0 }, stance: "stand".into(), orders: vec![] };
+    let player = PlayerState {
+        hp: 100,
+        pos: IVec2 { x: 0, y: 0 },
+        stance: "stand".into(),
+        orders: vec![],
+    };
     let enemies: Vec<EnemyState> = positions
         .iter()
         .filter_map(|(e, pos)| {
             let team_id = teams.get(e).copied().unwrap_or(0);
             if team_id == 2 {
-                Some(EnemyState { id: 0, pos: *pos, hp: 50, cover: "low".into(), last_seen: 0.0 })
-            } else { None }
+                Some(EnemyState {
+                    id: 0,
+                    pos: *pos,
+                    hp: 50,
+                    cover: "low".into(),
+                    last_seen: 0.0,
+                })
+            } else {
+                None
+            }
         })
         .collect();
     for (e, pos) in &positions {
-        if teams.get(e).copied() != Some(1) { continue; }
+        if teams.get(e).copied() != Some(1) {
+            continue;
+        }
         let ammo = world.get::<CAmmo>(*e).map(|a| a.rounds).unwrap_or(0);
-        let cds_map = world.get::<CCooldowns>(*e).map(|c| c.map.clone()).unwrap_or_default();
-        let cooldowns: std::collections::BTreeMap<String, f32> = cds_map.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
-        let me = CompanionState { ammo, cooldowns, morale: 1.0, pos: *pos };
-        let snap = WorldSnapshot { t: 0.0, player: player.clone(), me, enemies: enemies.clone(), pois: vec![], obstacles: vec![], objective: None };
+        let cds_map = world
+            .get::<CCooldowns>(*e)
+            .map(|c| c.map.clone())
+            .unwrap_or_default();
+        let cooldowns: std::collections::BTreeMap<String, f32> = cds_map
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v))
+            .collect();
+        let me = CompanionState {
+            ammo,
+            cooldowns,
+            morale: 1.0,
+            pos: *pos,
+        };
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: player.clone(),
+            me,
+            enemies: enemies.clone(),
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
         let plan = orch.propose_plan(&snap);
         if let Some(ActionStep::MoveTo { x, y }) = plan.steps.iter().find_map(|s| {
-            if let ActionStep::MoveTo { x, y } = s { Some(ActionStep::MoveTo { x: *x, y: *y }) } else { None }
+            if let ActionStep::MoveTo { x, y } = s {
+                Some(ActionStep::MoveTo { x: *x, y: *y })
+            } else {
+                None
+            }
         }) {
-            updates.push((*e, CDesiredPos { pos: IVec2 { x, y } }));
-            planned_events.push(AiPlannedEvent { entity: *e, target: IVec2 { x, y } });
+            updates.push((
+                *e,
+                CDesiredPos {
+                    pos: IVec2 { x, y },
+                },
+            ));
+            planned_events.push(AiPlannedEvent {
+                entity: *e,
+                target: IVec2 { x, y },
+            });
         } else {
             failed_events.push(AiPlanningFailedEvent {
                 entity: *e,
@@ -139,21 +221,29 @@ fn sys_ai_planning(world: &mut ecs::World) {
             });
         }
     }
-    for (e, d) in updates { world.insert(e, d); }
+    for (e, d) in updates {
+        world.insert(e, d);
+    }
     if let Some(ev) = world.resource_mut::<Events<AiPlannedEvent>>() {
         let mut w = ev.writer();
-        for pe in planned_events { w.send(pe); }
+        for pe in planned_events {
+            w.send(pe);
+        }
     }
     if let Some(ev) = world.resource_mut::<Events<AiPlanningFailedEvent>>() {
         let mut w = ev.writer();
-        for fe in failed_events { w.send(fe); }
+        for fe in failed_events {
+            w.send(fe);
+        }
     }
 }
 
 impl ecs::Plugin for AiPlanningPlugin {
     fn build(&self, app: &mut ecs::App) {
-        app.world.insert_resource(Events::<AiPlanningFailedEvent>::default());
-        app.schedule.add_system("ai_planning", sys_ai_planning as ecs::SystemFn);
+        app.world
+            .insert_resource(Events::<AiPlanningFailedEvent>::default());
+        app.schedule
+            .add_system("ai_planning", sys_ai_planning as ecs::SystemFn);
     }
 }
 
@@ -167,9 +257,9 @@ pub fn build_app_with_ai(legacy_world: astraweave_core::World, dt: f32) -> ecs::
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{World, IVec2, Team};
     use anyhow::anyhow;
     use anyhow::Result;
+    use astraweave_core::{IVec2, Team, World};
 
     #[test]
     fn ai_plugin_sets_desired_position_for_companion() -> Result<()> {
@@ -178,22 +268,43 @@ mod tests {
         let mut app = build_app_with_ai(w, 0.016);
         // Spawn two ECS entities: a companion and an enemy
         let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 3, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 3, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
-    let d = app.world.get::<CDesiredPos>(ally).ok_or_else(|| anyhow!("desired pos set"))?;
+        let d = app
+            .world
+            .get::<CDesiredPos>(ally)
+            .ok_or_else(|| anyhow!("desired pos set"))?;
         // Expect to move towards enemy along +x axis
         assert!(d.pos.x >= 1 && d.pos.y == 0);
 
         // Event should be published
-    let evs = app.world.resource_mut::<Events<AiPlannedEvent>>().ok_or_else(|| anyhow!("Events<AiPlannedEvent> resource missing"))?;
+        let evs = app
+            .world
+            .resource_mut::<Events<AiPlannedEvent>>()
+            .ok_or_else(|| anyhow!("Events<AiPlannedEvent> resource missing"))?;
         let mut rdr = evs.reader();
         let v: Vec<_> = rdr.drain().collect();
         assert_eq!(v.len(), 1);

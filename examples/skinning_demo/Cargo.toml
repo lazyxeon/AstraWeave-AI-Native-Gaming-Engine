@@ -1,0 +1,17 @@
+[package]
+name = "skinning_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-render = { path = "../../astraweave-render" }
+astraweave-asset = { path = "../../astraweave-asset" }
+winit = { workspace = true }
+pollster = { workspace = true }
+glam = { workspace = true }
+anyhow = { workspace = true }
+
+[features]
+default = ["skinning-cpu"]
+skinning-cpu = ["astraweave-render/skinning-cpu"]
+skinning-gpu = ["astraweave-render/skinning-gpu"]

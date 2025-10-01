@@ -54,7 +54,8 @@ pub fn capture_state(tick: u64, path: &str, world: &World) -> Result<()> {
 
 pub fn replay_state(path: &str, steps: u32, cfg: &crate::SimConfig) -> anyhow::Result<World> {
     let data = std::fs::read(path).context(format!("failed to read snapshot file: {}", path))?;
-    let snap: Snapshot = serde_json::from_slice(&data).context("failed to deserialize snapshot JSON")?;
+    let snap: Snapshot =
+        serde_json::from_slice(&data).context("failed to deserialize snapshot JSON")?;
     let mut w = World::from_serde(&snap.world);
     for _ in 0..steps {
         step(&mut w, cfg);

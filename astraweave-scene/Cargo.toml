@@ -10,6 +10,9 @@ serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 astraweave-ecs = { path = "../astraweave-ecs" }
 
+[dev-dependencies]
+astraweave-render = { path = "../astraweave-render" }
+
 [features]
 default = []
 ecs = []

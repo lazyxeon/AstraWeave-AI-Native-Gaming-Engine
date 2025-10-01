@@ -1,7 +1,11 @@
 //! AstraWeave ECS — deterministic, minimal ECS core tailored for AI-first simulation.
 //! Phase 1 goal: provide archetype-like storage, a fixed schedule, and a plugin boundary.
 
-use std::{any::TypeId, collections::{BTreeMap, HashMap}, hash::Hash};
+use std::{
+    any::TypeId,
+    collections::{BTreeMap, HashMap},
+    hash::Hash,
+};
 
 pub trait Component: 'static + Send + Sync {}
 impl<T: 'static + Send + Sync> Component for T {}
@@ -32,20 +36,29 @@ pub struct World {
 }
 
 impl World {
-    pub fn new() -> Self { Self::default() }
-    pub fn spawn(&mut self) -> Entity { let e = Entity(self.next); self.next+=1; e }
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn spawn(&mut self) -> Entity {
+        let e = Entity(self.next);
+        self.next += 1;
+        e
+    }
     pub fn insert<T: Component>(&mut self, e: Entity, c: T) {
-        self.comps.entry(TypeId::of::<T>())
+        self.comps
+            .entry(TypeId::of::<T>())
             .or_default()
             .insert(e, Box::new(c));
     }
     pub fn get<T: Component>(&self, e: Entity) -> Option<&T> {
-        self.comps.get(&TypeId::of::<T>())
+        self.comps
+            .get(&TypeId::of::<T>())
             .and_then(|m| m.get(&e))
             .and_then(|b| b.downcast_ref::<T>())
     }
     pub fn get_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
-        self.comps.get_mut(&TypeId::of::<T>())
+        self.comps
+            .get_mut(&TypeId::of::<T>())
             .and_then(|m| m.get_mut(&e))
             .and_then(|b| b.downcast_mut::<T>())
     }
@@ -83,21 +96,31 @@ impl<'w, T: Component> Query<'w, T> {
     pub fn new(world: &'w World) -> Self {
         let ty = TypeId::of::<T>();
         let it = world.comps.get(&ty).map(|m| m.iter());
-        Self { world, ty, it, _m: Default::default() }
+        Self {
+            world,
+            ty,
+            it,
+            _m: Default::default(),
+        }
     }
 }
 
 // Read-only two-component query: yields entities that have both A and B
 pub struct Query2<'w, A: Component, B: Component> {
     wb: &'w World,
-    ita: Option<std::collections::btree_map::Iter<'w, Entity, Box<dyn std::any::Any + Send + Sync>>>,
+    ita:
+        Option<std::collections::btree_map::Iter<'w, Entity, Box<dyn std::any::Any + Send + Sync>>>,
     _m: std::marker::PhantomData<(A, B)>,
 }
 
 impl<'w, A: Component, B: Component> Query2<'w, A, B> {
     pub fn new(world: &'w World) -> Self {
         let ita = world.comps.get(&TypeId::of::<A>()).map(|m| m.iter());
-    Self { wb: world, ita, _m: Default::default() }
+        Self {
+            wb: world,
+            ita,
+            _m: Default::default(),
+        }
     }
 }
 
@@ -148,11 +171,14 @@ pub struct Stage {
 
 impl Schedule {
     pub fn with_stage(mut self, name: &'static str) -> Self {
-        self.stages.push(Stage { name, systems: vec![] });
+        self.stages.push(Stage {
+            name,
+            systems: vec![],
+        });
         self
     }
     pub fn add_system(&mut self, stage: &'static str, sys: SystemFn) {
-        if let Some(s) = self.stages.iter_mut().find(|s| s.name==stage) {
+        if let Some(s) = self.stages.iter_mut().find(|s| s.name == stage) {
             s.systems.push(sys);
         }
     }
@@ -180,14 +206,22 @@ impl App {
             .with_stage("ai_planning")
             .with_stage("physics")
             .with_stage("presentation");
-        Self { world: World::new(), schedule }
+        Self {
+            world: World::new(),
+            schedule,
+        }
     }
     pub fn add_system(&mut self, stage: &'static str, sys: SystemFn) {
         self.schedule.add_system(stage, sys);
     }
-    pub fn insert_resource<T: 'static + Send + Sync>(mut self, r: T) -> Self { self.world.insert_resource(r); self }
+    pub fn insert_resource<T: 'static + Send + Sync>(mut self, r: T) -> Self {
+        self.world.insert_resource(r);
+        self
+    }
     pub fn run_fixed(mut self, steps: u32) -> Self {
-        for _ in 0..steps { self.schedule.run(&mut self.world); }
+        for _ in 0..steps {
+            self.schedule.run(&mut self.world);
+        }
         self
     }
 }
@@ -197,7 +231,10 @@ pub trait Plugin {
     fn build(&self, app: &mut App);
 }
 impl App {
-    pub fn add_plugin(mut self, p: impl Plugin) -> Self { p.build(&mut self); self }
+    pub fn add_plugin(mut self, p: impl Plugin) -> Self {
+        p.build(&mut self);
+        self
+    }
 }
 
 // Filtered query: yields entities that have T and pass a filter function
@@ -208,7 +245,10 @@ pub struct FilteredQuery<'w, T: Component, F: Fn(&T) -> bool> {
 
 impl<'w, T: Component, F: Fn(&T) -> bool> FilteredQuery<'w, T, F> {
     pub fn new(world: &'w World, filter: F) -> Self {
-        Self { query: Query::new(world), filter }
+        Self {
+            query: Query::new(world),
+            filter,
+        }
     }
 }
 
@@ -246,7 +286,8 @@ macro_rules! query2 {
 impl World {
     /// Get all entities with a specific component
     pub fn entities_with<T: Component>(&self) -> Vec<Entity> {
-        self.comps.get(&TypeId::of::<T>())
+        self.comps
+            .get(&TypeId::of::<T>())
             .map(|m| m.keys().cloned().collect())
             .unwrap_or_default()
     }
@@ -258,14 +299,16 @@ impl World {
 
     /// Remove component from entity (Phase 1: basic implementation)
     pub fn remove<T: Component>(&mut self, e: Entity) -> bool {
-        self.comps.get_mut(&TypeId::of::<T>())
+        self.comps
+            .get_mut(&TypeId::of::<T>())
             .and_then(|m| m.remove(&e))
             .is_some()
     }
 
     /// Count entities with component
     pub fn count<T: Component>(&self) -> usize {
-        self.comps.get(&TypeId::of::<T>())
+        self.comps
+            .get(&TypeId::of::<T>())
             .map(|m| m.len())
             .unwrap_or(0)
     }
@@ -275,15 +318,24 @@ impl World {
 mod tests {
     use super::*;
     #[derive(Clone, Copy)]
-    struct Pos { x: i32 }
+    struct Pos {
+        x: i32,
+    }
 
-    fn sim(world: &mut World) { // increments all positions
+    fn sim(world: &mut World) {
+        // increments all positions
         let mut to_update: Vec<Entity> = vec![];
         {
             let q = Query::<Pos>::new(world);
-            for (e, _p) in q { to_update.push(e); }
+            for (e, _p) in q {
+                to_update.push(e);
+            }
         }
-        for e in to_update { if let Some(p)=world.get_mut::<Pos>(e) { p.x += 1; } }
+        for e in to_update {
+            if let Some(p) = world.get_mut::<Pos>(e) {
+                p.x += 1;
+            }
+        }
     }
 
     #[test]
@@ -298,8 +350,10 @@ mod tests {
 
     #[test]
     fn query2_yields_only_entities_with_both() {
-        #[derive(Clone, Copy)] struct A(u32);
-        #[derive(Clone, Copy)] struct B(u32);
+        #[derive(Clone, Copy)]
+        struct A(u32);
+        #[derive(Clone, Copy)]
+        struct B(u32);
         let mut app = App::new();
         let e1 = app.world.spawn();
         let e2 = app.world.spawn();
@@ -308,7 +362,9 @@ mod tests {
         app.world.insert(e2, A(3)); // missing B
         let mut seen = Vec::new();
         let q = Query2::<A, B>::new(&app.world);
-        for (e, a, b) in q { seen.push((e, a.0, b.0)); }
+        for (e, a, b) in q {
+            seen.push((e, a.0, b.0));
+        }
         assert_eq!(seen.len(), 1);
         assert_eq!(seen[0].1, 1);
         assert_eq!(seen[0].2, 2);
@@ -316,38 +372,42 @@ mod tests {
 
     #[test]
     fn filtered_query_works() {
-        #[derive(Clone, Copy)] struct Health(i32);
+        #[derive(Clone, Copy)]
+        struct Health(i32);
         let mut world = World::new();
         let e1 = world.spawn();
         let e2 = world.spawn();
         world.insert(e1, Health(100));
         world.insert(e2, Health(50));
-        
+
         let mut healthy = Vec::new();
         let fq = FilteredQuery::new(&world, |h: &Health| h.0 > 75);
-        for (e, h) in fq { healthy.push((e, h.0)); }
+        for (e, h) in fq {
+            healthy.push((e, h.0));
+        }
         assert_eq!(healthy.len(), 1);
         assert_eq!(healthy[0].1, 100);
     }
 
     #[test]
     fn world_convenience_methods() {
-        #[derive(Clone, Copy)] struct TestComp(u32);
+        #[derive(Clone, Copy)]
+        struct TestComp(u32);
         let mut world = World::new();
         let e1 = world.spawn();
         let e2 = world.spawn();
         world.insert(e1, TestComp(42));
         world.insert(e2, TestComp(24));
-        
+
         assert_eq!(world.count::<TestComp>(), 2);
         assert!(world.has::<TestComp>(e1));
         assert!(!world.has::<TestComp>(Entity(999)));
-        
+
         let entities = world.entities_with::<TestComp>();
         assert_eq!(entities.len(), 2);
         assert!(entities.contains(&e1));
         assert!(entities.contains(&e2));
-        
+
         assert!(world.remove::<TestComp>(e1));
         assert_eq!(world.count::<TestComp>(), 1);
         assert!(!world.has::<TestComp>(e1));

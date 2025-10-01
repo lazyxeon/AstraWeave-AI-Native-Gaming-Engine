@@ -1,17 +1,17 @@
 use anyhow::Result;
+use hex;
+use notify;
+use notify::Watcher;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
-use serde::{Deserialize, Serialize};
-use std::fs;
-use walkdir;
-use notify;
-use notify::Watcher;
 use toml;
-use hex;
-use std::io;
+use walkdir;
 
 #[cfg(feature = "gltf")]
 pub mod gltf_loader {
@@ -360,7 +360,8 @@ pub mod gltf_loader {
         q
     }
 
-    // --- Skinned mesh loading (v0 minimal) ---
+    // --- Phase 2 Task 5: Skeletal Animation ---
+
     #[derive(Debug, Clone)]
     pub struct SkinnedVertexLite {
         pub position: [f32; 3],
@@ -377,14 +378,423 @@ pub mod gltf_loader {
         pub joint_count: u32,
     }
 
+    /// Joint in a skeleton hierarchy
     #[derive(Debug, Clone)]
-    pub struct AnimationClip {
-        pub times: Vec<f32>,
-        pub rotations: Vec<[f32; 4]>, // quaternion vec4(x,y,z,w) targeting first joint
+    pub struct Joint {
+        pub name: String,
+        pub parent_index: Option<usize>, // None for root joints
+        pub inverse_bind_matrix: [[f32; 4]; 4], // Mat4 as array
+        pub local_transform: Transform,
     }
 
-    /// Load first skinned mesh primitive (positions, normals, JOINTS_0, WEIGHTS_0) and an optional idle rotation clip for the first joint.
+    /// Local transform (translation, rotation, scale)
+    #[derive(Debug, Clone, Copy)]
+    pub struct Transform {
+        pub translation: [f32; 3],
+        pub rotation: [f32; 4], // Quaternion (x, y, z, w)
+        pub scale: [f32; 3],
+    }
+
+    impl Default for Transform {
+        fn default() -> Self {
+            Self {
+                translation: [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0, 1.0], // Identity quaternion
+                scale: [1.0, 1.0, 1.0],
+            }
+        }
+    }
+
+    /// Complete skeleton structure
+    #[derive(Debug, Clone)]
+    pub struct Skeleton {
+        pub joints: Vec<Joint>,
+        pub root_indices: Vec<usize>, // Indices of root joints (joints with no parent)
+    }
+
+    /// Animation channel data (one property per channel)
+    #[derive(Debug, Clone)]
+    pub enum ChannelData {
+        Translation(Vec<[f32; 3]>),
+        Rotation(Vec<[f32; 4]>), // Quaternions
+        Scale(Vec<[f32; 3]>),
+    }
+
+    /// Animation channel targeting a specific joint property
+    #[derive(Debug, Clone)]
+    pub struct AnimationChannel {
+        pub target_joint_index: usize,
+        pub times: Vec<f32>,
+        pub data: ChannelData,
+        pub interpolation: Interpolation,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub enum Interpolation {
+        Linear,
+        Step,
+        CubicSpline, // Not fully implemented yet
+    }
+
+    /// Complete animation clip with multiple channels
+    #[derive(Debug, Clone)]
+    pub struct AnimationClip {
+        pub name: String,
+        pub duration: f32,
+        pub channels: Vec<AnimationChannel>,
+    }
+
+    /// Load skeleton from glTF/GLB with inverse bind matrices and hierarchy
+    pub fn load_skeleton(bytes: &[u8]) -> Result<Skeleton> {
+        let doc = if bytes.len() >= 12 && &bytes[0..4] == b"glTF" {
+            // GLB path
+            let glb = gltf::binary::Glb::from_slice(bytes).context("Invalid GLB container")?;
+            let json = std::str::from_utf8(&glb.json).context("GLB JSON is not UTF-8")?;
+            Gltf::from_slice(json.as_bytes()).context("Failed to parse glTF JSON")?
+        } else {
+            // JSON path
+            Gltf::from_slice(bytes).context("Parse .gltf JSON")?
+        };
+
+        // Find first skin
+        let skin = doc
+            .skins()
+            .next()
+            .ok_or_else(|| anyhow!("No skins found in glTF"))?;
+
+        // Gather buffer data
+        let mut buffers: Vec<Vec<u8>> = Vec::new();
+        if bytes.len() >= 12 && &bytes[0..4] == b"glTF" {
+            let glb = gltf::binary::Glb::from_slice(bytes)?;
+            let bin = glb.bin.context("GLB missing BIN chunk")?;
+            for b in doc.buffers() {
+                match b.source() {
+                    gltf::buffer::Source::Bin => buffers.push(bin.clone().into_owned()),
+                    gltf::buffer::Source::Uri(_) => {
+                        bail!("External buffer URIs not supported in GLB path")
+                    }
+                }
+            }
+        } else {
+            for b in doc.buffers() {
+                match b.source() {
+                    gltf::buffer::Source::Uri(uri) => buffers.push(load_uri_bytes(uri)?),
+                    gltf::buffer::Source::Bin => bail!("Unexpected BIN in .gltf JSON"),
+                }
+            }
+        }
+
+        // Build joint hierarchy
+        let joint_nodes: Vec<gltf::Node> = skin.joints().collect();
+        let joint_count = joint_nodes.len();
+
+        // Build parent mapping (node index -> parent node index)
+        let mut parent_map: std::collections::HashMap<usize, usize> =
+            std::collections::HashMap::new();
+        for node in doc.nodes() {
+            let parent_idx = node.index();
+            for child in node.children() {
+                parent_map.insert(child.index(), parent_idx);
+            }
+        }
+
+        // Extract inverse bind matrices
+        let inverse_bind_matrices: Vec<[[f32; 4]; 4]> =
+            if let Some(ibm_accessor) = skin.inverse_bind_matrices() {
+                // Read matrices manually from buffer view
+                let view = ibm_accessor
+                    .view()
+                    .context("IBM accessor missing buffer view")?;
+                let buffer_data = &buffers[view.buffer().index()];
+                let offset = view.offset() + ibm_accessor.offset();
+                let stride = view.stride().unwrap_or(16 * 4); // Mat4 = 16 floats = 64 bytes
+
+                let mut matrices = Vec::with_capacity(joint_count);
+                for i in 0..joint_count {
+                    let base = offset + i * stride;
+                    let mut matrix = [[0.0f32; 4]; 4];
+                    for row in 0..4 {
+                        for col in 0..4 {
+                            let idx = base + (row * 4 + col) * 4;
+                            if idx + 4 <= buffer_data.len() {
+                                let bytes = &buffer_data[idx..idx + 4];
+                                matrix[col][row] =
+                                    f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                            }
+                        }
+                    }
+                    matrices.push(matrix);
+                }
+                matrices
+            } else {
+                // Default to identity matrices if not provided
+                vec![
+                    [
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0]
+                    ];
+                    joint_count
+                ]
+            };
+
+        // Create joint list with parent indices relative to skin joint array
+        let mut joints = Vec::with_capacity(joint_count);
+        let node_to_joint_index: std::collections::HashMap<usize, usize> = joint_nodes
+            .iter()
+            .enumerate()
+            .map(|(i, n)| (n.index(), i))
+            .collect();
+
+        for (joint_idx, joint_node) in joint_nodes.iter().enumerate() {
+            let (t, r, s) = joint_node.transform().decomposed();
+            let local_transform = Transform {
+                translation: t,
+                rotation: r,
+                scale: s,
+            };
+
+            // Find parent joint index (relative to skin joints, not global nodes)
+            let parent_index = parent_map
+                .get(&joint_node.index())
+                .and_then(|parent_node_idx| node_to_joint_index.get(parent_node_idx))
+                .copied();
+
+            joints.push(Joint {
+                name: joint_node.name().unwrap_or("unnamed").to_string(),
+                parent_index,
+                inverse_bind_matrix: inverse_bind_matrices.get(joint_idx).copied().unwrap_or([
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ]),
+                local_transform,
+            });
+        }
+
+        // Find root joints (joints with no parent in the skin hierarchy)
+        let root_indices: Vec<usize> = joints
+            .iter()
+            .enumerate()
+            .filter_map(|(i, j)| {
+                if j.parent_index.is_none() {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        Ok(Skeleton {
+            joints,
+            root_indices,
+        })
+    }
+
+    /// Load all animation clips from glTF/GLB
+    pub fn load_animations(bytes: &[u8], _skeleton: &Skeleton) -> Result<Vec<AnimationClip>> {
+        let doc = if bytes.len() >= 12 && &bytes[0..4] == b"glTF" {
+            let glb = gltf::binary::Glb::from_slice(bytes).context("Invalid GLB container")?;
+            let json = std::str::from_utf8(&glb.json).context("GLB JSON is not UTF-8")?;
+            Gltf::from_slice(json.as_bytes()).context("Failed to parse glTF JSON")?
+        } else {
+            Gltf::from_slice(bytes).context("Parse .gltf JSON")?
+        };
+
+        // Gather buffer data
+        let mut buffers: Vec<Vec<u8>> = Vec::new();
+        if bytes.len() >= 12 && &bytes[0..4] == b"glTF" {
+            let glb = gltf::binary::Glb::from_slice(bytes)?;
+            let bin = glb.bin.context("GLB missing BIN chunk")?;
+            for b in doc.buffers() {
+                match b.source() {
+                    gltf::buffer::Source::Bin => buffers.push(bin.clone().into_owned()),
+                    gltf::buffer::Source::Uri(_) => {
+                        bail!("External buffer URIs not supported in GLB path")
+                    }
+                }
+            }
+        } else {
+            for b in doc.buffers() {
+                match b.source() {
+                    gltf::buffer::Source::Uri(uri) => buffers.push(load_uri_bytes(uri)?),
+                    gltf::buffer::Source::Bin => bail!("Unexpected BIN in .gltf JSON"),
+                }
+            }
+        }
+
+        // Build node-to-joint mapping for this skeleton
+        let mut node_to_joint: std::collections::HashMap<usize, usize> =
+            std::collections::HashMap::new();
+        if let Some(skin) = doc.skins().next() {
+            for (joint_idx, joint_node) in skin.joints().enumerate() {
+                node_to_joint.insert(joint_node.index(), joint_idx);
+            }
+        }
+
+        let mut clips = Vec::new();
+        for anim in doc.animations() {
+            let name = anim
+                .name()
+                .unwrap_or(&format!("animation_{}", anim.index()))
+                .to_string();
+
+            let mut channels = Vec::new();
+            let mut max_time = 0.0f32;
+
+            for channel in anim.channels() {
+                let target_node_idx = channel.target().node().index();
+
+                // Map to joint index
+                let target_joint_index = match node_to_joint.get(&target_node_idx) {
+                    Some(&idx) => idx,
+                    None => continue, // Skip channels not targeting skeleton joints
+                };
+
+                let reader = channel.reader(|buf| buffers.get(buf.index()).map(|d| d.as_slice()));
+                let times: Vec<f32> = reader
+                    .read_inputs()
+                    .ok_or_else(|| anyhow!("Missing animation inputs"))?
+                    .collect();
+
+                if times.is_empty() {
+                    continue;
+                }
+
+                max_time = max_time.max(*times.last().unwrap());
+
+                let interpolation = match channel.sampler().interpolation() {
+                    gltf::animation::Interpolation::Linear => Interpolation::Linear,
+                    gltf::animation::Interpolation::Step => Interpolation::Step,
+                    gltf::animation::Interpolation::CubicSpline => Interpolation::CubicSpline,
+                };
+
+                let data = match channel.target().property() {
+                    gltf::animation::Property::Translation => {
+                        let translations: Vec<[f32; 3]> = match reader
+                            .read_outputs()
+                            .ok_or_else(|| anyhow!("Missing animation outputs"))?
+                        {
+                            gltf::animation::util::ReadOutputs::Translations(it) => it.collect(),
+                            _ => bail!("Unexpected output type for translation"),
+                        };
+                        ChannelData::Translation(translations)
+                    }
+                    gltf::animation::Property::Rotation => {
+                        let rotations: Vec<[f32; 4]> = match reader
+                            .read_outputs()
+                            .ok_or_else(|| anyhow!("Missing animation outputs"))?
+                        {
+                            gltf::animation::util::ReadOutputs::Rotations(rot_it) => match rot_it {
+                                gltf::animation::util::Rotations::F32(it) => {
+                                    it.map(|r| [r[0], r[1], r[2], r[3]]).collect()
+                                }
+                                gltf::animation::util::Rotations::I16(it) => it
+                                    .map(|r| {
+                                        normalize_q([
+                                            (r[0] as f32) / 32767.0,
+                                            (r[1] as f32) / 32767.0,
+                                            (r[2] as f32) / 32767.0,
+                                            (r[3] as f32) / 32767.0,
+                                        ])
+                                    })
+                                    .collect(),
+                                gltf::animation::util::Rotations::I8(it) => it
+                                    .map(|r| {
+                                        normalize_q([
+                                            (r[0] as f32) / 127.0,
+                                            (r[1] as f32) / 127.0,
+                                            (r[2] as f32) / 127.0,
+                                            (r[3] as f32) / 127.0,
+                                        ])
+                                    })
+                                    .collect(),
+                                gltf::animation::util::Rotations::U8(it) => it
+                                    .map(|r| {
+                                        normalize_q([
+                                            (r[0] as f32) / 255.0,
+                                            (r[1] as f32) / 255.0,
+                                            (r[2] as f32) / 255.0,
+                                            (r[3] as f32) / 255.0,
+                                        ])
+                                    })
+                                    .collect(),
+                                gltf::animation::util::Rotations::U16(it) => it
+                                    .map(|r| {
+                                        normalize_q([
+                                            (r[0] as f32) / 65535.0,
+                                            (r[1] as f32) / 65535.0,
+                                            (r[2] as f32) / 65535.0,
+                                            (r[3] as f32) / 65535.0,
+                                        ])
+                                    })
+                                    .collect(),
+                            },
+                            _ => bail!("Unexpected output type for rotation"),
+                        };
+                        ChannelData::Rotation(rotations)
+                    }
+                    gltf::animation::Property::Scale => {
+                        let scales: Vec<[f32; 3]> = match reader
+                            .read_outputs()
+                            .ok_or_else(|| anyhow!("Missing animation outputs"))?
+                        {
+                            gltf::animation::util::ReadOutputs::Scales(it) => it.collect(),
+                            _ => bail!("Unexpected output type for scale"),
+                        };
+                        ChannelData::Scale(scales)
+                    }
+                    _ => continue, // Skip morphTargets or other properties
+                };
+
+                channels.push(AnimationChannel {
+                    target_joint_index,
+                    times,
+                    data,
+                    interpolation,
+                });
+            }
+
+            if !channels.is_empty() {
+                clips.push(AnimationClip {
+                    name,
+                    duration: max_time,
+                    channels,
+                });
+            }
+        }
+
+        Ok(clips)
+    }
+
+    /// Load first skinned mesh primitive (positions, normals, JOINTS_0, WEIGHTS_0) with complete skeleton and animations.
+    /// Returns: (mesh data, skeleton, animation clips, optional material)
+    pub fn load_skinned_mesh_complete(
+        bytes: &[u8],
+    ) -> Result<(
+        SkinnedMeshData,
+        Skeleton,
+        Vec<AnimationClip>,
+        Option<MaterialData>,
+    )> {
+        // Load skeleton first
+        let skeleton = load_skeleton(bytes)?;
+
+        // Load animations
+        let animations = load_animations(bytes, &skeleton)?;
+
+        // Load mesh data (reuse existing logic)
+        let (mesh, _, mat) = load_first_skinned_mesh_and_idle(bytes)?;
+
+        Ok((mesh, skeleton, animations, mat))
+    }
+
+    /// Legacy function: Load first skinned mesh primitive (positions, normals, JOINTS_0, WEIGHTS_0) and an optional idle rotation clip for the first joint.
     /// Notes: For Phase 0, we only support the first node that references a mesh and has a skin.
+    /// Deprecated: Use load_skinned_mesh_complete for full skeleton and animation support.
+    #[deprecated(note = "Use load_skinned_mesh_complete for full skeleton support")]
     pub fn load_first_skinned_mesh_and_idle(
         bytes: &[u8],
     ) -> Result<(SkinnedMeshData, Option<AnimationClip>, Option<MaterialData>)> {
@@ -583,9 +993,16 @@ pub mod gltf_loader {
                             _ => bail!("Anim outputs not rotations"),
                         };
                         if inputs.len() == outputs.len() && !inputs.is_empty() {
+                            let duration = *inputs.last().unwrap();
                             clip = Some(AnimationClip {
-                                times: inputs,
-                                rotations: outputs,
+                                name: "legacy_idle".to_string(),
+                                duration,
+                                channels: vec![AnimationChannel {
+                                    target_joint_index: 0,
+                                    times: inputs,
+                                    data: ChannelData::Rotation(outputs),
+                                    interpolation: Interpolation::Linear,
+                                }],
                             });
                             break;
                         }
@@ -681,6 +1098,7 @@ impl<T> AssetCache<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn guid_is_deterministic_and_case_insensitive() {
         let a = guid_for_path("Assets/Characters/Hero.gltf");
@@ -690,12 +1108,106 @@ mod tests {
         assert_eq!(b, c);
         assert_eq!(a.len(), 32);
     }
+
     #[test]
     fn cache_inserts_and_retrieves() {
         let mut c = AssetCache::<i32>::default();
         let id = c.insert("assets/tex.png", 7);
         assert_eq!(c.get(&id), Some(&7));
         assert_eq!(c.len(), 1);
+    }
+
+    // Phase 2 Task 5: Skeletal Animation Tests
+    #[cfg(feature = "gltf")]
+    #[test]
+    fn test_skeleton_structure() {
+        // Test that skeleton structure types compile and have expected fields
+        let transform = gltf_loader::Transform::default();
+        assert_eq!(transform.translation, [0.0, 0.0, 0.0]);
+        assert_eq!(transform.rotation, [0.0, 0.0, 0.0, 1.0]); // Identity quat
+        assert_eq!(transform.scale, [1.0, 1.0, 1.0]);
+
+        // Verify Joint structure
+        let joint = gltf_loader::Joint {
+            name: "test_joint".to_string(),
+            parent_index: None,
+            inverse_bind_matrix: [[1.0, 0.0, 0.0, 0.0]; 4],
+            local_transform: transform,
+        };
+        assert_eq!(joint.name, "test_joint");
+        assert!(joint.parent_index.is_none());
+    }
+
+    #[cfg(feature = "gltf")]
+    #[test]
+    fn test_animation_channel_types() {
+        // Test that animation types compile
+        use gltf_loader::{AnimationChannel, ChannelData, Interpolation};
+
+        let channel = AnimationChannel {
+            target_joint_index: 0,
+            times: vec![0.0, 1.0, 2.0],
+            data: ChannelData::Translation(vec![[0.0, 0.0, 0.0]; 3]),
+            interpolation: Interpolation::Linear,
+        };
+
+        assert_eq!(channel.times.len(), 3);
+        assert_eq!(channel.interpolation, Interpolation::Linear);
+
+        // Test rotation channel
+        let rot_channel = AnimationChannel {
+            target_joint_index: 1,
+            times: vec![0.0, 1.0],
+            data: ChannelData::Rotation(vec![[0.0, 0.0, 0.0, 1.0]; 2]),
+            interpolation: Interpolation::Step,
+        };
+
+        match rot_channel.data {
+            ChannelData::Rotation(rots) => assert_eq!(rots.len(), 2),
+            _ => panic!("Expected rotation data"),
+        }
+    }
+
+    #[cfg(feature = "gltf")]
+    #[test]
+    fn test_skeleton_root_detection() {
+        // Test that we can identify root joints correctly
+        use gltf_loader::{Joint, Skeleton, Transform};
+
+        let joints = vec![
+            Joint {
+                name: "root".to_string(),
+                parent_index: None,
+                inverse_bind_matrix: [[1.0, 0.0, 0.0, 0.0]; 4],
+                local_transform: Transform::default(),
+            },
+            Joint {
+                name: "child1".to_string(),
+                parent_index: Some(0),
+                inverse_bind_matrix: [[1.0, 0.0, 0.0, 0.0]; 4],
+                local_transform: Transform::default(),
+            },
+            Joint {
+                name: "child2".to_string(),
+                parent_index: Some(0),
+                inverse_bind_matrix: [[1.0, 0.0, 0.0, 0.0]; 4],
+                local_transform: Transform::default(),
+            },
+        ];
+
+        let skeleton = Skeleton {
+            joints: joints.clone(),
+            root_indices: vec![0],
+        };
+
+        assert_eq!(skeleton.root_indices.len(), 1);
+        assert_eq!(skeleton.root_indices[0], 0);
+        assert_eq!(skeleton.joints.len(), 3);
+
+        // Verify hierarchy
+        assert!(skeleton.joints[0].parent_index.is_none());
+        assert_eq!(skeleton.joints[1].parent_index, Some(0));
+        assert_eq!(skeleton.joints[2].parent_index, Some(0));
     }
 }
 
@@ -728,7 +1240,7 @@ pub struct AssetDatabase {
     pub assets: HashMap<String, AssetMetadata>, // GUID -> metadata
     pub path_to_guid: HashMap<PathBuf, String>,
     pub dependency_graph: HashMap<String, HashSet<String>>, // GUID -> set of dependent GUIDs
-    pub reverse_deps: HashMap<String, HashSet<String>>, // GUID -> set of GUIDs it depends on
+    pub reverse_deps: HashMap<String, HashSet<String>>,     // GUID -> set of GUIDs it depends on
     pub hot_reload_tx: watch::Sender<()>,
     pub hot_reload_rx: watch::Receiver<()>,
 }
@@ -746,7 +1258,12 @@ impl AssetDatabase {
         }
     }
 
-    pub fn register_asset(&mut self, path: &Path, kind: AssetKind, dependencies: Vec<String>) -> Result<String> {
+    pub fn register_asset(
+        &mut self,
+        path: &Path,
+        kind: AssetKind,
+        dependencies: Vec<String>,
+    ) -> Result<String> {
         let guid = if let Some(existing) = self.path_to_guid.get(path) {
             existing.clone()
         } else {
@@ -763,7 +1280,10 @@ impl AssetDatabase {
             kind,
             hash,
             dependencies: dependencies.clone(),
-            last_modified: metadata.modified()?.duration_since(std::time::UNIX_EPOCH)?.as_secs(),
+            last_modified: metadata
+                .modified()?
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_secs(),
             size_bytes: size,
         };
 
@@ -772,8 +1292,14 @@ impl AssetDatabase {
 
         // Update dependency graph
         for dep_guid in &dependencies {
-            self.reverse_deps.entry(guid.clone()).or_insert(HashSet::new()).insert(dep_guid.clone());
-            self.dependency_graph.entry(dep_guid.clone()).or_insert(HashSet::new()).insert(guid.clone());
+            self.reverse_deps
+                .entry(guid.clone())
+                .or_insert(HashSet::new())
+                .insert(dep_guid.clone());
+            self.dependency_graph
+                .entry(dep_guid.clone())
+                .or_insert(HashSet::new())
+                .insert(guid.clone());
         }
 
         Ok(guid)
@@ -796,7 +1322,13 @@ impl AssetDatabase {
     }
 
     pub fn invalidate_asset(&mut self, guid: &str) -> Result<()> {
-        let dependents: Vec<String> = self.dependency_graph.get(guid).cloned().unwrap_or_default().into_iter().collect();
+        let dependents: Vec<String> = self
+            .dependency_graph
+            .get(guid)
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
         for dep in dependents {
             // Mark dependents as needing reload
             if let Some(meta) = self.assets.get_mut(&dep) {
@@ -839,8 +1371,14 @@ impl AssetDatabase {
         // Rebuild dependency graphs
         for (guid, meta) in &self.assets {
             for dep in &meta.dependencies {
-                self.reverse_deps.entry(guid.clone()).or_insert(HashSet::new()).insert(dep.clone());
-                self.dependency_graph.entry(dep.clone()).or_insert(HashSet::new()).insert(guid.clone());
+                self.reverse_deps
+                    .entry(guid.clone())
+                    .or_insert(HashSet::new())
+                    .insert(dep.clone());
+                self.dependency_graph
+                    .entry(dep.clone())
+                    .or_insert(HashSet::new())
+                    .insert(guid.clone());
             }
         }
         Ok(())
@@ -870,11 +1408,12 @@ fn infer_dependencies(path: &Path, kind: AssetKind) -> Result<Vec<String>> {
                 for line in content.lines() {
                     if line.contains("\"uri\":") {
                         if let Some(start) = line.find('"') {
-                            if let Some(end) = line[start+1..].find('"') {
-                                let uri = &line[start+1..start+1+end];
+                            if let Some(end) = line[start + 1..].find('"') {
+                                let uri = &line[start + 1..start + 1 + end];
                                 if !uri.starts_with("data:") {
                                     // Assume relative path, compute GUID
-                                    let dep_path = path.parent().unwrap_or(Path::new(".")).join(uri);
+                                    let dep_path =
+                                        path.parent().unwrap_or(Path::new(".")).join(uri);
                                     deps.push(guid_for_path(&dep_path.to_string_lossy()));
                                 }
                             }
@@ -923,10 +1462,15 @@ pub struct AssetWatcher {
 impl AssetWatcher {
     pub fn new(db: Arc<Mutex<AssetDatabase>>) -> Result<Self> {
         let db_clone = db.clone();
-        let watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
-            match res {
+        let watcher = notify::recommended_watcher(
+            move |res: Result<notify::Event, notify::Error>| match res {
                 Ok(event) => {
-                    if matches!(event.kind, notify::EventKind::Modify(_) | notify::EventKind::Create(_) | notify::EventKind::Remove(_)) {
+                    if matches!(
+                        event.kind,
+                        notify::EventKind::Modify(_)
+                            | notify::EventKind::Create(_)
+                            | notify::EventKind::Remove(_)
+                    ) {
                         for path in &event.paths {
                             if let Ok(mut db) = db_clone.lock() {
                                 if let Some(guid) = db.get_guid_by_path(path).cloned() {
@@ -937,8 +1481,8 @@ impl AssetWatcher {
                     }
                 }
                 Err(e) => eprintln!("Watch error: {:?}", e),
-            }
-        })?;
+            },
+        )?;
 
         Ok(Self { db, watcher })
     }

@@ -1,4 +1,6 @@
-use astraweave_behavior::{BehaviorNode, BehaviorGraph, BehaviorContext, BehaviorStatus, DecoratorType};
+use astraweave_behavior::{
+    BehaviorContext, BehaviorGraph, BehaviorNode, BehaviorStatus, DecoratorType,
+};
 
 #[test]
 fn test_sequence_success() {

@@ -1,0 +1,28 @@
+[package]
+name = "astraweave-weaving"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Emergent behavior layer - pattern detection and intent generation for AstraWeave"
+
+[features]
+default = []
+weaving = []
+
+[dependencies]
+# Core dependencies
+anyhow = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+
+# Math
+glam = { workspace = true }
+
+# AstraWeave crates
+astraweave-pcg = { path = "../astraweave-pcg" }
+
+# Collections (deterministic)
+# Using std BTreeMap/BTreeSet for stable iteration
+
+[dev-dependencies]
+approx = { workspace = true }

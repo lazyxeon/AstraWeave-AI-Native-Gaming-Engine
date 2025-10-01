@@ -1029,7 +1029,11 @@ fn validate_plan(plan: &PlanIntent, reg: &ToolRegistry) -> Result<()> {
 const MAX_COORD_BOUND: i32 = 100;
 
 /// Sanitize and validate plan for safety
-pub fn sanitize_plan(plan: &mut PlanIntent, snap: &WorldSnapshot, reg: &ToolRegistry) -> Result<()> {
+pub fn sanitize_plan(
+    plan: &mut PlanIntent,
+    snap: &WorldSnapshot,
+    reg: &ToolRegistry,
+) -> Result<()> {
     // Remove any steps that exceed bounds or use invalid targets
     plan.steps.retain(|step| match step {
         ActionStep::MoveTo { x, y } => {
@@ -1043,10 +1047,15 @@ pub fn sanitize_plan(plan: &mut PlanIntent, snap: &WorldSnapshot, reg: &ToolRegi
                 && (x.abs() <= MAX_COORD_BOUND && y.abs() <= MAX_COORD_BOUND)
                 && reg.tools.iter().any(|t| t.name == "throw")
         }
-        ActionStep::CoverFire { target_id, duration } => {
+        ActionStep::CoverFire {
+            target_id,
+            duration,
+        } => {
             // Check target exists and duration reasonable
-            snap.enemies.iter().any(|e| e.id == *target_id) &&
-            *duration > 0.0 && *duration <= 10.0 && reg.tools.iter().any(|t| t.name == "cover_fire")
+            snap.enemies.iter().any(|e| e.id == *target_id)
+                && *duration > 0.0
+                && *duration <= 10.0
+                && reg.tools.iter().any(|t| t.name == "cover_fire")
         }
         ActionStep::Revive { ally_id } => {
             // Check ally exists (simplified: allow any ally for now, or validate against known ally IDs)
@@ -1186,7 +1195,8 @@ pub fn fallback_heuristic_plan(snap: &WorldSnapshot, reg: &ToolRegistry) -> Plan
     if let Some(obj) = &snap.objective {
         if obj == "extract" {
             // Move towards player if far
-            let dist = ((snap.me.pos.x - snap.player.pos.x).abs() + (snap.me.pos.y - snap.player.pos.y).abs()) as i32;
+            let dist = ((snap.me.pos.x - snap.player.pos.x).abs()
+                + (snap.me.pos.y - snap.player.pos.y).abs()) as i32;
             if dist > 3 && reg.tools.iter().any(|t| t.name == "move_to") {
                 steps.push(ActionStep::MoveTo {
                     x: snap.player.pos.x,

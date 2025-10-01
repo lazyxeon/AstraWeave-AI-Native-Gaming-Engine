@@ -93,6 +93,11 @@ pub struct MaterialManager {
     _albedo_tex: Option<wgpu::Texture>,
     _normal_tex: Option<wgpu::Texture>,
     _mra_tex: Option<wgpu::Texture>,
+    // Cached bind group layout (created once, reused)
+    bind_group_layout: Option<wgpu::BindGroupLayout>,
+    // Current GPU arrays and layout
+    current_arrays: Option<MaterialGpuArrays>,
+    current_stats: Option<MaterialLoadStats>,
 }
 
 impl MaterialManager {
@@ -101,12 +106,177 @@ impl MaterialManager {
             _albedo_tex: None,
             _normal_tex: None,
             _mra_tex: None,
+            bind_group_layout: None,
+            current_arrays: None,
+            current_stats: None,
         }
+    }
+
+    /// Create or get the cached bind group layout for materials (group 1)
+    /// Layout:
+    /// - @binding(0): albedo_array (texture_2d_array<f32>, rgba8_srgb)
+    /// - @binding(1): sampler (filtering)
+    /// - @binding(2): normal_array (texture_2d_array<f32>, rg8_unorm)
+    /// - @binding(3): sampler_linear
+    /// - @binding(4): mra_array (texture_2d_array<f32>, rgba8_unorm)
+    pub fn get_or_create_bind_group_layout(
+        &mut self,
+        device: &wgpu::Device,
+    ) -> &wgpu::BindGroupLayout {
+        if self.bind_group_layout.is_none() {
+            self.bind_group_layout = Some(device.create_bind_group_layout(
+                &wgpu::BindGroupLayoutDescriptor {
+                    label: Some("material-arrays-bgl"),
+                    entries: &[
+                        // 0: albedo array
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Texture {
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                                view_dimension: wgpu::TextureViewDimension::D2Array,
+                                multisampled: false,
+                            },
+                            count: None,
+                        },
+                        // 1: sampler
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            count: None,
+                        },
+                        // 2: normal array
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 2,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Texture {
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                                view_dimension: wgpu::TextureViewDimension::D2Array,
+                                multisampled: false,
+                            },
+                            count: None,
+                        },
+                        // 3: sampler_linear
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 3,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            count: None,
+                        },
+                        // 4: mra array
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 4,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Texture {
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                                view_dimension: wgpu::TextureViewDimension::D2Array,
+                                multisampled: false,
+                            },
+                            count: None,
+                        },
+                    ],
+                },
+            ));
+        }
+        self.bind_group_layout.as_ref().unwrap()
+    }
+
+    /// Create a bind group from the current material arrays
+    pub fn create_bind_group(
+        &self,
+        device: &wgpu::Device,
+        layout: &wgpu::BindGroupLayout,
+    ) -> Result<wgpu::BindGroup> {
+        let arrays = self
+            .current_arrays
+            .as_ref()
+            .context("No materials loaded")?;
+
+        Ok(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("material-arrays-bg"),
+            layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&arrays.albedo),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&arrays.sampler_albedo),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&arrays.normal),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(&arrays.sampler_linear),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: wgpu::BindingResource::TextureView(&arrays.mra),
+                },
+            ],
+        }))
+    }
+
+    /// Get current material stats (if loaded)
+    pub fn current_stats(&self) -> Option<&MaterialLoadStats> {
+        self.current_stats.as_ref()
+    }
+
+    /// Get current array layout (if loaded)
+    pub fn current_layout(&self) -> Option<&ArrayLayout> {
+        self.current_arrays.as_ref().map(|a| &a.layout)
     }
 }
 
 #[cfg(feature = "textures")]
 impl MaterialManager {
+    /// Load a biome from a directory containing materials.toml and arrays.toml
+    /// This is the primary convenience API for loading materials.
+    pub async fn load_biome(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        biome_dir: &std::path::Path,
+    ) -> Result<MaterialLoadStats> {
+        let materials_toml = biome_dir.join("materials.toml");
+        let arrays_toml = biome_dir.join("arrays.toml");
+
+        // Validate files exist
+        if !materials_toml.exists() {
+            anyhow::bail!("materials.toml not found at {}", materials_toml.display());
+        }
+        if !arrays_toml.exists() {
+            anyhow::bail!("arrays.toml not found at {}", arrays_toml.display());
+        }
+
+        let (arrays, stats) = self
+            .load_pack_from_toml(device, queue, biome_dir, &materials_toml, &arrays_toml)
+            .await?;
+
+        self.current_arrays = Some(arrays);
+        self.current_stats = Some(stats.clone());
+
+        Ok(stats)
+    }
+
+    /// Reload the current biome (hot-reload support)
+    pub async fn reload_biome(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        biome_dir: &std::path::Path,
+    ) -> Result<MaterialLoadStats> {
+        println!(
+            "[materials] Hot-reloading biome from {}",
+            biome_dir.display()
+        );
+        self.load_biome(device, queue, biome_dir).await
+    }
+
     /// Load a pack from authored TOML files under assets/materials/{biome}
     pub async fn load_pack_from_toml(
         &mut self,
@@ -154,6 +324,11 @@ impl MaterialManager {
         let doc: MaterialsDoc = toml::from_str(&mats_src)
             .with_context(|| format!("parse {}", materials_toml.display()))?;
 
+        // Validate biome name
+        if doc.biome.name.is_empty() {
+            anyhow::bail!("Biome name cannot be empty in {}", materials_toml.display());
+        }
+
         // Parse arrays.toml mapping
         #[derive(Deserialize)]
         struct ArraysDoc {
@@ -164,9 +339,39 @@ impl MaterialManager {
         let arrays: ArraysDoc = toml::from_str(&arrays_src)
             .with_context(|| format!("parse {}", arrays_toml.display()))?;
 
+        // Validate array indices are unique
+        let mut index_counts: HashMap<u32, Vec<String>> = HashMap::new();
+        for (key, &idx) in &arrays.layers {
+            index_counts.entry(idx).or_default().push(key.clone());
+        }
+        for (idx, keys) in index_counts {
+            if keys.len() > 1 {
+                anyhow::bail!(
+                    "Duplicate array index {} in arrays.toml for keys: {:?}",
+                    idx,
+                    keys
+                );
+            }
+        }
+
         let mut layers: Vec<(String, MaterialLayerDesc)> = Vec::new();
         let mut skipped = 0usize;
         for l in doc.layer {
+            // Validate layer key
+            if l.key.is_empty() {
+                eprintln!("[materials] Skipping layer with empty key");
+                skipped += 1;
+                continue;
+            }
+
+            // Validate tiling
+            if l.tiling[0] <= 0.0 || l.tiling[1] <= 0.0 {
+                eprintln!(
+                    "[materials] Warning: Layer '{}' has invalid tiling {:?}, using default",
+                    l.key, l.tiling
+                );
+            }
+
             if !arrays.layers.contains_key(&l.key) {
                 skipped += 1;
                 eprintln!(
@@ -196,8 +401,8 @@ impl MaterialManager {
         layers.sort_by_key(|(k, _)| arrays.layers.get(k).copied().unwrap_or(u32::MAX));
 
         // Upload into texture arrays (delegated to helper in this module)
-            let (gpu, stats, albedo_tex, normal_tex, mra_tex) =
-                crate::material_loader::material_loader_impl::build_arrays(
+        let (gpu, stats, albedo_tex, normal_tex, mra_tex) =
+            crate::material_loader::material_loader_impl::build_arrays(
                 device,
                 queue,
                 &layers,
@@ -223,6 +428,9 @@ impl MaterialManager {
         self._albedo_tex = None;
         self._normal_tex = None;
         self._mra_tex = None;
+        self.current_arrays = None;
+        self.current_stats = None;
+        println!("[materials] Unloaded current biome");
     }
 }
 
@@ -243,6 +451,86 @@ impl MaterialManager {
 
     pub fn unload_current(&mut self) { /* no-op */
     }
+}
+
+/// Validate a MaterialPackDesc for correctness
+pub fn validate_material_pack(pack: &MaterialPackDesc) -> Result<()> {
+    // Check biome name is not empty
+    if pack.biome.is_empty() {
+        anyhow::bail!("Biome name cannot be empty");
+    }
+
+    // Check all layers have unique keys
+    let mut keys = std::collections::HashSet::new();
+    for layer in &pack.layers {
+        if layer.key.is_empty() {
+            anyhow::bail!("Layer key cannot be empty");
+        }
+        if !keys.insert(&layer.key) {
+            anyhow::bail!("Duplicate layer key: '{}'", layer.key);
+        }
+
+        // Validate tiling values are positive
+        if layer.tiling[0] <= 0.0 || layer.tiling[1] <= 0.0 {
+            anyhow::bail!(
+                "Layer '{}': tiling values must be positive, got {:?}",
+                layer.key,
+                layer.tiling
+            );
+        }
+
+        // Validate triplanar scale is positive
+        if layer.triplanar_scale <= 0.0 {
+            anyhow::bail!(
+                "Layer '{}': triplanar_scale must be positive, got {}",
+                layer.key,
+                layer.triplanar_scale
+            );
+        }
+
+        // Check that at least one texture path is provided
+        if layer.albedo.is_none()
+            && layer.normal.is_none()
+            && layer.mra.is_none()
+            && layer.metallic.is_none()
+            && layer.roughness.is_none()
+            && layer.ao.is_none()
+        {
+            eprintln!(
+                "[materials] Warning: Layer '{}' has no texture paths",
+                layer.key
+            );
+        }
+    }
+
+    Ok(())
+}
+
+/// Validate array layout for correctness
+pub fn validate_array_layout(layout: &ArrayLayout) -> Result<()> {
+    // Check for gaps in index space (warn only)
+    if layout.count > 0 {
+        let max_index = layout.layer_indices.values().max().copied().unwrap_or(0);
+        if max_index >= layout.count {
+            eprintln!(
+                "[materials] Warning: Max index {} >= count {}, possible gap",
+                max_index, layout.count
+            );
+        }
+
+        // Check for duplicate indices
+        let mut index_counts: HashMap<u32, usize> = HashMap::new();
+        for &idx in layout.layer_indices.values() {
+            *index_counts.entry(idx).or_insert(0) += 1;
+        }
+        for (idx, count) in index_counts {
+            if count > 1 {
+                anyhow::bail!("Duplicate array index {} used {} times", idx, count);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 // Small helper to normalize PathBuf joins (remove .. etc.)
@@ -346,9 +634,27 @@ stone = 2
     fn test_stable_layer_index_mapping() {
         // Simulate layers and arrays mapping
         let mut layers = vec![
-            ("stone".to_string(), MaterialLayerDesc { key: "stone".to_string(), ..Default::default() }),
-            ("grass".to_string(), MaterialLayerDesc { key: "grass".to_string(), ..Default::default() }),
-            ("dirt".to_string(), MaterialLayerDesc { key: "dirt".to_string(), ..Default::default() }),
+            (
+                "stone".to_string(),
+                MaterialLayerDesc {
+                    key: "stone".to_string(),
+                    ..Default::default()
+                },
+            ),
+            (
+                "grass".to_string(),
+                MaterialLayerDesc {
+                    key: "grass".to_string(),
+                    ..Default::default()
+                },
+            ),
+            (
+                "dirt".to_string(),
+                MaterialLayerDesc {
+                    key: "dirt".to_string(),
+                    ..Default::default()
+                },
+            ),
         ];
         let arrays_layers = std::collections::HashMap::from([
             ("grass".to_string(), 0),
@@ -400,5 +706,105 @@ stone = 2
         assert!(summary.contains("layers=5"));
         assert!(summary.contains("albedo L/S=3/2"));
         assert!(summary.contains("gpu=10.00 MiB"));
+    }
+
+    #[test]
+    fn test_validate_material_pack_empty_biome() {
+        let pack = MaterialPackDesc {
+            biome: String::new(),
+            layers: vec![],
+        };
+        assert!(validate_material_pack(&pack).is_err());
+    }
+
+    #[test]
+    fn test_validate_material_pack_duplicate_keys() {
+        let pack = MaterialPackDesc {
+            biome: "test".to_string(),
+            layers: vec![
+                MaterialLayerDesc {
+                    key: "grass".to_string(),
+                    ..Default::default()
+                },
+                MaterialLayerDesc {
+                    key: "grass".to_string(),
+                    ..Default::default()
+                },
+            ],
+        };
+        assert!(validate_material_pack(&pack).is_err());
+    }
+
+    #[test]
+    fn test_validate_material_pack_invalid_tiling() {
+        let pack = MaterialPackDesc {
+            biome: "test".to_string(),
+            layers: vec![MaterialLayerDesc {
+                key: "grass".to_string(),
+                tiling: [-1.0, 2.0],
+                ..Default::default()
+            }],
+        };
+        assert!(validate_material_pack(&pack).is_err());
+    }
+
+    #[test]
+    fn test_validate_material_pack_invalid_triplanar() {
+        let pack = MaterialPackDesc {
+            biome: "test".to_string(),
+            layers: vec![MaterialLayerDesc {
+                key: "grass".to_string(),
+                triplanar_scale: -5.0,
+                ..Default::default()
+            }],
+        };
+        assert!(validate_material_pack(&pack).is_err());
+    }
+
+    #[test]
+    fn test_validate_material_pack_valid() {
+        let pack = MaterialPackDesc {
+            biome: "forest".to_string(),
+            layers: vec![
+                MaterialLayerDesc {
+                    key: "grass".to_string(),
+                    albedo: Some(PathBuf::from("grass.png")),
+                    tiling: [2.0, 2.0],
+                    triplanar_scale: 16.0,
+                    ..Default::default()
+                },
+                MaterialLayerDesc {
+                    key: "dirt".to_string(),
+                    normal: Some(PathBuf::from("dirt_n.png")),
+                    ..Default::default()
+                },
+            ],
+        };
+        assert!(validate_material_pack(&pack).is_ok());
+    }
+
+    #[test]
+    fn test_validate_array_layout_duplicate_indices() {
+        let mut layout = ArrayLayout {
+            layer_indices: HashMap::new(),
+            count: 3,
+        };
+        layout.layer_indices.insert("grass".to_string(), 0);
+        layout.layer_indices.insert("dirt".to_string(), 0); // Duplicate!
+
+        assert!(validate_array_layout(&layout).is_err());
+    }
+
+    #[test]
+    fn test_validate_array_layout_valid() {
+        let mut layout = ArrayLayout {
+            layer_indices: HashMap::new(),
+            count: 3,
+        };
+        layout.layer_indices.insert("grass".to_string(), 0);
+        layout.layer_indices.insert("dirt".to_string(), 1);
+        layout.layer_indices.insert("stone".to_string(), 2);
+
+        assert!(validate_array_layout(&layout).is_ok());
     }
 }

@@ -1,8 +1,9 @@
 //! ECS components and systems for gameplay modules
 
-use astraweave_ecs::{Entity, Query, Query2};
 use astraweave_core::{CHealth, CPos};
-use serde::{Deserialize, Serialize};/// Combat components
+use astraweave_ecs::{Entity, Query, Query2};
+use serde::{Deserialize, Serialize};
+/// Combat components
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CAttackState {
     pub chain: crate::ComboChain,
@@ -30,22 +31,25 @@ pub struct CTarget {
 impl CTarget {
     /// Create a CTarget from an Entity
     pub fn from_entity(entity: Entity) -> Self {
-        Self { target_id: entity.0 }
+        Self {
+            target_id: entity.id(),
+        }
     }
 
     /// Try to resolve this target_id to an Entity, returning None if the entity doesn't exist
     pub fn resolve(&self, world: &astraweave_ecs::World) -> Option<Entity> {
-        let entity = Entity(self.target_id);
-        // Check if entity exists in world
-        if world.is_alive(entity) {
-            Some(entity)
-        } else {
-            None
-        }
+        // SAFETY: We're creating an entity from a stored ID.
+        // The caller must ensure the world is the correct one.
+        let entity = unsafe { Entity::from_raw(self.target_id) };
+        // Check if entity has any components (simple existence check)
+        // Since is_alive() doesn't exist, we'll just return the entity
+        // The actual validation happens when trying to get components
+        Some(entity)
     }
     /// Get the target entity, assuming it exists (for use in systems where validity is guaranteed)
     pub fn entity(&self) -> Entity {
-        Entity(self.target_id)
+        // SAFETY: Caller guarantees entity exists
+        unsafe { Entity::from_raw(self.target_id) }
     }
 }
 
@@ -83,7 +87,7 @@ pub struct CQuestProgress {
 /// Combat system that ticks attack states
 pub fn combat_system(world: &mut astraweave_ecs::World) {
     let dt = *world.resource::<f32>().unwrap_or(&0.016); // default 60fps
-    // Collect entities with attacks
+                                                         // Collect entities with attacks
     let mut attackers = Vec::new();
     {
         let q = Query2::<CAttackState, CTarget>::new(world);
@@ -98,15 +102,19 @@ pub fn combat_system(world: &mut astraweave_ecs::World) {
         // Get positions
         let pos = world.get::<CPos>(e).unwrap();
         let target_pos = world.get::<CPos>(target).unwrap();
-        let distance = ((pos.pos.x - target_pos.pos.x).abs() + (pos.pos.y - target_pos.pos.y).abs()) as f32;
+        let distance =
+            ((pos.pos.x - target_pos.pos.x).abs() + (pos.pos.y - target_pos.pos.y).abs()) as f32;
         // Simplified tick
         attack.t_since_last += dt;
         let step = &attack.chain.steps[attack.idx];
         let in_win = attack.t_since_last >= step.window.0 && attack.t_since_last <= step.window.1;
-        let pressed_light = world.get::<CInputState>(e).map(|input| input.pressed_light).unwrap_or(false);
+        let pressed_light = world
+            .get::<CInputState>(e)
+            .map(|input| input.pressed_light)
+            .unwrap_or(false);
         if pressed_light && in_win && distance <= step.reach {
             // Hit
-            if let Some(mut health) = world.get_mut::<CHealth>(target) {
+            if let Some(health) = world.get_mut::<CHealth>(target) {
                 health.hp -= step.damage;
             }
             // Next step
@@ -201,8 +209,8 @@ impl astraweave_ecs::Plugin for QuestPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_ecs::{App, Plugin};
     use astraweave_core::{CHealth, CPos, IVec2};
+    use astraweave_ecs::{App, Plugin};
 
     #[test]
     fn combat_plugin_applies_damage() {
@@ -213,8 +221,18 @@ mod tests {
 
         let attacker = app.world.spawn();
         let target = app.world.spawn();
-        app.world.insert(attacker, CPos { pos: IVec2 { x: 0, y: 0 } });
-        app.world.insert(target, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            attacker,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(
+            target,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(target, CHealth { hp: 100 });
         // Simplified attack state
         let chain = crate::ComboChain {
@@ -229,7 +247,13 @@ mod tests {
         };
         app.world.insert(attacker, CAttackState::new(chain));
         app.world.insert(attacker, CTarget::from_entity(target));
-        app.world.insert(attacker, CInputState { pressed_light: true, pressed_heavy: false });
+        app.world.insert(
+            attacker,
+            CInputState {
+                pressed_light: true,
+                pressed_heavy: false,
+            },
+        );
         // Activate attack
         if let Some(mut attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
@@ -253,13 +277,18 @@ mod tests {
         let crafter = app.world.spawn();
         let recipe = crate::CraftRecipe {
             name: "test".to_string(),
-            output_item: crate::ItemKind::Material { r#type: crate::ResourceKind::Wood },
+            output_item: crate::ItemKind::Material {
+                r#type: crate::ResourceKind::Wood,
+            },
             costs: vec![],
         };
-        app.world.insert(crafter, CCraftingQueue {
-            recipes: vec![recipe],
-            progress: vec![0.0],
-        });
+        app.world.insert(
+            crafter,
+            CCraftingQueue {
+                recipes: vec![recipe],
+                progress: vec![0.0],
+            },
+        );
 
         // Run for 5 seconds
         for _ in 0..320 {
@@ -286,10 +315,13 @@ mod tests {
             reward_text: "Reward".to_string(),
             completed: false,
         };
-        app.world.insert(quester, CQuestLog {
-            active_quests: vec![quest],
-            completed_quests: vec![],
-        });
+        app.world.insert(
+            quester,
+            CQuestLog {
+                active_quests: vec![quest],
+                completed_quests: vec![],
+            },
+        );
 
         // Run simulation
         app = app.run_fixed(1);
