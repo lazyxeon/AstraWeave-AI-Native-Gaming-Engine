@@ -12,12 +12,16 @@ fn test_manifest_is_deterministic() {
     }
     let data = fs::read_to_string(manifest_path).unwrap();
     let v: Value = serde_json::from_str(&data).unwrap();
-    // Check manifest is an array and has required fields
-    assert!(v.is_array());
-    if let Some(first) = v.as_array().and_then(|arr| arr.first()) {
-        assert!(first.get("src").is_some());
-        assert!(first.get("out").is_some());
-        assert!(first.get("sha256").is_some());
-        assert!(first.get("kind").is_some());
+    // Check manifest has entries array
+    assert!(v.get("entries").is_some());
+    if let Some(entries) = v.get("entries").and_then(|e| e.as_array()) {
+        if let Some(first) = entries.first() {
+            assert!(first.get("src").is_some());
+            assert!(first.get("out").is_some());
+            assert!(first.get("sha256").is_some());
+            assert!(first.get("kind").is_some());
+            assert!(first.get("guid").is_some());
+            assert!(first.get("dependencies").is_some());
+        }
     }
 }

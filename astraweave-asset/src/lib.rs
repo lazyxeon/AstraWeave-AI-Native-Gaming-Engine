@@ -1,6 +1,17 @@
 use anyhow::Result;
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use tokio::sync::watch;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use walkdir;
+use notify;
+use notify::Watcher;
+use toml;
+use hex;
+use std::io;
 
 #[cfg(feature = "gltf")]
 pub mod gltf_loader {
@@ -685,5 +696,282 @@ mod tests {
         let id = c.insert("assets/tex.png", 7);
         assert_eq!(c.get(&id), Some(&7));
         assert_eq!(c.len(), 1);
+    }
+}
+
+// ---- Phase 3: Asset Database with Dependency Graph, GUIDs, Hot-Reload ----
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssetMetadata {
+    pub guid: String,
+    pub path: String,
+    pub kind: AssetKind,
+    pub hash: String,
+    pub dependencies: Vec<String>, // GUIDs of dependencies
+    pub last_modified: u64,
+    pub size_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum AssetKind {
+    Mesh,
+    Texture,
+    Audio,
+    Dialogue,
+    Material,
+    Animation,
+    Other,
+}
+
+#[derive(Debug)]
+pub struct AssetDatabase {
+    pub assets: HashMap<String, AssetMetadata>, // GUID -> metadata
+    pub path_to_guid: HashMap<PathBuf, String>,
+    pub dependency_graph: HashMap<String, HashSet<String>>, // GUID -> set of dependent GUIDs
+    pub reverse_deps: HashMap<String, HashSet<String>>, // GUID -> set of GUIDs it depends on
+    pub hot_reload_tx: watch::Sender<()>,
+    pub hot_reload_rx: watch::Receiver<()>,
+}
+
+impl AssetDatabase {
+    pub fn new() -> Self {
+        let (tx, rx) = watch::channel(());
+        Self {
+            assets: HashMap::new(),
+            path_to_guid: HashMap::new(),
+            dependency_graph: HashMap::new(),
+            reverse_deps: HashMap::new(),
+            hot_reload_tx: tx,
+            hot_reload_rx: rx,
+        }
+    }
+
+    pub fn register_asset(&mut self, path: &Path, kind: AssetKind, dependencies: Vec<String>) -> Result<String> {
+        let guid = if let Some(existing) = self.path_to_guid.get(path) {
+            existing.clone()
+        } else {
+            guid_for_path(&path.to_string_lossy())
+        };
+
+        let metadata = fs::metadata(path)?;
+        let hash = compute_file_hash(path)?;
+        let size = metadata.len();
+
+        let meta = AssetMetadata {
+            guid: guid.clone(),
+            path: path.to_string_lossy().to_string(),
+            kind,
+            hash,
+            dependencies: dependencies.clone(),
+            last_modified: metadata.modified()?.duration_since(std::time::UNIX_EPOCH)?.as_secs(),
+            size_bytes: size,
+        };
+
+        self.assets.insert(guid.clone(), meta);
+        self.path_to_guid.insert(path.to_path_buf(), guid.clone());
+
+        // Update dependency graph
+        for dep_guid in &dependencies {
+            self.reverse_deps.entry(guid.clone()).or_insert(HashSet::new()).insert(dep_guid.clone());
+            self.dependency_graph.entry(dep_guid.clone()).or_insert(HashSet::new()).insert(guid.clone());
+        }
+
+        Ok(guid)
+    }
+
+    pub fn get_asset(&self, guid: &str) -> Option<&AssetMetadata> {
+        self.assets.get(guid)
+    }
+
+    pub fn get_guid_by_path(&self, path: &Path) -> Option<&String> {
+        self.path_to_guid.get(path)
+    }
+
+    pub fn get_dependents(&self, guid: &str) -> Option<&HashSet<String>> {
+        self.dependency_graph.get(guid)
+    }
+
+    pub fn get_dependencies(&self, guid: &str) -> Option<&HashSet<String>> {
+        self.reverse_deps.get(guid)
+    }
+
+    pub fn invalidate_asset(&mut self, guid: &str) -> Result<()> {
+        let dependents: Vec<String> = self.dependency_graph.get(guid).cloned().unwrap_or_default().into_iter().collect();
+        for dep in dependents {
+            // Mark dependents as needing reload
+            if let Some(meta) = self.assets.get_mut(&dep) {
+                meta.hash = "invalidated".to_string();
+            }
+        }
+        self.hot_reload_tx.send(()).ok();
+        Ok(())
+    }
+
+    pub fn scan_directory(&mut self, root: &Path) -> Result<()> {
+        for entry in walkdir::WalkDir::new(root) {
+            let entry = entry?;
+            if entry.file_type().is_file() {
+                let path = entry.path();
+                let kind = infer_asset_kind(path);
+                let dependencies = infer_dependencies(path, kind.clone())?;
+                self.register_asset(path, kind, dependencies)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn save_manifest(&self, path: &Path) -> Result<()> {
+        let manifest: Vec<&AssetMetadata> = self.assets.values().collect();
+        let json = serde_json::to_string_pretty(&manifest)?;
+        fs::write(path, json)?;
+        Ok(())
+    }
+
+    pub fn load_manifest(&mut self, path: &Path) -> Result<()> {
+        let json = fs::read_to_string(path)?;
+        let manifest: Vec<AssetMetadata> = serde_json::from_str(&json)?;
+        for meta in manifest {
+            let guid = meta.guid.clone();
+            let path_buf = PathBuf::from(&meta.path);
+            self.assets.insert(guid.clone(), meta);
+            self.path_to_guid.insert(path_buf, guid);
+        }
+        // Rebuild dependency graphs
+        for (guid, meta) in &self.assets {
+            for dep in &meta.dependencies {
+                self.reverse_deps.entry(guid.clone()).or_insert(HashSet::new()).insert(dep.clone());
+                self.dependency_graph.entry(dep.clone()).or_insert(HashSet::new()).insert(guid.clone());
+            }
+        }
+        Ok(())
+    }
+}
+
+fn infer_asset_kind(path: &Path) -> AssetKind {
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("gltf") | Some("glb") | Some("obj") => AssetKind::Mesh,
+        Some("png") | Some("jpg") | Some("jpeg") | Some("ktx2") | Some("dds") => AssetKind::Texture,
+        Some("wav") | Some("ogg") | Some("mp3") => AssetKind::Audio,
+        Some("dialogue") | Some("dialogue.toml") => AssetKind::Dialogue,
+        Some("material") | Some("material.toml") => AssetKind::Material,
+        Some("anim") | Some("animation") => AssetKind::Animation,
+        _ => AssetKind::Other,
+    }
+}
+
+fn infer_dependencies(path: &Path, kind: AssetKind) -> Result<Vec<String>> {
+    match kind {
+        AssetKind::Mesh => {
+            // For glTF, parse and extract texture/material dependencies
+            if path.extension().and_then(|e| e.to_str()) == Some("gltf") {
+                let content = fs::read_to_string(path)?;
+                let mut deps = Vec::new();
+                // Simple regex-like search for URIs
+                for line in content.lines() {
+                    if line.contains("\"uri\":") {
+                        if let Some(start) = line.find('"') {
+                            if let Some(end) = line[start+1..].find('"') {
+                                let uri = &line[start+1..start+1+end];
+                                if !uri.starts_with("data:") {
+                                    // Assume relative path, compute GUID
+                                    let dep_path = path.parent().unwrap_or(Path::new(".")).join(uri);
+                                    deps.push(guid_for_path(&dep_path.to_string_lossy()));
+                                }
+                            }
+                        }
+                    }
+                }
+                Ok(deps)
+            } else {
+                Ok(Vec::new())
+            }
+        }
+        AssetKind::Material => {
+            // Parse TOML for texture references
+            let content = fs::read_to_string(path)?;
+            let doc: toml::Value = toml::from_str(&content)?;
+            let mut deps = Vec::new();
+            if let Some(textures) = doc.get("textures") {
+                if let Some(table) = textures.as_table() {
+                    for (_name, value) in table {
+                        if let Some(path_str) = value.as_str() {
+                            let dep_path = path.parent().unwrap_or(Path::new(".")).join(path_str);
+                            deps.push(guid_for_path(&dep_path.to_string_lossy()));
+                        }
+                    }
+                }
+            }
+            Ok(deps)
+        }
+        _ => Ok(Vec::new()),
+    }
+}
+
+fn compute_file_hash(path: &Path) -> Result<String> {
+    let mut file = fs::File::open(path)?;
+    let mut hasher = Sha256::new();
+    std::io::copy(&mut file, &mut hasher)?;
+    Ok(hex::encode(hasher.finalize()))
+}
+
+// Hot-reload watcher
+pub struct AssetWatcher {
+    db: Arc<Mutex<AssetDatabase>>,
+    watcher: notify::RecommendedWatcher,
+}
+
+impl AssetWatcher {
+    pub fn new(db: Arc<Mutex<AssetDatabase>>) -> Result<Self> {
+        let db_clone = db.clone();
+        let watcher = notify::recommended_watcher(move |res: Result<notify::Event, notify::Error>| {
+            match res {
+                Ok(event) => {
+                    if matches!(event.kind, notify::EventKind::Modify(_) | notify::EventKind::Create(_) | notify::EventKind::Remove(_)) {
+                        for path in &event.paths {
+                            if let Ok(mut db) = db_clone.lock() {
+                                if let Some(guid) = db.get_guid_by_path(path).cloned() {
+                                    db.invalidate_asset(&guid).ok();
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(e) => eprintln!("Watch error: {:?}", e),
+            }
+        })?;
+
+        Ok(Self { db, watcher })
+    }
+
+    pub fn watch_directory(&mut self, path: &Path) -> Result<()> {
+        self.watcher.watch(path, notify::RecursiveMode::Recursive)?;
+        Ok(())
+    }
+}
+
+// Import pipelines
+pub mod import_pipelines {
+    use super::*;
+    use image::ImageFormat;
+
+    pub fn import_texture(source: &Path, output: &Path) -> Result<()> {
+        let img = image::open(source)?;
+        let rgba = img.to_rgba8();
+        rgba.save_with_format(output, ImageFormat::Png)?;
+        Ok(())
+    }
+
+    pub fn import_audio(source: &Path, output: &Path) -> Result<()> {
+        // For now, just copy; in full impl, use audio processing
+        fs::copy(source, output)?;
+        Ok(())
+    }
+
+    pub fn import_dialogue(source: &Path, output: &Path) -> Result<()> {
+        // Validate TOML structure
+        let content = fs::read_to_string(source)?;
+        let _: toml::Value = toml::from_str(&content)?;
+        fs::copy(source, output)?;
+        Ok(())
     }
 }
