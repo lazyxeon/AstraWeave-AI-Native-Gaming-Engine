@@ -1,6 +1,6 @@
 //! ECS AI planning plugin: registers a minimal planning system into the ai_planning stage.
 use astraweave_core::{ActionStep, CAmmo, CCooldowns, CDesiredPos, CPos, CTeam, CompanionState, EnemyState, IVec2, PlayerState, World, WorldSnapshot, PerceptionConfig, build_snapshot};
-use astraweave_core::ecs_events::{Events, AiPlannedEvent};
+use astraweave_core::ecs_events::{Events, AiPlannedEvent, AiPlanningFailedEvent};
 use astraweave_core::ecs_bridge::EntityBridge;
 use astraweave_ecs as ecs;
 
@@ -58,6 +58,7 @@ fn sys_ai_planning(world: &mut ecs::World) {
     let orch = RuleOrchestrator;
     let mut updates: Vec<(ecs::Entity, CDesiredPos)> = vec![];
     let mut planned_events: Vec<AiPlannedEvent> = vec![];
+    let mut failed_events: Vec<AiPlanningFailedEvent> = vec![];
 
     // Try legacy world path
     if let Some(w) = world.resource::<World>() {
@@ -82,6 +83,14 @@ fn sys_ai_planning(world: &mut ecs::World) {
                         updates.push((mapped, CDesiredPos { pos: IVec2 { x, y } }));
                     planned_events.push(AiPlannedEvent { entity: mapped, target: IVec2 { x, y } });
                 }
+            } else {
+                // No valid move found
+                if let Some(mapped) = map_legacy_companion_to_ecs(&positions, &teams, &snap, comp, world) {
+                    failed_events.push(AiPlanningFailedEvent {
+                        entity: mapped,
+                        reason: "No valid actions in plan".to_string(),
+                    });
+                }
             }
             // Early return after legacy-based planning for now (single companion minimal)
             if !updates.is_empty() {
@@ -89,6 +98,10 @@ fn sys_ai_planning(world: &mut ecs::World) {
                 if let Some(ev) = world.resource_mut::<Events<AiPlannedEvent>>() {
                     let mut w = ev.writer();
                     for pe in planned_events { w.send(pe); }
+                }
+                if let Some(ev) = world.resource_mut::<Events<AiPlanningFailedEvent>>() {
+                    let mut w = ev.writer();
+                    for fe in failed_events { w.send(fe); }
                 }
                 return;
             }
@@ -119,6 +132,11 @@ fn sys_ai_planning(world: &mut ecs::World) {
         }) {
             updates.push((*e, CDesiredPos { pos: IVec2 { x, y } }));
             planned_events.push(AiPlannedEvent { entity: *e, target: IVec2 { x, y } });
+        } else {
+            failed_events.push(AiPlanningFailedEvent {
+                entity: *e,
+                reason: "No valid move action found".to_string(),
+            });
         }
     }
     for (e, d) in updates { world.insert(e, d); }
@@ -126,10 +144,15 @@ fn sys_ai_planning(world: &mut ecs::World) {
         let mut w = ev.writer();
         for pe in planned_events { w.send(pe); }
     }
+    if let Some(ev) = world.resource_mut::<Events<AiPlanningFailedEvent>>() {
+        let mut w = ev.writer();
+        for fe in failed_events { w.send(fe); }
+    }
 }
 
 impl ecs::Plugin for AiPlanningPlugin {
     fn build(&self, app: &mut ecs::App) {
+        app.world.insert_resource(Events::<AiPlanningFailedEvent>::default());
         app.schedule.add_system("ai_planning", sys_ai_planning as ecs::SystemFn);
     }
 }

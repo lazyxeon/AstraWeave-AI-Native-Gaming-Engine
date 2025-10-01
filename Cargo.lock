@@ -2699,6 +2699,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ecs_ai_demo"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ai",
+ "astraweave-core",
+ "astraweave-ecs",
+]
+
+[[package]]
 name = "ed25519"
 version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

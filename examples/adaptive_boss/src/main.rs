@@ -30,6 +30,7 @@ fn main() -> anyhow::Result<()> {
             last_seen: w.t,
         }],
         pois: vec![],
+        obstacles: vec![],
         objective: Some("defeat_boss".into()),
     };
 

@@ -200,6 +200,77 @@ impl App {
     pub fn add_plugin(mut self, p: impl Plugin) -> Self { p.build(&mut self); self }
 }
 
+// Filtered query: yields entities that have T and pass a filter function
+pub struct FilteredQuery<'w, T: Component, F: Fn(&T) -> bool> {
+    query: Query<'w, T>,
+    filter: F,
+}
+
+impl<'w, T: Component, F: Fn(&T) -> bool> FilteredQuery<'w, T, F> {
+    pub fn new(world: &'w World, filter: F) -> Self {
+        Self { query: Query::new(world), filter }
+    }
+}
+
+impl<'w, T: Component, F: Fn(&T) -> bool> Iterator for FilteredQuery<'w, T, F> {
+    type Item = (Entity, &'w T);
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some((e, t)) = self.query.next() {
+            if (self.filter)(t) {
+                return Some((e, t));
+            }
+        }
+        None
+    }
+}
+
+// Convenience macro for common queries
+#[macro_export]
+macro_rules! query {
+    ($world:expr, $comp:ty) => {
+        $crate::Query::<$comp>::new($world)
+    };
+    ($world:expr, $comp:ty, where $filter:expr) => {
+        $crate::FilteredQuery::<$comp, _>::new($world, $filter)
+    };
+}
+
+#[macro_export]
+macro_rules! query2 {
+    ($world:expr, $a:ty, $b:ty) => {
+        $crate::Query2::<$a, $b>::new($world)
+    };
+}
+
+// Convenience methods on World
+impl World {
+    /// Get all entities with a specific component
+    pub fn entities_with<T: Component>(&self) -> Vec<Entity> {
+        self.comps.get(&TypeId::of::<T>())
+            .map(|m| m.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Check if entity has component
+    pub fn has<T: Component>(&self, e: Entity) -> bool {
+        self.get::<T>(e).is_some()
+    }
+
+    /// Remove component from entity (Phase 1: basic implementation)
+    pub fn remove<T: Component>(&mut self, e: Entity) -> bool {
+        self.comps.get_mut(&TypeId::of::<T>())
+            .and_then(|m| m.remove(&e))
+            .is_some()
+    }
+
+    /// Count entities with component
+    pub fn count<T: Component>(&self) -> usize {
+        self.comps.get(&TypeId::of::<T>())
+            .map(|m| m.len())
+            .unwrap_or(0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -241,5 +312,44 @@ mod tests {
         assert_eq!(seen.len(), 1);
         assert_eq!(seen[0].1, 1);
         assert_eq!(seen[0].2, 2);
+    }
+
+    #[test]
+    fn filtered_query_works() {
+        #[derive(Clone, Copy)] struct Health(i32);
+        let mut world = World::new();
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        world.insert(e1, Health(100));
+        world.insert(e2, Health(50));
+        
+        let mut healthy = Vec::new();
+        let fq = FilteredQuery::new(&world, |h: &Health| h.0 > 75);
+        for (e, h) in fq { healthy.push((e, h.0)); }
+        assert_eq!(healthy.len(), 1);
+        assert_eq!(healthy[0].1, 100);
+    }
+
+    #[test]
+    fn world_convenience_methods() {
+        #[derive(Clone, Copy)] struct TestComp(u32);
+        let mut world = World::new();
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        world.insert(e1, TestComp(42));
+        world.insert(e2, TestComp(24));
+        
+        assert_eq!(world.count::<TestComp>(), 2);
+        assert!(world.has::<TestComp>(e1));
+        assert!(!world.has::<TestComp>(Entity(999)));
+        
+        let entities = world.entities_with::<TestComp>();
+        assert_eq!(entities.len(), 2);
+        assert!(entities.contains(&e1));
+        assert!(entities.contains(&e2));
+        
+        assert!(world.remove::<TestComp>(e1));
+        assert_eq!(world.count::<TestComp>(), 1);
+        assert!(!world.has::<TestComp>(e1));
     }
 }
