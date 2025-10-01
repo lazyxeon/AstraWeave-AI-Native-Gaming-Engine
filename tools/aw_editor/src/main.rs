@@ -316,6 +316,21 @@ impl EditorApp {
                         }
                     });
                 }
+                BehaviorNode::Decorator(_, ref mut child) => {
+                    ui.collapsing("Decorator", |ui| {
+                        show_node(ui, child);
+                    });
+                }
+                BehaviorNode::Parallel(ref mut children, _) => {
+                    ui.collapsing("Parallel", |ui| {
+                        for child in children.iter_mut() {
+                            show_node(ui, child);
+                        }
+                        if ui.button("Add Action").clicked() {
+                            children.push(BehaviorNode::Action("new action".into()));
+                        }
+                    });
+                }
             }
         }
 
@@ -802,6 +817,10 @@ impl eframe::App for EditorApp {
 }
 
 fn main() -> Result<()> {
+    // Initialize observability
+    astraweave_observability::init_observability(Default::default())
+        .expect("Failed to initialize observability");
+
     // Create content directory if it doesn't exist
     let content_dir = PathBuf::from("content");
     let _ = fs::create_dir_all(&content_dir);

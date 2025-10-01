@@ -1,0 +1,17 @@
+[package]
+name = "{{project_name}}"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+astraweave-ecs.workspace = true
+# Add other dependencies as needed
+
+[dev-dependencies]
+tempfile.workspace = true

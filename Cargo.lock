@@ -647,6 +647,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-observability"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ecs",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "astraweave-persistence-ecs"
 version = "0.1.0"
 dependencies = [
@@ -1302,6 +1317,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "aw_demo_builder"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "serde",
+ "serde_json",
+ "walkdir",
+]
+
+[[package]]
 name = "aw_editor"
 version = "0.1.0"
 dependencies = [
@@ -1312,6 +1338,7 @@ dependencies = [
  "astraweave-core",
  "astraweave-dialogue",
  "astraweave-nav",
+ "astraweave-observability",
  "astraweave-quests",
  "eframe",
  "egui 0.32.3",
@@ -1343,6 +1370,18 @@ dependencies = [
  "serde_json",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "aw_release"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "semver",
+ "serde",
+ "serde_json",
+ "toml",
 ]
 
 [[package]]
@@ -7763,6 +7802,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing-serde"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "704b1aeb7be0d0a84fc9828cae51dab5970fee5088f83d1dd7ee6f6246fc6ff1"
+dependencies = [
+ "serde",
+ "tracing-core",
+]
+
+[[package]]
 name = "tracing-subscriber"
 version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7772,12 +7821,15 @@ dependencies = [
  "nu-ansi-term",
  "once_cell",
  "regex-automata",
+ "serde",
+ "serde_json",
  "sharded-slab",
  "smallvec",
  "thread_local",
  "tracing",
  "tracing-core",
  "tracing-log",
+ "tracing-serde",
 ]
 
 [[package]]
