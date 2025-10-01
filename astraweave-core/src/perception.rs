@@ -64,6 +64,7 @@ pub fn build_snapshot(
             k: "breach_door".into(),
             pos: IVec2 { x: 15, y: 8 },
         }],
+        obstacles: w.obstacles.iter().map(|&(x, y)| IVec2 { x, y }).collect(),
         objective,
     }
 }

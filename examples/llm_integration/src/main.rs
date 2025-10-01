@@ -61,15 +61,16 @@ async fn main() -> anyhow::Result<()> {
 
 async fn test_mock_client(snap: &WorldSnapshot, reg: &ToolRegistry) -> anyhow::Result<()> {
     let client = MockLlm;
-    match plan_from_llm(&client, snap, reg).await {
-        Ok(plan) => {
-            println!("✓ MockLlm generated plan:");
-            println!("{}", serde_json::to_string_pretty(&plan)?);
+    let plan_source = plan_from_llm(&client, snap, reg).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { plan: p, reason } => {
+            println!("MockLlm fell back: {}", reason);
+            p
         }
-        Err(e) => {
-            println!("✗ MockLlm failed: {}", e);
-        }
-    }
+    };
+    println!("✓ MockLlm generated plan:");
+    println!("{}", serde_json::to_string_pretty(&plan)?);
     Ok(())
 }
 
@@ -166,16 +167,16 @@ async fn test_ollama_client(
                 }
                 Err(_) => {
                     // Fall back to the full plan_from_llm which includes extraction/recovery steps
-                    match astraweave_llm::plan_from_llm(&client, snap, reg).await {
-                        Ok(plan) => {
-                            println!("✓ Ollama generated plan (via plan_from_llm):");
-                            println!("{}", serde_json::to_string_pretty(&plan)?);
+                    let plan_source = astraweave_llm::plan_from_llm(&client, snap, reg).await;
+                    let plan = match plan_source {
+                        PlanSource::Llm(p) => p,
+                        PlanSource::Fallback { plan: p, reason } => {
+                            println!("Ollama fell back: {}", reason);
+                            p
                         }
-                        Err(e) => {
-                            println!("✗ Ollama failed parsing into PlanIntent: {}", e);
-                            println!("  Make sure Ollama is running and the model is available");
-                        }
-                    }
+                    };
+                    println!("✓ Ollama generated plan (via plan_from_llm):");
+                    println!("{}", serde_json::to_string_pretty(&plan)?);
                 }
             }
         }
@@ -200,18 +201,16 @@ async fn test_local_http_client(
     };
 
     println!("Connecting to local LLM at: {}", url);
-    match plan_from_llm(&client, snap, reg).await {
-        Ok(plan) => {
-            println!("✓ Local HTTP client generated plan:");
-            println!("{}", serde_json::to_string_pretty(&plan)?);
+    let plan_source = plan_from_llm(&client, snap, reg).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { plan: p, reason } => {
+            println!("Local HTTP client fell back: {}", reason);
+            p
         }
-        Err(e) => {
-            println!("✗ Local HTTP client failed: {}", e);
-            println!(
-                "  Make sure your local LLM service is running and compatible with OpenAI API"
-            );
-        }
-    }
+    };
+    println!("✓ Local HTTP client generated plan:");
+    println!("{}", serde_json::to_string_pretty(&plan)?);
     Ok(())
 }
 

@@ -382,8 +382,11 @@ dependencies = [
  "astraweave-core",
  "astraweave-ecs",
  "astraweave-llm",
+ "astraweave-nav",
  "async-trait",
  "futures",
+ "glam",
+ "rapier3d",
  "serde",
  "serde_json",
  "tokio",
@@ -441,6 +444,7 @@ name = "astraweave-behavior"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "astraweave-ecs",
  "serde",
  "serde_json",
 ]
@@ -461,6 +465,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-ecs",
+ "astraweave-memory",
  "criterion",
  "glam",
  "rand 0.9.2",
@@ -504,6 +509,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-core",
+ "astraweave-ecs",
+ "astraweave-input",
  "astraweave-nav",
  "astraweave-physics",
  "glam",
@@ -574,9 +581,11 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "hex",
+ "semver",
  "serde",
  "serde_json",
  "sha2",
+ "tempfile",
 ]
 
 [[package]]

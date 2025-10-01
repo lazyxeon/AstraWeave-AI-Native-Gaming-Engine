@@ -8,8 +8,11 @@ edition = "2021"
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-astraweave-core = { path = "../astraweave-core" }
-astraweave-ecs = { path = "../astraweave-ecs" }
+astraweave-core = { workspace = true }
+astraweave-ecs = { workspace = true }
+astraweave-nav = { workspace = true }
+rapier3d = { workspace = true }
+glam = { workspace = true }
 async-trait = "0.1"
 tokio = { workspace = true, optional = true }
 
@@ -19,7 +22,7 @@ default = []
 llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio"]
 
 [dependencies.astraweave-llm]
-path = "../astraweave-llm"
+workspace = true
 optional = true
 
 [dev-dependencies]

@@ -1,6 +1,6 @@
 // Unit test for Tool Sandbox error taxonomy and validation
 use astraweave_ai::tool_sandbox::*;
-use astraweave_core::WorldSnapshot;
+use astraweave_core::{WorldSnapshot, IVec2};
 
 #[test]
 fn test_tool_error_taxonomy() {
@@ -11,15 +11,17 @@ fn test_tool_error_taxonomy() {
 #[test]
 fn test_validate_tool_action_stub() {
     let world = WorldSnapshot::default();
-    let result = validate_tool_action(1, ToolVerb::MoveTo, &world);
+    let context = ValidationContext::new();
+    let result = validate_tool_action(1, ToolVerb::MoveTo, &world, &context, Some(IVec2 { x: 1, y: 0 }));
     assert!(result.is_ok());
 }
 
 #[test]
 fn test_throw_respects_cooldown() {
     let mut world = WorldSnapshot::default();
-    world.me.cooldowns.insert(crate::cooldowns::CooldownKey::from("throw:smoke"), 3.0);
-    let res = validate_tool_action(1, ToolVerb::Throw, &world);
+    world.me.cooldowns.insert("throw".to_string(), 3.0);
+    let context = ValidationContext::new();
+    let res = validate_tool_action(1, ToolVerb::Throw, &world, &context, Some(IVec2 { x: 1, y: 0 }));
     assert!(res.is_err());
     let e = res.unwrap_err();
     assert!(format!("{}", e).contains("cooldown"));
@@ -29,7 +31,8 @@ fn test_throw_respects_cooldown() {
 fn test_cover_fire_requires_ammo() {
     let mut world = WorldSnapshot::default();
     world.me.ammo = 0;
-    let res = validate_tool_action(1, ToolVerb::CoverFire, &world);
+    let context = ValidationContext::new();
+    let res = validate_tool_action(1, ToolVerb::CoverFire, &world, &context, Some(IVec2 { x: 1, y: 0 }));
     assert!(res.is_err());
     let e = res.unwrap_err();
     assert!(format!("{}", e).contains("ammo"));

@@ -48,7 +48,7 @@ fn sys_ai_planning(world: &mut ecs::World) {
     let mut teams: std::collections::BTreeMap<ecs::Entity, u8> = std::collections::BTreeMap::new();
     {
         let q = ecs::Query::<CPos>::new(world);
-        for (e, p) in q { positions.insert(e, IVec2 { x: p.x, y: p.y }); }
+        for (e, p) in q { positions.insert(e, IVec2 { x: p.pos.x, y: p.pos.y }); }
     }
     {
         let q = ecs::Query::<CTeam>::new(world);
@@ -110,8 +110,9 @@ fn sys_ai_planning(world: &mut ecs::World) {
         if teams.get(e).copied() != Some(1) { continue; }
         let ammo = world.get::<CAmmo>(*e).map(|a| a.rounds).unwrap_or(0);
         let cds_map = world.get::<CCooldowns>(*e).map(|c| c.map.clone()).unwrap_or_default();
-        let me = CompanionState { ammo, cooldowns: cds_map, morale: 1.0, pos: *pos };
-        let snap = WorldSnapshot { t: 0.0, player: player.clone(), me, enemies: enemies.clone(), pois: vec![], objective: None };
+        let cooldowns: std::collections::BTreeMap<String, f32> = cds_map.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+        let me = CompanionState { ammo, cooldowns, morale: 1.0, pos: *pos };
+        let snap = WorldSnapshot { t: 0.0, player: player.clone(), me, enemies: enemies.clone(), pois: vec![], obstacles: vec![], objective: None };
         let plan = orch.propose_plan(&snap);
         if let Some(ActionStep::MoveTo { x, y }) = plan.steps.iter().find_map(|s| {
             if let ActionStep::MoveTo { x, y } = s { Some(ActionStep::MoveTo { x: *x, y: *y }) } else { None }
@@ -166,7 +167,7 @@ mod tests {
         app = app.run_fixed(1);
     let d = app.world.get::<CDesiredPos>(ally).ok_or_else(|| anyhow!("desired pos set"))?;
         // Expect to move towards enemy along +x axis
-        assert!(d.x >= 1 && d.y == 0);
+        assert!(d.pos.x >= 1 && d.pos.y == 0);
 
         // Event should be published
     let evs = app.world.resource_mut::<Events<AiPlannedEvent>>().ok_or_else(|| anyhow!("Events<AiPlannedEvent> resource missing"))?;

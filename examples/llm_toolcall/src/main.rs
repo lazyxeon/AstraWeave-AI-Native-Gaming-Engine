@@ -1,5 +1,16 @@
 use astraweave_core::*;
-use astraweave_llm::{plan_from_llm, MockLlm};
+use astraweave_llm::{plan_from_llm, MockLlm, PlanSource};
+
+fn tool_spec(name: &str, args: &[(&str, &str)]) -> ToolSpec {
+    ToolSpec {
+        name: name.into(),
+        args: args
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect(),
+    }
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Tiny snapshot
@@ -25,31 +36,14 @@ async fn main() -> anyhow::Result<()> {
             last_seen: 1.0,
         }],
         pois: vec![],
+        obstacles: vec![],
         objective: Some("extract".into()),
     };
     let reg = ToolRegistry {
         tools: vec![
-            ToolSpec {
-                name: "move_to".into(),
-                args: [("x", "i32"), ("y", "i32")]
-                    .into_iter()
-                    .map(|(k, v)| (k.into(), v.into()))
-                    .collect(),
-            },
-            ToolSpec {
-                name: "throw".into(),
-                args: [("item", "enum[smoke,grenade]"), ("x", "i32"), ("y", "i32")]
-                    .into_iter()
-                    .map(|(k, v)| (k.into(), v.into()))
-                    .collect(),
-            },
-            ToolSpec {
-                name: "cover_fire".into(),
-                args: [("target_id", "u32"), ("duration", "f32")]
-                    .into_iter()
-                    .map(|(k, v)| (k.into(), v.into()))
-                    .collect(),
-            },
+            tool_spec("move_to", &[("x", "i32"), ("y", "i32")]),
+            tool_spec("throw", &[("item", "enum[smoke,grenade]"), ("x", "i32"), ("y", "i32")]),
+            tool_spec("cover_fire", &[("target_id", "u32"), ("duration", "f32")]),
         ],
         constraints: Constraints {
             enforce_cooldowns: true,
@@ -58,7 +52,14 @@ async fn main() -> anyhow::Result<()> {
         },
     };
     let client = MockLlm;
-    let plan = plan_from_llm(&client, &snap, &reg).await?;
+    let plan_source = plan_from_llm(&client, &snap, &reg).await;
+    let plan = match plan_source {
+        PlanSource::Llm(p) => p,
+        PlanSource::Fallback { plan: p, reason } => {
+            eprintln!("Fell back to heuristic: {}", reason);
+            p
+        }
+    };
     println!("{}", serde_json::to_string_pretty(&plan)?);
     Ok(())
 }

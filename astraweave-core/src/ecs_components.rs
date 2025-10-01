@@ -40,6 +40,15 @@ pub mod cooldowns {
 		}
 	}
 
+	impl std::fmt::Display for CooldownKey {
+		fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+			match self {
+				CooldownKey::ThrowSmoke => write!(f, "throw:smoke"),
+				CooldownKey::Custom(s) => write!(f, "{}", s),
+			}
+		}
+	}
+
 	pub type Map = BTreeMap<CooldownKey, f32>;
 }
 
@@ -51,9 +60,28 @@ pub struct CCooldowns { pub map: CooldownMap }
 #[derive(Clone, Copy, Debug, Default)]
 pub struct CDesiredPos { pub pos: IVec2 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct CAiAgent;
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 /// Component storing the legacy World entity id for round-trip mapping.
 pub struct CLegacyId { pub id: crate::Entity }
+
+#[derive(Clone, Debug)]
+pub struct CPersona {
+    pub profile: astraweave_memory::CompanionProfile,
+}
+
+impl Default for CPersona {
+    fn default() -> Self {
+        Self {
+            profile: astraweave_memory::CompanionProfile::new_default(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct CMemory {
+    pub facts: Vec<astraweave_memory::Fact>,
+    pub episodes: Vec<astraweave_memory::Episode>,
+}

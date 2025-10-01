@@ -7,9 +7,10 @@ fn fixture_world(smoke_cd: f32, enemy_pos: (i32, i32)) -> WorldSnapshot {
     WorldSnapshot {
         t: 1.0,
         player: PlayerState { hp: 90, pos: IVec2 { x: 0, y: 0 }, stance: "stand".into(), orders: vec![] },
-    me: CompanionState { ammo: 12, cooldowns: BTreeMap::from([(crate::cooldowns::CooldownKey::from("throw:smoke"), smoke_cd)]), morale: 0.8, pos: IVec2 { x: 0, y: 0 } },
+    me: CompanionState { ammo: 12, cooldowns: BTreeMap::from([("throw:smoke".to_string(), smoke_cd)]), morale: 0.8, pos: IVec2 { x: 0, y: 0 } },
         enemies: vec![EnemyState { id: 2, pos: IVec2 { x: enemy_pos.0, y: enemy_pos.1 }, hp: 50, cover: "none".into(), last_seen: 0.0 }],
         pois: vec![],
+        obstacles: vec![],
         objective: None,
     }
 }
