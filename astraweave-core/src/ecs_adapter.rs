@@ -207,4 +207,66 @@ mod tests {
         assert_eq!(collected[0].from, IVec2 { x: 0, y: 0 });
         assert_eq!(collected[0].to, IVec2 { x: 1, y: 0 });
     }
+
+    #[test]
+    fn parity_ecs_vs_legacy_movement_and_cooldowns() {
+        // Create identical legacy and ECS worlds, run for 10 ticks, compare final state
+        let mut legacy_world = World::new();
+        let legacy_entity = legacy_world.spawn("test", IVec2 { x: 0, y: 0 }, crate::Team { id: 1 }, 100, 10);
+        // Set desired position by directly modifying pose (legacy doesn't have desired pos concept)
+        if let Some(pose) = legacy_world.pose_mut(legacy_entity) {
+            pose.pos = IVec2 { x: 5, y: 3 }; // Move to target position
+        }
+        // Set cooldown
+        if let Some(cds) = legacy_world.cooldowns_mut(legacy_entity) {
+            cds.map.insert("test_cd".to_string(), 1.0);
+        }
+
+        // Create ECS world with same initial state
+        let ecs_world = World::new();
+        let mut ecs_app = build_app(ecs_world, 0.016);
+        // Create ECS entity and set up bridge
+        let ecs_entity = ecs_app.world.spawn();
+        if let Some(bridge) = ecs_app.world.resource_mut::<EntityBridge>() {
+            bridge.insert_pair(legacy_entity, ecs_entity);
+        }
+        // Set initial position in ECS
+        ecs_app.world.insert(ecs_entity, CPos { pos: IVec2 { x: 0, y: 0 } });
+        // Set desired position in ECS
+        ecs_app.world.insert(ecs_entity, CDesiredPos { pos: IVec2 { x: 5, y: 3 } });
+        // Set cooldown in ECS
+        ecs_app.world.insert(ecs_entity, CCooldowns { map: std::collections::BTreeMap::from([(crate::cooldowns::CooldownKey::from("test_cd"), 1.0)]) });
+        // Set health in ECS
+        ecs_app.world.insert(ecs_entity, CHealth { hp: 100 });
+
+        // Run 10 ticks
+        for _ in 0..10 {
+            legacy_world.tick(0.016);
+            // For legacy, manually move toward desired position (simplified movement)
+            if let Some(pose) = legacy_world.pose_mut(legacy_entity) {
+                let current = pose.pos;
+                let target = IVec2 { x: 5, y: 3 };
+                let dx = (target.x - current.x).signum();
+                let dy = (target.y - current.y).signum();
+                pose.pos.x += dx;
+                pose.pos.y += dy;
+            }
+        }
+        ecs_app = ecs_app.run_fixed(10);
+
+        // Compare positions
+        let legacy_pos = legacy_world.pos_of(legacy_entity).unwrap();
+        let ecs_pos = ecs_app.world.get::<CPos>(ecs_entity).unwrap().pos;
+        assert_eq!(legacy_pos, ecs_pos, "Positions should match after 10 ticks");
+
+        // Compare cooldowns
+        let legacy_cd = legacy_world.cooldowns(legacy_entity).unwrap().map.get("test_cd").copied().unwrap_or(0.0);
+        let ecs_cd = ecs_app.world.get::<CCooldowns>(ecs_entity).unwrap().map.get(&crate::cooldowns::CooldownKey::from("test_cd")).copied().unwrap_or(0.0);
+        assert!((legacy_cd - ecs_cd).abs() < 1e-6, "Cooldowns should match: legacy={:.3}, ecs={:.3}", legacy_cd, ecs_cd);
+
+        // Compare health (should be unchanged)
+        let legacy_hp = legacy_world.health(legacy_entity).unwrap().hp;
+        let ecs_hp = ecs_app.world.get::<CHealth>(ecs_entity).unwrap().hp;
+        assert_eq!(legacy_hp, ecs_hp, "Health should match");
+    }
 }

@@ -83,7 +83,7 @@ members = [
   "astraweave-persistence-ecs",
   "astraweave-stress-test",
   "astraweave-security",
-  "astraweave-observability",
+  "astraweave-observability", "examples/ecs_ai_demo",
 ]
 resolver = "2"
 

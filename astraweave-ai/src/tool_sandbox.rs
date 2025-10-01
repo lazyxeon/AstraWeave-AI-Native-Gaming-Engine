@@ -155,11 +155,10 @@ pub fn validate_tool_action(
                             }
                         }
 
-                        if let Some(collider_aabb) = collider.compute_aabb() {
-                            if query_aabb.intersects(&collider_aabb) {
-                                intersecting = true;
-                                break;
-                            }
+                        let collider_aabb = collider.compute_aabb();
+                        if query_aabb.intersects(&collider_aabb) {
+                            intersecting = true;
+                            break;
                         }
                     }
 
@@ -213,7 +212,7 @@ fn has_line_of_sight(from: IVec2, to: IVec2, world: &WorldSnapshot) -> bool {
     let mut y = from.y;
 
     while x != to.x || y != to.y {
-        if world.obstacles.iter().any(|&(ox, oy)| ox == x && oy == y) {
+        if world.obstacles.iter().any(|obs| obs.x == x && obs.y == y) {
             return false;
         }
         let e2 = 2 * err;
@@ -232,9 +231,8 @@ fn has_line_of_sight(from: IVec2, to: IVec2, world: &WorldSnapshot) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{WorldSnapshot, PlayerState, CompanionState, EnemyState, Poi};
+    use astraweave_core::{WorldSnapshot, PlayerState, CompanionState};
 
-    #[test]
     #[test]
     fn error_taxonomy_works() {
         assert_eq!(ToolError::OutOfBounds.to_string(), "OutOfBounds");
@@ -245,7 +243,10 @@ mod tests {
         assert_eq!(ToolError::InvalidTarget.to_string(), "InvalidTarget");
         assert_eq!(ToolError::PhysicsBlocked.to_string(), "PhysicsBlocked");
         assert_eq!(ToolError::Unknown.to_string(), "Unknown");
-    }    fn validate_move_to_no_path() {
+    }
+
+    #[test]
+    fn validate_move_to_no_path() {
         let world = WorldSnapshot {
             t: 0.0,
             player: PlayerState { hp: 100, pos: IVec2 { x: 0, y: 0 }, stance: "standing".into(), orders: vec![] },
@@ -253,7 +254,7 @@ mod tests {
             enemies: vec![],
             pois: vec![],
             objective: None,
-            obstacles: vec![(1, 0)], // obstacle at (1,0)
+            obstacles: vec![IVec2 { x: 1, y: 0 }], // obstacle at (1,0)
         };
         let nav = NavMesh { tris: vec![], max_step: 0.4, max_slope_deg: 60.0 }; // empty nav, no path
         let context = ValidationContext::new().with_nav(&nav);

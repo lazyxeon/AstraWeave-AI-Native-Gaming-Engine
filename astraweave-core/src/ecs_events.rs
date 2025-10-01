@@ -40,3 +40,23 @@ pub struct AiPlannedEvent {
     pub entity: ecs::Entity,
     pub target: IVec2,
 }
+
+#[derive(Clone, Debug)]
+pub struct AiPlanningFailedEvent {
+    pub entity: ecs::Entity,
+    pub reason: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct ToolValidationFailedEvent {
+    pub entity: ecs::Entity,
+    pub tool_verb: String,
+    pub reason: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct HealthChangedEvent {
+    pub entity: ecs::Entity,
+    pub old_hp: i32,
+    pub new_hp: i32,
+}
