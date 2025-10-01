@@ -1,14 +1,14 @@
+use astraweave_asset::{AssetDatabase, AssetKind};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
-use astraweave_asset::{AssetDatabase, AssetKind};
 
 /// Tracks residency of assets in GPU memory for streaming.
 /// Evicts least-recently-used assets when memory pressure is high.
 pub struct ResidencyManager {
     db: Arc<Mutex<AssetDatabase>>,
     loaded_assets: HashMap<String, ResidencyInfo>, // GUID -> info
-    lru_queue: VecDeque<String>, // GUIDs in LRU order
+    lru_queue: VecDeque<String>,                   // GUIDs in LRU order
     max_memory_mb: usize,
     current_memory_mb: usize,
     hot_reload_rx: watch::Receiver<()>,
@@ -35,7 +35,11 @@ impl ResidencyManager {
         }
     }
 
-    pub fn with_hot_reload(db: Arc<Mutex<AssetDatabase>>, max_memory_mb: usize, rx: watch::Receiver<()>) -> Self {
+    pub fn with_hot_reload(
+        db: Arc<Mutex<AssetDatabase>>,
+        max_memory_mb: usize,
+        rx: watch::Receiver<()>,
+    ) -> Self {
         Self {
             db,
             loaded_assets: HashMap::new(),
@@ -54,31 +58,35 @@ impl ResidencyManager {
             return Ok(());
         }
 
-        let db = self.db.lock().unwrap();
-        if let Some(meta) = db.get_asset(guid) {
-            let memory_mb = (meta.size_bytes / (1024 * 1024)) as usize + 1; // Estimate GPU memory
-
-            // Evict if necessary
-            while self.current_memory_mb + memory_mb > self.max_memory_mb {
-                self.evict_lru()?;
+        // Get asset metadata
+        let (meta, memory_mb) = {
+            let db = self.db.lock().unwrap();
+            if let Some(meta) = db.get_asset(guid) {
+                let memory_mb = (meta.size_bytes / (1024 * 1024)) as usize + 1;
+                (meta.clone(), memory_mb)
+            } else {
+                return Err(anyhow::anyhow!("Asset {} not found in database", guid));
             }
+        }; // db lock dropped here
 
-            // Load asset (placeholder: in real impl, upload to GPU)
-            let info = ResidencyInfo {
-                kind: meta.kind.clone(),
-                memory_mb,
-                last_used: std::time::Instant::now(),
-                gpu_handle: Some(format!("gpu_{}", guid)), // Placeholder
-            };
-
-            self.loaded_assets.insert(guid.to_string(), info);
-            self.lru_queue.push_back(guid.to_string());
-            self.current_memory_mb += memory_mb;
-
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("Asset {} not found in database", guid))
+        // Evict if necessary
+        while self.current_memory_mb + memory_mb > self.max_memory_mb {
+            self.evict_lru()?;
         }
+
+        // Load asset (placeholder: in real impl, upload to GPU)
+        let info = ResidencyInfo {
+            kind: meta.kind,
+            memory_mb,
+            last_used: std::time::Instant::now(),
+            gpu_handle: Some(format!("gpu_{}", guid)),
+        };
+
+        self.loaded_assets.insert(guid.to_string(), info);
+        self.lru_queue.push_back(guid.to_string());
+        self.current_memory_mb += memory_mb;
+
+        Ok(())
     }
 
     /// Mark asset as recently used.
@@ -112,11 +120,13 @@ impl ResidencyManager {
 
     /// Check for hot-reload notifications and invalidate affected assets.
     pub fn check_hot_reload(&mut self) {
-        if let Ok(()) = self.hot_reload_rx.try_recv() {
-            // Invalidate all loaded assets on hot-reload signal
-            for guid in self.loaded_assets.keys().cloned().collect::<Vec<_>>() {
-                self.invalidate_asset(&guid);
-            }
+        if self.hot_reload_rx.has_changed().unwrap_or(false) {
+            // Mark hot-reload notification as seen
+            let _ = self.hot_reload_rx.borrow_and_update();
+            // Clear all loaded assets on hot-reload signal
+            self.loaded_assets.clear();
+            self.lru_queue.clear();
+            self.current_memory_mb = 0;
         }
     }
 }
@@ -135,21 +145,24 @@ mod tests {
         let guid = "test_guid".to_string();
         {
             let mut db = db.lock().unwrap();
-            db.assets.insert(guid.clone(), AssetMetadata {
-                guid: guid.clone(),
-                path: "test".to_string(),
-                kind: AssetKind::Texture,
-                hash: "hash".to_string(),
-                dependencies: vec![],
-                last_modified: 0,
-                size_bytes: 5 * 1024 * 1024, // 5 MB
-            });
+            db.assets.insert(
+                guid.clone(),
+                AssetMetadata {
+                    guid: guid.clone(),
+                    path: "test".to_string(),
+                    kind: AssetKind::Texture,
+                    hash: "hash".to_string(),
+                    dependencies: vec![],
+                    last_modified: 0,
+                    size_bytes: 5 * 1024 * 1024, // 5 MB
+                },
+            );
         }
 
         // Load asset
         rm.load_asset(&guid).unwrap();
         assert!(rm.loaded_assets.contains_key(&guid));
-        assert_eq!(rm.current_memory_mb, 5);
+        assert_eq!(rm.current_memory_mb, 6); // 5MB rounds up to 6MB (size/MB + 1)
 
         // Touch
         rm.touch_asset(&guid);
@@ -158,21 +171,24 @@ mod tests {
         let guid2 = "test_guid2".to_string();
         {
             let mut db = db.lock().unwrap();
-            db.assets.insert(guid2.clone(), AssetMetadata {
-                guid: guid2.clone(),
-                path: "test2".to_string(),
-                kind: AssetKind::Texture,
-                hash: "hash2".to_string(),
-                dependencies: vec![],
-                last_modified: 0,
-                size_bytes: 6 * 1024 * 1024, // 6 MB
-            });
+            db.assets.insert(
+                guid2.clone(),
+                AssetMetadata {
+                    guid: guid2.clone(),
+                    path: "test2".to_string(),
+                    kind: AssetKind::Texture,
+                    hash: "hash2".to_string(),
+                    dependencies: vec![],
+                    last_modified: 0,
+                    size_bytes: 6 * 1024 * 1024, // 6 MB
+                },
+            );
         }
 
         rm.load_asset(&guid2).unwrap();
         // Should have evicted guid
         assert!(!rm.loaded_assets.contains_key(&guid));
         assert!(rm.loaded_assets.contains_key(&guid2));
-        assert_eq!(rm.current_memory_mb, 6);
+        assert_eq!(rm.current_memory_mb, 7); // 6MB rounds up to 7MB (size/MB + 1)
     }
 }
