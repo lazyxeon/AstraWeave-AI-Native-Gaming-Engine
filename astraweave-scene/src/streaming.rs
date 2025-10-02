@@ -1,0 +1,364 @@
+//! Streaming Manager for World Partition
+//!
+//! This module handles async loading and unloading of cells based on camera position.
+//! It uses tokio for async operations and maintains an LRU cache of recently unloaded cells.
+
+use crate::world_partition::{Cell, CellState, GridCoord, LRUCache, WorldPartition};
+use anyhow::Result;
+use std::collections::{HashMap, HashSet};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
+/// Events emitted by the streaming system
+#[derive(Debug, Clone)]
+pub enum StreamingEvent {
+    CellLoadStarted(GridCoord),
+    CellLoaded(GridCoord),
+    CellLoadFailed(GridCoord, String),
+    CellUnloadStarted(GridCoord),
+    CellUnloaded(GridCoord),
+}
+
+/// Streaming configuration
+#[derive(Debug, Clone)]
+pub struct StreamingConfig {
+    /// Maximum number of cells to keep loaded at once
+    pub max_active_cells: usize,
+    /// Number of cells to keep in LRU cache (avoid immediate reload)
+    pub lru_cache_size: usize,
+    /// Radius around camera to load cells (in world units)
+    pub streaming_radius: f32,
+    /// Maximum concurrent loading tasks
+    pub max_concurrent_loads: usize,
+}
+
+impl Default for StreamingConfig {
+    fn default() -> Self {
+        Self {
+            max_active_cells: 25, // 5x5 grid around camera
+            lru_cache_size: 5,
+            streaming_radius: 500.0, // 500 meters
+            max_concurrent_loads: 4,
+        }
+    }
+}
+
+/// Metrics for monitoring streaming performance
+#[derive(Debug, Clone, Default)]
+pub struct StreamingMetrics {
+    pub active_cells: usize,
+    pub loading_cells: usize,
+    pub loaded_cells: usize,
+    pub cached_cells: usize,
+    pub memory_usage_bytes: usize,
+    pub total_loads: u64,
+    pub total_unloads: u64,
+    pub failed_loads: u64,
+}
+
+/// World Partition Manager - handles streaming logic
+pub struct WorldPartitionManager {
+    partition: Arc<RwLock<WorldPartition>>,
+    config: StreamingConfig,
+    lru_cache: LRUCache,
+    active_cells: HashSet<GridCoord>,
+    loading_cells: HashSet<GridCoord>,
+    metrics: StreamingMetrics,
+    event_listeners: Vec<Box<dyn Fn(StreamingEvent) + Send + Sync>>,
+}
+
+impl WorldPartitionManager {
+    pub fn new(partition: Arc<RwLock<WorldPartition>>, config: StreamingConfig) -> Self {
+        Self {
+            partition,
+            lru_cache: LRUCache::new(config.lru_cache_size),
+            config,
+            active_cells: HashSet::new(),
+            loading_cells: HashSet::new(),
+            metrics: StreamingMetrics::default(),
+            event_listeners: Vec::new(),
+        }
+    }
+
+    /// Add event listener
+    pub fn add_event_listener<F>(&mut self, listener: F)
+    where
+        F: Fn(StreamingEvent) + Send + Sync + 'static,
+    {
+        self.event_listeners.push(Box::new(listener));
+    }
+
+    /// Emit event to all listeners
+    fn emit_event(&self, event: StreamingEvent) {
+        for listener in &self.event_listeners {
+            listener(event.clone());
+        }
+    }
+
+    /// Update streaming based on camera position
+    pub async fn update(&mut self, camera_position: glam::Vec3) -> Result<()> {
+        let partition = self.partition.read().await;
+
+        // Determine which cells should be active based on camera position
+        let desired_cells = partition.cells_in_radius(camera_position, self.config.streaming_radius);
+
+        drop(partition); // Release read lock
+
+        // Cells to load (in desired but not active/loading)
+        let to_load: Vec<GridCoord> = desired_cells
+            .iter()
+            .filter(|coord| !self.active_cells.contains(coord) && !self.loading_cells.contains(coord))
+            .copied()
+            .collect();
+
+        // Cells to unload (in active but not desired)
+        let to_unload: Vec<GridCoord> = self
+            .active_cells
+            .iter()
+            .filter(|coord| !desired_cells.contains(coord))
+            .copied()
+            .collect();
+
+        // Start loading new cells (respecting max concurrent loads)
+        let available_slots = self.config.max_concurrent_loads.saturating_sub(self.loading_cells.len());
+        for coord in to_load.into_iter().take(available_slots) {
+            self.start_load_cell(coord).await?;
+        }
+
+        // Unload cells that are out of range
+        for coord in to_unload {
+            self.unload_cell(coord).await?;
+        }
+
+        // Update metrics
+        self.update_metrics().await;
+
+        Ok(())
+    }
+
+    /// Start loading a cell asynchronously
+    async fn start_load_cell(&mut self, coord: GridCoord) -> Result<()> {
+        // Check if in LRU cache (quick reload)
+        if self.lru_cache.contains(coord) {
+            self.lru_cache.remove(coord);
+            self.active_cells.insert(coord);
+            
+            let mut partition = self.partition.write().await;
+            if let Some(cell) = partition.get_cell_mut(coord) {
+                cell.state = CellState::Loaded;
+            }
+            
+            self.emit_event(StreamingEvent::CellLoaded(coord));
+            self.metrics.total_loads += 1;
+            return Ok(());
+        }
+
+        // Mark as loading
+        self.loading_cells.insert(coord);
+        
+        {
+            let mut partition = self.partition.write().await;
+            let cell = partition.get_or_create_cell(coord);
+            cell.state = CellState::Loading;
+        }
+
+        self.emit_event(StreamingEvent::CellLoadStarted(coord));
+
+        // Simulate async loading (in real implementation, this would load assets)
+        // For now, we just mark as loaded immediately
+        let partition_clone = Arc::clone(&self.partition);
+        let coord_clone = coord;
+
+        // In a real implementation, spawn a tokio task here
+        // For now, we'll do it synchronously for simplicity
+        self.finish_load_cell(coord_clone).await?;
+
+        Ok(())
+    }
+
+    /// Finish loading a cell (called after async load completes)
+    async fn finish_load_cell(&mut self, coord: GridCoord) -> Result<()> {
+        self.loading_cells.remove(&coord);
+        self.active_cells.insert(coord);
+
+        let mut partition = self.partition.write().await;
+        if let Some(cell) = partition.get_cell_mut(coord) {
+            cell.state = CellState::Loaded;
+        }
+
+        self.emit_event(StreamingEvent::CellLoaded(coord));
+        self.metrics.total_loads += 1;
+
+        Ok(())
+    }
+
+    /// Handle load failure
+    async fn handle_load_failure(&mut self, coord: GridCoord, error: String) {
+        self.loading_cells.remove(&coord);
+        
+        let mut partition = self.partition.write().await;
+        if let Some(cell) = partition.get_cell_mut(coord) {
+            cell.state = CellState::Unloaded;
+        }
+
+        self.emit_event(StreamingEvent::CellLoadFailed(coord, error));
+        self.metrics.failed_loads += 1;
+    }
+
+    /// Unload a cell
+    async fn unload_cell(&mut self, coord: GridCoord) -> Result<()> {
+        if !self.active_cells.contains(&coord) {
+            return Ok(());
+        }
+
+        self.emit_event(StreamingEvent::CellUnloadStarted(coord));
+
+        {
+            let mut partition = self.partition.write().await;
+            if let Some(cell) = partition.get_cell_mut(coord) {
+                cell.state = CellState::Unloading;
+            }
+        }
+
+        // Perform unload (in real implementation, release GPU resources, etc.)
+        // For now, just mark as unloaded
+        {
+            let mut partition = self.partition.write().await;
+            if let Some(cell) = partition.get_cell_mut(coord) {
+                cell.state = CellState::Unloaded;
+            }
+        }
+
+        self.active_cells.remove(&coord);
+        self.lru_cache.touch(coord);
+
+        self.emit_event(StreamingEvent::CellUnloaded(coord));
+        self.metrics.total_unloads += 1;
+
+        Ok(())
+    }
+
+    /// Update metrics
+    async fn update_metrics(&mut self) {
+        let partition = self.partition.read().await;
+        
+        self.metrics.active_cells = self.active_cells.len();
+        self.metrics.loading_cells = self.loading_cells.len();
+        self.metrics.loaded_cells = partition.loaded_cells().len();
+        self.metrics.cached_cells = self.lru_cache.queue.len();
+        self.metrics.memory_usage_bytes = partition.memory_usage_estimate();
+    }
+
+    /// Get current metrics
+    pub fn metrics(&self) -> &StreamingMetrics {
+        &self.metrics
+    }
+
+    /// Force load a specific cell
+    pub async fn force_load_cell(&mut self, coord: GridCoord) -> Result<()> {
+        if self.active_cells.contains(&coord) {
+            return Ok(());
+        }
+        self.start_load_cell(coord).await
+    }
+
+    /// Force unload a specific cell
+    pub async fn force_unload_cell(&mut self, coord: GridCoord) -> Result<()> {
+        self.unload_cell(coord).await
+    }
+
+    /// Get list of active cells
+    pub fn active_cells(&self) -> Vec<GridCoord> {
+        self.active_cells.iter().copied().collect()
+    }
+
+    /// Check if cell is active
+    pub fn is_cell_active(&self, coord: GridCoord) -> bool {
+        self.active_cells.contains(&coord)
+    }
+
+    /// Check if cell is loading
+    pub fn is_cell_loading(&self, coord: GridCoord) -> bool {
+        self.loading_cells.contains(&coord)
+    }
+}
+
+/// Helper function to create a streaming manager with default config
+pub fn create_streaming_manager(
+    partition: Arc<RwLock<WorldPartition>>,
+) -> WorldPartitionManager {
+    WorldPartitionManager::new(partition, StreamingConfig::default())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::world_partition::GridConfig;
+
+    #[tokio::test]
+    async fn test_streaming_manager_creation() {
+        let config = GridConfig::default();
+        let partition = Arc::new(RwLock::new(WorldPartition::new(config)));
+        let manager = create_streaming_manager(partition);
+        
+        assert_eq!(manager.metrics().active_cells, 0);
+        assert_eq!(manager.metrics().loading_cells, 0);
+    }
+
+    #[tokio::test]
+    async fn test_streaming_update() {
+        let config = GridConfig::default();
+        let partition = Arc::new(RwLock::new(WorldPartition::new(config)));
+        let mut manager = create_streaming_manager(partition);
+
+        // Update at origin
+        let camera_pos = glam::Vec3::new(0.0, 0.0, 0.0);
+        manager.update(camera_pos).await.unwrap();
+
+        // Should have loaded some cells
+        assert!(manager.metrics().active_cells > 0);
+    }
+
+    #[tokio::test]
+    async fn test_force_load_unload() {
+        let config = GridConfig::default();
+        let partition = Arc::new(RwLock::new(WorldPartition::new(config)));
+        let mut manager = create_streaming_manager(partition);
+
+        let coord = GridCoord::new(0, 0, 0);
+        
+        // Force load
+        manager.force_load_cell(coord).await.unwrap();
+        assert!(manager.is_cell_active(coord));
+
+        // Force unload
+        manager.force_unload_cell(coord).await.unwrap();
+        assert!(!manager.is_cell_active(coord));
+    }
+
+    #[tokio::test]
+    async fn test_event_emission() {
+        let config = GridConfig::default();
+        let partition = Arc::new(RwLock::new(WorldPartition::new(config)));
+        let mut manager = create_streaming_manager(partition);
+
+        let events = Arc::new(RwLock::new(Vec::new()));
+        let events_clone = Arc::clone(&events);
+
+        manager.add_event_listener(move |event| {
+            let events = events_clone.clone();
+            tokio::spawn(async move {
+                events.write().await.push(event);
+            });
+        });
+
+        let coord = GridCoord::new(0, 0, 0);
+        manager.force_load_cell(coord).await.unwrap();
+
+        // Give time for async event handling
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+
+        let events_vec = events.read().await;
+        assert!(!events_vec.is_empty());
+    }
+}

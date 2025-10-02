@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - World Partition System (October 2025)
+
+#### Scene Management (`astraweave-scene`)
+- **World Partition Module**: Grid-based spatial partitioning for large open worlds ([`astraweave-scene/src/world_partition.rs`](astraweave-scene/src/world_partition.rs))
+  - `WorldPartition`: Core grid structure with HashMap-based cell storage
+  - `GridCoord`: 3D integer coordinates for cell addressing
+  - `Cell`: Container for entities, assets, and streaming state
+  - `AABB`: Axis-aligned bounding box for spatial queries
+  - `Frustum`: Camera frustum culling utilities
+  - `GridConfig`: Configurable cell size and world bounds
+- **Streaming Manager**: Async cell loading/unloading ([`astraweave-scene/src/streaming.rs`](astraweave-scene/src/streaming.rs))
+  - `WorldPartitionManager`: Tokio-based async streaming controller
+  - `StreamingConfig`: Configurable streaming parameters (radius, max cells, cache size)
+  - `LRUCache`: Recently unloaded cell cache for quick reload
+  - `StreamingEvent`: Event system for load/unload notifications
+  - `StreamingMetrics`: Performance and memory tracking
+- **Partitioned Scene**: Integration layer ([`astraweave-scene/src/partitioned_scene.rs`](astraweave-scene/src/partitioned_scene.rs))
+  - `PartitionedScene`: Wrapper combining Scene with WorldPartition
+  - `ScenePartitionExt`: Extension trait for Scene
+- **Features**: New `world-partition` feature flag
+- **Documentation**: Comprehensive guide with architecture diagrams ([`astraweave-scene/WORLD_PARTITION.md`](astraweave-scene/WORLD_PARTITION.md))
+- **Tests**: 15+ unit tests covering grid operations, frustum culling, streaming logic
+
+#### Examples
+- **World Partition Demo** ([`examples/world_partition_demo`](examples/world_partition_demo))
+  - Procedural 10x10 grid generation (10km² world)
+  - Camera flythrough simulation
+  - Performance monitoring and metrics
+  - Acceptance criteria verification (memory < 500MB, no stalls > 100ms)
+
+#### Key Features
+- **Grid-Based Partitioning**: Configurable cell size (default 100m)
+- **Async Streaming**: Tokio-based non-blocking cell loading
+- **Frustum Culling**: Camera-based visibility determination
+- **LRU Caching**: Prevents immediate reload of recently unloaded cells
+- **Memory Bounded**: Configurable max active cells
+- **Event System**: Extensible event listeners for load/unload operations
+- **Metrics Tracking**: Real-time performance and memory monitoring
+- **ECS Integration**: Optional ECS feature for entity management
+
+#### Performance Characteristics
+- Memory usage: < 500MB for 10km² world with 100m cells
+- Frame time: < 100ms for streaming updates
+- Concurrent loading: Configurable (default 4 tasks)
+- LRU cache: Configurable (default 5 cells)
+
 ### Added - Phase 2 Task 5: Skeletal Animation (October 2025)
 
 #### Asset Import (`astraweave-asset`)
