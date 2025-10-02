@@ -8,19 +8,23 @@ pub mod chunk;
 pub mod climate;
 pub mod erosion;
 pub mod heightmap;
+pub mod meshing;
 pub mod noise_gen;
 pub mod scatter;
 pub mod structures;
+pub mod voxel_data;
 
 pub use biome::{Biome, BiomeConfig, BiomeType};
 pub use chunk::{ChunkId, ChunkManager, TerrainChunk};
 pub use climate::{ClimateConfig, ClimateMap};
 pub use heightmap::{Heightmap, HeightmapConfig};
+pub use meshing::{AsyncMeshGenerator, ChunkMesh, DualContouring, LodConfig, LodMeshGenerator, MeshVertex};
 pub use noise_gen::{NoiseConfig, TerrainNoise};
 pub use scatter::{ScatterConfig, ScatterResult, VegetationInstance, VegetationScatter};
 pub use structures::{
     StructureConfig, StructureGenerator, StructureInstance, StructureResult, StructureType,
 };
+pub use voxel_data::{ChunkCoord, Density, MaterialId, Voxel, VoxelChunk, VoxelGrid, CHUNK_SIZE};
 
 use glam::Vec3;
 use serde::{Deserialize, Serialize};

@@ -1,0 +1,14 @@
+[package]
+name = "hybrid_voxel_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-terrain = { path = "../../astraweave-terrain", features = ["hybrid-voxel"] }
+astraweave-render = { path = "../../astraweave-render" }
+astraweave-scene = { path = "../../astraweave-scene" }
+glam = "0.30"
+pollster = "0.4"
+winit = "0.30"
+wgpu = "26"
+anyhow = "1.0"
