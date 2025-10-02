@@ -13,6 +13,9 @@ use tokio::sync::watch;
 use toml;
 use walkdir;
 
+// Nanite preprocessing module
+pub mod nanite_preprocess;
+
 #[cfg(feature = "gltf")]
 pub mod gltf_loader {
     use anyhow::{anyhow, bail, Context, Result};

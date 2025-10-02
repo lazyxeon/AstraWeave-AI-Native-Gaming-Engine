@@ -31,6 +31,12 @@ pub mod residency; // asset streaming and residency management // OBJ fallback l
 #[cfg(feature = "skinning-gpu")]
 pub mod skinning_gpu; // Phase 2 Task 5 Phase D: GPU skinning pipeline
 
+// Nanite virtualized geometry system
+#[cfg(feature = "nanite")]
+pub mod nanite_visibility;
+#[cfg(feature = "nanite")]
+pub mod nanite_render;
+
 pub use camera::{Camera, CameraController};
 pub use environment::{
     SkyConfig, SkyRenderer, TimeOfDay, WeatherParticles, WeatherSystem, WeatherType,
