@@ -1,0 +1,14 @@
+[package]
+name = "nanite_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-render = { path = "../../astraweave-render", features = ["nanite", "textures"] }
+astraweave-asset = { path = "../../astraweave-asset", features = ["gltf"] }
+astraweave-terrain = { path = "../../astraweave-terrain" }
+glam = { workspace = true }
+winit = { workspace = true }
+pollster = { workspace = true }
+anyhow = { workspace = true }
+tokio = { version = "1", features = ["full"] }

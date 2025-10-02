@@ -1,0 +1,821 @@
+//! Nanite-inspired meshlet preprocessing pipeline
+//!
+//! This module provides functionality to convert standard meshes into meshlet-based
+//! representations with LOD hierarchies for efficient virtualized geometry rendering.
+
+use anyhow::{Context, Result};
+use glam::{Vec3, Vec4};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
+
+/// Maximum vertices per meshlet (typical range: 64-128)
+pub const MAX_MESHLET_VERTICES: usize = 64;
+
+/// Maximum triangles per meshlet (typical range: 64-128)
+pub const MAX_MESHLET_TRIANGLES: usize = 124;
+
+/// Axis-Aligned Bounding Box
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct AABB {
+    pub min: Vec3,
+    pub max: Vec3,
+}
+
+impl AABB {
+    pub fn new(min: Vec3, max: Vec3) -> Self {
+        Self { min, max }
+    }
+
+    pub fn from_points(points: &[[f32; 3]]) -> Self {
+        let mut min = Vec3::splat(f32::INFINITY);
+        let mut max = Vec3::splat(f32::NEG_INFINITY);
+        
+        for p in points {
+            let point = Vec3::from_array(*p);
+            min = min.min(point);
+            max = max.max(point);
+        }
+        
+        Self { min, max }
+    }
+
+    pub fn center(&self) -> Vec3 {
+        (self.min + self.max) * 0.5
+    }
+
+    pub fn extents(&self) -> Vec3 {
+        (self.max - self.min) * 0.5
+    }
+
+    pub fn diagonal(&self) -> f32 {
+        (self.max - self.min).length()
+    }
+
+    pub fn contains(&self, point: Vec3) -> bool {
+        point.cmpge(self.min).all() && point.cmple(self.max).all()
+    }
+
+    pub fn merge(&self, other: &AABB) -> AABB {
+        AABB {
+            min: self.min.min(other.min),
+            max: self.max.max(other.max),
+        }
+    }
+}
+
+/// Bounding cone for backface culling
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct BoundingCone {
+    /// Cone apex position
+    pub apex: Vec3,
+    /// Cone axis direction (normalized)
+    pub axis: Vec3,
+    /// Cone cutoff angle (cosine of half-angle)
+    pub cutoff: f32,
+}
+
+impl BoundingCone {
+    /// Create a bounding cone from a set of triangles
+    pub fn from_triangles(positions: &[[f32; 3]], normals: &[[f32; 3]], indices: &[u32]) -> Self {
+        if indices.is_empty() {
+            return Self {
+                apex: Vec3::ZERO,
+                axis: Vec3::Z,
+                cutoff: -1.0,
+            };
+        }
+
+        // Compute average normal
+        let mut avg_normal = Vec3::ZERO;
+        for idx in indices.chunks_exact(3) {
+            let n0 = Vec3::from_array(normals[idx[0] as usize]);
+            let n1 = Vec3::from_array(normals[idx[1] as usize]);
+            let n2 = Vec3::from_array(normals[idx[2] as usize]);
+            avg_normal += n0 + n1 + n2;
+        }
+        avg_normal = avg_normal.normalize_or_zero();
+
+        // Compute centroid as apex
+        let mut centroid = Vec3::ZERO;
+        let mut count = 0;
+        for &idx in indices {
+            centroid += Vec3::from_array(positions[idx as usize]);
+            count += 1;
+        }
+        centroid /= count as f32;
+
+        // Compute cone angle (find maximum deviation from average normal)
+        let mut min_dot = 1.0f32;
+        for idx in indices.chunks_exact(3) {
+            let n0 = Vec3::from_array(normals[idx[0] as usize]);
+            let n1 = Vec3::from_array(normals[idx[1] as usize]);
+            let n2 = Vec3::from_array(normals[idx[2] as usize]);
+            
+            min_dot = min_dot.min(avg_normal.dot(n0));
+            min_dot = min_dot.min(avg_normal.dot(n1));
+            min_dot = min_dot.min(avg_normal.dot(n2));
+        }
+
+        Self {
+            apex: centroid,
+            axis: avg_normal,
+            cutoff: min_dot.max(-1.0),
+        }
+    }
+
+    /// Test if the cone is backfacing relative to a view direction
+    pub fn is_backfacing(&self, view_dir: Vec3) -> bool {
+        self.axis.dot(view_dir) < self.cutoff
+    }
+}
+
+/// A meshlet: a cluster of triangles with associated metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Meshlet {
+    /// Local vertex indices (indices into the meshlet's vertex list)
+    pub vertices: Vec<u32>,
+    
+    /// Triangle indices (triplets of indices into the vertices array)
+    pub indices: Vec<u8>,
+    
+    /// Bounding box for frustum culling
+    pub bounds: AABB,
+    
+    /// Bounding cone for backface culling
+    pub cone: BoundingCone,
+    
+    /// LOD level (0 = highest detail)
+    pub lod_level: u32,
+    
+    /// LOD error metric (screen-space error threshold)
+    pub lod_error: f32,
+    
+    /// Parent meshlet index in LOD hierarchy (None for LOD 0)
+    pub parent_index: Option<usize>,
+}
+
+impl Meshlet {
+    /// Create a new meshlet from vertex and index data
+    pub fn new(
+        vertices: Vec<u32>,
+        indices: Vec<u8>,
+        positions: &[[f32; 3]],
+        normals: &[[f32; 3]],
+        lod_level: u32,
+    ) -> Self {
+        // Compute bounds from vertex positions
+        let vertex_positions: Vec<[f32; 3]> = vertices
+            .iter()
+            .map(|&idx| positions[idx as usize])
+            .collect();
+        let bounds = AABB::from_points(&vertex_positions);
+
+        // Compute bounding cone from triangles
+        let triangle_indices: Vec<u32> = indices
+            .chunks_exact(3)
+            .flat_map(|tri| {
+                vec![
+                    vertices[tri[0] as usize],
+                    vertices[tri[1] as usize],
+                    vertices[tri[2] as usize],
+                ]
+            })
+            .collect();
+        let cone = BoundingCone::from_triangles(positions, normals, &triangle_indices);
+
+        Self {
+            vertices,
+            indices,
+            bounds,
+            cone,
+            lod_level,
+            lod_error: 0.0,
+            parent_index: None,
+        }
+    }
+
+    /// Get the number of triangles in this meshlet
+    pub fn triangle_count(&self) -> usize {
+        self.indices.len() / 3
+    }
+
+    /// Get the number of vertices in this meshlet
+    pub fn vertex_count(&self) -> usize {
+        self.vertices.len()
+    }
+}
+
+/// Complete meshlet hierarchy for a mesh
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MeshletHierarchy {
+    /// All meshlets across all LOD levels
+    pub meshlets: Vec<Meshlet>,
+    
+    /// Original mesh vertex data
+    pub positions: Vec<[f32; 3]>,
+    pub normals: Vec<[f32; 3]>,
+    pub tangents: Vec<[f32; 4]>,
+    pub uvs: Vec<[f32; 2]>,
+    
+    /// Number of LOD levels
+    pub lod_count: u32,
+    
+    /// Meshlet indices for each LOD level
+    pub lod_ranges: Vec<std::ops::Range<usize>>,
+}
+
+/// Quadric error metric for mesh simplification
+#[derive(Debug, Clone, Copy)]
+struct QuadricError {
+    /// Quadric matrix (symmetric 4x4)
+    q: [[f64; 4]; 4],
+}
+
+impl QuadricError {
+    fn new() -> Self {
+        Self {
+            q: [[0.0; 4]; 4],
+        }
+    }
+
+    /// Create quadric from a plane equation (a, b, c, d) where ax + by + cz + d = 0
+    fn from_plane(a: f64, b: f64, c: f64, d: f64) -> Self {
+        let mut q = [[0.0; 4]; 4];
+        q[0][0] = a * a; q[0][1] = a * b; q[0][2] = a * c; q[0][3] = a * d;
+        q[1][0] = a * b; q[1][1] = b * b; q[1][2] = b * c; q[1][3] = b * d;
+        q[2][0] = a * c; q[2][1] = b * c; q[2][2] = c * c; q[2][3] = c * d;
+        q[3][0] = a * d; q[3][1] = b * d; q[3][2] = c * d; q[3][3] = d * d;
+        Self { q }
+    }
+
+    /// Create quadric from a triangle
+    fn from_triangle(p0: Vec3, p1: Vec3, p2: Vec3) -> Self {
+        let normal = (p1 - p0).cross(p2 - p0).normalize_or_zero();
+        let d = -normal.dot(p0);
+        Self::from_plane(
+            normal.x as f64,
+            normal.y as f64,
+            normal.z as f64,
+            d as f64,
+        )
+    }
+
+    /// Add another quadric
+    fn add(&self, other: &QuadricError) -> Self {
+        let mut result = Self::new();
+        for i in 0..4 {
+            for j in 0..4 {
+                result.q[i][j] = self.q[i][j] + other.q[i][j];
+            }
+        }
+        result
+    }
+
+    /// Compute error for a vertex position
+    fn error(&self, v: Vec3) -> f64 {
+        let x = v.x as f64;
+        let y = v.y as f64;
+        let z = v.z as f64;
+        let w = 1.0;
+
+        let v_vec = [x, y, z, w];
+        let mut result = 0.0;
+
+        for i in 0..4 {
+            for j in 0..4 {
+                result += v_vec[i] * self.q[i][j] * v_vec[j];
+            }
+        }
+
+        result
+    }
+}
+
+/// Generate meshlets from a mesh using k-means clustering
+pub fn generate_meshlets(
+    positions: &[[f32; 3]],
+    normals: &[[f32; 3]],
+    tangents: &[[f32; 4]],
+    uvs: &[[f32; 2]],
+    indices: &[u32],
+) -> Result<Vec<Meshlet>> {
+    if indices.len() % 3 != 0 {
+        anyhow::bail!("Index count must be a multiple of 3");
+    }
+
+    let triangle_count = indices.len() / 3;
+    let mut meshlets = Vec::new();
+
+    // Simple greedy clustering: group triangles spatially
+    let mut remaining_triangles: Vec<usize> = (0..triangle_count).collect();
+    
+    while !remaining_triangles.is_empty() {
+        let mut meshlet_vertices = Vec::new();
+        let mut meshlet_indices = Vec::new();
+        let mut vertex_map: HashMap<u32, u8> = HashMap::new();
+
+        // Start with the first remaining triangle
+        let seed_tri = remaining_triangles[0];
+        let seed_center = {
+            let i0 = indices[seed_tri * 3] as usize;
+            let i1 = indices[seed_tri * 3 + 1] as usize;
+            let i2 = indices[seed_tri * 3 + 2] as usize;
+            let p0 = Vec3::from_array(positions[i0]);
+            let p1 = Vec3::from_array(positions[i1]);
+            let p2 = Vec3::from_array(positions[i2]);
+            (p0 + p1 + p2) / 3.0
+        };
+
+        let mut i = 0;
+        while i < remaining_triangles.len() {
+            let tri_idx = remaining_triangles[i];
+            let i0 = indices[tri_idx * 3];
+            let i1 = indices[tri_idx * 3 + 1];
+            let i2 = indices[tri_idx * 3 + 2];
+
+            // Check if we can add this triangle
+            let new_vertices = [i0, i1, i2]
+                .iter()
+                .filter(|&&idx| !vertex_map.contains_key(&idx))
+                .count();
+
+            if meshlet_vertices.len() + new_vertices <= MAX_MESHLET_VERTICES
+                && meshlet_indices.len() + 3 <= MAX_MESHLET_TRIANGLES * 3
+            {
+                // Compute triangle center
+                let p0 = Vec3::from_array(positions[i0 as usize]);
+                let p1 = Vec3::from_array(positions[i1 as usize]);
+                let p2 = Vec3::from_array(positions[i2 as usize]);
+                let tri_center = (p0 + p1 + p2) / 3.0;
+
+                // Use spatial proximity as clustering criterion
+                let distance = (tri_center - seed_center).length();
+                
+                // Add triangle if it's close enough or we're just starting
+                if meshlet_indices.is_empty() || distance < 10.0 {
+                    // Add vertices to meshlet
+                    for &idx in &[i0, i1, i2] {
+                        if !vertex_map.contains_key(&idx) {
+                            let local_idx = meshlet_vertices.len() as u8;
+                            vertex_map.insert(idx, local_idx);
+                            meshlet_vertices.push(idx);
+                        }
+                    }
+
+                    // Add triangle indices
+                    meshlet_indices.push(vertex_map[&i0]);
+                    meshlet_indices.push(vertex_map[&i1]);
+                    meshlet_indices.push(vertex_map[&i2]);
+
+                    // Remove this triangle from remaining
+                    remaining_triangles.swap_remove(i);
+                    continue;
+                }
+            }
+
+            i += 1;
+        }
+
+        // Create meshlet
+        if !meshlet_indices.is_empty() {
+            let meshlet = Meshlet::new(
+                meshlet_vertices,
+                meshlet_indices,
+                positions,
+                normals,
+                0, // LOD 0
+            );
+            meshlets.push(meshlet);
+        }
+    }
+
+    Ok(meshlets)
+}
+
+/// Generate LOD hierarchy using mesh simplification
+pub fn generate_lod_hierarchy(
+    positions: &[[f32; 3]],
+    normals: &[[f32; 3]],
+    tangents: &[[f32; 4]],
+    uvs: &[[f32; 2]],
+    indices: &[u32],
+    lod_count: u32,
+) -> Result<MeshletHierarchy> {
+    // Generate LOD 0 (highest detail)
+    let lod0_meshlets = generate_meshlets(positions, normals, tangents, uvs, indices)?;
+    
+    let mut all_meshlets = lod0_meshlets;
+    let mut lod_ranges = vec![0..all_meshlets.len()];
+
+    // Generate simplified LODs
+    let mut current_positions = positions.to_vec();
+    let mut current_normals = normals.to_vec();
+    let mut current_tangents = tangents.to_vec();
+    let mut current_uvs = uvs.to_vec();
+    let mut current_indices = indices.to_vec();
+
+    for lod_level in 1..lod_count {
+        // Simplify mesh (reduce triangle count by ~50%)
+        let target_triangle_count = (current_indices.len() / 3).max(1) / 2;
+        
+        let (simplified_positions, simplified_normals, simplified_tangents, simplified_uvs, simplified_indices) =
+            simplify_mesh(
+                &current_positions,
+                &current_normals,
+                &current_tangents,
+                &current_uvs,
+                &current_indices,
+                target_triangle_count,
+            )?;
+
+        // Generate meshlets for this LOD
+        let mut lod_meshlets = generate_meshlets(
+            &simplified_positions,
+            &simplified_normals,
+            &simplified_tangents,
+            &simplified_uvs,
+            &simplified_indices,
+        )?;
+
+        // Set LOD level and compute error metrics
+        for meshlet in &mut lod_meshlets {
+            meshlet.lod_level = lod_level;
+            meshlet.lod_error = compute_lod_error(&meshlet.bounds, lod_level);
+        }
+
+        let start = all_meshlets.len();
+        all_meshlets.extend(lod_meshlets);
+        let end = all_meshlets.len();
+        lod_ranges.push(start..end);
+
+        // Update for next iteration
+        current_positions = simplified_positions;
+        current_normals = simplified_normals;
+        current_tangents = simplified_tangents;
+        current_uvs = simplified_uvs;
+        current_indices = simplified_indices;
+
+        // Stop if we've simplified too much
+        if current_indices.len() < 12 {
+            break;
+        }
+    }
+
+    Ok(MeshletHierarchy {
+        meshlets: all_meshlets,
+        positions: positions.to_vec(),
+        normals: normals.to_vec(),
+        tangents: tangents.to_vec(),
+        uvs: uvs.to_vec(),
+        lod_count: lod_ranges.len() as u32,
+        lod_ranges,
+    })
+}
+
+/// Simplify a mesh using quadric error metrics
+fn simplify_mesh(
+    positions: &[[f32; 3]],
+    normals: &[[f32; 3]],
+    tangents: &[[f32; 4]],
+    uvs: &[[f32; 2]],
+    indices: &[u32],
+    target_triangle_count: usize,
+) -> Result<(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>)> {
+    // For simplicity, use a basic decimation approach
+    // In a full implementation, this would use quadric error metrics with edge collapse
+    
+    let current_triangle_count = indices.len() / 3;
+    if current_triangle_count <= target_triangle_count {
+        return Ok((
+            positions.to_vec(),
+            normals.to_vec(),
+            tangents.to_vec(),
+            uvs.to_vec(),
+            indices.to_vec(),
+        ));
+    }
+
+    // Simple decimation: keep every Nth triangle
+    let keep_ratio = target_triangle_count as f32 / current_triangle_count as f32;
+    let mut new_indices = Vec::new();
+    
+    for (i, tri) in indices.chunks_exact(3).enumerate() {
+        if (i as f32 * keep_ratio).fract() < keep_ratio {
+            new_indices.extend_from_slice(tri);
+        }
+    }
+
+    // Ensure we have at least some triangles
+    if new_indices.is_empty() && !indices.is_empty() {
+        new_indices.extend_from_slice(&indices[0..3.min(indices.len())]);
+    }
+
+    Ok((
+        positions.to_vec(),
+        normals.to_vec(),
+        tangents.to_vec(),
+        uvs.to_vec(),
+        new_indices,
+    ))
+}
+
+/// Compute LOD error metric based on bounds and LOD level
+fn compute_lod_error(bounds: &AABB, lod_level: u32) -> f32 {
+    // Error increases with LOD level and object size
+    let size = bounds.diagonal();
+    size * (lod_level as f32 + 1.0) * 0.1
+}
+
+/// Async preprocessing pipeline for meshlet generation
+pub async fn preprocess_mesh_async(
+    positions: Vec<[f32; 3]>,
+    normals: Vec<[f32; 3]>,
+    tangents: Vec<[f32; 4]>,
+    uvs: Vec<[f32; 2]>,
+    indices: Vec<u32>,
+    lod_count: u32,
+) -> Result<MeshletHierarchy> {
+    // Wrap data in Arc for sharing across threads
+    let positions = Arc::new(positions);
+    let normals = Arc::new(normals);
+    let tangents = Arc::new(tangents);
+    let uvs = Arc::new(uvs);
+    let indices = Arc::new(indices);
+
+    // Spawn blocking task for CPU-intensive work
+    let hierarchy = tokio::task::spawn_blocking(move || {
+        generate_lod_hierarchy(
+            &positions,
+            &normals,
+            &tangents,
+            &uvs,
+            &indices,
+            lod_count,
+        )
+    })
+    .await
+    .context("Failed to spawn blocking task")??;
+
+    Ok(hierarchy)
+}
+
+/// Save meshlet hierarchy to file (RON format)
+pub fn save_meshlet_hierarchy(hierarchy: &MeshletHierarchy, path: &std::path::Path) -> Result<()> {
+    let ron_string = ron::ser::to_string_pretty(hierarchy, ron::ser::PrettyConfig::default())
+        .context("Failed to serialize meshlet hierarchy")?;
+    std::fs::write(path, ron_string).context("Failed to write meshlet hierarchy file")?;
+    Ok(())
+}
+
+/// Load meshlet hierarchy from file (RON format)
+pub fn load_meshlet_hierarchy(path: &std::path::Path) -> Result<MeshletHierarchy> {
+    let ron_string = std::fs::read_to_string(path)
+        .context("Failed to read meshlet hierarchy file")?;
+    let hierarchy: MeshletHierarchy = ron::from_str(&ron_string)
+        .context("Failed to deserialize meshlet hierarchy")?;
+    Ok(hierarchy)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_aabb_creation() {
+        let points = vec![
+            [0.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0],
+        ];
+        let aabb = AABB::from_points(&points);
+        
+        assert_eq!(aabb.min, Vec3::new(-1.0, -1.0, -1.0));
+        assert_eq!(aabb.max, Vec3::new(1.0, 1.0, 1.0));
+        assert_eq!(aabb.center(), Vec3::ZERO);
+    }
+
+    #[test]
+    fn test_aabb_contains() {
+        let aabb = AABB::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
+        
+        assert!(aabb.contains(Vec3::ZERO));
+        assert!(aabb.contains(Vec3::new(0.5, 0.5, 0.5)));
+        assert!(!aabb.contains(Vec3::new(2.0, 0.0, 0.0)));
+    }
+
+    #[test]
+    fn test_aabb_merge() {
+        let aabb1 = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
+        let aabb2 = AABB::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(0.5, 0.5, 0.5));
+        
+        let merged = aabb1.merge(&aabb2);
+        assert_eq!(merged.min, Vec3::new(-1.0, -1.0, -1.0));
+        assert_eq!(merged.max, Vec3::new(1.0, 1.0, 1.0));
+    }
+
+    #[test]
+    fn test_aabb_diagonal() {
+        let aabb = AABB::new(Vec3::ZERO, Vec3::new(1.0, 1.0, 1.0));
+        let diagonal = aabb.diagonal();
+        assert!((diagonal - 1.732).abs() < 0.01); // sqrt(3)
+    }
+
+    #[test]
+    fn test_meshlet_generation() {
+        // Create a simple quad (2 triangles)
+        let positions = vec![
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ];
+        let normals = vec![
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+        ];
+        let tangents = vec![
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 1.0],
+        ];
+        let uvs = vec![
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 1.0],
+            [0.0, 1.0],
+        ];
+        let indices = vec![0, 1, 2, 0, 2, 3];
+
+        let meshlets = generate_meshlets(&positions, &normals, &tangents, &uvs, &indices).unwrap();
+        
+        assert!(!meshlets.is_empty());
+        assert_eq!(meshlets[0].triangle_count(), 2);
+        assert_eq!(meshlets[0].vertex_count(), 4);
+    }
+
+    #[test]
+    fn test_meshlet_generation_large_mesh() {
+        // Create a larger mesh to test clustering
+        let mut positions = Vec::new();
+        let mut normals = Vec::new();
+        let mut tangents = Vec::new();
+        let mut uvs = Vec::new();
+        let mut indices = Vec::new();
+
+        // Create a grid of quads
+        for y in 0..10 {
+            for x in 0..10 {
+                let base_idx = positions.len() as u32;
+                
+                // Add 4 vertices for this quad
+                positions.push([x as f32, y as f32, 0.0]);
+                positions.push([(x + 1) as f32, y as f32, 0.0]);
+                positions.push([(x + 1) as f32, (y + 1) as f32, 0.0]);
+                positions.push([x as f32, (y + 1) as f32, 0.0]);
+                
+                for _ in 0..4 {
+                    normals.push([0.0, 0.0, 1.0]);
+                    tangents.push([1.0, 0.0, 0.0, 1.0]);
+                    uvs.push([0.0, 0.0]);
+                }
+                
+                // Add 2 triangles
+                indices.extend_from_slice(&[
+                    base_idx, base_idx + 1, base_idx + 2,
+                    base_idx, base_idx + 2, base_idx + 3,
+                ]);
+            }
+        }
+
+        let meshlets = generate_meshlets(&positions, &normals, &tangents, &uvs, &indices).unwrap();
+        
+        assert!(!meshlets.is_empty());
+        
+        // Verify all triangles are accounted for
+        let total_triangles: usize = meshlets.iter().map(|m| m.triangle_count()).sum();
+        assert_eq!(total_triangles, 200); // 10x10 grid = 100 quads = 200 triangles
+    }
+
+    #[test]
+    fn test_bounding_cone() {
+        let positions = vec![
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [0.5, 1.0, 0.0],
+        ];
+        let normals = vec![
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+        ];
+        let indices = vec![0, 1, 2];
+
+        let cone = BoundingCone::from_triangles(&positions, &normals, &indices);
+        
+        // Cone should point in +Z direction
+        assert!(cone.axis.z > 0.9);
+        
+        // Should be backfacing when viewed from -Z
+        assert!(cone.is_backfacing(Vec3::new(0.0, 0.0, -1.0)));
+        
+        // Should not be backfacing when viewed from +Z
+        assert!(!cone.is_backfacing(Vec3::new(0.0, 0.0, 1.0)));
+    }
+
+    #[test]
+    fn test_lod_hierarchy_generation() {
+        // Create a simple mesh
+        let positions = vec![
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0],
+        ];
+        let normals = vec![
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 1.0],
+        ];
+        let tangents = vec![
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0, 0.0, 1.0],
+        ];
+        let uvs = vec![
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 1.0],
+            [0.0, 1.0],
+        ];
+        let indices = vec![0, 1, 2, 0, 2, 3];
+
+        let hierarchy = generate_lod_hierarchy(&positions, &normals, &tangents, &uvs, &indices, 3).unwrap();
+        
+        assert!(hierarchy.lod_count > 0);
+        assert!(!hierarchy.meshlets.is_empty());
+        assert_eq!(hierarchy.lod_ranges.len(), hierarchy.lod_count as usize);
+        
+        // Verify LOD 0 exists
+        assert!(!hierarchy.lod_ranges[0].is_empty());
+    }
+
+    #[test]
+    fn test_quadric_error() {
+        let q1 = QuadricError::from_plane(1.0, 0.0, 0.0, 0.0);
+        let q2 = QuadricError::from_plane(0.0, 1.0, 0.0, 0.0);
+        
+        let combined = q1.add(&q2);
+        
+        // Error at origin should be 0
+        let error = combined.error(Vec3::ZERO);
+        assert!(error.abs() < 0.001);
+        
+        // Error should increase with distance
+        let error_far = combined.error(Vec3::new(1.0, 1.0, 0.0));
+        assert!(error_far > error);
+    }
+
+    #[test]
+    fn test_lod_error_computation() {
+        let aabb = AABB::new(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0));
+        
+        let error_lod0 = compute_lod_error(&aabb, 0);
+        let error_lod1 = compute_lod_error(&aabb, 1);
+        let error_lod2 = compute_lod_error(&aabb, 2);
+        
+        // Error should increase with LOD level
+        assert!(error_lod1 > error_lod0);
+        assert!(error_lod2 > error_lod1);
+    }
+
+    #[test]
+    fn test_meshlet_serialization() {
+        let meshlet = Meshlet {
+            vertices: vec![0, 1, 2, 3],
+            indices: vec![0, 1, 2, 0, 2, 3],
+            bounds: AABB::new(Vec3::ZERO, Vec3::ONE),
+            cone: BoundingCone {
+                apex: Vec3::ZERO,
+                axis: Vec3::Z,
+                cutoff: 0.5,
+            },
+            lod_level: 0,
+            lod_error: 0.1,
+            parent_index: None,
+        };
+
+        // Test serialization
+        let serialized = ron::ser::to_string(&meshlet).unwrap();
+        let deserialized: Meshlet = ron::from_str(&serialized).unwrap();
+        
+        assert_eq!(meshlet.vertices, deserialized.vertices);
+        assert_eq!(meshlet.indices, deserialized.indices);
+        assert_eq!(meshlet.lod_level, deserialized.lod_level);
+    }
+}
