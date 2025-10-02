@@ -3,6 +3,36 @@
 All notable changes to the AstraWeave AI-Native Gaming Engine will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+
+## [Unreleased]
+
+### Added - Hybrid Voxel/Polygon Terrain System
+
+#### Core Voxel System (astraweave-terrain)
+- Sparse Voxel Octree (SVO) implementation for efficient voxel storage
+- VoxelGrid with HashMap-based chunk management
+- Dual Contouring isosurface generation
+- Async mesh generation with tokio and rayon
+- LOD (Level of Detail) system with 4 levels
+
+#### Clustered Forward Rendering (astraweave-render)
+- Complete clustered forward+ implementation supporting 100+ lights
+- GPU resources and bindings for clustered lighting
+- WGSL shader integration
+
+#### VXGI (Voxel Global Illumination)
+- Voxel Cone Tracing implementation
+- Compute shader voxelization
+- Hybrid GI approach (VXGI + DDGI)
+
+#### Voxel Editor Tools (aw_editor)
+- Interactive brush system (sphere, cube, cylinder)
+- Undo/Redo system
+- Voxel raycasting
+
+#### Examples and Documentation
+- hybrid_voxel_demo example
+- HYBRID_VOXEL.md comprehensive documentation
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
