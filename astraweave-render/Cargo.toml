@@ -48,6 +48,8 @@ postfx = []
 # Phase 2 Task 5: Skeletal Animation
 skinning-cpu = [] # CPU skinning (default, CI-safe)
 skinning-gpu = [] # GPU skinning (optional, requires GPU for tests)
+# Nanite virtualized geometry
+nanite = []
 
 [dev-dependencies]
 naga = "26.0"
