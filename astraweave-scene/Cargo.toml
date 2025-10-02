@@ -9,6 +9,7 @@ glam = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 astraweave-ecs = { path = "../astraweave-ecs" }
+tokio = { workspace = true, features = ["sync", "rt"] }
 
 [dev-dependencies]
 astraweave-render = { path = "../astraweave-render" }
@@ -16,3 +17,4 @@ astraweave-render = { path = "../astraweave-render" }
 [features]
 default = []
 ecs = []
+world-partition = []
