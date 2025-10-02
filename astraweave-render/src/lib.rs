@@ -1,7 +1,9 @@
 pub mod camera;
 pub mod clustered;
+pub mod clustered_forward; // Complete clustered forward rendering
 pub mod depth;
 pub mod environment;
+pub mod gi; // Global Illumination (VXGI)
 pub mod ibl; // image-based lighting manager
 pub mod mesh; // cpu mesh structures + utils
 pub mod mesh_registry;
