@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["camera","clustered","depth","effects","environment","graph","graph_adapter","ibl","material","material_loader","mesh","mesh_registry","overlay","post","primitives","renderer","terrain","texture","types"]};
+window.SIDEBAR_ITEMS = {"mod":["animation","camera","clustered","culling","culling_node","depth","effects","environment","graph","graph_adapter","ibl","material","material_loader","mesh","mesh_registry","overlay","post","primitives","renderer","residency","terrain","texture","types"]};

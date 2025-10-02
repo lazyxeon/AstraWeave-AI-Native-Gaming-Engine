@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["PlannerMode"],"fn":["dispatch_planner"],"struct":["CAiController"]};

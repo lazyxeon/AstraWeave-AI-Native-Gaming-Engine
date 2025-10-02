@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ArrayLayout","MaterialGpuArrays","MaterialLayerDesc","MaterialLoadStats","MaterialManager","MaterialPackDesc"]};
+window.SIDEBAR_ITEMS = {"fn":["validate_array_layout","validate_material_pack"],"struct":["ArrayLayout","MaterialGpuArrays","MaterialLayerDesc","MaterialLoadStats","MaterialManager","MaterialPackDesc"]};

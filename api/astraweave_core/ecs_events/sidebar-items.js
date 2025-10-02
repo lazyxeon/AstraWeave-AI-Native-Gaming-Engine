@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["AiPlannedEvent","EventReader","EventWriter","Events","MovedEvent"]};
+window.SIDEBAR_ITEMS = {"struct":["AiPlannedEvent","AiPlanningFailedEvent","EventReader","EventWriter","Events","HealthChangedEvent","MovedEvent","ToolValidationFailedEvent"]};
