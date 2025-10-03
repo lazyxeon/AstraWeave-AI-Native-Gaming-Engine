@@ -213,7 +213,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initial HUD
     app.render_text_hud();
 
-    let mut frame_count = 0;
+    let mut _frame_count = 0;
     let mut hud_timer = Instant::now();
 
     event_loop.run(move |event, target| {
@@ -270,7 +270,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         _ => {}
                     }
 
-                    frame_count += 1;
+                    _frame_count += 1;
 
                     // Update HUD every 0.5s
                     if hud_timer.elapsed().as_secs_f32() > 0.5 {

@@ -10,8 +10,7 @@
 //!
 //! Deterministic: Fixed seed (42) ensures reproducible behavior
 
-use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
-use astraweave_core::{build_snapshot, IVec2, PerceptionConfig, Team, World};
+use astraweave_core::{IVec2, Team, World};
 use rand::{Rng, SeedableRng};
 use std::io::{self, Read};
 
@@ -35,6 +34,7 @@ struct DemoState {
     tick_count: u64,
     paused: bool,
     time_scale: f32,
+    #[allow(dead_code)]
     seed: u64,
 }
 
@@ -52,8 +52,8 @@ impl DemoState {
         ];
 
         // Spawn target (player dummy) at random position
-        let target_x = rng.gen_range(8..12);
-        let target_y = rng.gen_range(8..12);
+        let target_x = rng.random_range(8..12);
+        let target_y = rng.random_range(8..12);
         let target_id = world.spawn(
             "Target",
             IVec2 {
@@ -69,9 +69,9 @@ impl DemoState {
         let agent_id = world.spawn("BTAgent", patrol_waypoints[0], Team { id: 1 }, 80, 10);
 
         // Add some obstacles (deterministic)
-        for i in 0..5 {
-            let x = rng.gen_range(2..18);
-            let y = rng.gen_range(2..18);
+        for _i in 0..5 {
+            let x = rng.random_range(2..18);
+            let y = rng.random_range(2..18);
             world.obstacles.insert((x, y));
         }
 
@@ -89,6 +89,7 @@ impl DemoState {
         }
     }
 
+    #[allow(dead_code)]
     fn reset(&mut self) {
         *self = Self::new(self.seed);
     }
@@ -220,6 +221,7 @@ impl DemoState {
         println!("===============================");
     }
 
+    #[allow(dead_code)]
     fn handle_input(&mut self) -> bool {
         // Non-blocking input check
         let mut buffer = [0u8; 1];

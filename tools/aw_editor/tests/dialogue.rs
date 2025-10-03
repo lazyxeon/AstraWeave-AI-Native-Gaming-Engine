@@ -23,7 +23,7 @@ struct DialogueResponse {
 
 #[test]
 fn test_dialogue_serialization_and_reload_signal() {
-    let mut doc = DialogueDoc {
+    let doc = DialogueDoc {
         title: "Test Dialogue".into(),
         nodes: vec![DialogueNode {
             id: "start".into(),

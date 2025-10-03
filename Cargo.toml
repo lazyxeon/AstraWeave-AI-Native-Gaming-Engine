@@ -126,7 +126,7 @@ sha2 = "0.10"
 ed25519-dalek = { version = "2", features = ["rand_core"] }
 hex = "0.4"
 semver = "1.0"
-rhai = "1.23"
+rhai = { version = "1.23", features = ["sync"] }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 tungstenite = "0.28"

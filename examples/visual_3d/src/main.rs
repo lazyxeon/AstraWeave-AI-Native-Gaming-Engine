@@ -365,8 +365,8 @@ fn main() -> anyhow::Result<()> {
                     use astraweave_asset::gltf_loader as gl;
                     let path = "assets/skinned_demo.gltf"; // expected to be placed by user in assets/
                     if let Ok(bytes) = std::fs::read(path) {
-                        if let Ok((mesh, clip, mat_opt)) =
-                            gl::load_first_skinned_mesh_and_idle(&bytes)
+                        if let Ok((mesh, _skeleton, animations, mat_opt)) =
+                            gl::load_skinned_mesh_complete(&bytes)
                         {
                             // Convert to renderer format
                             let verts: Vec<SkinnedVertex> = mesh
@@ -408,9 +408,16 @@ fn main() -> anyhow::Result<()> {
                                 mats.push(glam::Mat4::IDENTITY);
                             }
                             renderer.update_skin_palette(&mats);
-                            // Store clip if present
-                            if let Some(c) = clip {
-                                skinned_gltf_clip = Some((c.times, c.rotations));
+                            // Store clip if present - extract first rotation channel from first animation
+                            if let Some(clip) = animations.first() {
+                                // Find first rotation channel
+                                if let Some(channel) = clip.channels.iter().find(|ch| {
+                                    matches!(ch.data, gl::ChannelData::Rotation(_))
+                                }) {
+                                    if let gl::ChannelData::Rotation(ref rotations) = channel.data {
+                                        skinned_gltf_clip = Some((channel.times.clone(), rotations.clone()));
+                                    }
+                                }
                             }
                             skinned_gltf_loaded = true;
                         } else {

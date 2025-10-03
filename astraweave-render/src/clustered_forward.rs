@@ -4,7 +4,7 @@
 //! 100+ dynamic lights efficiently by dividing the screen into 3D clusters and
 //! assigning lights to clusters for culling.
 
-use glam::{Mat4, Vec3, Vec4};
+use glam::{Mat4, Vec3};
 
 /// Configuration for clustered rendering
 #[derive(Debug, Clone, Copy)]

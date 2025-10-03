@@ -1,6 +1,5 @@
 // Test for deterministic persona/memory serialization
 use astraweave_memory::{CompanionProfile, Skill};
-use astraweave_persona::*;
 
 #[test]
 fn test_persona_serialization_roundtrip() {

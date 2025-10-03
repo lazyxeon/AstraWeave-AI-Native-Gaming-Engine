@@ -7,16 +7,15 @@
 //! - Telemetry and monitoring systems
 
 use anyhow::Result;
-use astraweave_ecs::{App, Component, Plugin, Query, Res, ResMut, Resource, SystemStage};
+use astraweave_ecs::{App, Plugin, World};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 /// Security configuration resource
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug)]
 pub struct SecurityConfig {
     pub enable_sandboxing: bool,
     pub enable_llm_validation: bool,
@@ -26,7 +25,7 @@ pub struct SecurityConfig {
 }
 
 /// Telemetry data collection
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug)]
 pub struct TelemetryData {
     pub events: Vec<TelemetryEvent>,
     pub session_start: std::time::Instant,
@@ -52,10 +51,10 @@ pub enum TelemetrySeverity {
 }
 
 /// Script execution sandbox
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone)]
 pub struct ScriptSandbox {
-    pub engine: rhai::Engine,
-    pub allowed_functions: HashMap<String, rhai::FnPtr>,
+    pub engine: Arc<Mutex<rhai::Engine>>,
+    pub allowed_functions: HashMap<String, String>,
     pub execution_limits: ExecutionLimits,
 }
 
@@ -68,7 +67,7 @@ pub struct ExecutionLimits {
 }
 
 /// LLM validation and sanitization
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug)]
 pub struct LLMValidator {
     pub banned_patterns: Vec<String>,
     pub allowed_domains: Vec<String>,
@@ -77,7 +76,7 @@ pub struct LLMValidator {
 }
 
 /// Anti-cheat component for entities
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, Debug)]
 pub struct CAntiCheat {
     pub player_id: String,
     pub trust_score: f32,
@@ -120,8 +119,8 @@ impl SecurityPlugin {
 impl Plugin for SecurityPlugin {
     fn build(&self, app: &mut App) {
         // Initialize security resources
-        app.insert_resource(self.config.clone());
-        app.insert_resource(TelemetryData {
+        app.world.insert_resource(self.config.clone());
+        app.world.insert_resource(TelemetryData {
             events: Vec::new(),
             session_start: std::time::Instant::now(),
             anomaly_count: 0,
@@ -133,7 +132,7 @@ impl Plugin for SecurityPlugin {
         engine.set_max_string_size(1000);
 
         let sandbox = ScriptSandbox {
-            engine,
+            engine: Arc::new(Mutex::new(engine)),
             allowed_functions: HashMap::new(),
             execution_limits: ExecutionLimits {
                 max_operations: 10000,
@@ -142,7 +141,7 @@ impl Plugin for SecurityPlugin {
             },
         };
 
-        app.insert_resource(sandbox);
+        app.world.insert_resource(sandbox);
 
         // Initialize LLM validator
         let llm_validator = LLMValidator {
@@ -161,98 +160,123 @@ impl Plugin for SecurityPlugin {
             enable_content_filtering: true,
         };
 
-        app.insert_resource(llm_validator);
+        app.world.insert_resource(llm_validator);
 
         // Add security systems
-        app.add_system(SystemStage::PreSimulation, input_validation_system);
-        app.add_system(SystemStage::PostSimulation, telemetry_collection_system);
-        app.add_system(SystemStage::PostSimulation, anomaly_detection_system);
+        app.add_system("pre_simulation", input_validation_system);
+        app.add_system("post_simulation", telemetry_collection_system);
+        app.add_system("post_simulation", anomaly_detection_system);
     }
 }
 
 /// Input validation system
-fn input_validation_system(mut query: Query<&mut CAntiCheat>, telemetry: ResMut<TelemetryData>) {
-    for mut anti_cheat in query.iter_mut() {
-        // Perform input validation checks
-        let validation_result = validate_player_input(&anti_cheat);
+fn input_validation_system(world: &mut World) {
+    let entities: Vec<_> = world.entities_with::<CAntiCheat>();
+    
+    for entity in entities {
+        // Get anti_cheat component to read
+        let validation_result = if let Some(anti_cheat) = world.get::<CAntiCheat>(entity) {
+            validate_player_input(anti_cheat)
+        } else {
+            continue;
+        };
 
         // Update trust score based on validation
-        anti_cheat.trust_score =
-            (anti_cheat.trust_score * 0.9) + (validation_result.trust_score * 0.1);
-        anti_cheat.last_validation = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
+        if let Some(anti_cheat) = world.get_mut::<CAntiCheat>(entity) {
+            anti_cheat.trust_score =
+                (anti_cheat.trust_score * 0.9) + (validation_result.trust_score * 0.1);
+            anti_cheat.last_validation = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
 
-        // Record anomalies
-        if !validation_result.anomalies.is_empty() {
-            anti_cheat
-                .anomaly_flags
-                .extend(validation_result.anomalies.clone());
+            // Record anomalies
+            if !validation_result.anomalies.is_empty() {
+                anti_cheat
+                    .anomaly_flags
+                    .extend(validation_result.anomalies.clone());
 
-            // Log telemetry event
-            telemetry.events.push(TelemetryEvent {
-                timestamp: anti_cheat.last_validation,
-                event_type: "input_anomaly".to_string(),
-                severity: TelemetrySeverity::Warning,
-                data: serde_json::json!({
-                    "player_id": anti_cheat.player_id,
-                    "anomalies": validation_result.anomalies,
-                    "trust_score": anti_cheat.trust_score
-                }),
-            });
+                // Collect data for telemetry
+                let player_id = anti_cheat.player_id.clone();
+                let trust_score = anti_cheat.trust_score;
+                let timestamp = anti_cheat.last_validation;
+
+                // Log telemetry event
+                if let Some(telemetry) = world.get_resource_mut::<TelemetryData>() {
+                    telemetry.events.push(TelemetryEvent {
+                        timestamp,
+                        event_type: "input_anomaly".to_string(),
+                        severity: TelemetrySeverity::Warning,
+                        data: serde_json::json!({
+                            "player_id": player_id,
+                            "anomalies": validation_result.anomalies,
+                            "trust_score": trust_score
+                        }),
+                    });
+                }
+            }
         }
     }
 }
 
 /// Telemetry collection system
-fn telemetry_collection_system(mut telemetry: ResMut<TelemetryData>) {
-    // Clean up old events (keep last 1000)
-    if telemetry.events.len() > 1000 {
-        telemetry.events = telemetry.events.split_off(telemetry.events.len() - 1000);
-    }
+fn telemetry_collection_system(world: &mut World) {
+    if let Some(telemetry) = world.get_resource_mut::<TelemetryData>() {
+        // Clean up old events (keep last 1000)
+        if telemetry.events.len() > 1000 {
+            telemetry.events = telemetry.events.split_off(telemetry.events.len() - 1000);
+        }
 
-    // Log periodic telemetry summary
-    let session_duration = telemetry.session_start.elapsed().as_secs();
-    if session_duration % 60 == 0 && !telemetry.events.is_empty() {
-        println!(
-            "Telemetry: {} events in {} seconds, {} anomalies",
-            telemetry.events.len(),
-            session_duration,
-            telemetry.anomaly_count
-        );
+        // Log periodic telemetry summary
+        let session_duration = telemetry.session_start.elapsed().as_secs();
+        if session_duration % 60 == 0 && !telemetry.events.is_empty() {
+            println!(
+                "Telemetry: {} events in {} seconds, {} anomalies",
+                telemetry.events.len(),
+                session_duration,
+                telemetry.anomaly_count
+            );
+        }
     }
 }
 
 /// Anomaly detection system
-fn anomaly_detection_system(mut telemetry: ResMut<TelemetryData>, query: Query<&CAntiCheat>) {
+fn anomaly_detection_system(world: &mut World) {
     let mut total_anomalies = 0;
     let mut low_trust_players = 0;
+    let mut total_players = 0;
 
-    for anti_cheat in query.iter() {
-        total_anomalies += anti_cheat.anomaly_flags.len() as u64;
-        if anti_cheat.trust_score < 0.5 {
-            low_trust_players += 1;
+    let entities: Vec<_> = world.entities_with::<CAntiCheat>();
+    
+    for entity in &entities {
+        if let Some(anti_cheat) = world.get::<CAntiCheat>(*entity) {
+            total_anomalies += anti_cheat.anomaly_flags.len() as u64;
+            if anti_cheat.trust_score < 0.5 {
+                low_trust_players += 1;
+            }
+            total_players += 1;
         }
     }
 
-    telemetry.anomaly_count = total_anomalies;
+    if let Some(telemetry) = world.get_resource_mut::<TelemetryData>() {
+        telemetry.anomaly_count = total_anomalies;
 
-    // Detect systemic anomalies
-    if low_trust_players > query.iter().count() / 2 {
-        telemetry.events.push(TelemetryEvent {
-            timestamp: std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs(),
-            event_type: "systemic_anomaly".to_string(),
-            severity: TelemetrySeverity::Critical,
-            data: serde_json::json!({
-                "low_trust_players": low_trust_players,
-                "total_players": query.iter().count(),
-                "total_anomalies": total_anomalies
-            }),
-        });
+        // Detect systemic anomalies
+        if low_trust_players > total_players / 2 {
+            telemetry.events.push(TelemetryEvent {
+                timestamp: std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+                event_type: "systemic_anomaly".to_string(),
+                severity: TelemetrySeverity::Critical,
+                data: serde_json::json!({
+                    "low_trust_players": low_trust_players,
+                    "total_players": total_players,
+                    "total_anomalies": total_anomalies
+                }),
+            });
+        }
     }
 }
 
@@ -338,27 +362,33 @@ pub async fn execute_script_sandboxed(
     sandbox: &ScriptSandbox,
     context: HashMap<String, rhai::Dynamic>,
 ) -> Result<rhai::Dynamic> {
-    // Compile the script
-    let ast = sandbox.engine.compile(script)?;
+    let script = script.to_string();
+    let engine = sandbox.engine.clone();
+    let timeout_ms = sandbox.execution_limits.timeout_ms;
 
-    // Create scope with context variables
-    let mut scope = rhai::Scope::new();
-    for (key, value) in context {
-        scope.push(key, value);
-    }
-
-    // Execute with timeout
+    // Execute with timeout in a blocking task
     let result = tokio::time::timeout(
-        std::time::Duration::from_millis(sandbox.execution_limits.timeout_ms),
-        tokio::task::spawn_blocking(move || {
-            sandbox
-                .engine
-                .eval_ast_with_scope::<rhai::Dynamic>(&mut scope, &ast)
+        std::time::Duration::from_millis(timeout_ms),
+        tokio::task::spawn_blocking(move || -> Result<rhai::Dynamic> {
+            let engine = engine.lock().map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
+            
+            // Compile the script
+            let ast = engine.compile(&script)?;
+
+            // Create scope with context variables
+            let mut scope = rhai::Scope::new();
+            for (key, value) in context {
+                scope.push(key, value);
+            }
+
+            // Execute the script
+            let result = engine.eval_ast_with_scope::<rhai::Dynamic>(&mut scope, &ast)?;
+            Ok(result)
         }),
     )
     .await??;
 
-    Ok(result?)
+    result
 }
 
 /// Generate cryptographic signature for data integrity
@@ -373,8 +403,7 @@ pub fn verify_signature(data: &[u8], signature: &Signature, verifying_key: &Veri
 
 /// Generate a new keypair for signing
 pub fn generate_keypair() -> (SigningKey, VerifyingKey) {
-    let mut rng = OsRng;
-    let signing_key = SigningKey::generate(&mut rng);
+    let signing_key = SigningKey::from_bytes(&rand::random());
     let verifying_key = signing_key.verifying_key();
     (signing_key, verifying_key)
 }
@@ -454,8 +483,10 @@ mod tests {
     #[tokio::test]
     async fn script_sandbox_execution() {
         let mut engine = rhai::Engine::new();
+        engine.set_max_operations(1000);
+        
         let sandbox = ScriptSandbox {
-            engine,
+            engine: Arc::new(Mutex::new(engine)),
             allowed_functions: HashMap::new(),
             execution_limits: ExecutionLimits {
                 max_operations: 1000,

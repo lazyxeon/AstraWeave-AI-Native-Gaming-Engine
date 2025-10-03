@@ -3,9 +3,8 @@
 //! This module provides compute-based frustum culling with CPU fallback for determinism.
 //! The compute path writes a compacted list of visible instance indices, enabling indirect draws.
 
-use anyhow::{Context, Result};
 use bytemuck::{Pod, Zeroable};
-use glam::{Mat4, Vec3, Vec4};
+use glam::{Mat4, Vec3};
 use wgpu::util::DeviceExt;
 
 /// Per-instance data for culling compute shader

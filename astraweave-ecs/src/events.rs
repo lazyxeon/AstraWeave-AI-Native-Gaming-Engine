@@ -7,8 +7,6 @@ use std::any::{Any, TypeId};
 use std::collections::{HashMap, VecDeque};
 use std::marker::PhantomData;
 
-use crate::Resource;
-
 /// Event trait marker
 pub trait Event: 'static + Send + Sync {}
 
@@ -42,6 +40,7 @@ impl<E: Event> EventQueue<E> {
     }
 
     /// Remove events older than N frames
+    #[allow(dead_code)]
     fn cleanup(&mut self, current_frame: u64, keep_frames: u64) {
         while let Some(&frame) = self.frame_added.front() {
             if current_frame.saturating_sub(frame) > keep_frames {
@@ -89,7 +88,8 @@ impl Events {
 
     /// Send an event
     pub fn send<E: Event>(&mut self, event: E) {
-        let queue = self.queues
+        let queue = self
+            .queues
             .entry(TypeId::of::<E>())
             .or_insert_with(|| Box::new(EventQueue::<E>::new()));
 
@@ -146,9 +146,9 @@ impl Events {
     /// Advance frame and cleanup old events
     pub fn update(&mut self) {
         self.current_frame += 1;
-        
+
         // Cleanup old events from all queues
-        for queue in self.queues.values_mut() {
+        for _queue in self.queues.values_mut() {
             // Type erasure: we need to cast to EventQueue<T> but don't know T
             // For now, we'll skip automatic cleanup and rely on explicit clear
             // TODO: Store cleanup function pointer or use trait object
@@ -171,9 +171,11 @@ impl Default for Events {
     }
 }
 
-impl Resource for Events {}
+// Note: Events implements Resource via the blanket impl in lib.rs
+// impl Resource for Events {} // Removed - conflicts with blanket impl
 
 /// Event reader - provides a handle to read events of a specific type
+#[allow(dead_code)]
 pub struct EventReader<E: Event> {
     type_id: TypeId,
     _marker: PhantomData<E>,
@@ -243,7 +245,7 @@ mod tests {
     #[test]
     fn test_send_and_read_events() {
         let mut events = Events::new();
-        
+
         events.send(TestEvent { value: 42 });
         events.send(TestEvent { value: 100 });
 
@@ -256,7 +258,7 @@ mod tests {
     #[test]
     fn test_drain_events() {
         let mut events = Events::new();
-        
+
         events.send(TestEvent { value: 1 });
         events.send(TestEvent { value: 2 });
 
@@ -270,12 +272,12 @@ mod tests {
     #[test]
     fn test_clear_events() {
         let mut events = Events::new();
-        
+
         events.send(TestEvent { value: 1 });
         events.send(TestEvent { value: 2 });
-        
+
         assert_eq!(events.len::<TestEvent>(), 2);
-        
+
         events.clear::<TestEvent>();
         assert_eq!(events.len::<TestEvent>(), 0);
     }

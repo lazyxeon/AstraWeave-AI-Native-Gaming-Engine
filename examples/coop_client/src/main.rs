@@ -61,7 +61,10 @@ async fn main() -> Result<()> {
     ))
     .await?;
     history.push((seq, plan.clone()));
-    seq = seq.wrapping_add(1);
+    #[allow(unused_assignments)]
+    {
+        seq = seq.wrapping_add(1);
+    }
     // Naive local prediction for MoveTo: adjust actor position if we have a snapshot
     let predicted_target = plan.steps.iter().find_map(|s| {
         if let ActionStep::MoveTo { x, y } = s {

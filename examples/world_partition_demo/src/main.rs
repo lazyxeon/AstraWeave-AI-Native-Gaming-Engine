@@ -5,8 +5,8 @@
 //! and monitors memory usage and performance.
 
 use astraweave_scene::partitioned_scene::PartitionedScene;
-use astraweave_scene::streaming::{StreamingConfig, StreamingEvent, WorldPartitionManager};
-use astraweave_scene::world_partition::{GridConfig, GridCoord, WorldPartition, AABB};
+use astraweave_scene::streaming::{StreamingConfig, StreamingEvent};
+use astraweave_scene::world_partition::{GridConfig, GridCoord, WorldPartition};
 use glam::Vec3;
 use rand::Rng;
 use std::sync::Arc;
@@ -15,7 +15,7 @@ use tokio::sync::RwLock;
 
 /// Generate a procedural demo world with entities distributed across cells
 async fn generate_demo_world(partition: &Arc<RwLock<WorldPartition>>, grid_size: i32) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut partition_write = partition.write().await;
 
     println!(
@@ -29,12 +29,11 @@ async fn generate_demo_world(partition: &Arc<RwLock<WorldPartition>>, grid_size:
             let cell = partition_write.get_or_create_cell(coord);
 
             // Add random number of entities per cell (simulating foliage, rocks, etc.)
-            let entity_count = rng.gen_range(10..50);
+            let entity_count = rng.random_range(10..50);
             for _ in 0..entity_count {
                 // In a real implementation, these would be actual entity IDs
                 // For demo purposes, we just use dummy u64 values
-                #[cfg(not(feature = "ecs"))]
-                cell.entities.push(rng.gen());
+                cell.entities.push(rng.random());
             }
 
             // Add some asset references
@@ -58,7 +57,7 @@ async fn generate_demo_world(partition: &Arc<RwLock<WorldPartition>>, grid_size:
 }
 
 /// Simulate a camera flythrough path
-fn generate_camera_path(duration_secs: f32, speed: f32) -> Vec<(f32, Vec3)> {
+fn generate_camera_path(duration_secs: f32, _speed: f32) -> Vec<(f32, Vec3)> {
     let mut path = Vec::new();
     let steps = (duration_secs * 60.0) as usize; // 60 updates per second
 

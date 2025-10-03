@@ -127,7 +127,7 @@ impl PartitionedScene {
         // Create entities from cell data
         // Note: In full ECS integration, this would use ECS World to spawn entities
         // For now, we use placeholder entity IDs
-        for (idx, entity_data) in cell_data.entities.iter().enumerate() {
+        for (idx, _entity_data) in cell_data.entities.iter().enumerate() {
             // Generate entity ID (in real ECS, this would come from world.spawn())
             let entity_id = ((coord.x as u64) << 40) | ((coord.y as u64) << 20) | idx as u64;
 

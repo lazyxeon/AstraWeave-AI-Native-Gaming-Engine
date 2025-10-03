@@ -31,7 +31,7 @@ struct QuestStep {
 use anyhow::Result;
 use astraweave_asset::AssetDatabase;
 use astraweave_behavior::{BehaviorGraph, BehaviorNode};
-use astraweave_core::{Health, IVec2, Team, World};
+use astraweave_core::{IVec2, Team, World};
 use astraweave_dialogue::DialogueGraph;
 use astraweave_nav::NavMesh;
 use astraweave_quests::Quest;
@@ -145,7 +145,9 @@ struct EditorApp {
     level: LevelDoc,
     status: String,
     mat_doc: MaterialLiveDoc,
+    #[allow(dead_code)]
     dialogue: DialogueDoc,
+    #[allow(dead_code)]
     quest: QuestDoc,
     asset_db: AssetDatabase,
     behavior_graph: BehaviorGraph,
@@ -801,7 +803,7 @@ impl eframe::App for EditorApp {
                         x: obs.pos[0] as i32,
                         y: obs.pos[2] as i32,
                     };
-                    let entity = world.spawn("obstacle", pos, Team { id: 2 }, 100, 0);
+                    let _entity = world.spawn("obstacle", pos, Team { id: 2 }, 100, 0);
                     world.obstacles.insert((pos.x, pos.y));
                 }
                 for npc in &self.level.npcs {
@@ -819,7 +821,7 @@ impl eframe::App for EditorApp {
                     .push("Simulation started with entities from level.".into());
             }
             // Tick simulation
-            let now = std::time::Instant::now();
+            let _now = std::time::Instant::now();
             let now = std::time::Instant::now();
             let elapsed = now.duration_since(self.last_sim_tick);
             const TICK_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
@@ -831,7 +833,7 @@ impl eframe::App for EditorApp {
                         world.tick(0.1); // dt = 0.1s
                                          // Simple behavior: regenerate health
                         for entity in world.entities() {
-                            if let Some(mut health) = world.health_mut(entity) {
+                            if let Some(health) = world.health_mut(entity) {
                                 health.hp = (health.hp + 1).min(100);
                             }
                         }

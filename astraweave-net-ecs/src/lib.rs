@@ -46,6 +46,7 @@ pub struct EntityState {
 }
 
 /// Network client plugin
+#[allow(dead_code)]
 pub struct NetworkClientPlugin {
     server_addr: String,
 }
@@ -65,6 +66,7 @@ impl Plugin for NetworkClientPlugin {
 }
 
 /// Network server plugin
+#[allow(dead_code)]
 pub struct NetworkServerPlugin {
     bind_addr: String,
 }
@@ -220,7 +222,7 @@ pub async fn connect_to_server(
 
     let url = format!("ws://{}", server_addr);
     let (ws_stream, _) = connect_async(url).await?;
-    let (write, mut read) = ws_stream.split();
+    let (_write, mut read) = ws_stream.split();
 
     // Create channels for communication
     let (tx, rx) = mpsc::unbounded_channel();
@@ -418,9 +420,11 @@ mod tests {
 
         // Verify systems ran (basic smoke test)
         let client = app.world.get::<CNetworkClient>(client_entity).unwrap();
-        assert!(client.last_acknowledged_input >= 0);
+        // Client tracking initialized (u64, always >= 0)
+        let _ = client.last_acknowledged_input;
 
         let authority = app.world.get::<CNetworkAuthority>(server_entity).unwrap();
-        assert!(authority.authoritative_tick >= 0);
+        // Server tracking initialized (u64, always >= 0)
+        let _ = authority.authoritative_tick;
     }
 }

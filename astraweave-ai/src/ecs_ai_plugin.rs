@@ -259,7 +259,7 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
     use anyhow::Result;
-    use astraweave_core::{IVec2, Team, World};
+    use astraweave_core::{IVec2, World};
 
     #[test]
     fn ai_plugin_sets_desired_position_for_companion() -> Result<()> {

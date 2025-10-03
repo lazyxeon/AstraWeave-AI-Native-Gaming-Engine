@@ -1,0 +1,144 @@
+// Sample World Partition Cell at (0, 0, 1) - North of origin
+// Cell size: 100.0 units (world position: z=100-200)
+// Contains: Meadow with flowers and wildlife spawners
+(
+    coord: [0, 0, 1],
+    entities: [
+        // Flower Patch 1 (Red Poppies)
+        (
+            position: [20.0, 0.0, 120.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [3.0, 1.0, 3.0],
+            mesh: "models/nature/flower_patch_red.glb",
+            material: 10,
+            components: {
+                "flower_type": "poppy",
+                "harvestable": "petals",
+            },
+            name: Some("flower_patch_red_01"),
+        ),
+        // Flower Patch 2 (Blue Cornflowers)
+        (
+            position: [50.0, 0.0, 140.0],
+            rotation: [0.0, 0.5, 0.0, 0.866],
+            scale: [2.5, 1.0, 2.5],
+            mesh: "models/nature/flower_patch_blue.glb",
+            material: 11,
+            components: {
+                "flower_type": "cornflower",
+                "harvestable": "petals",
+            },
+            name: Some("flower_patch_blue_01"),
+        ),
+        // Flower Patch 3 (Yellow Dandelions)
+        (
+            position: [70.0, 0.0, 160.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [4.0, 1.0, 4.0],
+            mesh: "models/nature/flower_patch_yellow.glb",
+            material: 12,
+            components: {
+                "flower_type": "dandelion",
+                "harvestable": "seeds",
+            },
+            name: Some("flower_patch_yellow_01"),
+        ),
+        // Birch Tree 1
+        (
+            position: [15.0, 0.0, 175.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.8, 1.0],
+            mesh: "models/nature/birch_tree.glb",
+            material: 13,
+            components: {
+                "health": "100",
+                "vegetation_type": "birch",
+            },
+            name: Some("birch_tree_01"),
+        ),
+        // Birch Tree 2
+        (
+            position: [85.0, 0.0, 185.0],
+            rotation: [0.0, 0.3, 0.0, 0.954],
+            scale: [0.9, 1.6, 0.9],
+            mesh: "models/nature/birch_tree.glb",
+            material: 13,
+            components: {
+                "health": "100",
+                "vegetation_type": "birch",
+            },
+            name: Some("birch_tree_02"),
+        ),
+        // Wildlife Spawner (Deer)
+        (
+            position: [45.0, 0.0, 150.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: "models/spawners/invisible.glb",
+            material: 0,
+            components: {
+                "spawner_type": "deer",
+                "spawn_count": "3",
+                "spawn_radius": "20.0",
+            },
+            name: Some("deer_spawner_01"),
+        ),
+        // Wildlife Spawner (Rabbit)
+        (
+            position: [60.0, 0.0, 130.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: "models/spawners/invisible.glb",
+            material: 0,
+            components: {
+                "spawner_type": "rabbit",
+                "spawn_count": "5",
+                "spawn_radius": "15.0",
+            },
+            name: Some("rabbit_spawner_01"),
+        ),
+        // Tall Grass 1
+        (
+            position: [35.0, 0.0, 145.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [5.0, 1.5, 5.0],
+            mesh: "models/nature/tall_grass.glb",
+            material: 14,
+            components: {
+                "foliage_density": "very_high",
+            },
+            name: Some("tall_grass_01"),
+        ),
+        // Tall Grass 2
+        (
+            position: [75.0, 0.0, 170.0],
+            rotation: [0.0, 0.2, 0.0, 0.98],
+            scale: [6.0, 1.5, 6.0],
+            mesh: "models/nature/tall_grass.glb",
+            material: 14,
+            components: {
+                "foliage_density": "very_high",
+            },
+            name: Some("tall_grass_02"),
+        ),
+    ],
+    assets: [
+        (path: "models/nature/flower_patch_red.glb", kind: Mesh, guid: "550e8400-e29b-41d4-a716-446655440030"),
+        (path: "models/nature/flower_patch_blue.glb", kind: Mesh, guid: "550e8400-e29b-41d4-a716-446655440031"),
+        (path: "models/nature/flower_patch_yellow.glb", kind: Mesh, guid: "550e8400-e29b-41d4-a716-446655440032"),
+        (path: "models/nature/birch_tree.glb", kind: Mesh, guid: "550e8400-e29b-41d4-a716-446655440033"),
+        (path: "models/nature/tall_grass.glb", kind: Mesh, guid: "550e8400-e29b-41d4-a716-446655440034"),
+        (path: "models/spawners/invisible.glb", kind: Mesh, guid: "550e8400-e29b-41d4-a716-446655440035"),
+        (path: "textures/nature/poppy_red.png", kind: Texture, guid: "550e8400-e29b-41d4-a716-446655440036"),
+        (path: "textures/nature/cornflower_blue.png", kind: Texture, guid: "550e8400-e29b-41d4-a716-446655440037"),
+        (path: "textures/nature/dandelion_yellow.png", kind: Texture, guid: "550e8400-e29b-41d4-a716-446655440038"),
+        (path: "textures/nature/birch_bark.png", kind: Texture, guid: "550e8400-e29b-41d4-a716-446655440039"),
+        (path: "textures/nature/grass_tall.png", kind: Texture, guid: "550e8400-e29b-41d4-a716-446655440040"),
+    ],
+    metadata: {
+        "biome": "meadow",
+        "elevation": "lowland",
+        "density": "high",
+        "wildlife_spawns": "true",
+    },
+)

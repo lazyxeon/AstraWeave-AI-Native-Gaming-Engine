@@ -37,7 +37,7 @@ fn test_combat_deterministic_damage() {
     let dt = 0.016; // 60 FPS
 
     // Frame 1: Light attack (within window)
-    let (hit1, dmg1) = attack_state.tick(
+    let (hit1, _dmg1) = attack_state.tick(
         dt,
         true,  // pressed_light
         false, // pressed_heavy

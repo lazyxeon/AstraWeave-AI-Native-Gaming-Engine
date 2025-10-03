@@ -47,6 +47,7 @@ pub struct ReplayEvent {
 }
 
 /// ECS Plugin for persistence functionality
+#[allow(dead_code)]
 pub struct PersistencePlugin {
     save_directory: PathBuf,
 }
@@ -66,7 +67,7 @@ impl Plugin for PersistencePlugin {
 }
 
 /// System that automatically saves game state at regular intervals
-fn auto_save_system(world: &mut World) {
+fn auto_save_system(_world: &mut World) {
     // TODO: Query for persistence manager and save at intervals
     // This would serialize the current ECS state and save it
 }

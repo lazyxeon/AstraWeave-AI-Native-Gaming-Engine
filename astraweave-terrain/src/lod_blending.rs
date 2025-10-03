@@ -43,6 +43,7 @@ impl MorphConfig {
 
 /// Result of vertex correspondence search
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct VertexCorrespondence {
     /// Index in high LOD mesh
     high_lod_index: usize,

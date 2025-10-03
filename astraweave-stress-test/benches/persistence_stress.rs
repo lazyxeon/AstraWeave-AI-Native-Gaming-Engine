@@ -1,5 +1,5 @@
-use astraweave_stress_test::{generate_stress_entities, run_stress_test, StressTestConfig};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use astraweave_stress_test::{generate_stress_entities, StressTestConfig};
+use criterion::{criterion_group, criterion_main, Criterion};
 
 fn persistence_stress_benchmark(c: &mut Criterion) {
     let config = StressTestConfig {
@@ -12,8 +12,8 @@ fn persistence_stress_benchmark(c: &mut Criterion) {
 
     c.bench_function("persistence_stress", |b| {
         b.iter(|| {
-            let entities = generate_stress_entities(black_box(&config));
-            black_box(entities);
+            let entities = generate_stress_entities(std::hint::black_box(&config));
+            std::hint::black_box(entities);
         })
     });
 }

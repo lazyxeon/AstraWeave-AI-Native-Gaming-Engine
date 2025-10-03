@@ -1,5 +1,5 @@
 use astraweave_asset::{AssetDatabase, AssetKind};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
 

@@ -1,5 +1,5 @@
 // Property-based test for dynamic memory update
-use astraweave_memory::{CompanionProfile, Fact};
+use astraweave_memory::CompanionProfile;
 
 #[test]
 fn test_dynamic_memory_update() {
