@@ -15,17 +15,18 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 /// Test entity component for stress testing
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, Debug)]
 pub struct CStressEntity {
     pub id: u32,
     pub position: [f32; 3],
     pub velocity: [f32; 3],
     pub health: f32,
-    pub data: Vec<u8>, // Variable-sized data for memory testing
+    pub data: Vec<u8>,
+    pub kind: String, // Variable-sized data for memory testing
 }
 
 /// AI stress component
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, Debug)]
 pub struct CAIStress {
     pub behavior_tree: Vec<String>, // Simulated behavior tree nodes
     pub last_decision: u64,
@@ -33,7 +34,7 @@ pub struct CAIStress {
 }
 
 /// Network stress component
-#[derive(Clone, Debug, Component)]
+#[derive(Clone, Debug)]
 pub struct CNetworkStress {
     pub player_id: String,
     pub input_buffer: Vec<Vec<u8>>,
@@ -41,7 +42,7 @@ pub struct CNetworkStress {
 }
 
 /// Stress test configuration
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug)]
 pub struct StressTestConfig {
     pub entity_count: usize,
     pub ai_entity_count: usize,
@@ -51,7 +52,7 @@ pub struct StressTestConfig {
 }
 
 /// Stress test results
-#[derive(Clone, Debug, Resource)]
+#[derive(Clone, Debug)]
 pub struct StressTestResults {
     pub start_time: Instant,
     pub frame_count: u64,
@@ -85,6 +86,7 @@ pub fn generate_stress_entities(config: &StressTestConfig) -> Vec<CStressEntity>
             ],
             health: rng.random_range(0.0..100.0),
             data,
+            kind: "default".to_string(), // Provide a default value for the kind field
         });
     }
 

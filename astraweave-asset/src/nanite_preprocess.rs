@@ -4,7 +4,7 @@
 //! representations with LOD hierarchies for efficient virtualized geometry rendering.
 
 use anyhow::{Context, Result};
-use glam::{Vec3, Vec4};
+use glam::Vec3;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -30,13 +30,13 @@ impl AABB {
     pub fn from_points(points: &[[f32; 3]]) -> Self {
         let mut min = Vec3::splat(f32::INFINITY);
         let mut max = Vec3::splat(f32::NEG_INFINITY);
-        
+
         for p in points {
             let point = Vec3::from_array(*p);
             min = min.min(point);
             max = max.max(point);
         }
-        
+
         Self { min, max }
     }
 
@@ -111,7 +111,7 @@ impl BoundingCone {
             let n0 = Vec3::from_array(normals[idx[0] as usize]);
             let n1 = Vec3::from_array(normals[idx[1] as usize]);
             let n2 = Vec3::from_array(normals[idx[2] as usize]);
-            
+
             min_dot = min_dot.min(avg_normal.dot(n0));
             min_dot = min_dot.min(avg_normal.dot(n1));
             min_dot = min_dot.min(avg_normal.dot(n2));
@@ -135,22 +135,22 @@ impl BoundingCone {
 pub struct Meshlet {
     /// Local vertex indices (indices into the meshlet's vertex list)
     pub vertices: Vec<u32>,
-    
+
     /// Triangle indices (triplets of indices into the vertices array)
     pub indices: Vec<u8>,
-    
+
     /// Bounding box for frustum culling
     pub bounds: AABB,
-    
+
     /// Bounding cone for backface culling
     pub cone: BoundingCone,
-    
+
     /// LOD level (0 = highest detail)
     pub lod_level: u32,
-    
+
     /// LOD error metric (screen-space error threshold)
     pub lod_error: f32,
-    
+
     /// Parent meshlet index in LOD hierarchy (None for LOD 0)
     pub parent_index: Option<usize>,
 }
@@ -211,16 +211,16 @@ impl Meshlet {
 pub struct MeshletHierarchy {
     /// All meshlets across all LOD levels
     pub meshlets: Vec<Meshlet>,
-    
+
     /// Original mesh vertex data
     pub positions: Vec<[f32; 3]>,
     pub normals: Vec<[f32; 3]>,
     pub tangents: Vec<[f32; 4]>,
     pub uvs: Vec<[f32; 2]>,
-    
+
     /// Number of LOD levels
     pub lod_count: u32,
-    
+
     /// Meshlet indices for each LOD level
     pub lod_ranges: Vec<std::ops::Range<usize>>,
 }
@@ -234,18 +234,28 @@ struct QuadricError {
 
 impl QuadricError {
     fn new() -> Self {
-        Self {
-            q: [[0.0; 4]; 4],
-        }
+        Self { q: [[0.0; 4]; 4] }
     }
 
     /// Create quadric from a plane equation (a, b, c, d) where ax + by + cz + d = 0
     fn from_plane(a: f64, b: f64, c: f64, d: f64) -> Self {
         let mut q = [[0.0; 4]; 4];
-        q[0][0] = a * a; q[0][1] = a * b; q[0][2] = a * c; q[0][3] = a * d;
-        q[1][0] = a * b; q[1][1] = b * b; q[1][2] = b * c; q[1][3] = b * d;
-        q[2][0] = a * c; q[2][1] = b * c; q[2][2] = c * c; q[2][3] = c * d;
-        q[3][0] = a * d; q[3][1] = b * d; q[3][2] = c * d; q[3][3] = d * d;
+        q[0][0] = a * a;
+        q[0][1] = a * b;
+        q[0][2] = a * c;
+        q[0][3] = a * d;
+        q[1][0] = a * b;
+        q[1][1] = b * b;
+        q[1][2] = b * c;
+        q[1][3] = b * d;
+        q[2][0] = a * c;
+        q[2][1] = b * c;
+        q[2][2] = c * c;
+        q[2][3] = c * d;
+        q[3][0] = a * d;
+        q[3][1] = b * d;
+        q[3][2] = c * d;
+        q[3][3] = d * d;
         Self { q }
     }
 
@@ -253,12 +263,7 @@ impl QuadricError {
     fn from_triangle(p0: Vec3, p1: Vec3, p2: Vec3) -> Self {
         let normal = (p1 - p0).cross(p2 - p0).normalize_or_zero();
         let d = -normal.dot(p0);
-        Self::from_plane(
-            normal.x as f64,
-            normal.y as f64,
-            normal.z as f64,
-            d as f64,
-        )
+        Self::from_plane(normal.x as f64, normal.y as f64, normal.z as f64, d as f64)
     }
 
     /// Add another quadric
@@ -309,7 +314,7 @@ pub fn generate_meshlets(
 
     // Simple greedy clustering: group triangles spatially
     let mut remaining_triangles: Vec<usize> = (0..triangle_count).collect();
-    
+
     while !remaining_triangles.is_empty() {
         let mut meshlet_vertices = Vec::new();
         let mut meshlet_indices = Vec::new();
@@ -351,7 +356,7 @@ pub fn generate_meshlets(
 
                 // Use spatial proximity as clustering criterion
                 let distance = (tri_center - seed_center).length();
-                
+
                 // Add triangle if it's close enough or we're just starting
                 if meshlet_indices.is_empty() || distance < 10.0 {
                     // Add vertices to meshlet
@@ -404,7 +409,7 @@ pub fn generate_lod_hierarchy(
 ) -> Result<MeshletHierarchy> {
     // Generate LOD 0 (highest detail)
     let lod0_meshlets = generate_meshlets(positions, normals, tangents, uvs, indices)?;
-    
+
     let mut all_meshlets = lod0_meshlets;
     let mut lod_ranges = vec![0..all_meshlets.len()];
 
@@ -418,16 +423,21 @@ pub fn generate_lod_hierarchy(
     for lod_level in 1..lod_count {
         // Simplify mesh (reduce triangle count by ~50%)
         let target_triangle_count = (current_indices.len() / 3).max(1) / 2;
-        
-        let (simplified_positions, simplified_normals, simplified_tangents, simplified_uvs, simplified_indices) =
-            simplify_mesh(
-                &current_positions,
-                &current_normals,
-                &current_tangents,
-                &current_uvs,
-                &current_indices,
-                target_triangle_count,
-            )?;
+
+        let (
+            simplified_positions,
+            simplified_normals,
+            simplified_tangents,
+            simplified_uvs,
+            simplified_indices,
+        ) = simplify_mesh(
+            &current_positions,
+            &current_normals,
+            &current_tangents,
+            &current_uvs,
+            &current_indices,
+            target_triangle_count,
+        )?;
 
         // Generate meshlets for this LOD
         let mut lod_meshlets = generate_meshlets(
@@ -473,7 +483,37 @@ pub fn generate_lod_hierarchy(
     })
 }
 
-/// Simplify a mesh using quadric error metrics
+/// Edge for collapse priority queue
+#[derive(Debug, Clone)]
+struct EdgeCollapse {
+    v0: usize,
+    v1: usize,
+    error: f64,
+    optimal_pos: Vec3,
+}
+
+impl PartialEq for EdgeCollapse {
+    fn eq(&self, other: &Self) -> bool {
+        self.error == other.error
+    }
+}
+
+impl Eq for EdgeCollapse {}
+
+impl PartialOrd for EdgeCollapse {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        // Reverse ordering for min-heap (lower error = higher priority)
+        other.error.partial_cmp(&self.error)
+    }
+}
+
+impl Ord for EdgeCollapse {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+
+/// Simplify a mesh using quadric error metrics with edge collapse
 fn simplify_mesh(
     positions: &[[f32; 3]],
     normals: &[[f32; 3]],
@@ -481,10 +521,15 @@ fn simplify_mesh(
     uvs: &[[f32; 2]],
     indices: &[u32],
     target_triangle_count: usize,
-) -> Result<(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>)> {
-    // For simplicity, use a basic decimation approach
-    // In a full implementation, this would use quadric error metrics with edge collapse
-    
+) -> Result<(
+    Vec<[f32; 3]>,
+    Vec<[f32; 3]>,
+    Vec<[f32; 4]>,
+    Vec<[f32; 2]>,
+    Vec<u32>,
+)> {
+    use std::collections::{BinaryHeap, HashMap, HashSet};
+
     let current_triangle_count = indices.len() / 3;
     if current_triangle_count <= target_triangle_count {
         return Ok((
@@ -496,26 +541,173 @@ fn simplify_mesh(
         ));
     }
 
-    // Simple decimation: keep every Nth triangle
-    let keep_ratio = target_triangle_count as f32 / current_triangle_count as f32;
-    let mut new_indices = Vec::new();
-    
-    for (i, tri) in indices.chunks_exact(3).enumerate() {
-        if (i as f32 * keep_ratio).fract() < keep_ratio {
-            new_indices.extend_from_slice(tri);
+    // PHASE 1: Compute quadric error matrix for each vertex
+    let mut vertex_quadrics: Vec<QuadricError> = vec![QuadricError::new(); positions.len()];
+
+    for tri in indices.chunks_exact(3) {
+        let p0 = Vec3::from_array(positions[tri[0] as usize]);
+        let p1 = Vec3::from_array(positions[tri[1] as usize]);
+        let p2 = Vec3::from_array(positions[tri[2] as usize]);
+
+        let tri_quadric = QuadricError::from_triangle(p0, p1, p2);
+
+        // Accumulate quadric for each vertex
+        vertex_quadrics[tri[0] as usize] = vertex_quadrics[tri[0] as usize].add(&tri_quadric);
+        vertex_quadrics[tri[1] as usize] = vertex_quadrics[tri[1] as usize].add(&tri_quadric);
+        vertex_quadrics[tri[2] as usize] = vertex_quadrics[tri[2] as usize].add(&tri_quadric);
+    }
+
+    // PHASE 2: Build edge connectivity graph
+    let mut edges: HashSet<(usize, usize)> = HashSet::new();
+    let mut vertex_faces: HashMap<usize, HashSet<usize>> = HashMap::new();
+
+    for (face_idx, tri) in indices.chunks_exact(3).enumerate() {
+        let v0 = tri[0] as usize;
+        let v1 = tri[1] as usize;
+        let v2 = tri[2] as usize;
+
+        // Add edges (canonical ordering)
+        edges.insert((v0.min(v1), v0.max(v1)));
+        edges.insert((v1.min(v2), v1.max(v2)));
+        edges.insert((v2.min(v0), v2.max(v0)));
+
+        // Track which faces use each vertex
+        vertex_faces
+            .entry(v0)
+            .or_insert_with(HashSet::new)
+            .insert(face_idx);
+        vertex_faces
+            .entry(v1)
+            .or_insert_with(HashSet::new)
+            .insert(face_idx);
+        vertex_faces
+            .entry(v2)
+            .or_insert_with(HashSet::new)
+            .insert(face_idx);
+    }
+
+    // PHASE 3: Build priority queue of edge collapses
+    let mut collapse_heap: BinaryHeap<EdgeCollapse> = BinaryHeap::new();
+
+    for &(v0, v1) in &edges {
+        let combined_quadric = vertex_quadrics[v0].add(&vertex_quadrics[v1]);
+
+        // Find optimal position for collapsed vertex
+        // Simple heuristic: midpoint (full QEF solution would solve for optimal pos)
+        let p0 = Vec3::from_array(positions[v0]);
+        let p1 = Vec3::from_array(positions[v1]);
+        let optimal_pos = (p0 + p1) * 0.5;
+
+        let error = combined_quadric.error(optimal_pos);
+
+        collapse_heap.push(EdgeCollapse {
+            v0,
+            v1,
+            error,
+            optimal_pos,
+        });
+    }
+
+    // PHASE 4: Perform edge collapses until target reached
+    let mut collapsed_vertices: HashMap<usize, usize> = HashMap::new(); // Maps old -> new vertex index
+    let mut removed_faces: HashSet<usize> = HashSet::new();
+    let mut new_positions = positions.to_vec();
+    let new_normals = normals.to_vec();
+    let new_tangents = tangents.to_vec();
+    let new_uvs = uvs.to_vec();
+
+    let target_face_count = target_triangle_count;
+    let mut current_face_count = current_triangle_count;
+
+    while current_face_count > target_face_count && !collapse_heap.is_empty() {
+        let collapse = collapse_heap.pop().unwrap();
+
+        // Skip if vertices already collapsed
+        let v0 = *collapsed_vertices.get(&collapse.v0).unwrap_or(&collapse.v0);
+        let v1 = *collapsed_vertices.get(&collapse.v1).unwrap_or(&collapse.v1);
+
+        if v0 == v1 {
+            continue; // Already collapsed
+        }
+
+        // Check if collapse is valid (doesn't create degenerate geometry)
+        if let Some(v0_faces) = vertex_faces.get(&v0) {
+            if let Some(v1_faces) = vertex_faces.get(&v1) {
+                // Count shared faces (these will be removed)
+                let shared_faces: Vec<_> = v0_faces.intersection(v1_faces).copied().collect();
+
+                if shared_faces.is_empty() {
+                    continue; // No shared faces, invalid collapse
+                }
+
+                // Perform collapse: v1 -> v0
+                collapsed_vertices.insert(v1, v0);
+                new_positions[v0] = collapse.optimal_pos.to_array();
+
+                // Update quadric
+                vertex_quadrics[v0] = vertex_quadrics[v0].add(&vertex_quadrics[v1]);
+
+                // Remove shared faces
+                for &face_idx in &shared_faces {
+                    removed_faces.insert(face_idx);
+                    current_face_count -= 1;
+                }
+
+                // Update vertex_faces (transfer v1's faces to v0, except shared ones)
+                if let Some(v1_faces_owned) = vertex_faces.remove(&v1) {
+                    let v0_faces_mut = vertex_faces.entry(v0).or_insert_with(HashSet::new);
+                    for face_idx in v1_faces_owned {
+                        if !shared_faces.contains(&face_idx) {
+                            v0_faces_mut.insert(face_idx);
+                        }
+                    }
+                }
+            }
+        }
+
+        if current_face_count <= target_face_count {
+            break;
         }
     }
 
-    // Ensure we have at least some triangles
+    // PHASE 5: Rebuild index buffer with collapsed vertices
+    let mut new_indices = Vec::new();
+
+    for (face_idx, tri) in indices.chunks_exact(3).enumerate() {
+        if removed_faces.contains(&face_idx) {
+            continue; // Skip removed faces
+        }
+
+        let v0 = *collapsed_vertices
+            .get(&(tri[0] as usize))
+            .unwrap_or(&(tri[0] as usize)) as u32;
+        let v1 = *collapsed_vertices
+            .get(&(tri[1] as usize))
+            .unwrap_or(&(tri[1] as usize)) as u32;
+        let v2 = *collapsed_vertices
+            .get(&(tri[2] as usize))
+            .unwrap_or(&(tri[2] as usize)) as u32;
+
+        // Skip degenerate triangles
+        if v0 == v1 || v1 == v2 || v2 == v0 {
+            continue;
+        }
+
+        new_indices.push(v0);
+        new_indices.push(v1);
+        new_indices.push(v2);
+    }
+
+    // Ensure we have at least one triangle
     if new_indices.is_empty() && !indices.is_empty() {
         new_indices.extend_from_slice(&indices[0..3.min(indices.len())]);
     }
 
     Ok((
-        positions.to_vec(),
-        normals.to_vec(),
-        tangents.to_vec(),
-        uvs.to_vec(),
+        new_positions,
+        new_normals,
+        new_tangents,
+        new_uvs,
         new_indices,
     ))
 }
@@ -545,14 +737,7 @@ pub async fn preprocess_mesh_async(
 
     // Spawn blocking task for CPU-intensive work
     let hierarchy = tokio::task::spawn_blocking(move || {
-        generate_lod_hierarchy(
-            &positions,
-            &normals,
-            &tangents,
-            &uvs,
-            &indices,
-            lod_count,
-        )
+        generate_lod_hierarchy(&positions, &normals, &tangents, &uvs, &indices, lod_count)
     })
     .await
     .context("Failed to spawn blocking task")??;
@@ -570,10 +755,10 @@ pub fn save_meshlet_hierarchy(hierarchy: &MeshletHierarchy, path: &std::path::Pa
 
 /// Load meshlet hierarchy from file (RON format)
 pub fn load_meshlet_hierarchy(path: &std::path::Path) -> Result<MeshletHierarchy> {
-    let ron_string = std::fs::read_to_string(path)
-        .context("Failed to read meshlet hierarchy file")?;
-    let hierarchy: MeshletHierarchy = ron::from_str(&ron_string)
-        .context("Failed to deserialize meshlet hierarchy")?;
+    let ron_string =
+        std::fs::read_to_string(path).context("Failed to read meshlet hierarchy file")?;
+    let hierarchy: MeshletHierarchy =
+        ron::from_str(&ron_string).context("Failed to deserialize meshlet hierarchy")?;
     Ok(hierarchy)
 }
 
@@ -583,13 +768,9 @@ mod tests {
 
     #[test]
     fn test_aabb_creation() {
-        let points = vec![
-            [0.0, 0.0, 0.0],
-            [1.0, 1.0, 1.0],
-            [-1.0, -1.0, -1.0],
-        ];
+        let points = vec![[0.0, 0.0, 0.0], [1.0, 1.0, 1.0], [-1.0, -1.0, -1.0]];
         let aabb = AABB::from_points(&points);
-        
+
         assert_eq!(aabb.min, Vec3::new(-1.0, -1.0, -1.0));
         assert_eq!(aabb.max, Vec3::new(1.0, 1.0, 1.0));
         assert_eq!(aabb.center(), Vec3::ZERO);
@@ -598,7 +779,7 @@ mod tests {
     #[test]
     fn test_aabb_contains() {
         let aabb = AABB::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(1.0, 1.0, 1.0));
-        
+
         assert!(aabb.contains(Vec3::ZERO));
         assert!(aabb.contains(Vec3::new(0.5, 0.5, 0.5)));
         assert!(!aabb.contains(Vec3::new(2.0, 0.0, 0.0)));
@@ -608,7 +789,7 @@ mod tests {
     fn test_aabb_merge() {
         let aabb1 = AABB::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(1.0, 1.0, 1.0));
         let aabb2 = AABB::new(Vec3::new(-1.0, -1.0, -1.0), Vec3::new(0.5, 0.5, 0.5));
-        
+
         let merged = aabb1.merge(&aabb2);
         assert_eq!(merged.min, Vec3::new(-1.0, -1.0, -1.0));
         assert_eq!(merged.max, Vec3::new(1.0, 1.0, 1.0));
@@ -642,16 +823,11 @@ mod tests {
             [1.0, 0.0, 0.0, 1.0],
             [1.0, 0.0, 0.0, 1.0],
         ];
-        let uvs = vec![
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [1.0, 1.0],
-            [0.0, 1.0],
-        ];
+        let uvs = vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
         let indices = vec![0, 1, 2, 0, 2, 3];
 
         let meshlets = generate_meshlets(&positions, &normals, &tangents, &uvs, &indices).unwrap();
-        
+
         assert!(!meshlets.is_empty());
         assert_eq!(meshlets[0].triangle_count(), 2);
         assert_eq!(meshlets[0].vertex_count(), 4);
@@ -670,31 +846,35 @@ mod tests {
         for y in 0..10 {
             for x in 0..10 {
                 let base_idx = positions.len() as u32;
-                
+
                 // Add 4 vertices for this quad
                 positions.push([x as f32, y as f32, 0.0]);
                 positions.push([(x + 1) as f32, y as f32, 0.0]);
                 positions.push([(x + 1) as f32, (y + 1) as f32, 0.0]);
                 positions.push([x as f32, (y + 1) as f32, 0.0]);
-                
+
                 for _ in 0..4 {
                     normals.push([0.0, 0.0, 1.0]);
                     tangents.push([1.0, 0.0, 0.0, 1.0]);
                     uvs.push([0.0, 0.0]);
                 }
-                
+
                 // Add 2 triangles
                 indices.extend_from_slice(&[
-                    base_idx, base_idx + 1, base_idx + 2,
-                    base_idx, base_idx + 2, base_idx + 3,
+                    base_idx,
+                    base_idx + 1,
+                    base_idx + 2,
+                    base_idx,
+                    base_idx + 2,
+                    base_idx + 3,
                 ]);
             }
         }
 
         let meshlets = generate_meshlets(&positions, &normals, &tangents, &uvs, &indices).unwrap();
-        
+
         assert!(!meshlets.is_empty());
-        
+
         // Verify all triangles are accounted for
         let total_triangles: usize = meshlets.iter().map(|m| m.triangle_count()).sum();
         assert_eq!(total_triangles, 200); // 10x10 grid = 100 quads = 200 triangles
@@ -702,26 +882,18 @@ mod tests {
 
     #[test]
     fn test_bounding_cone() {
-        let positions = vec![
-            [0.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0],
-            [0.5, 1.0, 0.0],
-        ];
-        let normals = vec![
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-            [0.0, 0.0, 1.0],
-        ];
+        let positions = vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, 1.0, 0.0]];
+        let normals = vec![[0.0, 0.0, 1.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]];
         let indices = vec![0, 1, 2];
 
         let cone = BoundingCone::from_triangles(&positions, &normals, &indices);
-        
+
         // Cone should point in +Z direction
         assert!(cone.axis.z > 0.9);
-        
+
         // Should be backfacing when viewed from -Z
         assert!(cone.is_backfacing(Vec3::new(0.0, 0.0, -1.0)));
-        
+
         // Should not be backfacing when viewed from +Z
         assert!(!cone.is_backfacing(Vec3::new(0.0, 0.0, 1.0)));
     }
@@ -747,20 +919,16 @@ mod tests {
             [1.0, 0.0, 0.0, 1.0],
             [1.0, 0.0, 0.0, 1.0],
         ];
-        let uvs = vec![
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [1.0, 1.0],
-            [0.0, 1.0],
-        ];
+        let uvs = vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
         let indices = vec![0, 1, 2, 0, 2, 3];
 
-        let hierarchy = generate_lod_hierarchy(&positions, &normals, &tangents, &uvs, &indices, 3).unwrap();
-        
+        let hierarchy =
+            generate_lod_hierarchy(&positions, &normals, &tangents, &uvs, &indices, 3).unwrap();
+
         assert!(hierarchy.lod_count > 0);
         assert!(!hierarchy.meshlets.is_empty());
         assert_eq!(hierarchy.lod_ranges.len(), hierarchy.lod_count as usize);
-        
+
         // Verify LOD 0 exists
         assert!(!hierarchy.lod_ranges[0].is_empty());
     }
@@ -769,13 +937,13 @@ mod tests {
     fn test_quadric_error() {
         let q1 = QuadricError::from_plane(1.0, 0.0, 0.0, 0.0);
         let q2 = QuadricError::from_plane(0.0, 1.0, 0.0, 0.0);
-        
+
         let combined = q1.add(&q2);
-        
+
         // Error at origin should be 0
         let error = combined.error(Vec3::ZERO);
         assert!(error.abs() < 0.001);
-        
+
         // Error should increase with distance
         let error_far = combined.error(Vec3::new(1.0, 1.0, 0.0));
         assert!(error_far > error);
@@ -784,11 +952,11 @@ mod tests {
     #[test]
     fn test_lod_error_computation() {
         let aabb = AABB::new(Vec3::ZERO, Vec3::new(10.0, 10.0, 10.0));
-        
+
         let error_lod0 = compute_lod_error(&aabb, 0);
         let error_lod1 = compute_lod_error(&aabb, 1);
         let error_lod2 = compute_lod_error(&aabb, 2);
-        
+
         // Error should increase with LOD level
         assert!(error_lod1 > error_lod0);
         assert!(error_lod2 > error_lod1);
@@ -813,7 +981,7 @@ mod tests {
         // Test serialization
         let serialized = ron::ser::to_string(&meshlet).unwrap();
         let deserialized: Meshlet = ron::from_str(&serialized).unwrap();
-        
+
         assert_eq!(meshlet.vertices, deserialized.vertices);
         assert_eq!(meshlet.indices, deserialized.indices);
         assert_eq!(meshlet.lod_level, deserialized.lod_level);

@@ -6,7 +6,8 @@ fn persistence_stress_benchmark(c: &mut Criterion) {
         entity_count: 2000,
         ai_entity_count: 200,
         network_entity_count: 100,
-        duration_secs: 1,
+        test_duration_seconds: 60, // Set to desired duration
+        max_memory_mb: 1024,       // Set to desired memory limit
     };
 
     c.bench_function("persistence_stress", |b| {

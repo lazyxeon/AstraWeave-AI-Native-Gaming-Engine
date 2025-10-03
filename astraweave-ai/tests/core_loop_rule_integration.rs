@@ -75,7 +75,10 @@ fn test_rule_mode_deterministic_planning() {
     let plan = dispatch_planner(&controller, &snapshot).expect("Planning should succeed");
 
     // Validate plan structure
-    assert!(!plan.steps.is_empty(), "Rule orchestrator should produce steps");
+    assert!(
+        !plan.steps.is_empty(),
+        "Rule orchestrator should produce steps"
+    );
     assert!(
         plan.plan_id.starts_with("plan-"),
         "Plan should have ID prefix"

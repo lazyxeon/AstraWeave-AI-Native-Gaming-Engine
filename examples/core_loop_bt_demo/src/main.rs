@@ -66,13 +66,7 @@ impl DemoState {
         );
 
         // Spawn BT agent at first waypoint
-        let agent_id = world.spawn(
-            "BTAgent",
-            patrol_waypoints[0],
-            Team { id: 1 },
-            80,
-            10,
-        );
+        let agent_id = world.spawn("BTAgent", patrol_waypoints[0], Team { id: 1 }, 80, 10);
 
         // Add some obstacles (deterministic)
         for i in 0..5 {
@@ -121,7 +115,8 @@ impl DemoState {
                 // Check if reached waypoint
                 let waypoint = self.patrol_waypoints[self.current_waypoint];
                 if agent_pos == waypoint {
-                    self.current_waypoint = (self.current_waypoint + 1) % self.patrol_waypoints.len();
+                    self.current_waypoint =
+                        (self.current_waypoint + 1) % self.patrol_waypoints.len();
                 }
 
                 // Check for detection
@@ -165,11 +160,11 @@ impl DemoState {
 
     fn move_toward(&mut self, target: IVec2) {
         let agent_pos = self.world.pos_of(self.agent_id).unwrap();
-        
+
         // Simple movement (one step toward target)
         let dx = (target.x - agent_pos.x).signum();
         let dy = (target.y - agent_pos.y).signum();
-        
+
         let new_pos = IVec2 {
             x: agent_pos.x + dx,
             y: agent_pos.y + dy,
@@ -187,25 +182,34 @@ impl DemoState {
         println!("\n=== BT PATROL DEMO ===");
         println!("Mode: BehaviorTree");
         println!("Tick: {}", self.tick_count);
-        println!("Time: {:.2}s (scale: {:.1}x)", self.world.t, self.time_scale);
+        println!(
+            "Time: {:.2}s (scale: {:.1}x)",
+            self.world.t, self.time_scale
+        );
         println!("Current Node: {:?}", self.bt_state);
         println!("Status: {}", if self.paused { "PAUSED" } else { "RUNNING" });
-        
+
         // Agent state
         let agent_pos = self.world.pos_of(self.agent_id).unwrap();
         let agent_hp = self.world.health(self.agent_id).unwrap().hp;
-        println!("\nAgent: pos=({}, {}), hp={}", agent_pos.x, agent_pos.y, agent_hp);
-        
+        println!(
+            "\nAgent: pos=({}, {}), hp={}",
+            agent_pos.x, agent_pos.y, agent_hp
+        );
+
         // Target state
         let target_pos = self.world.pos_of(self.target_id).unwrap();
         let target_hp = self.world.health(self.target_id).unwrap().hp;
-        println!("Target: pos=({}, {}), hp={}", target_pos.x, target_pos.y, target_hp);
-        
+        println!(
+            "Target: pos=({}, {}), hp={}",
+            target_pos.x, target_pos.y, target_hp
+        );
+
         // Distance/LOS
         let distance = (agent_pos.x - target_pos.x).abs() + (agent_pos.y - target_pos.y).abs();
         let has_los = distance <= 6;
         println!("Distance: {}, LOS: {}", distance, has_los);
-        
+
         // Waypoint info
         if self.bt_state == BtState::Patrol {
             let waypoint = self.patrol_waypoints[self.current_waypoint];

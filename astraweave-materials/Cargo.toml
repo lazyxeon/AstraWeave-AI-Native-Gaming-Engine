@@ -8,4 +8,4 @@ license.workspace = true
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-naga = { version = "26.0", features = ["wgsl-in"] }
+naga = { version = "25.0", features = ["wgsl-in"] }

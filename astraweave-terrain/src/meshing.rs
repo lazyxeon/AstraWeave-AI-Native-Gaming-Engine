@@ -8,6 +8,7 @@
 //! - Generates more uniform triangles
 //! - Handles hermite data (density + gradient)
 
+use crate::marching_cubes_tables::{EDGE_ENDPOINTS, MC_EDGE_TABLE, MC_TRI_TABLE};
 use crate::voxel_data::{ChunkCoord, Voxel, VoxelChunk, CHUNK_SIZE};
 use glam::{IVec3, Vec3};
 use std::collections::HashMap;
@@ -66,7 +67,10 @@ struct EdgeKey {
 
 impl EdgeKey {
     fn new(p1: IVec3, p2: IVec3) -> Self {
-        if p1.x < p2.x || (p1.x == p2.x && p1.y < p2.y) || (p1.x == p2.x && p1.y == p2.y && p1.z < p2.z) {
+        if p1.x < p2.x
+            || (p1.x == p2.x && p1.y < p2.y)
+            || (p1.x == p2.x && p1.y == p2.y && p1.z < p2.z)
+        {
             Self { min: p1, max: p2 }
         } else {
             Self { min: p2, max: p1 }
@@ -75,6 +79,7 @@ impl EdgeKey {
 }
 
 /// Dual Contouring mesh generator
+#[derive(Clone)]
 pub struct DualContouring {
     /// Vertex cache for deduplication
     vertex_cache: HashMap<IVec3, u32>,
@@ -181,15 +186,29 @@ impl DualContouring {
 
     /// Compute vertex position using QEF (Quadratic Error Function) minimization
     /// Simplified version: use average of edge intersections
-    fn compute_vertex_position(&mut self, chunk: &VoxelChunk, cell_pos: IVec3, corners: &[Option<Voxel>; 8]) -> Vec3 {
+    fn compute_vertex_position(
+        &mut self,
+        chunk: &VoxelChunk,
+        cell_pos: IVec3,
+        corners: &[Option<Voxel>; 8],
+    ) -> Vec3 {
         let mut sum = Vec3::ZERO;
         let mut count = 0;
 
         // Check all 12 edges of the cube
         let edges = [
-            (0, 1), (1, 2), (2, 3), (3, 0), // Bottom face
-            (4, 5), (5, 6), (6, 7), (7, 4), // Top face
-            (0, 4), (1, 5), (2, 6), (3, 7), // Vertical edges
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0), // Bottom face
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (7, 4), // Top face
+            (0, 4),
+            (1, 5),
+            (2, 6),
+            (3, 7), // Vertical edges
         ];
 
         for (i, j) in edges.iter() {
@@ -198,7 +217,7 @@ impl DualContouring {
                 if v1.is_solid() != v2.is_solid() {
                     let p1 = self.corner_offset(*i);
                     let p2 = self.corner_offset(*j);
-                    
+
                     // Linear interpolation based on density
                     let t = if (v1.density - v2.density).abs() > 0.001 {
                         (0.5 - v1.density) / (v2.density - v1.density)
@@ -206,7 +225,7 @@ impl DualContouring {
                         0.5
                     };
                     let t = t.clamp(0.0, 1.0);
-                    
+
                     let intersection = p1 + (p2 - p1) * t;
                     sum += intersection;
                     count += 1;
@@ -232,8 +251,6 @@ impl DualContouring {
 
     /// Compute vertex normal using central differences
     fn compute_vertex_normal(&self, chunk: &VoxelChunk, cell_pos: IVec3) -> Vec3 {
-        let epsilon = 1.0;
-        
         let dx = self.sample_density(chunk, cell_pos + IVec3::new(1, 0, 0))
             - self.sample_density(chunk, cell_pos - IVec3::new(1, 0, 0));
         let dy = self.sample_density(chunk, cell_pos + IVec3::new(0, 1, 0))
@@ -255,33 +272,65 @@ impl DualContouring {
     }
 
     /// Generate triangles for a cell based on configuration
+    /// Uses proper Marching Cubes lookup tables for watertight meshes
     fn generate_cell_triangles(&self, cell_pos: IVec3, config: u8, indices: &mut Vec<u32>) {
-        // Simplified triangle generation based on configuration
-        // In a full implementation, this would use edge tables like Marching Cubes
-        // For now, we generate a simple quad for demonstration
-        
-        if let Some(&vertex_idx) = self.vertex_cache.get(&cell_pos) {
-            // Check neighboring cells and create triangles
-            // This is a simplified version - full DC would use edge-based triangulation
-            
-            // Generate triangles connecting to neighboring vertices
-            let neighbors = [
-                cell_pos + IVec3::new(1, 0, 0),
-                cell_pos + IVec3::new(0, 1, 0),
-                cell_pos + IVec3::new(0, 0, 1),
-            ];
+        // Get the edge table value for this configuration
+        let edge_flags = MC_EDGE_TABLE[config as usize];
 
-            for i in 0..neighbors.len() {
-                let n1 = neighbors[i];
-                let n2 = neighbors[(i + 1) % neighbors.len()];
+        // If no edges have vertices, skip this cell
+        if edge_flags == 0 {
+            return;
+        }
 
-                if let (Some(&idx1), Some(&idx2)) = (self.vertex_cache.get(&n1), self.vertex_cache.get(&n2)) {
-                    // Create triangle
-                    indices.push(vertex_idx);
-                    indices.push(idx1);
-                    indices.push(idx2);
-                }
+        // Build list of edge vertices (up to 12 edges)
+        let mut edge_vertices = [None; 12];
+        for edge_idx in 0..12 {
+            if (edge_flags & (1 << edge_idx)) != 0 {
+                // This edge has a vertex on the isosurface
+                let (c0_idx, c1_idx) = EDGE_ENDPOINTS[edge_idx];
+
+                // Compute corner positions
+                let corner_offsets = [
+                    IVec3::new(0, 0, 0), // 0
+                    IVec3::new(1, 0, 0), // 1
+                    IVec3::new(1, 0, 1), // 2
+                    IVec3::new(0, 0, 1), // 3
+                    IVec3::new(0, 1, 0), // 4
+                    IVec3::new(1, 1, 0), // 5
+                    IVec3::new(1, 1, 1), // 6
+                    IVec3::new(0, 1, 1), // 7
+                ];
+
+                let p0 = cell_pos + corner_offsets[c0_idx];
+                let p1 = cell_pos + corner_offsets[c1_idx];
+                let edge_key = EdgeKey::new(p0, p1);
+
+                // Look up the vertex index (should already exist from process_cell)
+                edge_vertices[edge_idx] = self.vertex_cache.get(&edge_key.min).copied();
             }
+        }
+
+        // Generate triangles using the triangle table
+        let tri_config = MC_TRI_TABLE[config as usize];
+        let mut i = 0;
+
+        while i < 15 && tri_config[i] != -1 {
+            // Each triangle uses 3 edge indices
+            let e0 = tri_config[i] as usize;
+            let e1 = tri_config[i + 1] as usize;
+            let e2 = tri_config[i + 2] as usize;
+
+            // Get vertex indices from edge vertices
+            if let (Some(v0), Some(v1), Some(v2)) =
+                (edge_vertices[e0], edge_vertices[e1], edge_vertices[e2])
+            {
+                // Add triangle (counter-clockwise winding)
+                indices.push(v0);
+                indices.push(v1);
+                indices.push(v2);
+            }
+
+            i += 3;
         }
     }
 }
@@ -316,7 +365,7 @@ impl AsyncMeshGenerator {
     pub async fn generate_meshes_parallel(&mut self, chunks: Vec<VoxelChunk>) -> Vec<ChunkMesh> {
         // Use rayon for parallel processing
         use rayon::prelude::*;
-        
+
         chunks
             .into_par_iter()
             .map(|chunk| {
@@ -392,10 +441,10 @@ mod tests {
     fn test_dual_contouring_empty_chunk() {
         let coord = ChunkCoord::new(0, 0, 0);
         let chunk = VoxelChunk::new(coord);
-        
+
         let mut dc = DualContouring::new();
         let mesh = dc.generate_mesh(&chunk);
-        
+
         assert!(mesh.is_empty());
     }
 
@@ -403,13 +452,13 @@ mod tests {
     fn test_dual_contouring_single_voxel() {
         let coord = ChunkCoord::new(0, 0, 0);
         let mut chunk = VoxelChunk::new(coord);
-        
+
         // Set a single solid voxel
         chunk.set_voxel(IVec3::new(5, 5, 5), Voxel::new(1.0, 1));
-        
+
         let mut dc = DualContouring::new();
         let mesh = dc.generate_mesh(&chunk);
-        
+
         // Should generate some vertices
         assert!(!mesh.vertices.is_empty());
     }
@@ -421,7 +470,7 @@ mod tests {
             normal: Vec3::Y,
             material: 5,
         };
-        
+
         assert_eq!(vertex.position.x, 1.0);
         assert_eq!(vertex.normal, Vec3::Y);
         assert_eq!(vertex.material, 5);
@@ -431,7 +480,7 @@ mod tests {
     fn test_lod_selection() {
         let config = LodConfig::default();
         let mut lod_gen = LodMeshGenerator::new(config);
-        
+
         assert_eq!(lod_gen.select_lod_level(50.0), 0);
         assert_eq!(lod_gen.select_lod_level(200.0), 1);
         assert_eq!(lod_gen.select_lod_level(400.0), 2);
@@ -442,10 +491,10 @@ mod tests {
     fn test_edge_key_ordering() {
         let p1 = IVec3::new(0, 0, 0);
         let p2 = IVec3::new(1, 0, 0);
-        
+
         let key1 = EdgeKey::new(p1, p2);
         let key2 = EdgeKey::new(p2, p1);
-        
+
         assert_eq!(key1, key2);
     }
 }

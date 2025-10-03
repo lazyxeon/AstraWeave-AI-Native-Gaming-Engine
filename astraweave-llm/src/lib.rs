@@ -437,7 +437,7 @@ impl LlmClient for OllamaChatClient {
 
             // We'll periodically flush partial assembled assistant output to disk so
             // an interrupted run can still be inspected. Track last flush size.
-            let mut last_flush = 0usize;
+            let last_flush = 0usize;
             let mut first_token_at: Option<std::time::Instant> = None;
             while let Some(item) =
                 tokio::time::timeout(std::time::Duration::from_secs(10), stream.next())
@@ -1057,7 +1057,7 @@ pub fn sanitize_plan(
                 && *duration <= 10.0
                 && reg.tools.iter().any(|t| t.name == "cover_fire")
         }
-        ActionStep::Revive { ally_id } => {
+        ActionStep::Revive { ally_id: _ } => {
             // Check ally exists (simplified: allow any ally for now, or validate against known ally IDs)
             reg.tools.iter().any(|t| t.name == "revive")
         }

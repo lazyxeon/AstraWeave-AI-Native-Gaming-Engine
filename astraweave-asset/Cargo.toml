@@ -14,7 +14,7 @@ base64 = "0.22"
 sha2 = "0.10"
 hex = "0.4"
 uuid = { version = "1", features = ["v4"] }
-tokio = { version = "1", features = ["sync", "rt-multi-thread"] }
+tokio = { version = "1", features = ["sync", "rt-multi-thread", "fs"] }
 notify = "6"
 walkdir = "2"
 toml = "0.8"
@@ -22,6 +22,9 @@ ron = "0.8"
 
 # Optional: glTF parsing (CPU side) – stub for Phase 0; wire actual loader later
 gltf = { version = "1.4", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "fs"] }
 
 [features]
 gltf = ["dep:gltf"]

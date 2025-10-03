@@ -9,7 +9,7 @@
 //! WorldPartition
 //! ├── Grid (HashMap<GridCoord, Cell>)
 //! │   └── Cell
-//! │       ├── Entities (Vec<EntityId>)
+//! │       ├── Entities (Vec<Entity>)
 //! │       ├── Assets (Vec<AssetRef>)
 //! │       └── State (Unloaded/Loading/Loaded)
 //! └── WorldPartitionManager
@@ -40,8 +40,8 @@ use glam::{Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 
-#[cfg(feature = "ecs")]
-use crate::ecs::Entity as EntityId;
+// Entity is just a u64 ID
+pub type Entity = u64;
 
 /// Grid coordinate in 3D space (i32 for signed coordinates)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -256,9 +256,21 @@ impl Frustum {
 
             // Get positive vertex (furthest point in direction of plane normal)
             let p = Vec3::new(
-                if normal.x >= 0.0 { aabb.max.x } else { aabb.min.x },
-                if normal.y >= 0.0 { aabb.max.y } else { aabb.min.y },
-                if normal.z >= 0.0 { aabb.max.z } else { aabb.min.z },
+                if normal.x >= 0.0 {
+                    aabb.max.x
+                } else {
+                    aabb.min.x
+                },
+                if normal.y >= 0.0 {
+                    aabb.max.y
+                } else {
+                    aabb.min.y
+                },
+                if normal.z >= 0.0 {
+                    aabb.max.z
+                } else {
+                    aabb.min.z
+                },
             );
 
             // If positive vertex is outside plane, AABB is completely outside
@@ -270,7 +282,12 @@ impl Frustum {
     }
 
     /// Get cells within frustum (simplified: use sphere around camera)
-    pub fn cells_in_frustum(&self, camera_pos: Vec3, cell_size: f32, radius: f32) -> Vec<GridCoord> {
+    pub fn cells_in_frustum(
+        &self,
+        camera_pos: Vec3,
+        cell_size: f32,
+        radius: f32,
+    ) -> Vec<GridCoord> {
         let camera_cell = GridCoord::from_world_pos(camera_pos, cell_size);
         let radius_cells = (radius / cell_size).ceil() as i32;
 
@@ -278,11 +295,8 @@ impl Frustum {
         for dx in -radius_cells..=radius_cells {
             for dy in -radius_cells..=radius_cells {
                 for dz in -radius_cells..=radius_cells {
-                    let coord = GridCoord::new(
-                        camera_cell.x + dx,
-                        camera_cell.y + dy,
-                        camera_cell.z + dz,
-                    );
+                    let coord =
+                        GridCoord::new(camera_cell.x + dx, camera_cell.y + dy, camera_cell.z + dz);
 
                     // Check if cell AABB intersects frustum
                     let cell_center = coord.to_world_center(cell_size);
@@ -329,10 +343,7 @@ pub enum CellState {
 pub struct Cell {
     pub coord: GridCoord,
     pub state: CellState,
-    #[cfg(feature = "ecs")]
-    pub entities: Vec<EntityId>,
-    #[cfg(not(feature = "ecs"))]
-    pub entities: Vec<u64>, // Fallback to u64 IDs
+    pub entities: Vec<Entity>,
     pub assets: Vec<AssetRef>,
     pub bounds: AABB,
 }
@@ -412,8 +423,7 @@ impl WorldPartition {
     }
 
     /// Assign entity to cell based on position
-    #[cfg(feature = "ecs")]
-    pub fn assign_entity_to_cell(&mut self, entity: EntityId, position: Vec3) {
+    pub fn assign_entity_to_cell(&mut self, entity: Entity, position: Vec3) {
         let coord = GridCoord::from_world_pos(position, self.config.cell_size);
         let cell = self.get_or_create_cell(coord);
         if !cell.entities.contains(&entity) {
@@ -422,8 +432,7 @@ impl WorldPartition {
     }
 
     /// Assign entity to cell based on AABB (can span multiple cells)
-    #[cfg(feature = "ecs")]
-    pub fn assign_entity_to_cells_by_bounds(&mut self, entity: EntityId, bounds: AABB) {
+    pub fn assign_entity_to_cells_by_bounds(&mut self, entity: Entity, bounds: AABB) {
         let cells = bounds.overlapping_cells(self.config.cell_size);
         for coord in cells {
             let cell = self.get_or_create_cell(coord);
@@ -434,8 +443,7 @@ impl WorldPartition {
     }
 
     /// Remove entity from all cells
-    #[cfg(feature = "ecs")]
-    pub fn remove_entity(&mut self, entity: EntityId) {
+    pub fn remove_entity(&mut self, entity: Entity) {
         for cell in self.cells.values_mut() {
             cell.entities.retain(|&e| e != entity);
         }
@@ -526,6 +534,16 @@ impl LRUCache {
             self.queue.remove(pos);
         }
     }
+
+    /// Get number of cells in cache
+    pub fn len(&self) -> usize {
+        self.queue.len()
+    }
+
+    /// Check if cache is empty
+    pub fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
 }
 
 #[cfg(test)]
@@ -569,7 +587,7 @@ mod tests {
     fn test_aabb_overlapping_cells() {
         let aabb = AABB::new(Vec3::new(50.0, 0.0, 50.0), Vec3::new(250.0, 10.0, 250.0));
         let cells = aabb.overlapping_cells(100.0);
-        
+
         // Should cover cells (0,0,0), (1,0,0), (0,0,1), (1,0,1), (2,0,1), (1,0,2), (2,0,2)
         assert!(cells.len() >= 4); // At minimum 4 cells
         assert!(cells.contains(&GridCoord::new(0, 0, 0)));
@@ -590,18 +608,18 @@ mod tests {
     #[test]
     fn test_lru_cache() {
         let mut cache = LRUCache::new(3);
-        
+
         cache.touch(GridCoord::new(0, 0, 0));
         cache.touch(GridCoord::new(1, 0, 0));
         cache.touch(GridCoord::new(2, 0, 0));
-        
+
         assert!(cache.contains(GridCoord::new(0, 0, 0)));
         assert_eq!(cache.lru(), Some(GridCoord::new(0, 0, 0)));
-        
+
         // Touch oldest, should move to front
         cache.touch(GridCoord::new(0, 0, 0));
         assert_eq!(cache.lru(), Some(GridCoord::new(1, 0, 0)));
-        
+
         // Add new, should evict LRU
         cache.touch(GridCoord::new(3, 0, 0));
         assert!(!cache.contains(GridCoord::new(1, 0, 0)));
@@ -612,7 +630,7 @@ mod tests {
         let coord = GridCoord::new(0, 0, 0);
         let neighbors_2d = coord.neighbors_2d();
         assert_eq!(neighbors_2d.len(), 8);
-        
+
         let neighbors_3d = coord.neighbors_3d();
         assert_eq!(neighbors_3d.len(), 26);
     }

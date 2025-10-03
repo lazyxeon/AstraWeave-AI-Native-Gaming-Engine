@@ -108,10 +108,7 @@ fn test_goap_mode_deterministic_planning() {
         "Same state should produce same plan ID"
     );
 
-    println!(
-        "GOAP determinism validated: {} steps",
-        plan1.steps.len()
-    );
+    println!("GOAP determinism validated: {} steps", plan1.steps.len());
 }
 
 #[test]
@@ -184,7 +181,10 @@ fn test_goap_mode_policy_variants() {
     };
 
     let plan1 = dispatch_planner(&controller1, &snapshot).expect("GOAP planning should succeed");
-    assert!(!plan1.steps.is_empty(), "Gather/craft policy should produce steps");
+    assert!(
+        !plan1.steps.is_empty(),
+        "Gather/craft policy should produce steps"
+    );
 
     // Policy with different name should still work (uses default goal)
     let controller2 = CAiController {
@@ -241,10 +241,7 @@ fn test_goap_mode_reproducibility() {
 
     // Validate all plans are identical
     for i in 1..10 {
-        assert_eq!(
-            plan_ids[i], plan_ids[0],
-            "All plan IDs should be identical"
-        );
+        assert_eq!(plan_ids[i], plan_ids[0], "All plan IDs should be identical");
         assert_eq!(
             step_counts[i], step_counts[0],
             "All step counts should be identical"

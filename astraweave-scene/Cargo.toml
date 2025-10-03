@@ -9,7 +9,9 @@ glam = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 astraweave-ecs = { path = "../astraweave-ecs" }
-tokio = { workspace = true, features = ["sync", "rt"] }
+astraweave-asset = { path = "../astraweave-asset" }
+tokio = { workspace = true, features = ["sync", "rt", "fs"] }
+wgpu = { workspace = true }
 
 [dev-dependencies]
 astraweave-render = { path = "../astraweave-render" }

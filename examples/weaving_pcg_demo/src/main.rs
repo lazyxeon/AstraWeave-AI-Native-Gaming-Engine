@@ -87,13 +87,7 @@ impl DemoState {
         let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
 
         // Spawn player
-        let player_id = world.spawn(
-            "Player",
-            IVec2 { x: 10, y: 10 },
-            Team { id: 0 },
-            100,
-            0,
-        );
+        let player_id = world.spawn("Player", IVec2 { x: 10, y: 10 }, Team { id: 0 }, 100, 0);
 
         let mut demo = Self {
             world,
@@ -161,7 +155,7 @@ impl DemoState {
         // Process current encounter
         if self.current_encounter_idx < self.encounters.len() {
             let encounter = &mut self.encounters[self.current_encounter_idx];
-            
+
             if !encounter.completed {
                 // Simulate encounter effects
                 match encounter.encounter_type {
@@ -197,9 +191,7 @@ impl DemoState {
     }
 
     fn detect_patterns(&mut self) {
-        let completed: Vec<_> = self.encounters.iter()
-            .filter(|e| e.completed)
-            .collect();
+        let completed: Vec<_> = self.encounters.iter().filter(|e| e.completed).collect();
 
         if completed.is_empty() {
             return;
@@ -217,9 +209,7 @@ impl DemoState {
         self.pattern.combat_streak = streak;
 
         // Average difficulty
-        let total_difficulty: i32 = completed.iter()
-            .map(|e| e.difficulty)
-            .sum();
+        let total_difficulty: i32 = completed.iter().map(|e| e.difficulty).sum();
         self.pattern.avg_difficulty = total_difficulty as f32 / completed.len() as f32;
 
         // Tension score
@@ -286,7 +276,7 @@ impl DemoState {
         // Simple adjudication: accept first intent if tension budget allows
         if !self.pending_intents.is_empty() {
             let intent = self.pending_intents[0].clone();
-            
+
             // Check cooldown/budget (simplified)
             let can_accept = match intent {
                 Intent::SpawnAid => self.tension < 8.0,
@@ -382,18 +372,31 @@ impl DemoState {
 
         // Player state
         println!("\n📊 Player State:");
-        println!("  Health: {}/100 ({})", self.player_health, self.pattern.health_trend);
+        println!(
+            "  Health: {}/100 ({})",
+            self.player_health, self.pattern.health_trend
+        );
         println!("  Tension: {:.1}", self.tension);
 
         // Current encounter
-        println!("\n🎲 Current Encounter: {}/{}", 
-                 self.current_encounter_idx + 1, self.encounters.len());
+        println!(
+            "\n🎲 Current Encounter: {}/{}",
+            self.current_encounter_idx + 1,
+            self.encounters.len()
+        );
         if self.current_encounter_idx < self.encounters.len() {
             let enc = &self.encounters[self.current_encounter_idx];
             println!("  Type: {:?}", enc.encounter_type);
             println!("  Difficulty: {}", enc.difficulty);
             println!("  Position: ({}, {})", enc.position.x, enc.position.y);
-            println!("  Status: {}", if enc.completed { "✓ Completed" } else { "⏳ Active" });
+            println!(
+                "  Status: {}",
+                if enc.completed {
+                    "✓ Completed"
+                } else {
+                    "⏳ Active"
+                }
+            );
         }
 
         // Pattern analysis
@@ -414,19 +417,29 @@ impl DemoState {
         for intent in &self.pending_intents {
             println!("    - {:?}", intent);
         }
-        println!("  Accepted (this run): {} intents", self.accepted_intents.len());
+        println!(
+            "  Accepted (this run): {} intents",
+            self.accepted_intents.len()
+        );
 
         // Encounter queue
         println!("\n📝 Upcoming Encounters:");
-        let upcoming: Vec<_> = self.encounters.iter()
+        let upcoming: Vec<_> = self
+            .encounters
+            .iter()
             .skip(self.current_encounter_idx + 1)
             .take(3)
             .collect();
         for enc in upcoming {
-            println!("  [{:02}] {:?} (diff: {})", enc.id, enc.encounter_type, enc.difficulty);
+            println!(
+                "  [{:02}] {:?} (diff: {})",
+                enc.id, enc.encounter_type, enc.difficulty
+            );
         }
 
-        println!("\nControls: [Space] New Encounter | [N] Next | [P] Pattern | [R] Reseed | [Q] Quit");
+        println!(
+            "\nControls: [Space] New Encounter | [N] Next | [P] Pattern | [R] Reseed | [Q] Quit"
+        );
         println!("============================");
     }
 
@@ -434,17 +447,25 @@ impl DemoState {
         println!("\n╔═══════════════════════════════╗");
         println!("║   PATTERN ANALYSIS DETAIL     ║");
         println!("╚═══════════════════════════════╝");
-        
+
         println!("\n🔍 Encounter History:");
         for (i, enc) in self.encounters.iter().enumerate() {
             let status = if enc.completed { "✓" } else { "○" };
-            println!("  {}{:02}: {:?} (diff: {}, pos: {:?})",
-                     status, i + 1, enc.encounter_type, enc.difficulty, enc.position);
+            println!(
+                "  {}{:02}: {:?} (diff: {}, pos: {:?})",
+                status,
+                i + 1,
+                enc.encounter_type,
+                enc.difficulty,
+                enc.position
+            );
         }
 
         println!("\n📊 Statistics:");
         let completed = self.encounters.iter().filter(|e| e.completed).count();
-        let combat_count = self.encounters.iter()
+        let combat_count = self
+            .encounters
+            .iter()
             .filter(|e| e.completed && e.encounter_type == EncounterType::Combat)
             .count();
         println!("  Total Encounters: {}", self.encounters.len());
@@ -497,6 +518,9 @@ fn main() -> anyhow::Result<()> {
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
-    println!("\n✅ Demo finished. Total encounters: {}", demo.encounter_count);
+    println!(
+        "\n✅ Demo finished. Total encounters: {}",
+        demo.encounter_count
+    );
     Ok(())
 }

@@ -82,13 +82,7 @@ impl DemoState {
         let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
 
         // Spawn agent at center
-        let agent_id = world.spawn(
-            "CraftAgent",
-            IVec2 { x: 10, y: 10 },
-            Team { id: 0 },
-            100,
-            0,
-        );
+        let agent_id = world.spawn("CraftAgent", IVec2 { x: 10, y: 10 }, Team { id: 0 }, 100, 0);
 
         // Create campfire
         let campfire_pos = IVec2 { x: 10, y: 10 };
@@ -203,14 +197,22 @@ impl DemoState {
 
         match action {
             GoapAction::GoToTree => {
-                if let Some(node) = self.resources.iter().find(|n| n.resource_type == ResourceType::Wood && n.amount > 0) {
+                if let Some(node) = self
+                    .resources
+                    .iter()
+                    .find(|n| n.resource_type == ResourceType::Wood && n.amount > 0)
+                {
                     self.move_toward(node.pos)
                 } else {
                     true // No wood available, skip
                 }
             }
             GoapAction::ChopWood => {
-                if let Some(node) = self.resources.iter_mut().find(|n| n.resource_type == ResourceType::Wood && n.pos == agent_pos) {
+                if let Some(node) = self
+                    .resources
+                    .iter_mut()
+                    .find(|n| n.resource_type == ResourceType::Wood && n.pos == agent_pos)
+                {
                     if node.amount > 0 {
                         node.amount -= 1;
                         self.inventory.wood += 1;
@@ -221,14 +223,22 @@ impl DemoState {
                 }
             }
             GoapAction::GoToBerries => {
-                if let Some(node) = self.resources.iter().find(|n| n.resource_type == ResourceType::Berries && n.amount > 0) {
+                if let Some(node) = self
+                    .resources
+                    .iter()
+                    .find(|n| n.resource_type == ResourceType::Berries && n.amount > 0)
+                {
                     self.move_toward(node.pos)
                 } else {
                     true
                 }
             }
             GoapAction::GatherBerries => {
-                if let Some(node) = self.resources.iter_mut().find(|n| n.resource_type == ResourceType::Berries && n.pos == agent_pos) {
+                if let Some(node) = self
+                    .resources
+                    .iter_mut()
+                    .find(|n| n.resource_type == ResourceType::Berries && n.pos == agent_pos)
+                {
                     if node.amount > 0 {
                         node.amount -= 1;
                         self.inventory.berries += 1;
@@ -240,7 +250,10 @@ impl DemoState {
             }
             GoapAction::GoToCampfire => self.move_toward(self.campfire_pos),
             GoapAction::CookFood => {
-                if agent_pos == self.campfire_pos && self.inventory.wood >= 2 && self.inventory.berries >= 2 {
+                if agent_pos == self.campfire_pos
+                    && self.inventory.wood >= 2
+                    && self.inventory.berries >= 2
+                {
                     self.inventory.wood -= 2;
                     self.inventory.berries -= 2;
                     self.inventory.cooked_food += 1;
@@ -286,7 +299,10 @@ impl DemoState {
         println!("\n=== GOAP CRAFT DEMO ===");
         println!("Mode: GOAP (Goal-Oriented Action Planning)");
         println!("Tick: {}", self.tick_count);
-        println!("Time: {:.2}s (scale: {:.1}x)", self.world.t, self.time_scale);
+        println!(
+            "Time: {:.2}s (scale: {:.1}x)",
+            self.world.t, self.time_scale
+        );
         println!("Status: {}", if self.paused { "PAUSED" } else { "RUNNING" });
 
         // Goal state
@@ -311,8 +327,10 @@ impl DemoState {
         // Resources
         println!("\nWorld Resources:");
         for (i, node) in self.resources.iter().enumerate() {
-            println!("  {:?} at ({}, {}): {} remaining",
-                     node.resource_type, node.pos.x, node.pos.y, node.amount);
+            println!(
+                "  {:?} at ({}, {}): {} remaining",
+                node.resource_type, node.pos.x, node.pos.y, node.amount
+            );
         }
 
         println!("\nControls: [Space] Pause | [/] Speed | [R] Reset | [G] Add Resource | [Q] Quit");

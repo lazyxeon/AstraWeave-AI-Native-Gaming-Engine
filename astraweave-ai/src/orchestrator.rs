@@ -1,6 +1,6 @@
 //! Orchestrator trait implementations and selection utilities for AstraWeave AI planning.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 #[cfg(feature = "llm_orchestrator")]
 use astraweave_core::{default_tool_registry, ToolRegistry};
 use astraweave_core::{ActionStep, IVec2, PlanIntent, WorldSnapshot};

@@ -1,9 +1,10 @@
 use glam::{Mat4, Quat, Vec3};
 use serde::{Deserialize, Serialize};
 
-pub mod world_partition;
-pub mod streaming;
+pub mod gpu_resource_manager;
 pub mod partitioned_scene;
+pub mod streaming;
+pub mod world_partition;
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Transform {
@@ -237,6 +238,7 @@ pub mod ecs {
         }
 
         /// Mark an entity and all descendants as dirty
+        #[allow(dead_code)]
         fn mark_dirty_recursive(
             world: &mut EcsWorld,
             entity: EntityId,
@@ -261,6 +263,7 @@ pub mod ecs {
     }
 
     /// System to mark dirty transforms when local transforms change
+    #[allow(unused_variables)]
     pub fn mark_dirty_transforms(world: &mut EcsWorld) {
         // In a real system, this would check for changes to CTransformLocal
         // For now, we assume callers manually insert CDirtyTransform when needed

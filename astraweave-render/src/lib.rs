@@ -33,9 +33,11 @@ pub mod skinning_gpu; // Phase 2 Task 5 Phase D: GPU skinning pipeline
 
 // Nanite virtualized geometry system
 #[cfg(feature = "nanite")]
-pub mod nanite_visibility;
+pub mod nanite_gpu_culling;
 #[cfg(feature = "nanite")]
 pub mod nanite_render;
+#[cfg(feature = "nanite")]
+pub mod nanite_visibility; // NEW: GPU-driven culling and visibility
 
 pub use camera::{Camera, CameraController};
 pub use environment::{

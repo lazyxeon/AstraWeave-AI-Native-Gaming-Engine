@@ -6,7 +6,8 @@ fn network_stress_benchmark(c: &mut Criterion) {
         entity_count: 500,
         ai_entity_count: 50,
         network_entity_count: 200,
-        duration_secs: 1,
+        test_duration_seconds: 1, // Set to desired value
+        max_memory_mb: 1024,      // Set to desired value
     };
 
     c.bench_function("network_stress", |b| {

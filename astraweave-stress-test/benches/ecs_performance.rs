@@ -6,7 +6,8 @@ fn ecs_performance_benchmark(c: &mut Criterion) {
         entity_count: 1000,
         ai_entity_count: 100,
         network_entity_count: 50,
-        duration_secs: 1,
+        test_duration_seconds: 1,
+        max_memory_mb: 512,
     };
 
     c.bench_function("ecs_performance", |b| {

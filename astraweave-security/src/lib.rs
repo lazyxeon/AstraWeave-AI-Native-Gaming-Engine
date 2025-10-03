@@ -333,7 +333,7 @@ pub fn sanitize_llm_prompt(prompt: &str, validator: &LLMValidator) -> Result<Str
 }
 
 /// Execute script in sandbox
-pub fn execute_script_sandboxed(
+pub async fn execute_script_sandboxed(
     script: &str,
     sandbox: &ScriptSandbox,
     context: HashMap<String, rhai::Dynamic>,

@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tokio::sync::watch;
@@ -15,6 +14,9 @@ use walkdir;
 
 // Nanite preprocessing module
 pub mod nanite_preprocess;
+
+// World Partition cell loader
+pub mod cell_loader;
 
 #[cfg(feature = "gltf")]
 pub mod gltf_loader {

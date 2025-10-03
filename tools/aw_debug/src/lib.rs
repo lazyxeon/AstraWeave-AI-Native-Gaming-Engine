@@ -53,7 +53,8 @@ impl PerfHud {
                 .enumerate()
                 .map(|(i, dt)| [i as f64, (*dt * 1000.0) as f64])
                 .collect();
-            let line = Line::new(PlotPoints::new(ys)).color(Color32::from_rgb(100, 200, 100));
+            let line = Line::new(PlotPoints::from(ys)).name("frame_time")
+                .color(egui::Color32::from_rgb(100, 200, 100));
             plot_ui.line(line);
         });
 
