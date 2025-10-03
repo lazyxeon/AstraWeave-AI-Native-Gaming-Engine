@@ -1,6 +1,7 @@
 use astraweave_core::*;
+use astraweave_llm::plan_from_llm;
 use astraweave_llm::LlmClient;
-use astraweave_llm::{plan_from_llm, LocalHttpClient, MockLlm};
+use astraweave_llm::PlanSource;
 use std::env;
 
 /// Comprehensive LLM integration example demonstrating multiple client types
@@ -281,6 +282,7 @@ fn create_test_scenario() -> WorldSnapshot {
                 pos: IVec2 { x: 8, y: 6 },
             },
         ],
+        obstacles: vec![],
         objective: Some("Reach extraction point while providing cover".into()),
     }
 }

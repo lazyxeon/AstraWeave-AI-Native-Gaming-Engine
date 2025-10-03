@@ -87,7 +87,7 @@ fn replay_system(world: &mut World) {
 
     // Now update each entity
     for entity in entities_to_update {
-        if let Some(mut replay) = world.get_mut::<CReplayState>(entity) {
+        if let Some(replay) = world.get_mut::<CReplayState>(entity) {
             if replay.current_tick < replay.total_ticks {
                 // Apply next replay event
                 // TODO: Implement replay event application

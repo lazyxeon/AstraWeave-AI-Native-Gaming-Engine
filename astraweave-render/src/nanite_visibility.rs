@@ -16,7 +16,7 @@ impl Frustum {
     /// Extract frustum planes from a view-projection matrix
     pub fn from_matrix(view_proj: Mat4) -> Self {
         let m = view_proj.to_cols_array_2d();
-        
+
         // Extract planes (Gribb-Hartmann method)
         let planes = [
             // Left plane
@@ -25,42 +25,48 @@ impl Frustum {
                 m[1][3] + m[1][0],
                 m[2][3] + m[2][0],
                 m[3][3] + m[3][0],
-            ).normalize(),
+            )
+            .normalize(),
             // Right plane
             Vec4::new(
                 m[0][3] - m[0][0],
                 m[1][3] - m[1][0],
                 m[2][3] - m[2][0],
                 m[3][3] - m[3][0],
-            ).normalize(),
+            )
+            .normalize(),
             // Bottom plane
             Vec4::new(
                 m[0][3] + m[0][1],
                 m[1][3] + m[1][1],
                 m[2][3] + m[2][1],
                 m[3][3] + m[3][1],
-            ).normalize(),
+            )
+            .normalize(),
             // Top plane
             Vec4::new(
                 m[0][3] - m[0][1],
                 m[1][3] - m[1][1],
                 m[2][3] - m[2][1],
                 m[3][3] - m[3][1],
-            ).normalize(),
+            )
+            .normalize(),
             // Near plane
             Vec4::new(
                 m[0][3] + m[0][2],
                 m[1][3] + m[1][2],
                 m[2][3] + m[2][2],
                 m[3][3] + m[3][2],
-            ).normalize(),
+            )
+            .normalize(),
             // Far plane
             Vec4::new(
                 m[0][3] - m[0][2],
                 m[1][3] - m[1][2],
                 m[2][3] - m[2][2],
                 m[3][3] - m[3][2],
-            ).normalize(),
+            )
+            .normalize(),
         ];
 
         Self { planes }
@@ -92,7 +98,7 @@ impl Frustum {
         for plane in &self.planes {
             let normal = Vec3::new(plane.x, plane.y, plane.z);
             let d = plane.w;
-            
+
             let distance = normal.dot(center) + d;
             if distance < -radius {
                 return false;
@@ -131,13 +137,13 @@ impl LODSelector {
         max_lod: u32,
     ) -> u32 {
         let distance = (bounds_center - camera_pos).length();
-        
+
         // Compute projected size in pixels
         let projected_size = self.compute_projected_size(bounds_radius, distance);
-        
+
         // Compute screen-space error threshold
         let error_threshold = lod_error * self.lod_bias;
-        
+
         // Select LOD based on projected size and error
         let lod = if projected_size < error_threshold {
             // Object is small on screen, use lower detail
@@ -167,11 +173,11 @@ pub struct VisibilityBuffer {
     /// Visibility texture (stores meshlet ID and triangle ID)
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
-    
+
     /// Depth texture for Hi-Z occlusion culling
     pub depth_texture: wgpu::Texture,
     pub depth_view: wgpu::TextureView,
-    
+
     /// Width and height
     pub width: u32,
     pub height: u32,
@@ -211,8 +217,7 @@ impl VisibilityBuffer {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
 
@@ -245,47 +250,47 @@ pub struct GpuMeshlet {
     /// Bounding box min
     pub bounds_min: [f32; 3],
     pub vertex_offset: u32,
-    
+
     /// Bounding box max
     pub bounds_max: [f32; 3],
     pub vertex_count: u32,
-    
+
     /// Bounding cone apex
     pub cone_apex: [f32; 3],
     pub triangle_offset: u32,
-    
+
     /// Bounding cone axis
     pub cone_axis: [f32; 3],
     pub triangle_count: u32,
-    
+
     /// Cone cutoff and LOD info
     pub cone_cutoff: f32,
     pub lod_level: u32,
     pub lod_error: f32,
-    pub _padding: u32,
+    pub material_id: u32, // NEW: Material index for texture array sampling
 }
 
 /// Meshlet culling and rendering system
 pub struct MeshletRenderer {
     /// Visibility buffer
     pub visibility_buffer: VisibilityBuffer,
-    
+
     /// Meshlet data buffer
     pub meshlet_buffer: wgpu::Buffer,
-    
+
     /// Vertex data buffer
     pub vertex_buffer: wgpu::Buffer,
-    
+
     /// Index data buffer
     pub index_buffer: wgpu::Buffer,
-    
+
     /// Bind group for meshlet data
     pub bind_group: wgpu::BindGroup,
     pub bind_group_layout: wgpu::BindGroupLayout,
-    
+
     /// Render pipeline
     pub pipeline: wgpu::RenderPipeline,
-    
+
     /// Number of meshlets
     pub meshlet_count: u32,
 }
@@ -400,6 +405,7 @@ impl MeshletRenderer {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[],
+                compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -409,6 +415,7 @@ impl MeshletRenderer {
                     blend: None,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -464,7 +471,7 @@ impl MeshletRenderer {
             let cone_apex = Vec3::from_array(meshlet.cone_apex);
             let cone_axis = Vec3::from_array(meshlet.cone_axis);
             let view_dir = (cone_apex - camera_pos).normalize();
-            
+
             if cone_axis.dot(view_dir) < meshlet.cone_cutoff {
                 continue; // Backfacing
             }
@@ -498,23 +505,11 @@ mod tests {
         let selector = LODSelector::new(1080.0, std::f32::consts::FRAC_PI_3);
 
         // Close object should use high detail (LOD 0)
-        let lod = selector.select_lod(
-            Vec3::new(0.0, 0.0, -5.0),
-            1.0,
-            0.1,
-            Vec3::ZERO,
-            3,
-        );
+        let lod = selector.select_lod(Vec3::new(0.0, 0.0, -5.0), 1.0, 0.1, Vec3::ZERO, 3);
         assert_eq!(lod, 0);
 
         // Far object should use lower detail
-        let lod = selector.select_lod(
-            Vec3::new(0.0, 0.0, -100.0),
-            1.0,
-            0.1,
-            Vec3::ZERO,
-            3,
-        );
+        let lod = selector.select_lod(Vec3::new(0.0, 0.0, -100.0), 1.0, 0.1, Vec3::ZERO, 3);
         assert!(lod > 0);
     }
 }

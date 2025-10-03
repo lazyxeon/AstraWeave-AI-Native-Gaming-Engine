@@ -1,15 +1,85 @@
-//! AstraWeave ECS — deterministic, minimal ECS core tailored for AI-first simulation.
-//! Phase 1 goal: provide archetype-like storage, a fixed schedule, and a plugin boundary.
+//! AstraWeave ECS — Production-grade, AI-native ECS for game development.
+//!
+//! This ECS is designed specifically for AI-first game engines, providing:
+//! - **Archetype-based storage** for cache-friendly iteration (like Bevy/Flecs)
+//! - **Deterministic execution** via fixed schedules and ordered iteration
+//! - **Event system** for AI perception and reactive behaviors
+//! - **System parameters** for ergonomic system signatures
+//! - **Plugin architecture** for modular game systems
+//!
+//! ## Architecture
+//!
+//! The AI-native game loop follows: **Perception → Reasoning → Planning → Action**
+//!
+//! ### System Stages:
+//! 1. **Perception**: Build WorldSnapshots, update AI sensors
+//! 2. **Simulation**: Game logic, cooldowns, state updates
+//! 3. **AI Planning**: Generate PlanIntents from AI orchestrators
+//! 4. **Physics**: Apply forces, resolve collisions
+//! 5. **Presentation**: Rendering, audio, UI updates
+//!
+//! ## Example
+//!
+//! ```rust,ignore
+//! use astraweave_ecs::*;
+//!
+//! #[derive(Clone, Copy)]
+//! struct Position { x: f32, y: f32 }
+//!
+//! #[derive(Clone, Copy)]
+//! struct Velocity { x: f32, y: f32 }
+//!
+//! fn movement_system(world: &mut World) {
+//!     let mut query = QueryMut::<Position>::new(world);
+//!     for (entity, pos) in query.iter_mut() {
+//!         if let Some(vel) = world.get::<Velocity>(entity) {
+//!             pos.x += vel.x;
+//!             pos.y += vel.y;
+//!         }
+//!     }
+//! }
+//!
+//! let mut app = App::new();
+//! app.add_system("simulation", movement_system);
+//! app = app.run_fixed(100); // Run 100 ticks
+//! ```
+
+mod archetype;
+mod events;
+mod system_param;
+
+pub use archetype::*;
+pub use events::*;
+pub use system_param::*;
 
 use std::{
     any::TypeId,
     collections::{BTreeMap, HashMap},
     hash::Hash,
+    ops::{Deref, DerefMut},
 };
 
 pub trait Component: 'static + Send + Sync {}
 impl<T: 'static + Send + Sync> Component for T {}
 
+/// Marker trait for resources (singletons in World)
+pub trait Resource: 'static + Send + Sync {}
+impl<T: 'static + Send + Sync> Resource for T {}
+
+/// System stage identifiers for the AI-native game loop
+pub struct SystemStage;
+
+impl SystemStage {
+    pub const PRE_SIMULATION: &'static str = "pre_simulation";
+    pub const PERCEPTION: &'static str = "perception";
+    pub const SIMULATION: &'static str = "simulation";
+    pub const AI_PLANNING: &'static str = "ai_planning";
+    pub const PHYSICS: &'static str = "physics";
+    pub const POST_SIMULATION: &'static str = "post_simulation";
+    pub const PRESENTATION: &'static str = "presentation";
+}
+
+/// Entity identifier - deterministic, ordered via u64
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct Entity(u64);
@@ -311,6 +381,22 @@ impl World {
             .get(&TypeId::of::<T>())
             .map(|m| m.len())
             .unwrap_or(0)
+    }
+
+    /// Helper: Get resource (returns Option<&T>)
+    pub fn get_resource<T: Resource>(&self) -> Option<&T> {
+        self.resource::<T>()
+    }
+
+    /// Helper: Get mutable resource (returns Option<&mut T>)
+    pub fn get_resource_mut<T: Resource>(&mut self) -> Option<&mut T> {
+        self.resource_mut::<T>()
+    }
+
+    /// Helper: Insert component (Bevy-compatible API)
+    pub fn insert_component<T: Component>(&mut self, e: Entity, c: T) -> anyhow::Result<()> {
+        self.insert(e, c);
+        Ok(())
     }
 }
 

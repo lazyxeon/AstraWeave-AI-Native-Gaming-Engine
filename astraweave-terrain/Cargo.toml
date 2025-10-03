@@ -13,14 +13,15 @@ serde.workspace = true
 astraweave-gameplay = { path = "../astraweave-gameplay" }
 noise = "0.9"
 rayon = "1.11"
-tokio = { version = "1", features = ["sync", "rt"], optional = true }
+tokio = { version = "1", features = ["sync", "rt"] }
 
 [features]
-default = []
-hybrid-voxel = ["tokio"]
+default = ["hybrid-voxel"]
+hybrid-voxel = []
 
 [dev-dependencies]
 criterion.workspace = true
+tokio = { version = "1", features = ["rt", "sync", "macros"] }
 
 [[bench]]
 name = "terrain_generation"

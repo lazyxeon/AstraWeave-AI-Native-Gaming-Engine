@@ -37,6 +37,7 @@ impl CTarget {
     }
 
     /// Try to resolve this target_id to an Entity, returning None if the entity doesn't exist
+    #[allow(unused_variables)]
     pub fn resolve(&self, world: &astraweave_ecs::World) -> Option<Entity> {
         // SAFETY: We're creating an entity from a stored ID.
         // The caller must ensure the world is the correct one.
@@ -255,7 +256,7 @@ mod tests {
             },
         );
         // Activate attack
-        if let Some(mut attack) = app.world.get_mut::<CAttackState>(attacker) {
+        if let Some(attack) = app.world.get_mut::<CAttackState>(attacker) {
             attack.active = true;
         }
 

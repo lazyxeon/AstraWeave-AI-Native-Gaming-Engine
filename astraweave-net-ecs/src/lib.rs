@@ -3,10 +3,9 @@
 //! Provides client-server networking with prediction and reconciliation
 //! integrated into the ECS architecture.
 
-use astraweave_ecs::{App, Component, Entity, Plugin, Query, World};
+use astraweave_ecs::{App, Plugin, Query, World};
 use aw_net_proto::{decode_msg, ClientToServer, Codec, ServerToClient};
 use std::collections::HashMap;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
@@ -202,7 +201,7 @@ fn server_input_processing_system(world: &mut World) {
         }
     }
 
-    for (entity, mut client, _authority) in clients_to_process {
+    for (entity, client, _authority) in clients_to_process {
         // Process validated client inputs
         // TODO: Apply input validation, anti-cheat checks, etc.
 
@@ -216,12 +215,12 @@ pub async fn connect_to_server(
     server_addr: &str,
 ) -> Result<mpsc::UnboundedReceiver<ServerToClient>, Box<dyn std::error::Error>> {
     use futures_util::stream::StreamExt;
-    use tokio::net::TcpStream;
-    use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
+
+    use tokio_tungstenite::connect_async;
 
     let url = format!("ws://{}", server_addr);
     let (ws_stream, _) = connect_async(url).await?;
-    let (mut write, mut read) = ws_stream.split();
+    let (write, mut read) = ws_stream.split();
 
     // Create channels for communication
     let (tx, rx) = mpsc::unbounded_channel();

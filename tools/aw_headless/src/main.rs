@@ -12,7 +12,7 @@ fn main() -> Result<()> {
     let path = std::env::args()
         .nth(1)
         .unwrap_or_else(|| "headless.png".to_string());
-    let mut encoder = PngEncoder::new(std::fs::File::create(&path)?);
+    let encoder = PngEncoder::new(std::fs::File::create(&path)?);
     encoder.write_image(&img, 128, 64, ExtendedColorType::Rgba8)?;
     println!("Wrote {}", path);
     Ok(())

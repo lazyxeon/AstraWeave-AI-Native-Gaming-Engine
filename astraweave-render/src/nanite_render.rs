@@ -3,8 +3,9 @@
 //! This module integrates the meshlet-based rendering system with the existing
 //! clustered forward renderer, material system, and global illumination.
 
-use crate::nanite_visibility::{GpuMeshlet, MeshletRenderer, VisibilityBuffer, Frustum, LODSelector};
-use crate::material::Material;
+use crate::nanite_visibility::{
+    Frustum, GpuMeshlet, LODSelector, MeshletRenderer, VisibilityBuffer,
+};
 use crate::types::Instance;
 use glam::{Mat4, Vec3};
 use wgpu::util::DeviceExt;
@@ -13,14 +14,14 @@ use wgpu::util::DeviceExt;
 pub struct NaniteRenderContext {
     /// Meshlet renderer
     pub meshlet_renderer: MeshletRenderer,
-    
+
     /// LOD selector
     pub lod_selector: LODSelector,
-    
+
     /// Material resolve pipeline (reads visibility buffer and applies materials)
     pub material_pipeline: wgpu::RenderPipeline,
     pub material_bind_group_layout: wgpu::BindGroupLayout,
-    
+
     /// Camera uniform buffer
     pub camera_buffer: wgpu::Buffer,
     pub camera_bind_group: wgpu::BindGroup,
@@ -47,14 +48,8 @@ impl NaniteRenderContext {
         output_format: wgpu::TextureFormat,
     ) -> Self {
         // Create meshlet renderer
-        let meshlet_renderer = MeshletRenderer::new(
-            device,
-            width,
-            height,
-            meshlets,
-            vertices,
-            indices,
-        );
+        let meshlet_renderer =
+            MeshletRenderer::new(device, width, height, meshlets, vertices, indices);
 
         // Create LOD selector
         let lod_selector = LODSelector::new(height as f32, fov);
@@ -68,10 +63,10 @@ impl NaniteRenderContext {
         });
 
         // Create camera bind group layout
-        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Nanite Camera Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
+        let camera_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Nanite Camera Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
@@ -80,50 +75,48 @@ impl NaniteRenderContext {
                         min_binding_size: None,
                     },
                     count: None,
-                },
-            ],
-        });
+                }],
+            });
 
         // Create camera bind group
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Nanite Camera Bind Group"),
             layout: &camera_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
-                },
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_buffer.as_entire_binding(),
+            }],
         });
 
         // Create material resolve bind group layout
-        let material_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Nanite Material Bind Group Layout"),
-            entries: &[
-                // Visibility buffer texture
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Uint,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let material_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Nanite Material Bind Group Layout"),
+                entries: &[
+                    // Visibility buffer texture
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Uint,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // Meshlet data
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // Meshlet data
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
+                ],
+            });
 
         // Create material resolve shader
         let material_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -132,11 +125,12 @@ impl NaniteRenderContext {
         });
 
         // Create material resolve pipeline
-        let material_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Nanite Material Pipeline Layout"),
-            bind_group_layouts: &[&material_bind_group_layout, &camera_bind_group_layout],
-            push_constant_ranges: &[],
-        });
+        let material_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Nanite Material Pipeline Layout"),
+                bind_group_layouts: &[&material_bind_group_layout, &camera_bind_group_layout],
+                push_constant_ranges: &[],
+            });
 
         let material_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Nanite Material Pipeline"),
@@ -145,6 +139,7 @@ impl NaniteRenderContext {
                 module: &material_shader,
                 entry_point: "vs_main",
                 buffers: &[],
+                compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &material_shader,
@@ -154,6 +149,7 @@ impl NaniteRenderContext {
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
+                compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -193,7 +189,11 @@ impl NaniteRenderContext {
             position: position.to_array(),
             _padding: 0.0,
         };
-        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera_uniform]));
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[camera_uniform]),
+        );
     }
 
     /// Render meshlets to visibility buffer
@@ -206,7 +206,9 @@ impl NaniteRenderContext {
     ) {
         // Perform CPU-side culling
         let frustum = Frustum::from_matrix(view_proj);
-        let visible_meshlets = self.meshlet_renderer.cull_meshlets(meshlets, &frustum, camera_pos);
+        let visible_meshlets = self
+            .meshlet_renderer
+            .cull_meshlets(meshlets, &frustum, camera_pos);
 
         if visible_meshlets.is_empty() {
             return;
@@ -250,18 +252,21 @@ impl NaniteRenderContext {
     /// Resolve visibility buffer and apply materials
     pub fn render_material_pass(
         &self,
+        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         output_view: &wgpu::TextureView,
         depth_view: &wgpu::TextureView,
     ) {
         // Create bind group for material resolve
-        let material_bind_group = self.meshlet_renderer.bind_group.device().create_bind_group(&wgpu::BindGroupDescriptor {
+        let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Nanite Material Resolve Bind Group"),
             layout: &self.material_bind_group_layout,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&self.meshlet_renderer.visibility_buffer.view),
+                    resource: wgpu::BindingResource::TextureView(
+                        &self.meshlet_renderer.visibility_buffer.view,
+                    ),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
@@ -302,7 +307,9 @@ impl NaniteRenderContext {
 
     /// Resize the rendering context
     pub fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
-        self.meshlet_renderer.visibility_buffer.resize(device, width, height);
+        self.meshlet_renderer
+            .visibility_buffer
+            .resize(device, width, height);
         self.lod_selector.screen_height = height as f32;
     }
 }

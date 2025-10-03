@@ -4,7 +4,7 @@
 //! It uses voxel cone tracing to sample indirect lighting from a sparse voxel
 //! radiance field built from the terrain SVO.
 
-use glam::{Vec3, Vec4, Mat4};
+use glam::Mat4;
 use wgpu::util::DeviceExt;
 
 /// Configuration for VXGI
@@ -38,26 +38,26 @@ impl Default for VxgiConfig {
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct VoxelRadiance {
-    /// RGB radiance + opacity
-    pub radiance: Vec4,
+    /// RGB radiance + opacity (stored as array instead of Vec4)
+    pub radiance: [f32; 4],
 }
 
 /// VXGI renderer
 pub struct VxgiRenderer {
     config: VxgiConfig,
-    
+
     // GPU resources
     voxel_texture: wgpu::Texture,
     voxel_texture_view: wgpu::TextureView,
     voxel_sampler: wgpu::Sampler,
-    
+
     // Bind groups
     vxgi_bind_group_layout: wgpu::BindGroupLayout,
     vxgi_bind_group: wgpu::BindGroup,
-    
+
     // Compute pipeline for voxelization
     voxelization_pipeline: wgpu::ComputePipeline,
-    
+
     // Dirty flag
     needs_update: bool,
 }
@@ -77,12 +77,12 @@ impl VxgiRenderer {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D3,
             format: wgpu::TextureFormat::Rgba16Float,
-            usage: wgpu::TextureUsages::STORAGE_BINDING 
+            usage: wgpu::TextureUsages::STORAGE_BINDING
                 | wgpu::TextureUsages::TEXTURE_BINDING
                 | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        
+
         let voxel_texture_view = voxel_texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("VXGI Voxel Texture View"),
             format: Some(wgpu::TextureFormat::Rgba16Float),
@@ -93,7 +93,7 @@ impl VxgiRenderer {
             base_array_layer: 0,
             array_layer_count: None,
         });
-        
+
         let voxel_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("VXGI Voxel Sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -104,30 +104,31 @@ impl VxgiRenderer {
             mipmap_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
-        
+
         // Create bind group layout
-        let vxgi_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("VXGI Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D3,
-                        multisampled: false,
+        let vxgi_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("VXGI Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D3,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
-        
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
         let vxgi_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("VXGI Bind Group"),
             layout: &vxgi_bind_group_layout,
@@ -142,22 +143,22 @@ impl VxgiRenderer {
                 },
             ],
         });
-        
+
         // Create voxelization compute pipeline
         let voxelization_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("VXGI Voxelization Shader"),
             source: wgpu::ShaderSource::Wgsl(VOXELIZATION_SHADER.into()),
         });
-        
-        let voxelization_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("VXGI Voxelization Pipeline"),
-            layout: None,
-            module: &voxelization_shader,
-            entry_point: Some("voxelize"),
-            compilation_options: Default::default(),
-            cache: None,
-        });
-        
+
+        let voxelization_pipeline =
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("VXGI Voxelization Pipeline"),
+                layout: None,
+                module: &voxelization_shader,
+                entry_point: "voxelize",
+                compilation_options: Default::default(),
+            });
+
         Self {
             config,
             voxel_texture,
@@ -169,45 +170,45 @@ impl VxgiRenderer {
             needs_update: true,
         }
     }
-    
+
     /// Mark voxel grid as needing update
     pub fn mark_dirty(&mut self) {
         self.needs_update = true;
     }
-    
+
     /// Update voxel radiance field from terrain
     pub fn update_voxel_field(&mut self, encoder: &mut wgpu::CommandEncoder) {
         if !self.needs_update {
             return;
         }
-        
+
         // Run voxelization compute shader
         let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("VXGI Voxelization Pass"),
             timestamp_writes: None,
         });
-        
+
         compute_pass.set_pipeline(&self.voxelization_pipeline);
-        
+
         let workgroup_size = 8;
         let dispatch_size = (self.config.voxel_resolution + workgroup_size - 1) / workgroup_size;
         compute_pass.dispatch_workgroups(dispatch_size, dispatch_size, dispatch_size);
-        
+
         drop(compute_pass);
-        
+
         self.needs_update = false;
     }
-    
+
     /// Get bind group layout
     pub fn bind_group_layout(&self) -> &wgpu::BindGroupLayout {
         &self.vxgi_bind_group_layout
     }
-    
+
     /// Get bind group
     pub fn bind_group(&self) -> &wgpu::BindGroup {
         &self.vxgi_bind_group
     }
-    
+
     /// Get configuration
     pub fn config(&self) -> &VxgiConfig {
         &self.config

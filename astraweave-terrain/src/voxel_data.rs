@@ -143,11 +143,8 @@ impl OctreeNode {
                 }
                 let idx = Self::child_index(local_pos, size);
                 let half = size / 2;
-                let child_pos = IVec3::new(
-                    local_pos.x % half,
-                    local_pos.y % half,
-                    local_pos.z % half,
-                );
+                let child_pos =
+                    IVec3::new(local_pos.x % half, local_pos.y % half, local_pos.z % half);
                 children[idx]
                     .as_ref()
                     .and_then(|child| child.get_voxel(child_pos, half, depth + 1))
@@ -172,11 +169,8 @@ impl OctreeNode {
             OctreeNode::Internal(children) => {
                 let idx = Self::child_index(local_pos, size);
                 let half = size / 2;
-                let child_pos = IVec3::new(
-                    local_pos.x % half,
-                    local_pos.y % half,
-                    local_pos.z % half,
-                );
+                let child_pos =
+                    IVec3::new(local_pos.x % half, local_pos.y % half, local_pos.z % half);
 
                 if children[idx].is_none() {
                     children[idx] = Some(OctreeNode::leaf(Voxel::default()));
@@ -254,7 +248,12 @@ impl VoxelChunk {
 
     /// Check if local position is within chunk bounds
     fn is_valid_local_pos(&self, pos: IVec3) -> bool {
-        pos.x >= 0 && pos.x < CHUNK_SIZE && pos.y >= 0 && pos.y < CHUNK_SIZE && pos.z >= 0 && pos.z < CHUNK_SIZE
+        pos.x >= 0
+            && pos.x < CHUNK_SIZE
+            && pos.y >= 0
+            && pos.y < CHUNK_SIZE
+            && pos.z >= 0
+            && pos.z < CHUNK_SIZE
     }
 
     /// Get voxel at world position
@@ -348,7 +347,7 @@ impl VoxelGrid {
         let coord = ChunkCoord::from_world_pos(world_pos);
         let chunk = self.get_or_create_chunk(coord);
         chunk.set_voxel_world(world_pos, voxel);
-        
+
         if chunk.is_dirty() && !self.dirty_chunks.contains(&coord) {
             self.dirty_chunks.push(coord);
         }

@@ -1,0 +1,11 @@
+[package]
+name = "ecs_ai_showcase"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-ecs = { path = "../../astraweave-ecs" }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-ai = { path = "../../astraweave-ai" }
+anyhow = { workspace = true }
+glam = { workspace = true }

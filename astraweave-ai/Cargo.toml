@@ -15,11 +15,14 @@ rapier3d = { workspace = true }
 glam = { workspace = true }
 async-trait = "0.1"
 tokio = { workspace = true, optional = true }
+tracing = { workspace = true }
 
 [features]
 default = []
 # Enabling llm_orchestrator will also enable the Ollama client in astraweave-llm and a tokio runtime for background warmup
 llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio"]
+ai-goap = []
+ai-bt = []
 
 [dependencies.astraweave-llm]
 workspace = true

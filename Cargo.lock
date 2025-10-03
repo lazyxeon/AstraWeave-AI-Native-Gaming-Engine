@@ -370,7 +370,7 @@ name = "asset_signing"
 version = "0.1.0"
 dependencies = [
  "ed25519-dalek",
- "rand 0.9.2",
+ "rand 0.8.5",
  "sha2",
 ]
 
@@ -390,6 +390,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -571,7 +572,7 @@ name = "astraweave-materials"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "naga 26.0.0",
+ "naga 25.0.1",
  "serde",
  "serde_json",
 ]
@@ -757,11 +758,13 @@ name = "astraweave-scene"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-asset",
  "astraweave-ecs",
  "astraweave-render",
  "glam",
  "serde",
  "tokio",
+ "wgpu",
 ]
 
 [[package]]
@@ -838,7 +841,7 @@ dependencies = [
  "astraweave-cinematics",
  "astraweave-gameplay",
  "astraweave-input",
- "egui 0.32.3",
+ "egui 0.28.1",
  "egui-wgpu",
  "egui-winit",
  "glam",
@@ -1332,7 +1335,7 @@ dependencies = [
  "bytemuck",
  "crossbeam-channel",
  "eframe",
- "egui 0.32.3",
+ "egui 0.28.1",
  "egui_plot",
  "notify 8.2.0",
  "rand 0.9.2",
@@ -1369,7 +1372,7 @@ dependencies = [
  "astraweave-quests",
  "astraweave-render",
  "eframe",
- "egui 0.32.3",
+ "egui 0.28.1",
  "egui_dock",
  "egui_graphs",
  "glam",
@@ -1961,6 +1964,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-cinematics",
+ "serde_json",
 ]
 
 [[package]]
@@ -2064,6 +2068,8 @@ version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe6d2e5af09e8c8ad56c969f2157a3d4238cebc7c55f0a517728c38f7b200f81"
 dependencies = [
+ "serde",
+ "termcolor",
  "unicode-width 0.2.1",
 ]
 
@@ -2548,7 +2554,7 @@ dependencies = [
  "anyhow",
  "astraweave-core",
  "eframe",
- "egui 0.32.3",
+ "egui 0.28.1",
 ]
 
 [[package]]
@@ -2561,7 +2567,7 @@ dependencies = [
  "astraweave-render",
  "aw_debug",
  "eframe",
- "egui 0.32.3",
+ "egui 0.28.1",
  "egui-wgpu",
  "egui-winit",
  "glam",
@@ -2747,15 +2753,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ecolor"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94bdf37f8d5bd9aa7f753573fdda9cf7343afa73dd28d7bfe9593bd9798fc07e"
-dependencies = [
- "emath 0.32.3",
-]
-
-[[package]]
 name = "ecs_ai_demo"
 version = "0.4.0"
 dependencies = [
@@ -2763,6 +2760,17 @@ dependencies = [
  "astraweave-ai",
  "astraweave-core",
  "astraweave-ecs",
+]
+
+[[package]]
+name = "ecs_ai_showcase"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ai",
+ "astraweave-core",
+ "astraweave-ecs",
+ "glam",
 ]
 
 [[package]]
@@ -2864,22 +2872,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "egui"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d5d0306cd61ca75e29682926d71f2390160247f135965242e904a636f51c0dc"
-dependencies = [
- "ahash",
- "bitflags 2.9.4",
- "emath 0.32.3",
- "epaint 0.32.3",
- "nohash-hasher",
- "profiling",
- "smallvec",
- "unicode-segmentation",
-]
-
-[[package]]
 name = "egui-wgpu"
 version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2956,13 +2948,13 @@ dependencies = [
 
 [[package]]
 name = "egui_plot"
-version = "0.33.0"
+version = "0.28.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524318041a8ea90c81c738e8985f8ad9e3f9bed636b03c2ff37b218113ed5121"
+checksum = "c7acc4fe778c41b91d57e04c1a2cf5765b3dc977f9f8384d2bb2eb4254855365"
 dependencies = [
  "ahash",
- "egui 0.32.3",
- "emath 0.32.3",
+ "egui 0.28.1",
+ "emath 0.28.1",
 ]
 
 [[package]]
@@ -2991,12 +2983,6 @@ checksum = "0a6a21708405ea88f63d8309650b4d77431f4bc28fb9d8e6f77d3963b51249e6"
 dependencies = [
  "bytemuck",
 ]
-
-[[package]]
-name = "emath"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45fd7bc25f769a3c198fe1cf183124bf4de3bd62ef7b4f1eaf6b08711a3af8db"
 
 [[package]]
 name = "embedded-io"
@@ -3122,28 +3108,6 @@ dependencies = [
  "nohash-hasher",
  "parking_lot 0.12.4",
 ]
-
-[[package]]
-name = "epaint"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63adcea970b7a13094fe97a36ab9307c35a750f9e24bf00bb7ef3de573e0fddb"
-dependencies = [
- "ab_glyph",
- "ahash",
- "ecolor 0.32.3",
- "emath 0.32.3",
- "epaint_default_fonts",
- "nohash-hasher",
- "parking_lot 0.12.4",
- "profiling",
-]
-
-[[package]]
-name = "epaint_default_fonts"
-version = "0.32.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1537accc50c9cab5a272c39300bdd0dd5dca210f6e5e8d70be048df9596e7ca2"
 
 [[package]]
 name = "equator"
@@ -4979,6 +4943,30 @@ dependencies = [
 
 [[package]]
 name = "naga"
+version = "25.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b977c445f26e49757f9aca3631c3b8b836942cb278d69a92e7b80d3b24da632"
+dependencies = [
+ "arrayvec",
+ "bit-set 0.8.0",
+ "bitflags 2.9.4",
+ "cfg_aliases 0.2.1",
+ "codespan-reporting 0.12.0",
+ "half",
+ "hashbrown 0.15.5",
+ "hexf-parse",
+ "indexmap",
+ "log",
+ "num-traits",
+ "once_cell",
+ "rustc-hash 1.1.0",
+ "strum",
+ "thiserror 2.0.17",
+ "unicode-ident",
+]
+
+[[package]]
+name = "naga"
 version = "26.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "916cbc7cb27db60be930a4e2da243cf4bc39569195f22fd8ee419cd31d5b662c"
@@ -4991,7 +4979,6 @@ dependencies = [
  "codespan-reporting 0.12.0",
  "half",
  "hashbrown 0.15.5",
- "hexf-parse",
  "indexmap",
  "libm",
  "log",
@@ -4999,7 +4986,6 @@ dependencies = [
  "once_cell",
  "rustc-hash 1.1.0",
  "thiserror 2.0.17",
- "unicode-ident",
 ]
 
 [[package]]
@@ -5877,26 +5863,6 @@ checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
  "fixedbitset",
  "indexmap",
-]
-
-[[package]]
-name = "phase6_integration_demo"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "astraweave-ai",
- "astraweave-core",
- "astraweave-ecs",
- "astraweave-nav",
- "astraweave-net-ecs",
- "astraweave-persistence-ecs",
- "astraweave-physics",
- "astraweave-security",
- "astraweave-stress-test",
- "rand 0.9.2",
- "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]
@@ -7286,6 +7252,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
+name = "strum"
+version = "0.26.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
+dependencies = [
+ "strum_macros",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7994,7 +7982,7 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "astraweave-ui",
- "egui 0.32.3",
+ "egui 0.28.1",
  "egui-wgpu",
  "egui-winit",
  "glam",
@@ -8177,7 +8165,7 @@ dependencies = [
  "astraweave-asset",
  "astraweave-core",
  "astraweave-render",
- "egui 0.32.3",
+ "egui 0.28.1",
  "egui-wgpu",
  "egui-winit",
  "glam",

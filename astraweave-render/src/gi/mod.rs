@@ -3,9 +3,14 @@
 //! This module provides various GI solutions including VXGI and integration
 //! with the existing DDGI system.
 
+pub mod voxelization_pipeline;
 pub mod vxgi;
 
-pub use vxgi::{VxgiConfig, VxgiRenderer, VoxelRadiance, CONE_TRACING_SHADER};
+pub use voxelization_pipeline::{
+    VoxelMaterial, VoxelVertex, VoxelizationConfig, VoxelizationMesh, VoxelizationPipeline,
+    VoxelizationStats,
+};
+pub use vxgi::{VoxelRadiance, VxgiConfig, VxgiRenderer, CONE_TRACING_SHADER};
 
 /// Hybrid GI configuration combining VXGI and DDGI
 #[derive(Debug, Clone, Copy)]

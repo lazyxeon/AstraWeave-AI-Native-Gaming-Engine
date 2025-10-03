@@ -5,8 +5,6 @@
 //! assigning lights to clusters for culling.
 
 use glam::{Mat4, Vec3, Vec4};
-use std::collections::HashMap;
-use wgpu::util::DeviceExt;
 
 /// Configuration for clustered rendering
 #[derive(Debug, Clone, Copy)]
@@ -35,21 +33,22 @@ impl Default for ClusterConfig {
     }
 }
 
-/// Light data for GPU
+/// GPU-compatible light structure
+/// Uses arrays instead of Vec4 for Pod/Zeroable compatibility
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GpuLight {
     /// Position in world space (w = radius)
-    pub position: Vec4,
+    pub position: [f32; 4],
     /// Color and intensity (w = intensity)
-    pub color: Vec4,
+    pub color: [f32; 4],
 }
 
 impl GpuLight {
     pub fn new(position: Vec3, radius: f32, color: Vec3, intensity: f32) -> Self {
         Self {
-            position: position.extend(radius),
-            color: color.extend(intensity),
+            position: [position.x, position.y, position.z, radius],
+            color: [color.x, color.y, color.z, intensity],
         }
     }
 }
@@ -59,9 +58,9 @@ impl GpuLight {
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GpuCluster {
     /// Min bounds of cluster in view space
-    pub min_bounds: Vec4,
+    pub min_bounds: [f32; 4],
     /// Max bounds of cluster in view space
-    pub max_bounds: Vec4,
+    pub max_bounds: [f32; 4],
     /// Offset into light index list
     pub light_offset: u32,
     /// Number of lights in this cluster
@@ -73,21 +72,21 @@ pub struct GpuCluster {
 /// Clustered forward renderer
 pub struct ClusteredForwardRenderer {
     config: ClusterConfig,
-    
+
     // GPU resources
     light_buffer: wgpu::Buffer,
     cluster_buffer: wgpu::Buffer,
     light_indices_buffer: wgpu::Buffer,
-    
+
     // Bind groups
     cluster_bind_group_layout: wgpu::BindGroupLayout,
     cluster_bind_group: wgpu::BindGroup,
-    
+
     // CPU-side data
     lights: Vec<GpuLight>,
     clusters: Vec<GpuCluster>,
     light_indices: Vec<u32>,
-    
+
     // Capacity
     max_lights: usize,
     max_lights_per_cluster: usize,
@@ -99,7 +98,7 @@ impl ClusteredForwardRenderer {
         let max_lights = 256;
         let max_lights_per_cluster = 128;
         let total_clusters = (config.cluster_x * config.cluster_y * config.cluster_z) as usize;
-        
+
         // Create buffers
         let light_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Clustered Light Buffer"),
@@ -107,58 +106,59 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         let cluster_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Cluster Buffer"),
             size: (total_clusters * std::mem::size_of::<GpuCluster>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         let light_indices_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Light Indices Buffer"),
             size: (total_clusters * max_lights_per_cluster * std::mem::size_of::<u32>()) as u64,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         // Create bind group layout
-        let cluster_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Cluster Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+        let cluster_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Cluster Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
-        
+                ],
+            });
+
         // Create bind group
         let cluster_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Cluster Bind Group"),
@@ -178,7 +178,7 @@ impl ClusteredForwardRenderer {
                 },
             ],
         });
-        
+
         Self {
             config,
             light_buffer,
@@ -187,59 +187,76 @@ impl ClusteredForwardRenderer {
             cluster_bind_group_layout,
             cluster_bind_group,
             lights: Vec::new(),
-            clusters: vec![GpuCluster {
-                min_bounds: Vec4::ZERO,
-                max_bounds: Vec4::ZERO,
-                light_offset: 0,
-                light_count: 0,
-                _padding: [0; 2],
-            }; total_clusters],
+            clusters: vec![
+                GpuCluster {
+                    min_bounds: [0.0; 4],
+                    max_bounds: [0.0; 4],
+                    light_offset: 0,
+                    light_count: 0,
+                    _padding: [0; 2],
+                };
+                total_clusters
+            ],
             light_indices: Vec::new(),
             max_lights,
             max_lights_per_cluster,
         }
     }
-    
+
     /// Update lights for the current frame
     pub fn update_lights(&mut self, lights: Vec<GpuLight>) {
         self.lights = lights;
     }
-    
+
     /// Build clusters and assign lights
-    pub fn build_clusters(&mut self, queue: &wgpu::Queue, view_matrix: Mat4, proj_matrix: Mat4, screen_size: (u32, u32)) {
+    pub fn build_clusters(
+        &mut self,
+        queue: &wgpu::Queue,
+        view_matrix: Mat4,
+        proj_matrix: Mat4,
+        screen_size: (u32, u32),
+    ) {
         // Clear previous data
         self.light_indices.clear();
-        
+
         let (width, height) = screen_size;
-        let total_clusters = (self.config.cluster_x * self.config.cluster_y * self.config.cluster_z) as usize;
-        
+        let total_clusters =
+            (self.config.cluster_x * self.config.cluster_y * self.config.cluster_z) as usize;
+
         // Calculate cluster bounds in view space
         for z in 0..self.config.cluster_z {
             for y in 0..self.config.cluster_y {
                 for x in 0..self.config.cluster_x {
                     let cluster_idx = self.cluster_index(x, y, z);
-                    
+
                     // Calculate cluster bounds
                     let min_x = (x as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
                     let max_x = ((x + 1) as f32 / self.config.cluster_x as f32) * 2.0 - 1.0;
                     let min_y = (y as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
                     let max_y = ((y + 1) as f32 / self.config.cluster_y as f32) * 2.0 - 1.0;
-                    
+
                     // Exponential depth slicing for better distribution
                     let near = self.config.near;
                     let far = self.config.far;
                     let min_z = near * (far / near).powf(z as f32 / self.config.cluster_z as f32);
-                    let max_z = near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
-                    
-                    self.clusters[cluster_idx].min_bounds = Vec4::new(min_x, min_y, min_z, 1.0);
-                    self.clusters[cluster_idx].max_bounds = Vec4::new(max_x, max_y, max_z, 1.0);
+                    let max_z =
+                        near * (far / near).powf((z + 1) as f32 / self.config.cluster_z as f32);
+
+                    self.clusters[cluster_idx].min_bounds = [min_x, min_y, min_z, 1.0];
+                    self.clusters[cluster_idx].max_bounds = [max_x, max_y, max_z, 1.0];
                     self.clusters[cluster_idx].light_offset = self.light_indices.len() as u32;
                     self.clusters[cluster_idx].light_count = 0;
-                    
+
                     // Assign lights to this cluster
                     for (light_idx, light) in self.lights.iter().enumerate() {
-                        if self.light_intersects_cluster(light, &self.clusters[cluster_idx], view_matrix) {
-                            if self.clusters[cluster_idx].light_count < self.max_lights_per_cluster as u32 {
+                        if self.light_intersects_cluster(
+                            light,
+                            &self.clusters[cluster_idx],
+                            view_matrix,
+                        ) {
+                            if self.clusters[cluster_idx].light_count
+                                < self.max_lights_per_cluster as u32
+                            {
                                 self.light_indices.push(light_idx as u32);
                                 self.clusters[cluster_idx].light_count += 1;
                             }
@@ -248,54 +265,76 @@ impl ClusteredForwardRenderer {
                 }
             }
         }
-        
+
         // Upload to GPU
         if !self.lights.is_empty() {
             queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&self.lights));
         }
-        queue.write_buffer(&self.cluster_buffer, 0, bytemuck::cast_slice(&self.clusters));
+        queue.write_buffer(
+            &self.cluster_buffer,
+            0,
+            bytemuck::cast_slice(&self.clusters),
+        );
         if !self.light_indices.is_empty() {
-            queue.write_buffer(&self.light_indices_buffer, 0, bytemuck::cast_slice(&self.light_indices));
+            queue.write_buffer(
+                &self.light_indices_buffer,
+                0,
+                bytemuck::cast_slice(&self.light_indices),
+            );
         }
     }
-    
+
     /// Get cluster index from 3D coordinates
     fn cluster_index(&self, x: u32, y: u32, z: u32) -> usize {
         (x + y * self.config.cluster_x + z * self.config.cluster_x * self.config.cluster_y) as usize
     }
-    
+
     /// Check if a light intersects a cluster
-    fn light_intersects_cluster(&self, light: &GpuLight, cluster: &GpuCluster, view_matrix: Mat4) -> bool {
+    fn light_intersects_cluster(
+        &self,
+        light: &GpuLight,
+        cluster: &GpuCluster,
+        view_matrix: Mat4,
+    ) -> bool {
         // Transform light position to view space
-        let light_pos_view = view_matrix * light.position;
-        let radius = light.position.w;
-        
+        let light_pos_4 =
+            Vec3::new(light.position[0], light.position[1], light.position[2]).extend(1.0);
+        let light_pos_view_4 = view_matrix * light_pos_4;
+        let light_pos_view = Vec3::new(light_pos_view_4.x, light_pos_view_4.y, light_pos_view_4.z);
+        let radius = light.position[3];
+
         // Simple sphere-AABB intersection test
         let closest_point = Vec3::new(
-            light_pos_view.x.clamp(cluster.min_bounds.x, cluster.max_bounds.x),
-            light_pos_view.y.clamp(cluster.min_bounds.y, cluster.max_bounds.y),
-            light_pos_view.z.clamp(cluster.min_bounds.z, cluster.max_bounds.z),
+            light_pos_view
+                .x
+                .clamp(cluster.min_bounds[0], cluster.max_bounds[0]),
+            light_pos_view
+                .y
+                .clamp(cluster.min_bounds[1], cluster.max_bounds[1]),
+            light_pos_view
+                .z
+                .clamp(cluster.min_bounds[2], cluster.max_bounds[2]),
         );
-        
-        let distance_sq = (Vec3::new(light_pos_view.x, light_pos_view.y, light_pos_view.z) - closest_point).length_squared();
+
+        let distance_sq = (light_pos_view - closest_point).length_squared();
         distance_sq <= radius * radius
     }
-    
+
     /// Get the bind group layout
     pub fn bind_group_layout(&self) -> &wgpu::BindGroupLayout {
         &self.cluster_bind_group_layout
     }
-    
+
     /// Get the bind group
     pub fn bind_group(&self) -> &wgpu::BindGroup {
         &self.cluster_bind_group
     }
-    
+
     /// Get configuration
     pub fn config(&self) -> &ClusterConfig {
         &self.config
     }
-    
+
     /// Get light count
     pub fn light_count(&self) -> usize {
         self.lights.len()
@@ -414,7 +453,7 @@ mod tests {
             Vec3::new(1.0, 0.5, 0.0),
             2.0,
         );
-        
+
         assert_eq!(light.position.x, 1.0);
         assert_eq!(light.position.w, 10.0);
         assert_eq!(light.color.w, 2.0);

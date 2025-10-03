@@ -8,8 +8,11 @@ pub mod chunk;
 pub mod climate;
 pub mod erosion;
 pub mod heightmap;
+pub mod lod_blending;
+pub mod marching_cubes_tables;
 pub mod meshing;
 pub mod noise_gen;
+pub mod partition_integration;
 pub mod scatter;
 pub mod structures;
 pub mod voxel_data;
@@ -18,8 +21,15 @@ pub use biome::{Biome, BiomeConfig, BiomeType};
 pub use chunk::{ChunkId, ChunkManager, TerrainChunk};
 pub use climate::{ClimateConfig, ClimateMap};
 pub use heightmap::{Heightmap, HeightmapConfig};
-pub use meshing::{AsyncMeshGenerator, ChunkMesh, DualContouring, LodConfig, LodMeshGenerator, MeshVertex};
+pub use lod_blending::{LodBlender, MorphConfig, MorphedMesh, MorphingLodManager};
+pub use meshing::{
+    AsyncMeshGenerator, ChunkMesh, DualContouring, LodConfig, LodMeshGenerator, MeshVertex,
+};
 pub use noise_gen::{NoiseConfig, TerrainNoise};
+pub use partition_integration::{
+    PartitionCoord, VoxelPartitionConfig, VoxelPartitionEvent, VoxelPartitionManager,
+    VoxelPartitionStats,
+};
 pub use scatter::{ScatterConfig, ScatterResult, VegetationInstance, VegetationScatter};
 pub use structures::{
     StructureConfig, StructureGenerator, StructureInstance, StructureResult, StructureType,

@@ -123,7 +123,7 @@ mod tests {
                 end: true,
             }],
         };
-        let mut st = DialogueState::new(&dlg);
+        let st = DialogueState::new(&dlg);
         let mut audio = AudioEngine::new()?;
         let bank = VoiceBank {
             speakers: Default::default(),
