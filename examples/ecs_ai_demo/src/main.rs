@@ -79,7 +79,7 @@ fn move_system(world: &mut ecs::World) {
     };
     world.each_mut::<CPos>(|e, p| {
         if let Some(goal) = goals.get(&e) {
-            let mut dx = (goal.pos.x - p.pos.x).signum();
+            let dx = (goal.pos.x - p.pos.x).signum();
             let mut dy = (goal.pos.y - p.pos.y).signum();
             // Cardinal-only behavior: prefer moving along X this tick; if we move in X,
             // do not also move in Y (prevents diagonal movement).

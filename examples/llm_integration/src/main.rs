@@ -1,10 +1,21 @@
 use astraweave_core::*;
-use astraweave_llm::plan_from_llm;
-use astraweave_llm::LlmClient;
-use astraweave_llm::PlanSource;
+use astraweave_llm::{plan_from_llm, MockLlm, PlanSource};
+#[cfg(feature = "ollama")]
+use astraweave_llm::{LlmClient, LocalHttpClient};
+#[cfg(feature = "ollama")]
 use std::env;
 
 /// Comprehensive LLM integration example demonstrating multiple client types
+/// 
+/// This example is configured to use Phi-3 Medium (locally downloaded) by default.
+/// To use Phi-3 Medium with Ollama:
+///   1. Make sure Ollama is running: `ollama serve`
+///   2. Pull Phi-3 Medium: `ollama pull phi3:medium`
+///   3. Run this example: `cargo run -p llm_integration --features ollama`
+/// 
+/// Or set environment variables:
+///   OLLAMA_URL=http://localhost:11434
+///   OLLAMA_MODEL=phi3:medium
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     println!("AstraWeave LLM Integration Example");
@@ -25,23 +36,35 @@ async fn main() -> anyhow::Result<()> {
     println!("--------------------------");
     test_mock_client(&world_snapshot, &tool_registry).await?;
 
-    // 2. Test Ollama Chat client (prefer local Ollama at http://127.0.0.1:11434)
-    let ollama_url =
-        env::var("OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
-    println!("\n2. Testing Ollama Chat Client at {}", ollama_url);
-    println!("-------------------------");
+    // 2. Test Ollama Chat client with Phi-3 Medium (default model for this project)
+    #[cfg(feature = "ollama")]
+    {
+        let ollama_url =
+            env::var("OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
+        
+        println!("\n2. Testing Ollama Chat Client at {}", ollama_url);
+        println!("   Default Model: Phi-3 Medium (phi3:medium)");
+        println!("-------------------------");
 
-    // Quick health check: GET /api/tags is a safe, browser-friendly endpoint that lists available models.
-    // Note: /api/chat and /api/generate are POST-only endpoints. Clicking a browser link to them will
-    // perform a GET and typically return HTTP 405 Method Not Allowed. To inspect models, open the /api/tags URL.
-    if let Err(e) = probe_ollama_tags(&ollama_url).await {
-        println!("Warning: failed to probe Ollama /api/tags: {}", e);
-        println!("Proceeding to attempt a POST to the chat endpoint; this may fail if the model is not loaded.");
+        // Quick health check: GET /api/tags is a safe, browser-friendly endpoint that lists available models.
+        // Note: /api/chat and /api/generate are POST-only endpoints. Clicking a browser link to them will
+        // perform a GET and typically return HTTP 405 Method Not Allowed. To inspect models, open the /api/tags URL.
+        if let Err(e) = probe_ollama_tags(&ollama_url).await {
+            println!("Warning: failed to probe Ollama /api/tags: {}", e);
+            println!("Proceeding to attempt a POST to the chat endpoint; this may fail if the model is not loaded.");
+        }
+
+        test_ollama_client(&world_snapshot, &tool_registry, &ollama_url).await?;
+    }
+    
+    #[cfg(not(feature = "ollama"))]
+    {
+        println!("\n2. Ollama Chat Client (Skipped - rebuild with --features ollama to enable)");
+        println!("   To use Phi-3 Medium: cargo run -p llm_integration --features ollama");
     }
 
-    test_ollama_client(&world_snapshot, &tool_registry, &ollama_url).await?;
-
     // 3. Test LocalHttpClient (if URL provided)
+    #[cfg(feature = "ollama")]
     if let Ok(local_url) = env::var("LOCAL_LLM_URL") {
         println!("\n3. Testing Local HTTP Client");
         println!("-----------------------------");
@@ -51,11 +74,22 @@ async fn main() -> anyhow::Result<()> {
             "\n3. Local HTTP Client (Skipped - set LOCAL_LLM_URL environment variable to test)"
         );
     }
+    
+    #[cfg(not(feature = "ollama"))]
+    {
+        println!("\n3. Local HTTP Client (Skipped - requires --features ollama)");
+    }
 
     println!("\nExample completed successfully!");
-    println!("\nTo test with real LLM services:");
-    println!("  OLLAMA_URL=http://localhost:11434 OLLAMA_MODEL=llama2 cargo run");
-    println!("  LOCAL_LLM_URL=http://localhost:5000 LOCAL_LLM_MODEL=gpt-3.5-turbo cargo run");
+    println!("\n=== Phi-3 Medium Configuration ===");
+    println!("To use Phi-3 Medium (recommended for this project):");
+    println!("  1. Install Ollama: https://ollama.ai/download");
+    println!("  2. Pull Phi-3 Medium: ollama pull phi3:medium");
+    println!("  3. Run with features: cargo run -p llm_integration --features ollama");
+    println!("\nEnvironment Variables:");
+    println!("  OLLAMA_URL=http://localhost:11434 (default)");
+    println!("  OLLAMA_MODEL=phi3:medium (default)");
+    println!("  LOCAL_LLM_URL=<your-url> (for alternative endpoints)");
 
     Ok(())
 }
@@ -75,6 +109,7 @@ async fn test_mock_client(snap: &WorldSnapshot, reg: &ToolRegistry) -> anyhow::R
     Ok(())
 }
 
+#[cfg(feature = "ollama")]
 async fn test_ollama_client(
     snap: &WorldSnapshot,
     reg: &ToolRegistry,
@@ -108,31 +143,31 @@ async fn test_ollama_client(
                                         {
                                             model.to_string()
                                         } else {
-                                            "llama2".to_string()
+                                            "phi3:medium".to_string()
                                         }
                                     } else {
-                                        "llama2".to_string()
+                                        "phi3:medium".to_string()
                                     }
                                 } else {
-                                    "llama2".to_string()
+                                    "phi3:medium".to_string()
                                 }
                             } else {
-                                "llama2".to_string()
+                                "phi3:medium".to_string()
                             }
                         } else {
-                            "llama2".to_string()
+                            "phi3:medium".to_string()
                         }
                     } else {
                         println!(
-                            "Warning: /api/tags returned {} - falling back to default model llama2",
+                            "Warning: /api/tags returned {} - falling back to default model phi3:medium",
                             resp.status()
                         );
-                        "llama2".to_string()
+                        "phi3:medium".to_string()
                     }
                 }
                 Err(e) => {
-                    println!("Warning: failed to fetch /api/tags to select a model: {}. Using default 'llama2'", e);
-                    "llama2".to_string()
+                    println!("Warning: failed to fetch /api/tags to select a model: {}. Using default 'phi3:medium'", e);
+                    "phi3:medium".to_string()
                 }
             }
         }
@@ -189,6 +224,7 @@ async fn test_ollama_client(
     Ok(())
 }
 
+#[cfg(feature = "ollama")]
 async fn test_local_http_client(
     snap: &WorldSnapshot,
     reg: &ToolRegistry,
@@ -215,6 +251,7 @@ async fn test_local_http_client(
     Ok(())
 }
 
+#[cfg(feature = "ollama")]
 async fn probe_ollama_tags(base_url: &str) -> anyhow::Result<()> {
     let url = format!("{}/api/tags", base_url.trim_end_matches('/'));
     println!("Probing Ollama for available models at: {} (GET)", url);

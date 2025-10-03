@@ -188,7 +188,7 @@ impl DualContouring {
     /// Simplified version: use average of edge intersections
     fn compute_vertex_position(
         &mut self,
-        chunk: &VoxelChunk,
+        _chunk: &VoxelChunk,
         cell_pos: IVec3,
         corners: &[Option<Voxel>; 8],
     ) -> Vec3 {
@@ -479,7 +479,7 @@ mod tests {
     #[test]
     fn test_lod_selection() {
         let config = LodConfig::default();
-        let mut lod_gen = LodMeshGenerator::new(config);
+        let lod_gen = LodMeshGenerator::new(config);
 
         assert_eq!(lod_gen.select_lod_level(50.0), 0);
         assert_eq!(lod_gen.select_lod_level(200.0), 1);

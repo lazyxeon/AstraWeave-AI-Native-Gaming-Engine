@@ -10,7 +10,7 @@
 
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
 use astraweave_core::{
-    build_snapshot, CompanionState, EnemyState, IVec2, PerceptionConfig, PlayerState, Team, World,
+    build_snapshot, CompanionState, IVec2, PerceptionConfig, PlayerState, Team, World,
     WorldSnapshot,
 };
 use std::collections::BTreeMap;
@@ -57,7 +57,7 @@ fn build_ai_snapshot(world: &World, companion_id: u32) -> WorldSnapshot {
 #[test]
 fn test_rule_mode_deterministic_planning() {
     // Setup: Create world with player, companion, enemy
-    let mut world = create_test_world();
+    let world = create_test_world();
     let companion_id = world
         .all_of_team(1)
         .first()

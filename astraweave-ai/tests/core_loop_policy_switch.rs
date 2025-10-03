@@ -8,19 +8,9 @@
 
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
 use astraweave_core::{
-    build_snapshot, CompanionState, IVec2, PerceptionConfig, PlayerState, Team, World,
-    WorldSnapshot,
+    CompanionState, IVec2, PlayerState, WorldSnapshot,
 };
 use std::collections::BTreeMap;
-
-/// Helper to create test world
-fn create_test_world() -> World {
-    let mut world = World::new();
-    let _player = world.spawn("player", IVec2 { x: 5, y: 5 }, Team { id: 0 }, 100, 10);
-    let _companion = world.spawn("companion", IVec2 { x: 5, y: 7 }, Team { id: 1 }, 100, 10);
-    let _enemy = world.spawn("enemy", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 100, 10);
-    world
-}
 
 /// Helper to create test snapshot
 fn create_test_snapshot(t: f32, has_enemies: bool) -> WorldSnapshot {

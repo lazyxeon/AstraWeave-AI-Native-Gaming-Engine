@@ -8,10 +8,9 @@
 //! - Memory usage and leak detection
 
 use anyhow::Result;
-use astraweave_ecs::{App, Component, Query, Res, ResMut, Resource, SystemStage};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use astraweave_ecs::{App, World};
+use criterion::{criterion_group, criterion_main, Criterion};
 use rand::prelude::*;
-use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 /// Test entity component for stress testing
@@ -141,75 +140,93 @@ pub fn generate_network_stress_entities(config: &StressTestConfig) -> Vec<CNetwo
 }
 
 /// Physics simulation system for stress testing
-fn physics_stress_system(mut query: Query<&mut CStressEntity>) {
-    for mut entity in query.iter_mut() {
-        // Update position based on velocity
-        for i in 0..3 {
-            entity.position[i] += entity.velocity[i] * 0.016; // ~60 FPS delta
-        }
-
-        // Simple boundary checking
-        for i in 0..3 {
-            if entity.position[i] > 1000.0 {
-                entity.position[i] = -1000.0;
-            } else if entity.position[i] < -1000.0 {
-                entity.position[i] = 1000.0;
+fn physics_stress_system(world: &mut World) {
+    let entities: Vec<_> = world.entities_with::<CStressEntity>();
+    
+    for entity in entities {
+        if let Some(entity_data) = world.get_mut::<CStressEntity>(entity) {
+            // Update position based on velocity
+            for i in 0..3 {
+                entity_data.position[i] += entity_data.velocity[i] * 0.016; // ~60 FPS delta
             }
-        }
 
-        // Health decay simulation
-        entity.health = (entity.health - 0.01).max(0.0);
+            // Simple boundary checking
+            for i in 0..3 {
+                if entity_data.position[i] > 1000.0 {
+                    entity_data.position[i] = -1000.0;
+                } else if entity_data.position[i] < -1000.0 {
+                    entity_data.position[i] = 1000.0;
+                }
+            }
+
+            // Health decay simulation
+            entity_data.health = (entity_data.health - 0.01).max(0.0);
+        }
     }
 }
 
 /// AI decision system for stress testing
-fn ai_stress_system(mut query: Query<&mut CAIStress>) {
+fn ai_stress_system(world: &mut World) {
     let mut rng = rand::rng();
+    let entities: Vec<_> = world.entities_with::<CAIStress>();
 
-    for mut ai in query.iter_mut() {
-        ai.decision_count += 1;
+    for entity in entities {
+        if let Some(ai) = world.get_mut::<CAIStress>(entity) {
+            ai.decision_count += 1;
 
-        // Simulate AI decision making
-        if rng.random_bool(0.1) {
-            // 10% chance to make a decision
-            ai.last_decision = ai.decision_count;
-            // Simulate behavior tree traversal
-            for node in &ai.behavior_tree {
-                black_box(node); // Prevent optimization
+            // Simulate AI decision making
+            if rng.random_bool(0.1) {
+                // 10% chance to make a decision
+                ai.last_decision = ai.decision_count;
+                // Simulate behavior tree traversal
+                for node in &ai.behavior_tree {
+                    std::hint::black_box(node); // Prevent optimization
+                }
             }
         }
     }
 }
 
 /// Network processing system for stress testing
-fn network_stress_system(mut query: Query<&mut CNetworkStress>) {
+fn network_stress_system(world: &mut World) {
     let mut rng = rand::rng();
+    let entities: Vec<_> = world.entities_with::<CNetworkStress>();
 
-    for mut net in query.iter_mut() {
-        // Simulate processing network inputs
-        for input in &net.input_buffer {
-            black_box(input); // Prevent optimization
-        }
+    for entity in entities {
+        if let Some(net) = world.get_mut::<CNetworkStress>(entity) {
+            // Simulate processing network inputs
+            for input in &net.input_buffer {
+                std::hint::black_box(input); // Prevent optimization
+            }
 
-        // Simulate network synchronization
-        if rng.random_bool(0.05) {
-            // 5% chance to sync
-            net.last_sync += 1;
+            // Simulate network synchronization
+            if rng.random_bool(0.05) {
+                // 5% chance to sync
+                net.last_sync += 1;
+            }
         }
     }
 }
 
 /// Results tracking system
-fn results_tracking_system(mut results: ResMut<StressTestResults>, config: Res<StressTestConfig>) {
-    results.frame_count += 1;
+fn results_tracking_system(world: &mut World) {
+    if let Some(results) = world.get_resource_mut::<StressTestResults>() {
+        results.frame_count += 1;
+    }
 
-    // Check for test completion
-    if results.start_time.elapsed() >= Duration::from_secs(config.test_duration_seconds) {
-        println!("Stress test completed!");
-        println!("Frames: {}", results.frame_count);
-        println!("Average frame time: {:.2}ms", results.average_frame_time_ms);
-        println!("Peak memory: {}MB", results.peak_memory_usage_mb);
-        println!("Errors: {}", results.errors.len());
+    // Get config for test completion check
+    if let (Some(results), Some(config)) = (
+        world.get_resource::<StressTestResults>(),
+        world.get_resource::<StressTestConfig>(),
+    ) {
+        // Check for test completion
+        if results.start_time.elapsed() >= Duration::from_secs(config.test_duration_seconds) {
+            println!("Stress test completed!");
+            println!("Frames: {}", results.frame_count);
+            println!("Average frame time: {:.2}ms", results.average_frame_time_ms);
+            println!("Peak memory: {}MB", results.peak_memory_usage_mb);
+            println!("Errors: {}", results.errors.len());
+        }
     }
 }
 
@@ -218,8 +235,8 @@ pub fn create_stress_test_app(config: StressTestConfig) -> Result<App> {
     let mut app = App::new();
 
     // Add configuration and results resources
-    app.insert_resource(config.clone());
-    app.insert_resource(StressTestResults {
+    app.world.insert_resource(config.clone());
+    app.world.insert_resource(StressTestResults {
         start_time: Instant::now(),
         frame_count: 0,
         total_entities_processed: 0,
@@ -239,10 +256,10 @@ pub fn create_stress_test_app(config: StressTestConfig) -> Result<App> {
     println!("Generated {} network entities", network_entities.len());
 
     // Add systems
-    app.add_system(SystemStage::Simulation, physics_stress_system);
-    app.add_system(SystemStage::Simulation, ai_stress_system);
-    app.add_system(SystemStage::Simulation, network_stress_system);
-    app.add_system(SystemStage::PostSimulation, results_tracking_system);
+    app.add_system("simulation", physics_stress_system);
+    app.add_system("simulation", ai_stress_system);
+    app.add_system("simulation", network_stress_system);
+    app.add_system("post_simulation", results_tracking_system);
 
     Ok(app)
 }
@@ -258,7 +275,7 @@ pub async fn run_stress_test(config: StressTestConfig) -> Result<StressTestResul
 
     // Run the test for the specified duration
     while start_time.elapsed() < Duration::from_secs(config.test_duration_seconds) {
-        app.tick(0.016)?; // ~60 FPS
+        app.schedule.run(&mut app.world);
         frame_count += 1;
 
         // Yield occasionally to prevent blocking
@@ -345,7 +362,7 @@ pub fn ecs_performance_benchmark(c: &mut Criterion) {
     c.bench_function("ecs_stress_test", |b| {
         b.iter(|| {
             let app = create_stress_test_app(config.clone()).unwrap();
-            black_box(app);
+            std::hint::black_box(app);
         })
     });
 }
@@ -364,7 +381,7 @@ pub fn entity_generation_benchmark(c: &mut Criterion) {
             let entities = generate_stress_entities(&config);
             let ai_entities = generate_ai_stress_entities(&config);
             let net_entities = generate_network_stress_entities(&config);
-            black_box((entities, ai_entities, net_entities));
+            std::hint::black_box((entities, ai_entities, net_entities));
         })
     });
 }

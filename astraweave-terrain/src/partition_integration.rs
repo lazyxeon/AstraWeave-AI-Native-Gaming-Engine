@@ -167,6 +167,7 @@ pub struct VoxelPartitionManager {
     /// Generated meshes
     meshes: HashMap<ChunkCoord, ChunkMesh>,
     /// Mesh generator
+    #[allow(dead_code)]
     mesh_generator: AsyncMeshGenerator,
     /// Event queue
     events: Vec<VoxelPartitionEvent>,

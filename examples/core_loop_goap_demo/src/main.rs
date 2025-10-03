@@ -13,8 +13,6 @@
 
 use astraweave_core::{IVec2, Team, World};
 use rand::{Rng, SeedableRng};
-use std::collections::HashMap;
-use std::io::{self, Read};
 
 /// Resource types in the world
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -72,6 +70,7 @@ struct DemoState {
     tick_count: u64,
     paused: bool,
     time_scale: f32,
+    #[allow(dead_code)]
     seed: u64,
     hunger: i32,
 }
@@ -113,8 +112,8 @@ impl DemoState {
 
         // Add some obstacles
         for _ in 0..5 {
-            let x = rng.gen_range(2..18);
-            let y = rng.gen_range(2..18);
+            let x = rng.random_range(2..18);
+            let y = rng.random_range(2..18);
             if (x, y) != (campfire_pos.x, campfire_pos.y) {
                 world.obstacles.insert((x, y));
             }
@@ -137,6 +136,7 @@ impl DemoState {
         }
     }
 
+    #[allow(dead_code)]
     fn reset(&mut self) {
         *self = Self::new(self.seed);
     }
@@ -326,7 +326,7 @@ impl DemoState {
 
         // Resources
         println!("\nWorld Resources:");
-        for (i, node) in self.resources.iter().enumerate() {
+        for (_i, node) in self.resources.iter().enumerate() {
             println!(
                 "  {:?} at ({}, {}): {} remaining",
                 node.resource_type, node.pos.x, node.pos.y, node.amount
@@ -337,11 +337,12 @@ impl DemoState {
         println!("==========================");
     }
 
+    #[allow(dead_code)]
     fn spawn_resource(&mut self) {
         let mut rng = rand::rngs::StdRng::seed_from_u64(self.seed + self.tick_count);
-        let x = rng.gen_range(2..18);
-        let y = rng.gen_range(2..18);
-        let resource_type = if rng.gen_bool(0.5) {
+        let x = rng.random_range(2..18);
+        let y = rng.random_range(2..18);
+        let resource_type = if rng.random_bool(0.5) {
             ResourceType::Wood
         } else {
             ResourceType::Berries

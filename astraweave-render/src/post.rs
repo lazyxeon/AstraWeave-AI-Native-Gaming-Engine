@@ -2,7 +2,6 @@
 // These shaders are not wired into runtime yet; we just ensure they parse via naga.
 
 use anyhow::Result;
-use std::borrow::Cow;
 
 // ---------------------------------------------------------------------------------
 // Bloom Post-Processing

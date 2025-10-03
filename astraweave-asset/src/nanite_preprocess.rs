@@ -301,8 +301,8 @@ impl QuadricError {
 pub fn generate_meshlets(
     positions: &[[f32; 3]],
     normals: &[[f32; 3]],
-    tangents: &[[f32; 4]],
-    uvs: &[[f32; 2]],
+    _tangents: &[[f32; 4]],
+    _uvs: &[[f32; 2]],
     indices: &[u32],
 ) -> Result<Vec<Meshlet>> {
     if indices.len() % 3 != 0 {

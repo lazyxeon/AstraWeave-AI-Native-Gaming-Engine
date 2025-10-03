@@ -115,7 +115,7 @@ fn validate_line_of_sight(world: &WorldSnapshot, target_pos: Option<IVec2>) -> R
 
 /// Validate a tool action for an agent in the world
 pub fn validate_tool_action(
-    agent_id: u32,
+    _agent_id: u32,
     verb: ToolVerb,
     world: &WorldSnapshot,
     context: &ValidationContext,
@@ -165,7 +165,7 @@ pub fn validate_tool_action(
                     // Query for intersecting colliders, but exclude dynamic bodies (agents)
                     // Only consider static/environment colliders as obstacles
                     let mut intersecting = false;
-                    for (collider_handle, collider) in colliders.iter() {
+                    for (_collider_handle, collider) in colliders.iter() {
                         // Skip colliders attached to dynamic rigid bodies (agents)
                         if let Some(parent_handle) = collider.parent() {
                             if let Some(rigid_body) = bodies.get(parent_handle) {

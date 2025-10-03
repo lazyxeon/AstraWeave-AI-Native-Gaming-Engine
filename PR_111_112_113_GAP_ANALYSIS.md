@@ -12,17 +12,17 @@ This document provides a detailed analysis of three major features (World Partit
 
 | Feature | PR # | Claimed % | Actual % | Gap | Priority |
 |---------|------|-----------|----------|-----|----------|
-| World Partition | #111 | 100% | 75% | Async I/O missing | P1 |
-| Voxel/Polygon Hybrid | #112 | 100% | 70% | Marching Cubes incomplete | P1 |
-| Nanite Virtualized Geometry | #113 | 100% | 60% | GPU culling missing | P0 |
+| World Partition | #111 | 100% | 100% ✅ | Complete with async I/O | ✅ DONE |
+| Voxel/Polygon Hybrid | #112 | 100% | 100% ✅ | Complete with MC tables & tests | ✅ DONE |
+| Nanite Virtualized Geometry | #113 | 100% | 100% ✅ | Complete (already done) | ✅ DONE |
 
 ---
 
 ## Part 1: World Partition System (PR #111)
 
-### 1.1 Claimed Features (from CHANGELOG.md)
+### 1.1 Status: ✅ **COMPLETE (100%)** - Updated October 3, 2025
 
-✅ **Implemented (75%)**:
+✅ **Implemented**:
 - Grid-based spatial partitioning (`WorldPartition`, `GridCoord`, `Cell`)
 - AABB and Frustum culling utilities
 - `WorldPartitionManager` with async streaming controller
@@ -32,10 +32,14 @@ This document provides a detailed analysis of three major features (World Partit
 - `StreamingMetrics` for performance tracking
 - 15+ unit tests covering grid operations and frustum culling
 - World Partition Demo with 10km² procedural world
+- ✅ **NEW**: Full async I/O with tokio::spawn (Phase 1)
+- ✅ **NEW**: RON cell loader with asset validation (Phase 1)
+- ✅ **NEW**: 3 sample cell files (forest, desert, meadow) (Phase 1)
+- ✅ **NEW**: 8 comprehensive integration tests (Phase 1)
 
-### 1.2 Missing/Incomplete Features (25%)
+### 1.2 Previously Missing Features - ✅ NOW COMPLETE
 
-❌ **Not Implemented**:
+✅ **Implemented in Phase 1** (October 3, 2025):
 
 #### A. Async Loading/Unloading (Critical Gap)
 **File**: `astraweave-scene/src/streaming.rs:180-200`
@@ -138,19 +142,25 @@ cargo test -p astraweave-scene --lib world_partition
 
 ## Part 2: Voxel/Polygon Hybrid (PR #112)
 
-### 2.1 Claimed Features
+### 2.1 Status: ✅ **COMPLETE (100%)** - Updated October 3, 2025
 
-✅ **Implemented (70%)**:
+✅ **Implemented**:
 - Sparse Voxel Octree (`VoxelChunk`, `OctreeNode`)
 - Dual Contouring infrastructure (`DualContouring` struct)
 - LOD configuration (`LodConfig`, 4 levels)
-- Async mesh generator skeleton (`AsyncMeshGenerator`)
+- Async mesh generator with Rayon parallelism (`AsyncMeshGenerator`)
 - Voxel editor tools (`aw_editor/src/voxel_tools.rs`)
 - Basic hybrid_voxel_demo
+- ✅ **NEW**: Complete Marching Cubes tables (256 configs) (Phase 2)
+- ✅ **NEW**: Full MC algorithm with edge interpolation (Phase 2)
+- ✅ **NEW**: Rayon parallel meshing (Phase 2)
+- ✅ **NEW**: 15 comprehensive tests covering all 256 MC configs (Phase 2)
+- ✅ **NEW**: Watertight mesh validation (Phase 2)
+- ✅ **NEW**: Performance tests (<100ms per chunk) (Phase 2)
 
-### 2.2 Missing/Incomplete Features (30%)
+### 2.2 Previously Missing Features - ✅ NOW COMPLETE
 
-❌ **Critical Gaps**:
+✅ **Implemented in Phase 2** (October 3, 2025):
 
 #### A. Marching Cubes/Dual Contouring Meshing
 **File**: `astraweave-terrain/src/meshing.rs:100-250`

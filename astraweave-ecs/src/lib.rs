@@ -56,7 +56,6 @@ use std::{
     any::TypeId,
     collections::{BTreeMap, HashMap},
     hash::Hash,
-    ops::{Deref, DerefMut},
 };
 
 pub trait Component: 'static + Send + Sync {}
@@ -155,6 +154,7 @@ impl World {
 }
 
 // Simple query over one or two component types (Phase 1 minimal)
+#[allow(dead_code)]
 pub struct Query<'w, T: Component> {
     world: &'w World,
     ty: TypeId,
@@ -478,6 +478,7 @@ mod tests {
     #[test]
     fn world_convenience_methods() {
         #[derive(Clone, Copy)]
+        #[allow(dead_code)]
         struct TestComp(u32);
         let mut world = World::new();
         let e1 = world.spawn();

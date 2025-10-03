@@ -352,7 +352,7 @@ fn test_prompt_includes_obstacles() {
 /// Test that obstacle scenarios don't break JSON parsing
 #[test]
 fn test_obstacle_scenario_json_parsing() {
-    let world_snapshot = create_scenario_with_multiple_obstacles();
+    let _world_snapshot = create_scenario_with_multiple_obstacles();
     let tool_registry = create_comprehensive_registry();
 
     let json_output =

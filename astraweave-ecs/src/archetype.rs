@@ -65,18 +65,19 @@ impl Archetype {
     }
 
     /// Add an entity with its components (must match signature)
-    pub fn add_entity(&mut self, entity: Entity, component_data: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>) {
+    pub fn add_entity(
+        &mut self,
+        entity: Entity,
+        mut component_data: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>,
+    ) {
         let row = self.entities.len();
         self.entities.insert(entity, row);
 
         for ty in &self.signature.components {
-            if let Some(data) = component_data.get(ty) {
-                // SAFETY: We clone the Box pointer, not the data
-                // This is safe because component_data is moved into this function
+            if let Some(data) = component_data.remove(ty) {
+                // Move the Box from component_data into the column
                 let column = self.components.get_mut(ty).unwrap();
-                // We need to reconstruct the box - this requires unsafe or a different approach
-                // For now, we'll store a reference to the data
-                column.push(component_data.get(ty).unwrap().as_ref() as *const _ as *mut _);
+                column.push(data);
             }
         }
     }
@@ -100,7 +101,7 @@ impl Archetype {
     /// Remove entity from archetype
     pub fn remove_entity(&mut self, entity: Entity) -> Option<usize> {
         let row = self.entities.remove(&entity)?;
-        
+
         // Swap-remove from all component columns
         for column in self.components.values_mut() {
             column.swap_remove(row);
@@ -108,7 +109,11 @@ impl Archetype {
 
         // Update entity indices for swapped entity
         if row < self.entities.len() {
-            if let Some((swapped_entity, _)) = self.entities.iter().find(|(_, &r)| r == self.entities.len()) {
+            if let Some((swapped_entity, _)) = self
+                .entities
+                .iter()
+                .find(|(_, &r)| r == self.entities.len())
+            {
                 let swapped = *swapped_entity;
                 self.entities.insert(swapped, row);
             }
@@ -195,7 +200,9 @@ impl ArchetypeStorage {
 
     /// Find archetypes that contain a specific component
     pub fn archetypes_with_component(&self, ty: TypeId) -> impl Iterator<Item = &Archetype> {
-        self.archetypes.values().filter(move |arch| arch.signature.contains(ty))
+        self.archetypes
+            .values()
+            .filter(move |arch| arch.signature.contains(ty))
     }
 }
 
@@ -226,10 +233,10 @@ mod tests {
     fn test_archetype_storage() {
         let mut storage = ArchetypeStorage::new();
         let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
-        
+
         let id1 = storage.get_or_create_archetype(sig.clone());
         let id2 = storage.get_or_create_archetype(sig.clone());
-        
+
         assert_eq!(id1, id2); // Same signature returns same archetype
     }
 }

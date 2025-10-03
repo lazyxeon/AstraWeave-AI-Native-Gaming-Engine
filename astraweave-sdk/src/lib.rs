@@ -407,14 +407,12 @@ mod tests {
     #[test]
     fn last_error_is_set_on_intent_parse_error() {
         let w = aw_world_create();
-        let rc = unsafe {
-            aw_world_submit_intent_json(
-                w,
-                1,
-                std::ffi::CString::new("not json").unwrap().as_ptr(),
-                None,
-            )
-        };
+        let rc = aw_world_submit_intent_json(
+            w,
+            1,
+            std::ffi::CString::new("not json").unwrap().as_ptr(),
+            None,
+        );
         assert_eq!(rc, AW_ERR_PARSE);
         let mut buf = [0u8; 128];
         let n = aw_last_error_string(buf.as_mut_ptr(), buf.len());

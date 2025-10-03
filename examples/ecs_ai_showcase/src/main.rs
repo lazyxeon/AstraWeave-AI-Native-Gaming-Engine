@@ -8,7 +8,7 @@
 //! - Resource management
 
 use anyhow::Result;
-use astraweave_ecs::*;
+use astraweave_ecs::{App, Entity, Event, Events, World};
 use glam::Vec3;
 use std::collections::HashMap;
 
@@ -27,6 +27,7 @@ struct Velocity {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
 enum Team {
     Player,
     Enemy,
@@ -34,6 +35,7 @@ enum Team {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct Health {
     current: i32,
     max: i32,
@@ -56,6 +58,7 @@ enum AIState {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct Player {
     name: String,
 }
@@ -90,6 +93,17 @@ struct DamageEvent {
 impl Event for DamageEvent {}
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
+struct HealthChangedEvent {
+    entity: Entity,
+    old_health: i32,
+    new_health: i32,
+    source: Option<Entity>,
+}
+impl Event for HealthChangedEvent {}
+
+#[derive(Clone, Debug)]
+#[allow(dead_code)]
 struct AIStateChangedEvent {
     entity: Entity,
     old_state: AIState,
@@ -105,7 +119,7 @@ impl Event for AIStateChangedEvent {}
 fn ai_perception_system(world: &mut World) {
     // Get all AI agents
     let ai_entities: Vec<Entity> = world.entities_with::<AIAgent>();
-    
+
     // For each AI agent, find nearby enemies
     for agent_entity in ai_entities {
         let agent_pos = if let Some(pos) = world.get::<Position>(agent_entity) {
@@ -122,7 +136,7 @@ fn ai_perception_system(world: &mut World) {
 
         // Find closest enemy
         let mut closest_enemy: Option<(Entity, f32)> = None;
-        
+
         let all_entities: Vec<Entity> = world.entities_with::<Position>();
         for other_entity in all_entities {
             if other_entity == agent_entity {
@@ -130,7 +144,10 @@ fn ai_perception_system(world: &mut World) {
             }
 
             // Check if enemy team
-            let is_enemy = match (world.get::<Team>(agent_entity), world.get::<Team>(other_entity)) {
+            let is_enemy = match (
+                world.get::<Team>(agent_entity),
+                world.get::<Team>(other_entity),
+            ) {
                 (Some(Team::Enemy), Some(Team::Player)) => true,
                 (Some(Team::Player), Some(Team::Enemy)) => true,
                 _ => false,
@@ -142,7 +159,7 @@ fn ai_perception_system(world: &mut World) {
 
             if let Some(other_pos) = world.get::<Position>(other_entity) {
                 let distance = (other_pos.pos - agent_pos).length();
-                
+
                 if distance <= perception_radius {
                     if let Some((_, closest_dist)) = closest_enemy {
                         if distance < closest_dist {
@@ -170,9 +187,6 @@ fn ai_perception_system(world: &mut World) {
 fn ai_planning_system(world: &mut World) {
     let ai_entities: Vec<Entity> = world.entities_with::<AIAgent>();
 
-    // Get events resource
-    let events_ptr = world.get_resource_mut::<Events>() as *mut Events;
-    
     for entity in ai_entities {
         let (current_state, target, health) = {
             let ai = if let Some(ai) = world.get::<AIAgent>(entity) {
@@ -180,8 +194,11 @@ fn ai_planning_system(world: &mut World) {
             } else {
                 continue;
             };
-            
-            let health = world.get::<Health>(entity).map(|h| h.current).unwrap_or(100);
+
+            let health = world
+                .get::<Health>(entity)
+                .map(|h| h.current)
+                .unwrap_or(100);
             (ai.state.clone(), ai.target, health)
         };
 
@@ -250,7 +267,7 @@ fn ai_planning_system(world: &mut World) {
             }
 
             // Emit state changed event
-            if let Some(events) = unsafe { events_ptr.as_mut() } {
+            if let Some(events) = world.get_resource_mut::<Events>() {
                 events.send(AIStateChangedEvent {
                     entity,
                     old_state: current_state,
@@ -273,13 +290,12 @@ fn movement_system(world: &mut World) {
         .unwrap_or(1.0 / 60.0);
 
     let entities: Vec<Entity> = world.entities_with::<Position>();
-    
+
     for entity in entities {
-        if let (Some(pos), Some(vel)) = (
-            world.get_mut::<Position>(entity),
-            world.get::<Velocity>(entity),
-        ) {
-            pos.pos += vel.vel * delta_time;
+        // Copy velocity first to avoid borrow conflicts
+        let vel = world.get::<Velocity>(entity).map(|v| v.vel);
+        if let (Some(pos), Some(vel_val)) = (world.get_mut::<Position>(entity), vel) {
+            pos.pos += vel_val * delta_time;
         }
     }
 }
@@ -300,13 +316,12 @@ fn ai_behavior_system(world: &mut World) {
                 // Move towards target
                 if let Some(ai) = world.get::<AIAgent>(entity) {
                     if let Some(target) = ai.target {
-                        if let (Some(my_pos), Some(target_pos)) = (
-                            world.get::<Position>(entity),
-                            world.get::<Position>(target),
-                        ) {
+                        if let (Some(my_pos), Some(target_pos)) =
+                            (world.get::<Position>(entity), world.get::<Position>(target))
+                        {
                             let direction = (target_pos.pos - my_pos.pos).normalize_or_zero();
                             let speed = 5.0;
-                            
+
                             if let Some(vel) = world.get_mut::<Velocity>(entity) {
                                 vel.vel = direction * speed;
                             }
@@ -318,13 +333,12 @@ fn ai_behavior_system(world: &mut World) {
                 // Move away from target
                 if let Some(ai) = world.get::<AIAgent>(entity) {
                     if let Some(target) = ai.target {
-                        if let (Some(my_pos), Some(target_pos)) = (
-                            world.get::<Position>(entity),
-                            world.get::<Position>(target),
-                        ) {
+                        if let (Some(my_pos), Some(target_pos)) =
+                            (world.get::<Position>(entity), world.get::<Position>(target))
+                        {
                             let direction = (my_pos.pos - target_pos.pos).normalize_or_zero();
                             let speed = 7.0; // Flee faster
-                            
+
                             if let Some(vel) = world.get_mut::<Velocity>(entity) {
                                 vel.vel = direction * speed;
                             }
@@ -337,7 +351,7 @@ fn ai_behavior_system(world: &mut World) {
                 if let Some(vel) = world.get_mut::<Velocity>(entity) {
                     vel.vel = Vec3::ZERO;
                 }
-                
+
                 // Emit damage event
                 if let Some(ai) = world.get::<AIAgent>(entity) {
                     if let Some(target) = ai.target {
@@ -378,6 +392,7 @@ fn combat_system(world: &mut World) {
     };
 
     let mut stats_update = (0, 0); // (damage_dealt, enemies_defeated)
+    let mut health_changed_events = Vec::new();
 
     for event in damage_events {
         if let Some(health) = world.get_mut::<Health>(event.target) {
@@ -387,17 +402,22 @@ fn combat_system(world: &mut World) {
             if health.current <= 0 {
                 // Entity defeated
                 stats_update.1 += 1;
-                
-                // Emit health changed event
-                if let Some(events) = world.get_resource_mut::<Events>() {
-                    events.send(HealthChangedEvent {
-                        entity: event.target,
-                        old_health: health.current + event.damage,
-                        new_health: health.current,
-                        source: Some(event.attacker),
-                    });
-                }
+
+                // Queue health changed event
+                health_changed_events.push(HealthChangedEvent {
+                    entity: event.target,
+                    old_health: health.current + event.damage,
+                    new_health: health.current,
+                    source: Some(event.attacker),
+                });
             }
+        }
+    }
+
+    // Emit all health changed events
+    if let Some(events) = world.get_resource_mut::<Events>() {
+        for event in health_changed_events {
+            events.send(event);
         }
     }
 
@@ -431,7 +451,7 @@ fn stats_display_system(world: &mut World) {
         // Count AI states
         let ai_entities: Vec<Entity> = world.entities_with::<AIAgent>();
         let mut state_counts: HashMap<String, u32> = HashMap::new();
-        
+
         for entity in ai_entities {
             if let Some(ai) = world.get::<AIAgent>(entity) {
                 let state_name = format!("{:?}", ai.state);
@@ -461,40 +481,54 @@ fn setup_world(app: &mut App) {
 
     // Spawn player
     let player = app.world.spawn();
-    app.world.insert(player, Player {
-        name: "Hero".to_string(),
-    });
-    app.world.insert(player, Position {
-        pos: Vec3::new(0.0, 0.0, 0.0),
-    });
-    app.world.insert(player, Velocity {
-        vel: Vec3::ZERO,
-    });
-    app.world.insert(player, Health {
-        current: 100,
-        max: 100,
-    });
+    app.world.insert(
+        player,
+        Player {
+            name: "Hero".to_string(),
+        },
+    );
+    app.world.insert(
+        player,
+        Position {
+            pos: Vec3::new(0.0, 0.0, 0.0),
+        },
+    );
+    app.world.insert(player, Velocity { vel: Vec3::ZERO });
+    app.world.insert(
+        player,
+        Health {
+            current: 100,
+            max: 100,
+        },
+    );
     app.world.insert(player, Team::Player);
 
     // Spawn enemies
     for i in 0..5 {
         let enemy = app.world.spawn();
-        app.world.insert(enemy, Position {
-            pos: Vec3::new(10.0 + i as f32 * 3.0, 0.0, 10.0),
-        });
-        app.world.insert(enemy, Velocity {
-            vel: Vec3::ZERO,
-        });
-        app.world.insert(enemy, Health {
-            current: 50,
-            max: 50,
-        });
+        app.world.insert(
+            enemy,
+            Position {
+                pos: Vec3::new(10.0 + i as f32 * 3.0, 0.0, 10.0),
+            },
+        );
+        app.world.insert(enemy, Velocity { vel: Vec3::ZERO });
+        app.world.insert(
+            enemy,
+            Health {
+                current: 50,
+                max: 50,
+            },
+        );
         app.world.insert(enemy, Team::Enemy);
-        app.world.insert(enemy, AIAgent {
-            perception_radius: 15.0,
-            target: None,
-            state: AIState::Idle,
-        });
+        app.world.insert(
+            enemy,
+            AIAgent {
+                perception_radius: 15.0,
+                target: None,
+                state: AIState::Idle,
+            },
+        );
     }
 
     println!("🎮 ECS AI Showcase initialized!");
@@ -508,26 +542,26 @@ fn main() -> Result<()> {
 
     // Register systems in AI-native order:
     // Perception → AI Planning → Simulation → Post-Simulation
-    
-    app.add_system(SystemStage::PERCEPTION, ai_perception_system);
-    app.add_system(SystemStage::AI_PLANNING, ai_planning_system);
-    app.add_system(SystemStage::SIMULATION, ai_behavior_system);
-    app.add_system(SystemStage::SIMULATION, movement_system);
-    app.add_system(SystemStage::SIMULATION, combat_system);
-    app.add_system(SystemStage::POST_SIMULATION, stats_display_system);
+
+    app.add_system("perception", ai_perception_system);
+    app.add_system("ai_planning", ai_planning_system);
+    app.add_system("simulation", ai_behavior_system);
+    app.add_system("simulation", movement_system);
+    app.add_system("simulation", combat_system);
+    app.add_system("post_simulation", stats_display_system);
 
     setup_world(&mut app);
 
     // Run simulation
     println!("🚀 Starting simulation...\n");
-    
+
     for _ in 0..300 {
         // Update game time
         if let Some(time) = app.world.get_resource_mut::<GameTime>() {
             time.tick += 1;
         }
 
-        // Run all systems
+        // Run all systems (NEW API: schedule.run directly)
         app.schedule.run(&mut app.world);
 
         // Update events

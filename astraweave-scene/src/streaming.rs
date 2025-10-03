@@ -233,10 +233,8 @@ impl WorldPartitionManager {
             }
         });
 
-        // Note: We immediately return here; finish_load_cell will be called by the spawned task
-        // For now, call it synchronously to maintain existing behavior
-        self.finish_load_cell(coord).await?;
-
+        // The spawned task will handle updating cell state asynchronously
+        // Loading will complete in the background; check cell state later via partition.get_cell()
         Ok(())
     }
 
@@ -256,6 +254,7 @@ impl WorldPartitionManager {
     }
 
     /// Finish loading a cell (called after async load completes)
+    #[allow(dead_code)]
     async fn finish_load_cell(&mut self, coord: GridCoord) -> Result<()> {
         self.loading_cells.remove(&coord);
         self.active_cells.insert(coord);

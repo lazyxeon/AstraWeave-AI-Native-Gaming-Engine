@@ -11,18 +11,20 @@ use crate::{Component, Entity, Events, Resource, World};
 pub trait SystemParam: Sized {
     /// Fetch the parameter from the world
     fn fetch(world: &World) -> Option<Self>;
-    
+
     /// Fetch mutable parameter from the world
     fn fetch_mut(world: &mut World) -> Option<Self>;
 }
 
 /// Query system parameter for iterating over entities with components
+#[allow(dead_code)]
 pub struct Query<'w, T> {
     entities: Vec<Entity>,
     world_ptr: *const World,
     _marker: PhantomData<(&'w (), T)>,
 }
 
+#[allow(dead_code)]
 impl<'w, T: Component> Query<'w, T> {
     pub fn new(world: &'w World) -> Self {
         let entities = world.entities_with::<T>();
@@ -36,9 +38,9 @@ impl<'w, T: Component> Query<'w, T> {
     /// Iterate over all entities with component T
     pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
         let world = unsafe { &*self.world_ptr };
-        self.entities.iter().filter_map(move |&entity| {
-            world.get::<T>(entity).map(|comp| (entity, comp))
-        })
+        self.entities
+            .iter()
+            .filter_map(move |&entity| world.get::<T>(entity).map(|comp| (entity, comp)))
     }
 
     /// Get component for a specific entity
@@ -75,13 +77,13 @@ impl<'w, T: Component> QueryMut<'w, T> {
     }
 
     /// Iterate mutably over all entities with component T
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (Entity, &mut T)> + '_ {
-        let world = unsafe { &mut *self.world_ptr };
-        let entities = std::mem::take(&mut self.entities);
-        
-        entities.into_iter().filter_map(move |entity| {
-            world.get_mut::<T>(entity).map(|comp| (entity, comp))
-        })
+    pub fn iter_mut(&mut self) -> QueryMutIter<'_, T> {
+        QueryMutIter {
+            entities: std::mem::take(&mut self.entities),
+            index: 0,
+            world_ptr: self.world_ptr,
+            _marker: PhantomData,
+        }
     }
 
     /// Get mutable component for a specific entity
@@ -96,6 +98,36 @@ impl<'w, T: Component> QueryMut<'w, T> {
 
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
+    }
+}
+
+/// Iterator over mutable query items to avoid borrowing issues in closures.
+/// SAFETY: Each entity is visited at most once, ensuring unique mutable access per component.
+pub struct QueryMutIter<'w, T> {
+    entities: Vec<Entity>,
+    index: usize,
+    world_ptr: *mut World,
+    _marker: PhantomData<(&'w mut (), T)>,
+}
+
+impl<'w, T: Component> Iterator for QueryMutIter<'w, T> {
+    type Item = (Entity, &'w mut T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.index < self.entities.len() {
+            let entity = self.entities[self.index];
+            self.index += 1;
+
+            let world = unsafe { &mut *self.world_ptr };
+
+            // SAFETY: The entity list guarantees we visit each entity at most once,
+            // so the mutable reference to its component will not alias with others.
+            let ptr = world.get_mut::<T>(entity)? as *mut T;
+            let comp = unsafe { &mut *ptr };
+
+            return Some((entity, comp));
+        }
+        None
     }
 }
 
@@ -114,7 +146,7 @@ impl<'w, A: Component, B: Component> QueryTuple<'w, A, B> {
             .into_iter()
             .filter(|&e| world.has::<B>(e))
             .collect();
-        
+
         Self {
             entities,
             world_ptr: world as *const World,
@@ -146,7 +178,7 @@ impl<'w, A: Component, B: Component> QueryTupleMut<'w, A, B> {
             .into_iter()
             .filter(|&e| world.has::<B>(e))
             .collect();
-        
+
         Self {
             entities,
             world_ptr: world as *mut World,
@@ -182,7 +214,7 @@ impl<'w, A: Component, B: Component> Iterator for QueryTupleMutIter<'w, A, B> {
             self.index += 1;
 
             let world = unsafe { &mut *self.world_ptr };
-            
+
             // Get both mutable references
             // SAFETY: We guarantee no aliasing because each entity is visited once
             let a_ptr = world.get_mut::<A>(entity)? as *mut A;
@@ -247,7 +279,9 @@ pub struct EventsParam<'w> {
 
 impl<'w> EventsParam<'w> {
     pub fn new(world: &'w mut World) -> Option<Self> {
-        world.get_resource_mut::<Events>().map(|events| Self { events })
+        world
+            .get_resource_mut::<Events>()
+            .map(|events| Self { events })
     }
 
     pub fn send<E: crate::Event>(&mut self, event: E) {
@@ -294,10 +328,10 @@ mod tests {
         let mut world = World::new();
         let e1 = world.spawn();
         let e2 = world.spawn();
-        
+
         world.insert(e1, Position(1.0, 2.0));
         world.insert(e1, Velocity(0.5, 0.5));
-        
+
         world.insert(e2, Position(3.0, 4.0));
         // e2 doesn't have Velocity
 
@@ -318,7 +352,7 @@ mod tests {
         world.insert_resource(TestResource { value: 42 });
 
         let res = Res::<TestResource>::new(&world).unwrap();
-        assert_eq!(res.value, 42);
+        assert_eq!((*res).value, 42);
     }
 
     #[test]
@@ -327,7 +361,7 @@ mod tests {
         world.insert_resource(TestResource { value: 42 });
 
         let mut res = ResMut::<TestResource>::new(&mut world).unwrap();
-        res.value = 100;
+        (*res).value = 100;
 
         assert_eq!(world.get_resource::<TestResource>().unwrap().value, 100);
     }

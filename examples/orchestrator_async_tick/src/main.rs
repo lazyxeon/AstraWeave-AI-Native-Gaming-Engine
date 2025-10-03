@@ -3,7 +3,7 @@ use astraweave_ai::{
 };
 use astraweave_core::{
     default_tool_registry, map_engine_error, validation::validate_and_execute,
-    validation::ValidateCfg, ActionStep, Entity, IVec2, PlanIntent, World, WorldSnapshot,
+    validation::ValidateCfg, Entity, IVec2, PlanIntent, World, WorldSnapshot,
 };
 use astraweave_llm::MockLlm;
 
@@ -34,6 +34,7 @@ fn mk_snap_from_world(w: &World, me: Entity, player: Entity, enemy: Entity) -> W
             last_seen: 0.0,
         }],
         pois: vec![],
+        obstacles: vec![],  // No obstacles in this test scenario
         objective: None,
     }
 }
