@@ -640,7 +640,7 @@
 <a href=#640 id=640 data-nosnippet>640</a>// Bloom WGSL Shaders
 <a href=#641 id=641 data-nosnippet>641</a>// ---------------------------------------------------------------------------------
 <a href=#642 id=642 data-nosnippet>642</a>
-<a href=#643 id=643 data-nosnippet>643</a></span><span class="kw">const </span>BLOOM_THRESHOLD_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
+<a href=#643 id=643 data-nosnippet>643</a></span><span class="kw">const </span>_BLOOM_THRESHOLD_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
 <a href=#644 id=644 data-nosnippet>644</a>struct VsOut { @builtin(position) pos: vec4&lt;f32&gt;, @location(0) uv: vec2&lt;f32&gt; };
 <a href=#645 id=645 data-nosnippet>645</a>@vertex fn vs(@builtin(vertex_index) vi: u32) -&gt; VsOut {
 <a href=#646 id=646 data-nosnippet>646</a>    var out: VsOut;
@@ -666,7 +666,7 @@
 <a href=#666 id=666 data-nosnippet>666</a>}
 <a href=#667 id=667 data-nosnippet>667</a>"#</span>;
 <a href=#668 id=668 data-nosnippet>668</a>
-<a href=#669 id=669 data-nosnippet>669</a><span class="kw">const </span>BLOOM_DOWNSAMPLE_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
+<a href=#669 id=669 data-nosnippet>669</a><span class="kw">const </span>_BLOOM_DOWNSAMPLE_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
 <a href=#670 id=670 data-nosnippet>670</a>struct VsOut { @builtin(position) pos: vec4&lt;f32&gt;, @location(0) uv: vec2&lt;f32&gt; };
 <a href=#671 id=671 data-nosnippet>671</a>@vertex fn vs(@builtin(vertex_index) vi: u32) -&gt; VsOut {
 <a href=#672 id=672 data-nosnippet>672</a>    var out: VsOut;
@@ -694,7 +694,7 @@
 <a href=#694 id=694 data-nosnippet>694</a>}
 <a href=#695 id=695 data-nosnippet>695</a>"#</span>;
 <a href=#696 id=696 data-nosnippet>696</a>
-<a href=#697 id=697 data-nosnippet>697</a><span class="kw">const </span>BLOOM_UPSAMPLE_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
+<a href=#697 id=697 data-nosnippet>697</a><span class="kw">const </span>_BLOOM_UPSAMPLE_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
 <a href=#698 id=698 data-nosnippet>698</a>struct VsOut { @builtin(position) pos: vec4&lt;f32&gt;, @location(0) uv: vec2&lt;f32&gt; };
 <a href=#699 id=699 data-nosnippet>699</a>@vertex fn vs(@builtin(vertex_index) vi: u32) -&gt; VsOut {
 <a href=#700 id=700 data-nosnippet>700</a>    var out: VsOut;
@@ -725,7 +725,7 @@
 <a href=#725 id=725 data-nosnippet>725</a>}
 <a href=#726 id=726 data-nosnippet>726</a>"#</span>;
 <a href=#727 id=727 data-nosnippet>727</a>
-<a href=#728 id=728 data-nosnippet>728</a><span class="kw">const </span>BLOOM_COMPOSITE_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
+<a href=#728 id=728 data-nosnippet>728</a><span class="kw">const </span>_BLOOM_COMPOSITE_WGSL: <span class="kw-2">&amp;</span>str = <span class="string">r#"
 <a href=#729 id=729 data-nosnippet>729</a>struct VsOut { @builtin(position) pos: vec4&lt;f32&gt;, @location(0) uv: vec2&lt;f32&gt; };
 <a href=#730 id=730 data-nosnippet>730</a>@vertex fn vs(@builtin(vertex_index) vi: u32) -&gt; VsOut {
 <a href=#731 id=731 data-nosnippet>731</a>    var out: VsOut;

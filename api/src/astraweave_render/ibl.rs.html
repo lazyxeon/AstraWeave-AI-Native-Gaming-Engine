@@ -68,10 +68,10 @@
 <a href=#68 id=68 data-nosnippet>68</a><span class="doccomment">/// Internal textures owned by the manager (kept to control lifetime)
 <a href=#69 id=69 data-nosnippet>69</a></span><span class="kw">struct </span>IblTextures {
 <a href=#70 id=70 data-nosnippet>70</a>    _env: wgpu::Texture, <span class="comment">// Kept alive for views
-<a href=#71 id=71 data-nosnippet>71</a>    </span>irradiance: wgpu::Texture,
-<a href=#72 id=72 data-nosnippet>72</a>    specular: wgpu::Texture,
-<a href=#73 id=73 data-nosnippet>73</a>    brdf_lut: wgpu::Texture,
-<a href=#74 id=74 data-nosnippet>74</a>    spec_mips: u32,
+<a href=#71 id=71 data-nosnippet>71</a>    </span>_irradiance: wgpu::Texture,
+<a href=#72 id=72 data-nosnippet>72</a>    _specular: wgpu::Texture,
+<a href=#73 id=73 data-nosnippet>73</a>    _brdf_lut: wgpu::Texture,
+<a href=#74 id=74 data-nosnippet>74</a>    _spec_mips: u32,
 <a href=#75 id=75 data-nosnippet>75</a>}
 <a href=#76 id=76 data-nosnippet>76</a>
 <a href=#77 id=77 data-nosnippet>77</a><span class="kw">pub struct </span>IblManager {
@@ -847,10 +847,10 @@
 <a href=#847 id=847 data-nosnippet>847</a>        <span class="comment">// Hold textures so views remain valid for the lifetime of the manager
 <a href=#848 id=848 data-nosnippet>848</a>        </span><span class="self">self</span>.textures = <span class="prelude-val">Some</span>(IblTextures {
 <a href=#849 id=849 data-nosnippet>849</a>            _env: env_tex,
-<a href=#850 id=850 data-nosnippet>850</a>            irradiance: irr_tex,
-<a href=#851 id=851 data-nosnippet>851</a>            specular: spec_tex,
-<a href=#852 id=852 data-nosnippet>852</a>            brdf_lut: brdf_tex,
-<a href=#853 id=853 data-nosnippet>853</a>            spec_mips,
+<a href=#850 id=850 data-nosnippet>850</a>            _irradiance: irr_tex,
+<a href=#851 id=851 data-nosnippet>851</a>            _specular: spec_tex,
+<a href=#852 id=852 data-nosnippet>852</a>            _brdf_lut: brdf_tex,
+<a href=#853 id=853 data-nosnippet>853</a>            _spec_mips: spec_mips,
 <a href=#854 id=854 data-nosnippet>854</a>        });
 <a href=#855 id=855 data-nosnippet>855</a>        <span class="kw">let </span>resources = IblResources {
 <a href=#856 id=856 data-nosnippet>856</a>            env_cube: env_view,
@@ -1112,14 +1112,14 @@
 <a href=#1112 id=1112 data-nosnippet>1112</a>        view_formats: <span class="kw-2">&amp;</span>[],
 <a href=#1113 id=1113 data-nosnippet>1113</a>    });
 <a href=#1114 id=1114 data-nosnippet>1114</a>    queue.write_texture(
-<a href=#1115 id=1115 data-nosnippet>1115</a>        wgpu::ImageCopyTexture {
+<a href=#1115 id=1115 data-nosnippet>1115</a>        wgpu::TexelCopyTextureInfo {
 <a href=#1116 id=1116 data-nosnippet>1116</a>            texture: <span class="kw-2">&amp;</span>tex,
 <a href=#1117 id=1117 data-nosnippet>1117</a>            mip_level: <span class="number">0</span>,
 <a href=#1118 id=1118 data-nosnippet>1118</a>            origin: wgpu::Origin3d::ZERO,
 <a href=#1119 id=1119 data-nosnippet>1119</a>            aspect: wgpu::TextureAspect::All,
 <a href=#1120 id=1120 data-nosnippet>1120</a>        },
 <a href=#1121 id=1121 data-nosnippet>1121</a>        <span class="kw-2">&amp;</span>rgba_f16,
-<a href=#1122 id=1122 data-nosnippet>1122</a>        wgpu::ImageDataLayout {
+<a href=#1122 id=1122 data-nosnippet>1122</a>        wgpu::TexelCopyBufferLayout {
 <a href=#1123 id=1123 data-nosnippet>1123</a>            offset: <span class="number">0</span>,
 <a href=#1124 id=1124 data-nosnippet>1124</a>            bytes_per_row: <span class="prelude-val">Some</span>(w * <span class="number">8</span>),
 <a href=#1125 id=1125 data-nosnippet>1125</a>            rows_per_image: <span class="prelude-val">Some</span>(h),
