@@ -1,215 +1,231 @@
-# AstraWeave: AI-Native Game Engine - GitHub Copilot Instructions
+# AstraWeave: AI-Native Game Engine — GitHub Copilot Instructions
 
-**ALWAYS** reference these instructions first and fallback to search or commands only when you encounter unexpected information that does not match the info here.
+**Read this first** when working in this codebase. Use search/commands only for information not covered here.
 
-AstraWeave is a deterministic, ECS-based game engine where **AI agents are first-class citizens**. Unlike traditional engines where AI is bolted on, AstraWeave implements the core AI loop (**Perception → Reasoning → Planning → Action**) directly into the simulation architecture. The codebase is a Rust workspace with 40+ crates and 23+ examples.
+## What This Is
+
+AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are first-class citizens**. The core loop (**Perception → Reasoning → Planning → Action**) is baked into the architecture. The workspace has **50+ crates** including core engine, examples, and tools.
+
+**Current State (Phase 4 Complete - October 2025)**:
+- ✅ SDK with stable C ABI + auto-generated headers (validated in CI)
+- ✅ Cinematics timeline/sequencer (UI integration, load/save)
+- ✅ Core engine builds in 8-15s incremental
+- ✅ Production-ready: astraweave-ecs, -ai, -physics, -render, -nav, -audio
+- ⚠️ Some examples have API drift issues (see below)
+
+---
+
+## Quick Commands (Windows PowerShell)
+
+**Setup & Build:**
+```powershell
+# Automated setup (handles Rust, dependencies, validation)
+./scripts/bootstrap.sh       # Cross-platform (use Git Bash on Windows)
+make setup                   # Alternative via Makefile
+
+# Fast build (core components only - 2-5 min first time, 8-15s incremental)
+make build
+cargo build -p astraweave-ecs -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-render -p hello_companion
+
+# Workspace check (excludes broken crates - use task or alias)
+# Task: "Phase1-check" in .vscode/tasks.json
+# OR: cargo check-all (alias in .cargo/config.toml)
+```
+
+**Testing & Validation:**
+```powershell
+# Core tests (6-30 seconds)
+cargo test -p astraweave-ecs -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-audio
+make test
+
+# Working example (AI planning demo - expect LOS panic)
+cargo run -p hello_companion --release
+make example
+
+# Code quality
+cargo fmt --all; cargo clippy -p astraweave-ecs -p hello_companion --all-features -- -D warnings
+make check    # Comprehensive (format, lint, test)
+```
+
+**Key Cargo Aliases** (in `.cargo/config.toml`):
+- `cargo check-all` - Workspace check with exclusions
+- `cargo build-core` - Core components only
+- `cargo test-all` - Tests on working crates
+- `cargo clippy-all` - Full linting with exclusions
+
+---
+
+## Architecture Essentials
+
+### AI-First Loop (Core Pattern Everywhere)
+```
+Perception → Reasoning → Planning → Action
+    ↓           ↓            ↓          ↓
+WorldSnapshot  AI Model   PlanIntent  Tool Validation
+```
+
+**Key Concepts:**
+- `WorldSnapshot`: Filtered world state for AI perception (see `astraweave-ai/src/core_loop.rs`)
+- `PlanIntent` + `ActionStep`: AI decisions as validated action sequences
+- `Orchestrator` trait: Abstracts AI planning (rule-based vs LLM)
+- **Tool Sandbox**: All AI actions validated by engine (no cheating possible)
+
+### ECS System Stages (astraweave-ecs)
+Deterministic, ordered execution:
+1. **PRE_SIMULATION** - Setup, initialization
+2. **PERCEPTION** - Build WorldSnapshots, update AI sensors
+3. **SIMULATION** - Game logic, cooldowns, state updates
+4. **AI_PLANNING** - Generate PlanIntents from orchestrators
+5. **PHYSICS** - Apply forces, resolve collisions
+6. **POST_SIMULATION** - Cleanup, constraint resolution
+7. **PRESENTATION** - Rendering, audio, UI updates
+
+**Fixed 60Hz tick** with deterministic RNG and ordered entity iteration.
+
+### Rendering & Materials (astraweave-render)
+- **wgpu 25.0.2** backend (Vulkan/DX12/Metal via wgpu)
+- **Material System**: TOML → GPU D2 array textures with stable indices
+  - Pattern: `assets/materials/<biome>/{materials.toml, arrays.toml}`
+  - WGSL bindings (group=1): albedo (0), sampler (1), normal (2), linear sampler (3), MRA (4)
+- **Shared Utilities**: `MaterialManager`, `IblManager`, `MeshRegistry`
+- **Feature Flags**: `textures`, `assets` gate loaders
+
+---
+
+## Workspace Structure
+
+**Core Engine Crates** (production-ready):
+```
+astraweave-ecs/         # Archetype-based ECS, system stages, events
+astraweave-ai/          # AI orchestrator, core loop, tool sandbox
+astraweave-sdk/         # C ABI, header generation (SDK exports)
+astraweave-render/      # wgpu 25 renderer, materials, IBL
+astraweave-physics/     # Rapier3D wrapper, character controller
+astraweave-nav/         # Navmesh, A*, portal graphs
+astraweave-audio/       # Spatial audio, rodio backend
+astraweave-scene/       # World partition, async cell streaming
+astraweave-terrain/     # Voxel/polygon hybrid, marching cubes
+astraweave-cinematics/  # Timeline, sequencer, camera/audio/FX tracks
+```
+
+**Gameplay & Tools**:
+```
+astraweave-behavior/    # Behavior trees, utility AI
+astraweave-weaving/     # Fate-weaving system (Veilweaver game mechanic)
+astraweave-pcg/         # Procedural content generation
+tools/aw_editor/        # Level/encounter editor (GUI)
+tools/aw_asset_cli/     # Asset pipeline tooling
+```
+
+**Examples** (`examples/`):
+- ✅ Working: `hello_companion`, `unified_showcase`, `core_loop_bt_demo`, `core_loop_goap_demo`, `weaving_pcg_demo`
+- ⚠️ API Drift: `visual_3d`, `ui_controls_demo`, `debug_overlay` (egui/winit version mismatches)
+- ❌ Broken: `astraweave-author`, `rhai_authoring` (rhai sync trait issues)
+
+---
 
 ## Working Effectively
 
-### Bootstrap and Build Process
-- **Cross-Platform**: Supports Linux, macOS, Windows (PowerShell). Use `./scripts/bootstrap.sh` on Unix or review `DEVELOPMENT_SETUP.md` for Windows.
+### Build Strategy
+**DO:**
+- Build incrementally (`-p` flag for single crates)
+- Use cargo aliases (`check-all`, `build-core`) or VS Code tasks
+- Let initial builds complete (15-45 min first time - normal for Rust graphics projects)
+- Use `--release` for examples (much faster runtime)
 
-- **Rust Version**: Uses stable Rust 1.89.0+. The repository includes `rust-toolchain.toml` for automatic toolchain management.
+**DON'T:**
+- Attempt full workspace builds without exclusions (broken crates will fail)
+- Cancel long-running builds (dependency compilation takes time)
+- Try to fix broken examples without checking API versions first
 
-- **Quick Setup**: Use convenience commands:
-  ```bash
-  make setup          # or ./scripts/bootstrap.sh  
-  make build          # Build core components only
-  make build-all      # Build all working components  
-  make example        # Run hello_companion demo
-  ```
+### Development Workflow
+1. **Make changes** in one crate at a time
+2. **Quick check**: `cargo check -p <crate>` (fast feedback)
+3. **Test**: `cargo test -p <crate>` (if tests exist)
+4. **Format**: `cargo fmt --all` (before commit)
+5. **Lint**: `cargo clippy -p <crate> --all-features -- -D warnings`
+6. **Integration**: Run `hello_companion` or `unified_showcase` to validate
 
-- **Manual Core Build**: Build the functioning core components:
-  ```bash
-  cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics \
-              -p astraweave-nav -p astraweave-render -p hello_companion
-  ```
-  **Timing: 2-5 minutes depending on system. NEVER CANCEL - dependency compilation can take 15+ minutes initially.**
+### Key Files to Check
+- **Public APIs**: Each crate's `src/lib.rs` (exports)
+- **Workspace Deps**: Root `Cargo.toml` (centralized versions)
+- **Build Config**: `.cargo/config.toml` (aliases, profiles, sccache)
+- **CI Tasks**: `.vscode/tasks.json` (Phase1-check, Phase1-tests)
+- **Exclusions**: See `check-all` alias for crates to skip
 
-- **Workspace Check with Exclusions**: Many compilation issues have been fixed, but some crates still have issues:
-  ```bash
-  cargo check --workspace --exclude astraweave-author --exclude visual_3d \
-              --exclude ui_controls_demo --exclude npc_town_demo --exclude rhai_authoring \
-              --exclude debug_overlay --exclude cutscene_render_demo --exclude weaving_playground \
-              --exclude combat_physics_demo --exclude navmesh_demo --exclude physics_demo3d \
-              --exclude debug_toolkit_demo --exclude aw_debug --exclude aw_editor \
-              --exclude aw_asset_cli --exclude astraweave-llm --exclude llm_toolcall \
-              --exclude llm_integration
-  ```
+---
 
-### Testing
-- **Core Tests**: Run unit tests on working crates:
-  ```bash
-  cargo test -p astraweave-input  # Has actual unit tests
-  make test                       # Runs tests on all working components
-  ```
-  **Timing: 6-30 seconds. Most crates are demo-heavy rather than test-heavy.**
+## Common Patterns & Conventions
 
-- **Integration Testing**: Use the working hello_companion example to validate AI systems:
-  ```bash
-  cargo run -p hello_companion --release
-  make example
-  ```
-
-### Code Quality
-- **Format Check**: 
-  ```bash
-  cargo fmt --all --check  # Check formatting
-  make format              # Apply formatting
-  ```
-
-- **Linting**:
-  ```bash
-  cargo clippy -p astraweave-core -p hello_companion --all-features -- -D warnings
-  make lint                # Run comprehensive linting
-  ```
-
-- **Development Workflow**: Use convenience commands:
-  ```bash
-  make check               # Run comprehensive checks (format, lint, test)
-  make dev                 # Quick development cycle (format, lint, test)
-  make ci                  # Full CI-style validation
-  ```
-
-- **Security Audit**: 
-  ```bash
-  cargo audit              # Check for known vulnerabilities
-  cargo deny check         # License and dependency validation
-  make audit               # Combined security checks
-  ```
-
-## Validation
-
-### Working Examples
-- **hello_companion**: Builds and runs (panics on LOS logic but demonstrates AI planning):
-  ```bash
-  cargo run -p hello_companion --release
-  ```
-  Expected output: Shows AI plan generation, then panics with "LosBlocked" error.
-
-### Manual Testing Scenarios
-- **CANNOT fully validate graphics examples** due to compilation errors in visual_3d and UI demos
-- **Basic AI Logic**: hello_companion demonstrates AI companion planning and intent validation
-- **Test Infrastructure**: astraweave-input has working unit tests
-
-### **CRITICAL LIMITATIONS**
-- **Graphics Examples Don't Work**: visual_3d, debug_overlay, ui_controls_demo have API mismatches  
-- **Many Examples Missing Dependencies**: Need manual `serde_json` additions
-- **No End-to-End Validation Possible**: Cannot test complete user scenarios due to build issues
-
-## Repository Structure
-
+**Error Handling:**
+```rust
+use anyhow::{Context, Result};
+fn do_work() -> Result<()> {
+    something().context("Failed to do work")?;
+    Ok(())
+}
 ```
-astraweave-core/        # ECS world, validation, intent system  
-astraweave-ai/          # AI orchestrator and planning
-astraweave-render/      # wgpu-based 3D rendering
-astraweave-physics/     # Rapier3D wrapper with character controller
-astraweave-nav/         # Navmesh baking and A* pathfinding  
-astraweave-gameplay/    # Weaving, crafting, combat, dialogue
-astraweave-audio/       # Audio engine with spatial effects
-examples/               # 23 demos (MANY BROKEN)
-assets/                 # Sample data files
+- Use `anyhow::Result` with `.context()` for errors
+- Avoid panics in core crates (examples can panic for demo purposes)
+
+**Component Definition (ECS):**
+```rust
+#[derive(Clone, Copy)]
+pub struct Position { pub x: f32, pub y: f32 }
+
+// Auto-implements Component trait (any T: 'static + Send + Sync)
 ```
 
-## Key Architecture Patterns
+**System Registration:**
+```rust
+app.add_system(SystemStage::PERCEPTION, build_ai_snapshots);
+app.add_system(SystemStage::AI_PLANNING, orchestrator_tick);
+```
 
-### AI-First Design Philosophy
-- **Perception → Reasoning → Planning → Action** loop is core to all AI systems
-- `WorldSnapshot` structs provide structured, filtered world state to AI agents
-- `PlanIntent` with `ActionStep` sequences define all AI behavior
-- **Tool validation** ensures AI actions are physically/logically valid
-- `Orchestrator` trait abstracts AI planning (rule-based vs LLM-based)
+**Asset Loading (async pattern):**
+```rust
+// See astraweave-asset/src/cell_loader.rs
+use tokio::fs;
+pub async fn load_cell_from_ron(path: &Path) -> Result<CellData> {
+    let content = fs::read_to_string(path).await?;
+    Ok(ron::from_str(&content)?)
+}
+```
 
-### ECS and Data Flow
-- Entities have core components: Position (`IVec2`), Health, Team, Cooldowns
-- `World` struct manages entities, obstacles, and simulation state
-- Fixed-tick simulation (60Hz target) with deterministic time progression
-- `build_snapshot()` filters world state for specific agent perception
-- `validate_and_execute()` processes AI plans through engine validation
-
-### Component Communication Patterns
-- Core crates export clear public APIs (see `lib.rs` files)
-- Heavy use of `anyhow::Result` for error handling
-- Workspace dependencies centralized in root `Cargo.toml`
-- Examples demonstrate integration patterns, not production code
-
-## Important Build Information
-
-### Working Dependencies
-- **Graphics**: wgpu 0.20, winit 0.29, egui 0.28
-- **Physics**: rapier3d 0.22
-- **Audio**: rodio 0.17  
-- **AI/Scripting**: rhai 1.22 (HAS SYNC ISSUES in some crates)
-
-### Known Compilation Issues
-- **astraweave-author**: rhai trait sync errors
-- **rhai_authoring**: Depends on broken astraweave-author
-- **npc_town_demo**: API mismatches
-- **debug_overlay**: egui API changes
-- **visual_3d**: winit Arc<Window> mismatch
-
-### Performance Notes
-- **Initial Build**: 15-45+ minutes (estimate based on partial builds)
-- **Incremental Build**: 8-15 seconds for core components
-- **Release Build**: Faster, use for testing examples
+---
 
 ## Critical Warnings
 
-- **DO NOT** attempt to build full workspace without excluding broken crates
-- **DO NOT** try to run graphics examples - they won't compile
-- **ALWAYS** use long timeouts (30+ minutes) for builds
-- **NEVER CANCEL** long-running builds - they are normal for Rust graphics projects
-- **EXPECT** runtime panics in examples - they demonstrate concepts but have logic issues
+⚠️ **Known Issues:**
+- **Graphics Examples**: `visual_3d`, `debug_overlay` won't compile (egui 0.32 vs 0.28, winit 0.30 vs 0.29)
+- **Rhai Crates**: `astraweave-author`, `rhai_authoring` have Sync trait errors
+- **Some Examples**: Missing `serde_json` or other deps (add manually if needed)
+- **LLM Crates**: `astraweave-llm`, `llm_toolcall` excluded from standard builds
 
-## When Working with This Codebase
+⏱️ **Build Timings:**
+- First build: 15-45 minutes (wgpu + dependencies)
+- Core incremental: 8-15 seconds
+- Full workspace check: 2-4 minutes (with exclusions)
 
-1. **Start with core libraries**: Focus on astraweave-core, astraweave-ai, astraweave-physics
-````instructions
-# AstraWeave: AI‑Native Game Engine — Copilot Instructions (concise)
+✅ **Validation:**
+- `hello_companion` example demonstrates AI planning (expect LOS panic - this is intentional)
+- `cargo test -p astraweave-ecs` has comprehensive unit tests
+- CI validates SDK ABI, cinematics, and core crates
 
-Purpose: Help agents work productively in a large Rust workspace where AI is first‑class. Prefer precise edits, crate‑by‑crate validation, and deterministic behavior.
+---
 
-Build & Run
-- Toolchain: Rust 1.89+ via rust-toolchain.toml. Windows/macOS/Linux supported (PowerShell on Windows).
-- Quick start (core crates):
-  - make setup; make build  (or see DEVELOPMENT_SETUP.md)
-  - cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-render -p hello_companion
-- Validate fast:
-  - cargo test -p astraweave-input
-  - cargo run -p hello_companion --release  (AI planning demo; may panic on LOS validation)
-- Code quality: cargo fmt --all; cargo clippy -p astraweave-core -p hello_companion --all-features -- -D warnings
-- Security (optional): cargo audit; cargo deny check
-- Note: Initial builds are heavy (graphics), do not cancel long compiles.
+## Where to Look
 
-Architecture (what matters)
-- AI‑first loop is core everywhere: Perception → Reasoning → Planning → Action.
-- World/ECS: deterministic fixed‑tick (target 60Hz). Use WorldSnapshot for filtered perception. Validate PlanIntent/ActionStep via engine rules before execution.
-- Orchestrators abstract AI planning (rule‑based vs LLM). Prefer explicit data contracts and anyhow::Result.
+**AI Systems**: `astraweave-ai/src/{orchestrator.rs, tool_sandbox.rs, core_loop.rs}`  
+**ECS Internals**: `astraweave-ecs/src/{archetype.rs, system_param.rs, events.rs}`  
+**Rendering Pipeline**: `astraweave-render/src/{lib.rs, material.rs}`  
+**Physics Integration**: `astraweave-physics/src/character_controller.rs`  
+**Async World Streaming**: `astraweave-scene/src/streaming.rs` + `astraweave-asset/src/cell_loader.rs`  
+**Marching Cubes**: `astraweave-terrain/src/voxel_mesh.rs` (complete 256-config tables)  
+**Example Integration**: `examples/hello_companion/src/main.rs`, `examples/unified_showcase/src/main.rs`
 
-Rendering & Assets (shared patterns)
-- astraweave-render is wgpu‑based; common utilities: IblManager, MeshRegistry, Texture helpers.
-- Materials are authored (TOML) and packed into GPU D2 array textures with stable indices:
-  - Path pattern: assets/materials/<biome>/{materials.toml, arrays.toml}
-  - Array bindings in WGSL (group=1):
-    - 0: albedo D2Array (RGBA8 sRGB), 1: sampler
-    - 2: normal D2Array (RG8; Z reconstructed), 3: linear sampler
-    - 4: MRA D2Array (RGBA8: R=metal, G=roughness, B=AO)
-- Prefer the shared MaterialManager (astraweave-render) over per‑example loaders; preserve layer index stability from arrays.toml.
+**Documentation**: `README.md`, `DEVELOPMENT_SETUP.md`, phase completion summaries (`PHASE_*_COMPLETION_SUMMARY.md`)
 
-Conventions
-- Public APIs are exposed at each crate’s lib.rs; workspace deps centralized in root Cargo.toml.
-- Error handling: anyhow::Result with context; avoid panics in core crates.
-- Features: astraweave-render uses feature flags (e.g., textures, assets) to gate loaders.
+---
 
-Work effectively
-- Change one crate at a time; run cargo check/test for that crate.
-- For examples: many are demos/experimental; favor hello_companion and core libraries for validation.
-- If a graphics or UI example fails due to API drift, align wgpu/winit/egui versions with astraweave-render or exclude from workspace checks.
-
-Where to look
-- Core ECS/intent/validation: astraweave-core/
-- AI orchestration & planning: astraweave-ai/
-- Rendering/IBL/material arrays: astraweave-render/ (see lib.rs, material.rs)
-- Physics & nav: astraweave-physics/, astraweave-nav/
-- Examples (integration patterns): examples/* (unified_showcase, hello_companion)
-````
+**Version**: 0.4.0 | **Rust**: 1.89.0 | **License**: MIT | **Status**: Production-ready core (Phase 4 complete)

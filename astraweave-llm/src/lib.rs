@@ -447,7 +447,7 @@ impl LlmClient for OllamaChatClient {
 
             // We'll periodically flush partial assembled assistant output to disk so
             // an interrupted run can still be inspected. Track last flush size.
-            let last_flush = 0usize;
+            let mut last_flush = 0usize;
             let mut first_token_at: Option<std::time::Instant> = None;
             while let Some(item) =
                 tokio::time::timeout(std::time::Duration::from_secs(10), stream.next())

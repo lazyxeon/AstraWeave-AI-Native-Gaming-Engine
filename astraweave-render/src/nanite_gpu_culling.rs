@@ -9,7 +9,7 @@
 //
 // This enables rendering 10M+ polygons at 60+ FPS with GPU-driven LOD
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use glam::{Mat4, Vec3, Vec4};
 use wgpu::util::DeviceExt;
 
@@ -364,6 +364,7 @@ impl NaniteCullingPipeline {
             module: &shader,
             entry_point: Some("main"),
             compilation_options: Default::default(),
+            cache: None,
         });
 
         // Create bind groups for each mip transition (src -> dst)
@@ -484,6 +485,7 @@ impl NaniteCullingPipeline {
             module: &shader,
             entry_point: Some("main"),
             compilation_options: Default::default(),
+            cache: None,
         });
 
         Ok((pipeline, bind_group_layout, hiz_bind_group_layout))
@@ -606,6 +608,7 @@ impl NaniteCullingPipeline {
             module: &shader,
             entry_point: Some("main"),
             compilation_options: Default::default(),
+            cache: None,
         });
 
         Ok((pipeline, bind_group_layout, vis_bind_group_layout))
@@ -886,7 +889,7 @@ impl NaniteCullingPipeline {
     fn build_hiz_pyramid(
         &self,
         encoder: &mut wgpu::CommandEncoder,
-        src_depth: &wgpu::TextureView,
+        _src_depth: &wgpu::TextureView,
     ) -> Result<()> {
         // Copy source depth to Hi-Z mip 0
         // (Placeholder - needs actual copy or render pass)

@@ -68,10 +68,10 @@ pub struct IblResources {
 /// Internal textures owned by the manager (kept to control lifetime)
 struct IblTextures {
     _env: wgpu::Texture, // Kept alive for views
-    irradiance: wgpu::Texture,
-    specular: wgpu::Texture,
-    brdf_lut: wgpu::Texture,
-    spec_mips: u32,
+    _irradiance: wgpu::Texture,
+    _specular: wgpu::Texture,
+    _brdf_lut: wgpu::Texture,
+    _spec_mips: u32,
 }
 
 pub struct IblManager {
@@ -847,10 +847,10 @@ impl IblManager {
         // Hold textures so views remain valid for the lifetime of the manager
         self.textures = Some(IblTextures {
             _env: env_tex,
-            irradiance: irr_tex,
-            specular: spec_tex,
-            brdf_lut: brdf_tex,
-            spec_mips,
+            _irradiance: irr_tex,
+            _specular: spec_tex,
+            _brdf_lut: brdf_tex,
+            _spec_mips: spec_mips,
         });
         let resources = IblResources {
             env_cube: env_view,
@@ -1112,14 +1112,14 @@ fn create_hdr2d(
         view_formats: &[],
     });
     queue.write_texture(
-        wgpu::ImageCopyTexture {
+        wgpu::TexelCopyTextureInfo {
             texture: &tex,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         &rgba_f16,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(w * 8),
             rows_per_image: Some(h),

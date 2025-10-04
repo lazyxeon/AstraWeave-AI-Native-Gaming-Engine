@@ -45,9 +45,9 @@ pub struct VxgiRenderer {
     config: VxgiConfig,
 
     // GPU resources
-    voxel_texture: wgpu::Texture,
-    voxel_texture_view: wgpu::TextureView,
-    voxel_sampler: wgpu::Sampler,
+    _voxel_texture: wgpu::Texture,
+    _voxel_texture_view: wgpu::TextureView,
+    _voxel_sampler: wgpu::Sampler,
 
     // Bind groups
     vxgi_bind_group_layout: wgpu::BindGroupLayout,
@@ -161,9 +161,9 @@ impl VxgiRenderer {
 
         Self {
             config,
-            voxel_texture,
-            voxel_texture_view,
-            voxel_sampler,
+            _voxel_texture: voxel_texture,
+            _voxel_texture_view: voxel_texture_view,
+            _voxel_sampler: voxel_sampler,
             vxgi_bind_group_layout,
             vxgi_bind_group,
             voxelization_pipeline,

@@ -88,7 +88,7 @@ pub struct ClusteredForwardRenderer {
     light_indices: Vec<u32>,
 
     // Capacity
-    max_lights: usize,
+    _max_lights: usize,
     max_lights_per_cluster: usize,
 }
 
@@ -198,7 +198,7 @@ impl ClusteredForwardRenderer {
                 total_clusters
             ],
             light_indices: Vec::new(),
-            max_lights,
+            _max_lights: max_lights,
             max_lights_per_cluster,
         }
     }
@@ -213,14 +213,14 @@ impl ClusteredForwardRenderer {
         &mut self,
         queue: &wgpu::Queue,
         view_matrix: Mat4,
-        proj_matrix: Mat4,
+        _proj_matrix: Mat4,
         screen_size: (u32, u32),
     ) {
         // Clear previous data
         self.light_indices.clear();
 
-        let (width, height) = screen_size;
-        let total_clusters =
+        let (_width, _height) = screen_size;
+        let _total_clusters =
             (self.config.cluster_x * self.config.cluster_y * self.config.cluster_z) as usize;
 
         // Calculate cluster bounds in view space
@@ -454,8 +454,8 @@ mod tests {
             2.0,
         );
 
-        assert_eq!(light.position.x, 1.0);
-        assert_eq!(light.position.w, 10.0);
-        assert_eq!(light.color.w, 2.0);
+        assert_eq!(light.position[0], 1.0);
+        assert_eq!(light.position[3], 10.0);
+        assert_eq!(light.color[3], 2.0);
     }
 }

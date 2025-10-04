@@ -2339,10 +2339,7 @@ fn add_billboard_cross(builder: &mut MeshBuilder, center: Vec3, size: Vec2, rota
 }
 
 struct Mesh {
-    // Full interleaved vertex buffer (P/N/UV) retained for potential future use
     vertex_buffer: wgpu::Buffer,
-    // Position-only vertex buffer (Float32x3 stride) used by minimal/shadow pipelines
-    vertex_pos: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     index_count: u32,
 }
@@ -3751,7 +3748,6 @@ fn main() -> Result<()> {
     pollster::block_on(run())
 }
 
-#[allow(deprecated)] // winit 0.30 API - TODO: Migrate to ApplicationHandler (see audio_spatial_demo for reference)
 async fn run() -> Result<()> {
     // Generate default textures at startup if missing (seed -> vary looks)
     let seed = 0xA57; // change to taste / hook to key for regeneration
@@ -3773,17 +3769,10 @@ async fn run() -> Result<()> {
     let event_loop = EventLoop::new()?;
     let window_attributes = winit::window::Window::default_attributes()
         .with_title("AstraWeave Unified Showcase (Modified)");
-    let window = std::sync::Arc::new(event_loop.create_window(window_attributes)?);
+    let window: Option<std::sync::Arc<winit::window::Window>> = None; // Will be created in ApplicationHandler::resumed
     // Setup renderer, UI, physics
     let mut render = setup_renderer(window.clone()).await?;
     let mut physics = build_physics_world();
-    
-    // CRITICAL FIX: Calculate correct aspect ratio BEFORE first render
-    // Prevents geometry explosion from incorrect 1:1 aspect ratio on first frame
-    let window_size = window.inner_size();
-    let initial_aspect = (window_size.width as f32).max(1.0) / (window_size.height as f32).max(1.0);
-    println!("✓ Window size: {}x{}, initial aspect ratio: {:.3}", 
-             window_size.width, window_size.height, initial_aspect);
 
     // Initialize default environment via shared texture/material pipeline
     println!("🌱 Initializing with grassland biome...");
@@ -3841,7 +3830,7 @@ async fn run() -> Result<()> {
         yaw: -0.3,   // Better angle to view village, forest, and terrain features
         pitch: -0.4, // Optimal pitch to see both terrain detail and sky
         fovy: 70f32.to_radians(), // Optimized field of view for biome immersion
-        aspect: initial_aspect, // CRITICAL FIX: Use correct aspect ratio from window size
+        aspect: 1.0,
         znear: 0.01,
         zfar: 10000.0, // Extended far plane for maximum terrain visibility
     };
@@ -4531,8 +4520,7 @@ async fn run() -> Result<()> {
                                 }
                                 // Fallback to local procedural mesh
                                 if let Some(mesh) = render.meshes.get(&batch.mesh_key) {
-                                    // Shadow pipeline expects position-only buffer (Float32x3)
-                                    sp.set_vertex_buffer(0, mesh.vertex_pos.slice(..));
+                                    sp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                     sp.set_vertex_buffer(1, render.instance_vb.slice(..));
                                     sp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                                     if !batch.instances.is_empty() { sp.draw_indexed(0..mesh.index_count, 0, 0..batch.instances.len() as u32); }
@@ -4540,22 +4528,14 @@ async fn run() -> Result<()> {
                             }
                         }
 
-                        // Render - with improved error handling and validation
+                        // Render
                         let frame = match render.surface.get_current_texture() {
                             Ok(f) => f,
-                            Err(e) => {
-                                eprintln!("⚠ Surface texture acquisition failed: {:?} - Reconfiguring surface", e);
-                                render.surface.configure(&render.device, &render.surface_cfg);
-                                match render.surface.get_current_texture() {
-                                    Ok(f) => {
-                                        println!("✓ Surface reconfiguration successful");
-                                        f
-                                    },
-                                    Err(e2) => {
-                                        eprintln!("✗ CRITICAL: Surface reconfiguration failed: {:?}", e2);
-                                        panic!("Unable to acquire surface texture after reconfiguration");
-                                    }
-                                }
+                            Err(_) => {
+                                render
+                                    .surface
+                                    .configure(&render.device, &render.surface_cfg);
+                                render.surface.get_current_texture().unwrap()
                             }
                         };
                         let view = frame
@@ -4624,8 +4604,7 @@ async fn run() -> Result<()> {
                                             0,
                                             bytemuck::cast_slice(&batch.instances),
                                         );
-                                        // Minimal pipeline expects position-only buffer (Float32x3)
-                                        rp.set_vertex_buffer(0, mesh.vertex_pos.slice(..));
+                                        rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
                                         rp.set_index_buffer(
                                             mesh.index_buffer.slice(..),
@@ -4648,19 +4627,7 @@ async fn run() -> Result<()> {
                                 // Prefer GPU mesh override from registry. Use full-vertex pipeline for better shading.
                                 if let Some(&h) = render.mesh_overrides.get(&batch.mesh_key) {
                                     if let Some(gpu) = render.mesh_registry.get_gpu(h) {
-                                        // CRITICAL FIX: Re-bind all bind groups after pipeline switch
                                         rp.set_pipeline(&render.pipeline_full);
-                                        rp.set_bind_group(0, &render.camera_bg, &[]);
-                                        rp.set_bind_group(1, &render.ground_bind_group, &[]);
-                                        rp.set_bind_group(2, &render.shadow_bg, &[]);
-                                        rp.set_bind_group(3, &render.light_bg, &[]);
-                                        if let Some(material_bg) = render.material_bind_group.as_ref() {
-                                            rp.set_bind_group(4, material_bg, &[]);
-                                        } else {
-                                            rp.set_bind_group(4, &render.default_material_bind_group, &[]);
-                                        }
-                                        rp.set_bind_group(5, &render.ibl_bg, &[]);
-                                        
                                         rp.set_vertex_buffer(0, gpu.vertex_full.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
                                         rp.set_index_buffer(gpu.index.slice(..), wgpu::IndexFormat::Uint32);
@@ -4668,23 +4635,10 @@ async fn run() -> Result<()> {
                                         continue;
                                     }
                                 }
-                                // Fallback to local procedural mesh - ensure pipeline is set correctly
+                                // Fallback to local procedural mesh
                                 rp.set_pipeline(&render.pipeline);
-                                // Re-bind all bind groups after pipeline switch (wgpu requirement)
-                                rp.set_bind_group(0, &render.camera_bg, &[]);
-                                rp.set_bind_group(1, &render.ground_bind_group, &[]);
-                                rp.set_bind_group(2, &render.shadow_bg, &[]);
-                                rp.set_bind_group(3, &render.light_bg, &[]);
-                                if let Some(material_bg) = render.material_bind_group.as_ref() {
-                                    rp.set_bind_group(4, material_bg, &[]);
-                                } else {
-                                    rp.set_bind_group(4, &render.default_material_bind_group, &[]);
-                                }
-                                rp.set_bind_group(5, &render.ibl_bg, &[]);
-                                
                                 if let Some(mesh) = render.meshes.get(&batch.mesh_key) {
-                                    // Minimal pipeline expects position-only buffer (Float32x3)
-                                    rp.set_vertex_buffer(0, mesh.vertex_pos.slice(..));
+                                    rp.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
                                     rp.set_vertex_buffer(1, render.instance_vb.slice(..));
                                     rp.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                                     if !batch.instances.is_empty() { rp.draw_indexed(0..mesh.index_count, 0, 0..batch.instances.len() as u32); }
@@ -5379,14 +5333,6 @@ fn create_mesh(device: &wgpu::Device, mesh: MeshData) -> Mesh {
         usage: wgpu::BufferUsages::VERTEX,
     });
 
-    // Create a tightly packed position-only buffer for pipelines that expect Float32x3 with 12-byte stride
-    let positions: Vec<[f32; 3]> = mesh.vertices.iter().map(|v| v.position).collect();
-    let vertex_pos = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("mesh-vertices-pos-only"),
-        contents: bytemuck::cast_slice(&positions),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
-
     let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("mesh-indices"),
         contents: bytemuck::cast_slice(&mesh.indices),
@@ -5395,7 +5341,6 @@ fn create_mesh(device: &wgpu::Device, mesh: MeshData) -> Mesh {
 
     Mesh {
         vertex_buffer,
-        vertex_pos,
         index_buffer,
         index_count: mesh.indices.len() as u32,
     }
@@ -5533,7 +5478,6 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     let caps = surface.get_capabilities(&adapter);
     println!("Surface capabilities: {:?}", caps);
 
-    // CRITICAL FIX: Properly select sRGB format for correct color space rendering
     let surface_format = caps
         .formats
         .iter()
@@ -5542,34 +5486,13 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         .unwrap_or(caps.formats[0]);
 
     println!("Selected surface format: {:?}", surface_format);
-    
-    // CRITICAL FIX: Prefer VSync (Fifo) or Mailbox for smooth, tear-free presentation
-    // Immediate mode can cause flickering/tearing on many systems
-    let present_mode = if caps.present_modes.contains(&wgpu::PresentMode::Mailbox) {
-        wgpu::PresentMode::Mailbox  // Triple buffering - smooth, low latency
-    } else if caps.present_modes.contains(&wgpu::PresentMode::Fifo) {
-        wgpu::PresentMode::Fifo  // VSync - guaranteed smooth
-    } else {
-        caps.present_modes[0]  // Fallback to whatever is available
-    };
-    println!("Selected present mode: {:?}", present_mode);
-    
-    // CRITICAL FIX: Explicitly use Opaque alpha mode to avoid premultiplied alpha issues
-    // that can cause color shifting or unexpected blending behavior
-    let alpha_mode = if caps.alpha_modes.contains(&wgpu::CompositeAlphaMode::Opaque) {
-        wgpu::CompositeAlphaMode::Opaque
-    } else {
-        caps.alpha_modes[0]
-    };
-    println!("Selected alpha mode: {:?}", alpha_mode);
-    
     let surface_cfg = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
         width: size.width.max(1),
         height: size.height.max(1),
-        present_mode,
-        alpha_mode,
+        present_mode: caps.present_modes[0],
+        alpha_mode: caps.alpha_modes[0],
         view_formats: vec![],
         desired_maximum_frame_latency: 2,
     };

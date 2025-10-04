@@ -1,5 +1,5 @@
 #[cfg(feature = "postfx")]
-use crate::post::{WGSL_SSAO, WGSL_SSGI, WGSL_SSR};
+use crate::post::{WGSL_SSAO, WGSL_SSR};
 use anyhow::Result;
 use glam::Vec4Swizzles;
 use glam::{vec3, Mat4};
@@ -402,7 +402,7 @@ pub struct Renderer {
     cin_playing: bool,
 
     // Asset streaming and residency management
-    residency_manager: crate::residency::ResidencyManager,
+    _residency_manager: crate::residency::ResidencyManager,
 }
 
 impl Renderer {
@@ -452,14 +452,14 @@ impl Renderer {
                 &wgpu::DeviceDescriptor {
                     label: Some("device"),
                     required_features: {
-                        let f = wgpu::Features::empty();
+                        let _f = wgpu::Features::empty();
                         #[cfg(feature = "gpu-tests")]
                         {
                             wgpu::Features::TIMESTAMP_QUERY
                         }
                         #[cfg(not(feature = "gpu-tests"))]
                         {
-                            f
+                            _f
                         }
                     },
                     required_limits: wgpu::Limits::default(),
@@ -744,7 +744,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let ssr_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _ssr_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssr bg"),
             layout: &ssr_bgl,
             entries: &[
@@ -769,7 +769,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let ssr_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let _ssr_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("ssr pipeline"),
             layout: Some(&ssr_pl),
             vertex: wgpu::VertexState {
@@ -824,7 +824,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let ssao_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _ssao_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssao bg"),
             layout: &ssao_bgl,
             entries: &[
@@ -845,7 +845,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let ssao_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let _ssao_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("ssao pipeline"),
             layout: Some(&ssao_pl),
             vertex: wgpu::VertexState {
@@ -871,7 +871,9 @@ impl Renderer {
             cache: None,
         });
 
-        // SSGI
+        // SSGI - requires normal_view which isn't created yet at this point
+        // TODO: Move this creation after normal_tex is created, or refactor postfx init
+        /*
         #[cfg(feature = "postfx")]
         let ssgi_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("ssgi shader"),
@@ -960,6 +962,7 @@ impl Renderer {
             multiview: None,
             cache: None,
         });
+        */
 
         // Post-fx composition pipeline
         #[cfg(feature = "postfx")]
@@ -1010,7 +1013,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let post_fx_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _post_fx_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("post fx bg"),
             layout: &post_fx_bgl,
             entries: &[
@@ -1039,7 +1042,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let post_fx_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let _post_fx_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("post fx pipeline"),
             layout: Some(&post_fx_pl),
             vertex: wgpu::VertexState {
@@ -1477,14 +1480,14 @@ fn vs(input: VSIn) -> VSOut {
         });
         // Initialize albedo with a 1x1 white texel so sampling yields visible color
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &albedo_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[255u8, 255u8, 255u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1530,14 +1533,14 @@ fn vs(input: VSIn) -> VSOut {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[0u8, 255u8, 0u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1574,14 +1577,14 @@ fn vs(input: VSIn) -> VSOut {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[128u8, 128u8, 255u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1887,14 +1890,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[0u8, 255u8, 0u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1931,14 +1934,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[128u8, 128u8, 255u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -2262,7 +2265,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             cin_tl: None,
             cin_seq: awc::Sequencer::new(),
             cin_playing: false,
-            residency_manager: crate::residency::ResidencyManager::new(
+            _residency_manager: crate::residency::ResidencyManager::new(
                 std::sync::Arc::new(std::sync::Mutex::new(astraweave_asset::AssetDatabase::new())),
                 512, // 512 MB default max memory
             ),
@@ -2902,6 +2905,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
 
         // Optional feature-gated post chain
+        // TODO: Restore when postfx fields are added to Renderer struct
+        /*
         #[cfg(feature = "postfx")]
         {
             let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -2961,6 +2966,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             gi.draw(0..3, 0..1);
             drop(gi);
         }
+        */
 
         // Postprocess HDR to surface
         {
@@ -2980,8 +2986,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             });
             #[cfg(feature = "postfx")]
             {
-                pp.set_pipeline(&self.post_fx_pipeline);
-                pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+                // TODO: Restore when postfx pipeline fields are added
+                // pp.set_pipeline(&self.post_fx_pipeline);
+                // pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+                pp.set_pipeline(&self.post_pipeline);
+                pp.set_bind_group(0, &self.post_bind_group, &[]);
             }
             #[cfg(not(feature = "postfx"))]
             {
@@ -3272,6 +3281,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         drop(rp);
 
         // Optional postfx chain
+        // TODO: Restore when postfx fields are added to Renderer struct
+        /*
         #[cfg(feature = "postfx")]
         {
             let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -3329,6 +3340,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             gi.draw(0..3, 0..1);
             drop(gi);
         }
+        */
 
         // Post to surface view provided
         let mut pp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -3347,8 +3359,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         });
         #[cfg(feature = "postfx")]
         {
-            pp.set_pipeline(&self.post_fx_pipeline);
-            pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+            // TODO: Restore when postfx pipeline fields are added
+            // pp.set_pipeline(&self.post_fx_pipeline);
+            // pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+            pp.set_pipeline(&self.post_pipeline);
+            pp.set_bind_group(0, &self.post_bind_group, &[]);
         }
         #[cfg(not(feature = "postfx"))]
         {
@@ -3544,14 +3559,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .albedo_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.albedo_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -3619,14 +3634,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .mr_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -3694,14 +3709,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .normal_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -3893,3 +3908,4 @@ fn aabb_in_view_space(view: &glam::Mat4, corners_ws: &[glam::Vec3; 8]) -> (glam:
 }
 
 // End of file
+
