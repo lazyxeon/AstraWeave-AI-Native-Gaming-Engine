@@ -83,13 +83,13 @@
 <a href=#83 id=83 data-nosnippet>83</a>            layout: <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>pl),
 <a href=#84 id=84 data-nosnippet>84</a>            vertex: wgpu::VertexState {
 <a href=#85 id=85 data-nosnippet>85</a>                module: <span class="kw-2">&amp;</span>shader,
-<a href=#86 id=86 data-nosnippet>86</a>                entry_point: <span class="string">"vs_main"</span>,
+<a href=#86 id=86 data-nosnippet>86</a>                entry_point: <span class="prelude-val">Some</span>(<span class="string">"vs_main"</span>),
 <a href=#87 id=87 data-nosnippet>87</a>                buffers: <span class="kw-2">&amp;</span>[],
 <a href=#88 id=88 data-nosnippet>88</a>                compilation_options: wgpu::PipelineCompilationOptions::default(),
 <a href=#89 id=89 data-nosnippet>89</a>            },
 <a href=#90 id=90 data-nosnippet>90</a>            fragment: <span class="prelude-val">Some</span>(wgpu::FragmentState {
 <a href=#91 id=91 data-nosnippet>91</a>                module: <span class="kw-2">&amp;</span>shader,
-<a href=#92 id=92 data-nosnippet>92</a>                entry_point: <span class="string">"fs_main"</span>,
+<a href=#92 id=92 data-nosnippet>92</a>                entry_point: <span class="prelude-val">Some</span>(<span class="string">"fs_main"</span>),
 <a href=#93 id=93 data-nosnippet>93</a>                targets: <span class="kw-2">&amp;</span>[<span class="prelude-val">Some</span>(wgpu::ColorTargetState {
 <a href=#94 id=94 data-nosnippet>94</a>                    format,
 <a href=#95 id=95 data-nosnippet>95</a>                    blend: <span class="prelude-val">Some</span>(wgpu::BlendState::ALPHA_BLENDING),
@@ -101,21 +101,22 @@
 <a href=#101 id=101 data-nosnippet>101</a>            depth_stencil: <span class="prelude-val">None</span>,
 <a href=#102 id=102 data-nosnippet>102</a>            multisample: wgpu::MultisampleState::default(),
 <a href=#103 id=103 data-nosnippet>103</a>            multiview: <span class="prelude-val">None</span>,
-<a href=#104 id=104 data-nosnippet>104</a>        });
-<a href=#105 id=105 data-nosnippet>105</a>        <span class="self">Self </span>{
-<a href=#106 id=106 data-nosnippet>106</a>            buf,
-<a href=#107 id=107 data-nosnippet>107</a>            pipeline,
-<a href=#108 id=108 data-nosnippet>108</a>            bind,
-<a href=#109 id=109 data-nosnippet>109</a>        }
-<a href=#110 id=110 data-nosnippet>110</a>    }
-<a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">pub fn </span>update(<span class="kw-2">&amp;</span><span class="self">self</span>, queue: <span class="kw-2">&amp;</span>wgpu::Queue, p: <span class="kw-2">&amp;</span>OverlayParams) {
-<a href=#113 id=113 data-nosnippet>113</a>        queue.write_buffer(<span class="kw-2">&amp;</span><span class="self">self</span>.buf, <span class="number">0</span>, bytemuck::bytes_of(p));
-<a href=#114 id=114 data-nosnippet>114</a>    }
-<a href=#115 id=115 data-nosnippet>115</a>
-<a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">pub fn </span>draw&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, rpass: <span class="kw-2">&amp;mut </span>wgpu::RenderPass&lt;<span class="lifetime">'a</span>&gt;) {
-<a href=#117 id=117 data-nosnippet>117</a>        rpass.set_pipeline(<span class="kw-2">&amp;</span><span class="self">self</span>.pipeline);
-<a href=#118 id=118 data-nosnippet>118</a>        rpass.set_bind_group(<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.bind, <span class="kw-2">&amp;</span>[]);
-<a href=#119 id=119 data-nosnippet>119</a>        rpass.draw(<span class="number">0</span>..<span class="number">3</span>, <span class="number">0</span>..<span class="number">1</span>);
-<a href=#120 id=120 data-nosnippet>120</a>    }
-<a href=#121 id=121 data-nosnippet>121</a>}</code></pre></div></section></main></body></html>
+<a href=#104 id=104 data-nosnippet>104</a>            cache: <span class="prelude-val">None</span>,
+<a href=#105 id=105 data-nosnippet>105</a>        });
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="self">Self </span>{
+<a href=#107 id=107 data-nosnippet>107</a>            buf,
+<a href=#108 id=108 data-nosnippet>108</a>            pipeline,
+<a href=#109 id=109 data-nosnippet>109</a>            bind,
+<a href=#110 id=110 data-nosnippet>110</a>        }
+<a href=#111 id=111 data-nosnippet>111</a>    }
+<a href=#112 id=112 data-nosnippet>112</a>
+<a href=#113 id=113 data-nosnippet>113</a>    <span class="kw">pub fn </span>update(<span class="kw-2">&amp;</span><span class="self">self</span>, queue: <span class="kw-2">&amp;</span>wgpu::Queue, p: <span class="kw-2">&amp;</span>OverlayParams) {
+<a href=#114 id=114 data-nosnippet>114</a>        queue.write_buffer(<span class="kw-2">&amp;</span><span class="self">self</span>.buf, <span class="number">0</span>, bytemuck::bytes_of(p));
+<a href=#115 id=115 data-nosnippet>115</a>    }
+<a href=#116 id=116 data-nosnippet>116</a>
+<a href=#117 id=117 data-nosnippet>117</a>    <span class="kw">pub fn </span>draw&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, rpass: <span class="kw-2">&amp;mut </span>wgpu::RenderPass&lt;<span class="lifetime">'a</span>&gt;) {
+<a href=#118 id=118 data-nosnippet>118</a>        rpass.set_pipeline(<span class="kw-2">&amp;</span><span class="self">self</span>.pipeline);
+<a href=#119 id=119 data-nosnippet>119</a>        rpass.set_bind_group(<span class="number">0</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.bind, <span class="kw-2">&amp;</span>[]);
+<a href=#120 id=120 data-nosnippet>120</a>        rpass.draw(<span class="number">0</span>..<span class="number">3</span>, <span class="number">0</span>..<span class="number">1</span>);
+<a href=#121 id=121 data-nosnippet>121</a>    }
+<a href=#122 id=122 data-nosnippet>122</a>}</code></pre></div></section></main></body></html>
