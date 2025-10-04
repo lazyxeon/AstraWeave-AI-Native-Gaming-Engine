@@ -10,5 +10,5 @@ astraweave-scene = { path = "../../astraweave-scene" }
 glam = "0.30"
 pollster = "0.4"
 winit = "0.30"
-wgpu = "26"
+wgpu = { workspace = true }
 anyhow = "1.0"

@@ -118,7 +118,7 @@ pub struct VoxelizationPipeline {
     config: VoxelizationConfig,
 
     // Shader module
-    shader_module: wgpu::ShaderModule,
+    _shader_module: wgpu::ShaderModule,
 
     // Compute pipelines
     voxelize_pipeline: wgpu::ComputePipeline,
@@ -261,7 +261,7 @@ impl VoxelizationPipeline {
 
         Self {
             config,
-            shader_module,
+            _shader_module: shader_module,
             voxelize_pipeline,
             clear_pipeline,
             bind_group_layout,

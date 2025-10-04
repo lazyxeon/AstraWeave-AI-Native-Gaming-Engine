@@ -3,12 +3,8 @@
 //! This module integrates the meshlet-based rendering system with the existing
 //! clustered forward renderer, material system, and global illumination.
 
-use crate::nanite_visibility::{
-    Frustum, GpuMeshlet, LODSelector, MeshletRenderer, VisibilityBuffer,
-};
-use crate::types::Instance;
+use crate::nanite_visibility::{Frustum, GpuMeshlet, LODSelector, MeshletRenderer};
 use glam::{Mat4, Vec3};
-use wgpu::util::DeviceExt;
 
 /// Nanite rendering context
 pub struct NaniteRenderContext {

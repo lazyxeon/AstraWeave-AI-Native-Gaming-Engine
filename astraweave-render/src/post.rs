@@ -640,7 +640,7 @@ impl BloomPipeline {
 // Bloom WGSL Shaders
 // ---------------------------------------------------------------------------------
 
-const BLOOM_THRESHOLD_WGSL: &str = r#"
+const _BLOOM_THRESHOLD_WGSL: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
@@ -666,7 +666,7 @@ fn luminance(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.299, 0.587, 0.
 }
 "#;
 
-const BLOOM_DOWNSAMPLE_WGSL: &str = r#"
+const _BLOOM_DOWNSAMPLE_WGSL: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
@@ -694,7 +694,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 }
 "#;
 
-const BLOOM_UPSAMPLE_WGSL: &str = r#"
+const _BLOOM_UPSAMPLE_WGSL: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
@@ -725,7 +725,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 }
 "#;
 
-const BLOOM_COMPOSITE_WGSL: &str = r#"
+const _BLOOM_COMPOSITE_WGSL: &str = r#"
 struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;

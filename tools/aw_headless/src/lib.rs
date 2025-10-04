@@ -109,15 +109,15 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
     });
 
     enc.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture {
+        wgpu::TexelCopyTextureInfo {
             texture: &tex,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
-        wgpu::ImageCopyBuffer {
+        wgpu::TexelCopyBufferInfo {
             buffer: &buf,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded_row_bytes as u32),
                 rows_per_image: Some(height),
@@ -131,14 +131,14 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
     );
 
     queue.submit(Some(enc.finish()));
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 
     let slice = buf.slice(..);
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     slice.map_async(wgpu::MapMode::Read, move |res| {
         let _ = tx.send(res);
     });
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     rx.recv().expect("map result").expect("ok");
     let data = slice.get_mapped_range();
 
@@ -228,3 +228,4 @@ mod tests {
         assert!(avg <= 0.5, "avg delta {} too high", avg);
     }
 }
+

@@ -7,23 +7,12 @@ use astraweave_render::animation::*;
 use glam::{Mat4, Quat, Vec3};
 use std::time::Instant;
 use winit::{
+    application::ApplicationHandler,
     event::*,
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    window::WindowBuilder,
+    window::{Window, WindowId},
 };
-
-/// Demo application state
-struct DemoApp {
-    skeleton: Skeleton,
-    clip: AnimationClip,
-    current_time: f32,
-    playback_speed: f32,
-    is_playing: bool,
-    last_frame: Instant,
-    mode: SkinningMode,
-    frame_times: Vec<f32>, // Rolling window for FPS calc
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum SkinningMode {
@@ -32,9 +21,25 @@ enum SkinningMode {
     GPU, // Available with --features skinning-gpu
 }
 
+/// Demo application state
+struct DemoApp {
+    window: Option<Window>,
+    skeleton: Skeleton,
+    clip: AnimationClip,
+    current_time: f32,
+    playback_speed: f32,
+    is_playing: bool,
+    last_frame: Instant,
+    mode: SkinningMode,
+    frame_times: Vec<f32>, // Rolling window for FPS calc
+    frame_count: u32,
+    hud_timer: Instant,
+}
+
 impl DemoApp {
     fn new() -> Self {
         Self {
+            window: None,
             skeleton: create_demo_skeleton(),
             clip: create_demo_animation(),
             current_time: 0.0,
@@ -43,6 +48,8 @@ impl DemoApp {
             last_frame: Instant::now(),
             mode: SkinningMode::CPU,
             frame_times: Vec::with_capacity(60),
+            frame_count: 0,
+            hud_timer: Instant::now(),
         }
     }
 
@@ -148,6 +155,106 @@ impl DemoApp {
     }
 }
 
+impl ApplicationHandler for DemoApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = Window::default_attributes()
+                .with_title("AstraWeave - Skeletal Animation Demo (Phase 2 Task 5)")
+                .with_inner_size(winit::dpi::LogicalSize::new(800, 600));
+            
+            match event_loop.create_window(window_attributes) {
+                Ok(window) => {
+                    self.window = Some(window);
+                    // Initial HUD
+                    self.render_text_hud();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create window: {:?}", e);
+                    event_loop.exit();
+                }
+            }
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        let Some(window) = self.window.as_ref() else { return };
+        
+        if window_id != window.id() {
+            return;
+        }
+
+        match event {
+            WindowEvent::CloseRequested
+            | WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        physical_key: PhysicalKey::Code(KeyCode::Escape),
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                ..
+            } => {
+                println!("\n👋 Exiting demo...\n");
+                event_loop.exit();
+            }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        physical_key: PhysicalKey::Code(key),
+                        state: ElementState::Pressed,
+                        ..
+                    },
+                ..
+            } => {
+                self.handle_input(key);
+            }
+            WindowEvent::RedrawRequested => {
+                // Update animation
+                self.update();
+
+                // Sample animation
+                let _local_poses = self.clip.sample(self.current_time, &self.skeleton);
+                let _joint_matrices = compute_joint_matrices(&self.skeleton, &_local_poses);
+
+                // CPU skinning (GPU would happen here with feature flag)
+                match self.mode {
+                    SkinningMode::CPU => {
+                        // CPU skinning is already done via compute_joint_matrices
+                    }
+                    #[cfg(feature = "skinning-gpu")]
+                    SkinningMode::GPU => {
+                        // GPU skinning would upload joint_matrices to buffer
+                        // and dispatch compute shader
+                    }
+                    #[cfg(not(feature = "skinning-gpu"))]
+                    _ => {}
+                }
+
+                self.frame_count += 1;
+
+                // Update HUD every 0.5s
+                if self.hud_timer.elapsed().as_secs_f32() > 0.5 {
+                    print!("\x1B[2J\x1B[1;1H"); // Clear console
+                    self.render_text_hud();
+                    self.hud_timer = Instant::now();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = self.window.as_ref() {
+            window.request_redraw();
+        }
+    }
+}
+
 /// Create demo skeleton (3 joints: root, spine, shoulder)
 fn create_demo_skeleton() -> Skeleton {
     Skeleton {
@@ -203,92 +310,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n🎮 Starting Skeletal Animation Demo...\n");
 
     let event_loop = EventLoop::new()?;
-    let window = WindowBuilder::new()
-        .with_title("AstraWeave - Skeletal Animation Demo (Phase 2 Task 5)")
-        .with_inner_size(winit::dpi::LogicalSize::new(800, 600))
-        .build(&event_loop)?;
-
+    event_loop.set_control_flow(ControlFlow::Poll);
+    
     let mut app = DemoApp::new();
-
-    // Initial HUD
-    app.render_text_hud();
-
-    let mut _frame_count = 0;
-    let mut hud_timer = Instant::now();
-
-    event_loop.run(move |event, target| {
-        target.set_control_flow(ControlFlow::Poll);
-
-        match event {
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == window.id() => match event {
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            physical_key: PhysicalKey::Code(KeyCode::Escape),
-                            state: ElementState::Pressed,
-                            ..
-                        },
-                    ..
-                } => {
-                    println!("\n👋 Exiting demo...\n");
-                    target.exit();
-                }
-                WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            physical_key: PhysicalKey::Code(key),
-                            state: ElementState::Pressed,
-                            ..
-                        },
-                    ..
-                } => {
-                    app.handle_input(*key);
-                }
-                WindowEvent::RedrawRequested => {
-                    // Update animation
-                    app.update();
-
-                    // Sample animation
-                    let _local_poses = app.clip.sample(app.current_time, &app.skeleton);
-                    let _joint_matrices = compute_joint_matrices(&app.skeleton, &_local_poses);
-
-                    // CPU skinning (GPU would happen here with feature flag)
-                    match app.mode {
-                        SkinningMode::CPU => {
-                            // CPU skinning is already done via compute_joint_matrices
-                        }
-                        #[cfg(feature = "skinning-gpu")]
-                        SkinningMode::GPU => {
-                            // GPU skinning would upload joint_matrices to buffer
-                            // and dispatch compute shader
-                        }
-                        #[cfg(not(feature = "skinning-gpu"))]
-                        _ => {}
-                    }
-
-                    _frame_count += 1;
-
-                    // Update HUD every 0.5s
-                    if hud_timer.elapsed().as_secs_f32() > 0.5 {
-                        print!("\x1B[2J\x1B[1;1H"); // Clear console
-                        app.render_text_hud();
-                        hud_timer = Instant::now();
-                    }
-
-                    window.request_redraw();
-                }
-                _ => {}
-            },
-            Event::AboutToWait => {
-                window.request_redraw();
-            }
-            _ => {}
-        }
-    })?;
+    event_loop.run_app(&mut app)?;
 
     Ok(())
 }

@@ -267,7 +267,7 @@ cargo test -p astraweave-input
 
 
 ### Dependencies
-- **wgpu** 0.20 - Cross-platform GPU rendering
+- **wgpu** 25.0.2 - Cross-platform GPU rendering
 - **Rapier3D** 0.22 - Physics simulation  
 - **rodio** 0.17 - Audio playback
 - **rhai** 1.22 - Scripting runtime (AI scripting, some crates excluded)

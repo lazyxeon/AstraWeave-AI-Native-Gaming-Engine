@@ -339,7 +339,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                     depth_or_array_layers: 1,
                 };
                 queue.write_texture(
-                    wgpu::ImageCopyTexture {
+                    wgpu::TexelCopyTextureInfo {
                         texture: tex,
                         mip_level: 0,
                         origin: wgpu::Origin3d {
@@ -350,7 +350,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                         aspect: wgpu::TextureAspect::All,
                     },
                     bytes,
-                    wgpu::ImageDataLayout {
+                    wgpu::TexelCopyBufferLayout {
                         offset: 0,
                         bytes_per_row: Some(bpr),
                         rows_per_image: Some(height),

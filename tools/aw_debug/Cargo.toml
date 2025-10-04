@@ -6,7 +6,7 @@ license = "MIT"
 
 [dependencies]
 egui = { workspace = true }
-egui_plot = "0.32"
+egui_plot = { workspace = true }
 eframe = { workspace = true }
 rand = { workspace = true }
 tracing = "0.1"

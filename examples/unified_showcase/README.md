@@ -3,7 +3,7 @@
 A focused demo for testing AstraWeave's PBR material system, array textures, debug overlay, and a minimal Image-Based Lighting (IBL) pipeline.
 
 ## What’s inside
-- Per-layer material arrays (albedo, normal RG8 with Z reconstruction, MRA) with robust fallbacks
+- Per- If you see validation errors about views or uniform sizes, ensure you're on `wgpu 25.0.2` and use the exact bind groups shipped here; we separate a single-mip resolve view for main pass and a full-mip view for post.layer material arrays (albedo, normal RG8 with Z reconstruction, MRA) with robust fallbacks
 - Mipmap generation via render passes
 - Overlay grid to visualize material array layers (borders + index bar)
 - Baseline IBL driven by a procedural sky:

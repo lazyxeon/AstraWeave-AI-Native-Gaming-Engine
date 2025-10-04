@@ -3,11 +3,10 @@
 //! Phase 2 Task 5 (Phase D): GPU-accelerated skeletal animation skinning.
 //! Feature-gated with `skinning-gpu` - optional for performance, CPU path is default.
 
-use crate::animation::{JointMatrixGPU, JointPalette, MAX_JOINTS};
+use crate::animation::JointPalette;
 use anyhow::Result;
 use glam::Mat4;
 use std::collections::HashMap;
-use wgpu::util::DeviceExt;
 
 /// Handle for a joint palette buffer (per-skeleton GPU buffer)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -105,7 +104,8 @@ impl JointPaletteManager {
             .ok_or_else(|| anyhow::anyhow!("Invalid joint palette handle: {:?}", handle))?;
 
         // Convert to bytes and upload
-        let data = bytemuck::cast_slice(&[*palette]);
+        let binding = [*palette];
+        let data = bytemuck::cast_slice(&binding);
         self.queue.write_buffer(buffer, 0, data);
 
         Ok(())
@@ -228,15 +228,15 @@ fn apply_skinning_tangent(input: SkinnedVertexInput) -> vec3<f32> {
 // ============================================================================
 
 /// Helper to create skinned mesh pipeline with GPU skinning enabled
-pub fn create_skinned_pipeline_descriptor(
-    device: &wgpu::Device,
-    camera_bind_group_layout: &wgpu::BindGroupLayout,
-    material_bind_group_layout: &wgpu::BindGroupLayout,
-    light_bind_group_layout: &wgpu::BindGroupLayout,
-    texture_bind_group_layout: &wgpu::BindGroupLayout,
-    joint_palette_bind_group_layout: &wgpu::BindGroupLayout,
-    format: wgpu::TextureFormat,
-) -> wgpu::RenderPipelineDescriptor {
+pub fn create_skinned_pipeline_descriptor<'a>(
+    _device: &'a wgpu::Device,
+    _camera_bind_group_layout: &'a wgpu::BindGroupLayout,
+    _material_bind_group_layout: &'a wgpu::BindGroupLayout,
+    _light_bind_group_layout: &'a wgpu::BindGroupLayout,
+    _texture_bind_group_layout: &'a wgpu::BindGroupLayout,
+    _joint_palette_bind_group_layout: &'a wgpu::BindGroupLayout,
+    _format: wgpu::TextureFormat,
+) -> wgpu::RenderPipelineDescriptor<'a> {
     // This would be implemented with the full pipeline descriptor
     // For now, return a minimal descriptor structure
     todo!("Pipeline descriptor creation - integrate with existing renderer pipelines")
