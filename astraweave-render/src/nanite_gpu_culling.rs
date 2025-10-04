@@ -210,6 +210,7 @@ impl NaniteCullingPipeline {
         let hiz_views: Vec<wgpu::TextureView> = (0..mip_count)
             .map(|mip| {
                 hiz_texture.create_view(&wgpu::TextureViewDescriptor {
+                    usage: None,
                     label: Some(&format!("Hi-Z Mip {}", mip)),
                     format: Some(wgpu::TextureFormat::R32Float),
                     dimension: Some(wgpu::TextureViewDimension::D2),
@@ -361,7 +362,7 @@ impl NaniteCullingPipeline {
             label: Some("Hi-Z Pyramid Pipeline"),
             layout: Some(&pipeline_layout),
             module: &shader,
-            entry_point: "main",
+            entry_point: Some("main"),
             compilation_options: Default::default(),
         });
 
@@ -481,7 +482,7 @@ impl NaniteCullingPipeline {
             label: Some("Cluster Cull Pipeline"),
             layout: Some(&pipeline_layout),
             module: &shader,
-            entry_point: "main",
+            entry_point: Some("main"),
             compilation_options: Default::default(),
         });
 
@@ -603,7 +604,7 @@ impl NaniteCullingPipeline {
             label: Some("SW Raster Pipeline"),
             layout: Some(&pipeline_layout),
             module: &shader,
-            entry_point: "main",
+            entry_point: Some("main"),
             compilation_options: Default::default(),
         });
 
@@ -796,13 +797,13 @@ impl NaniteCullingPipeline {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[
                     Some(wgpu::ColorTargetState {
                         format: wgpu::TextureFormat::Rgba16Float,
@@ -839,6 +840,7 @@ impl NaniteCullingPipeline {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         Ok((

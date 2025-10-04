@@ -217,13 +217,13 @@ fn headless_biome_pack_and_pipeline_compat() {
         layout: Some(&pl),
         vertex: wgpu::VertexState {
             module: &sm,
-            entry_point: "vs",
+            entry_point: Some("vs"),
             buffers: &[],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &sm,
-            entry_point: "fs",
+            entry_point: Some("fs"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: None,
@@ -235,6 +235,7 @@ fn headless_biome_pack_and_pipeline_compat() {
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     // Ensure we can create a bind group against the materials layout without mismatch

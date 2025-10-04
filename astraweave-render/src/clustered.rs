@@ -364,6 +364,8 @@ mod tests {
                 label: Some("compute device"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: None,
             },
             None,
         ))
@@ -436,7 +438,7 @@ mod tests {
             label: Some("cluster"),
             layout: Some(&pl),
             module: &shader,
-            entry_point: "cs_main",
+            entry_point: Some("cs_main"),
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         });
 
@@ -520,14 +522,14 @@ mod tests {
             (clusters * std::mem::size_of::<u32>()) as u64,
         );
         queue.submit(Some(enc.finish()));
-        device.poll(wgpu::Maintain::Wait);
+        device.poll(wgpu::MaintainBase::Wait);
         // Map and compare
         let slice = buf_counts_read.slice(..);
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         slice.map_async(wgpu::MapMode::Read, move |res| {
             let _ = tx.send(res);
         });
-        device.poll(wgpu::Maintain::Wait);
+        device.poll(wgpu::MaintainBase::Wait);
         let _ = rx.recv().expect("map result").expect("map ok");
         let data = slice.get_mapped_range();
         let counts_gpu: Vec<u32> = bytemuck::cast_slice(&data).to_vec();

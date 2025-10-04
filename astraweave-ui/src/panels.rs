@@ -210,7 +210,7 @@ pub fn draw_ui(
                 if ui.button("Save JSON").clicked() {
                     if let Some(ref tlv) = *tl.lock().unwrap() {
                         let s = serde_json::to_string_pretty(tlv).unwrap();
-                        ui.output_mut(|o| o.copied_text = s);
+                        ui.ctx().copy_text(s);
                     }
                 }
                 // Load/Save to assets

@@ -36,7 +36,7 @@ use winit::{
     event::*,
     event_loop::EventLoop,
     keyboard::*,
-    window::{CursorGrabMode, WindowBuilder},
+    window::CursorGrabMode,
 };
 //
 fn generate_house_impostor_mesh() -> MeshData {
@@ -1198,6 +1198,7 @@ fn create_array_texture_from_images(
 
     let view_label = format!("{label}-view");
     let view = texture.create_view(&wgpu::TextureViewDescriptor {
+        usage: None,
         label: Some(view_label.as_str()),
         format: Some(format),
         dimension: Some(wgpu::TextureViewDimension::D2Array),
@@ -2761,13 +2762,13 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         layout: Some(&pl),
         vertex: wgpu::VertexState {
             module: &sm,
-            entry_point: "vs",
+            entry_point: Some("vs"),
             buffers: &[],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &sm,
-            entry_point: "fs",
+            entry_point: Some("fs"),
             targets: &[Some(wgpu::ColorTargetState {
                 format,
                 blend: None,
@@ -2779,6 +2780,7 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -2804,6 +2806,7 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
             src_h = (src_h.max(1) / 2).max(1);
 
             let src_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("mip-src-view"),
                 format: Some(format),
                 dimension: Some(wgpu::TextureViewDimension::D2),
@@ -2830,6 +2833,7 @@ fn fs(in: VsOut) -> @location(0) vec4<f32> {
             });
 
             let dst_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("mip-dst-view"),
                 format: Some(format),
                 dimension: Some(wgpu::TextureViewDimension::D2),
@@ -3763,11 +3767,9 @@ async fn run() -> Result<()> {
 
     // Boilerplate: create event loop and window
     let event_loop = EventLoop::new()?;
-    let window = std::sync::Arc::new(
-        WindowBuilder::new()
-            .with_title("AstraWeave Unified Showcase (Modified)")
-            .build(&event_loop)?,
-    );
+    let window_attributes = winit::window::Window::default_attributes()
+        .with_title("AstraWeave Unified Showcase (Modified)");
+    let window = std::sync::Arc::new(event_loop.create_window(window_attributes)?);
     // Setup renderer, UI, physics
     let mut render = setup_renderer(window.clone()).await?;
     let mut physics = build_physics_world();
@@ -4322,6 +4324,7 @@ async fn run() -> Result<()> {
                             .create_view(&wgpu::TextureViewDescriptor::default());
                         // Single-mip view (level 0) for render/resolve target
                         render.hdr_resolve_view = render.hdr_tex.create_view(&wgpu::TextureViewDescriptor {
+                            usage: None,
                             label: Some("hdr-resolve-view"),
                             format: Some(wgpu::TextureFormat::Rgba16Float),
                             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -5424,7 +5427,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     );
 
     // Enable debug features for better error reporting
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
         flags: wgpu::InstanceFlags::DEBUG | wgpu::InstanceFlags::VALIDATION,
         ..Default::default()
@@ -5440,8 +5443,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
         })
-        .await
-        .unwrap();
+        .await?;
 
     println!("Adapter found: {:?}", adapter.get_info());
 
@@ -5463,8 +5465,9 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
                     max_bind_groups: 6,
                     ..wgpu::Limits::default()
                 },
-            },
-            None, // Enable validation for debug builds: Some(&std::path::Path::new("wgpu_trace"))
+                memory_hints: Default::default(),
+                trace: wgpu::Trace::Off,
+            }, // Enable validation for debug builds: wgpu::Trace::Path(std::path::Path::new("wgpu_trace"))
         )
         .await
         .unwrap();
@@ -5529,6 +5532,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
     let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
     // Single-mip resolve/render view for mip level 0
     let hdr_resolve_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor {
+        usage: None,
         label: Some("hdr-resolve-view"),
         format: Some(wgpu::TextureFormat::Rgba16Float),
         dimension: Some(wgpu::TextureViewDimension::D2),
@@ -5923,13 +5927,13 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         layout: Some(&post_pl),
         vertex: wgpu::VertexState {
             module: &post_sm,
-            entry_point: "vs",
+            entry_point: Some("vs"),
             buffers: &[],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &post_sm,
-            entry_point: "fs",
+            entry_point: Some("fs"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: surface_format,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -5941,6 +5945,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     // Debug overlay shader to draw a grid of material layers (albedo)
@@ -6188,13 +6193,13 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         layout: Some(&layer_dbg_pl),
         vertex: wgpu::VertexState {
             module: &layer_dbg_sm,
-            entry_point: "vs",
+            entry_point: Some("vs"),
             buffers: &[],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &layer_dbg_sm,
-            entry_point: "fs",
+            entry_point: Some("fs"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: surface_format,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -6206,6 +6211,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     // Instance buffer sized to the LOD-managed instance cap
@@ -6233,7 +6239,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         layout: Some(&shadow_pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shadow_shader,
-            entry_point: "vs_shadow",
+            entry_point: Some("vs_shadow"),
             buffers: &[
                 wgpu::VertexBufferLayout {
                     array_stride: 3 * 4,
@@ -6307,6 +6313,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
             alpha_to_coverage_enabled: false,
         },
         multiview: None,
+        cache: None,
     });
 
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -6384,6 +6391,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         view_formats: &[],
     });
     let dummy_cube_view = dummy_cube_tex.create_view(&wgpu::TextureViewDescriptor {
+        usage: None,
         label: Some("ibl-dummy-cube-view"),
         format: Some(wgpu::TextureFormat::Rgba16Float),
         dimension: Some(wgpu::TextureViewDimension::Cube),
@@ -6596,7 +6604,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader_module,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
             buffers: &[
                 wgpu::VertexBufferLayout {
                     array_stride: 3 * 4,
@@ -6649,7 +6657,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba16Float,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -6677,6 +6685,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
             alpha_to_coverage_enabled: false,
         },
         multiview: None,
+        cache: None,
     });
 
     // Full-vertex pipeline for glTF overrides
@@ -6685,7 +6694,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
             module: &shader_module,
-            entry_point: "vs_main_full",
+            entry_point: Some("vs_main_full"),
             buffers: &[
                 // Full MeshVertex buffer: P/N/T/UV at locations 0..3
                 astraweave_render::mesh::MeshVertexLayout::buffer_layout(),
@@ -6731,7 +6740,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba16Float,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -6759,6 +6768,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
             alpha_to_coverage_enabled: false,
         },
         multiview: None,
+        cache: None,
     });
 
     // With shared material manager, normals are stored as RG (Z reconstructed) by policy

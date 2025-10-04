@@ -229,8 +229,9 @@ impl VoxelizationPipeline {
             label: Some("Voxelization Compute Pipeline"),
             layout: Some(&voxelize_pipeline_layout),
             module: &shader_module,
-            entry_point: "voxelize",
+            entry_point: Some("voxelize"),
             compilation_options: Default::default(),
+            cache: None,
         });
 
         // Create compute pipeline for clearing voxels
@@ -238,8 +239,9 @@ impl VoxelizationPipeline {
             label: Some("Voxel Clear Compute Pipeline"),
             layout: Some(&voxelize_pipeline_layout),
             module: &shader_module,
-            entry_point: "clear_voxels",
+            entry_point: Some("clear_voxels"),
             compilation_options: Default::default(),
+            cache: None,
         });
 
         // Create config buffer
