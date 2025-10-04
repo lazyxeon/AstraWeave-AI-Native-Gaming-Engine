@@ -28,6 +28,8 @@ pub async fn create_headless_device() -> (Device, Queue) {
                 label: Some("test_device"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_defaults(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: None,
             },
             None,
         )

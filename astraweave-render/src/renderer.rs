@@ -437,7 +437,7 @@ impl Renderer {
     }
     pub async fn new(window: std::sync::Arc<winit::window::Window>) -> Result<Self> {
         // WGPU init
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         let surface = instance.create_surface(window.clone())?;
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
@@ -445,8 +445,7 @@ impl Renderer {
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
-            .await
-            .ok_or_else(|| anyhow::anyhow!("No adapter"))?;
+            .await?;
 
         let (device, queue) = adapter
             .request_device(
@@ -464,8 +463,9 @@ impl Renderer {
                         }
                     },
                     required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: wgpu::Trace::Off,
                 },
-                None,
             )
             .await?;
 
@@ -774,13 +774,13 @@ impl Renderer {
             layout: Some(&ssr_pl),
             vertex: wgpu::VertexState {
                 module: &ssr_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &ssr_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -792,6 +792,7 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // SSAO
@@ -849,13 +850,13 @@ impl Renderer {
             layout: Some(&ssao_pl),
             vertex: wgpu::VertexState {
                 module: &ssao_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &ssao_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -867,6 +868,7 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // SSGI
@@ -938,13 +940,13 @@ impl Renderer {
             layout: Some(&ssgi_pl),
             vertex: wgpu::VertexState {
                 module: &ssgi_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &ssgi_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -956,6 +958,7 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Post-fx composition pipeline
@@ -1041,13 +1044,13 @@ impl Renderer {
             layout: Some(&post_fx_pl),
             vertex: wgpu::VertexState {
                 module: &post_fx_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &post_fx_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -1059,6 +1062,7 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Shadow bind group layout (declared early so we can include it in main pipeline layout)
@@ -1193,7 +1197,7 @@ impl Renderer {
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[
                     crate::types::Vertex::layout(),
                     crate::types::InstanceRaw::layout(),
@@ -1202,7 +1206,7 @@ impl Renderer {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -1225,6 +1229,7 @@ impl Renderer {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
         // after instance_buf creation
         let weather = crate::effects::WeatherFx::new(&device, 800);
@@ -1244,13 +1249,13 @@ impl Renderer {
             layout: Some(&post_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &post_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &post_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -1262,6 +1267,7 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Shadow map resources (2-layer array for CSM)
@@ -1282,6 +1288,7 @@ impl Renderer {
         });
         // Array view for sampling
         let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("shadow array view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
@@ -1293,6 +1300,7 @@ impl Renderer {
         });
         // Per-layer views for rendering
         let shadow_layer0_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("shadow layer0 view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -1303,6 +1311,7 @@ impl Renderer {
             array_layer_count: Some(1),
         });
         let shadow_layer1_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("shadow layer1 view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -1412,7 +1421,7 @@ fn vs(input: VSIn) -> VSOut {
             layout: Some(&shadow_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shadow_shader,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[
                     crate::types::Vertex::layout(),
                     crate::types::InstanceRaw::layout(),
@@ -1437,6 +1446,7 @@ fn vs(input: VSIn) -> VSOut {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Default 1x1 white albedo
@@ -1815,7 +1825,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             layout: Some(&skinned_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &skinned_shader,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[
                     crate::types::SkinnedVertex::layout(),
                     crate::types::InstanceRaw::layout(),
@@ -1824,7 +1834,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &skinned_shader,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -1847,6 +1857,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Default extra textures
@@ -2124,8 +2135,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 label: Some("clustered comp pipeline"),
                 layout: Some(&clustered_comp_pl),
                 module: &clustered_comp_shader,
-                entry_point: "cs_main",
+                entry_point: Some("cs_main"),
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
+                cache: None,
             });
         let clustered_comp_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("clustered comp bg"),
@@ -3449,13 +3461,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 layout: Some(&layout),
                 vertex: wgpu::VertexState {
                     module: &shader,
-                    entry_point: "vs_main",
+                    entry_point: Some("vs_main"),
                     buffers: &[],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
-                    entry_point: "fs_main",
+                    entry_point: Some("fs_main"),
                     targets: &[Some(wgpu::ColorTargetState {
                         format,
                         blend: None,
@@ -3467,6 +3479,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState::default(),
                 multiview: None,
+                cache: None,
             })
     }
 

@@ -265,6 +265,8 @@ fn test_parity_rest_pose() {
                     label: Some("Parity Test Device"),
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: None,
                 },
                 None,
             )
@@ -316,6 +318,8 @@ fn test_parity_animated_frame() {
                     label: Some("Parity Test Device"),
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: None,
                 },
                 None,
             )
@@ -374,6 +378,8 @@ fn test_parity_weighted_blending() {
                     label: Some("Parity Test Device"),
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: None,
                 },
                 None,
             )

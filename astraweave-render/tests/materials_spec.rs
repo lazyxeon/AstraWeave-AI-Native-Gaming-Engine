@@ -63,6 +63,8 @@ fn parses_materials_and_arrays_and_orders_layers() {
             label: Some("materials-test device"),
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: None,
         },
         None,
     ))
@@ -149,6 +151,8 @@ fn packs_mra_from_separate_planes_when_missing_mra() {
             label: Some("materials-test device"),
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: None,
         },
         None,
     ))
@@ -209,6 +213,8 @@ fn path_resolution_uses_base_dir_and_normalizes() {
             label: Some("materials-test device"),
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: None,
         },
         None,
     ))

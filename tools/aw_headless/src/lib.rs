@@ -2,15 +2,14 @@ use anyhow::Result;
 
 /// Renders a full-screen quad using a WGSL snippet (expects a `vs_main` and `fs_main`) into an RGBA8 image.
 pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Result<Vec<u8>> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::LowPower,
             compatible_surface: None,
             force_fallback_adapter: false,
         })
-        .await
-        .ok_or_else(|| anyhow::anyhow!("No adapter"))?;
+        .await?;
 
     let (device, queue) = adapter
         .request_device(
@@ -18,8 +17,9 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
                 label: Some("aw_headless device"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
             },
-            None,
         )
         .await?;
 
@@ -54,13 +54,13 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
         layout: Some(&layout),
         vertex: wgpu::VertexState {
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
             buffers: &[],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: None,
@@ -72,6 +72,7 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     let mut enc =
@@ -130,14 +131,14 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
     );
 
     queue.submit(Some(enc.finish()));
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(wgpu::MaintainBase::Wait);
 
     let slice = buf.slice(..);
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     slice.map_async(wgpu::MapMode::Read, move |res| {
         let _ = tx.send(res);
     });
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(wgpu::MaintainBase::Wait);
     rx.recv().expect("map result").expect("ok");
     let data = slice.get_mapped_range();
 

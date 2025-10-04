@@ -33,6 +33,16 @@ impl LlmClient for MockLlm {
     }
 }
 
+/// Mock client that always returns an error (for testing fallback behavior)
+pub struct AlwaysErrMock;
+
+#[async_trait::async_trait]
+impl LlmClient for AlwaysErrMock {
+    async fn complete(&self, _prompt: &str) -> Result<String> {
+        bail!("AlwaysErrMock: simulated LLM failure")
+    }
+}
+
 #[cfg(feature = "ollama")]
 pub struct OllamaClient {
     pub url: String,

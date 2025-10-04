@@ -188,13 +188,13 @@ impl IblManager {
             layout: Some(&unit_pl),
             vertex: wgpu::VertexState {
                 module: &brdf_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &brdf_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rg16Float,
                     blend: None,
@@ -206,6 +206,7 @@ impl IblManager {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Env sampling BGL for irradiance/specular passes
@@ -247,13 +248,13 @@ impl IblManager {
             layout: Some(&sky_pl),
             vertex: wgpu::VertexState {
                 module: &sky_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &sky_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -265,6 +266,7 @@ impl IblManager {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let irr_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -272,13 +274,13 @@ impl IblManager {
             layout: Some(&conv_pl),
             vertex: wgpu::VertexState {
                 module: &irr_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &irr_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -290,6 +292,7 @@ impl IblManager {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let spec_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -297,13 +300,13 @@ impl IblManager {
             layout: Some(&conv_pl),
             vertex: wgpu::VertexState {
                 module: &spec_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &spec_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -315,6 +318,7 @@ impl IblManager {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         // Equirectangular to cube pipeline
@@ -366,13 +370,13 @@ impl IblManager {
             layout: Some(&eqr_pl),
             vertex: wgpu::VertexState {
                 module: &eqr_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &eqr_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -384,6 +388,7 @@ impl IblManager {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let mgr = Self {
@@ -560,16 +565,19 @@ impl IblManager {
 
         // Views
         let env_view = env_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("ibl-env-view"),
             dimension: Some(wgpu::TextureViewDimension::Cube),
             ..Default::default()
         });
         let irr_view = irr_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("ibl-irr-view"),
             dimension: Some(wgpu::TextureViewDimension::Cube),
             ..Default::default()
         });
         let spec_view = spec_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("ibl-spec-view"),
             dimension: Some(wgpu::TextureViewDimension::Cube),
             base_mip_level: 0,
@@ -611,6 +619,7 @@ impl IblManager {
                 });
                 for face in 0..6u32 {
                     let face_view = env_tex.create_view(&wgpu::TextureViewDescriptor {
+                        usage: None,
                         label: Some("ibl-env-face"),
                         format: Some(wgpu::TextureFormat::Rgba16Float),
                         dimension: Some(wgpu::TextureViewDimension::D2),
@@ -689,6 +698,7 @@ impl IblManager {
                 });
                 for face in 0..6u32 {
                     let face_view = env_tex.create_view(&wgpu::TextureViewDescriptor {
+                        usage: None,
                         label: Some("ibl-env-face"),
                         format: Some(wgpu::TextureFormat::Rgba16Float),
                         dimension: Some(wgpu::TextureViewDimension::D2),
@@ -747,6 +757,7 @@ impl IblManager {
             });
             for face in 0..6u32 {
                 let dst_face = irr_tex.create_view(&wgpu::TextureViewDescriptor {
+                    usage: None,
                     label: Some("ibl-irr-face"),
                     format: Some(wgpu::TextureFormat::Rgba16Float),
                     dimension: Some(wgpu::TextureViewDimension::D2),
@@ -800,6 +811,7 @@ impl IblManager {
             for mip in 0..spec_mips {
                 for face in 0..6u32 {
                     let dst = spec_tex.create_view(&wgpu::TextureViewDescriptor {
+                        usage: None,
                         label: Some("ibl-spec-sub"),
                         format: Some(wgpu::TextureFormat::Rgba16Float),
                         dimension: Some(wgpu::TextureViewDimension::D2),

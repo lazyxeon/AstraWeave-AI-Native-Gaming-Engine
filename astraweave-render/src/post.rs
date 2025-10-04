@@ -232,13 +232,13 @@ impl BloomPipeline {
             layout: Some(&threshold_pl),
             vertex: wgpu::VertexState {
                 module: &threshold_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &threshold_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -250,6 +250,7 @@ impl BloomPipeline {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let downsample_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -257,13 +258,13 @@ impl BloomPipeline {
             layout: Some(&mip_pl),
             vertex: wgpu::VertexState {
                 module: &downsample_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &downsample_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -275,6 +276,7 @@ impl BloomPipeline {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let upsample_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -282,13 +284,13 @@ impl BloomPipeline {
             layout: Some(&mip_pl),
             vertex: wgpu::VertexState {
                 module: &upsample_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &upsample_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: Some(wgpu::BlendState {
@@ -311,6 +313,7 @@ impl BloomPipeline {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let composite_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -318,13 +321,13 @@ impl BloomPipeline {
             layout: Some(&composite_pl),
             vertex: wgpu::VertexState {
                 module: &composite_sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &composite_sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: wgpu::TextureFormat::Rgba16Float,
                     blend: None,
@@ -336,6 +339,7 @@ impl BloomPipeline {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         Ok(Self {
@@ -435,6 +439,7 @@ impl BloomPipeline {
         // 1. Threshold pass (mip 0)
         {
             let mip0_view = bloom_chain.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("bloom-mip0"),
                 base_mip_level: 0,
                 mip_level_count: Some(1),
@@ -480,12 +485,14 @@ impl BloomPipeline {
         // 2. Downsample pass (mip 0 → mip 1, mip 1 → mip 2, ...)
         for mip in 1..mip_count {
             let src_view = bloom_chain.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("bloom-downsample-src"),
                 base_mip_level: mip - 1,
                 mip_level_count: Some(1),
                 ..Default::default()
             });
             let dst_view = bloom_chain.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("bloom-downsample-dst"),
                 base_mip_level: mip,
                 mip_level_count: Some(1),
@@ -528,12 +535,14 @@ impl BloomPipeline {
         // Upsample uses additive blending to accumulate blur contributions
         for mip in (0..(mip_count - 1)).rev() {
             let src_view = bloom_chain.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("bloom-upsample-src"),
                 base_mip_level: mip + 1,
                 mip_level_count: Some(1),
                 ..Default::default()
             });
             let dst_view = bloom_chain.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("bloom-upsample-dst"),
                 base_mip_level: mip,
                 mip_level_count: Some(1),
@@ -575,6 +584,7 @@ impl BloomPipeline {
         // 4. Composite pass (original + bloom blur → output)
         {
             let bloom_view = bloom_chain.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some("bloom-final-blur"),
                 base_mip_level: 0,
                 mip_level_count: Some(1),

@@ -82,13 +82,13 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             layout: Some(&pl),
             vertex: wgpu::VertexState {
                 module: &sm,
-                entry_point: "vs",
+                entry_point: Some("vs"),
                 buffers: &[],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &sm,
-                entry_point: "fs",
+                entry_point: Some("fs"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: None,
@@ -100,6 +100,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -120,6 +121,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         for layer in base_layer..(base_layer + layer_count) {
             for level in 1..mip_levels {
                 let src_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                    usage: None,
                     label: Some("mip-src-view"),
                     format: Some(format),
                     dimension: Some(wgpu::TextureViewDimension::D2),
@@ -146,6 +148,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 });
 
                 let dst_view = texture.create_view(&wgpu::TextureViewDescriptor {
+                    usage: None,
                     label: Some("mip-dst-view"),
                     format: Some(format),
                     dimension: Some(wgpu::TextureViewDimension::D2),
@@ -245,6 +248,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 view_formats: &[],
             });
             let view = tex.create_view(&wgpu::TextureViewDescriptor {
+                usage: None,
                 label: Some(label),
                 format: Some(fmt),
                 dimension: Some(wgpu::TextureViewDimension::D2Array),

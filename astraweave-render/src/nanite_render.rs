@@ -137,13 +137,13 @@ impl NaniteRenderContext {
             layout: Some(&material_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &material_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &material_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: output_format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -169,6 +169,7 @@ impl NaniteRenderContext {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
 
         Self {

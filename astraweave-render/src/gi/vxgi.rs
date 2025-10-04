@@ -82,6 +82,7 @@ impl VxgiRenderer {
         });
 
         let voxel_texture_view = voxel_texture.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("VXGI Voxel Texture View"),
             format: Some(wgpu::TextureFormat::Rgba16Float),
             dimension: Some(wgpu::TextureViewDimension::D3),
@@ -153,8 +154,9 @@ impl VxgiRenderer {
                 label: Some("VXGI Voxelization Pipeline"),
                 layout: None,
                 module: &voxelization_shader,
-                entry_point: "voxelize",
+                entry_point: Some("voxelize"),
                 compilation_options: Default::default(),
+                cache: None,
             });
 
         Self {

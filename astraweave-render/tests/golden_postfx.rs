@@ -88,6 +88,8 @@ fn golden_postfx_compose_matches_cpu() {
             label: Some("golden-postfx device"),
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: None,
         },
         None,
     ))
@@ -184,7 +186,7 @@ fn golden_postfx_compose_matches_cpu() {
     queue.write_texture(gi_tex.as_image_copy(), &gi_bytes, layout, extent);
     // Ensure writes are flushed before using these textures in a render pass
     queue.submit(std::iter::empty());
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(wgpu::MaintainBase::Wait);
 
     // Target texture (sRGB) for readback
     let target = device.create_texture(&wgpu::TextureDescriptor {
@@ -277,13 +279,13 @@ fn golden_postfx_compose_matches_cpu() {
         layout: Some(&pl),
         vertex: wgpu::VertexState {
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
             buffers: &[],
             compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState::REPLACE),
@@ -295,6 +297,7 @@ fn golden_postfx_compose_matches_cpu() {
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
+        cache: None,
     });
 
     // Render
@@ -347,13 +350,13 @@ fn golden_postfx_compose_matches_cpu() {
         },
     );
     queue.submit(Some(enc.finish()));
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(wgpu::MaintainBase::Wait);
     let slice = buf.slice(..);
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     slice.map_async(wgpu::MapMode::Read, move |res| {
         let _ = tx.send(res);
     });
-    device.poll(wgpu::Maintain::Wait);
+    device.poll(wgpu::MaintainBase::Wait);
     rx.recv().unwrap().unwrap();
     let data = slice.get_mapped_range();
     let mut img = vec![0u8; (w * h * 4) as usize];
