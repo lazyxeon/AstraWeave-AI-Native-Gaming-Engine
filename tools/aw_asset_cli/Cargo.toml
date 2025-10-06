@@ -20,7 +20,7 @@ gltf = "1"
 image = "0.25"
 astraweave-asset = { path = "../../astraweave-asset" }
 tokio = { version = "1", features = ["full"] }
-notify = "6"
+notify = "8"
 flate2 = "1"  # for compression
 ring = "0.17"  # for signing
 base64 = "0.22"
