@@ -366,7 +366,7 @@ cargo run -p ecs_ai_showcase
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines.
+We welcome contributions! See [CONTRIBUTING.md](../docs/supplemental-docs/CONTRIBUTING.md) for guidelines.
 
 ## License
 

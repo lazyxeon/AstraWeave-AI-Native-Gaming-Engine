@@ -213,7 +213,7 @@ examples/skinning_demo/
 ├── README.md
 └── src/main.rs (~280 lines)
 
-CHANGELOG.md (~350 lines)
+docs/supplemental-docs/CHANGELOG.md (~350 lines)
 
 Total: ~4,368 new lines
 ```
@@ -243,8 +243,8 @@ Cargo.toml (added skinning_demo to workspace)
 ### Updated Reports
 - [`docs/PHASE2_STATUS_REPORT.md`](../docs/PHASE2_STATUS_REPORT.md): Task 5 marked complete with links
 - [`docs/PHASE2_TASK5_PROGRESS_REPORT.md`](../docs/PHASE2_TASK5_PROGRESS_REPORT.md): Progress 100% with all phases documented
-- [`roadmap.md`](../roadmap.md): Phase 2 Task 5 complete with implementation links
-- [`CHANGELOG.md`](../CHANGELOG.md): Task 5 additions with commands and performance data
+- [`roadmap.md`](supplemental-docs/roadmap.md): Phase 2 Task 5 complete with implementation links
+- [`CHANGELOG.md`](supplemental-docs/CHANGELOG.md): Task 5 additions with commands and performance data
 
 ---
 
