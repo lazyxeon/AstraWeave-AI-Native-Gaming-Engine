@@ -7,7 +7,7 @@
 
 *AI agents are first-class citizens with genuine learning, adaptation, and emergent behavior*
 
-📊 **[Executive Summary](EXECUTIVE_SUMMARY.md)** • 🎯 **[Pitch Deck](PITCH_DECK.md)** • ⚡ **[One-Page Overview](ONE_PAGE_OVERVIEW.md)**
+📊 **[Executive Summary](docs/supplementary/EXECUTIVE_SUMMARY.md)** • 🎯 **[Pitch Deck](docs/supplementary/PITCH_DECK.md)** • ⚡ **[One-Page Overview](docs/supplementary/ONE_PAGE_OVERVIEW.md)**
 
 [![Code Size](https://img.shields.io/github/languages/code-size/lazyxeon/AstraWeave-AI-Native-Gaming-Engine)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine)
 [![Cross Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-blue.svg)](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/actions/workflows/ci.yml)
@@ -85,7 +85,7 @@ The bootstrap script will:
 
 ### Manual Setup
 
-For detailed manual setup or troubleshooting, see: **[DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md)**
+For detailed manual setup or troubleshooting, see: **[DEVELOPMENT_SETUP.md](docs/supplementary/DEVELOPMENT_SETUP.md)**
 
 ### Hello World: Your First AI Companion
 
@@ -324,7 +324,7 @@ AstraWeave implements enterprise-grade security, CI, and quality practices:
 ### Compliance
 - **OpenSSF Scorecard**: Continuous security posture monitoring
 - **MIT License**: Permissive open-source licensing
-- **SECURITY.md**: Clear vulnerability reporting process
+- **[Security Policy](docs/supplementary/guidelines/SECURITY.md)**: Clear vulnerability reporting process
 
 ---
 
@@ -344,8 +344,8 @@ AstraWeave implements enterprise-grade security, CI, and quality practices:
 - **Examples**: Create new demos showcasing engine features
 
 ### How to Contribute
-1. Read our [Contributing Guidelines](CONTRIBUTING.md)
-2. Check the [Code of Conduct](CODE_OF_CONDUCT.md)
+1. Read our [Contributing Guidelines](docs/supplementary/guidelines/CONTRIBUTING.md)
+2. Check the [Code of Conduct](docs/supplementary/guidelines/CODE_OF_CONDUCT.md)
 3. Browse [open issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues)
 4. Submit your pull request
 
