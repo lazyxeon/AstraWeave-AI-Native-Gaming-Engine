@@ -324,7 +324,7 @@ AstraWeave implements enterprise-grade security, CI, and quality practices:
 ### Compliance
 - **OpenSSF Scorecard**: Continuous security posture monitoring
 - **MIT License**: Permissive open-source licensing
-- **SECURITY.md**: Clear vulnerability reporting process
+- [**SECURITY.md**](docs/supplemental-docs/SECURITY.md): Clear vulnerability reporting process
 
 ---
 
@@ -333,7 +333,7 @@ AstraWeave implements enterprise-grade security, CI, and quality practices:
 
 ### For Game Developers
 - **Start with Examples**: Run the demos to understand engine capabilities
-- **Read the Docs**: Check `AI Engine/AstraWeave.md` for technical details
+- **Read the Docs**: Check [`AI Engine/AstraWeave.md`](docs/supplemental-docs/AI%20Engine/AstraWeave.md) for technical details
 - **Build Something**: Use AstraWeave to create your own AI-native game
 - **Share Your Creation**: Show us what you build!
 
@@ -344,8 +344,8 @@ AstraWeave implements enterprise-grade security, CI, and quality practices:
 - **Examples**: Create new demos showcasing engine features
 
 ### How to Contribute
-1. Read our [Contributing Guidelines](CONTRIBUTING.md)
-2. Check the [Code of Conduct](CODE_OF_CONDUCT.md)
+1. Read our [Contributing Guidelines](docs/supplemental-docs/CONTRIBUTING.md)
+2. Check the [Code of Conduct](docs/supplemental-docs/CODE_OF_CONDUCT.md)
 3. Browse [open issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues)
 4. Submit your pull request
 
