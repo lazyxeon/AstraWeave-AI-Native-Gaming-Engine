@@ -399,6 +399,123 @@ cargo test -p astraweave-ai -p astraweave-behavior -p astraweave-memory -p astra
 
 Phase 5 Complete ✅ - All objectives achieved:
 - Full tool validation with nav/physics integration
+
+## Comprehensive PBR Gap analysis
+
+Purpose: capture a systematic, implementable plan to develop a full physically-based rendering (PBR) texture workflow across the engine. This section is written to be machine- and human-consumable so iterative work can be planned, tracked, and automated where useful.
+
+Overview:
+- Current baseline: engine provides a material manager, TOML-based material packs, an interleaved MeshVertex (P/N/T/UV), an IBL manager, and an HDR offscreen -> post pipeline. Examples mix procedural shading and material sampling.
+- Goal: implement a deterministic, high-quality PBR texture pipeline with robust asset tooling, consistent color-space handling, IBL with prefiltering, a centralized WGSL PBR library, and editor/tooling to author/validate materials.
+
+Scope (what "complete PBR texture workflow" includes):
+- Material definition schema + GPU representation (MaterialGpu)
+- Texture ingestion (bake/compress/mipgen), color-space enforcement (sRGB vs linear)
+- Texture registry and stable array indices (D2 arrays) with residency/streaming
+- Per-instance material binding (material_id) with batching by material
+- Central WGSL PBR library: sampling helpers, BRDF (GGX + Smith), Fresnel, normal map handling, ORM sampling
+- IBL: BRDF LUT, prefiltered specular env map, irradiance (diffuse) map
+- Terrain/Layered materials (splat masks, triplanar fallback)
+- Tooling: asset baking CLI, manifest, validation rules, editor hot-reload
+- Debugging: material/texture inspectors, channel viewers, UV/TBN debug
+
+High-level gaps (deltas from current codebase):
+1. MaterialGpu layout and per-instance material_id (missing in InstanceRaw)
+2. Explicit color-space policy enforcement in loaders (albedo sRGB, normal/ORM linear)
+3. Bake pipeline to produce compressed GPU-ready textures with mips and metadata
+4. BRDF LUT and prefilter pipeline for environment maps inside `IblManager`
+5. Centralized WGSL PBR library (`shaders/pbr_lib.wgsl`) and shader include strategy
+6. Sampler policy and texture metadata (wrap, filter, normal_y_convention)
+7. Terrain blending and triplanar functions for slope-heavy geometry
+8. Tooling: `aw_asset_cli` extensions for baking & validation + materials.toml schema update
+9. Debug UI for per-material visualization
+10. Performance: material batching, texture residency manager, stream eviction
+
+Phased plan (milestones + acceptance criteria)
+
+- Phase PBR-A (Foundations, 1–2 weeks)
+	- Tasks:
+		- Define `MaterialGpu` struct (albedo_index, normal_index, orm_index, factors, flags)
+		- Add `material_id: u32` to `InstanceRaw` and update WGSL shader inputs/locations
+		- Implement a minimal `pbr_lib.wgsl` with BRDF LUT sampling and Fresnel-Schlick helper
+		- Bake & bind a BRDF LUT texture at startup (single 2D LUT)
+	- Acceptance:
+		- Instances can reference materials by id; shader compiles and samples MaterialGpu via bind group/SSBO
+		- BRDF LUT present and sampled for specular term
+
+- Phase PBR-B (Textures & Color Space, COMPLETE ✅)
+	- Tasks:
+		- ✅ Extend `aw_asset_cli` to bake textures: generate mips, KTX2/DDS compression (BCn), and JSON metadata indicating color-space and normal_y
+		- ✅ Enforce loader behavior: create textures with correct `wgpu::TextureFormat` (sRGB for albedo, linear for normal/orm)
+		- ✅ Add an assert/validate step in MaterialIntegrator that refuses missing mips or wrong color-space.
+		- ✅ **Full BC7 support** via basis_universal + texture2ddecoder (hybrid architecture)
+		- ✅ Basis Universal transcoding for future-proof universal texture format
+	- Acceptance:
+		- ✅ All materials in `assets/materials/*` produce compressed GPU textures with mips; loader uses correct formats and validation passes.
+		- ✅ 36 baked BC7/BC5 KTX2 textures with complete metadata (albedo sRGB, normal/MRA linear)
+		- ✅ **BC7/BC5/BC3/BC1 decompression working** (no magenta placeholders)
+		- ✅ Production-ready hybrid decoder: Basis Universal (future) + texture2ddecoder (current assets)
+
+- Phase PBR-C (IBL & Specular Prefilter, **COMPLETE ✅**)
+	- Tasks:
+		- ✅ Implement `IblManager::build_prefiltered_specular` generating mip levels encoding roughness variants using GGX importance sampling
+		- ✅ Implement irradiance convolution pass and store as small cubemap
+		- ✅ Wire prefiltered env and irradiance into material shading with correct sample counts
+		- ✅ Create PBR shader library (`pbr_lib.wgsl`) with IBL sampling functions
+		- ✅ Add quality configuration system (Low/Medium/High) with adaptive sample counts
+	- Acceptance:
+		- ✅ Reflections vary correctly with roughness; diffuse irradiance contributes to the final lighting term.
+		- ✅ GGX importance sampling with proper TBN transformation
+		- ✅ Cosine-weighted hemisphere sampling for diffuse irradiance (1800 samples)
+		- ✅ BRDF LUT generation with split-sum approximation
+		- ✅ Complete `evaluate_ibl()` function integrating diffuse + specular + energy conservation
+		- ✅ Quality presets: Low (128-512×512), Medium (256-512×512), High (512-1024×1024)
+		- ✅ Clean compilation and production-ready implementation
+
+- Phase PBR-D (Shader consolidation & material sampling, 1–2 weeks)
+	- Tasks:
+		- Move PBR code to `shaders/pbr_lib.wgsl` and include from example shaders
+		- Create `sample_material(material_id, uv)` helper that resolves and applies sRGB->linear conversions where needed
+	- Acceptance:
+		- Unified shader include compiles across examples; consistent results when toggling materials.
+
+- Phase PBR-E (Terrain & layering, 2–4 weeks)
+	- Tasks:
+		- Implement splat-map based terrain shader paths; integrate normal blending and triplanar fallback; allow per-layer uv_scale
+	- Acceptance:
+		- Terrain blends smoothly; no visible seams; triplanar reduces stretching on steep slopes.
+
+- Phase PBR-F (Tooling, validation, and debug, 2–3 weeks)
+	- Tasks:
+		- Expand `aw_asset_cli` validators: channel checks (ORM order), presence of mips, and size limits
+		- Material inspector in `aw_editor` to preview maps, toggle linear/sRGB view, and sample BRDF responses
+		- Hot-reload materials and textures in examples
+	- Acceptance:
+		- Bake/validate pipeline runs in CI; editor previews and hot-reload work.
+
+Implementation notes and engineering contract
+- Inputs: Material TOML packs (albedo, normal, orm), baked/compressed textures + JSON manifests, instance list with `material_id`.
+- Outputs: Material arrays (D2 arrays), MaterialGpu SSBO/UBO, BRDF LUT texture, prefiltered env cubemaps, updated WGSL shader includes.
+- Errors: asset-bake failures reported and cause logged; shader fallback to default material when missing.
+
+Edge cases & mitigations
+- Missing mips: fallback to generated runtime mips (slow) with a warning; CI should mark bake missing as fail.
+- Normal Y convention mismatch: allow `normal_y` flag in metadata; remap in shader (flip Y if needed).
+- Large material count: use array chunking and residency manager with LRU eviction and fallback material.
+
+Quick wins (low-risk immediate changes)
+1. Add `material_id: u32` to `InstanceRaw` and expose to WGSL (small API change, helps batching).
+2. Add BRDF LUT generation and binding (fast and visually meaningful).
+3. Centralize PBR helpers into `pbr_lib.wgsl` and include from `examples/unified_showcase`.
+4. Enforce albedo sRGB in the texture loaders and log conversion steps.
+
+Next steps for maintainers
+1. Approve the schema for `MaterialGpu` and TOML fields; I'll generate the initial Rust struct + WGSL mapping.
+2. Prioritize Phase PBR-A and PBR-B in the next sprint; add tasks into the project board and CI gating.
+
+Notes:
+- This section is intentionally prescriptive and scoped so we can iterate (implement A -> test -> B -> test). Each phase includes acceptance criteria to measure completion.
+- I can produce the initial PR implementing Phase PBR-A (MaterialGpu struct, InstanceRaw change, BRDF LUT, minimal pbr_lib.wgsl) when you tell me to proceed.
 - Behavior trees with ECS events and orchestrators
 - Persona/memory persistence with versioning and signing
 - LLM planning with guardrails, sandboxing, and fallbacks

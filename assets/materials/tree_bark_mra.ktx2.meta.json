@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/tree_bark_mra.png",
+  "output_path": "assets/materials\\tree_bark_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "23bc66d7196a95c61604a90b3fce6b7293edf98374c30f10e6d5be36146b6b3b"
+}

@@ -10,6 +10,7 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 toml = { workspace = true }
+clap = { version = "4", features = ["derive"] }
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
 sha2 = { workspace = true }
@@ -24,3 +25,13 @@ notify = "6"
 flate2 = "1"  # for compression
 ring = "0.17"  # for signing
 base64 = "0.22"
+ktx2 = "0.3"  # for KTX2 texture container format
+
+# Optional: libktx-rs for production-grade BC compression
+# Requires native libKTX library (see README for setup)
+# libktx-rs = { version = "0.3", optional = true }
+
+[features]
+default = []
+# Enable when libKTX native library is available
+# professional-compression = ["libktx-rs"]

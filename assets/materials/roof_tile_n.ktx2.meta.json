@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/roof_tile_n.png",
+  "output_path": "assets/materials\\roof_tile_n.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": "OpenGl",
+  "compression": "Bc5",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "5129caa6545ebf36d0a4be7ca757196049079ca6da5658e19a4b4b1a25e3f157"
+}

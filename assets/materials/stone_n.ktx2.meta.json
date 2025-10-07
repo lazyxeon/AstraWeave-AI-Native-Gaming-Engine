@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/stone_n.png",
+  "output_path": "assets/materials\\stone_n.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": "OpenGl",
+  "compression": "Bc5",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "570ba07195ce0febcdb5d51fb0d293de8d675ea5921dc9b69b20d9d2bcc4361a"
+}

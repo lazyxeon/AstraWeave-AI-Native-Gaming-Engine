@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/rock_slate_mra.png",
+  "output_path": "assets/materials/baked\\rock_slate_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "332e5098a37fde25df4442c77952cf3453f083937bff41355a18f8e785a52fa8"
+}

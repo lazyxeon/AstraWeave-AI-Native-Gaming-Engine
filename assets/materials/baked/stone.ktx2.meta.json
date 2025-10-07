@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/stone.png",
+  "output_path": "assets/materials/baked\\stone.ktx2",
+  "color_space": "srgb",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "52807be9c23f742b24d4f2c54aa173930bb18269bc83223e5d9c9786ea8e3f70"
+}

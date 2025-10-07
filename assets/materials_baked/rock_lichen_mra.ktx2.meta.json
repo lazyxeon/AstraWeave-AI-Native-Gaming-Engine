@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/rock_lichen_mra.png",
+  "output_path": "assets/materials_baked\\rock_lichen_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "bf916e2e6f412b50bb69353f3265d6ce0ea0d3766f84de4750e629b947006584"
+}

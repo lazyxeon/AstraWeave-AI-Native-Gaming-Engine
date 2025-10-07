@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/dirt.png",
+  "output_path": "assets/materials_baked\\dirt.ktx2",
+  "color_space": "srgb",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "ecab1a7fbf3cd3936079a3f0f5f76cb6ebe9f5b98385298b21ea7cafa510f4d5"
+}

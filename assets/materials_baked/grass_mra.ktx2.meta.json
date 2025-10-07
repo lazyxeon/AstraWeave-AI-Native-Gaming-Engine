@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/grass_mra.png",
+  "output_path": "assets/materials_baked\\grass_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "a75a15dd3447e6cb0f30a1ccd684fa3376338174482f8a3e23109891803944f3"
+}

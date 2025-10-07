@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn resource_table_transient_texture() {
         // Headless device for testing
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::LowPower,
             compatible_surface: None,
@@ -326,14 +326,7 @@ mod tests {
         }))
         .expect("adapter");
         let (device, _queue) = pollster::block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("test-device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
-                memory_hints: wgpu::MemoryHints::default(),
-                trace: None,
-            },
-            None,
+            &wgpu::DeviceDescriptor::default(),
         ))
         .expect("device");
 

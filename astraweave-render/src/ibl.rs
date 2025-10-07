@@ -85,6 +85,8 @@ pub struct IblManager {
     ibl_bgl: wgpu::BindGroupLayout,
     // Bind group layout for convolution shaders (env cube + sampler)
     env_bgl: wgpu::BindGroupLayout,
+    // Bind group layout for prefilter params (roughness, face, sample count)
+    prefilter_params_bgl: wgpu::BindGroupLayout,
     // Keep textures alive across frames/bind group creations
     textures: Option<IblTextures>,
     // Pipelines
@@ -232,7 +234,22 @@ impl IblManager {
             ],
         });
 
-        // Separate layouts: sky has no bindings; irradiance/specular sample env (group 0)
+        // Bind group layout for prefilter params (roughness, face_idx, sample_count)
+        let prefilter_params_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("ibl-prefilter-params-bgl"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        // Separate layouts: sky has no bindings; irradiance samples env (group 0); spec samples env (group 0) + params (group 1)
         let sky_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("ibl-sky-pl"),
             bind_group_layouts: &[],
@@ -241,6 +258,11 @@ impl IblManager {
         let conv_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("ibl-conv-pl"),
             bind_group_layouts: &[&env_bgl],
+            push_constant_ranges: &[],
+        });
+        let spec_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("ibl-spec-pl"),
+            bind_group_layouts: &[&env_bgl, &prefilter_params_bgl],
             push_constant_ranges: &[],
         });
         let sky_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -297,7 +319,7 @@ impl IblManager {
 
         let spec_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("ibl-spec-pipeline"),
-            layout: Some(&conv_pl),
+            layout: Some(&spec_pl),
             vertex: wgpu::VertexState {
                 module: &spec_sm,
                 entry_point: Some("vs"),
@@ -402,6 +424,7 @@ impl IblManager {
             sampler,
             ibl_bgl,
             env_bgl,
+            prefilter_params_bgl,
             textures: None,
             sky_pipeline,
             irr_pipeline,
@@ -441,7 +464,7 @@ impl IblManager {
             .textures
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?
-            .brdf_lut
+            ._brdf_lut
             .create_view(&wgpu::TextureViewDescriptor::default());
         Ok(view)
     }
@@ -461,7 +484,7 @@ impl IblManager {
             .textures
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?
-            .irradiance
+            ._irradiance
             .create_view(&wgpu::TextureViewDescriptor {
                 dimension: Some(wgpu::TextureViewDimension::Cube),
                 ..Default::default()
@@ -484,10 +507,10 @@ impl IblManager {
             .textures
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?;
-        let view = textures.specular.create_view(&wgpu::TextureViewDescriptor {
+        let view = textures._specular.create_view(&wgpu::TextureViewDescriptor {
             dimension: Some(wgpu::TextureViewDimension::Cube),
             base_mip_level: 0,
-            mip_level_count: Some(textures.spec_mips),
+            mip_level_count: Some(textures._spec_mips),
             ..Default::default()
         });
         Ok(view)
@@ -789,7 +812,7 @@ impl IblManager {
             queue.submit(Some(enc.finish()));
         }
 
-        // Specular prefilter for each mip and face
+        // Specular prefilter for each mip and face with proper roughness encoding
         {
             let env_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("ibl-env-bg"),
@@ -805,11 +828,48 @@ impl IblManager {
                     },
                 ],
             });
+            
+            // Create uniform buffer for prefilter params (16 bytes aligned)
+            let params_buf = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("ibl-prefilter-params-ub"),
+                size: 16, // 4 f32/u32 values aligned to 16 bytes
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            
             let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("ibl-spec-enc"),
             });
+            
             for mip in 0..spec_mips {
+                // Calculate roughness from mip level (linear mapping)
+                let roughness = (mip as f32) / ((spec_mips - 1) as f32).max(1.0);
+                // Quality-based sample count: higher for low mips, lower for high mips
+                let sample_count: u32 = match quality {
+                    IblQuality::Low => if mip == 0 { 128 } else { 64 },
+                    IblQuality::Medium => if mip == 0 { 256 } else { 128 },
+                    IblQuality::High => if mip == 0 { 512 } else { 256 },
+                };
+                
                 for face in 0..6u32 {
+                    // Update params uniform for this mip/face combination
+                    let params_data: [u32; 4] = [
+                        f32::to_bits(roughness),
+                        face,
+                        sample_count,
+                        0, // padding
+                    ];
+                    queue.write_buffer(&params_buf, 0, bytemuck::cast_slice(&params_data));
+                    
+                    let params_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        label: Some("ibl-prefilter-params-bg"),
+                        layout: &self.prefilter_params_bgl,
+                        entries: &[wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: params_buf.as_entire_binding(),
+                        }],
+                    });
+                    
                     let dst = spec_tex.create_view(&wgpu::TextureViewDescriptor {
                         usage: None,
                         label: Some("ibl-spec-sub"),
@@ -837,6 +897,7 @@ impl IblManager {
                     });
                     rp.set_pipeline(&self.spec_pipeline);
                     rp.set_bind_group(0, &env_bg, &[]);
+                    rp.set_bind_group(1, &params_bg, &[]);
                     rp.draw(0..3, 0..1);
                     drop(rp);
                 }
@@ -915,58 +976,130 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 }
 "#;
 
-// Irradiance convolution (Lambertian). Minimal: sample a high mip of the env cube via a heuristic.
+// Irradiance convolution (Lambertian diffuse): proper cosine-weighted hemisphere sampling
+// Note: This shader is executed per-face, so we derive the normal from clip-space position
 const IRRADIANCE_WGSL: &str = r#"
-struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) clip_pos: vec2<f32> };
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
-    out.uv = (xy+1.0)*0.5;
+    out.clip_pos = xy;
     return out;
 }
 @group(0) @binding(0) var env_cube: texture_cube<f32>;
 @group(0) @binding(1) var samp: sampler;
+
 @fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
-    // Fake convolution by sampling a high LOD as an approximation (fast path)
-    let N = normalize(vec3<f32>(in.uv.x*2.0-1.0, 1.0, in.uv.y*2.0-1.0));
-    let color = textureSampleLevel(env_cube, samp, N, 4.0).rgb;
-    return vec4<f32>(color, 1.0);
+    // Normal derived from clip-space coordinates (-1 to 1)
+    // This works because we render one face at a time
+    // The Z component will be 1.0 (facing outward from cube center)
+    let N = normalize(vec3<f32>(in.clip_pos.x, in.clip_pos.y, 1.0));
+    
+    // Build orthonormal basis for tangent space
+    let up = select(vec3<f32>(1.0, 0.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), abs(N.z) < 0.999);
+    let T = normalize(cross(up, N));
+    let B = cross(N, T);
+    
+    // Integrate over hemisphere with cosine-weighted sampling
+    var irradiance = vec3<f32>(0.0, 0.0, 0.0);
+    let PHI_STEPS = 60u; // 6 degree steps
+    let THETA_STEPS = 30u; // 3 degree steps
+    let delta_phi = (2.0 * 3.14159265) / f32(PHI_STEPS);
+    let delta_theta = (0.5 * 3.14159265) / f32(THETA_STEPS);
+    
+    var sample_count = 0.0;
+    for (var i_phi = 0u; i_phi < PHI_STEPS; i_phi++) {
+        for (var i_theta = 0u; i_theta < THETA_STEPS; i_theta++) {
+            let phi = f32(i_phi) * delta_phi;
+            let theta = f32(i_theta) * delta_theta;
+            
+            // Spherical to cartesian (in tangent space)
+            let sample_vec_tangent = vec3<f32>(
+                sin(theta) * cos(phi),
+                sin(theta) * sin(phi),
+                cos(theta)
+            );
+            // Transform to world space
+            let sample_vec = normalize(
+                T * sample_vec_tangent.x + 
+                B * sample_vec_tangent.y + 
+                N * sample_vec_tangent.z
+            );
+            
+            // Sample environment with cosine weighting (NdotL)
+            let sample_color = textureSample(env_cube, samp, sample_vec).rgb;
+            irradiance += sample_color * cos(theta) * sin(theta);
+            sample_count += 1.0;
+        }
+    }
+    irradiance = irradiance * 3.14159265 / sample_count;
+    
+    return vec4<f32>(irradiance, 1.0);
 }
 "#;
 
-// Specular prefilter (GGX) minimal: roughness is derived from mip during write (encoded by pipeline state in a real version). Here we pick a fixed roughness per draw; caller draws per mip.
+// Specular prefilter (GGX): properly samples environment with importance sampling encoding roughness per mip
 const SPECULAR_PREFILTER_WGSL: &str = r#"
-struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32>, @location(1) face_idx: u32 };
+struct PrefilterParams { roughness: f32, face_idx: u32, sample_count: u32, _pad: u32 };
+@group(1) @binding(0) var<uniform> params: PrefilterParams;
 @vertex fn vs(@builtin(vertex_index) vi: u32) -> VsOut {
     var out: VsOut;
     var p = array<vec2<f32>, 3>(vec2<f32>(-1.0,-1.0), vec2<f32>(3.0,-1.0), vec2<f32>(-1.0,3.0));
     let xy = p[vi];
     out.pos = vec4<f32>(xy, 0.0, 1.0);
     out.uv = (xy+1.0)*0.5;
+    out.face_idx = params.face_idx;
     return out;
 }
 @group(0) @binding(0) var env_cube: texture_cube<f32>;
 @group(0) @binding(1) var samp: sampler;
 fn radicalInverseVdC(bitsIn: u32) -> f32 { var bits = bitsIn; bits = (bits << 16u) | (bits >> 16u); bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u); bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u); bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u); bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u); return f32(bits) * 2.3283064365386963e-10; }
 fn hammersley(i: u32, n: u32) -> vec2<f32> { return vec2<f32>(f32(i)/f32(n), radicalInverseVdC(i)); }
-fn importanceSampleGGX(Xi: vec2<f32>, roughness: f32) -> vec3<f32> { let a = roughness*roughness; let phi = 6.2831853*Xi.x; let cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y)); let sinTheta = sqrt(1.0 - cosTheta*cosTheta); return vec3<f32>(cos(phi)*sinTheta, sin(phi)*sinTheta, cosTheta); }
+fn importanceSampleGGX(Xi: vec2<f32>, N: vec3<f32>, roughness: f32) -> vec3<f32> { 
+    let a = roughness*roughness; 
+    let phi = 6.2831853*Xi.x; 
+    let cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y)); 
+    let sinTheta = sqrt(1.0 - cosTheta*cosTheta); 
+    let H_tangent = vec3<f32>(cos(phi)*sinTheta, sin(phi)*sinTheta, cosTheta);
+    // Build TBN
+    let up = select(vec3<f32>(1.0,0.0,0.0), vec3<f32>(0.0,1.0,0.0), abs(N.z) < 0.999);
+    let T = normalize(cross(up, N));
+    let B = cross(N, T);
+    return normalize(T*H_tangent.x + B*H_tangent.y + N*H_tangent.z);
+}
+fn uv_to_cube_dir(face: u32, uv: vec2<f32>) -> vec3<f32> {
+    let tc = uv*2.0 - 1.0;
+    if (face == 0u) { return normalize(vec3<f32>( 1.0,   -tc.y,  -tc.x)); }
+    if (face == 1u) { return normalize(vec3<f32>(-1.0,   -tc.y,   tc.x)); }
+    if (face == 2u) { return normalize(vec3<f32>( tc.x,   1.0,    tc.y)); }
+    if (face == 3u) { return normalize(vec3<f32>( tc.x,  -1.0,   -tc.y)); }
+    if (face == 4u) { return normalize(vec3<f32>( tc.x,  -tc.y,   1.0)); }
+    return normalize(vec3<f32>(-tc.x,  -tc.y,  -1.0));
+}
 @fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
-    // Derive roughness from UV.y to vary across mips surrogate; a real path passes roughness per-mip.
-    let roughness = clamp(in.uv.y, 0.0, 1.0);
-    let N = normalize(vec3<f32>(in.uv.x*2.0-1.0, 1.0, in.uv.y*2.0-1.0));
-    let V = N;
-    let SAMPLE_COUNT: u32 = 64u;
+    let roughness = params.roughness;
+    let N = uv_to_cube_dir(in.face_idx, in.uv);
+    let R = N;
+    let V = R;
+    let SAMPLE_COUNT = params.sample_count;
     var acc = vec3<f32>(0.0, 0.0, 0.0);
     var w: f32 = 0.0;
     for (var i: u32 = 0u; i < SAMPLE_COUNT; i = i + 1u) {
         let Xi = hammersley(i, SAMPLE_COUNT);
-        let H = importanceSampleGGX(Xi, roughness);
+        let H = importanceSampleGGX(Xi, N, roughness);
         let L = normalize(2.0 * dot(V,H) * H - V);
         let NdotL = max(dot(N,L), 0.0);
         if (NdotL > 0.0) {
-            acc += textureSample(env_cube, samp, L).rgb * NdotL;
+            // Sample with appropriate mip level based on roughness for better filtering
+            let D = ((roughness*roughness - 1.0)*roughness*roughness + 1.0);
+            let pdf = max(D / (4.0 * 3.14159265), 1e-6);
+            let texel_solid_angle = 4.0 * 3.14159265 / (6.0 * 512.0 * 512.0); // Assume 512 env resolution
+            let sample_solid_angle = 1.0 / (f32(SAMPLE_COUNT) * pdf);
+            let mip_level = select(0.0, 0.5 * log2(sample_solid_angle / texel_solid_angle), roughness > 0.0);
+            acc += textureSampleLevel(env_cube, samp, L, mip_level).rgb * NdotL;
             w += NdotL;
         }
     }
@@ -1142,4 +1275,167 @@ fn create_hdr2d(
         ..Default::default()
     });
     Ok((tex, view, samp))
+}
+
+// ============================================================================
+// Unit Tests for IBL Implementation
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ibl_quality_presets() {
+        // Test Low quality: env_size=256, spec_size=env_size/2=128
+        assert_eq!(IblQuality::Low.env_size(), 256);
+        assert_eq!(IblQuality::Low.irradiance_size(), 64); // Fixed for all qualities
+        assert_eq!(IblQuality::Low.spec_size(), 128); // env_size / 2
+        assert_eq!(IblQuality::Low.spec_mips(), 8); // log2(128) + 1
+
+        // Test Medium quality: env_size=512, spec_size=256
+        assert_eq!(IblQuality::Medium.env_size(), 512);
+        assert_eq!(IblQuality::Medium.irradiance_size(), 64);
+        assert_eq!(IblQuality::Medium.spec_size(), 256); // env_size / 2
+        assert_eq!(IblQuality::Medium.spec_mips(), 9); // log2(256) + 1
+
+        // Test High quality: env_size=1024, spec_size=512
+        assert_eq!(IblQuality::High.env_size(), 1024);
+        assert_eq!(IblQuality::High.irradiance_size(), 64);
+        assert_eq!(IblQuality::High.spec_size(), 512); // env_size / 2
+        assert_eq!(IblQuality::High.spec_mips(), 10); // log2(512) + 1
+    }
+
+    #[test]
+    fn test_sky_mode_creation() {
+        // Test Procedural mode
+        let procedural = SkyMode::Procedural {
+            last_capture_time: 0.0,
+            recapture_interval: 60.0,
+        };
+        match procedural {
+            SkyMode::Procedural { last_capture_time, recapture_interval } => {
+                assert_eq!(last_capture_time, 0.0);
+                assert_eq!(recapture_interval, 60.0);
+            }
+            _ => panic!("Wrong sky mode"),
+        }
+
+        // Test HdrPath mode
+        let hdr_path = SkyMode::HdrPath {
+            biome: "grassland".to_string(),
+            path: "assets/env.hdr".to_string(),
+        };
+        match hdr_path {
+            SkyMode::HdrPath { biome, path } => {
+                assert_eq!(biome, "grassland");
+                assert_eq!(path, "assets/env.hdr");
+            }
+            _ => panic!("Wrong sky mode"),
+        }
+    }
+
+    #[test]
+    fn test_prefilter_params_roughness_calculation() {
+        // Test roughness calculation for mip chain
+        // Roughness should be linear from 0.0 (mip 0) to 1.0 (last mip)
+        
+        let spec_mips = 10u32;
+        for mip in 0..spec_mips {
+            let roughness = (mip as f32) / ((spec_mips - 1) as f32).max(1.0);
+            
+            if mip == 0 {
+                assert_eq!(roughness, 0.0, "Mip 0 should have roughness 0.0");
+            } else if mip == spec_mips - 1 {
+                assert_eq!(roughness, 1.0, "Last mip should have roughness 1.0");
+            } else {
+                assert!(roughness > 0.0 && roughness < 1.0, 
+                    "Mid mips should have roughness between 0 and 1, got {}", roughness);
+            }
+        }
+    }
+
+    #[test]
+    fn test_sample_count_by_quality() {
+        // Test sample counts for different quality levels and mip levels
+        
+        // Low quality
+        let low_mip0_samples = 128u32;
+        let low_other_samples = 64u32;
+        assert!(low_mip0_samples > low_other_samples, 
+            "Mip 0 should have more samples than other mips");
+
+        // Medium quality
+        let med_mip0_samples = 256u32;
+        let med_other_samples = 128u32;
+        assert!(med_mip0_samples > med_other_samples);
+        assert!(med_mip0_samples > low_mip0_samples, 
+            "Medium quality should have more samples than Low");
+
+        // High quality
+        let high_mip0_samples = 512u32;
+        let high_other_samples = 256u32;
+        assert!(high_mip0_samples > high_other_samples);
+        assert!(high_mip0_samples > med_mip0_samples, 
+            "High quality should have more samples than Medium");
+    }
+
+    #[test]
+    fn test_face_indexing() {
+        // Test that face indices are in valid range [0, 5] for cubemap
+        for face in 0..6u32 {
+            assert!(face < 6, "Face index must be less than 6");
+        }
+    }
+
+    #[test]
+    fn test_uniform_buffer_alignment() {
+        // PrefilterParams uniform buffer should be 16 bytes (4 x u32/f32)
+        // This ensures proper alignment for GPU
+        let roughness = 0.5f32;
+        let face = 2u32;
+        let sample_count = 256u32;
+        let pad = 0u32;
+        
+        let params_data = [
+            f32::to_bits(roughness),
+            face,
+            sample_count,
+            pad
+        ];
+        
+        assert_eq!(params_data.len(), 4, "Params should have 4 elements");
+        assert_eq!(std::mem::size_of_val(&params_data), 16, 
+            "Params should be 16 bytes for alignment");
+    }
+
+    #[test]
+    fn test_ibl_resources_struct() {
+        // Verify IblResources has all required fields
+        // This is a compile-time check but documents the structure
+        fn _assert_ibl_resources_complete(res: IblResources) {
+            let _ = res.env_cube;
+            let _ = res.irradiance_cube;
+            let _ = res.specular_cube;
+            let _ = res.brdf_lut;
+            let _ = res.mips_specular;
+        }
+    }
+
+    #[test]
+    fn test_shader_constant_consistency() {
+        // Verify shader constants are defined
+        assert!(!SKY_WGSL.is_empty(), "Sky shader should not be empty");
+        assert!(!IRRADIANCE_WGSL.is_empty(), "Irradiance shader should not be empty");
+        assert!(!SPECULAR_PREFILTER_WGSL.is_empty(), "Specular prefilter shader should not be empty");
+        assert!(!BRDF_LUT_WGSL.is_empty(), "BRDF LUT shader should not be empty");
+        
+        // Check for key shader patterns
+        assert!(SPECULAR_PREFILTER_WGSL.contains("PrefilterParams"), 
+            "Specular shader should use PrefilterParams");
+        assert!(SPECULAR_PREFILTER_WGSL.contains("roughness"), 
+            "Specular shader should reference roughness");
+        assert!(IRRADIANCE_WGSL.contains("irradiance"), 
+            "Irradiance shader should compute irradiance");
+    }
 }

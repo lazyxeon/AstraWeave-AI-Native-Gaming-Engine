@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/forest_floor_n.png",
+  "output_path": "assets/materials/baked\\forest_floor_n.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": "OpenGl",
+  "compression": "Bc5",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "5db58e32d6fd863dc970b47f7a98ff14148bdebd314bf6bcca3fffdff3e4e9c6"
+}

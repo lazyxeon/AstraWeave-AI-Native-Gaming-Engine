@@ -1,15 +1,109 @@
 use std::{borrow::Cow, collections::HashMap, path::Path};
 
-use anyhow::{Context, Result};
-
-use crate::material::{ArrayLayout, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats};
+use anyhow::{anyhow, Context, Result};
+use aw_asset_cli::{ColorSpace, TextureMetadata};
+use crate::material::{
+    ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
+};
 
 pub(crate) mod material_loader_impl {
     use super::*;
+    use bytemuck::cast_slice;
+    use wgpu::util::DeviceExt;
 
     fn mip_level_count_for(size: wgpu::Extent3d) -> u32 {
         let max_dim = size.width.max(size.height).max(1);
         32 - max_dim.leading_zeros()
+    }
+
+    /// Helper to determine texture format from metadata
+    /// Returns (format, is_srgb, channel_count) for proper texture creation
+    fn format_from_metadata(
+        meta: Option<&TextureMetadata>,
+        default_format: wgpu::TextureFormat,
+        texture_type: &str, // "albedo", "normal", or "mra"
+    ) -> wgpu::TextureFormat {
+        if let Some(meta) = meta {
+            // Use metadata color_space to determine format
+            match texture_type {
+                "albedo" => {
+                    match meta.color_space {
+                        ColorSpace::Srgb => wgpu::TextureFormat::Rgba8UnormSrgb,
+                        ColorSpace::Linear => wgpu::TextureFormat::Rgba8Unorm,
+                    }
+                }
+                "normal" => {
+                    // Normal maps are always linear, use RG for BC5-compressed normals
+                    wgpu::TextureFormat::Rg8Unorm
+                }
+                "mra" => {
+                    // MRA maps are always linear
+                    wgpu::TextureFormat::Rgba8Unorm
+                }
+                _ => default_format,
+            }
+        } else {
+            // No metadata, use default format
+            default_format
+        }
+    }
+
+    /// Try to load texture metadata for a given texture path
+    /// Looks for `.meta.json` file alongside the texture
+    fn try_load_metadata(texture_path: &Path) -> Option<TextureMetadata> {
+        TextureMetadata::load_for_texture(texture_path).ok()
+    }
+
+    /// Validate that texture metadata meets requirements for production rendering
+    /// Returns error message if validation fails
+    fn validate_texture_metadata(
+        meta: Option<&TextureMetadata>,
+        texture_type: &str, // "albedo", "normal", or "mra"
+        material_key: &str,
+        biome_name: &str,
+    ) -> Result<()> {
+        let meta = meta.ok_or_else(|| {
+            anyhow::anyhow!(
+                "Missing metadata for {}/{} {} texture - all textures should have .meta.json",
+                biome_name,
+                material_key,
+                texture_type
+            )
+        })?;
+
+        // Check mip levels requirement
+        if meta.mip_levels <= 1 {
+            anyhow::bail!(
+                "Texture {}/{} {} has only {} mip level(s) - requires full mipmap chain (>1 mips)",
+                biome_name,
+                material_key,
+                texture_type,
+                meta.mip_levels
+            );
+        }
+
+        // Check color-space expectations
+        match texture_type {
+            "albedo" => {
+                if meta.color_space != ColorSpace::Srgb {
+                    eprintln!(
+                        "[materials] WARN {}/{} albedo has {:?} color-space, expected Srgb",
+                        biome_name, material_key, meta.color_space
+                    );
+                }
+            }
+            "normal" | "mra" => {
+                if meta.color_space != ColorSpace::Linear {
+                    eprintln!(
+                        "[materials] WARN {}/{} {} has {:?} color-space, expected Linear",
+                        biome_name, material_key, texture_type, meta.color_space
+                    );
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
     }
 
     fn generate_mipmaps(
@@ -39,8 +133,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 @group(0) @binding(1) var src_smp: sampler;
 
 @fragment fn fs(in: VsOut) -> @location(0) vec4<f32> {
-  let c = textureSample(src_tex, src_smp, in.uv);
-  return c;
+    let c = textureSample(src_tex, src_smp, in.uv);
+    return c;
 }
 "#;
 
@@ -184,6 +278,11 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
     }
 
     fn load_rgba(path: &Path) -> Result<image::RgbaImage> {
+        // Check if it's a KTX2 file
+        if path.extension().and_then(|s| s.to_str()) == Some("ktx2") {
+            return load_ktx2_to_rgba(path);
+        }
+
         let img = image::ImageReader::open(path)
             .with_context(|| format!("open {}", path.display()))?
             .decode()
@@ -192,11 +291,181 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
     }
 
     fn load_gray(path: &Path) -> Result<image::GrayImage> {
+        // Note: KTX2 normal maps (BC5) need special handling
+        // For now, we only support PNG/JPEG normals via load_gray
         let img = image::ImageReader::open(path)
             .with_context(|| format!("open {}", path.display()))?
             .decode()
             .with_context(|| format!("decode {}", path.display()))?;
         Ok(img.to_luma8())
+    }
+
+    /// Load a KTX2 file and decompress to RGBA8 using basis_universal transcoder
+    fn load_ktx2_to_rgba(path: &Path) -> Result<image::RgbaImage> {
+        use basis_universal::*;
+        
+        let data = std::fs::read(path)
+            .with_context(|| format!("read ktx2 file {}", path.display()))?;
+        
+        let reader = ktx2::Reader::new(&data)
+            .context("failed to parse KTX2 header")?;
+        
+        let level0 = reader.levels().next()
+            .ok_or_else(|| anyhow!("KTX2 file has no mip levels"))?;
+        
+        let width = reader.header().pixel_width;
+        let height = reader.header().pixel_height;
+        
+        // Check if this is a Basis Universal compressed texture
+        let has_basis_data = reader.data_format_descriptors().next().is_some();
+        
+        println!("[ktx2] Loading texture: {} ({}x{}, basis={:?})", 
+                path.display(), width, height, has_basis_data);
+        
+        if has_basis_data {
+            // Basis Universal compressed texture - use transcoder
+            let mut transcoder = Transcoder::new();
+            
+            // Initialize transcoder (must be called once per transcoder instance)
+            transcoder.prepare_transcoding(&data)
+                .map_err(|e| anyhow!("Failed to prepare basis transcoding: {:?}", e))?;
+            
+            let image_count = transcoder.image_count(&data);
+            if image_count == 0 {
+                return Err(anyhow!("KTX2 file has no basis images"));
+            }
+            
+            // Transcode to RGBA8
+            let image_index = 0;
+            let level_index = 0;
+            
+            let transcoded = transcoder.transcode_image_level(
+                &data,
+                TranscoderTextureFormat::RGBA32,
+                TranscodeParameters {
+                    image_index,
+                    level_index,
+                    ..Default::default()
+                }
+            ).map_err(|e| anyhow!("Failed to transcode basis image: {:?}", e))?;
+            
+            let img = image::RgbaImage::from_raw(width, height, transcoded)
+                .ok_or_else(|| anyhow!("failed to create RGBA image from transcoded data"))?;
+            
+            println!("[ktx2] ✓ Transcoded Basis Universal texture to RGBA");
+            Ok(img)
+        } else {
+            // Raw BC-compressed texture - use texture2ddecoder for decoding
+            let format_val = reader.header().format;
+            let format_desc = format!("{:?}", format_val);
+            let is_bc7 = format_desc.contains("98") || format_desc.contains("BC7");
+            let is_bc5 = format_desc.contains("143") || format_desc.contains("BC5");
+            let is_bc3 = format_desc.contains("133") || format_desc.contains("137") || format_desc.contains("BC3");
+            let is_bc1 = format_desc.contains("131") || format_desc.contains("BC1");
+            
+            println!("[ktx2] Decoding BC format: BC7={}, BC5={}, BC3={}, BC1={}", 
+                    is_bc7, is_bc5, is_bc3, is_bc1);
+            
+            if is_bc7 {
+                // BC7: Full RGBA with perceptual endpoint coding
+                let mut pixels_u32 = vec![0u32; (width * height) as usize];
+                texture2ddecoder::decode_bc7(level0, width as usize, height as usize, &mut pixels_u32)
+                    .map_err(|e| anyhow!("BC7 decode failed: {}", e))?;
+                
+                // Convert u32 pixels to u8 RGBA
+                let mut rgba = vec![0u8; (width * height * 4) as usize];
+                for (i, &pixel) in pixels_u32.iter().enumerate() {
+                    let bytes = pixel.to_le_bytes();
+                    rgba[i * 4] = bytes[0];  // R
+                    rgba[i * 4 + 1] = bytes[1];  // G
+                    rgba[i * 4 + 2] = bytes[2];  // B
+                    rgba[i * 4 + 3] = bytes[3];  // A
+                }
+                
+                let img = image::RgbaImage::from_raw(width, height, rgba)
+                    .ok_or_else(|| anyhow!("failed to create RGBA image from BC7 data"))?;
+                
+                println!("[ktx2] ✓ Decoded BC7 texture");
+                Ok(img)
+            } else if is_bc5 {
+                // BC5: 2-channel for normal maps, reconstruct Z component
+                let mut pixels_u32 = vec![0u32; (width * height) as usize];
+                texture2ddecoder::decode_bc5(level0, width as usize, height as usize, &mut pixels_u32)
+                    .map_err(|e| anyhow!("BC5 decode failed: {}", e))?;
+                
+                // Convert u32 to u8 and reconstruct Z
+                let mut rgba = vec![0u8; (width * height * 4) as usize];
+                for (i, &pixel) in pixels_u32.iter().enumerate() {
+                    let bytes = pixel.to_le_bytes();
+                    let r = bytes[0];
+                    let g = bytes[1];
+                    
+                    // Reconstruct Z component: Z = sqrt(1 - X² - Y²)
+                    let x = (r as f32 / 255.0) * 2.0 - 1.0;
+                    let y = (g as f32 / 255.0) * 2.0 - 1.0;
+                    let z = (1.0 - x * x - y * y).max(0.0).sqrt();
+                    let b = ((z + 1.0) * 0.5 * 255.0) as u8;
+                    
+                    rgba[i * 4] = r;
+                    rgba[i * 4 + 1] = g;
+                    rgba[i * 4 + 2] = b;
+                    rgba[i * 4 + 3] = 255;
+                }
+                
+                let img = image::RgbaImage::from_raw(width, height, rgba)
+                    .ok_or_else(|| anyhow!("failed to create RGBA image from BC5 data"))?;
+                
+                println!("[ktx2] ✓ Decoded BC5 normal map with Z reconstruction");
+                Ok(img)
+            } else if is_bc3 {
+                // BC3 (DXT5): RGBA with interpolated alpha
+                let mut pixels_u32 = vec![0u32; (width * height) as usize];
+                texture2ddecoder::decode_bc3(level0, width as usize, height as usize, &mut pixels_u32)
+                    .map_err(|e| anyhow!("BC3 decode failed: {}", e))?;
+                
+                // Convert u32 to u8 RGBA
+                let mut rgba = vec![0u8; (width * height * 4) as usize];
+                for (i, &pixel) in pixels_u32.iter().enumerate() {
+                    let bytes = pixel.to_le_bytes();
+                    rgba[i * 4] = bytes[0];
+                    rgba[i * 4 + 1] = bytes[1];
+                    rgba[i * 4 + 2] = bytes[2];
+                    rgba[i * 4 + 3] = bytes[3];
+                }
+                
+                let img = image::RgbaImage::from_raw(width, height, rgba)
+                    .ok_or_else(|| anyhow!("failed to create RGBA image from BC3 data"))?;
+                
+                println!("[ktx2] ✓ Decoded BC3 texture");
+                Ok(img)
+            } else if is_bc1 {
+                // BC1 (DXT1): RGB 565 with 1-bit alpha
+                let mut pixels_u32 = vec![0u32; (width * height) as usize];
+                texture2ddecoder::decode_bc1(level0, width as usize, height as usize, &mut pixels_u32)
+                    .map_err(|e| anyhow!("BC1 decode failed: {}", e))?;
+                
+                // Convert u32 to u8 RGBA
+                let mut rgba = vec![0u8; (width * height * 4) as usize];
+                for (i, &pixel) in pixels_u32.iter().enumerate() {
+                    let bytes = pixel.to_le_bytes();
+                    rgba[i * 4] = bytes[0];
+                    rgba[i * 4 + 1] = bytes[1];
+                    rgba[i * 4 + 2] = bytes[2];
+                    rgba[i * 4 + 3] = bytes[3];
+                }
+                
+                let img = image::RgbaImage::from_raw(width, height, rgba)
+                    .ok_or_else(|| anyhow!("failed to create RGBA image from BC1 data"))?;
+                
+                println!("[ktx2] ✓ Decoded BC1 texture");
+                Ok(img)
+            } else {
+                Err(anyhow!(
+                    "Unsupported BC format: {:?}. Supported: BC1, BC3, BC5, BC7",
+                    format_val
+                ))
+            }
+        }
     }
 
     pub fn build_arrays(
@@ -273,9 +542,34 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             ..Default::default()
         };
 
-        let alb_fmt = wgpu::TextureFormat::Rgba8UnormSrgb;
-        let nrm_fmt = wgpu::TextureFormat::Rg8Unorm;
-        let mra_fmt = wgpu::TextureFormat::Rgba8Unorm;
+        // Check first layer for metadata to determine format policy
+        // In production, all textures should have metadata; we use first layer as representative sample
+        let sample_albedo_meta = layers.first().and_then(|(_, desc)| {
+            desc.albedo.as_ref().and_then(|p| try_load_metadata(p))
+        });
+        let sample_normal_meta = layers.first().and_then(|(_, desc)| {
+            desc.normal.as_ref().and_then(|p| try_load_metadata(p))
+        });
+        let sample_mra_meta = layers.first().and_then(|(_, desc)| {
+            desc.mra.as_ref().and_then(|p| try_load_metadata(p))
+        });
+
+        // Use metadata to determine formats, fallback to defaults
+        let alb_fmt = format_from_metadata(
+            sample_albedo_meta.as_ref(),
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            "albedo",
+        );
+        let nrm_fmt = format_from_metadata(
+            sample_normal_meta.as_ref(),
+            wgpu::TextureFormat::Rg8Unorm,
+            "normal",
+        );
+        let mra_fmt = format_from_metadata(
+            sample_mra_meta.as_ref(),
+            wgpu::TextureFormat::Rgba8Unorm,
+            "mra",
+        );
         let (alb_tex, alb_view, samp_alb) = make_array(
             device,
             "mat-albedo",
@@ -315,6 +609,10 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             layer_indices: HashMap::new(),
             count: layer_count,
         };
+
+        let mut material_records = (0..layer_count)
+            .map(|idx| MaterialGpu::neutral(idx))
+            .collect::<Vec<_>>();
 
         // Neutral patterns used for fallbacks
         let neutral_albedo = vec![255u8; (width * height * 4) as usize];
@@ -389,8 +687,39 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             if let Some(&idx) = mapping.get(key) {
                 layout.layer_indices.insert(key.clone(), idx);
 
+                let record = &mut material_records[idx as usize];
+                record.tiling_triplanar = [
+                    desc.tiling[0],
+                    desc.tiling[1],
+                    desc.triplanar_scale,
+                    0.0,
+                ];
+                if desc.triplanar_scale != 0.0 && desc.triplanar_scale != 1.0 {
+                    record.flags |= MaterialGpu::FLAG_TRIPLANAR;
+                }
+
+                let mut has_albedo = false;
+                let mut has_normal = false;
+                let mut has_orm = false;
+
                 // Albedo
                 if let Some(ref p) = desc.albedo {
+                    // Load metadata to check color-space
+                    let meta = try_load_metadata(p);
+                    if let Some(ref m) = meta {
+                        println!("[materials] INFO loaded metadata for {}/{} albedo: color_space={:?} mips={} compression={:?}",
+                            biome_name, key, m.color_space, m.mip_levels, m.compression);
+                    } else {
+                        println!("[materials] WARN no metadata for {}/{} albedo → assuming sRGB", biome_name, key);
+                    }
+
+                    // Validate metadata (production requirement)
+                    // NOTE: This will log warnings for now but won't block loading
+                    // Remove the `if let Err(e)` to enforce strict validation
+                    if let Err(e) = validate_texture_metadata(meta.as_ref(), "albedo", key, biome_name) {
+                        eprintln!("[materials] VALIDATION WARNING: {} (loading anyway with fallbacks)", e);
+                    }
+
                     match load_rgba(p) {
                         Ok(img) => {
                             let img = image::imageops::resize(
@@ -407,6 +736,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                                 idx,
                             );
                             stats.albedo_loaded += 1;
+                            has_albedo = true;
                         }
                         Err(e) => {
                             eprintln!("[materials] WARN missing/bad albedo for {}/{}: {} → substituting neutral", biome_name, key, e);
@@ -424,6 +754,20 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
                 // Normal (RG from XY)
                 if let Some(ref p) = desc.normal {
+                    // Load metadata to check color-space
+                    let meta = try_load_metadata(p);
+                    if let Some(ref m) = meta {
+                        println!("[materials] INFO loaded metadata for {}/{} normal: color_space={:?} mips={} compression={:?}",
+                            biome_name, key, m.color_space, m.mip_levels, m.compression);
+                    } else {
+                        println!("[materials] WARN no metadata for {}/{} normal → assuming Linear RG", biome_name, key);
+                    }
+
+                    // Validate metadata (production requirement)
+                    if let Err(e) = validate_texture_metadata(meta.as_ref(), "normal", key, biome_name) {
+                        eprintln!("[materials] VALIDATION WARNING: {} (loading anyway with fallbacks)", e);
+                    }
+
                     match load_rgba(p) {
                         Ok(img_rgba) => {
                             // Extract RG channels
@@ -448,6 +792,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                                 idx,
                             );
                             stats.normal_loaded += 1;
+                            has_normal = true;
                         }
                         Err(e) => {
                             eprintln!("[materials] WARN missing/bad normal for {}/{}: {} → substituting neutral", biome_name, key, e);
@@ -464,6 +809,20 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
                 // MRA
                 if let Some(ref p) = desc.mra {
+                    // Load metadata to check color-space
+                    let meta = try_load_metadata(p);
+                    if let Some(ref m) = meta {
+                        println!("[materials] INFO loaded metadata for {}/{} mra: color_space={:?} mips={} compression={:?}",
+                            biome_name, key, m.color_space, m.mip_levels, m.compression);
+                    } else {
+                        println!("[materials] WARN no metadata for {}/{} mra → assuming Linear RGBA", biome_name, key);
+                    }
+
+                    // Validate metadata (production requirement)
+                    if let Err(e) = validate_texture_metadata(meta.as_ref(), "mra", key, biome_name) {
+                        eprintln!("[materials] VALIDATION WARNING: {} (loading anyway with fallbacks)", e);
+                    }
+
                     match load_rgba(p) {
                         Ok(img) => {
                             let img = image::imageops::resize(
@@ -480,6 +839,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                                 idx,
                             );
                             stats.mra_loaded += 1;
+                            has_orm = true;
                         }
                         Err(e) => {
                             eprintln!(
@@ -533,6 +893,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                                         );
                                         stats.mra_loaded += 1;
                                         stats.mra_packed += 1;
+                                        has_orm = true;
                                     }
                                     _ => {
                                         eprintln!("[materials] WARN cannot pack MRA for {}/{} → substituting neutral", biome_name, key);
@@ -590,6 +951,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                             );
                             stats.mra_loaded += 1;
                             stats.mra_packed += 1;
+                            has_orm = true;
                         }
                         _ => {
                             eprintln!(
@@ -605,6 +967,16 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                         biome_name, key
                     );
                     stats.mra_substituted += 1;
+                }
+
+                if has_albedo {
+                    record.flags |= MaterialGpu::FLAG_HAS_ALBEDO;
+                }
+                if has_normal {
+                    record.flags |= MaterialGpu::FLAG_HAS_NORMAL;
+                }
+                if has_orm {
+                    record.flags |= MaterialGpu::FLAG_HAS_ORM;
                 }
             }
         }
@@ -652,6 +1024,12 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         };
         stats.gpu_memory_bytes = sum_mips(4) + sum_mips(2) + sum_mips(4);
 
+        let material_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("material-gpu-records"),
+            contents: cast_slice(&material_records),
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        });
+
         let gpu = MaterialGpuArrays {
             albedo: alb_view,
             normal: nrm_view,
@@ -659,6 +1037,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             sampler_albedo: samp_alb,
             sampler_linear: samp_lin,
             layout,
+            materials: material_records,
+            material_buffer,
         };
 
         Ok((gpu, stats, alb_tex, nrm_tex, mra_tex))

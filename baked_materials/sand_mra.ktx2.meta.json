@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/sand_mra.png",
+  "output_path": "baked_materials\\sand_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "edc5b6b9ffe909244881accc8585aaff0f6de31f6bc68081261b36f59d910280"
+}

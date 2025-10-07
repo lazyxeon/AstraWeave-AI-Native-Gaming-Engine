@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use astraweave_asset::{AssetDatabase, AssetKind};
 use base64;
 use base64::Engine;
+use clap::{Parser, Subcommand};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use ring::rand::SystemRandom;
@@ -15,6 +16,75 @@ use std::{
 };
 use walkdir::WalkDir;
 use which::which;
+
+mod texture_baker;
+use texture_baker::{bake_texture, infer_config_from_path, ColorSpace};
+
+#[derive(Parser)]
+#[command(name = "aw_asset_cli")]
+#[command(about = "AstraWeave asset pipeline tool", long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Run full asset cooking pipeline from config file
+    Cook {
+        /// Path to pipeline config file (default: aw_pipeline.toml)
+        #[arg(default_value = "aw_pipeline.toml")]
+        config: String,
+    },
+    /// Bake individual texture with mipmap generation
+    BakeTexture {
+        /// Input texture file path
+        input: PathBuf,
+        /// Output directory
+        #[arg(short, long, default_value = "baked_textures")]
+        output: PathBuf,
+        /// Force color space (srgb or linear)
+        #[arg(long)]
+        color_space: Option<String>,
+        /// Treat as normal map
+        #[arg(long)]
+        normal_map: bool,
+    },
+}
+
+fn main() -> Result<()> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Commands::Cook { config } => cook_pipeline(&config),
+        Commands::BakeTexture {
+            input,
+            output,
+            color_space,
+            normal_map,
+        } => {
+            let mut config = infer_config_from_path(&input);
+            
+            if let Some(cs) = color_space {
+                config.color_space = match cs.to_lowercase().as_str() {
+                    "srgb" => ColorSpace::Srgb,
+                    "linear" => ColorSpace::Linear,
+                    _ => anyhow::bail!("Invalid color space: {} (use 'srgb' or 'linear')", cs),
+                };
+            }
+            
+            if normal_map {
+                config.is_normal_map = true;
+                config.color_space = ColorSpace::Linear;
+            }
+
+            let metadata = bake_texture(&input, &output, &config)?;
+            println!("\nBaked texture metadata:");
+            println!("{}", serde_json::to_string_pretty(&metadata)?);
+            Ok(())
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct PipelineCfg {
@@ -57,9 +127,8 @@ struct SignedManifest {
     signature: String, // base64 encoded Ed25519 signature
 }
 
-fn main() -> Result<()> {
-    let cfg_path = std::env::args().nth(1).unwrap_or("aw_pipeline.toml".into());
-    let cfg_text = fs::read_to_string(&cfg_path).with_context(|| format!("read {}", cfg_path))?;
+fn cook_pipeline(cfg_path: &str) -> Result<()> {
+    let cfg_text = fs::read_to_string(cfg_path).with_context(|| format!("read {}", cfg_path))?;
     let cfg: PipelineCfg = toml::from_str(&cfg_text)?;
 
     fs::create_dir_all(&cfg.output)?;

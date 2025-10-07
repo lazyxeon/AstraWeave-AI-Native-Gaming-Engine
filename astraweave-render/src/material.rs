@@ -3,6 +3,45 @@ use std::{collections::HashMap, path::PathBuf};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+/// GPU representation of material properties for shader access
+/// Stored in a storage buffer, indexed by material_id
+#[repr(C)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct MaterialGpu {
+    /// Packed texture indices: [albedo_idx, normal_idx, orm_idx, unused]
+    pub texture_indices: [u32; 4],
+    /// Tiling factors: [u_tile, v_tile, triplanar_scale, unused]
+    pub tiling_triplanar: [f32; 4],
+    /// Material factors: [metallic, roughness, ao, alpha]
+    pub factors: [f32; 4],
+    /// Flags bitfield (has_albedo, has_normal, has_orm, triplanar, etc.)
+    pub flags: u32,
+    /// Padding for alignment
+    pub _padding: [u32; 3],
+}
+
+impl MaterialGpu {
+    /// Flag indicating the material has an albedo texture
+    pub const FLAG_HAS_ALBEDO: u32 = 1 << 0;
+    /// Flag indicating the material has a normal map
+    pub const FLAG_HAS_NORMAL: u32 = 1 << 1;
+    /// Flag indicating the material has an ORM (occlusion/roughness/metallic) map
+    pub const FLAG_HAS_ORM: u32 = 1 << 2;
+    /// Flag indicating triplanar projection should be used
+    pub const FLAG_TRIPLANAR: u32 = 1 << 3;
+
+    /// Create a neutral/default material with the given layer index
+    pub fn neutral(layer_idx: u32) -> Self {
+        Self {
+            texture_indices: [layer_idx, layer_idx, layer_idx, 0],
+            tiling_triplanar: [1.0, 1.0, 16.0, 0.0],
+            factors: [0.0, 0.5, 1.0, 1.0], // metallic=0, roughness=0.5, ao=1, alpha=1
+            flags: 0,
+            _padding: [0; 3],
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MaterialLayerDesc {
     pub key: String,
@@ -53,6 +92,10 @@ pub struct MaterialGpuArrays {
     pub sampler_albedo: wgpu::Sampler,
     pub sampler_linear: wgpu::Sampler,
     pub layout: ArrayLayout,
+    /// Material metadata records (one per layer)
+    pub materials: Vec<MaterialGpu>,
+    /// GPU storage buffer containing MaterialGpu array
+    pub material_buffer: wgpu::Buffer,
 }
 
 #[derive(Clone, Debug, Default)]
