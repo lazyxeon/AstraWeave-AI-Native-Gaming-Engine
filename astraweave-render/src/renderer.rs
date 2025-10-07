@@ -2650,6 +2650,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let plane_inst = Instance {
             transform: plane_xform,
             color: [0.1, 0.12, 0.14, 1.0],
+            material_id: 0,
         }
         .raw();
         let plane_buf = self
@@ -2743,6 +2744,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let inst = Instance {
                 transform: Mat4::IDENTITY,
                 color: [1.0, 1.0, 1.0, 1.0],
+                material_id: 0,
             }
             .raw();
             Some(
@@ -3025,6 +3027,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let plane_inst = Instance {
             transform: plane_xform,
             color: [0.1, 0.12, 0.14, 1.0],
+            material_id: 0,
         }
         .raw();
         let plane_buf = self
@@ -3041,6 +3044,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let inst = Instance {
                 transform: Mat4::IDENTITY,
                 color: [1.0, 1.0, 1.0, 1.0],
+                material_id: 0,
             }
             .raw();
             Some(
@@ -3195,6 +3199,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let inst = Instance {
                 transform: Mat4::IDENTITY,
                 color: [1.0, 1.0, 1.0, 1.0],
+                material_id: 0,
             }
             .raw();
             Some(

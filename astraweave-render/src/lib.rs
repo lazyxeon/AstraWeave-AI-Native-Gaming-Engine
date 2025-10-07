@@ -20,6 +20,8 @@ pub mod culling_node; // Culling node for render graph
 pub mod graph; // minimal render graph scaffolding (Phase 2)
 pub mod graph_adapter; // runs a graph on Renderer frames
 pub mod material; // shared authored materials API + GPU arrays
+pub mod material_extended; // Phase PBR-E: Advanced materials (clearcoat, anisotropy, SSS, sheen, transmission)
+pub mod terrain_material; // Phase PBR-F: Terrain layering with splat maps and triplanar projection
 #[cfg(feature = "textures")]
 pub mod material_loader; // internal builder helpers
 #[cfg(any(feature = "gltf-assets", feature = "assets"))]
@@ -61,6 +63,14 @@ pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
 pub use material::{
     ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
     MaterialManager, MaterialPackDesc,
+};
+pub use material_extended::{
+    MaterialDefinitionExtended, MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY,
+    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE,
+    MATERIAL_FLAG_TRANSMISSION,
+};
+pub use terrain_material::{
+    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
 };
 pub use mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
 pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};

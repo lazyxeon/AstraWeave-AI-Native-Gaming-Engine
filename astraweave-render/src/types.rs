@@ -104,6 +104,8 @@ pub struct InstanceRaw {
     pub model: [[f32; 4]; 4],
     pub normal_matrix: [[f32; 3]; 3],
     pub color: [f32; 4],
+    pub material_id: u32,
+    pub _padding: [u32; 3], // 16-byte alignment
 }
 
 impl InstanceRaw {
@@ -156,6 +158,12 @@ impl InstanceRaw {
                     shader_location: 9,
                     format: wgpu::VertexFormat::Float32x4,
                 },
+                // material_id (uint)
+                wgpu::VertexAttribute {
+                    offset: 116,
+                    shader_location: 10,
+                    format: wgpu::VertexFormat::Uint32,
+                },
             ],
         }
     }
@@ -177,6 +185,7 @@ pub struct Material {
 pub struct Instance {
     pub transform: Mat4,
     pub color: [f32; 4],
+    pub material_id: u32,
 }
 
 impl Instance {
@@ -191,12 +200,14 @@ impl Instance {
                 normal.z_axis.truncate().to_array(),
             ],
             color: self.color,
+            material_id: self.material_id,
+            _padding: [0; 3],
         }
     }
 
     pub fn from_pos_scale_color(pos: Vec3, scale: Vec3, color: [f32; 4]) -> Self {
         let transform = Mat4::from_scale_rotation_translation(scale, glam::Quat::IDENTITY, pos);
-        Self { transform, color }
+        Self { transform, color, material_id: 0 }
     }
 }
 

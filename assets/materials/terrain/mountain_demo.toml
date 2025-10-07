@@ -1,0 +1,68 @@
+# AstraWeave Terrain Material: Mountain Demo
+# Phase PBR-F Integration Example
+# Demonstrates steep terrain with aggressive triplanar projection
+
+name = "mountain_terrain"
+biome = "mountain"
+splat_map = "../splat_mountain.png"  # To be generated
+splat_uv_scale = 0.3  # Larger features for mountains
+triplanar_enabled = true
+triplanar_slope_threshold = 30.0  # Earlier triplanar activation (steep)
+normal_blend_method = "rnm"  # Reoriented Normal Mapping
+height_blend_enabled = true
+
+# Layer 0: Rock base (dominant material)
+[[layers]]
+name = "rock"
+albedo = "../rock_slate.png"
+normal = "../rock_slate_n.png"
+orm = "../rock_slate_mra.png"
+height = "../rock_slate.png"
+uv_scale = [3.0, 3.0]  # Large rock formations
+height_range = [0.0, 200.0]  # All elevations
+blend_sharpness = 0.7  # Sharp rock transitions
+triplanar_power = 6.0  # Very strong triplanar (cliffs)
+metallic = 0.0
+roughness = 0.65  # Rocky surface
+
+# Layer 1: Snow caps (high elevations)
+[[layers]]
+name = "snow"
+albedo = "../sand.png"  # Use sand as white snow placeholder
+normal = "../sand_n.png"
+orm = "../sand_mra.png"
+height = "../sand.png"
+uv_scale = [12.0, 12.0]  # Fine snow detail
+height_range = [100.0, 250.0]  # High altitude only
+blend_sharpness = 0.5  # Soft snow transitions
+triplanar_power = 4.0  # Moderate triplanar (snow conforms)
+metallic = 0.0
+roughness = 0.95  # Very rough (fresh snow)
+
+# Layer 2: Cliff face (vertical surfaces)
+[[layers]]
+name = "cliff"
+albedo = "../stone.png"
+normal = "../stone_n.png"
+orm = "../stone_mra.png"
+height = "../stone.png"
+uv_scale = [2.5, 2.5]  # Large cliff features
+height_range = [50.0, 180.0]  # Mid to high
+blend_sharpness = 0.9  # Very sharp cliff edges
+triplanar_power = 8.0  # Maximum triplanar (near vertical)
+metallic = 0.0
+roughness = 0.6  # Hard stone
+
+# Layer 3: Scree/gravel (loose rock debris)
+[[layers]]
+name = "scree"
+albedo = "../dirt.png"  # Brown/gray gravel
+normal = "../dirt_n.png"
+orm = "../dirt_mra.png"
+height = "../dirt.png"
+uv_scale = [8.0, 8.0]  # Small rock pieces
+height_range = [30.0, 120.0]  # Slopes and bases
+blend_sharpness = 0.6  # Moderate transitions
+triplanar_power = 5.0  # Strong triplanar
+metallic = 0.0
+roughness = 0.75  # Rough loose material

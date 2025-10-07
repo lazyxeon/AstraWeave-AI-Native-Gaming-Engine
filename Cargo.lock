@@ -1371,6 +1371,7 @@ dependencies = [
  "thiserror 2.0.17",
  "toml",
  "uuid",
+ "walkdir",
 ]
 
 [[package]]
@@ -7943,6 +7944,7 @@ dependencies = [
  "image",
  "log",
  "noise",
+ "notify 8.2.0",
  "pathfinding",
  "pollster 0.3.0",
  "rapier3d",
