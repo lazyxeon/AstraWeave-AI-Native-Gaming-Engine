@@ -56,7 +56,7 @@ skinning-gpu = [] # GPU skinning (optional, requires GPU for tests)
 nanite = []
 
 [dev-dependencies]
-naga = "26.0"
+naga = "27.0"
 criterion = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png"] }
 tempfile = "3"
