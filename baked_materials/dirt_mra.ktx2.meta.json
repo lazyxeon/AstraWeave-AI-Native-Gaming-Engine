@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/dirt_mra.png",
+  "output_path": "baked_materials\\dirt_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "de4988075abd72842270b99e391383160ae7ba3d92193db08182a335a288088b"
+}

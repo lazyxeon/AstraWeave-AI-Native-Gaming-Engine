@@ -59,8 +59,8 @@ pub use culling_node::CullingNode;
 pub use effects::{WeatherFx, WeatherKind};
 pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
 pub use material::{
-    ArrayLayout, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats, MaterialManager,
-    MaterialPackDesc,
+    ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
+    MaterialManager, MaterialPackDesc,
 };
 pub use mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
 pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};

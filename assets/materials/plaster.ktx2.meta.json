@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/plaster.png",
+  "output_path": "assets/materials\\plaster.ktx2",
+  "color_space": "srgb",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "deb7dbfab197a47f58e8ebdf1867617a9f72690b3f0cd02f0ae6809981ba1f50"
+}

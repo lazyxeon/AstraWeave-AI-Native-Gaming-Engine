@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/tree_leaves_n.png",
+  "output_path": "assets/materials/baked\\tree_leaves_n.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": "OpenGl",
+  "compression": "Bc5",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "a33fe6832fc220603ea54f35d615674801a9b20f9b2e091d4f013495f8e54d53"
+}

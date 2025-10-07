@@ -1731,6 +1731,21 @@ impl MeshCategory {
     }
 }
 
+fn default_material_id_for(category: MeshCategory) -> u32 {
+    fn idx(key: &str, fallback: u32) -> u32 {
+        material_layer_index(key).map(|i| i as u32).unwrap_or(fallback)
+    }
+    match category {
+        MeshCategory::Terrain => idx("grass", 0),
+        MeshCategory::Tree => idx("tree_bark", 5),
+        MeshCategory::House => idx("plaster", 9),
+        MeshCategory::Rock => idx("rock_slate", 8),
+        MeshCategory::Character => idx("cloth", 11),
+        MeshCategory::Skybox => idx("forest_floor", 4),
+        MeshCategory::Primitive => idx("stone", 2),
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 struct MeshKey {
     category: MeshCategory,
@@ -1990,10 +2005,10 @@ struct ShadowParams {
 struct InstanceRaw {
     model: [[f32; 4]; 4],
     color: [f32; 4],
+    material_id: u32,
     mesh_category: u32,
     mesh_variant: u32,
     lod_flags: u32,
-    _padding: u32,
 }
 
 struct MeshData {
@@ -2985,6 +3000,12 @@ fn switch_biome(
                 wgpu::BindGroupEntry {
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&rt.gpu.mra),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Buffer(
+                        rt.gpu.material_buffer.as_entire_buffer_binding(),
+                    ),
                 },
             ],
         });
@@ -3992,6 +4013,7 @@ async fn run() -> Result<()> {
                                                                 wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&rt.gpu.normal) },
                                                                 wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::Sampler(&rt.gpu.sampler_linear) },
                                                                 wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&rt.gpu.mra) },
+                                                                wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::Buffer(rt.gpu.material_buffer.as_entire_buffer_binding()) },
                                                             ],
                                                         });
                                                         render.ground_bind_group = new_bg;
@@ -6248,6 +6270,12 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&pack_rt.gpu.mra),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Buffer(
+                        pack_rt.gpu.material_buffer.as_entire_buffer_binding(),
+                    ),
+                },
             ],
         })
     };
@@ -6360,6 +6388,21 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
                             format: wgpu::VertexFormat::Uint32,
                             offset: 80,
                             shader_location: 6,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 84,
+                            shader_location: 7,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 88,
+                            shader_location: 8,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 92,
+                            shader_location: 9,
                         },
                     ],
                 },
@@ -6727,6 +6770,21 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
                             offset: 80,
                             shader_location: 6,
                         },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 84,
+                            shader_location: 7,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 88,
+                            shader_location: 8,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 92,
+                            shader_location: 9,
+                        },
                     ],
                 },
             ],
@@ -6809,6 +6867,21 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
                             format: wgpu::VertexFormat::Uint32,
                             offset: 80,
                             shader_location: 9,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 84,
+                            shader_location: 10,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 88,
+                            shader_location: 11,
+                        },
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 92,
+                            shader_location: 12,
                         },
                     ],
                 },
@@ -7050,7 +7123,10 @@ struct VsIn {
     @location(3) m2: vec4<f32>,
     @location(4) m3: vec4<f32>,
     @location(5) color: vec4<f32>,
-    @location(6) mesh_type: u32,
+    @location(6) material_id: u32,
+    @location(7) mesh_type: u32,
+    @location(8) mesh_variant: u32,
+    @location(9) lod_flags: u32,
 };
 
 struct VsOut { @builtin(position) pos: vec4<f32> };
@@ -7070,7 +7146,9 @@ fn vs_shadow(in: VsIn) -> VsOut {
 }
 "#;
 
-const SHADER: &str = r#"
+const SHADER: &str = concat!(
+    include_str!("shaders/pbr_lib.wgsl"),
+    r#"
 struct Camera { view_proj: mat4x4<f32> };
 struct DebugParams { debug_tint: u32, _pad: vec3<f32> };
 struct PostParams { exposure: f32, _pad0: vec3<f32> };
@@ -7117,6 +7195,7 @@ const MATERIAL_CLOTH: i32 = 11;
 @group(1) @binding(2) var material_normal: texture_2d_array<f32>;
 @group(1) @binding(3) var material_normal_sampler: sampler;
 @group(1) @binding(4) var material_mra: texture_2d_array<f32>;
+@group(1) @binding(5) var<storage, read> materials: array<MaterialGpu>;
 
 @group(4) @binding(0) var<uniform> u_material: MaterialUniform;
 
@@ -7430,7 +7509,8 @@ fn calculate_tessellation_factor(world_pos: vec3<f32>, camera_pos: vec3<f32>, sl
 // - location(0): position (vec3)
 // - locations(1..4): model matrix columns (vec4)
 // - location(5): color (vec4)
-// - location(6): mesh_type (u32)
+// - location(6): material_id (u32)
+// - location(7): mesh_type (u32)
 struct VsIn {
     @location(0) pos: vec3<f32>,
     @location(1) m0: vec4<f32>,
@@ -7438,7 +7518,8 @@ struct VsIn {
     @location(3) m2: vec4<f32>,
     @location(4) m3: vec4<f32>,
     @location(5) color: vec4<f32>,
-    @location(6) mesh_type: u32,
+    @location(6) material_id: u32,
+    @location(7) mesh_type: u32,
 };
 
 // Full-vertex path for glTF overrides (P/N/T/UV + instance data)
@@ -7452,7 +7533,8 @@ struct VsInFull {
     @location(6) m2: vec4<f32>,
     @location(7) m3: vec4<f32>,
     @location(8) color: vec4<f32>,
-    @location(9) mesh_type: u32,
+    @location(9) material_id: u32,
+    @location(10) mesh_type: u32,
 };
 
 struct VsOut {
@@ -7464,6 +7546,7 @@ struct VsOut {
     @location(4) uv: vec2<f32>,
   @location(5) mesh_type: u32,
     @location(6) local_pos: vec3<f32>,
+    @location(7) material_id: u32,
 };
 
 @vertex
@@ -7503,6 +7586,7 @@ fn vs_main(in: VsIn) -> VsOut {
   
   out.color = in.color;
   out.mesh_type = in.mesh_type;
+  out.material_id = in.material_id;
   
   // Calculate view direction for sky effects
   let camera_pos = vec3<f32>(0.0, 5.0, 0.0); // Better approximation for typical camera height
@@ -7543,6 +7627,7 @@ fn vs_main_full(in: VsInFull) -> VsOut {
     out.normal = normalize(normal_matrix * in.normal);
     out.color = in.color;
     out.mesh_type = in.mesh_type;
+    out.material_id = in.material_id;
     let camera_pos = vec3<f32>(0.0, 5.0, 0.0);
     out.view_dir = normalize(world.xyz - camera_pos);
     return out;
@@ -8071,9 +8156,9 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     }
   }
   
-  return vec4<f32>(col, 1.0);
+    return vec4<f32>(col, 1.0);
 }
-"#;
+"#);
 
 // ---------------- physics world build/step & instance sync ----------------
 
@@ -8382,10 +8467,10 @@ fn sync_instances_from_physics(
     let skybox_instance = InstanceRaw {
         model: skybox_translation.to_cols_array_2d(),
         color: [0.8, 0.9, 1.0, 1.0],
+        material_id: default_material_id_for(MeshCategory::Skybox),
         mesh_category: MeshCategory::Skybox.as_u32(),
         mesh_variant: 0,
         lod_flags: 0,
-        _padding: 0,
     };
     out.push(skybox_instance);
 
@@ -8440,10 +8525,10 @@ fn sync_instances_from_physics(
         out.push(InstanceRaw {
             model: model_m.to_cols_array_2d(),
             color,
+            material_id: default_material_id_for(category),
             mesh_category: category.as_u32(),
             mesh_variant,
             lod_flags,
-            _padding: 0,
         });
     }
 
@@ -8484,10 +8569,10 @@ fn sync_instances_from_physics(
         out.push(InstanceRaw {
             model: model_matrix.to_cols_array_2d(),
             color: character.get_color(),
+            material_id: default_material_id_for(MeshCategory::Character),
             mesh_category: MeshCategory::Character.as_u32(),
             mesh_variant,
             lod_flags,
-            _padding: 0,
         });
     }
 

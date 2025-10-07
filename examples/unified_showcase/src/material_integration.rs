@@ -65,6 +65,18 @@ impl MaterialIntegrator {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<astraweave_render::MaterialGpu>() as u64,
+                        ),
+                    },
+                    count: None,
+                },
             ],
         });
         Self {
@@ -124,6 +136,18 @@ impl MaterialIntegrator {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(
+                            std::mem::size_of::<astraweave_render::MaterialGpu>() as u64,
+                        ),
+                    },
+                    count: None,
+                },
             ],
         })
     }
@@ -176,6 +200,12 @@ impl MaterialIntegrator {
                 wgpu::BindGroupEntry {
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&gpu.mra),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Buffer(
+                        gpu.material_buffer.as_entire_buffer_binding(),
+                    ),
                 },
             ],
         });
@@ -275,6 +305,12 @@ impl MaterialIntegrator {
                 wgpu::BindGroupEntry {
                     binding: 4,
                     resource: wgpu::BindingResource::TextureView(&gpu.mra),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: wgpu::BindingResource::Buffer(
+                        gpu.material_buffer.as_entire_buffer_binding(),
+                    ),
                 },
             ],
         });

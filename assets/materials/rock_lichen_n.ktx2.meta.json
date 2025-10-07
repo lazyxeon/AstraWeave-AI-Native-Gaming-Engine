@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/rock_lichen_n.png",
+  "output_path": "assets/materials\\rock_lichen_n.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": "OpenGl",
+  "compression": "Bc5",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "d7fae4a1b638c14ae1d1b0821d6d5fc3bbcccdc87971be496538a6374d74d95a"
+}

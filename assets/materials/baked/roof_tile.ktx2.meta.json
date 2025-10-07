@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/roof_tile.png",
+  "output_path": "assets/materials/baked\\roof_tile.ktx2",
+  "color_space": "srgb",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "fdab38fea24513d93f2bd2c67da22a7ac47a6efc66f30bc915d06dce4a73814c"
+}

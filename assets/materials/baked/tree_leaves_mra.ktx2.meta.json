@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/tree_leaves_mra.png",
+  "output_path": "assets/materials/baked\\tree_leaves_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "3044fe21b3d0ed77b126af1581c8c073bb4dd84926538de1124e75ec2a6b4bdc"
+}
