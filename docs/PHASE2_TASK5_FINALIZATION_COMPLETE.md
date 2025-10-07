@@ -27,7 +27,7 @@
   - Commands for CPU default and GPU suite with feature flags
   - Executive summary updated to reflect completion
 
-- [x] **Updated**: [`roadmap.md`](../roadmap.md)
+- [x] **Updated**: [`roadmap.md`](supplemental-docs/roadmap.md)
   - Phase 2 progress update dated October 2025
   - Task 5 marked as complete (✅)
   - Links to implementation summary and demo
@@ -84,7 +84,7 @@
 
 ### 4. Traceability & Release Notes ✅
 
-- [x] **Created**: [`CHANGELOG.md`](../CHANGELOG.md)
+- [x] **Created**: [`CHANGELOG.md`](supplemental-docs/CHANGELOG.md)
   - Comprehensive entry for Task 5 (October 2025)
   - All additions listed by crate with file paths
   - Performance metrics included

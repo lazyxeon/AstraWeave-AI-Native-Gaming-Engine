@@ -202,8 +202,8 @@ opt-level = 3
 sign-commit = false
 sign-tag = false
 pre-release-replacements = [
-  { file = "CHANGELOG.md", search = "Unreleased", replace = "{{version}}" },
-  { file = "CHANGELOG.md", search = "ReleaseDate", replace = "{{date}}" },
+  { file = "docs/supplemental-docs/CHANGELOG.md", search = "Unreleased", replace = "{{version}}" },
+  { file = "docs/supplemental-docs/CHANGELOG.md", search = "ReleaseDate", replace = "{{date}}" },
 ]
 
 # CI-specific optimizations

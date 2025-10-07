@@ -11,3 +11,4 @@ See also existing docs:
 - AI Scripting: `ai-scripting.md`
 - Networking: `networking.md`
 - Build Quick Reference: `BUILD_QUICK_REFERENCE.md`
+- Supplemental archive: `supplemental-docs/`
