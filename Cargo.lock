@@ -7838,7 +7838,7 @@ dependencies = [
  "image",
  "log",
  "noise",
- "notify 8.2.0",
+ "notify",
  "pathfinding",
  "pollster",
  "rapier3d",
