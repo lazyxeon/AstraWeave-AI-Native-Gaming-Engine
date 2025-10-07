@@ -317,7 +317,8 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
         let height = reader.header().pixel_height;
         
         // Check if this is a Basis Universal compressed texture
-        let has_basis_data = reader.data_format_descriptors().next().is_some();
+        // In ktx2 0.4+, check supercompression_scheme instead of data_format_descriptors
+        let has_basis_data = reader.header().supercompression_scheme.is_some();
         
         println!("[ktx2] Loading texture: {} ({}x{}, basis={:?})", 
                 path.display(), width, height, has_basis_data);
@@ -369,6 +370,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             if is_bc7 {
                 // BC7: Full RGBA with perceptual endpoint coding
                 let mut pixels_u32 = vec![0u32; (width * height) as usize];
+                // level0 is now &[u8] sliced from original data
                 texture2ddecoder::decode_bc7(level0, width as usize, height as usize, &mut pixels_u32)
                     .map_err(|e| anyhow!("BC7 decode failed: {}", e))?;
                 
