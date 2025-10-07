@@ -1,0 +1,212 @@
+name: Material Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'assets/materials/**'
+      - 'tools/aw_asset_cli/**'
+      - '.github/workflows/material-validation.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'assets/materials/**'
+      - 'tools/aw_asset_cli/**'
+      - '.github/workflows/material-validation.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  validate-materials:
+    name: Validate PBR Materials
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        lfs: true
+    
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Build aw_asset_cli
+      run: |
+        echo "::group::Building asset CLI tool"
+        cargo build -p aw_asset_cli --release
+        echo "::endgroup::"
+    
+    - name: Validate terrain materials (grassland)
+      id: validate-grassland
+      continue-on-error: true
+      run: |
+        echo "::group::Validating grassland_demo.toml"
+        cargo run -p aw_asset_cli --release -- validate \
+          assets/materials/terrain/grassland_demo.toml \
+          --format json \
+          --output validation-grassland.json
+        echo "::endgroup::"
+    
+    - name: Validate terrain materials (mountain)
+      id: validate-mountain
+      continue-on-error: true
+      run: |
+        echo "::group::Validating mountain_demo.toml"
+        cargo run -p aw_asset_cli --release -- validate \
+          assets/materials/terrain/mountain_demo.toml \
+          --format json \
+          --output validation-mountain.json
+        echo "::endgroup::"
+    
+    - name: Validate terrain materials (desert)
+      id: validate-desert
+      continue-on-error: true
+      run: |
+        echo "::group::Validating desert_demo.toml"
+        cargo run -p aw_asset_cli --release -- validate \
+          assets/materials/terrain/desert_demo.toml \
+          --format json \
+          --output validation-desert.json
+        echo "::endgroup::"
+    
+    - name: Validate all materials (directory scan)
+      id: validate-all
+      continue-on-error: true
+      run: |
+        echo "::group::Validating all materials in assets/materials/"
+        cargo run -p aw_asset_cli --release -- validate \
+          assets/materials/ \
+          --format json \
+          --output validation-all.json \
+          --recursive
+        echo "::endgroup::"
+    
+    - name: Parse validation results
+      id: parse-results
+      run: |
+        echo "::group::Parsing validation results"
+        
+        # Function to check validation status
+        check_validation() {
+          local file=$1
+          local name=$2
+          
+          if [ -f "$file" ]; then
+            passed=$(jq -r '.results[0].passed // false' "$file")
+            error_count=$(jq -r '.results[0].errors | length' "$file")
+            warning_count=$(jq -r '.results[0].warnings | length' "$file")
+            
+            echo "${name}_passed=${passed}" >> $GITHUB_OUTPUT
+            echo "${name}_errors=${error_count}" >> $GITHUB_OUTPUT
+            echo "${name}_warnings=${warning_count}" >> $GITHUB_OUTPUT
+            
+            if [ "$passed" = "true" ]; then
+              echo "✅ ${name}: PASS (${warning_count} warnings)"
+            else
+              echo "❌ ${name}: FAIL (${error_count} errors, ${warning_count} warnings)"
+            fi
+          else
+            echo "⚠️ ${name}: No validation results found"
+            echo "${name}_passed=false" >> $GITHUB_OUTPUT
+          fi
+        }
+        
+        # Check all validation results
+        check_validation "validation-grassland.json" "grassland"
+        check_validation "validation-mountain.json" "mountain"
+        check_validation "validation-desert.json" "desert"
+        check_validation "validation-all.json" "all_materials"
+        
+        echo "::endgroup::"
+    
+    - name: Generate validation summary
+      run: |
+        echo "## 🎨 Material Validation Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Material | Status | Errors | Warnings |" >> $GITHUB_STEP_SUMMARY
+        echo "|----------|--------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+        
+        # Function to add summary row
+        add_summary_row() {
+          local file=$1
+          local name=$2
+          
+          if [ -f "$file" ]; then
+            passed=$(jq -r '.results[0].passed // false' "$file")
+            error_count=$(jq -r '.results[0].errors | length' "$file")
+            warning_count=$(jq -r '.results[0].warnings | length' "$file")
+            
+            if [ "$passed" = "true" ]; then
+              status="✅ PASS"
+            else
+              status="❌ FAIL"
+            fi
+            
+            echo "| ${name} | ${status} | ${error_count} | ${warning_count} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| ${name} | ⚠️ NO RESULTS | - | - |" >> $GITHUB_STEP_SUMMARY
+          fi
+        }
+        
+        add_summary_row "validation-grassland.json" "Grassland Demo"
+        add_summary_row "validation-mountain.json" "Mountain Demo"
+        add_summary_row "validation-desert.json" "Desert Demo"
+        add_summary_row "validation-all.json" "All Materials"
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Details" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "See artifacts below for full validation reports (JSON format)." >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload validation reports
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: material-validation-reports
+        path: |
+          validation-*.json
+        retention-days: 30
+    
+    - name: Check validation status
+      run: |
+        echo "::group::Checking overall validation status"
+        
+        # Check if any validation failed
+        failed=false
+        
+        for file in validation-*.json; do
+          if [ -f "$file" ]; then
+            passed=$(jq -r '.results[0].passed // false' "$file")
+            if [ "$passed" != "true" ]; then
+              failed=true
+              echo "❌ Validation failed: $file"
+              jq -r '.results[0].errors[]' "$file" || true
+            fi
+          fi
+        done
+        
+        if [ "$failed" = "true" ]; then
+          echo "::error::Material validation failed. See artifacts for details."
+          exit 1
+        else
+          echo "✅ All material validations passed!"
+        fi
+        
+        echo "::endgroup::"

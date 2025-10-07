@@ -1,0 +1,68 @@
+# AstraWeave Terrain Material: Grassland Demo
+# Phase PBR-F Integration Example
+# Demonstrates 4-layer terrain blending with height-based transitions
+
+name = "grassland_terrain"
+biome = "grassland"
+splat_map = "../splat_grassland.png"  # To be generated
+splat_uv_scale = 0.5  # Global splat map tiling
+triplanar_enabled = true
+triplanar_slope_threshold = 35.0  # Degrees from vertical
+normal_blend_method = "rnm"  # Reoriented Normal Mapping (best quality)
+height_blend_enabled = true
+
+# Layer 0: Grass base (most common)
+[[layers]]
+name = "grass"
+albedo = "../grass.png"
+normal = "../grass_n.png"
+orm = "../grass_mra.png"
+height = "../grass.png"  # Use albedo as placeholder height (green channel)
+uv_scale = [8.0, 8.0]  # Higher tiling for detail
+height_range = [0.0, 50.0]  # Low to mid elevations
+blend_sharpness = 0.6  # Moderate transition sharpness
+triplanar_power = 3.0  # Gentle triplanar on slopes
+metallic = 0.0
+roughness = 0.9  # Very rough (grass)
+
+# Layer 1: Dirt patches (common in worn areas)
+[[layers]]
+name = "dirt"
+albedo = "../dirt.png"
+normal = "../dirt_n.png"
+orm = "../dirt_mra.png"
+height = "../dirt.png"
+uv_scale = [6.0, 6.0]  # Slightly larger patches
+height_range = [0.0, 100.0]  # All elevations
+blend_sharpness = 0.5  # Softer transitions with grass
+triplanar_power = 4.0  # More triplanar on slopes
+metallic = 0.0
+roughness = 0.8  # Rough earth
+
+# Layer 2: Rock outcrops (on high/steep areas)
+[[layers]]
+name = "rock"
+albedo = "../rock_slate.png"
+normal = "../rock_slate_n.png"
+orm = "../rock_slate_mra.png"
+height = "../rock_slate.png"
+uv_scale = [4.0, 4.0]  # Larger rock features
+height_range = [50.0, 150.0]  # High elevations
+blend_sharpness = 0.8  # Sharp rock edges
+triplanar_power = 5.0  # Strong triplanar on cliffs
+metallic = 0.0
+roughness = 0.7  # Moderately rough stone
+
+# Layer 3: Sparse grass/moss (fills gaps, adds variety)
+[[layers]]
+name = "moss"
+albedo = "../rock_lichen.png"
+normal = "../rock_lichen_n.png"
+orm = "../rock_lichen_mra.png"
+height = "../rock_lichen.png"
+uv_scale = [10.0, 10.0]  # Fine detail
+height_range = [20.0, 80.0]  # Mid elevations, cracks
+blend_sharpness = 0.4  # Very soft, natural blending
+triplanar_power = 3.5  # Moderate triplanar
+metallic = 0.0
+roughness = 0.85  # Rough organic surface

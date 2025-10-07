@@ -67,6 +67,8 @@ impl WeatherFx {
                         m.inverse().transpose().z_axis.truncate().to_array(),
                     ],
                     color: p.color,
+                    material_id: 0,
+                    _padding: [0; 3],
                 }
             })
             .collect();

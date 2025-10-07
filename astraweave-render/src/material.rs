@@ -273,6 +273,21 @@ impl MaterialManager {
     pub fn current_layout(&self) -> Option<&ArrayLayout> {
         self.current_arrays.as_ref().map(|a| &a.layout)
     }
+
+    /// Get reference to albedo texture array (for hot-reload)
+    pub fn albedo_texture(&self) -> Option<&wgpu::Texture> {
+        self._albedo_tex.as_ref()
+    }
+
+    /// Get reference to normal texture array (for hot-reload)
+    pub fn normal_texture(&self) -> Option<&wgpu::Texture> {
+        self._normal_tex.as_ref()
+    }
+
+    /// Get reference to MRA texture array (for hot-reload)
+    pub fn mra_texture(&self) -> Option<&wgpu::Texture> {
+        self._mra_tex.as_ref()
+    }
 }
 
 #[cfg(feature = "textures")]

@@ -1,4 +1,9 @@
 // Enhanced shader for unified_showcase with improved PBR lighting, normal mapping, and texture blending
+// Includes Phase PBR-E advanced materials support
+
+// Import PBR-E advanced material functions
+// TODO: Uncomment when wgsl module system is properly configured
+// #import "pbr_advanced.wgsl"
 
 struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
@@ -9,6 +14,56 @@ struct TimeUniform { time: f32, _padding: vec3<f32> };
 @group(1) @binding(2) var normal_texture: texture_2d<f32>;
 @group(1) @binding(3) var normal_sampler: sampler;
 
+// Phase PBR-E: Advanced materials SSBO (group 6)
+struct MaterialGpuExtended {
+    // Base PBR (64 bytes)
+    albedo_index: u32,
+    normal_index: u32,
+    orm_index: u32,
+    flags: u32,
+    base_color_factor: vec4<f32>,
+    metallic_factor: f32,
+    roughness_factor: f32,
+    occlusion_strength: f32,
+    _pad0: f32,
+    emissive_factor: vec3<f32>,
+    _pad1: f32,
+    
+    // Clearcoat (16 bytes)
+    clearcoat_strength: f32,
+    clearcoat_roughness: f32,
+    clearcoat_normal_index: u32,
+    _pad2: f32,
+    
+    // Anisotropy (16 bytes)
+    anisotropy_strength: f32,
+    anisotropy_rotation: f32,
+    _pad3: vec2<f32>,
+    
+    // Subsurface (32 bytes)
+    subsurface_color: vec3<f32>,
+    subsurface_scale: f32,
+    subsurface_radius: f32,
+    thickness_index: u32,
+    _pad4: vec2<f32>,
+    
+    // Sheen (16 bytes)
+    sheen_color: vec3<f32>,
+    sheen_roughness: f32,
+    
+    // Transmission (48 bytes)
+    transmission_factor: f32,
+    ior: f32,
+    _pad5: vec2<f32>,
+    attenuation_color: vec3<f32>,
+    attenuation_distance: f32,
+    
+    // Padding to 256 bytes (80 bytes)
+    _pad_final: array<f32, 20>,
+};
+
+@group(6) @binding(0) var<storage, read> pbr_e_materials: array<MaterialGpuExtended>;
+
 // Vertex input structure with proper attributes
 struct VsIn {
     @location(0) position: vec3<f32>,
@@ -18,6 +73,7 @@ struct VsIn {
     @location(4) m3: vec4<f32>,
     @location(5) color: vec4<f32>,
     @location(6) mesh_type: u32,
+    @location(10) material_id: u32,  // Phase PBR-E: material index for SSBO lookup
 };
 
 // Enhanced vertex output with all necessary attributes for advanced rendering
@@ -31,6 +87,7 @@ struct VsOut {
     @location(5) view_dir: vec3<f32>,
     @location(6) tangent: vec3<f32>,
     @location(7) bitangent: vec3<f32>,
+    @location(8) material_id: u32,  // Phase PBR-E: pass material index to fragment shader
 };
 
 // Calculate tangent and bitangent for normal mapping
@@ -124,6 +181,7 @@ fn vs_main(in: VsIn) -> VsOut {
     out.view_dir = view_dir;
     out.tangent = tangent;
     out.bitangent = bitangent;
+    out.material_id = in.material_id;  // Phase PBR-E: pass through material index
     
     return out;
 }
@@ -147,7 +205,12 @@ fn get_biome_type(world_pos: vec2<f32>) -> i32 {
     }
 }
 
-// Enhanced PBR lighting calculation
+// ============================================================================
+// PBR Lighting (using consolidated pbr_lib.wgsl functions)
+// ============================================================================
+
+// Enhanced PBR lighting with Cook-Torrance BRDF and IBL support
+// Now delegates to pbr_lib::pbr_direct_lighting for physically accurate BRDF
 fn calculate_pbr_lighting(
     normal: vec3<f32>, 
     view_dir: vec3<f32>, 
@@ -156,43 +219,29 @@ fn calculate_pbr_lighting(
     metallic: f32,
     time: f32
 ) -> vec3<f32> {
-    // Base material properties
-    let base_reflectivity = mix(vec3<f32>(0.04), albedo, metallic);
-    
-    // Environment ambient light
-    let ambient_intensity = 0.2;
-    let ambient = albedo * ambient_intensity;
-    
-    // Directional light (sun)
+    // Directional light (sun) with time-based rotation
     let sun_angle = time * 0.05;
     let light_dir = normalize(vec3<f32>(cos(sun_angle), 0.8, sin(sun_angle)));
     let light_color = vec3<f32>(1.0, 0.98, 0.95);
-    let light_intensity = 1.0;
     
-    // Diffuse term (Lambert)
-    let n_dot_l = max(dot(normal, light_dir), 0.0);
-    let diffuse = albedo * light_color * n_dot_l;
+    // Use consolidated PBR direct lighting (Cook-Torrance BRDF with GGX+Smith+Fresnel)
+    // This replaces the previous simplified GGX implementation
+    let direct_lighting = pbr_direct_lighting(
+        normal,
+        view_dir,
+        light_dir,
+        light_color,
+        albedo,
+        roughness,
+        metallic
+    );
     
-    // Specular term (simplified GGX)
-    let h = normalize(light_dir + view_dir);
-    let n_dot_h = max(dot(normal, h), 0.0);
-    let v_dot_h = max(dot(view_dir, h), 0.0);
+    // Simple ambient term (will be replaced with IBL in future)
+    let ambient_intensity = 0.2;
+    let ambient = albedo * ambient_intensity;
     
-    let alpha = roughness * roughness;
-    let alpha2 = alpha * alpha;
-    let n_dot_h2 = n_dot_h * n_dot_h;
-    
-    // Simplified specular BRDF
-    let denom = (n_dot_h2 * (alpha2 - 1.0) + 1.0);
-    let distribution = alpha2 / (3.14159 * denom * denom);
-    
-    let f0 = base_reflectivity;
-    let fresnel = f0 + (1.0 - f0) * pow(1.0 - v_dot_h, 5.0);
-    
-    let specular = distribution * fresnel * light_color * n_dot_l;
-    
-    // Combine lighting terms
-    return ambient + (diffuse + specular) * light_intensity;
+    // Combine direct lighting with ambient
+    return ambient + direct_lighting;
 }
 
 // Enhanced sky gradient with atmospheric scattering
@@ -313,6 +362,73 @@ fn get_terrain_texture(
         } else {
             result = forest_color;
         }
+    }
+    
+    return result;
+}
+
+// Phase PBR-E: Simplified evaluation for demo purposes
+// Full implementation would integrate all 5 advanced BRDF lobes from pbr_advanced.wgsl
+fn evaluate_pbr_e_material(
+    material: MaterialGpuExtended,
+    normal: vec3<f32>,
+    view_dir: vec3<f32>,
+    light_dir: vec3<f32>
+) -> vec3<f32> {
+    // Extract base material properties
+    let base_color = material.base_color_factor.rgb;
+    let roughness = material.roughness_factor;
+    let metallic = material.metallic_factor;
+    
+    // Base PBR calculation
+    var result = pbr_direct_lighting(
+        normal,
+        view_dir,
+        light_dir,
+        vec3<f32>(1.0, 0.98, 0.95), // Light color
+        base_color,
+        roughness,
+        metallic
+    );
+    
+    // Add clearcoat if enabled (flag 0x01)
+    if ((material.flags & 1u) != 0u) {
+        let clearcoat_strength = material.clearcoat_strength;
+        let clearcoat_roughness = material.clearcoat_roughness;
+        
+        // Simplified clearcoat: additional specular lobe with fixed F0=0.04 (IOR 1.5)
+        let H = normalize(light_dir + view_dir);
+        let NdotH = max(dot(normal, H), 0.0);
+        let spec = pow(NdotH, 1.0 / (clearcoat_roughness * clearcoat_roughness + 0.001));
+        result += vec3<f32>(0.04) * spec * clearcoat_strength * 0.3;
+    }
+    
+    // Add sheen if enabled (flag 0x08)
+    if ((material.flags & 8u) != 0u) {
+        let sheen_color = material.sheen_color;
+        let VdotN = dot(view_dir, normal);
+        let sheen_factor = pow(1.0 - abs(VdotN), 5.0); // Retroreflection at grazing angles
+        result += sheen_color * sheen_factor * 0.2;
+    }
+    
+    // Add subsurface scattering if enabled (flag 0x04)
+    if ((material.flags & 4u) != 0u) {
+        let sss_color = material.subsurface_color;
+        let sss_scale = material.subsurface_scale;
+        
+        // Wrapped diffuse for forward + backscattering
+        let NdotL = dot(normal, light_dir);
+        let wrapped = (NdotL + sss_scale) / (1.0 + sss_scale);
+        result += sss_color * max(wrapped, 0.0) * 0.3;
+    }
+    
+    // Add transmission if enabled (flag 0x10)
+    if ((material.flags & 16u) != 0u) {
+        let transmission = material.transmission_factor;
+        let attenuation = material.attenuation_color;
+        
+        // Simple transmission: blend with attenuation color
+        result = mix(result, attenuation * 0.5, transmission * 0.3);
     }
     
     return result;
@@ -440,6 +556,28 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     } else if (in.mesh_type == 4u) { // Skybox
         // Pure procedural sky rendering
         return vec4<f32>(sky_color(in.view_dir, time), 1.0);
+        
+    } else if (in.mesh_type == 6u) { // Phase PBR-E: Demo spheres (Primitive mesh category)
+        // Fetch material from SSBO using material_id
+        let material = pbr_e_materials[in.material_id];
+        
+        // Directional light (sun) with time-based rotation
+        let sun_angle = time * 0.05;
+        let light_dir = normalize(vec3<f32>(cos(sun_angle), 0.8, sin(sun_angle)));
+        
+        // Evaluate PBR-E advanced material
+        let pbr_e_color = evaluate_pbr_e_material(
+            material,
+            normalize(in.normal),
+            normalize(in.view_dir),
+            light_dir
+        );
+        
+        // Add ambient lighting
+        let ambient = material.base_color_factor.rgb * 0.15;
+        let final_color = ambient + pbr_e_color;
+        
+        return vec4<f32>(final_color, 1.0);
     }
     
     // Fallback for unknown mesh types

@@ -28,6 +28,11 @@ struct QuestStep {
     description: String,
     completed: bool,
 }
+
+mod brdf_preview;
+mod file_watcher; // Task 3: Hot-reload support
+mod material_inspector;
+
 use anyhow::Result;
 use astraweave_asset::AssetDatabase;
 use astraweave_behavior::{BehaviorGraph, BehaviorNode};
@@ -36,6 +41,7 @@ use astraweave_dialogue::DialogueGraph;
 use astraweave_nav::NavMesh;
 use astraweave_quests::Quest;
 use eframe::egui;
+use material_inspector::MaterialInspector;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use uuid::Uuid;
@@ -164,6 +170,7 @@ struct EditorApp {
     nav_max_slope_deg: f32,
     sim_world: Option<World>,
     sim_tick_count: u64,
+    material_inspector: MaterialInspector,  // NEW - Phase PBR-G Task 2
 }
 
 impl Default for EditorApp {
@@ -249,6 +256,7 @@ impl Default for EditorApp {
             nav_max_slope_deg: 60.0,
             sim_world: None,
             sim_tick_count: 0,
+            material_inspector: MaterialInspector::new(),  // NEW - Phase PBR-G Task 2
         }
     }
 }
@@ -787,6 +795,9 @@ impl eframe::App for EditorApp {
                 });
                 ui.collapsing("Quest Graph Editor", |ui| self.show_quest_graph_editor(ui));
                 ui.collapsing("Material Editor", |ui| self.show_material_editor(ui));
+                ui.collapsing("Material Inspector", |ui| {
+                    self.material_inspector.show(ui, ctx)
+                });
                 ui.collapsing("Terrain Painter", |ui| self.show_terrain_painter(ui));
                 ui.collapsing("Navmesh Controls", |ui| self.show_navmesh_controls(ui));
                 ui.collapsing("Asset Inspector", |ui| self.show_asset_inspector(ui));

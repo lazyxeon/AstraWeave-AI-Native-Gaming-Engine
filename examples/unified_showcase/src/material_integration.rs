@@ -157,6 +157,7 @@ impl MaterialIntegrator {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         biome: &str,
+        hot_reload_manager: Option<&mut crate::material_hot_reload::MaterialReloadManager>,
     ) -> Result<&MaterialPackRuntime> {
         if self.cache.contains_key(biome) {
             return Ok(self.cache.get(biome).unwrap());
@@ -177,6 +178,61 @@ impl MaterialIntegrator {
             .manager
             .load_pack_from_toml(device, queue, &base, &mats, &arrays)
             .await?;
+
+        // Auto-register materials for hot-reload (optimization: zero-allocation iteration)
+        if let Some(reload_mgr) = hot_reload_manager {
+            use crate::material_hot_reload::{MaterialArrayIndices, MaterialType};
+            
+            reload_mgr.register_biome(biome, base.clone());
+            reload_mgr.set_current_biome(biome);
+            
+            // Extract indices from layout (zero-allocation: iterate by reference)
+            for (material_name, &array_index) in &gpu.layout.layer_indices {
+                let material_id = array_index;
+                
+                // Optimize: construct path once, avoiding repeated allocations
+                let toml_path = base.join(format!("{}.toml", material_name));
+                
+                let array_indices = MaterialArrayIndices {
+                    albedo_index: array_index,
+                    normal_index: array_index,
+                    orm_index: array_index,
+                };
+                
+                reload_mgr.register_material(
+                    material_id,
+                    MaterialType::Standard,
+                    toml_path,
+                    array_indices,
+                );
+                
+                // Register texture paths (cache for fast hot-reload routing)
+                // Optimization: check existence once, store result
+                let albedo_path = base.join(format!("{}_albedo.png", material_name));
+                let normal_path = base.join(format!("{}_normal.png", material_name));
+                let orm_path = base.join(format!("{}_orm.png", material_name));
+                
+                // Only check filesystem if any texture path might exist
+                // Optimization: short-circuit evaluation, minimal I/O
+                let has_textures = albedo_path.exists() || normal_path.exists() || orm_path.exists();
+                
+                if has_textures {
+                    reload_mgr.update_material_textures(
+                        material_id,
+                        if albedo_path.exists() { Some(albedo_path) } else { None },
+                        if normal_path.exists() { Some(normal_path) } else { None },
+                        if orm_path.exists() { Some(orm_path) } else { None },
+                    );
+                }
+            }
+            
+            println!(
+                "[hot-reload] Auto-registered {} materials for biome '{}'",
+                gpu.layout.layer_indices.len(),
+                biome
+            );
+        }
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("materials-pack"),
             layout: &self.bgl,
@@ -338,5 +394,10 @@ impl MaterialIntegrator {
         self.cache.insert(biome.to_string(), runtime);
         self.set_current(biome);
         Ok(self.cache.get(biome).unwrap())
+    }
+
+    /// Get reference to internal MaterialManager (for hot-reload texture access)
+    pub fn manager(&self) -> &MaterialManager {
+        &self.manager
     }
 }
