@@ -4737,21 +4737,15 @@ async fn run() -> Result<()> {
                             rp.set_pipeline(&render.pipeline);
                             rp.set_bind_group(0, &render.camera_bg, &[]);
                             rp.set_bind_group(1, &render.ground_bind_group, &[]);
-                            rp.set_bind_group(2, &render.shadow_bg, &[]);
-                            rp.set_bind_group(3, &render.light_bg, &[]);
-                            // Bind material uniform: use specific if set, else fallback
+                            rp.set_bind_group(2, &render.shadow_bg, &[]); // Now includes light uniforms
+                            // Bind material uniform: use specific if set, else fallback (shifted to group 3)
                             if let Some(material_bg) = render.material_bind_group.as_ref() {
-                                rp.set_bind_group(4, material_bg, &[]);
+                                rp.set_bind_group(3, material_bg, &[]);
                             } else {
-                                rp.set_bind_group(4, &render.default_material_bind_group, &[]);
+                                rp.set_bind_group(3, &render.default_material_bind_group, &[]);
                             }
-                            // IBL bind group always set
-                            rp.set_bind_group(5, &render.ibl_bg, &[]);
-                            
-                            // Phase PBR-E: Set advanced materials bind group (group 6) if demo enabled
-                            if ui.pbr_e_demo_enabled && render.pbr_e_material_bind_group.is_some() {
-                                rp.set_bind_group(6, render.pbr_e_material_bind_group.as_ref().unwrap(), &[]);
-                            }
+                            // IBL bind group (shifted to group 4)
+                            rp.set_bind_group(4, &render.ibl_bg, &[]);
                             
                             // Render skybox first
                             for batch in &instance_batches {
@@ -4790,14 +4784,13 @@ async fn run() -> Result<()> {
                                         rp.set_pipeline(&render.pipeline_full);
                                         rp.set_bind_group(0, &render.camera_bg, &[]);
                                         rp.set_bind_group(1, &render.ground_bind_group, &[]);
-                                        rp.set_bind_group(2, &render.shadow_bg, &[]);
-                                        rp.set_bind_group(3, &render.light_bg, &[]);
+                                        rp.set_bind_group(2, &render.shadow_bg, &[]); // Now includes light uniforms
                                         if let Some(material_bg) = render.material_bind_group.as_ref() {
-                                            rp.set_bind_group(4, material_bg, &[]);
+                                            rp.set_bind_group(3, material_bg, &[]);
                                         } else {
-                                            rp.set_bind_group(4, &render.default_material_bind_group, &[]);
+                                            rp.set_bind_group(3, &render.default_material_bind_group, &[]);
                                         }
-                                        rp.set_bind_group(5, &render.ibl_bg, &[]);
+                                        rp.set_bind_group(4, &render.ibl_bg, &[]);
                                         
                                         rp.set_vertex_buffer(0, gpu.vertex_full.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
@@ -4811,14 +4804,13 @@ async fn run() -> Result<()> {
                                 // Re-bind all bind groups after pipeline switch (wgpu requirement)
                                 rp.set_bind_group(0, &render.camera_bg, &[]);
                                 rp.set_bind_group(1, &render.ground_bind_group, &[]);
-                                rp.set_bind_group(2, &render.shadow_bg, &[]);
-                                rp.set_bind_group(3, &render.light_bg, &[]);
+                                rp.set_bind_group(2, &render.shadow_bg, &[]); // Now includes light uniforms
                                 if let Some(material_bg) = render.material_bind_group.as_ref() {
-                                    rp.set_bind_group(4, material_bg, &[]);
+                                    rp.set_bind_group(3, material_bg, &[]);
                                 } else {
-                                    rp.set_bind_group(4, &render.default_material_bind_group, &[]);
+                                    rp.set_bind_group(3, &render.default_material_bind_group, &[]);
                                 }
-                                rp.set_bind_group(5, &render.ibl_bg, &[]);
+                                rp.set_bind_group(4, &render.ibl_bg, &[]);
                                 
                                 if let Some(mesh) = render.meshes.get(&batch.mesh_key) {
                                     // Minimal pipeline expects position-only buffer (Float32x3)
@@ -6401,9 +6393,9 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         }],
     });
 
-    // Shadow map layout: depth texture + comparison sampler
+    // Shadow map layout: depth texture + comparison sampler + light uniforms (merged group 2)
     let shadow_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("shadow-layout"),
+        label: Some("shadow-light-layout"),
         entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
@@ -6419,6 +6411,28 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
                 binding: 1,
                 visibility: wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 3,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: wgpu::BufferSize::new(
+                        std::mem::size_of::<ShadowParams>() as u64
+                    ),
+                },
                 count: None,
             },
         ],
@@ -6453,7 +6467,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         ..Default::default()
     });
     let shadow_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("shadow-bg"),
+        label: Some("shadow-light-bg"),
         layout: &shadow_bg_layout,
         entries: &[
             wgpu::BindGroupEntry {
@@ -6463,6 +6477,14 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: wgpu::BindingResource::Sampler(&shadow_sampler),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: light_ub.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: shadow_params_buf.as_entire_binding(),
             },
         ],
     });
@@ -6971,13 +6993,11 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("pipeline-layout"),
         bind_group_layouts: &[
-            &camera_bg_layout,           // Group 0
-            &texture_bind_group_layout,  // Group 1
-            &shadow_bg_layout,           // Group 2
-            &light_bg_layout,            // Group 3
-            &material_bind_group_layout, // Group 4
-            &ibl_bg_layout,              // Group 5
-            &pbr_e_material_bind_group_layout, // Group 6 (Phase PBR-E)
+            &camera_bg_layout,           // Group 0: Camera, post, scene, debug uniforms
+            &texture_bind_group_layout,  // Group 1: Material texture arrays
+            &shadow_bg_layout,           // Group 2: Shadows + Light (merged)
+            &material_bind_group_layout, // Group 3: Material uniforms
+            &ibl_bg_layout,              // Group 4: IBL cubemaps (was group 5)
         ],
         push_constant_ranges: &[],
     });
@@ -7482,19 +7502,20 @@ const MATERIAL_CLOTH: i32 = 11;
 @group(1) @binding(4) var material_mra: texture_2d_array<f32>;
 @group(1) @binding(5) var<storage, read> materials: array<MaterialGpu>;
 
-@group(4) @binding(0) var<uniform> u_material: MaterialUniform;
-
-// IBL bindings: prefiltered specular, irradiance, BRDF LUT, sampler
-@group(5) @binding(0) var ibl_specular: texture_cube<f32>;
-@group(5) @binding(1) var ibl_irradiance: texture_cube<f32>;
-@group(5) @binding(2) var brdf_lut: texture_2d<f32>;
-@group(5) @binding(3) var ibl_sampler: sampler;
-
-// Shadows
+// Shadows + Light (merged group 2+3 → group 2)
 @group(2) @binding(0) var shadow_map: texture_depth_2d;
 @group(2) @binding(1) var shadow_sampler: sampler_comparison;
-@group(3) @binding(0) var<uniform> u_light: Camera;
-@group(3) @binding(1) var<uniform> u_shadow_params: ShadowParams;
+@group(2) @binding(2) var<uniform> u_light: Camera;
+@group(2) @binding(3) var<uniform> u_shadow_params: ShadowParams;
+
+// Material uniforms (merged group 4+6 → group 3)
+@group(3) @binding(0) var<uniform> u_material: MaterialUniform;
+
+// IBL bindings (group 5 → group 4): prefiltered specular, irradiance, BRDF LUT, sampler
+@group(4) @binding(0) var ibl_specular: texture_cube<f32>;
+@group(4) @binding(1) var ibl_irradiance: texture_cube<f32>;
+@group(4) @binding(2) var brdf_lut: texture_2d<f32>;
+@group(4) @binding(3) var ibl_sampler: sampler;
 
 // Helper struct and functions for triplanar sampling across texture sets
 struct SampleSet { c: vec3<f32>, n: vec3<f32>, m: vec4<f32> };

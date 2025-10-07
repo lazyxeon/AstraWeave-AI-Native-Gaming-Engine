@@ -2,7 +2,7 @@
 // Corresponds to MaterialGpuExtended in pbr_advanced.wgsl
 
 use bytemuck::{Pod, Zeroable};
-use glam::{Vec2, Vec3, Vec4};
+use glam::Vec3;
 
 /// Extended material structure supporting advanced PBR features
 /// Size: 256 bytes (16-byte aligned for UBO/SSBO)
