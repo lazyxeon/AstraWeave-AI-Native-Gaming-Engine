@@ -28,7 +28,7 @@ tobj = { version = "4", optional = true }
 astraweave-cinematics = { path = "../astraweave-cinematics" }
 astraweave-asset = { path = "../astraweave-asset" }
 aw_asset_cli = { path = "../tools/aw_asset_cli" }
-ktx2 = "0.3"  # KTX2 texture loading for BC-compressed textures
+ktx2 = "0.4"  # KTX2 texture loading for BC-compressed textures
 basis-universal = "0.3.1"  # Universal texture transcoding with full Basis Universal support
 texture2ddecoder = "0.1"  # Pure Rust BC1/3/5/7 decoder
 serde_json = "1"
@@ -56,7 +56,7 @@ skinning-gpu = [] # GPU skinning (optional, requires GPU for tests)
 nanite = []
 
 [dev-dependencies]
-naga = "25.0"
+naga = "27.0"
 criterion = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png"] }
 tempfile = "3"

@@ -1,0 +1,68 @@
+# AstraWeave Terrain Material: Desert Demo
+# Phase PBR-F Integration Example
+# Demonstrates sandy terrain with minimal triplanar (gentle slopes)
+
+name = "desert_terrain"
+biome = "desert"
+splat_map = "../splat_desert.png"  # To be generated
+splat_uv_scale = 0.4  # Expansive desert feel
+triplanar_enabled = true
+triplanar_slope_threshold = 40.0  # Later triplanar (mostly flat)
+normal_blend_method = "udn"  # Unity Derivative Normals (faster for large areas)
+height_blend_enabled = true
+
+# Layer 0: Sand base (dominant material)
+[[layers]]
+name = "sand"
+albedo = "../sand.png"
+normal = "../sand_n.png"
+orm = "../sand_mra.png"
+height = "../sand.png"
+uv_scale = [10.0, 10.0]  # Fine sand ripples
+height_range = [0.0, 80.0]  # Low to mid elevations
+blend_sharpness = 0.3  # Very soft sand transitions
+triplanar_power = 2.0  # Minimal triplanar (gentle dunes)
+metallic = 0.0
+roughness = 0.9  # Very rough sand
+
+# Layer 1: Sandstone outcrops (harder material)
+[[layers]]
+name = "sandstone"
+albedo = "../stone.png"  # Tan/orange sandstone
+normal = "../stone_n.png"
+orm = "../stone_mra.png"
+height = "../stone.png"
+uv_scale = [5.0, 5.0]  # Medium rock layers
+height_range = [40.0, 150.0]  # Mid to high
+blend_sharpness = 0.7  # Sharp sandstone edges
+triplanar_power = 4.5  # Moderate triplanar
+metallic = 0.0
+roughness = 0.7  # Moderately rough stone
+
+# Layer 2: Dark rock (volcanic/metamorphic)
+[[layers]]
+name = "dark_rock"
+albedo = "../rock_slate.png"
+normal = "../rock_slate_n.png"
+orm = "../rock_slate_mra.png"
+height = "../rock_slate.png"
+uv_scale = [4.0, 4.0]  # Large formations
+height_range = [60.0, 180.0]  # High elevations
+blend_sharpness = 0.8  # Sharp rock contrast
+triplanar_power = 5.5  # Strong triplanar
+metallic = 0.0
+roughness = 0.6  # Hard volcanic rock
+
+# Layer 3: Pebbles/gravel (desert floor detail)
+[[layers]]
+name = "pebbles"
+albedo = "../dirt.png"  # Reddish-brown pebbles
+normal = "../dirt_n.png"
+orm = "../dirt_mra.png"
+height = "../dirt.png"
+uv_scale = [15.0, 15.0]  # Fine detail
+height_range = [10.0, 60.0]  # Low areas, washes
+blend_sharpness = 0.4  # Soft natural distribution
+triplanar_power = 3.0  # Light triplanar
+metallic = 0.0
+roughness = 0.8  # Rough small stones

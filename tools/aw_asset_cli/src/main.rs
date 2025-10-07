@@ -18,7 +18,10 @@ use walkdir::WalkDir;
 use which::which;
 
 mod texture_baker;
+mod validators;
+
 use texture_baker::{bake_texture, infer_config_from_path, ColorSpace};
+use validators::{validate_ktx2_mipmaps, validate_material_toml, validate_texture, TextureValidationConfig};
 
 #[derive(Parser)]
 #[command(name = "aw_asset_cli")]
@@ -49,6 +52,20 @@ enum Commands {
         /// Treat as normal map
         #[arg(long)]
         normal_map: bool,
+    },
+    /// Validate assets (Phase PBR-G)
+    Validate {
+        /// Path to asset or directory to validate
+        path: PathBuf,
+        /// Validation config file (optional)
+        #[arg(short, long)]
+        config: Option<PathBuf>,
+        /// Output format: text, json
+        #[arg(short, long, default_value = "text")]
+        format: String,
+        /// Fail on warnings
+        #[arg(long)]
+        strict: bool,
     },
 }
 
@@ -82,6 +99,14 @@ fn main() -> Result<()> {
             println!("\nBaked texture metadata:");
             println!("{}", serde_json::to_string_pretty(&metadata)?);
             Ok(())
+        }
+        Commands::Validate {
+            path,
+            config,
+            format,
+            strict,
+        } => {
+            validate_assets_command(&path, config.as_deref(), &format, strict)
         }
     }
 }
@@ -438,4 +463,152 @@ fn sign_manifest(manifest: &[ManifestEntry]) -> Result<SignedManifest> {
         entries: manifest.to_vec(),
         signature: base64::engine::general_purpose::STANDARD.encode(signature.as_ref()),
     })
+}
+
+/// Validate assets command handler for Phase PBR-G Task 1
+fn validate_assets_command(
+    path: &Path,
+    config_path: Option<&Path>,
+    format: &str,
+    strict: bool,
+) -> Result<()> {
+    use validators::{ValidationResult, TextureValidationConfig};
+
+    // Load validation config or use defaults
+    let config = if let Some(cfg_path) = config_path {
+        let cfg_str = fs::read_to_string(cfg_path)
+            .with_context(|| format!("Failed to read config from {}", cfg_path.display()))?;
+        toml::from_str(&cfg_str)
+            .with_context(|| format!("Failed to parse config TOML from {}", cfg_path.display()))?
+    } else {
+        TextureValidationConfig::default()
+    };
+
+    let mut results: Vec<ValidationResult> = Vec::new();
+
+    // Validate single file or directory
+    if path.is_file() {
+        let result = validate_single_asset(path, &config)?;
+        results.push(result);
+    } else if path.is_dir() {
+        // Walk directory and validate all supported assets
+        for entry in WalkDir::new(path) {
+            let entry = entry?;
+            if entry.file_type().is_file() {
+                let file_path = entry.path();
+                
+                // Check if file is a supported asset type
+                if let Some(ext) = file_path.extension().and_then(|e| e.to_str()) {
+                    match ext.to_lowercase().as_str() {
+                        "ktx2" | "png" | "jpg" | "jpeg" | "tga" | "bmp" | "toml" => {
+                            match validate_single_asset(file_path, &config) {
+                                Ok(result) => results.push(result),
+                                Err(e) => {
+                                    // Create error result for failed validation
+                                    results.push(ValidationResult {
+                                        asset_path: file_path.display().to_string(),
+                                        passed: false,
+                                        errors: vec![format!("Validation failed: {}", e)],
+                                        warnings: vec![],
+                                        info: vec![],
+                                    });
+                                }
+                            }
+                        }
+                        _ => {} // Skip unsupported file types
+                    }
+                }
+            }
+        }
+    } else {
+        anyhow::bail!("Path {} is neither a file nor a directory", path.display());
+    }
+
+    // Output results in requested format
+    match format {
+        "json" => {
+            let json = serde_json::to_string_pretty(&results)
+                .context("Failed to serialize results to JSON")?;
+            println!("{}", json);
+        }
+        _ => {
+            // Text format (default)
+            println!("\n=== Asset Validation Results ===\n");
+            
+            let mut passed_count = 0;
+            let mut failed_count = 0;
+            let mut warning_count = 0;
+
+            for result in &results {
+                if result.passed && result.warnings.is_empty() {
+                    passed_count += 1;
+                    println!("✅ {}", result.asset_path);
+                } else if result.passed && !result.warnings.is_empty() {
+                    passed_count += 1;
+                    warning_count += result.warnings.len();
+                    println!("⚠️  {} ({} warnings)", result.asset_path, result.warnings.len());
+                } else {
+                    failed_count += 1;
+                    println!("❌ {} ({} errors)", result.asset_path, result.errors.len());
+                }
+
+                // Show errors
+                for error in &result.errors {
+                    println!("   ERROR: {}", error);
+                }
+
+                // Show warnings
+                for warning in &result.warnings {
+                    println!("   WARN:  {}", warning);
+                }
+
+                // Show info (only in verbose mode or if explicitly requested)
+                if !result.info.is_empty() && std::env::var("VERBOSE").is_ok() {
+                    for info in &result.info {
+                        println!("   INFO:  {}", info);
+                    }
+                }
+
+                println!(); // Blank line between results
+            }
+
+            // Summary
+            println!("=== Summary ===");
+            println!("Total assets: {}", results.len());
+            println!("Passed: {}", passed_count);
+            println!("Failed: {}", failed_count);
+            println!("Warnings: {}", warning_count);
+        }
+    }
+
+    // Exit with error code if strict mode and there are warnings or errors
+    let has_issues = results.iter().any(|r| !r.passed || !r.warnings.is_empty());
+    if strict && has_issues {
+        eprintln!("\n❌ Validation failed in strict mode (errors or warnings present)");
+        std::process::exit(1);
+    }
+
+    Ok(())
+}
+
+/// Validate a single asset file
+fn validate_single_asset(path: &Path, config: &TextureValidationConfig) -> Result<validators::ValidationResult> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+
+    match ext.as_str() {
+        "ktx2" => validate_ktx2_mipmaps(path),
+        "toml" => validate_material_toml(path),
+        "png" | "jpg" | "jpeg" | "tga" | "bmp" => validate_texture(path, config),
+        _ => Ok(validators::ValidationResult {
+            asset_path: path.display().to_string(),
+            passed: false,
+            errors: vec![format!("Unsupported file extension: {}", ext)],
+            warnings: vec![],
+            info: vec![],
+        }),
+    }
 }
