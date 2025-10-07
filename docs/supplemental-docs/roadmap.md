@@ -317,7 +317,7 @@ editor-materials = ["editor-core"]  # Material editor
 editor-terrain = ["editor-core"]    # Terrain painter
 editor-nav = ["editor-core"]        # Navmesh baking
 editor-sim = ["editor-core"]        # Simulation playback
-editor-full = [...]                 # All features
+editor-full = ["..."]                 # All features
 ```
 
 **Compilation Status**:
