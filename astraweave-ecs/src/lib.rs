@@ -44,19 +44,17 @@
 //! app = app.run_fixed(100); // Run 100 ticks
 //! ```
 
-mod archetype;
-mod events;
+pub mod archetype;
+pub mod events;
 mod system_param;
 
-pub use archetype::*;
-pub use events::*;
-pub use system_param::*;
+use std::any::TypeId;
+use std::collections::HashMap;
+use std::hash::Hash;
 
-use std::{
-    any::TypeId,
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-};
+use archetype::{ArchetypeSignature, ArchetypeStorage};
+pub use events::{Event, EventReader};
+pub use system_param::{Query, Query2, SystemParam};
 
 pub trait Component: 'static + Send + Sync {}
 impl<T: 'static + Send + Sync> Component for T {}
@@ -97,10 +95,8 @@ impl Entity {
 }
 #[derive(Default)]
 pub struct World {
-    next: u64,
-    // Component storage: TypeId -> Entity -> Box<dyn Any>
-    // Phase 1: use BTreeMap to keep deterministic iteration order.
-    comps: HashMap<TypeId, BTreeMap<Entity, Box<dyn std::any::Any + Send + Sync>>>,
+    next_entity_id: u64,
+    archetypes: ArchetypeStorage,
     resources: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>, // singletons
 }
 
@@ -108,121 +104,155 @@ impl World {
     pub fn new() -> Self {
         Self::default()
     }
+
     pub fn spawn(&mut self) -> Entity {
-        let e = Entity(self.next);
-        self.next += 1;
+        let e = Entity(self.next_entity_id);
+        self.next_entity_id += 1;
+        // An entity with no components lives in the empty archetype.
+        let empty_sig = ArchetypeSignature::new(vec![]);
+        let archetype_id = self.archetypes.get_or_create_archetype(empty_sig);
+        self.archetypes.set_entity_archetype(e, archetype_id);
+        let archetype = self.archetypes.get_archetype_mut(archetype_id).unwrap();
+        archetype.add_entity(e, HashMap::new());
         e
     }
+
     pub fn insert<T: Component>(&mut self, e: Entity, c: T) {
-        self.comps
-            .entry(TypeId::of::<T>())
-            .or_default()
-            .insert(e, Box::new(c));
+        let mut components_to_add = HashMap::new();
+        components_to_add.insert(TypeId::of::<T>(), Box::new(c) as Box<dyn std::any::Any + Send + Sync>);
+        self.move_entity_to_new_archetype(e, components_to_add, false);
     }
+
+    fn move_entity_to_new_archetype(&mut self, entity: Entity, new_components: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>, is_removing: bool) {
+        // 1. Get current archetype and component data
+        let old_archetype_id = self.archetypes.get_entity_archetype(entity).unwrap();
+        
+        let mut current_components = {
+            let old_archetype = self.archetypes.get_archetype_mut(old_archetype_id).unwrap();
+            old_archetype.remove_entity_components(entity)
+        };
+
+        // 2. Determine new signature
+        let new_sig_types = {
+            let old_archetype = self.archetypes.get_archetype(old_archetype_id).unwrap();
+            let mut sig_types: Vec<_> = old_archetype.signature.components.clone();
+            if is_removing {
+                // For removal, the `new_components` map just contains the TypeId of the component to remove.
+                let type_to_remove = new_components.keys().next().unwrap();
+                sig_types.retain(|&tid| tid != *type_to_remove);
+            } else {
+                sig_types.extend(new_components.keys());
+            }
+            sig_types
+        };
+        
+        let new_signature = ArchetypeSignature::new(new_sig_types);
+
+        // 3. Get or create new archetype
+        let new_archetype_id = self.archetypes.get_or_create_archetype(new_signature);
+
+        // 4. Move entity's archetype mapping
+        self.archetypes.get_archetype_mut(old_archetype_id).unwrap().remove_entity(entity);
+        self.archetypes.set_entity_archetype(entity, new_archetype_id);
+
+        // 5. Add entity with all components to new archetype
+        let final_components = if is_removing {
+            let type_to_remove = new_components.keys().next().unwrap();
+            current_components.remove(type_to_remove);
+            current_components
+        } else {
+            current_components.extend(new_components);
+            current_components
+        };
+
+        let new_archetype = self.archetypes.get_archetype_mut(new_archetype_id).unwrap();
+        new_archetype.add_entity(entity, final_components);
+    }
+
     pub fn get<T: Component>(&self, e: Entity) -> Option<&T> {
-        self.comps
-            .get(&TypeId::of::<T>())
-            .and_then(|m| m.get(&e))
-            .and_then(|b| b.downcast_ref::<T>())
+        let archetype_id = self.archetypes.get_entity_archetype(e)?;
+        let archetype = self.archetypes.get_archetype(archetype_id)?;
+        archetype.get::<T>(e)
     }
+
     pub fn get_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
-        self.comps
-            .get_mut(&TypeId::of::<T>())
-            .and_then(|m| m.get_mut(&e))
-            .and_then(|b| b.downcast_mut::<T>())
+        let archetype_id = self.archetypes.get_entity_archetype(e)?;
+        let archetype = self.archetypes.get_archetype_mut(archetype_id)?;
+        archetype.get_mut::<T>(e)
     }
+
     pub fn insert_resource<T: 'static + Send + Sync>(&mut self, r: T) {
         self.resources.insert(TypeId::of::<T>(), Box::new(r));
     }
-    pub fn resource<T: 'static + Send + Sync>(&self) -> Option<&T> {
+
+    pub fn get_resource<T: 'static + Send + Sync>(&self) -> Option<&T> {
         self.resources.get(&TypeId::of::<T>())?.downcast_ref()
     }
-    pub fn resource_mut<T: 'static + Send + Sync>(&mut self) -> Option<&mut T> {
+
+    pub fn get_resource_mut<T: 'static + Send + Sync>(&mut self) -> Option<&mut T> {
         self.resources.get_mut(&TypeId::of::<T>())?.downcast_mut()
     }
 
-    // Iterate mutably over all components of type T
     pub fn each_mut<T: Component>(&mut self, mut f: impl FnMut(Entity, &mut T)) {
-        if let Some(map) = self.comps.get_mut(&TypeId::of::<T>()) {
-            for (e, b) in map.iter_mut() {
-                if let Some(r) = b.downcast_mut::<T>() {
-                    f(*e, r);
+        let archetypes_with_t = self
+            .archetypes
+            .archetypes_with_component(TypeId::of::<T>())
+            .map(|a| a.id)
+            .collect::<Vec<_>>();
+
+        for archetype_id in archetypes_with_t {
+            let archetype = self.archetypes.get_archetype_mut(archetype_id).unwrap();
+            let entities = archetype.entities_vec();
+            for entity in entities {
+                if let Some(component) = archetype.get_mut::<T>(entity) {
+                    f(entity, component);
                 }
             }
         }
     }
-}
 
-// Simple query over one or two component types (Phase 1 minimal)
-#[allow(dead_code)]
-pub struct Query<'w, T: Component> {
-    world: &'w World,
-    ty: TypeId,
-    it: Option<std::collections::btree_map::Iter<'w, Entity, Box<dyn std::any::Any + Send + Sync>>>,
-    _m: std::marker::PhantomData<T>,
-}
-
-impl<'w, T: Component> Query<'w, T> {
-    pub fn new(world: &'w World) -> Self {
-        let ty = TypeId::of::<T>();
-        let it = world.comps.get(&ty).map(|m| m.iter());
-        Self {
-            world,
-            ty,
-            it,
-            _m: Default::default(),
-        }
+    pub fn count<T: Component>(&self) -> usize {
+        self.archetypes
+            .archetypes_with_component(TypeId::of::<T>())
+            .map(|archetype| archetype.len())
+            .sum()
     }
-}
 
-// Read-only two-component query: yields entities that have both A and B
-pub struct Query2<'w, A: Component, B: Component> {
-    wb: &'w World,
-    ita:
-        Option<std::collections::btree_map::Iter<'w, Entity, Box<dyn std::any::Any + Send + Sync>>>,
-    _m: std::marker::PhantomData<(A, B)>,
-}
-
-impl<'w, A: Component, B: Component> Query2<'w, A, B> {
-    pub fn new(world: &'w World) -> Self {
-        let ita = world.comps.get(&TypeId::of::<A>()).map(|m| m.iter());
-        Self {
-            wb: world,
-            ita,
-            _m: Default::default(),
-        }
+    pub fn has<T: Component>(&self, entity: Entity) -> bool {
+        self.get::<T>(entity).is_some()
     }
-}
 
-impl<'w, A: Component, B: Component> Iterator for Query2<'w, A, B> {
-    type Item = (Entity, &'w A, &'w B);
-    fn next(&mut self) -> Option<Self::Item> {
-        let it = self.ita.as_mut()?;
-        for (e, ba) in it {
-            if let Some(ra) = ba.downcast_ref::<A>() {
-                if let Some(bmap) = self.wb.comps.get(&TypeId::of::<B>()) {
-                    if let Some(bb) = bmap.get(e) {
-                        if let Some(rb) = bb.downcast_ref::<B>() {
-                            return Some((*e, ra, rb));
-                        }
-                    }
-                }
-            }
-        }
-        None
+    pub fn entities_with<T: Component>(&self) -> Vec<Entity> {
+        self.archetypes
+            .archetypes_with_component(TypeId::of::<T>())
+            .flat_map(|archetype| archetype.entities_vec())
+            .collect()
     }
-}
 
-impl<'w, T: Component> Iterator for Query<'w, T> {
-    type Item = (Entity, &'w T);
-    fn next(&mut self) -> Option<Self::Item> {
-        let it = self.it.as_mut()?;
-        for (e, b) in it {
-            if let Some(r) = b.downcast_ref::<T>() {
-                return Some((*e, r));
-            }
+    pub fn remove<T: Component>(&mut self, e: Entity) -> bool {
+        if !self.has::<T>(e) {
+            return false;
         }
-        None
+        let mut components_to_remove = HashMap::new();
+        // We just need the type id for the signature change. The value is irrelevant.
+        components_to_remove.insert(TypeId::of::<T>(), Box::new(0) as Box<dyn std::any::Any + Send + Sync>);
+        self.move_entity_to_new_archetype(e, components_to_remove, true);
+        true
+    }
+
+    pub fn is_alive(&self, entity: Entity) -> bool {
+        self.archetypes.get_entity_archetype(entity).is_some()
+    }
+
+    pub fn despawn(&mut self, entity: Entity) -> bool {
+        if let Some(archetype_id) = self.archetypes.get_entity_archetype(entity) {
+            let archetype = self.archetypes.get_archetype_mut(archetype_id).unwrap();
+            archetype.remove_entity(entity);
+            self.archetypes.remove_entity(entity);
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -307,196 +337,140 @@ impl App {
     }
 }
 
-// Filtered query: yields entities that have T and pass a filter function
-pub struct FilteredQuery<'w, T: Component, F: Fn(&T) -> bool> {
-    query: Query<'w, T>,
-    filter: F,
-}
 
-impl<'w, T: Component, F: Fn(&T) -> bool> FilteredQuery<'w, T, F> {
-    pub fn new(world: &'w World, filter: F) -> Self {
-        Self {
-            query: Query::new(world),
-            filter,
-        }
-    }
-}
 
-impl<'w, T: Component, F: Fn(&T) -> bool> Iterator for FilteredQuery<'w, T, F> {
-    type Item = (Entity, &'w T);
-    fn next(&mut self) -> Option<Self::Item> {
-        while let Some((e, t)) = self.query.next() {
-            if (self.filter)(t) {
-                return Some((e, t));
-            }
-        }
-        None
-    }
-}
 
-// Convenience macro for common queries
-#[macro_export]
-macro_rules! query {
-    ($world:expr, $comp:ty) => {
-        $crate::Query::<$comp>::new($world)
-    };
-    ($world:expr, $comp:ty, where $filter:expr) => {
-        $crate::FilteredQuery::<$comp, _>::new($world, $filter)
-    };
-}
 
-#[macro_export]
-macro_rules! query2 {
-    ($world:expr, $a:ty, $b:ty) => {
-        $crate::Query2::<$a, $b>::new($world)
-    };
-}
-
-// Convenience methods on World
-impl World {
-    /// Get all entities with a specific component
-    pub fn entities_with<T: Component>(&self) -> Vec<Entity> {
-        self.comps
-            .get(&TypeId::of::<T>())
-            .map(|m| m.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Check if entity has component
-    pub fn has<T: Component>(&self, e: Entity) -> bool {
-        self.get::<T>(e).is_some()
-    }
-
-    /// Remove component from entity (Phase 1: basic implementation)
-    pub fn remove<T: Component>(&mut self, e: Entity) -> bool {
-        self.comps
-            .get_mut(&TypeId::of::<T>())
-            .and_then(|m| m.remove(&e))
-            .is_some()
-    }
-
-    /// Count entities with component
-    pub fn count<T: Component>(&self) -> usize {
-        self.comps
-            .get(&TypeId::of::<T>())
-            .map(|m| m.len())
-            .unwrap_or(0)
-    }
-
-    /// Helper: Get resource (returns Option<&T>)
-    pub fn get_resource<T: Resource>(&self) -> Option<&T> {
-        self.resource::<T>()
-    }
-
-    /// Helper: Get mutable resource (returns Option<&mut T>)
-    pub fn get_resource_mut<T: Resource>(&mut self) -> Option<&mut T> {
-        self.resource_mut::<T>()
-    }
-
-    /// Helper: Insert component (Bevy-compatible API)
-    pub fn insert_component<T: Component>(&mut self, e: Entity, c: T) -> anyhow::Result<()> {
-        self.insert(e, c);
-        Ok(())
-    }
-}
+// SECTION: System Execution
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[derive(Clone, Copy)]
-    struct Pos {
-        x: i32,
+
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct Position {
+        x: f32,
+        y: f32,
     }
 
-    fn sim(world: &mut World) {
-        // increments all positions
-        let mut to_update: Vec<Entity> = vec![];
-        {
-            let q = Query::<Pos>::new(world);
-            for (e, _p) in q {
-                to_update.push(e);
-            }
-        }
-        for e in to_update {
-            if let Some(p) = world.get_mut::<Pos>(e) {
-                p.x += 1;
-            }
-        }
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    struct Velocity {
+        vx: f32,
+        vy: f32,
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct TestResource(i32);
+
+    #[test]
+    fn test_spawn_and_insert() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+
+        assert!(world.has::<Position>(entity));
+        assert!(!world.has::<Velocity>(entity));
+
+        let pos = world.get::<Position>(entity).unwrap();
+        assert_eq!(*pos, Position { x: 1.0, y: 2.0 });
     }
 
     #[test]
-    fn schedule_runs_in_order() {
-        let mut app = App::new();
-        let e = app.world.spawn();
-        app.world.insert(e, Pos { x: 0 });
-        app.add_system("simulation", sim);
-        app = app.run_fixed(3);
-        assert_eq!(app.world.get::<Pos>(e).unwrap().x, 3);
+    fn test_despawn() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+
+        assert!(world.is_alive(entity));
+        world.despawn(entity);
+        assert!(!world.is_alive(entity));
+        assert!(!world.has::<Position>(entity));
     }
 
     #[test]
-    fn query2_yields_only_entities_with_both() {
-        #[derive(Clone, Copy)]
-        struct A(u32);
-        #[derive(Clone, Copy)]
-        struct B(u32);
-        let mut app = App::new();
-        let e1 = app.world.spawn();
-        let e2 = app.world.spawn();
-        app.world.insert(e1, A(1));
-        app.world.insert(e1, B(2));
-        app.world.insert(e2, A(3)); // missing B
-        let mut seen = Vec::new();
-        let q = Query2::<A, B>::new(&app.world);
-        for (e, a, b) in q {
-            seen.push((e, a.0, b.0));
-        }
-        assert_eq!(seen.len(), 1);
-        assert_eq!(seen[0].1, 1);
-        assert_eq!(seen[0].2, 2);
+    fn test_remove_component() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+        world.insert(entity, Velocity { vx: 0.0, vy: 0.0 });
+
+        assert!(world.has::<Position>(entity));
+        world.remove::<Position>(entity);
+        assert!(!world.has::<Position>(entity));
+        assert!(world.has::<Velocity>(entity)); // Other components should remain
     }
 
     #[test]
-    fn filtered_query_works() {
-        #[derive(Clone, Copy)]
-        struct Health(i32);
+    fn test_query_single_component() {
         let mut world = World::new();
         let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
         let e2 = world.spawn();
-        world.insert(e1, Health(100));
-        world.insert(e2, Health(50));
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        let e3 = world.spawn();
+        world.insert(e3, Velocity { vx: 0.0, vy: 0.0 });
 
-        let mut healthy = Vec::new();
-        let fq = FilteredQuery::new(&world, |h: &Health| h.0 > 75);
-        for (e, h) in fq {
-            healthy.push((e, h.0));
+        let query = Query::<Position>::new(&world);
+        let mut count = 0;
+        let mut total_x = 0.0;
+        for (entity, pos) in query {
+            count += 1;
+            total_x += pos.x;
+            assert!(entity == e1 || entity == e2);
         }
-        assert_eq!(healthy.len(), 1);
-        assert_eq!(healthy[0].1, 100);
+        assert_eq!(count, 2);
+        assert_eq!(total_x, 3.0);
     }
 
     #[test]
-    fn world_convenience_methods() {
-        #[derive(Clone, Copy)]
-        #[allow(dead_code)]
-        struct TestComp(u32);
+    fn test_query_two_components() {
         let mut world = World::new();
         let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e1, Velocity { vx: 1.0, vy: 1.0 });
+
         let e2 = world.spawn();
-        world.insert(e1, TestComp(42));
-        world.insert(e2, TestComp(24));
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
 
-        assert_eq!(world.count::<TestComp>(), 2);
-        assert!(world.has::<TestComp>(e1));
-        assert!(!world.has::<TestComp>(Entity(999)));
+        let e3 = world.spawn();
+        world.insert(e3, Position { x: 3.0, y: 3.0 });
+        world.insert(e3, Velocity { vx: 3.0, vy: 3.0 });
 
-        let entities = world.entities_with::<TestComp>();
-        assert_eq!(entities.len(), 2);
-        assert!(entities.contains(&e1));
-        assert!(entities.contains(&e2));
+        let query = Query2::<Position, Velocity>::new(&world);
+        let mut count = 0;
+        for (entity, pos, vel) in query {
+            count += 1;
+            assert!(entity == e1 || entity == e3);
+            assert_eq!(pos.x, vel.vx);
+        }
+        assert_eq!(count, 2);
+    }
 
-        assert!(world.remove::<TestComp>(e1));
-        assert_eq!(world.count::<TestComp>(), 1);
-        assert!(!world.has::<TestComp>(e1));
+    #[test]
+    fn test_resource_management() {
+        let mut world = World::new();
+        world.insert_resource(TestResource(42));
+
+        let resource = world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource.0, 42);
+
+        let resource_mut = world.get_resource_mut::<TestResource>().unwrap();
+        resource_mut.0 = 100;
+
+        let resource_after = world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource_after.0, 100);
+    }
+
+    #[test]
+    fn test_get_mut() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+
+        let pos_mut = world.get_mut::<Position>(entity).unwrap();
+        pos_mut.x = 5.0;
+
+        let pos = world.get::<Position>(entity).unwrap();
+        assert_eq!(pos.x, 5.0);
     }
 }

@@ -1,368 +1,120 @@
-//! System parameter abstraction for ergonomic system signatures.
-//!
-//! This allows systems to declare dependencies like Query, Res, ResMut, Events
-//! in a type-safe way similar to Bevy.
-
-use std::marker::PhantomData;
-
-use crate::{Component, Entity, Events, Resource, World};
+use crate::{archetype::ArchetypeId, Component, Entity, World};
 
 /// Trait for types that can be system parameters
 pub trait SystemParam: Sized {
-    /// Fetch the parameter from the world
-    fn fetch(world: &World) -> Option<Self>;
-
-    /// Fetch mutable parameter from the world
-    fn fetch_mut(world: &mut World) -> Option<Self>;
+    // This will be fleshed out later. For now, it's a marker trait.
 }
 
-/// Query system parameter for iterating over entities with components
-#[allow(dead_code)]
-pub struct Query<'w, T> {
-    entities: Vec<Entity>,
-    world_ptr: *const World,
-    _marker: PhantomData<(&'w (), T)>,
+// Read-only single-component query
+pub struct Query<'w, T: Component> {
+    world: &'w World,
+    archetype_ids: Vec<ArchetypeId>,
+    arch_idx: usize,
+    entity_idx: usize,
+    _m: std::marker::PhantomData<T>,
 }
 
-#[allow(dead_code)]
 impl<'w, T: Component> Query<'w, T> {
     pub fn new(world: &'w World) -> Self {
-        let entities = world.entities_with::<T>();
+        let archetype_ids = world
+            .archetypes
+            .archetypes_with_component(std::any::TypeId::of::<T>())
+            .map(|arch| arch.id)
+            .collect();
         Self {
-            entities,
-            world_ptr: world as *const World,
-            _marker: PhantomData,
+            world,
+            archetype_ids,
+            arch_idx: 0,
+            entity_idx: 0,
+            _m: Default::default(),
         }
     }
-
-    /// Iterate over all entities with component T
-    pub fn iter(&self) -> impl Iterator<Item = (Entity, &T)> + '_ {
-        let world = unsafe { &*self.world_ptr };
-        self.entities
-            .iter()
-            .filter_map(move |&entity| world.get::<T>(entity).map(|comp| (entity, comp)))
-    }
-
-    /// Get component for a specific entity
-    pub fn get(&self, entity: Entity) -> Option<&T> {
-        let world = unsafe { &*self.world_ptr };
-        world.get::<T>(entity)
-    }
-
-    /// Count entities matching this query
-    pub fn len(&self) -> usize {
-        self.entities.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entities.is_empty()
-    }
 }
 
-/// Mutable query system parameter
-pub struct QueryMut<'w, T> {
-    entities: Vec<Entity>,
-    world_ptr: *mut World,
-    _marker: PhantomData<(&'w mut (), T)>,
-}
-
-impl<'w, T: Component> QueryMut<'w, T> {
-    pub fn new(world: &'w mut World) -> Self {
-        let entities = world.entities_with::<T>();
-        Self {
-            entities,
-            world_ptr: world as *mut World,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Iterate mutably over all entities with component T
-    pub fn iter_mut(&mut self) -> QueryMutIter<'_, T> {
-        QueryMutIter {
-            entities: std::mem::take(&mut self.entities),
-            index: 0,
-            world_ptr: self.world_ptr,
-            _marker: PhantomData,
-        }
-    }
-
-    /// Get mutable component for a specific entity
-    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
-        let world = unsafe { &mut *self.world_ptr };
-        world.get_mut::<T>(entity)
-    }
-
-    pub fn len(&self) -> usize {
-        self.entities.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entities.is_empty()
-    }
-}
-
-/// Iterator over mutable query items to avoid borrowing issues in closures.
-/// SAFETY: Each entity is visited at most once, ensuring unique mutable access per component.
-pub struct QueryMutIter<'w, T> {
-    entities: Vec<Entity>,
-    index: usize,
-    world_ptr: *mut World,
-    _marker: PhantomData<(&'w mut (), T)>,
-}
-
-impl<'w, T: Component> Iterator for QueryMutIter<'w, T> {
-    type Item = (Entity, &'w mut T);
-
+impl<'w, T: Component> Iterator for Query<'w, T> {
+    type Item = (Entity, &'w T);
     fn next(&mut self) -> Option<Self::Item> {
-        while self.index < self.entities.len() {
-            let entity = self.entities[self.index];
-            self.index += 1;
+        loop {
+            if self.arch_idx >= self.archetype_ids.len() {
+                return None;
+            }
+            let archetype_id = self.archetype_ids[self.arch_idx];
+            let archetype = self.world.archetypes.get_archetype(archetype_id).unwrap();
 
-            let world = unsafe { &mut *self.world_ptr };
+            if self.entity_idx >= archetype.len() {
+                self.arch_idx += 1;
+                self.entity_idx = 0;
+                continue;
+            }
 
-            // SAFETY: The entity list guarantees we visit each entity at most once,
-            // so the mutable reference to its component will not alias with others.
-            let ptr = world.get_mut::<T>(entity)? as *mut T;
-            let comp = unsafe { &mut *ptr };
+            let entity = archetype.entities_vec()[self.entity_idx];
+            self.entity_idx += 1;
 
-            return Some((entity, comp));
+            // The borrow checker needs help here. Since we are iterating over disjoint archetypes
+            // and entities, this is safe. We'll use unsafe to extend the lifetime.
+            let component = archetype.get::<T>(entity).unwrap();
+            let component_ptr = component as *const T;
+            return Some((entity, unsafe { &*component_ptr }));
         }
-        None
     }
 }
 
-/// Query for multiple components (tuple support)
-pub struct QueryTuple<'w, A, B> {
-    entities: Vec<Entity>,
-    world_ptr: *const World,
-    _marker: PhantomData<(&'w (), A, B)>,
+// Read-only two-component query
+pub struct Query2<'w, A: Component, B: Component> {
+    world: &'w World,
+    archetype_ids: Vec<ArchetypeId>,
+    arch_idx: usize,
+    entity_idx: usize,
+    _m: std::marker::PhantomData<(A, B)>,
 }
 
-impl<'w, A: Component, B: Component> QueryTuple<'w, A, B> {
+impl<'w, A: Component, B: Component> Query2<'w, A, B> {
     pub fn new(world: &'w World) -> Self {
-        // Find entities that have both A and B
-        let entities_a = world.entities_with::<A>();
-        let entities: Vec<Entity> = entities_a
-            .into_iter()
-            .filter(|&e| world.has::<B>(e))
+        let archetype_ids = world
+            .archetypes
+            .archetypes_with_component(std::any::TypeId::of::<A>())
+            .filter(|arch| arch.signature.contains(std::any::TypeId::of::<B>()))
+            .map(|arch| arch.id)
             .collect();
 
         Self {
-            entities,
-            world_ptr: world as *const World,
-            _marker: PhantomData,
-        }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = (Entity, &A, &B)> + '_ {
-        let world = unsafe { &*self.world_ptr };
-        self.entities.iter().filter_map(move |&entity| {
-            let a = world.get::<A>(entity)?;
-            let b = world.get::<B>(entity)?;
-            Some((entity, a, b))
-        })
-    }
-}
-
-/// Mutable query for multiple components
-pub struct QueryTupleMut<'w, A, B> {
-    entities: Vec<Entity>,
-    world_ptr: *mut World,
-    _marker: PhantomData<(&'w mut (), A, B)>,
-}
-
-impl<'w, A: Component, B: Component> QueryTupleMut<'w, A, B> {
-    pub fn new(world: &'w mut World) -> Self {
-        let entities_a = world.entities_with::<A>();
-        let entities: Vec<Entity> = entities_a
-            .into_iter()
-            .filter(|&e| world.has::<B>(e))
-            .collect();
-
-        Self {
-            entities,
-            world_ptr: world as *mut World,
-            _marker: PhantomData,
-        }
-    }
-
-    /// SAFETY: This requires careful handling of mutable borrows
-    /// We return owned entity IDs and defer the mutable borrow to iteration time
-    pub fn iter_mut(&mut self) -> QueryTupleMutIter<'_, A, B> {
-        QueryTupleMutIter {
-            entities: self.entities.clone(),
-            index: 0,
-            world_ptr: self.world_ptr,
-            _marker: PhantomData,
+            world,
+            archetype_ids,
+            arch_idx: 0,
+            entity_idx: 0,
+            _m: Default::default(),
         }
     }
 }
 
-pub struct QueryTupleMutIter<'w, A, B> {
-    entities: Vec<Entity>,
-    index: usize,
-    world_ptr: *mut World,
-    _marker: PhantomData<(&'w mut (), A, B)>,
-}
-
-impl<'w, A: Component, B: Component> Iterator for QueryTupleMutIter<'w, A, B> {
-    type Item = (Entity, &'w mut A, &'w mut B);
-
+impl<'w, A: Component, B: Component> Iterator for Query2<'w, A, B> {
+    type Item = (Entity, &'w A, &'w B);
     fn next(&mut self) -> Option<Self::Item> {
-        while self.index < self.entities.len() {
-            let entity = self.entities[self.index];
-            self.index += 1;
+        loop {
+            if self.arch_idx >= self.archetype_ids.len() {
+                return None;
+            }
+            let archetype_id = self.archetype_ids[self.arch_idx];
+            let archetype = self.world.archetypes.get_archetype(archetype_id).unwrap();
 
-            let world = unsafe { &mut *self.world_ptr };
+            if self.entity_idx >= archetype.len() {
+                self.arch_idx += 1;
+                self.entity_idx = 0;
+                continue;
+            }
 
-            // Get both mutable references
-            // SAFETY: We guarantee no aliasing because each entity is visited once
-            let a_ptr = world.get_mut::<A>(entity)? as *mut A;
-            let b_ptr = world.get_mut::<B>(entity)? as *mut B;
+            let entity = archetype.entities_vec()[self.entity_idx];
+            self.entity_idx += 1;
 
-            // Extend lifetimes (safe because we own the iteration)
-            let a = unsafe { &mut *a_ptr };
-            let b = unsafe { &mut *b_ptr };
+            // Unsafe is used to satisfy the borrow checker. This is safe because
+            // we are only reading, and the iterator structure ensures we don't hold
+            // references that outlive the world.
+            let component_a = archetype.get::<A>(entity).unwrap();
+            let component_b = archetype.get::<B>(entity).unwrap();
+            let ptr_a = component_a as *const A;
+            let ptr_b = component_b as *const B;
 
-            return Some((entity, a, b));
+            return Some((entity, unsafe { &*ptr_a }, unsafe { &*ptr_b }));
         }
-        None
-    }
-}
-
-/// Immutable resource parameter
-pub struct Res<'w, T: Resource> {
-    value: &'w T,
-}
-
-impl<'w, T: Resource> Res<'w, T> {
-    pub fn new(world: &'w World) -> Option<Self> {
-        world.get_resource::<T>().map(|value| Self { value })
-    }
-}
-
-impl<'w, T: Resource> std::ops::Deref for Res<'w, T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        self.value
-    }
-}
-
-/// Mutable resource parameter
-pub struct ResMut<'w, T: Resource> {
-    value: &'w mut T,
-}
-
-impl<'w, T: Resource> ResMut<'w, T> {
-    pub fn new(world: &'w mut World) -> Option<Self> {
-        world.get_resource_mut::<T>().map(|value| Self { value })
-    }
-}
-
-impl<'w, T: Resource> std::ops::Deref for ResMut<'w, T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        self.value
-    }
-}
-
-impl<'w, T: Resource> std::ops::DerefMut for ResMut<'w, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.value
-    }
-}
-
-/// Events parameter for reading/sending events
-pub struct EventsParam<'w> {
-    events: &'w mut Events,
-}
-
-impl<'w> EventsParam<'w> {
-    pub fn new(world: &'w mut World) -> Option<Self> {
-        world
-            .get_resource_mut::<Events>()
-            .map(|events| Self { events })
-    }
-
-    pub fn send<E: crate::Event>(&mut self, event: E) {
-        self.events.send(event);
-    }
-
-    pub fn read<E: crate::Event>(&self) -> impl Iterator<Item = &E> {
-        self.events.read::<E>()
-    }
-
-    pub fn drain<E: crate::Event>(&mut self) -> impl Iterator<Item = E> + '_ {
-        self.events.drain::<E>()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[derive(Clone, Copy, Debug, PartialEq)]
-    struct Position(f32, f32);
-
-    #[derive(Clone, Copy, Debug, PartialEq)]
-    struct Velocity(f32, f32);
-
-    #[test]
-    fn test_query_iter() {
-        let mut world = World::new();
-        let e1 = world.spawn();
-        let e2 = world.spawn();
-        world.insert(e1, Position(1.0, 2.0));
-        world.insert(e2, Position(3.0, 4.0));
-
-        let query = Query::<Position>::new(&world);
-        let positions: Vec<_> = query.iter().map(|(_, p)| *p).collect();
-
-        assert_eq!(positions.len(), 2);
-        assert!(positions.contains(&Position(1.0, 2.0)));
-        assert!(positions.contains(&Position(3.0, 4.0)));
-    }
-
-    #[test]
-    fn test_query_tuple() {
-        let mut world = World::new();
-        let e1 = world.spawn();
-        let e2 = world.spawn();
-
-        world.insert(e1, Position(1.0, 2.0));
-        world.insert(e1, Velocity(0.5, 0.5));
-
-        world.insert(e2, Position(3.0, 4.0));
-        // e2 doesn't have Velocity
-
-        let query = QueryTuple::<Position, Velocity>::new(&world);
-        let count = query.iter().count();
-
-        assert_eq!(count, 1); // Only e1 has both
-    }
-
-    #[derive(Debug, PartialEq)]
-    struct TestResource {
-        value: i32,
-    }
-
-    #[test]
-    fn test_res_param() {
-        let mut world = World::new();
-        world.insert_resource(TestResource { value: 42 });
-
-        let res = Res::<TestResource>::new(&world).unwrap();
-        assert_eq!((*res).value, 42);
-    }
-
-    #[test]
-    fn test_res_mut_param() {
-        let mut world = World::new();
-        world.insert_resource(TestResource { value: 42 });
-
-        let mut res = ResMut::<TestResource>::new(&mut world).unwrap();
-        (*res).value = 100;
-
-        assert_eq!(world.get_resource::<TestResource>().unwrap().value, 100);
     }
 }

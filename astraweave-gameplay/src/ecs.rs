@@ -87,7 +87,7 @@ pub struct CQuestProgress {
 
 /// Combat system that ticks attack states
 pub fn combat_system(world: &mut astraweave_ecs::World) {
-    let dt = *world.resource::<f32>().unwrap_or(&0.016); // default 60fps
+    let dt = *world.get_resource::<f32>().unwrap_or(&0.016); // default 60fps
                                                          // Collect entities with attacks
     let mut attackers = Vec::new();
     {
@@ -132,7 +132,7 @@ pub fn combat_system(world: &mut astraweave_ecs::World) {
 
 /// Crafting system that advances crafting progress
 pub fn crafting_system(world: &mut astraweave_ecs::World) {
-    let dt = *world.resource::<f32>().unwrap_or(&0.016);
+    let dt = *world.get_resource::<f32>().unwrap_or(&0.016);
     // Collect entities with queues
     let mut crafters = Vec::new();
     {

@@ -1,63 +1,54 @@
 [package]
 name = "astraweave-render"
 version = "0.1.0"
-license.workspace = true
 edition = "2021"
+license.workspace = true
+
+[features]
+default = ["postfx"]
+postfx = []
+gpu-tests = []
+textures = ["image"]
+skinning-cpu = []
+skinning-gpu = []
+assets = []
 
 [dependencies]
 anyhow = { workspace = true }
-bytemuck = { workspace = true }
-glam = { workspace = true }
 wgpu = { workspace = true }
+glam = { workspace = true }
 winit = { workspace = true }
-pollster = { workspace = true }
-rand = { workspace = true }
-serde = { workspace = true }
-astraweave-terrain = { path = "../astraweave-terrain" }
+image = { version = "0.25", optional = true }
+bytemuck = { workspace = true }
+astraweave-core = { path = "../astraweave-core" }
 astraweave-materials = { path = "../astraweave-materials" }
-image = { version = "0.25", optional = true, features = ["hdr"] }
+astraweave-cinematics = { path = "../astraweave-cinematics" }
+astraweave-terrain = { path = "../astraweave-terrain" }
+log = "0.4"
+egui = { workspace = true }
+egui-winit = { workspace = true }
+egui-wgpu = { workspace = true }
 half = "2"
 toml = { workspace = true }
-
-# Optional asset loaders
 gltf = { version = "1.4", optional = true, features = ["import"] }
 mikktspace = { version = "0.3", optional = true }
 tobj = { version = "4", optional = true }
-
-# Cinematics for camera/timeline control
-astraweave-cinematics = { path = "../astraweave-cinematics" }
 astraweave-asset = { path = "../astraweave-asset" }
 aw_asset_cli = { path = "../tools/aw_asset_cli" }
-ktx2 = "0.3"  # KTX2 texture loading for BC-compressed textures (downgraded for API compatibility)
-basis-universal = "0.3.1"  # Universal texture transcoding with full Basis Universal support
-texture2ddecoder = "0.1"  # Pure Rust BC1/3/5/7 decoder
+ktx2 = "0.3"
+basis-universal = "0.3.1"
+texture2ddecoder = "0.1"
+serde = { workspace = true }
 serde_json = "1"
+rand = { workspace = true }
 tokio = { version = "1", features = ["sync"] }
-
-[features]
-default = ["textures", "skinning-cpu"]
-textures = ["image"]
-# Asset pipeline feature flags
-gltf-assets = ["gltf", "mikktspace"]
-obj-assets = ["tobj"]
-assets = ["gltf-assets", "obj-assets"]
-# Phase 2 Task 3: GPU-driven rendering
-gpu-culling = []
-indirect-draw = []
-gpu-tests = []
-# Phase 2 Task 4: IBL & Post-Processing
-ibl = ["textures"]
-bloom = []
-postfx = []
-# Phase 2 Task 5: Skeletal Animation
-skinning-cpu = [] # CPU skinning (default, CI-safe)
-skinning-gpu = [] # GPU skinning (optional, requires GPU for tests)
-# Nanite virtualized geometry
-nanite = []
 
 [dev-dependencies]
 naga = "25.0"
 criterion = { workspace = true }
-image = { version = "0.25", default-features = false, features = ["png"] }
 tempfile = "3"
 pollster = { workspace = true }
+env_logger = "0.11"
+serde = { version = "1", features = ["derive"] }
+png = "0.17"
+bytes = "1"
