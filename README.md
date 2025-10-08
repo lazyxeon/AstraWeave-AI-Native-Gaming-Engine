@@ -33,7 +33,7 @@
 AstraWeave itself is the outcome of an **iterative, multi-model AI collaboration pipeline**. Every architectural decision, line of code, asset, and document in this repository was generated through coordinated AI workflows—no human-authored code or content is present. The project functions simultaneously as:
 
 - **A living experiment in specialized AI workflows**, showcasing how model ensembles can refine complex systems through continuous feedback, validation, and tooling integration.
-- **An aspiring fully functional AI-native gaming engine**, proving that autonomous AI teams can design, implement, and evolve production-grade interactive technology end-to-end.
+- **An aspiring fully functional AI-native game engine**, proving that autonomous AI teams can design, implement, and evolve production-grade interactive technology end-to-end.
 
 This README, the surrounding documentation, and the engine codebase are therefore both a technical artifact and a case study in AI-led software creation. Each iteration has been captured, validated, and merged by AI agents operating under deterministic processes to ensure reliability, traceability, and reproducibility without human intervention.
 
