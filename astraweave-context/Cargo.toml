@@ -1,0 +1,38 @@
+[package]
+name = "astraweave-context"
+version = "0.1.0"
+edition = "2021"
+description = "Context management and conversation history for AI-native gaming"
+license = "MIT"
+repository = "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine"
+
+[dependencies]
+# Core dependencies
+anyhow = "1.0"
+async-trait = "0.1"
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Collections
+indexmap = "2.0"
+smallvec = "1.11"
+
+# Token counting
+tiktoken-rs = "0.5"
+
+# LLM integration
+astraweave-llm = { path = "../astraweave-llm" }
+
+# Concurrent data structures
+dashmap = "5.5"
+parking_lot = "0.12"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio-test = "0.4"
+
+[[bench]]
+name = "context_benchmark"
+harness = false

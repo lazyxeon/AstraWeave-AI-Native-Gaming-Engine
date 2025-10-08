@@ -1,0 +1,46 @@
+[package]
+name = "astraweave-rag"
+version = "0.1.0"
+edition = "2021"
+description = "Retrieval Augmented Generation pipeline for AI-native gaming"
+license = "MIT"
+repository = "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine"
+
+[dependencies]
+# Core dependencies
+anyhow = "1.0"
+async-trait = "0.1"
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
+
+# Integration with other AstraWeave crates
+astraweave-embeddings = { path = "../astraweave-embeddings" }
+astraweave-context = { path = "../astraweave-context" }
+astraweave-prompts = { path = "../astraweave-prompts" }
+astraweave-llm = { path = "../astraweave-llm" }
+
+# Vector operations
+nalgebra = "0.32"
+
+# Concurrent data structures
+dashmap = "5.5"
+parking_lot = "0.12"
+
+# Date and time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Random sampling for diversity
+rand = "0.8"
+
+# Fuzzy string matching
+fuzzy-matcher = "0.3"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+tokio-test = "0.4"
+
+[[bench]]
+name = "rag_benchmark"
+harness = false
