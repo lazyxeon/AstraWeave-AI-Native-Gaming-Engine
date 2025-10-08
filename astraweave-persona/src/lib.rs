@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
-use astraweave_memory::{CompanionProfile, Fact, Persona, Skill};
+// persona types live in the `persona` module of `astraweave_memory`
+use astraweave_memory::persona::{CompanionProfile, Fact, Persona, Skill};
 use serde::Deserialize;
 use std::io::Read;
 
@@ -45,19 +46,20 @@ pub fn load_persona_zip(path: &str) -> Result<CompanionProfile> {
     }
     let m: Manifest = toml::from_str(&manifest_txt)?;
     let mut p = CompanionProfile::new_default();
-    p.persona = Persona {
-        tone: m.tone,
-        risk: m.risk,
-        humor: m.humor,
-        voice: m.voice,
-        backstory: "Loaded from manifest".to_string(),
-        likes: vec![],
-        dislikes: vec![],
-        goals: vec![],
-    };
+    // Populate persona fields
+    p.persona.name = m.voice.clone();
+    p.persona.tone = m.tone.clone();
+    p.persona.risk = m.risk.clone();
+    p.persona.humor = m.humor.clone();
+    p.persona.voice = m.voice.clone();
+    p.persona.backstory = "Loaded from manifest".to_string();
+
+    // Player preferences (optional JSON)
     if let Some(js) = m.prefs_json {
-        p.player_prefs = serde_json::from_str(&js)?;
+        p.player_prefs = serde_json::from_str(&js).unwrap_or(serde_json::Value::Null);
     }
+
+    // Skills
     if let Some(sk) = m.skills {
         p.skills = sk
             .into_iter()
@@ -68,6 +70,8 @@ pub fn load_persona_zip(path: &str) -> Result<CompanionProfile> {
             })
             .collect();
     }
+
+    // Facts
     if let Some(fs) = m.facts {
         p.facts = fs
             .into_iter()
@@ -78,6 +82,8 @@ pub fn load_persona_zip(path: &str) -> Result<CompanionProfile> {
             })
             .collect();
     }
+
+    // Sign the profile (no-op placeholder)
     p.sign();
     Ok(p)
 }

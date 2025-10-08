@@ -18,6 +18,33 @@ pub struct TemplateLibrary {
     metadata: LibraryMetadata,
 }
 
+/// Backwards-compatible PromptLibrary used by consumers
+#[derive(Debug, Clone)]
+pub struct PromptLibrary {
+    templates: HashMap<String, crate::template::PromptTemplate>,
+}
+
+impl PromptLibrary {
+    /// Create a new prompt library
+    pub fn new() -> Self {
+        Self { templates: HashMap::new() }
+    }
+
+    /// Add a template to the library
+    pub fn add_template(&mut self, name: &str, template: crate::template::PromptTemplate) {
+        self.templates.insert(name.to_string(), template);
+    }
+
+    /// Get a template by name (cloned)
+    pub fn get_template(&self, name: &str) -> anyhow::Result<crate::template::PromptTemplate> {
+        if let Some(t) = self.templates.get(name) {
+            Ok(t.clone())
+        } else {
+            anyhow::bail!("template not found: {}", name)
+        }
+    }
+}
+
 /// Template collection
 #[derive(Debug, Clone)]
 pub struct TemplateCollection {

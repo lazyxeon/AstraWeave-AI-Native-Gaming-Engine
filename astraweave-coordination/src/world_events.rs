@@ -10,7 +10,8 @@ use chrono::{DateTime, Utc, Duration};
 use astraweave_llm::LlmClient;
 use astraweave_rag::RagPipeline;
 use astraweave_context::ConversationHistory;
-use astraweave_prompts::{PromptTemplate, PromptLibrary};
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_prompts::library::PromptLibrary;
 
 use crate::agent::{WorldEvent, EventSeverity};
 
@@ -277,7 +278,7 @@ impl WorldEventGenerator {
         let mut prompt_library = PromptLibrary::new();
 
         // Load event generation prompts
-        prompt_library.add_template("event_generation", PromptTemplate::new(
+        prompt_library.add_template("event_generation", PromptTemplate::new("event_generation".to_string(),
             r#"
 You are a world event generator for a dynamic fantasy game. Create engaging world events based on current game state and player activities.
 
@@ -319,9 +320,9 @@ Guidelines:
 5. Balance challenge with player capability
 6. Include meaningful consequences
             "#.trim().to_string()
-        )?);
+        ));
 
-        prompt_library.add_template("storyline_generation", PromptTemplate::new(
+        prompt_library.add_template("storyline_generation", PromptTemplate::new("storyline_generation".to_string(),
             r#"
 You are creating a multi-event storyline for a fantasy game. Design a coherent narrative arc with connected events.
 
@@ -371,9 +372,9 @@ Generate a storyline in JSON format:
 
 Create engaging, branching narratives that respond to player choices.
             "#.trim().to_string()
-        )?);
+        ));
 
-        prompt_library.add_template("event_coherence_check", PromptTemplate::new(
+        prompt_library.add_template("event_coherence_check", PromptTemplate::new("event_coherence_check".to_string(),
             r#"
 You are validating world event coherence. Check if the proposed event makes sense in the current game world.
 
@@ -408,7 +409,7 @@ Provide coherence analysis in JSON format:
 
 Focus on narrative consistency, logical causation, and player engagement opportunities.
             "#.trim().to_string()
-        )?);
+        ));
 
         let world_state = WorldState {
             current_time: Utc::now(),
@@ -524,7 +525,14 @@ Focus on narrative consistency, logical causation, and player engagement opportu
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("storyline_generation")?;
-        let prompt = template.render(&storyline_context)?;
+
+        // Convert storyline_context (String->String) into HashMap<String,String> for render_map
+        let mut serialized_story: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        for (k, v) in &storyline_context {
+            serialized_story.insert(k.clone(), v.clone());
+        }
+
+        let prompt = template.render_map(&serialized_story)?;
         drop(prompt_library);
 
         let response = self.llm_client.complete(&prompt).await
@@ -701,7 +709,14 @@ Focus on narrative consistency, logical causation, and player engagement opportu
     async fn generate_standalone_event(&self, context: &HashMap<String, serde_json::Value>, trigger_type: TriggerType) -> Result<WorldEvent> {
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("event_generation")?;
-        let prompt = template.render(context)?;
+
+        // Serialize context values to strings for rendering
+        let mut serialized_ctx: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        for (k, v) in context {
+            serialized_ctx.insert(k.clone(), serde_json::to_string(&v).unwrap_or_else(|_| "null".to_string()));
+        }
+
+        let prompt = template.render_map(&serialized_ctx)?;
         drop(prompt_library);
 
         let response = self.llm_client.complete(&prompt).await
@@ -762,7 +777,14 @@ Focus on narrative consistency, logical causation, and player engagement opportu
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("event_coherence_check")?;
-        let prompt = template.render(&coherence_context)?;
+
+        // Serialize coherence_context for rendering
+        let mut serialized_coh: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        for (k, v) in &coherence_context {
+            serialized_coh.insert(k.clone(), serde_json::to_string(v).unwrap_or_else(|_| "null".to_string()));
+        }
+
+        let prompt = template.render_map(&serialized_coh)?;
         drop(prompt_library);
 
         let response = self.llm_client.complete(&prompt).await

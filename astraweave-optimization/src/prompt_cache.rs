@@ -49,7 +49,8 @@ impl Default for PromptCacheConfig {
     fn default() -> Self {
         Self {
             max_cache_entries: 10000,
-            entry_ttl: Duration::from_hours(24),
+            // 24 hours
+            entry_ttl: Duration::from_secs(24 * 3600),
             enable_semantic_cache: true,
             similarity_threshold: 0.85,
             enable_compression: true,
@@ -96,7 +97,7 @@ pub struct PromptTemplate {
 }
 
 /// Cache performance statistics
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheStats {
     pub total_requests: u64,
     pub cache_hits: u64,
@@ -108,6 +109,23 @@ pub struct CacheStats {
     pub memory_usage_mb: f32,
     pub compression_savings_mb: f32,
     pub last_updated: DateTime<Utc>,
+}
+
+impl Default for CacheStats {
+    fn default() -> Self {
+        Self {
+            total_requests: 0,
+            cache_hits: 0,
+            cache_misses: 0,
+            semantic_hits: 0,
+            evictions: 0,
+            hit_rate: 0.0,
+            average_response_time_ms: 0.0,
+            memory_usage_mb: 0.0,
+            compression_savings_mb: 0.0,
+            last_updated: Utc::now(),
+        }
+    }
 }
 
 /// Cache lookup result

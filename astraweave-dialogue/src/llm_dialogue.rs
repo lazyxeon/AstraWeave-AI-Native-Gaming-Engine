@@ -20,7 +20,9 @@ use crate::{DialogueGraph, DialogueNode, DialogueResponse};
 // LLM Integration
 use astraweave_llm::LlmClient;
 use astraweave_context::{ConversationHistory, ContextConfig, Role, Message};
-use astraweave_prompts::{PromptTemplate, TemplateEngine, TemplateContext};
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_prompts::engine::TemplateEngine;
+use astraweave_prompts::context::PromptContext as TemplateContext;
 use astraweave_rag::{RagPipeline, MemoryQuery, RetrievedMemory};
 use astraweave_persona::{LlmPersonaManager, LlmPersona};
 use astraweave_embeddings::{Memory, MemoryCategory};
@@ -908,10 +910,9 @@ impl LlmDialogueSystem {
     
     /// Set up template engine with dialogue templates
     async fn setup_dialogue_templates(engine: &mut TemplateEngine) -> Result<()> {
-        // Main dialogue response template
-        let dialogue_template = PromptTemplate::new(
-            "dialogue_response",
-            r#"You are {{speaker.name}} engaged in conversation. Your personality: {{speaker.tone}}, humor: {{speaker.humor}}.
+    // Main dialogue response template
+    let dialogue_template = PromptTemplate::new("dialogue_response".to_string(),
+        r#"You are {{speaker.name}} engaged in conversation. Your personality: {{speaker.tone}}, humor: {{speaker.humor}}.
 
 {{speaker.backstory}}
 
@@ -941,10 +942,10 @@ Context: {{additional_context}}
 
 The player says: "{{player_input}}"
 
-Respond as {{speaker.name}} would, considering their personality, the emotional context, and conversation history. Be natural, engaging, and emotionally appropriate:"#
-        );
-        
-        engine.register_template("dialogue_response", dialogue_template)?;
+Respond as {{speaker.name}} would, considering their personality, the emotional context, and conversation history. Be natural, engaging, and emotionally appropriate:"#.trim().to_string()
+    );
+
+    engine.register_template("dialogue_response", dialogue_template)?;
         
         Ok(())
     }

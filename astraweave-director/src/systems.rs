@@ -211,9 +211,14 @@ impl DirectorLlmSystem {
         let plan = TacticPlan {
             strategy: "fallback_spawn".to_string(),
             reasoning: "LLM failure fallback - spawn enemies near player".to_string(),
-            operations: vec![DirectorOp::SpawnWave {
+                operations: vec![DirectorOp::SpawnWave {
                 archetype: "minion".into(),
-                count: budget.spawns.min(3),
+                // budget.spawns is i32; ensure we produce a u32 count safely
+                count: {
+                    let max_spawn = 3i32;
+                    let chosen = std::cmp::min(budget.spawns, max_spawn).max(0) as u32;
+                    chosen
+                },
                 origin: IVec2 {
                     x: snapshot.player.pos.x - 3,
                     y: snapshot.player.pos.y - 3,

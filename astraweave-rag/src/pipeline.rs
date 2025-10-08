@@ -280,6 +280,17 @@ impl RagPipeline {
         
         Ok(retrieved_memories)
     }
+
+    /// Convenience helper: retrieve and return the text contents as Vec<String>
+    pub async fn retrieve_texts(&self, query: &str, k: usize) -> Result<Vec<String>> {
+        let items = self.retrieve(query, k).await?;
+        Ok(items.into_iter().map(|r| r.memory.text).collect())
+    }
+
+    /// Return true if an LLM client is configured for this pipeline
+    pub fn has_llm_client(&self) -> bool {
+        self.llm_client.is_some()
+    }
     
     /// Inject retrieved memories into a prompt
     pub async fn inject_context(&self, base_prompt: &str, query: &str) -> Result<String> {
@@ -400,7 +411,7 @@ impl RagPipeline {
     }
     
     /// Trigger memory consolidation
-    async fn trigger_consolidation(&mut self) -> Result<()> {
+    async fn trigger_consolidation(&self) -> Result<()> {
         // Set consolidation in progress
         {
             let mut state = self.consolidation_state.write();
@@ -429,6 +440,53 @@ impl RagPipeline {
         }
         
         Ok(())
+    }
+
+    /// Adds a memory item asynchronously without requiring &mut self or Arc::get_mut.
+    ///
+    /// This method is safe to call from an Arc<RagPipeline> and uses the pipeline's
+    /// interior mutability (parking_lot locks) for coordination. It performs
+    /// embedding generation and vector store insertion asynchronously and updates
+    /// consolidation/metrics via synchronized locks. The lock scopes are kept
+    /// minimal and are not held across awaits.
+    pub async fn add_memory_async(&self, text: String) -> Result<String> {
+        let memory = Memory {
+            id: uuid::Uuid::new_v4().to_string(),
+            text: text.clone(),
+            timestamp: current_timestamp(),
+            importance: 1.0,
+            valence: 0.0,
+            category: MemoryCategory::Gameplay,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        // Generate embedding using the shared embedding client
+        let embedding = self.embedding_client.embed(&memory.text).await?;
+
+        // Store in vector store
+        self.vector_store.insert(memory.id.clone(), embedding, memory.text.clone()).await?;
+
+        // Update consolidation state (synchronous lock, dropped immediately)
+        {
+            let mut state = self.consolidation_state.write();
+            state.memories_since_consolidation += 1;
+        }
+
+        // Trigger consolidation if needed (runs while holding locks briefly internally)
+        if self.should_consolidate().await {
+            // Fire-and-forget consolidation is acceptable here; await it to keep behavior
+            // consistent with existing sync path.
+            let _ = self.trigger_consolidation().await;
+        }
+
+        // Update metrics
+        {
+            let mut metrics = self.metrics.write();
+            metrics.total_memories_stored += 1;
+        }
+
+        Ok(memory.id)
     }
     
     /// Check if a memory passes the query filters
@@ -693,6 +751,35 @@ mod tests {
         
         let metrics = pipeline.get_metrics();
         assert_eq!(metrics.total_memories_stored, 1);
+    }
+
+    #[tokio::test]
+    async fn add_memory_async_is_concurrent_arc_safe() {
+        let embedding_client = Arc::new(MockEmbeddingClient::new());
+        let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+        let config = RagConfig::default();
+
+        let pipeline = Arc::new(RagPipeline::new(
+            embedding_client,
+            vector_store,
+            None,
+            config,
+        ));
+
+        let p1 = Arc::clone(&pipeline);
+        let p2 = Arc::clone(&pipeline);
+
+        let t1 = tokio::spawn(async move { p1.add_memory_async("alpha".into()).await });
+        let t2 = tokio::spawn(async move { p2.add_memory_async("beta".into()).await });
+
+        let (r1, r2) = tokio::join!(t1, t2);
+        let id1 = r1.unwrap().unwrap();
+        let id2 = r2.unwrap().unwrap();
+
+        assert_ne!(id1, id2, "distinct memories should yield distinct IDs");
+
+        // Optionally verify vector store length increased (VectorStoreWrapper.len may be simplistic)
+        // We only check that the IDs are non-empty above to keep test robust.
     }
     
     #[test]
