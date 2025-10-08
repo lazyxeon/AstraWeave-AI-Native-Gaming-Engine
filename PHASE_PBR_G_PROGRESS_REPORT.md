@@ -26,7 +26,7 @@ Phase PBR-G has achieved significant progress with **5.5 out of 6 major tasks co
 ### ✅ Task 1: Asset CLI Validators (COMPLETE)
 **Lines**: 850+ (validators.rs 700+ lines, CLI handler 150+ lines)  
 **Status**: Production-ready  
-**Documentation**: PBR_G_TASK1_COMPLETION.md
+**Documentation**: [PBR_G_TASK1_COMPLETION.md](docs/pbr/PBR_G_TASK1_COMPLETION.md)
 
 **Features**:
 - 15 validation functions (ORM channels, mipmaps, normal maps, albedo, TOML structure)
@@ -50,31 +50,31 @@ cargo run -p aw_asset_cli -- validate assets/materials/grassland/grassland_demo.
 #### Task 2.1: MaterialInspector Module ✅
 - **Lines**: 494 lines (material_inspector.rs)
 - **Features**: 3-panel UI, texture loading, channel filtering, color space toggle, zoom controls
-- **Documentation**: PBR_G_TASK2.1_COMPLETION.md
+- **Documentation**: [PBR_G_TASK2.1_COMPLETION.md](docs/pbr/PBR_G_TASK2.1_COMPLETION.md)
 
 #### Task 2.2: BrdfPreview Module ✅
 - **Lines**: 280+ lines (brdf_preview.rs)
 - **Features**: Software sphere rasterizer, Cook-Torrance BRDF, ACES tone mapping, lighting controls
 - **Performance**: 10-20ms render time, dirty flag optimization
-- **Documentation**: PBR_G_TASK2.2_COMPLETION.md
+- **Documentation**: [PBR_G_TASK2.2_COMPLETION.md](docs/pbr/PBR_G_TASK2.2_COMPLETION.md)
 
 #### Task 2.3: Advanced Inspector Features ✅
 - **Lines**: 150+ lines
 - **Features**: Asset database browser, LRU material history (10 recent), directory traversal
-- **Documentation**: PBR_G_TASK2.3_COMPLETION.md
+- **Documentation**: [PBR_G_TASK2.3_COMPLETION.md](docs/pbr/PBR_G_TASK2.3_COMPLETION.md)
 
 #### Task 2.4: Testing & Polish ✅
 - **Lines**: 550+ lines documentation + 50 lines code changes
 - **Features**: 20+ tooltips, color-coded status messages, improved spacing, empty state handling
 - **Testing**: 18 test cases across 6 suites
-- **Documentation**: PBR_G_TASK2.4_TESTING_GUIDE.md (500+ lines), PBR_G_TASK2.4_COMPLETION.md
+- **Documentation**: [PBR_G_TASK2.4_TESTING_GUIDE.md](docs/pbr/PBR_G_TASK2.4_TESTING_GUIDE.md) (500+ lines), [PBR_G_TASK2.4_COMPLETION.md](docs/pbr/PBR_G_TASK2.4_COMPLETION.md)
 
 ---
 
 ### ✅ Task 3: Hot-Reload Integration (CORE COMPLETE - GPU design ready)
 **Lines**: 1,170+ code lines + 1,700+ documentation lines  
 **Status**: CPU-side complete, GPU design ready for implementation  
-**Documentation**: PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md (800+ lines), PBR_G_GPU_INTEGRATION_DESIGN.md (900+ lines)
+**Documentation**: [PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md](docs/pbr/PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md) (800+ lines), [PBR_G_GPU_INTEGRATION_DESIGN.md](docs/pbr/PBR_G_GPU_INTEGRATION_DESIGN.md) (900+ lines)
 
 **CPU-Side Implementation** (370 lines):
 - File watcher module (file_watcher.rs, 270+ lines)
@@ -107,7 +107,7 @@ cargo run -p aw_asset_cli -- validate assets/materials/grassland/grassland_demo.
 ### ✅ Task 4: Debug UI Components (CORE COMPLETE - optional features deferred)
 **Lines**: 230 code lines + 900 documentation lines  
 **Status**: Core features production-ready, optional enhancements deferred  
-**Documentation**: PBR_G_TASK4_DEBUG_UI_COMPLETE.md (900+ lines)
+**Documentation**: [PBR_G_TASK4_DEBUG_UI_COMPLETE.md](docs/pbr/PBR_G_TASK4_DEBUG_UI_COMPLETE.md) (900+ lines)
 
 **Implemented Features**:
 1. **UV Grid Overlay** (~50 lines):
@@ -141,7 +141,7 @@ cargo run -p aw_asset_cli -- validate assets/materials/grassland/grassland_demo.
 ### ✅ Task 5: CI Integration (COMPLETE)
 **Lines**: 780+ (workflows 380+ lines, documentation 400+ lines)  
 **Status**: Production-ready  
-**Documentation**: PBR_G_TASK5_CI_INTEGRATION_GUIDE.md (400+ lines), PBR_G_TASK5_COMPLETION.md
+**Documentation**: [PBR_G_TASK5_CI_INTEGRATION_GUIDE.md](docs/pbr/PBR_G_TASK5_CI_INTEGRATION_GUIDE.md) (400+ lines), [PBR_G_TASK5_COMPLETION.md](docs/pbr/PBR_G_TASK5_COMPLETION.md)
 
 **Workflows**:
 1. **material-validation.yml** (200+ lines):
@@ -250,13 +250,13 @@ cargo run -p aw_asset_cli -- validate assets/materials/grassland/grassland_demo.
 
 ### Documentation Created This Session
 
-1. **PBR_G_TASK4_DEBUG_UI_COMPLETE.md** (900+ lines):
+1. **[PBR_G_TASK4_DEBUG_UI_COMPLETE.md](docs/pbr/PBR_G_TASK4_DEBUG_UI_COMPLETE.md)** (900+ lines):
    - Code changes (struct fields, helper methods, UI controls)
    - Usage guide (UV grid, histogram)
    - Technical details (design decisions, performance)
    - Testing plan
 
-2. **PBR_G_GPU_INTEGRATION_DESIGN.md** (900+ lines):
+2. **[PBR_G_GPU_INTEGRATION_DESIGN.md](docs/pbr/PBR_G_GPU_INTEGRATION_DESIGN.md)** (900+ lines):
    - Architecture overview
    - Two integration strategies (Option A: 2.5h, Option B: 6.5h)
    - Complete code examples
@@ -264,7 +264,7 @@ cargo run -p aw_asset_cli -- validate assets/materials/grassland/grassland_demo.
    - Future enhancements (shader hot-reload, multi-material)
    - Implementation checklist
 
-3. **PBR_G_OPTION_B_SESSION_SUMMARY.md** (this session):
+3. **[PBR_G_OPTION_B_SESSION_SUMMARY.md](docs/pbr/PBR_G_OPTION_B_SESSION_SUMMARY.md)** (this session):
    - Session overview
    - Technical insights
    - Design decisions
