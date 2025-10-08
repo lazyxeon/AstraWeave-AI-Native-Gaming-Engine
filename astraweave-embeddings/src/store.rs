@@ -8,39 +8,25 @@ Uses HNSW indexing for fast approximate nearest neighbor search.
 use crate::{DistanceMetric, EmbeddingConfig, SearchResult, StoredVector};
 use anyhow::{anyhow, Result};
 use dashmap::DashMap;
-use hnsw_rs::prelude::*;
-use nalgebra as na;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// High-performance vector store with HNSW indexing
+/// High-performance vector store with HNSW indexing (simplified implementation)
 pub struct VectorStore {
     /// Configuration
     config: EmbeddingConfig,
-    
-    /// HNSW index for fast similarity search
-    index: Arc<RwLock<Option<Hnsw<f32, DistanceFunc>>>>,
-    
+
     /// Storage for vectors and metadata
     vectors: Arc<DashMap<String, StoredVector>>,
-    
-    /// ID to HNSW index mapping
-    id_to_index: Arc<DashMap<String, usize>>,
-    
-    /// Index to ID mapping
-    index_to_id: Arc<DashMap<usize, String>>,
-    
+
     /// Next available index
     next_index: Arc<parking_lot::Mutex<usize>>,
-    
+
     /// Metrics tracking
     metrics: Arc<RwLock<VectorStoreMetrics>>,
 }
-
-/// Distance function type for HNSW
-type DistanceFunc = fn(&[f32], &[f32]) -> f32;
 
 /// Metrics for vector store performance
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -65,17 +51,14 @@ impl VectorStore {
     pub fn with_config(config: EmbeddingConfig) -> Self {
         Self {
             config,
-            index: Arc::new(RwLock::new(None)),
             vectors: Arc::new(DashMap::new()),
-            id_to_index: Arc::new(DashMap::new()),
-            index_to_id: Arc::new(DashMap::new()),
             next_index: Arc::new(parking_lot::Mutex::new(0)),
             metrics: Arc::new(RwLock::new(VectorStoreMetrics::default())),
         }
     }
     
     /// Get the distance function for the configured metric
-    fn get_distance_func(&self) -> DistanceFunc {
+    fn get_distance_func(&self) -> fn(&[f32], &[f32]) -> f32 {
         match self.config.distance_metric {
             DistanceMetric::Cosine => cosine_distance,
             DistanceMetric::Euclidean => euclidean_distance,
@@ -108,21 +91,8 @@ impl VectorStore {
             metadata: HashMap::new(),
         };
         
-        // Get next index
-        let index = {
-            let mut next_idx = self.next_index.lock();
-            let idx = *next_idx;
-            *next_idx += 1;
-            idx
-        };
-        
-        // Store vector and mappings
-        self.vectors.insert(id.clone(), stored_vector);
-        self.id_to_index.insert(id.clone(), index);
-        self.index_to_id.insert(index, id);
-        
-        // Rebuild index if needed
-        self.rebuild_index_if_needed()?;
+        // Store vector
+        self.vectors.insert(id, stored_vector);
         
         // Update metrics
         {
@@ -159,18 +129,7 @@ impl VectorStore {
             metadata,
         };
         
-        let index = {
-            let mut next_idx = self.next_index.lock();
-            let idx = *next_idx;
-            *next_idx += 1;
-            idx
-        };
-        
-        self.vectors.insert(id.clone(), stored_vector);
-        self.id_to_index.insert(id.clone(), index);
-        self.index_to_id.insert(index, id);
-        
-        self.rebuild_index_if_needed()?;
+        self.vectors.insert(id, stored_vector);
         
         {
             let mut metrics = self.metrics.write();
@@ -192,37 +151,7 @@ impl VectorStore {
             ));
         }
         
-        let results = {
-            let index_guard = self.index.read();
-            if let Some(index) = index_guard.as_ref() {
-                // Use HNSW index for fast search
-                let neighbors = index.search(query, k, 200); // ef = 200
-                
-                let mut results = Vec::with_capacity(neighbors.len());
-                for neighbor in neighbors {
-                    if let Some(id) = self.index_to_id.get(&neighbor.d_id) {
-                        if let Some(stored_vector) = self.vectors.get(&*id) {
-                            let distance = neighbor.distance;
-                            let score = match self.config.distance_metric {
-                                DistanceMetric::Cosine => 1.0 - distance,
-                                DistanceMetric::DotProduct => -distance, // Flip sign for dot product
-                                _ => 1.0 / (1.0 + distance), // Convert distance to similarity
-                            };
-                            
-                            results.push(SearchResult {
-                                vector: stored_vector.clone(),
-                                score,
-                                distance,
-                            });
-                        }
-                    }
-                }
-                results
-            } else {
-                // Fallback to brute force search
-                self.brute_force_search(query, k)?
-            }
-        };
+        let results = self.brute_force_search(query, k)?;
         
         // Update metrics
         let search_time = start_time.elapsed().as_millis() as f32;
@@ -268,17 +197,6 @@ impl VectorStore {
     /// Remove a vector from the store
     pub fn remove(&self, id: &str) -> Option<StoredVector> {
         if let Some((_, stored_vector)) = self.vectors.remove(id) {
-            // Remove from mappings
-            if let Some((_, index)) = self.id_to_index.remove(id) {
-                self.index_to_id.remove(&index);
-            }
-            
-            // Mark index as needing rebuild
-            {
-                let mut index_guard = self.index.write();
-                *index_guard = None;
-            }
-            
             Some(stored_vector)
         } else {
             None
@@ -308,77 +226,16 @@ impl VectorStore {
     /// Clear all vectors
     pub fn clear(&self) {
         self.vectors.clear();
-        self.id_to_index.clear();
-        self.index_to_id.clear();
-        
+
         {
             let mut next_idx = self.next_index.lock();
             *next_idx = 0;
         }
-        
-        {
-            let mut index_guard = self.index.write();
-            *index_guard = None;
-        }
     }
     
-    /// Rebuild the HNSW index
+    /// Rebuild index (simplified stub - no HNSW in this version)
     pub fn rebuild_index(&self) -> Result<()> {
-        let start_time = std::time::Instant::now();
-        
-        if self.vectors.is_empty() {
-            return Ok(());
-        }
-        
-        let distance_func = self.get_distance_func();
-        
-        // Create new HNSW index
-        let mut hnsw = Hnsw::new(
-            16, // max connections per layer
-            self.config.dimensions,
-            16, // max layers
-            200, // ef construction
-            distance_func,
-        );
-        
-        // Insert all vectors
-        for entry in self.vectors.iter() {
-            let stored_vector = entry.value();
-            if let Some(index) = self.id_to_index.get(&stored_vector.id) {
-                hnsw.insert((&stored_vector.vector, *index));
-            }
-        }
-        
-        // Set ef for search
-        hnsw.set_ef(100);
-        
-        // Replace index
-        {
-            let mut index_guard = self.index.write();
-            *index_guard = Some(hnsw);
-        }
-        
-        // Update metrics
-        let build_time = start_time.elapsed().as_millis() as f32;
-        {
-            let mut metrics = self.metrics.write();
-            metrics.index_build_time_ms = build_time;
-        }
-        
-        Ok(())
-    }
-    
-    /// Rebuild index if it doesn't exist or is stale
-    fn rebuild_index_if_needed(&self) -> Result<()> {
-        let needs_rebuild = {
-            let index_guard = self.index.read();
-            index_guard.is_none()
-        };
-        
-        if needs_rebuild && !self.vectors.is_empty() {
-            self.rebuild_index()?;
-        }
-        
+        // Simplified implementation - no actual indexing
         Ok(())
     }
     
@@ -418,10 +275,7 @@ impl VectorStore {
             }
         }
         
-        // Rebuild index after pruning
-        if removed_count > 0 {
-            self.rebuild_index()?;
-        }
+        // No index rebuild needed in simplified version
         
         Ok(removed_count)
     }

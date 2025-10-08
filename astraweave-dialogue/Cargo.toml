@@ -10,3 +10,21 @@ publish.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
+
+# Phase 2 LLM Integration
+astraweave-llm = { path = "../astraweave-llm" }
+astraweave-embeddings = { path = "../astraweave-embeddings" }
+astraweave-context = { path = "../astraweave-context" }
+astraweave-prompts = { path = "../astraweave-prompts" }
+astraweave-rag = { path = "../astraweave-rag" }
+astraweave-persona = { path = "../astraweave-persona" }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+
+# Additional utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+rand = "0.8"
+regex = "1.10"

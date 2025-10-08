@@ -17,25 +17,30 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Vector operations and indexing
 nalgebra = "0.32"
-rand = "0.8"
+rand = { version = "0.8", features = ["small_rng"] }
 
 # ONNX Runtime for sentence transformers
-ort = { version = "2.0", features = ["cuda", "tensorrt"], optional = true }
+ort = { version = "2.0.0-rc.10", features = ["cuda", "tensorrt"], optional = true }
 
 # Alternative: candle for pure Rust inference
-candle-core = { version = "0.3", optional = true }
-candle-nn = { version = "0.3", optional = true }
-candle-transformers = { version = "0.3", optional = true }
+candle-core = { version = "0.7", optional = true }
+candle-nn = { version = "0.7", optional = true }
+candle-transformers = { version = "0.7", optional = true }
 
-# HNSW for approximate nearest neighbor search
-hnsw_rs = "0.3"
+# HNSW for approximate nearest neighbor search (optional)
+hnsw_rs = { version = "0.3", optional = true }
+
+# HTTP client for embeddings API
+reqwest = { version = "0.12", features = ["json"], optional = true }
 
 # Concurrent data structures
 dashmap = "5.5"
 parking_lot = "0.12"
 
 [features]
-default = ["candle"]
+default = ["hnsw"]
+hnsw = ["hnsw_rs"]
+http = ["reqwest"]
 onnx = ["ort"]
 candle = ["candle-core", "candle-nn", "candle-transformers"]
 
@@ -43,6 +48,3 @@ candle = ["candle-core", "candle-nn", "candle-transformers"]
 criterion = { version = "0.5", features = ["html_reports"] }
 tokio-test = "0.4"
 
-[[bench]]
-name = "embedding_benchmark"
-harness = false

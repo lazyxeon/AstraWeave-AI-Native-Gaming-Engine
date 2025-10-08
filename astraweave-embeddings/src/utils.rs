@@ -320,6 +320,7 @@ impl BatchProcessor {
         mut processor: F,
     ) -> Result<Vec<R>>
     where
+        T: Clone,
         F: FnMut(Vec<T>) -> Fut,
         Fut: std::future::Future<Output = Result<Vec<R>>>,
     {

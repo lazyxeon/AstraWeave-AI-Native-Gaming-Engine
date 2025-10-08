@@ -11,3 +11,19 @@ serde_json = { workspace = true }
 toml = { workspace = true }
 zip = { workspace = true }
 astraweave-memory = { path = "../astraweave-memory" }
+
+# Phase 2 LLM Integration
+astraweave-llm = { path = "../astraweave-llm" }
+astraweave-embeddings = { path = "../astraweave-embeddings" }
+astraweave-context = { path = "../astraweave-context" }
+astraweave-prompts = { path = "../astraweave-prompts" }
+astraweave-rag = { path = "../astraweave-rag" }
+
+# Async runtime
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+
+# Additional utilities
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+rand = "0.8"

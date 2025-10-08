@@ -3,6 +3,10 @@ use astraweave_memory::{CompanionProfile, Fact, Persona, Skill};
 use serde::Deserialize;
 use std::io::Read;
 
+// Phase 2 LLM Integration
+pub mod llm_persona;
+pub use llm_persona::*;
+
 #[derive(Deserialize)]
 struct Manifest {
     tone: String,

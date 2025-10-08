@@ -447,6 +447,7 @@ impl LlmClient for OllamaChatClient {
 
             // We'll periodically flush partial assembled assistant output to disk so
             // an interrupted run can still be inspected. Track last flush size.
+            #[allow(unused_mut)]
             let mut last_flush = 0usize;
             let mut first_token_at: Option<std::time::Instant> = None;
             while let Some(item) =
@@ -1155,6 +1156,12 @@ fn extract_json_from_fenced(s: &str) -> Option<String> {
     }
     None
 }
+
+pub mod ab_testing;
+pub mod rate_limiter;
+pub mod circuit_breaker;
+pub mod backpressure;
+pub mod production_hardening;
 
 /// Generate a plan using LLM with guardrails and fallback to heuristic if needed
 pub async fn plan_from_llm(

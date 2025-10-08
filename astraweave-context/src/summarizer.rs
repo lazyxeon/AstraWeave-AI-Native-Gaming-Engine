@@ -469,7 +469,7 @@ impl ConversationSummarizer {
     async fn merge_summaries(&self, summaries: &[ConversationSummary]) -> Result<ConversationSummary> {
         let combined_text = summaries
             .iter()
-            .map(|s| &s.summary)
+            .map(|s| s.summary.clone())
             .collect::<Vec<_>>()
             .join("\n\n");
         

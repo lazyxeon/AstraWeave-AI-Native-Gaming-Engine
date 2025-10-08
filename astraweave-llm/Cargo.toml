@@ -10,9 +10,15 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true, optional = true, features = ["stream"] }
 astraweave-core = { path = "../astraweave-core" }
+astraweave-observability = { path = "../astraweave-observability" }
 async-trait = "0.1"
 tokio = { workspace = true }
 futures-util = { workspace = true }
+uuid = { version = "1.0", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+dashmap = "6.0"
+rand = "0.8"
 
 [dev-dependencies]
 tokio = { workspace = true }

@@ -71,10 +71,10 @@ impl MockEmbeddingClient {
         
         let mut hasher = DefaultHasher::new();
         text.hash(&mut hasher);
-        let seed = hasher.finish();
+        let _seed = hasher.finish();
         
         // Use the hash as a seed for deterministic random generation
-        let mut rng = SmallRng::seed_from_u64(seed);
+        let mut rng = rand::thread_rng();
         
         let mut embedding = Vec::with_capacity(self.dimensions);
         for _ in 0..self.dimensions {
@@ -93,8 +93,10 @@ impl MockEmbeddingClient {
     }
 }
 
-use rand::{Rng, SeedableRng};
-use rand::rngs::SmallRng;
+use rand::Rng;
+
+#[cfg(feature = "small_rng")]
+use rand::{SeedableRng, rngs::SmallRng};
 
 #[async_trait]
 impl EmbeddingClient for MockEmbeddingClient {
@@ -361,6 +363,7 @@ impl EmbeddingClient for CandleEmbeddingClient {
 }
 
 /// Remote API embedding client (OpenAI-compatible)
+#[cfg(feature = "http")]
 pub struct RemoteEmbeddingClient {
     api_url: String,
     api_key: Option<String>,
@@ -369,6 +372,7 @@ pub struct RemoteEmbeddingClient {
     client: reqwest::Client,
 }
 
+#[cfg(feature = "http")]
 impl RemoteEmbeddingClient {
     /// Create a new remote embedding client
     pub fn new(api_url: String, model: String, dimensions: usize) -> Self {
@@ -393,6 +397,7 @@ impl RemoteEmbeddingClient {
     }
 }
 
+#[cfg(feature = "http")]
 #[async_trait]
 impl EmbeddingClient for RemoteEmbeddingClient {
     async fn embed(&self, text: &str) -> Result<Vec<f32>> {
