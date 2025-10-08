@@ -237,7 +237,7 @@ impl Message {
 }
 
 /// Context window metrics and statistics
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ContextMetrics {
     /// Total messages in history
     pub total_messages: usize,

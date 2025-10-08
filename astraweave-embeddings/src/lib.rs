@@ -139,7 +139,7 @@ pub struct Memory {
 }
 
 /// Categories of game memories
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum MemoryCategory {
     /// Interactions with other entities
     Social,

@@ -12,6 +12,7 @@ use winit::{
     event::{ElementState, Event, KeyEvent, WindowEvent},
     event_loop::EventLoop,
     keyboard::PhysicalKey,
+    window::Window,
 };
 
 fn world_to_instances(world: &World, scale: f32) -> Vec<Instance> {
@@ -78,12 +79,10 @@ fn main() -> anyhow::Result<()> {
     validate_textures()?;
 
     let event_loop = EventLoop::new()?;
-    let window = Arc::new(
-        winit::window::WindowBuilder::new()
-            .with_title("Veilweaver 3D - UI Overlay Demo")
-            .with_inner_size(PhysicalSize::new(1280, 720))
-            .build(&event_loop)?,
-    );
+    let window_attributes = Window::default_attributes()
+        .with_title("Veilweaver 3D - UI Overlay Demo")
+        .with_inner_size(PhysicalSize::new(1280, 720));
+    let window = Arc::new(event_loop.create_window(window_attributes)?);
 
     // World
     let mut world = World::new();
@@ -105,9 +104,10 @@ fn main() -> anyhow::Result<()> {
         &*window,
         None,
         None,
+        None,
     );
     let surface_format = renderer.surface_format();
-    let mut egui_rend = EguiRenderer::new(renderer.device(), surface_format, None, 1);
+    let mut egui_rend = EguiRenderer::new(renderer.device(), surface_format, None, 1, false);
 
     let mut camera = Camera {
         position: vec3(0.0, 8.0, 12.0),

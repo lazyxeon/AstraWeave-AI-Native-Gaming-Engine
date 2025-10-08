@@ -15,7 +15,7 @@ pub struct Memory {
 }
 
 /// Types of memories in the hierarchical memory system
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MemoryType {
     /// Short-term sensory impressions
     Sensory,
@@ -31,6 +31,12 @@ pub enum MemoryType {
     Emotional,
     /// Social memories about relationships and interactions
     Social,
+}
+
+impl Default for MemoryType {
+    fn default() -> Self {
+        MemoryType::Working
+    }
 }
 
 /// Content of a memory with structured data

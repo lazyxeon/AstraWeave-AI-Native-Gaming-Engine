@@ -8,7 +8,12 @@ members = [
   "astraweave-ipc",
   "astraweave-llm",       
   "astraweave-persona",   
-  "astraweave-author",    
+  "astraweave-author",
+  # Phase 1 LLM Integration Foundation Crates
+  "astraweave-embeddings",
+  "astraweave-context",
+  "astraweave-prompts",
+  "astraweave-rag",
   "astraweave-net",       
   "examples/hello_companion",
   "examples/adaptive_boss",
@@ -17,6 +22,7 @@ members = [
   "examples/debug_overlay",
   "examples/llm_toolcall",    
   "examples/llm_integration",    
+  "examples/llm_comprehensive_demo",
   "examples/ollama_probe",
   "examples/phase_director",  
   "examples/persona_loader",  
@@ -135,7 +141,7 @@ egui = "0.32"
 eframe = { version = "0.32", default-features = true, features = ["wgpu"] }
 egui_dock = "0.15"
 egui_graphs = "0.1"
-egui_plot = "0.32"
+egui_plot = "0.33"
 petgraph = "0.6"
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
 bytemuck = { version = "1", features = ["derive"] }

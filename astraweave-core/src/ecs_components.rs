@@ -81,21 +81,39 @@ pub struct CLegacyId {
     pub id: crate::Entity,
 }
 
-#[derive(Clone, Debug)]
-pub struct CPersona {
-    pub profile: astraweave_memory::CompanionProfile,
+// Temporary placeholder types to avoid circular dependency
+// These will be replaced when the memory system is integrated properly
+
+#[derive(Clone, Debug, Default)]
+pub struct CompanionProfile {
+    pub name: String,
+    pub personality_traits: Vec<String>,
+    pub background: String,
 }
 
-impl Default for CPersona {
-    fn default() -> Self {
-        Self {
-            profile: astraweave_memory::CompanionProfile::new_default(),
-        }
-    }
+#[derive(Clone, Debug, Default)]
+pub struct Fact {
+    pub id: String,
+    pub content: String,
+    pub confidence: f32,
+    pub timestamp: f64,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Episode {
+    pub id: String,
+    pub description: String,
+    pub timestamp: f64,
+    pub importance: f32,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct CPersona {
+    pub profile: CompanionProfile,
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct CMemory {
-    pub facts: Vec<astraweave_memory::Fact>,
-    pub episodes: Vec<astraweave_memory::Episode>,
+    pub facts: Vec<Fact>,
+    pub episodes: Vec<Episode>,
 }

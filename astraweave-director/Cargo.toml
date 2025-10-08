@@ -9,3 +9,10 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
+astraweave-llm = { path = "../astraweave-llm" }
+astraweave-rag = { path = "../astraweave-rag" }
+astraweave-context = { path = "../astraweave-context" }
+astraweave-prompts = { path = "../astraweave-prompts" }
+tokio = { workspace = true }
+tracing = { workspace = true }
+futures = "0.3"

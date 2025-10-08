@@ -8,6 +8,15 @@ pub struct BossDirector;
 mod phase;
 pub use phase::*;
 
+mod llm_director;
+pub use llm_director::*;
+
+mod components;
+pub use components::*;
+
+mod systems;
+pub use systems::*;
+
 impl BossDirector {
     pub fn plan(&self, snap: &WorldSnapshot, budget: &DirectorBudget) -> DirectorPlan {
         let mut ops = vec![];

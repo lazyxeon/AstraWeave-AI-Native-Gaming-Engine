@@ -46,7 +46,7 @@ impl PerfHud {
         ui.label(format!("FPS: {:.1}", self.fps));
         ui.label(format!("Entities: {}", self.entity_count));
 
-        Plot::new("ft_plot").view_aspect(2.5).show(ui, |plot_ui| {
+        let _ = Plot::new("ft_plot").view_aspect(2.5).show(ui, |plot_ui| {
             let ys: Vec<[f64; 2]> = self
                 .frame_times
                 .iter()
@@ -54,7 +54,7 @@ impl PerfHud {
                 .map(|(i, dt)| [i as f64, (*dt * 1000.0) as f64])
                 .collect();
             let line = Line::new("frame_time", PlotPoints::from(ys))
-                .color(egui_plot::Color32::from_rgb(100, 200, 100));
+                .color(egui::Color32::from_rgb(100, 200, 100));
             plot_ui.line(line);
         });
 

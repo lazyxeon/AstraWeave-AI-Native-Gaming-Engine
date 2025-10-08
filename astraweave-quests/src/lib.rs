@@ -27,3 +27,13 @@ impl Quest {
         self.steps.iter().all(|s| s.completed)
     }
 }
+
+// LLM-powered quest system modules
+pub mod llm_quests;
+pub use llm_quests::*;
+
+pub mod components;
+pub use components::*;
+
+pub mod systems;
+pub use systems::*;
