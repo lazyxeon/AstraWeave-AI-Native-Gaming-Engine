@@ -775,4 +775,4 @@ rp.set_bind_group(A, &merged_bg, &[]);
 **Document Version**: 1.0  
 **Date**: October 2025  
 **Author**: GitHub Copilot (AI Assistant)  
-**Related**: PBR_G_SHADER_FIXES_COMPLETE.md, BIND_GROUP_CONSOLIDATION_COMPLETE.md
+**Related**: [PBR_G_SHADER_FIXES_COMPLETE.md](docs/pbr/PBR_G_SHADER_FIXES_COMPLETE.md), BIND_GROUP_CONSOLIDATION_COMPLETE.md

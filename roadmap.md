@@ -497,11 +497,11 @@ Phased plan (milestones + acceptance criteria)
 		- Added tone mapping operators (Reinhard, ACES) and gamma correction
 		- Performance: ~150-200 ALU ops per pixel (competitive with UE5/Unity HDRP)
 	- Documentation:
-		- **PBR_D_COMPLETION_SUMMARY.md** (600+ lines): Technical details, theory, performance
-		- **PBR_D_QUICK_SUMMARY.md** (100+ lines): Fast reference guide
-		- **PBR_D_EXECUTIVE_SUMMARY.md** (50+ lines): Business impact, stakeholder summary
-		- **PBR_D_VALIDATION_REPORT.md** (400+ lines): Comprehensive testing report
-		- **PBR_D_FINAL_SUMMARY.md** (200+ lines): Final status and next steps
+		- **[PBR_D_COMPLETION_SUMMARY.md](docs/pbr/PBR_D_COMPLETION_SUMMARY.md)** (600+ lines): Technical details, theory, performance
+		- **[PBR_D_QUICK_SUMMARY.md](docs/pbr/PBR_D_QUICK_SUMMARY.md)** (100+ lines): Fast reference guide
+		- **[PBR_D_EXECUTIVE_SUMMARY.md](docs/pbr/PBR_D_EXECUTIVE_SUMMARY.md)** (50+ lines): Business impact, stakeholder summary
+		- **[PBR_D_VALIDATION_REPORT.md](docs/pbr/PBR_D_VALIDATION_REPORT.md)** (400+ lines): Comprehensive testing report
+		- **[PBR_D_FINAL_SUMMARY.md](docs/pbr/PBR_D_FINAL_SUMMARY.md)** (200+ lines): Final status and next steps
 	- Notes:
 		- Material ID system (material_id in InstanceRaw) deferred to post-PBR-D phase
 		- Material batching deferred (requires material_id infrastructure)
@@ -524,7 +524,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Shader updates (material_id in VsIn/VsOut, ready for SSBO)
 			- ✅ UI state extension (demo controls in UiState)
 			- ✅ Renderer wiring (material SSBO, bind groups, instance generation, pipeline layout)
-			- ✅ Integration documentation & testing preparation (PBR_E_INTEGRATION_COMPLETE.md)
+			- ✅ Integration documentation & testing preparation ([PBR_E_INTEGRATION_COMPLETE.md](docs/pbr/PBR_E_INTEGRATION_COMPLETE.md))
 	- Acceptance:
 		- ✅ All 5 advanced features compile and render correctly (WGSL implemented)
 		- ✅ Energy conservation verified for multi-lobe materials (unit tests passing)
@@ -539,8 +539,8 @@ Phased plan (milestones + acceptance criteria)
 		- **material_extended.rs** (~350 lines): Rust-side GPU struct, TOML parsing, factory methods
 		- **test_pbr_advanced.rs** (~500 lines): 28 comprehensive unit tests validating all features
 		- **test_pbr_visual_validation.rs** (~300 lines): 8 tests for parameter sweep grids (clearcoat, anisotropy, SSS, sheen, transmission)
-		- **PBR_E_DESIGN.md** (~450 lines): Physical theory, formulas, schemas, references
-		- **PBR_E_IMPLEMENTATION_SUMMARY.md** (~600 lines): Complete implementation summary and documentation
+		- **[PBR_E_DESIGN.md](docs/pbr/PBR_E_DESIGN.md)** (~450 lines): Physical theory, formulas, schemas, references
+		- **[PBR_E_IMPLEMENTATION_SUMMARY.md](docs/pbr/PBR_E_IMPLEMENTATION_SUMMARY.md)** (~600 lines): Complete implementation summary and documentation
 		- Feature flags: CLEARCOAT (0x01), ANISOTROPY (0x02), SUBSURFACE (0x04), SHEEN (0x08), TRANSMISSION (0x10)
 		- Performance budget: 370-510 ALU ops per pixel (all features without screen-space SSS)
 		- Material batching: `InstanceRaw` extended with `material_id: u32` at offset 116, `shader_location=10`
@@ -590,9 +590,9 @@ Phased plan (milestones + acceptance criteria)
 		- Height-based blending: Natural layer transitions
 		- Performance: 130-240 ALU ops/pixel (standard UV to full triplanar)
 	- Documentation:
-		- **PBR_F_DESIGN.md** (700+ lines): Technical design, theory, performance analysis
-		- **PBR_F_QUICK_REFERENCE.md** (400+ lines): Quick start, API reference, tuning guide
-		- **PBR_F_COMPLETION_SUMMARY.md** (400+ lines): Implementation summary, test results
+		- **[PBR_F_DESIGN.md](docs/pbr/PBR_F_DESIGN.md)** (700+ lines): Technical design, theory, performance analysis
+		- **[PBR_F_QUICK_REFERENCE.md](docs/pbr/PBR_F_QUICK_REFERENCE.md)** (400+ lines): Quick start, API reference, tuning guide
+		- **[PBR_F_COMPLETION_SUMMARY.md](docs/pbr/PBR_F_COMPLETION_SUMMARY.md)** (400+ lines): Implementation summary, test results
 	- Status: **COMPLETE** (Core implementation + testing + documentation)
 		- 36/36 tests passing (11 embedded + 25 integration)
 		- Build time: 15.86s (clean compilation)
@@ -610,7 +610,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Tested with all 3 Phase PBR-F demo materials (3/3 PASS ✅)
 			- ✅ Fixed material type detection order bug (terrain before biome)
 			- ✅ Total implementation: 850+ lines (validators.rs + main.rs handler)
-			- ✅ Comprehensive documentation (PBR_G_TASK1_COMPLETION.md)
+			- ✅ Comprehensive documentation ([PBR_G_TASK1_COMPLETION.md](docs/pbr/PBR_G_TASK1_COMPLETION.md))
 		- ✅ **Task 2.1: MaterialInspector Module** (COMPLETE)
 			- ✅ Created material_inspector.rs module (494 lines) with MaterialInspector struct
 			- ✅ Texture loading system using `image` crate (DynamicImage → egui ColorImage)
@@ -623,7 +623,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Integrated into aw_editor main.rs (5 changes: module, import, field, init, UI panel)
 			- ✅ Compilation success: Clean build with 3 warnings (unused future features)
 			- ✅ Error handling: Graceful missing texture handling, TOML parsing flexibility
-			- ✅ Documentation: PBR_G_TASK2.1_COMPLETION.md (comprehensive 494-line report)
+			- ✅ Documentation: [PBR_G_TASK2.1_COMPLETION.md](docs/pbr/PBR_G_TASK2.1_COMPLETION.md) (comprehensive 494-line report)
 		- ✅ **Task 2.2: BrdfPreview Module** (COMPLETE)
 			- ✅ Created brdf_preview.rs module (280+ lines) with BrdfPreview struct
 			- ✅ Software sphere rasterizer (256×256 resolution, 10-20ms render time)
@@ -635,7 +635,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Integrated into MaterialInspector (auto-update from loaded materials, collapsing panel)
 			- ✅ Dirty flag optimization (only renders on parameter changes)
 			- ✅ Compilation success: Clean build with 3 warnings (unused future features)
-			- ✅ Documentation: PBR_G_TASK2.2_COMPLETION.md (comprehensive 280+ line report)
+			- ✅ Documentation: [PBR_G_TASK2.2_COMPLETION.md](docs/pbr/PBR_G_TASK2.2_COMPLETION.md) (comprehensive 280+ line report)
 		- ✅ **Task 2.3: Advanced Inspector Features** (COMPLETE)
 			- ✅ Asset database browser with recursive directory traversal (walkdir crate)
 			- ✅ Material path history (LRU cache, max 10 recent materials)
@@ -649,7 +649,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Manual path text field with Load button
 			- ✅ Automatic discovery on startup
 			- ✅ Compilation success: Clean build with 3 warnings (unused future features)
-			- ✅ Documentation: PBR_G_TASK2.3_COMPLETION.md (150+ line comprehensive report)
+			- ✅ Documentation: [PBR_G_TASK2.3_COMPLETION.md](docs/pbr/PBR_G_TASK2.3_COMPLETION.md) (150+ line comprehensive report)
 		- ✅ **Task 2.4: Testing & Polish** (COMPLETE)
 			- ✅ Comprehensive testing guide (500+ lines, 18 test cases across 6 suites)
 			- ✅ UI polish: 20+ tooltips added to all controls
@@ -663,7 +663,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Integration testing (multi-material workflows, validation sync)
 			- ✅ Troubleshooting guide with 5 common issues
 			- ✅ Clean compilation (3 warnings for future features)
-			- ✅ Documentation: PBR_G_TASK2.4_TESTING_GUIDE.md (500+ lines), PBR_G_TASK2.4_COMPLETION.md (comprehensive report)
+			- ✅ Documentation: [PBR_G_TASK2.4_TESTING_GUIDE.md](docs/pbr/PBR_G_TASK2.4_TESTING_GUIDE.md) (500+ lines), [PBR_G_TASK2.4_COMPLETION.md](docs/pbr/PBR_G_TASK2.4_COMPLETION.md) (comprehensive report)
 		- ✅ **Task 3: Hot-Reload Integration** (COMPLETE - Full GPU implementation)
 			- ✅ File watching system (notify crate, 270+ lines)
 			- ✅ Debouncing (500ms) to handle rapid editor saves
@@ -684,7 +684,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Full TOML parsing for clearcoat, anisotropy, SSS, sheen, transmission
 			- ✅ Full TOML parsing for 4-layer terrain with splat maps
 			- ✅ Zero compilation errors/warnings
-			- ✅ Documentation: PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md (800+ lines), PBR_G_GPU_INTEGRATION_DESIGN.md (900+ lines), PBR_G_GPU_HOT_RELOAD_COMPLETE.md (500+ lines)
+			- ✅ Documentation: [PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md](docs/pbr/PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md) (800+ lines), [PBR_G_GPU_INTEGRATION_DESIGN.md](docs/pbr/PBR_G_GPU_INTEGRATION_DESIGN.md) (900+ lines), [PBR_G_GPU_HOT_RELOAD_COMPLETE.md](docs/pbr/PBR_G_GPU_HOT_RELOAD_COMPLETE.md) (500+ lines)
 		- ✅ **Task 4: Debug UI Components** (CORE COMPLETE - optional features deferred)
 			- ✅ UV visualization overlay (configurable density 2-32)
 			- ✅ Histogram display (256 bins, color-coded, statistics)
@@ -692,7 +692,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Clean compilation (cargo check passes)
 			- ⏳ TBN vector visualization (optional enhancement)
 			- ⏳ Pixel inspector (optional enhancement)
-			- ✅ Documentation: PBR_G_TASK4_DEBUG_UI_COMPLETE.md (900+ lines)
+			- ✅ Documentation: [PBR_G_TASK4_DEBUG_UI_COMPLETE.md](docs/pbr/PBR_G_TASK4_DEBUG_UI_COMPLETE.md) (900+ lines)
 		- ✅ **Task 5: CI Integration** (COMPLETE)
 			- ✅ Material validation workflow (.github/workflows/material-validation.yml, 200+ lines)
 			- ✅ PBR pipeline CI workflow (.github/workflows/pbr-pipeline-ci.yml, 180+ lines)
@@ -708,7 +708,7 @@ Phased plan (milestones + acceptance criteria)
 			- ✅ Test execution (astraweave-render, terrain materials, advanced materials)
 			- ✅ WGSL shader validation (basic syntax checks)
 			- ✅ Code quality checks (cargo fmt --check, clippy -D warnings)
-			- ✅ Documentation: PBR_G_TASK5_CI_INTEGRATION_GUIDE.md (400+ lines), PBR_G_TASK5_COMPLETION.md
+			- ✅ Documentation: [PBR_G_TASK5_CI_INTEGRATION_GUIDE.md](docs/pbr/PBR_G_TASK5_CI_INTEGRATION_GUIDE.md) (400+ lines), [PBR_G_TASK5_COMPLETION.md](docs/pbr/PBR_G_TASK5_COMPLETION.md)
 		- **Task 6: Documentation**
 			- Validator usage guide
 			- Material inspector guide
@@ -755,7 +755,7 @@ Phased plan (milestones + acceptance criteria)
 			- Performance: 10-20ms render time (software, single-threaded), renders only on change
 			- Testing: Compiles cleanly (3 warnings for unused future features)
 		- **Task 2.4 Complete** (~550 lines documentation + ~50 lines code):
-			- PBR_G_TASK2.4_TESTING_GUIDE.md: Comprehensive testing guide (500+ lines)
+			- [PBR_G_TASK2.4_TESTING_GUIDE.md](docs/pbr/PBR_G_TASK2.4_TESTING_GUIDE.md): Comprehensive testing guide (500+ lines)
 			- Test Suites: 6 suites with 18 test cases (functionality, BRDF, browser, edge cases, integration, performance)
 			- Edge Cases: Missing directories, corrupt TOML, missing textures, large textures (8K), invalid paths
 			- Performance: Large database (100+ materials), rapid switching, BRDF stress test
@@ -780,9 +780,9 @@ Phased plan (milestones + acceptance criteria)
 			- Job 1: System deps (Linux: Vulkan, X11), cargo fmt --check, cargo clippy -D warnings, build astraweave-render/aw_asset_cli/aw_editor (release)
 			- Job 2: Test astraweave-render, terrain materials, advanced materials, generate summary
 			- Job 3: Basic WGSL syntax checks, shader file listing
-			- PBR_G_TASK5_CI_INTEGRATION_GUIDE.md: Comprehensive CI guide (400+ lines)
+			- [PBR_G_TASK5_CI_INTEGRATION_GUIDE.md](docs/pbr/PBR_G_TASK5_CI_INTEGRATION_GUIDE.md): Comprehensive CI guide (400+ lines)
 			- Sections: Overview (workflows, triggers, features), Setup (3-step GitHub Actions config), Usage (local validation, viewing results, JSON parsing), Troubleshooting (5 issues: build failures, path differences, cache corruption, JSON parsing, artifacts), Performance (build times, validation times, caching), Advanced (strict mode, custom rules, notifications, status badges), Integration (pre-commit hooks, VS Code tasks)
-			- PBR_G_TASK5_COMPLETION.md: Comprehensive completion report
+			- [PBR_G_TASK5_COMPLETION.md](docs/pbr/PBR_G_TASK5_COMPLETION.md): Comprehensive completion report
 			- Testing: Workflows ready for first PR test, comprehensive documentation complete
 		- **Task 3 Complete** (~370 lines code + 800 lines docs):
 			- file_watcher.rs: File watching module (270+ lines)
@@ -798,25 +798,25 @@ Phased plan (milestones + acceptance criteria)
 			- Status messages: ✅ green (success), ⚠ orange (warning), ❌ red (error)
 			- Performance: Watcher overhead <0.1ms/event, material reload 10-50ms, texture reload 5-30ms
 			- Tests: 4 integration tests (watcher creation, material reload, texture reload, debounce validation)
-			- PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md: Comprehensive implementation report (800+ lines)
+			- [PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md](docs/pbr/PBR_G_TASK3_HOT_RELOAD_IMPLEMENTATION.md): Comprehensive implementation report (800+ lines)
 			- Covers architecture, usage guide, performance analysis, testing, future enhancements
 			- GPU Integration: Deferred for unified_showcase (MaterialGpu SSBO updates, texture array re-upload)
 			- Testing: Clean compilation (cargo check -p aw_editor passes, 3 expected warnings)
 		- **Task 2.3 Documentation**:
 		- **Task 2.3 Documentation**:
-			- PBR_G_TASK2.3_COMPLETION.md: Comprehensive completion report (150+ lines)
+			- [PBR_G_TASK2.3_COMPLETION.md](docs/pbr/PBR_G_TASK2.3_COMPLETION.md): Comprehensive completion report (150+ lines)
 			- Covers asset discovery, LRU history, UI enhancements, implementation details, testing guide
 		- **Task 2.4 Documentation**:
-			- PBR_G_TASK1_COMPLETION.md: Comprehensive completion report
+			- [PBR_G_TASK1_COMPLETION.md](docs/pbr/PBR_G_TASK1_COMPLETION.md): Comprehensive completion report
 			- Covers implementation, testing, bug fixes, usage examples, integration points
 		- **Task 2.1 Documentation**:
-			- PBR_G_TASK2.1_COMPLETION.md: Comprehensive completion report (494 lines)
+			- [PBR_G_TASK2.1_COMPLETION.md](docs/pbr/PBR_G_TASK2.1_COMPLETION.md): Comprehensive completion report (494 lines)
 			- Covers implementation details, technical challenges, testing results, API docs, next steps
 		- **Task 2.2 Documentation**:
-			- PBR_G_TASK2.2_COMPLETION.md: Comprehensive completion report (280+ lines)
+			- [PBR_G_TASK2.2_COMPLETION.md](docs/pbr/PBR_G_TASK2.2_COMPLETION.md): Comprehensive completion report (280+ lines)
 			- Covers BRDF theory, software rendering, integration, performance analysis, usage examples
 		- **Task 2.3 Documentation**:
-			- PBR_G_TASK2.3_COMPLETION.md: Comprehensive completion report (150+ lines)
+			- [PBR_G_TASK2.3_COMPLETION.md](docs/pbr/PBR_G_TASK2.3_COMPLETION.md): Comprehensive completion report (150+ lines)
 			- Covers asset discovery, LRU history, UI enhancements, implementation details, testing guide
 	- Status: **6/6 main tasks complete** (~85% progress, core functionality 100%)
 		- Task 1: ✅ COMPLETE (Asset CLI Validators, 850+ lines)
@@ -946,9 +946,9 @@ Phased plan (milestones + acceptance criteria)
 		- Added tone mapping operators (Reinhard, ACES) and gamma correction
 		- Performance: ~150-200 ALU ops per pixel (competitive with UE5/Unity HDRP)
 	- Documentation:
-		- **PBR_D_COMPLETION_SUMMARY.md** (600+ lines): Technical details, theory, performance
-		- **PBR_D_QUICK_SUMMARY.md** (100+ lines): Fast reference guide
-		- **PBR_D_EXECUTIVE_SUMMARY.md** (50+ lines): Business impact, stakeholder summary
+		- **[PBR_D_COMPLETION_SUMMARY.md](docs/pbr/PBR_D_COMPLETION_SUMMARY.md)** (600+ lines): Technical details, theory, performance
+		- **[PBR_D_QUICK_SUMMARY.md](docs/pbr/PBR_D_QUICK_SUMMARY.md)** (100+ lines): Fast reference guide
+		- **[PBR_D_EXECUTIVE_SUMMARY.md](docs/pbr/PBR_D_EXECUTIVE_SUMMARY.md)** (50+ lines): Business impact, stakeholder summary
 	- Notes:
 		- Material ID system (material_id in InstanceRaw) deferred to post-PBR-D phase
 		- Material batching deferred (requires material_id infrastructure)
