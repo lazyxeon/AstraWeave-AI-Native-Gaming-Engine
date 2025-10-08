@@ -13,7 +13,7 @@ use winit::{
     event::{ElementState, Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    window::WindowBuilder,
+    window::Window,
 };
 
 #[derive(Parser)]
@@ -435,16 +435,18 @@ fn main() -> Result<()> {
     println!();
 
     let event_loop = EventLoop::new()?;
-    let window = WindowBuilder::new()
+    let window_attributes = Window::default_attributes()
         .with_title("AstraWeave Biome Showcase")
-        .with_inner_size(winit::dpi::LogicalSize::new(1280, 720))
-        .build(&event_loop)?;
+        .with_inner_size(winit::dpi::LogicalSize::new(1280, 720));
+    let window = event_loop.create_window(window_attributes)?;
 
     // Initialize rendering (this would require implementing the actual graphics setup)
     // For now, we'll run a simple event loop to demonstrate the structure
 
     let mut last_frame = Instant::now();
 
+    // Use the event loop run closure. (Note: winit 0.30 encourages run_app but
+    // using run here keeps the example simple and compatible.)
     event_loop.run(move |event, elwt| {
         elwt.set_control_flow(ControlFlow::Poll);
 
@@ -467,14 +469,7 @@ fn main() -> Result<()> {
 
                     showcase.update(delta_time);
 
-                    // Here we would render the scene using WGPU
-                    // This would include:
-                    // 1. Rendering the sky
-                    // 2. Rendering terrain chunks
-                    // 3. Rendering vegetation instances
-                    // 4. Rendering structure instances
-                    // 5. Rendering weather particles
-                    // 6. Rendering UI overlays
+                    // Rendering code would go here
 
                     window.request_redraw();
                 }

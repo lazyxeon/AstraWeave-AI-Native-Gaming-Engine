@@ -28,6 +28,9 @@ pub use retrieval::*;
 pub mod sharing;
 pub use sharing::*;
 
+pub mod persona;
+pub use persona::*;
+
 #[cfg(feature = "bevy")]
 pub mod components;
 #[cfg(feature = "bevy")]

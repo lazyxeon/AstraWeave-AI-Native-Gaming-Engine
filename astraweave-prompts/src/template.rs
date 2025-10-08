@@ -6,6 +6,47 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Public PromptTemplate used across the workspace
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PromptTemplate {
+    pub id: String,
+    pub template: String,
+    #[serde(default)]
+    pub variables: Vec<String>,
+}
+
+impl PromptTemplate {
+    pub fn new<S: Into<String>>(id: S, template: S) -> Self {
+        let template_s = template.into();
+        let processor = TemplateProcessor::new(ProcessorConfig::default());
+        let vars = processor.extract_variables(&template_s);
+        Self { id: id.into(), template: template_s, variables: vars }
+    }
+
+    /// Render the template using a PromptContext (compat alias: TemplateContext)
+    /// Returns the rendered string or an anyhow::Error
+    pub fn render(&self, ctx: &crate::context::PromptContext) -> anyhow::Result<String> {
+        // Convert context to simple string map and use the processor for rendering
+        let vars = ctx.to_string_map();
+        let processor = TemplateProcessor::new(ProcessorConfig::default());
+        let rendered = processor.process(&self.template, &vars)?;
+        Ok(rendered)
+    }
+
+    /// Backward-compatible render method accepting a simple HashMap
+    pub fn render_map(&self, ctx: &std::collections::HashMap<String, String>) -> anyhow::Result<String> {
+        // Convert HashMap into PromptContext and reuse render
+        let mut pc = crate::context::PromptContext::new();
+        for (k, v) in ctx.iter() {
+            pc.set(k.clone(), v.clone().into());
+        }
+        self.render(&pc)
+    }
+
+    pub fn id(&self) -> &str { &self.id }
+    pub fn template(&self) -> &str { &self.template }
+}
+
 /// Template metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemplateMetadata {

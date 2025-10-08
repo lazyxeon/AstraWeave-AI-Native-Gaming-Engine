@@ -25,17 +25,40 @@ cargo run -p llm_comprehensive_demo --features ollama
 
 use anyhow::Result;
 use std::sync::Arc;
+use std::io::Write;
 use tokio::io::{self, AsyncBufReadExt, BufReader};
 
 // LLM Foundation
 use astraweave_llm::{LlmClient, MockLlm};
 use astraweave_embeddings::{MockEmbeddingClient, VectorStore};
 use astraweave_context::{ConversationHistory, ContextConfig, Role};
-use astraweave_prompts::{PromptTemplate, TemplateEngine, TemplateContext};
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_prompts::engine::TemplateEngine;
+use astraweave_prompts::context::PromptContext as TemplateContext;
 use astraweave_rag::{RagPipeline, RagConfig, VectorStoreWrapper};
 
 // Game Systems
-use astraweave_persona::{Persona, PersonalityTrait, Mood};
+use std::collections::HashMap;
+
+#[derive(Debug, Clone)]
+enum PersonalityTrait { Wise, Mysterious, Helpful, Patient }
+
+#[derive(Debug, Clone)]
+enum Mood { Curious, Neutral }
+
+#[derive(Debug, Clone)]
+struct Companion {
+    id: String,
+    name: String,
+    description: String,
+    personality_traits: Vec<PersonalityTrait>,
+    current_mood: Mood,
+    background: Option<String>,
+    goals: Vec<String>,
+    relationships: HashMap<String, String>,
+    memory_keywords: Vec<String>,
+    behavior_modifiers: HashMap<String, String>,
+}
 
 #[cfg(feature = "ollama")]
 use astraweave_llm::OllamaChatClient;
@@ -55,7 +78,7 @@ struct LlmComprehensiveDemo {
     template_engine: TemplateEngine,
     
     /// Companion persona
-    companion: Persona,
+    companion: Companion,
 }
 
 impl LlmComprehensiveDemo {
@@ -147,8 +170,7 @@ impl LlmComprehensiveDemo {
     /// Set up prompt templates for different scenarios
     fn setup_templates(engine: &mut TemplateEngine) -> Result<()> {
         // Companion dialogue template
-        let companion_template = PromptTemplate::new(
-            "companion_dialogue",
+        let companion_template = PromptTemplate::new("companion_dialogue".to_string(),
             r#"You are {{companion.name}}, a {{companion.role}} with the following traits:
 {{#each companion.personality_traits}}
 - {{this}}
@@ -167,15 +189,14 @@ Relevant memories from your experiences:
 
 The player says: "{{user_input}}"
 
-Respond as {{companion.name}} would, staying true to your personality and past experiences. Be helpful, engaging, and remember what has been discussed before."#
+Respond as {{companion.name}} would, staying true to your personality and past experiences. Be helpful, engaging, and remember what has been discussed before."#.trim().to_string()
         );
         
         engine.register_template("companion_dialogue", companion_template)?;
         
         // Memory summarization template
-        let memory_template = PromptTemplate::new(
-            "memory_summary",
-            "Summarize this game experience in 1-2 sentences, focusing on key events and outcomes:\n{{experience_text}}"
+        let memory_template = PromptTemplate::new("memory_summary".to_string(),
+            "Summarize this game experience in 1-2 sentences, focusing on key events and outcomes:\n{{experience_text}}".to_string()
         );
         
         engine.register_template("memory_summary", memory_template)?;
@@ -184,8 +205,8 @@ Respond as {{companion.name}} would, staying true to your personality and past e
     }
     
     /// Create the AI companion's persona
-    fn create_companion_persona() -> Persona {
-        Persona {
+    fn create_companion_persona() -> Companion {
+        Companion {
             id: "ai_companion".to_string(),
             name: "Luna".to_string(),
             description: "A wise and mysterious AI companion with deep knowledge of magic and ancient lore. Luna has accompanied many adventurers and has learned much about the world and its inhabitants.".to_string(),
@@ -198,9 +219,9 @@ Respond as {{companion.name}} would, staying true to your personality and past e
             current_mood: Mood::Curious,
             background: Some("Luna was created by the ancient mages as a guide for worthy adventurers. Over centuries, she has accumulated vast knowledge and experience.".to_string()),
             goals: vec!["Help the player on their quest".to_string(), "Learn about new experiences".to_string()],
-            relationships: std::collections::HashMap::new(),
+            relationships: HashMap::new(),
             memory_keywords: vec!["magic".to_string(), "adventure".to_string(), "wisdom".to_string()],
-            behavior_modifiers: std::collections::HashMap::new(),
+            behavior_modifiers: HashMap::new(),
         }
     }
     
@@ -233,7 +254,7 @@ Respond as {{companion.name}} would, staying true to your personality and past e
         
         loop {
             print!("You: ");
-            io::Write::flush(&mut io::stdout()).unwrap();
+                std::io::stdout().flush().unwrap();
             
             if let Some(input) = lines.next_line().await? {
                 let input = input.trim();
@@ -302,16 +323,16 @@ Respond as {{companion.name}} would, staying true to your personality and past e
         
         // 4. Build prompt using template engine
         let mut template_context = TemplateContext::new();
-        template_context.set("companion.name", &self.companion.name);
-        template_context.set("companion.role", "AI Companion");
-        template_context.set("companion.mood", format!("{:?}", self.companion.current_mood));
-        template_context.set("companion.description", &self.companion.description);
-        template_context.set("companion.personality_traits", 
-            &self.companion.personality_traits.iter()
+        template_context.set("companion.name".to_string(), self.companion.name.to_string().into());
+        template_context.set("companion.role".to_string(), "AI Companion".into());
+        template_context.set("companion.mood".to_string(), format!("{:?}", self.companion.current_mood).into());
+        template_context.set("companion.description".to_string(), self.companion.description.to_string().into());
+        template_context.set("companion.personality_traits".to_string(),
+            self.companion.personality_traits.iter()
                 .map(|t| format!("{:?}", t))
-                .collect::<Vec<_>>());
-        template_context.set("user_input", input);
-        template_context.set("conversation_context", &conversation_context);
+                .collect::<Vec<_>>().join(", ").into());
+        template_context.set("user_input".to_string(), input.to_string().into());
+        template_context.set("conversation_context".to_string(), conversation_context.into());
         
         // Add relevant memories if found
         if !relevant_memories.is_empty() {
@@ -319,7 +340,7 @@ Respond as {{companion.name}} would, staying true to your personality and past e
                 .iter()
                 .map(|m| format!("- {}", m.memory.text))
                 .collect();
-            template_context.set("relevant_memories", &memories_text.join("\n"));
+            template_context.set("relevant_memories".to_string(), memories_text.join("\n").into());
         }
         
         let prompt = self.template_engine.render("companion_dialogue", &template_context)?;

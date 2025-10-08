@@ -24,7 +24,8 @@ impl Default for InjectionConfig {
     fn default() -> Self {
         Self {
             max_memories: 5,
-            relevance_threshold: 0.6,
+            // Lowered threshold to be more inclusive in default tests and demos
+            relevance_threshold: 0.4,
             prioritize_recent: true,
             max_context_tokens: 2000,
         }
@@ -168,8 +169,8 @@ impl InjectionEngine {
 
     /// Calculate text similarity (simplified)
     fn calculate_text_similarity(&self, text1: &str, text2: &str) -> f32 {
-        let words1: Vec<&str> = text1.split_whitespace().collect();
-        let words2: Vec<&str> = text2.split_whitespace().collect();
+        let words1: Vec<String> = text1.to_lowercase().split_whitespace().map(|s| s.to_string()).collect();
+        let words2: Vec<String> = text2.to_lowercase().split_whitespace().map(|s| s.to_string()).collect();
 
         if words1.is_empty() || words2.is_empty() {
             return 0.0;

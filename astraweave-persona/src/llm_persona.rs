@@ -16,7 +16,10 @@ use tokio::sync::RwLock;
 use astraweave_llm::LlmClient;
 use astraweave_embeddings::{Memory, MemoryCategory, EmbeddingClient};
 use astraweave_context::{ConversationHistory, ContextConfig, Role};
-use astraweave_prompts::{PromptTemplate, TemplateEngine, TemplateContext};
+// Prompt types are provided by astraweave_prompts compat layer
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_prompts::engine::TemplateEngine;
+use astraweave_prompts::context::PromptContext as TemplateContext;
 use astraweave_rag::{RagPipeline, MemoryQuery};
 
 // Base persona from memory crate
@@ -576,25 +579,25 @@ impl LlmPersonaManager {
         // Build template context
         let mut template_context = TemplateContext::new();
         
-        // Basic persona info
-        template_context.set("persona.name", &persona.base.voice); // Using voice as name
-        template_context.set("persona.tone", &persona.base.tone);
-        template_context.set("persona.humor", &persona.base.humor);
-        template_context.set("persona.risk", &persona.base.risk);
-        template_context.set("persona.backstory", &persona.base.backstory);
+    // Basic persona info
+    template_context.set("persona.name".to_string(), persona.base.voice.clone().into()); // Using voice as name
+    template_context.set("persona.tone".to_string(), persona.base.tone.clone().into());
+    template_context.set("persona.humor".to_string(), persona.base.humor.clone().into());
+    template_context.set("persona.risk".to_string(), persona.base.risk.clone().into());
+    template_context.set("persona.backstory".to_string(), persona.base.backstory.clone().into());
         
         // Personality state
-        template_context.set("state.mood", &format!("{:?}", persona.personality_state.emotional_state));
-        template_context.set("state.energy", &persona.personality_state.energy_level.to_string());
-        template_context.set("state.confidence", &persona.personality_state.confidence.to_string());
-        template_context.set("state.trust", &persona.personality_state.trust_level.to_string());
+    template_context.set("state.mood".to_string(), format!("{:?}", persona.personality_state.emotional_state).into());
+    template_context.set("state.energy".to_string(), persona.personality_state.energy_level.to_string().into());
+    template_context.set("state.confidence".to_string(), persona.personality_state.confidence.to_string().into());
+    template_context.set("state.trust".to_string(), persona.personality_state.trust_level.to_string().into());
         
         // Input and context
-        template_context.set("user_input", input);
+        template_context.set("user_input".to_string(), input.to_string().into());
         if let Some(ctx) = context {
-            template_context.set("additional_context", ctx);
+            template_context.set("additional_context".to_string(), ctx.to_string().into());
         }
-        template_context.set("conversation_history", &conversation_context);
+        template_context.set("conversation_history".to_string(), conversation_context.into());
         
         // Memories
         if !memories.is_empty() {
@@ -602,7 +605,7 @@ impl LlmPersonaManager {
                 .iter()
                 .map(|m| format!("- {}", m.memory.text))
                 .collect();
-            template_context.set("relevant_memories", &memory_text.join("\n"));
+            template_context.set("relevant_memories".to_string(), memory_text.join("\n").into());
         }
         
         // Personality factors
@@ -610,7 +613,7 @@ impl LlmPersonaManager {
             .iter()
             .map(|(k, v)| format!("{}: {:.1}", k, v))
             .collect();
-        template_context.set("personality_factors", &personality_factors.join(", "));
+    template_context.set("personality_factors".to_string(), personality_factors.join(", ").into());
         
         // Use template engine to generate prompt
         let template_engine = self.template_engine.read().await;
@@ -671,8 +674,7 @@ impl LlmPersonaManager {
     /// Set up template engine with persona-specific templates
     async fn setup_persona_templates(engine: &mut TemplateEngine) -> Result<()> {
         // Main persona response template
-        let response_template = PromptTemplate::new(
-            "persona_response",
+        let response_template = PromptTemplate::new("persona_response".to_string(),
             r#"You are {{persona.name}}, speaking with tone: {{persona.tone}}, humor level: {{persona.humor}}, risk tolerance: {{persona.risk}}.
 
 {{persona.backstory}}
@@ -701,10 +703,10 @@ Additional context: {{additional_context}}
 
 The player says: "{{user_input}}"
 
-Respond as {{persona.name}} would, staying true to your personality, current state, and past experiences:"#
-        );
+Respond as {{persona.name}} would, staying true to your personality, current state, and past experiences:"#.trim().to_string()
+    );
         
-        engine.register_template("persona_response", response_template)?;
+    engine.register_template("persona_response", response_template)?;
         
         Ok(())
     }

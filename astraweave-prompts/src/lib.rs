@@ -21,10 +21,10 @@ async fn main() -> anyhow::Result<()> {
     
     // Register a template
     let template = PromptTemplate::new(
-        "dialogue",
+        "dialogue".to_string(),
         "You are {{character.name}}, a {{character.role}}. \
          Your personality is {{character.personality}}. \
-         Respond to: {{user_input}}"
+         Respond to: {{user_input}}".to_string()
     );
     
     engine.register_template("dialogue", template)?;

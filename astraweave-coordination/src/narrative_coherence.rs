@@ -10,7 +10,8 @@ use chrono::{DateTime, Utc};
 use astraweave_llm::LlmClient;
 use astraweave_rag::RagPipeline;
 use astraweave_context::ConversationHistory;
-use astraweave_prompts::{PromptTemplate, PromptLibrary};
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_prompts::library::PromptLibrary;
 
 /// Narrative coherence engine for maintaining story consistency across all game systems
 pub struct NarrativeCoherenceEngine {
@@ -422,7 +423,7 @@ impl NarrativeCoherenceEngine {
         let mut prompt_library = PromptLibrary::new();
 
         // Load narrative coherence prompts
-        prompt_library.add_template("coherence_analysis", PromptTemplate::new(
+        prompt_library.add_template("coherence_analysis", PromptTemplate::new("coherence_analysis".to_string(),
             r#"
 You are a narrative coherence analyzer. Examine the proposed narrative element for consistency with established story elements.
 
@@ -467,9 +468,9 @@ Focus on:
 4. Plot thread continuity
 5. Established fact preservation
             "#.trim().to_string()
-        )?);
+        ));
 
-        prompt_library.add_template("story_thread_weaving", PromptTemplate::new(
+        prompt_library.add_template("story_thread_weaving", PromptTemplate::new("story_thread_weaving".to_string(),
             r#"
 You are connecting narrative elements into coherent story threads. Analyze how different plot points can be woven together.
 
@@ -509,9 +510,9 @@ Create story thread connections in JSON format:
 
 Create meaningful connections that enhance the overall narrative.
             "#.trim().to_string()
-        )?);
+        ));
 
-        prompt_library.add_template("character_arc_guidance", PromptTemplate::new(
+        prompt_library.add_template("character_arc_guidance", PromptTemplate::new("character_arc_guidance".to_string(),
             r#"
 You are guiding character development for narrative coherence. Analyze character progression and suggest developments.
 
@@ -553,7 +554,7 @@ Provide character development guidance in JSON format:
 
 Ensure character development feels natural and earned.
             "#.trim().to_string()
-        )?);
+        ));
 
         let narrative_state = NarrativeState {
             main_storyline: None,
@@ -624,7 +625,14 @@ Ensure character development feels natural and earned.
         // Analyze coherence using LLM
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("coherence_analysis")?;
-        let prompt = template.render(&analysis_context)?;
+
+        // Serialize context values into strings for template rendering
+        let mut serialized_context: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+        for (k, v) in &analysis_context {
+            serialized_context.insert(k.clone(), serde_json::to_string(v).unwrap_or_else(|_| "null".to_string()));
+        }
+
+        let prompt = template.render_map(&serialized_context)?;
         drop(prompt_library);
 
         let response = self.llm_client.complete(&prompt).await
@@ -656,7 +664,7 @@ Ensure character development feels natural and earned.
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("story_thread_weaving")?;
-        let prompt = template.render(&context)?;
+    let prompt = template.render_map(&context)?;
         drop(prompt_library);
 
         let response = self.llm_client.complete(&prompt).await
@@ -682,7 +690,7 @@ Ensure character development feels natural and earned.
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("character_arc_guidance")?;
-        let prompt = template.render(&context)?;
+    let prompt = template.render_map(&context)?;
         drop(prompt_library);
 
         let response = self.llm_client.complete(&prompt).await
