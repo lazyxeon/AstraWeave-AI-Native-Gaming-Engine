@@ -13,8 +13,8 @@ fn sim_cooldowns(world_compat: &mut World, dt: f32) {
 }
 
 fn sys_sim(world: &mut ecs::World) {
-    let dt = world.resource::<Dt>().map(|d| d.0).unwrap_or(0.016);
-    if let Some(w) = world.resource_mut::<World>() {
+    let dt = world.get_resource::<Dt>().map(|d| d.0).unwrap_or(0.016);
+    if let Some(w) = world.get_resource_mut::<World>() {
         sim_cooldowns(w, dt);
     }
     // Phase 1: mirror basic cooldown decay into ECS components if present
@@ -72,7 +72,7 @@ fn sys_move(world: &mut ecs::World) {
             }
         }
     });
-    if let Some(ev) = world.resource_mut::<Events<MovedEvent>>() {
+    if let Some(ev) = world.get_resource_mut::<Events<MovedEvent>>() {
         let mut w = ev.writer();
         for (e, from, to) in moved {
             w.send(MovedEvent {
@@ -88,7 +88,7 @@ fn sys_refresh_los(world: &mut ecs::World) {
     // Example LOS cache refresh placeholder: for now, no persistent cache type.
     // In Phase 1 we show how to call helpers; a later step would store a cache component/resource.
     // Using obstacles from legacy world if present
-    if let Some(w) = world.resource::<World>() {
+    if let Some(w) = world.get_resource::<World>() {
         let _ = &w.obstacles; // no-op to show access; real cache omitted for minimal footprint
     }
 }
@@ -100,7 +100,7 @@ fn sys_bridge_sync(world: &mut ecs::World) {
 
     // Collect all ecs entities referenced by the bridge
     let mut referenced = BTreeSet::new();
-    if let Some(bridge) = world.resource::<EntityBridge>() {
+    if let Some(bridge) = world.get_resource::<EntityBridge>() {
         for ecs_e in bridge.ecs_entities() {
             referenced.insert(ecs_e);
         }
@@ -109,7 +109,7 @@ fn sys_bridge_sync(world: &mut ecs::World) {
     // Add CLegacyId to referenced entities if missing
     for &e in referenced.iter() {
         if world.get::<crate::CLegacyId>(e).is_none() {
-            if let Some(bridge) = world.resource::<EntityBridge>() {
+            if let Some(bridge) = world.get_resource::<EntityBridge>() {
                 if let Some(legacy) = bridge.get_by_ecs(&e) {
                     world.insert(e, crate::CLegacyId { id: legacy });
                 }
@@ -170,7 +170,7 @@ pub fn build_app(legacy_world: World, dt: f32) -> ecs::App {
             app.world.insert(e, CCooldowns { map });
         }
         // populate bridge
-        if let Some(bridge) = app.world.resource_mut::<EntityBridge>() {
+        if let Some(bridge) = app.world.get_resource_mut::<EntityBridge>() {
             bridge.insert_pair(legacy, e);
         }
     }

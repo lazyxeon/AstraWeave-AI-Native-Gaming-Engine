@@ -32,7 +32,7 @@ fn map_legacy_companion_to_ecs(
 
     // prefer bridge mapping from legacy id -> ecs entity when present
     let mapped = world
-        .resource::<EntityBridge>()
+        .get_resource::<EntityBridge>()
         .and_then(|b| b.get(&comp))
         .unwrap_or(closest);
     Some(mapped)
@@ -42,7 +42,7 @@ fn sys_ai_planning(world: &mut ecs::World) {
     // Build snapshots and set desired positions per companion entity
     // Prefer legacy World + perception builder when available; fallback to ECS-only snapshot
     // Ensure AiPlannedEvent resource exists
-    if world.resource::<Events<AiPlannedEvent>>().is_none() {
+    if world.get_resource::<Events<AiPlannedEvent>>().is_none() {
         world.insert_resource(Events::<AiPlannedEvent>::default());
     }
 
@@ -75,7 +75,7 @@ fn sys_ai_planning(world: &mut ecs::World) {
     let mut failed_events: Vec<AiPlanningFailedEvent> = vec![];
 
     // Try legacy world path
-    if let Some(w) = world.resource::<World>() {
+    if let Some(w) = world.get_resource::<World>() {
         // pick first player and companion if present
         let player_opt = w.all_of_team(0).first().copied();
         let comp_opt = w.all_of_team(1).first().copied();
@@ -127,13 +127,13 @@ fn sys_ai_planning(world: &mut ecs::World) {
                 for (e, d) in &updates {
                     world.insert(*e, *d);
                 }
-                if let Some(ev) = world.resource_mut::<Events<AiPlannedEvent>>() {
+                if let Some(ev) = world.get_resource_mut::<Events<AiPlannedEvent>>() {
                     let mut w = ev.writer();
                     for pe in planned_events {
                         w.send(pe);
                     }
                 }
-                if let Some(ev) = world.resource_mut::<Events<AiPlanningFailedEvent>>() {
+                if let Some(ev) = world.get_resource_mut::<Events<AiPlanningFailedEvent>>() {
                     let mut w = ev.writer();
                     for fe in failed_events {
                         w.send(fe);
@@ -224,13 +224,13 @@ fn sys_ai_planning(world: &mut ecs::World) {
     for (e, d) in updates {
         world.insert(e, d);
     }
-    if let Some(ev) = world.resource_mut::<Events<AiPlannedEvent>>() {
+    if let Some(ev) = world.get_resource_mut::<Events<AiPlannedEvent>>() {
         let mut w = ev.writer();
         for pe in planned_events {
             w.send(pe);
         }
     }
-    if let Some(ev) = world.resource_mut::<Events<AiPlanningFailedEvent>>() {
+    if let Some(ev) = world.get_resource_mut::<Events<AiPlanningFailedEvent>>() {
         let mut w = ev.writer();
         for fe in failed_events {
             w.send(fe);

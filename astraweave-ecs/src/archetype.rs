@@ -1,8 +1,3 @@
-//! Archetype-based storage for high-performance component access.
-//!
-//! Archetypes group entities with identical component layouts for cache-friendly iteration.
-//! This is the foundation for SOTA ECS performance (similar to Bevy/Flecs/EnTT).
-
 use std::any::TypeId;
 use std::collections::{BTreeMap, HashMap};
 
@@ -98,28 +93,32 @@ impl Archetype {
         boxed.downcast_mut::<T>()
     }
 
-    /// Remove entity from archetype
     pub fn remove_entity(&mut self, entity: Entity) -> Option<usize> {
-        let row = self.entities.remove(&entity)?;
+        self.entities.remove(&entity)
+    }
 
-        // Swap-remove from all component columns
-        for column in self.components.values_mut() {
-            column.swap_remove(row);
+    /// Remove entity from archetype and return its components
+    pub fn remove_entity_components(&mut self, entity: Entity) -> HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>> {
+        let row = match self.entities.remove(&entity) {
+            Some(r) => r,
+            None => return HashMap::new(),
+        };
+
+        let mut components = HashMap::new();
+        for (ty, column) in self.components.iter_mut() {
+            let component = column.swap_remove(row);
+            components.insert(*ty, component);
         }
 
-        // Update entity indices for swapped entity
+        // Update the index of the entity that was swapped into the removed slot
         if row < self.entities.len() {
-            if let Some((swapped_entity, _)) = self
-                .entities
-                .iter()
-                .find(|(_, &r)| r == self.entities.len())
-            {
-                let swapped = *swapped_entity;
-                self.entities.insert(swapped, row);
+            // Find which entity was at the end and now is in the `row` slot
+            let swapped_entity = self.entities.iter().find(|(_, &r)| r == self.entities.len()).map(|(e, _)| *e);
+            if let Some(swapped_entity) = swapped_entity {
+                *self.entities.get_mut(&swapped_entity).unwrap() = row;
             }
         }
-
-        Some(row)
+        components
     }
 
     pub fn len(&self) -> usize {
@@ -129,9 +128,15 @@ impl Archetype {
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
+
+    /// Get a vector of entities in this archetype
+    pub fn entities_vec(&self) -> Vec<Entity> {
+        self.entities.keys().copied().collect()
+    }
 }
 
 /// Manages all archetypes and entity->archetype mapping
+#[derive(Default)]
 pub struct ArchetypeStorage {
     next_id: u64,
     /// Map from signature to archetype ID
@@ -203,12 +208,6 @@ impl ArchetypeStorage {
         self.archetypes
             .values()
             .filter(move |arch| arch.signature.contains(ty))
-    }
-}
-
-impl Default for ArchetypeStorage {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
