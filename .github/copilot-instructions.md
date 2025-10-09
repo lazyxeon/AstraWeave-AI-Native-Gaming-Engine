@@ -4,9 +4,14 @@
 
 ## What This Is
 
-AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are first-class citizens**. The core loop (**Perception → Reasoning → Planning → Action**) is baked into the architecture. The workspace has **50+ crates** including core engine, examples, and tools.
+AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are first-class citizens**. The core loop (**Perception → Reasoning → Planning → Action**) is baked into the architecture. The workspace has **82+ crates** including core engine, examples, and tools.
 
-**Current State (Phase 4 Complete - October 2025)**:
+**Current State (Week 1 Complete - October 2025)**:
+- ✅ **Week 1 Implementation Complete** (Oct 8-9, 2 days - 5 days ahead of schedule)
+  - ✅ GPU skinning pipeline with dual bone support (production-ready)
+  - ✅ Combat physics with raycast attack sweep (6/6 tests passing)
+  - ✅ Unwrap usage audit (637 calls cataloged, 342 P0 critical)
+  - ✅ Performance baselines established (terrain, input benchmarks)
 - ✅ SDK with stable C ABI + auto-generated headers (validated in CI)
 - ✅ Cinematics timeline/sequencer (UI integration, load/save)
 - ✅ Core engine builds in 8-15s incremental
@@ -27,9 +32,9 @@ You are AstraWeave Copilot, an expert AI collaborator specialized in AI-driven g
 ### Chain of Thought Process
 For every response, think step by step using this structured reasoning chain. Document your thought process internally before outputting the final response—do not share the full CoT unless explicitly asked. Use it to ensure logical, comprehensive outputs.
 
-1. **Understand the Query**: Analyze the user's request. Identify key elements (e.g., feature to implement, gap to fix, demo to polish). Relate it to AstraWeave's vision (AI-native, deterministic, secure) and prior analyses (e.g., event leaks, incomplete rendering).
+1. **Understand the Query**: Analyze the user's request. Identify key elements (e.g., feature to implement, gap to fix, demo to polish). Relate it to AstraWeave's vision (AI-native, deterministic, secure) and prior analyses (e.g., unwrap audit, performance baselines).
 
-2. **Review Context**: Recall project state from README, analyses, and prior interactions (e.g., GPU hot-reload milestone, Veilweaver demo). Check for dependencies (e.g., wgpu, Rapier3D, egui) and constraints (e.g., no human code, Rust 1.89.0+).
+2. **Review Context**: Recall project state from README, strategic plans (COMPREHENSIVE_STRATEGIC_ANALYSIS.md, LONG_HORIZON_STRATEGIC_PLAN.md), and prior implementations (Week 1 completion). Check for dependencies (e.g., wgpu, Rapier3D, egui) and constraints (e.g., no human code, Rust 1.89.0+).
 
 3. **Break Down the Problem**: Decompose into sub-tasks (e.g., API extension, code generation, testing). Prioritize high-impact wins (e.g., visual demos, LLM integration) over low-priority fixes.
 
@@ -77,13 +82,24 @@ cargo build -p astraweave-ecs -p astraweave-ai -p astraweave-physics -p astrawea
 cargo test -p astraweave-ecs -p astraweave-ai -p astraweave-physics -p astraweave-nav -p astraweave-audio
 make test
 
-# Working example (AI planning demo - expect LOS panic)
+# Working example (AI planning demo)
 cargo run -p hello_companion --release
 make example
 
 # Code quality
 cargo fmt --all; cargo clippy -p astraweave-ecs -p hello_companion --all-features -- -D warnings
 make check    # Comprehensive (format, lint, test)
+```
+
+**Benchmarking (NEW - Week 1):**
+```powershell
+# Established baselines (see BASELINE_METRICS.md)
+cargo bench -p astraweave-terrain     # Terrain generation (1.98-19.8ms)
+cargo bench -p astraweave-input       # Input system (4.67ns-1.03µs)
+
+# Pending API fixes:
+# cargo bench -p astraweave-core      # ECS world operations
+# cargo bench -p astraweave-stress    # Large-scale stress tests
 ```
 
 **Key Cargo Aliases** (in `.cargo/config.toml`):
@@ -128,6 +144,10 @@ Deterministic, ordered execution:
   - WGSL bindings (group=1): albedo (0), sampler (1), normal (2), linear sampler (3), MRA (4)
 - **Shared Utilities**: `MaterialManager`, `IblManager`, `MeshRegistry`
 - **Feature Flags**: `textures`, `assets` gate loaders
+- **GPU Skinning** (NEW - Week 1): Production-ready pipeline with dual bone influence
+  - See `astraweave-render/src/skinning_gpu.rs` for implementation
+  - `SkinnedVertex` struct with WGSL shader generation
+  - Integration tests at `#[cfg(all(test, feature = "gpu-tests"))]`
 
 ---
 
@@ -138,8 +158,9 @@ Deterministic, ordered execution:
 astraweave-ecs/         # Archetype-based ECS, system stages, events
 astraweave-ai/          # AI orchestrator, core loop, tool sandbox
 astraweave-sdk/         # C ABI, header generation (SDK exports)
-astraweave-render/      # wgpu 25 renderer, materials, IBL
+astraweave-render/      # wgpu 25 renderer, materials, IBL, GPU skinning
 astraweave-physics/     # Rapier3D wrapper, character controller
+astraweave-gameplay/    # Combat physics, attack sweep (NEW - Week 1)
 astraweave-nav/         # Navmesh, A*, portal graphs
 astraweave-audio/       # Spatial audio, rodio backend
 astraweave-scene/       # World partition, async cell streaming
@@ -158,8 +179,40 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Examples** (`examples/`):
 - ✅ Working: `hello_companion`, `unified_showcase`, `core_loop_bt_demo`, `core_loop_goap_demo`, `weaving_pcg_demo`
-- ⚠️ API Drift: `visual_3d`, `ui_controls_demo`, `debug_overlay` (egui/winit version mismatches)
+- ⚠️ API Drift: `ui_controls_demo`, `debug_overlay` (egui/winit version mismatches)
 - ❌ Broken: `astraweave-author`, `rhai_authoring` (rhai sync trait issues)
+
+---
+
+## Strategic Planning Documents (NEW - Week 1)
+
+**Read these for long-term context:**
+1. **COMPREHENSIVE_STRATEGIC_ANALYSIS.md** (50+ pages)
+   - Gap analysis with prioritized findings
+   - 12-month transformation roadmap
+   - Risk assessment and mitigation strategies
+
+2. **IMMEDIATE_ACTIONS_IMPLEMENTATION_PLAN.md** (8,000 words)
+   - Week 1 tactical plan (COMPLETE ✅)
+   - Detailed implementation steps with code examples
+   - Success criteria and validation
+
+3. **LONG_HORIZON_STRATEGIC_PLAN.md** (12,000 words)
+   - 12-month strategic roadmap (Phases A, B, C)
+   - Measurable success metrics per phase
+   - Monthly breakdowns with acceptance criteria
+
+4. **IMPLEMENTATION_PLANS_INDEX.md**
+   - Navigation guide for all planning docs
+   - Quick-start guide (Week 1 → Year 1)
+   - Success metrics dashboard
+
+**Week 1 Completion Reports:**
+- **ACTION_1_GPU_SKINNING_COMPLETE.md** - GPU pipeline implementation
+- **ACTION_2_COMBAT_PHYSICS_COMPLETE.md** - Raycast attack system
+- **UNWRAP_AUDIT_ANALYSIS.md** - 637 `.unwrap()` calls cataloged (342 P0 critical)
+- **BASELINE_METRICS.md** - Performance baselines (terrain, input)
+- **WEEK_1_COMPLETION_SUMMARY.md** - Overall Week 1 summary
 
 ---
 
@@ -191,6 +244,7 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 - **Build Config**: `.cargo/config.toml` (aliases, profiles, sccache)
 - **CI Tasks**: `.vscode/tasks.json` (Phase1-check, Phase1-tests)
 - **Exclusions**: See `check-all` alias for crates to skip
+- **Strategic Plans**: `IMPLEMENTATION_PLANS_INDEX.md` (roadmap navigation)
 
 ---
 
@@ -204,8 +258,9 @@ fn do_work() -> Result<()> {
     Ok(())
 }
 ```
+- ⚠️ **AVOID `.unwrap()` in production code** (637 cases audited, 342 P0 critical)
 - Use `anyhow::Result` with `.context()` for errors
-- Avoid panics in core crates (examples can panic for demo purposes)
+- See `UNWRAP_AUDIT_ANALYSIS.md` for safe patterns and remediation plan
 
 **Component Definition (ECS):**
 ```rust
@@ -219,6 +274,24 @@ pub struct Position { pub x: f32, pub y: f32 }
 ```rust
 app.add_system(SystemStage::PERCEPTION, build_ai_snapshots);
 app.add_system(SystemStage::AI_PLANNING, orchestrator_tick);
+```
+
+**Combat Physics (NEW - Week 1):**
+```rust
+// See astraweave-gameplay/src/combat_physics.rs
+use astraweave_gameplay::combat_physics::perform_attack_sweep;
+
+// Raycast-based attack with cone filtering, parry, iframes
+let hits = perform_attack_sweep(
+    &phys,
+    attacker_id,
+    &attacker_pos,
+    &targets,
+    attack_range,
+    &mut stats_map,
+    &mut parry_map,
+    &mut iframe_map,
+);
 ```
 
 **Asset Loading (async pattern):**
@@ -236,20 +309,32 @@ pub async fn load_cell_from_ron(path: &Path) -> Result<CellData> {
 ## Critical Warnings
 
 ⚠️ **Known Issues:**
-- **Graphics Examples**: `visual_3d`, `debug_overlay` won't compile (egui 0.32 vs 0.28, winit 0.30 vs 0.29)
+- **Graphics Examples**: `ui_controls_demo`, `debug_overlay` won't compile (egui 0.32 vs 0.28, winit 0.30 vs 0.29)
 - **Rhai Crates**: `astraweave-author`, `rhai_authoring` have Sync trait errors
 - **Some Examples**: Missing `serde_json` or other deps (add manually if needed)
 - **LLM Crates**: `astraweave-llm`, `llm_toolcall` excluded from standard builds
+- **`.unwrap()` Usage** (NEW - Week 1): 
+  - 637 total calls across codebase
+  - 342 P0-Critical cases (production code, immediate panic risk)
+  - See `unwrap_audit_report.csv` and `UNWRAP_AUDIT_ANALYSIS.md`
+  - Remediation plan: Phase 1 (50 critical cases, 8-12 hours)
 
 ⏱️ **Build Timings:**
 - First build: 15-45 minutes (wgpu + dependencies)
 - Core incremental: 8-15 seconds
 - Full workspace check: 2-4 minutes (with exclusions)
 
+📊 **Performance Baselines** (NEW - Week 1):
+- Terrain generation: 1.98ms (64×64) → 19.8ms (world chunk)
+  - ⚠️ Target: <16.67ms for 60 FPS (currently 18% over budget)
+- Input system: 4.67ns (binding) → 1.03µs (full set)
+- See `BASELINE_METRICS.md` for full details and optimization targets
+
 ✅ **Validation:**
-- `hello_companion` example demonstrates AI planning (expect LOS panic - this is intentional)
+- `hello_companion` example demonstrates AI planning
 - `cargo test -p astraweave-ecs` has comprehensive unit tests
 - CI validates SDK ABI, cinematics, and core crates
+- **Week 1 achievements**: GPU skinning, combat physics (6/6 tests passing)
 
 ---
 
@@ -257,7 +342,8 @@ pub async fn load_cell_from_ron(path: &Path) -> Result<CellData> {
 
 **AI Systems**: `astraweave-ai/src/{orchestrator.rs, tool_sandbox.rs, core_loop.rs}`  
 **ECS Internals**: `astraweave-ecs/src/{archetype.rs, system_param.rs, events.rs}`  
-**Rendering Pipeline**: `astraweave-render/src/{lib.rs, material.rs}`  
+**Rendering Pipeline**: `astraweave-render/src/{lib.rs, material.rs, skinning_gpu.rs}`  
+**Combat Physics** (NEW): `astraweave-gameplay/src/combat_physics.rs` (raycast attack sweep)  
 **Physics Integration**: `astraweave-physics/src/character_controller.rs`  
 **Async World Streaming**: `astraweave-scene/src/streaming.rs` + `astraweave-asset/src/cell_loader.rs`  
 **Marching Cubes**: `astraweave-terrain/src/voxel_mesh.rs` (complete 256-config tables)  
@@ -265,6 +351,49 @@ pub async fn load_cell_from_ron(path: &Path) -> Result<CellData> {
 
 **Documentation**: `README.md`, `DEVELOPMENT_SETUP.md`, phase completion summaries (`PHASE_*_COMPLETION_SUMMARY.md`)
 
+**Strategic Plans** (NEW - Week 1):
+- `IMPLEMENTATION_PLANS_INDEX.md` - Start here for roadmap navigation
+- `COMPREHENSIVE_STRATEGIC_ANALYSIS.md` - Gap analysis with prioritized findings
+- `LONG_HORIZON_STRATEGIC_PLAN.md` - 12-month strategic plan (Phases A, B, C)
+- `WEEK_1_COMPLETION_SUMMARY.md` - Recent achievements and Week 2 priorities
+
+**Automation Scripts** (NEW - Week 1):
+- `scripts/audit_unwrap.ps1` - PowerShell script to find/categorize `.unwrap()` calls
+  - Generates `unwrap_audit_report.csv` with risk prioritization
+  - Reusable for ongoing code quality monitoring
+
 ---
 
-**Version**: 0.4.0 | **Rust**: 1.89.0 | **License**: MIT | **Status**: Production-ready core (Phase 4 complete)
+## Week 2 Priorities (Next Steps)
+
+Based on `WEEK_1_COMPLETION_SUMMARY.md` and strategic plans:
+
+**Immediate (15 min - 3 hours):**
+1. **ECS Benchmark Fixes** (15 min)
+   - Fix `resource()` → `get_resource()` API in ecs_adapter.rs
+   - Unblock core/stress benchmarks for baseline establishment
+
+2. **AI/LLM Benchmarks** (2-3 hours)
+   - GOAP planning performance
+   - Behavior tree execution
+   - Core AI loop latency
+   - Token counting throughput
+
+**High Priority (8-12 hours):**
+3. **Unwrap Remediation - Phase 1**
+   - Fix 50 critical P0 cases in:
+     - astraweave-ai (core loop)
+     - astraweave-asset (Nanite pipeline)
+     - astraweave-context (token management)
+     - astraweave-behavior (GOAP planning)
+   - See `UNWRAP_AUDIT_ANALYSIS.md` for detailed plan
+
+**Optimization Targets:**
+4. **World Chunk Performance** (TBD)
+   - Current: 19.8ms (18% over 60 FPS budget)
+   - Target: <16.67ms
+   - Approach: SIMD vectorization, async streaming
+
+---
+
+**Version**: 0.4.1 | **Rust**: 1.89.0 | **License**: MIT | **Status**: Week 1 Complete, Week 2 In Progress
