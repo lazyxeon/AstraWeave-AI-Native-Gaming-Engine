@@ -53,7 +53,10 @@ impl TerrainRenderer {
             self.loaded_meshes.insert(chunk_id, mesh);
         }
 
-        Ok(self.loaded_meshes.get(&chunk_id).unwrap())
+        Ok(self
+            .loaded_meshes
+            .get(&chunk_id)
+            .expect("BUG: chunk should exist after insert above"))
     }
 
     /// Generate a complete chunk with vegetation and resources

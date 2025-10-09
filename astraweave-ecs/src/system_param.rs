@@ -39,7 +39,8 @@ impl<'w, T: Component> Iterator for Query<'w, T> {
                 return None;
             }
             let archetype_id = self.archetype_ids[self.arch_idx];
-            let archetype = self.world.archetypes.get_archetype(archetype_id).unwrap();
+            let archetype = self.world.archetypes.get_archetype(archetype_id)
+                .expect("BUG: archetype should exist from archetype_ids");
 
             if self.entity_idx >= archetype.len() {
                 self.arch_idx += 1;
@@ -52,7 +53,8 @@ impl<'w, T: Component> Iterator for Query<'w, T> {
 
             // The borrow checker needs help here. Since we are iterating over disjoint archetypes
             // and entities, this is safe. We'll use unsafe to extend the lifetime.
-            let component = archetype.get::<T>(entity).unwrap();
+            let component = archetype.get::<T>(entity)
+                .expect("BUG: entity should have component T in archetype");
             let component_ptr = component as *const T;
             return Some((entity, unsafe { &*component_ptr }));
         }
@@ -95,7 +97,8 @@ impl<'w, A: Component, B: Component> Iterator for Query2<'w, A, B> {
                 return None;
             }
             let archetype_id = self.archetype_ids[self.arch_idx];
-            let archetype = self.world.archetypes.get_archetype(archetype_id).unwrap();
+            let archetype = self.world.archetypes.get_archetype(archetype_id)
+                .expect("BUG: archetype should exist from archetype_ids");
 
             if self.entity_idx >= archetype.len() {
                 self.arch_idx += 1;
@@ -109,8 +112,10 @@ impl<'w, A: Component, B: Component> Iterator for Query2<'w, A, B> {
             // Unsafe is used to satisfy the borrow checker. This is safe because
             // we are only reading, and the iterator structure ensures we don't hold
             // references that outlive the world.
-            let component_a = archetype.get::<A>(entity).unwrap();
-            let component_b = archetype.get::<B>(entity).unwrap();
+            let component_a = archetype.get::<A>(entity)
+                .expect("BUG: entity should have component A in archetype");
+            let component_b = archetype.get::<B>(entity)
+                .expect("BUG: entity should have component B in archetype");
             let ptr_a = component_a as *const A;
             let ptr_b = component_b as *const B;
 

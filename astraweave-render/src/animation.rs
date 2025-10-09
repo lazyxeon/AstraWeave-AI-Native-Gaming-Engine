@@ -173,9 +173,12 @@ impl AnimationClip {
             return (0, 0, 0.0);
         }
 
-        if time >= *times.last().unwrap() {
-            let last_idx = times.len() - 1;
-            return (last_idx, last_idx, 0.0);
+        // Safe: checked !is_empty() above, so last() returns Some
+        if let Some(&last_time) = times.last() {
+            if time >= last_time {
+                let last_idx = times.len() - 1;
+                return (last_idx, last_idx, 0.0);
+            }
         }
 
         // Binary search for keyframe

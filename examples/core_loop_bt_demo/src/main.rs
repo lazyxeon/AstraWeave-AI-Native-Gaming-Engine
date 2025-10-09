@@ -103,8 +103,10 @@ impl DemoState {
         self.tick_count += 1;
 
         // Get positions
-        let agent_pos = self.world.pos_of(self.agent_id).unwrap();
-        let target_pos = self.world.pos_of(self.target_id).unwrap();
+        let agent_pos = self.world.pos_of(self.agent_id)
+            .expect("Agent entity should have Position component");
+        let target_pos = self.world.pos_of(self.target_id)
+            .expect("Target entity should have Position component");
 
         // Simple LOS check (Manhattan distance for simplicity)
         let distance = (agent_pos.x - target_pos.x).abs() + (agent_pos.y - target_pos.y).abs();
@@ -160,7 +162,8 @@ impl DemoState {
     }
 
     fn move_toward(&mut self, target: IVec2) {
-        let agent_pos = self.world.pos_of(self.agent_id).unwrap();
+        let agent_pos = self.world.pos_of(self.agent_id)
+            .expect("Agent entity should have Position component");
 
         // Simple movement (one step toward target)
         let dx = (target.x - agent_pos.x).signum();
@@ -191,16 +194,20 @@ impl DemoState {
         println!("Status: {}", if self.paused { "PAUSED" } else { "RUNNING" });
 
         // Agent state
-        let agent_pos = self.world.pos_of(self.agent_id).unwrap();
-        let agent_hp = self.world.health(self.agent_id).unwrap().hp;
+        let agent_pos = self.world.pos_of(self.agent_id)
+            .expect("Agent entity should have Position component");
+        let agent_hp = self.world.health(self.agent_id)
+            .expect("Agent entity should have Health component").hp;
         println!(
             "\nAgent: pos=({}, {}), hp={}",
             agent_pos.x, agent_pos.y, agent_hp
         );
 
         // Target state
-        let target_pos = self.world.pos_of(self.target_id).unwrap();
-        let target_hp = self.world.health(self.target_id).unwrap().hp;
+        let target_pos = self.world.pos_of(self.target_id)
+            .expect("Target entity should have Position component");
+        let target_hp = self.world.health(self.target_id)
+            .expect("Target entity should have Health component").hp;
         println!(
             "Target: pos=({}, {}), hp={}",
             target_pos.x, target_pos.y, target_hp
@@ -254,7 +261,8 @@ fn main() -> anyhow::Result<()> {
         demo.update(0.1);
 
         // Check for target defeated
-        let target_hp = demo.world.health(demo.target_id).unwrap().hp;
+        let target_hp = demo.world.health(demo.target_id)
+            .expect("Target entity should have Health component").hp;
         if target_hp <= 0 {
             println!("\n🎯 TARGET DEFEATED! Demo complete.");
             break;

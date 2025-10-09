@@ -30,3 +30,8 @@ optional = true
 
 [dev-dependencies]
 futures = "0.3"
+criterion = { workspace = true }
+
+[[bench]]
+name = "ai_core_loop"
+harness = false

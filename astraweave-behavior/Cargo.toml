@@ -11,3 +11,13 @@ serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
 astraweave-ecs.workspace = true
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "goap_planning"
+harness = false
+
+[[bench]]
+name = "behavior_tree"
+harness = false

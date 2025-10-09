@@ -14,19 +14,23 @@ pub fn build_snapshot(
     objective: Option<String>,
     cfg: &PerceptionConfig,
 ) -> WorldSnapshot {
-    let ppos = w.pos_of(t_player).unwrap();
-    let cpos = w.pos_of(t_companion).unwrap();
+    let ppos = w.pos_of(t_player)
+        .expect("Player entity should have Position component");
+    let cpos = w.pos_of(t_companion)
+        .expect("Companion entity should have Position component");
     let player = PlayerState {
-        hp: w.health(t_player).unwrap().hp,
+        hp: w.health(t_player)
+            .expect("Player entity should have Health component").hp,
         pos: ppos,
         stance: "crouch".into(),
         orders: vec!["hold_east".into()],
     };
     let me = CompanionState {
-        ammo: w.ammo(t_companion).unwrap().rounds,
+        ammo: w.ammo(t_companion)
+            .expect("Companion entity should have Ammo component").rounds,
         cooldowns: w
             .cooldowns(t_companion)
-            .unwrap()
+            .expect("Companion entity should have Cooldowns component")
             .map
             .clone()
             .into_iter()

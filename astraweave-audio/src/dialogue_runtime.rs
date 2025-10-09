@@ -79,7 +79,9 @@ impl<'a> DialoguePlayer<'a> {
                     }
                     if !pool.is_empty() {
                         let mut rng = rand::rng();
-                        let path = pool.choose(&mut rng).unwrap().clone();
+                        let path = pool.choose(&mut rng)
+                            .expect("BUG: pool should have items after is_empty check")
+                            .clone();
                         self.audio.play_voice_file(&path, None)?;
                         return Ok(true);
                     }

@@ -71,7 +71,8 @@ impl Archetype {
         for ty in &self.signature.components {
             if let Some(data) = component_data.remove(ty) {
                 // Move the Box from component_data into the column
-                let column = self.components.get_mut(ty).unwrap();
+                let column = self.components.get_mut(ty)
+                    .expect("BUG: signature component should have column");
                 column.push(data);
             }
         }
@@ -122,7 +123,8 @@ impl Archetype {
                 .find(|(_, &r)| r == self.entities.len())
                 .map(|(e, _)| *e);
             if let Some(swapped_entity) = swapped_entity {
-                *self.entities.get_mut(&swapped_entity).unwrap() = row;
+                *self.entities.get_mut(&swapped_entity)
+                    .expect("BUG: swapped entity should exist in map") = row;
             }
         }
         components

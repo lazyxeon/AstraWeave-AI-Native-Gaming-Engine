@@ -84,7 +84,8 @@ impl MaterialLibrary {
     pub fn get_material(&self, name: &str) -> &Material {
         self.materials
             .get(name)
-            .unwrap_or_else(|| self.materials.get("default").unwrap())
+            .unwrap_or_else(|| self.materials.get("default")
+                .expect("BUG: 'default' material should always exist"))
     }
 
     // Load materials from a JSON configuration file

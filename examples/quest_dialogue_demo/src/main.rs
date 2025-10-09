@@ -81,7 +81,8 @@ fn main() -> anyhow::Result<()> {
     let mut ds2 = dialogue::DialogueState::new(&dialog2);
     println!(
         "Banter start: {}",
-        ds2.current(&dialog2).line.as_ref().unwrap().text
+        ds2.current(&dialog2).line.as_ref()
+            .expect("Dialogue node should have line text").text
     );
     ds2.choose(&dialog2, 0);
 
