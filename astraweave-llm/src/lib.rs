@@ -1158,10 +1158,10 @@ fn extract_json_from_fenced(s: &str) -> Option<String> {
 }
 
 pub mod ab_testing;
-pub mod rate_limiter;
-pub mod circuit_breaker;
 pub mod backpressure;
+pub mod circuit_breaker;
 pub mod production_hardening;
+pub mod rate_limiter;
 
 /// Generate a plan using LLM with guardrails and fallback to heuristic if needed
 pub async fn plan_from_llm(

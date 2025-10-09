@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{PlayerBehaviorModel, TacticPlan, TacticOutcome, LlmDirectorConfig};
+use crate::{LlmDirectorConfig, PlayerBehaviorModel, TacticOutcome, TacticPlan};
 
 /// ECS component for storing director AI state
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,7 +69,9 @@ impl CDirectorState {
             return 0.5; // neutral
         }
 
-        let total: f32 = self.recent_outcomes.iter()
+        let total: f32 = self
+            .recent_outcomes
+            .iter()
             .map(|outcome| outcome.effectiveness)
             .sum();
 
@@ -188,8 +190,8 @@ impl CDirectorMetrics {
         }
 
         // Update average effectiveness (rolling average)
-        let total_effectiveness = self.average_effectiveness * (self.tactics_executed - 1) as f32
-            + outcome.effectiveness;
+        let total_effectiveness =
+            self.average_effectiveness * (self.tactics_executed - 1) as f32 + outcome.effectiveness;
         self.average_effectiveness = total_effectiveness / self.tactics_executed as f32;
     }
 
@@ -202,8 +204,8 @@ impl CDirectorMetrics {
         }
 
         // Update average response time
-        let total_time = self.average_response_time * (self.llm_calls - 1) as f32
-            + response_time_ms as f32;
+        let total_time =
+            self.average_response_time * (self.llm_calls - 1) as f32 + response_time_ms as f32;
         self.average_response_time = total_time / self.llm_calls as f32;
     }
 
@@ -284,13 +286,11 @@ mod tests {
         let plan = TacticPlan {
             strategy: "test".to_string(),
             reasoning: "test".to_string(),
-            operations: vec![
-                DirectorOp::SpawnWave {
-                    archetype: "minion".to_string(),
-                    count: 3,
-                    origin: astraweave_core::IVec2 { x: 0, y: 0 },
-                }
-            ],
+            operations: vec![DirectorOp::SpawnWave {
+                archetype: "minion".to_string(),
+                count: 3,
+                origin: astraweave_core::IVec2 { x: 0, y: 0 },
+            }],
             difficulty_modifier: 1.0,
             expected_duration: 30,
             counter_strategies: vec![],

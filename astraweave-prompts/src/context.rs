@@ -90,10 +90,17 @@ impl ToString for ContextValue {
             ContextValue::Number(n) => n.to_string(),
             ContextValue::Boolean(b) => b.to_string(),
             ContextValue::Array(arr) => {
-                format!("[{}]", arr.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", "))
+                format!(
+                    "[{}]",
+                    arr.iter()
+                        .map(|v| v.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             }
             ContextValue::Object(obj) => {
-                format!("{{{}}}",
+                format!(
+                    "{{{}}}",
                     obj.iter()
                         .map(|(k, v)| format!("{}: {}", k, v.to_string()))
                         .collect::<Vec<_>>()

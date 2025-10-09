@@ -5,9 +5,9 @@
 
 use crate::memory_types::*;
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
 
 /// Configuration for memory consolidation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,11 +88,15 @@ impl ConsolidationEngine {
                         .iter()
                         .any(|assoc| assoc.memory_id == memories[j].id);
 
-                    if !already_associated && memories[i].associations.len() < self.config.max_associations {
+                    if !already_associated
+                        && memories[i].associations.len() < self.config.max_associations
+                    {
                         memories[i].add_association(
                             memories[j].id.clone(),
                             AssociationType::Temporal,
-                            0.5 + (1.0 - (time_diff.num_seconds().abs() as f32 / (window_duration.num_seconds() as f32))),
+                            0.5 + (1.0
+                                - (time_diff.num_seconds().abs() as f32
+                                    / (window_duration.num_seconds() as f32))),
                         );
                         associations_formed += 1;
                     }
@@ -120,7 +124,9 @@ impl ConsolidationEngine {
                             .iter()
                             .any(|assoc| assoc.memory_id == memories[j].id);
 
-                        if !already_associated && memories[i].associations.len() < self.config.max_associations {
+                        if !already_associated
+                            && memories[i].associations.len() < self.config.max_associations
+                        {
                             memories[i].add_association(
                                 memories[j].id.clone(),
                                 AssociationType::Spatial,
@@ -150,7 +156,9 @@ impl ConsolidationEngine {
                         .iter()
                         .any(|assoc| assoc.memory_id == memories[j].id);
 
-                    if !already_associated && memories[i].associations.len() < self.config.max_associations {
+                    if !already_associated
+                        && memories[i].associations.len() < self.config.max_associations
+                    {
                         memories[i].add_association(
                             memories[j].id.clone(),
                             AssociationType::Conceptual,
@@ -178,10 +186,7 @@ impl ConsolidationEngine {
         let words1: Vec<&str> = memory1.content.text.split_whitespace().collect();
         let words2: Vec<&str> = memory2.content.text.split_whitespace().collect();
 
-        let common_words = words1
-            .iter()
-            .filter(|word| words2.contains(word))
-            .count();
+        let common_words = words1.iter().filter(|word| words2.contains(word)).count();
 
         if !words1.is_empty() && !words2.is_empty() {
             let text_similarity = common_words as f32 / words1.len().min(words2.len()) as f32;
@@ -189,12 +194,15 @@ impl ConsolidationEngine {
         }
 
         // Participant overlap
-        let participants1: std::collections::HashSet<_> = memory1.content.context.participants.iter().collect();
-        let participants2: std::collections::HashSet<_> = memory2.content.context.participants.iter().collect();
+        let participants1: std::collections::HashSet<_> =
+            memory1.content.context.participants.iter().collect();
+        let participants2: std::collections::HashSet<_> =
+            memory2.content.context.participants.iter().collect();
         let common_participants = participants1.intersection(&participants2).count();
 
         if !participants1.is_empty() || !participants2.is_empty() {
-            let participant_similarity = common_participants as f32 / participants1.union(&participants2).count() as f32;
+            let participant_similarity =
+                common_participants as f32 / participants1.union(&participants2).count() as f32;
             similarity += participant_similarity * 0.2;
         }
 

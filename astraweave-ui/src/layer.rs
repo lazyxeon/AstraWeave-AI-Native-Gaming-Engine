@@ -19,8 +19,8 @@ impl UiLayer {
             egui::ViewportId::ROOT,
             window,
             Some(window.scale_factor() as f32),
-            Some(winit::window::Theme::Dark),                          // theme parameter (winit theme)
-            Some(device.limits().max_texture_dimension_2d as usize),   // max_texture_side
+            Some(winit::window::Theme::Dark), // theme parameter (winit theme)
+            Some(device.limits().max_texture_dimension_2d as usize), // max_texture_side
         );
         let egui_rend = EguiRenderer::new(device, format, None, 1, false); // false for srgb_support
         let scale_factor = window.scale_factor() as f32;
@@ -114,7 +114,7 @@ impl UiLayer {
             // SAFETY: The render pass doesn't outlive the encoder scope,
             // so extending the lifetime to 'static is safe here.
             // This is required due to egui-wgpu's API in version 0.32.
-            let render_pass_static: &mut wgpu::RenderPass<'static> = 
+            let render_pass_static: &mut wgpu::RenderPass<'static> =
                 unsafe { std::mem::transmute(&mut render_pass) };
             self.egui_rend.render(render_pass_static, meshes, &screen);
         }

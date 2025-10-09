@@ -170,7 +170,7 @@ struct EditorApp {
     nav_max_slope_deg: f32,
     sim_world: Option<World>,
     sim_tick_count: u64,
-    material_inspector: MaterialInspector,  // NEW - Phase PBR-G Task 2
+    material_inspector: MaterialInspector, // NEW - Phase PBR-G Task 2
 }
 
 impl Default for EditorApp {
@@ -256,7 +256,7 @@ impl Default for EditorApp {
             nav_max_slope_deg: 60.0,
             sim_world: None,
             sim_tick_count: 0,
-            material_inspector: MaterialInspector::new(),  // NEW - Phase PBR-G Task 2
+            material_inspector: MaterialInspector::new(), // NEW - Phase PBR-G Task 2
         }
     }
 }

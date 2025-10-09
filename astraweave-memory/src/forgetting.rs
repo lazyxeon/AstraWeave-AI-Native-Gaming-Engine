@@ -5,9 +5,9 @@
 
 use crate::memory_types::*;
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
 
 /// Configuration for forgetting mechanisms
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -194,7 +194,8 @@ impl ForgettingEngine {
         };
 
         // Apply importance modifier
-        let importance_modifier = 1.0 + (memory.metadata.importance - 0.5) * self.config.importance_factor;
+        let importance_modifier =
+            1.0 + (memory.metadata.importance - 0.5) * self.config.importance_factor;
 
         // Apply access frequency modifier
         let access_modifier = if memory.metadata.access_count > 0 {
@@ -205,16 +206,21 @@ impl ForgettingEngine {
         };
 
         // Apply spaced repetition effects
-        let spaced_repetition_modifier = if self.config.spaced_repetition && memory.metadata.access_count > 1 {
-            // Memories that are accessed multiple times decay more slowly
-            let repetition_factor = (memory.metadata.access_count as f32).ln() * 0.1;
-            1.0 + repetition_factor
-        } else {
-            1.0
-        };
+        let spaced_repetition_modifier =
+            if self.config.spaced_repetition && memory.metadata.access_count > 1 {
+                // Memories that are accessed multiple times decay more slowly
+                let repetition_factor = (memory.metadata.access_count as f32).ln() * 0.1;
+                1.0 + repetition_factor
+            } else {
+                1.0
+            };
 
         // Calculate new strength
-        let new_strength = curve.initial_strength * decay_factor * importance_modifier * access_modifier * spaced_repetition_modifier;
+        let new_strength = curve.initial_strength
+            * decay_factor
+            * importance_modifier
+            * access_modifier
+            * spaced_repetition_modifier;
 
         memory.metadata.strength = new_strength.max(0.0).min(1.0);
 
@@ -263,7 +269,11 @@ impl ForgettingEngine {
     }
 
     /// Get forgetting statistics for a memory type
-    pub fn get_type_statistics(&self, memory_type: &MemoryType, memories: &[Memory]) -> TypeForgettingStats {
+    pub fn get_type_statistics(
+        &self,
+        memory_type: &MemoryType,
+        memories: &[Memory],
+    ) -> TypeForgettingStats {
         let type_memories: Vec<_> = memories
             .iter()
             .filter(|m| &m.memory_type == memory_type)

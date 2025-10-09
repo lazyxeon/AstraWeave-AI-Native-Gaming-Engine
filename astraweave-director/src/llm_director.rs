@@ -1,25 +1,25 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, warn, info};
+use tracing::{debug, info, warn};
 
-use astraweave_core::{DirectorBudget, DirectorOp, DirectorPlan, WorldSnapshot, IVec2};
+use astraweave_context::{ContextConfig, ConversationHistory, Role};
+use astraweave_core::{DirectorBudget, DirectorOp, DirectorPlan, IVec2, WorldSnapshot};
 use astraweave_llm::LlmClient;
-use astraweave_rag::RagPipeline;
-use astraweave_context::{ConversationHistory, ContextConfig, Role};
-use astraweave_prompts::template::PromptTemplate;
 use astraweave_prompts::library::PromptLibrary;
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_rag::RagPipeline;
 
 /// Player behavior analysis for LLM-driven director decisions
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlayerBehaviorModel {
-    pub aggression: f32,        // 0.0 (defensive) to 1.0 (aggressive)
-    pub caution: f32,           // 0.0 (reckless) to 1.0 (cautious)
-    pub skill_level: f32,       // 0.0 (novice) to 1.0 (expert)
-    pub preferred_range: f32,   // 0.0 (melee) to 1.0 (ranged)
-    pub adaptability: f32,      // 0.0 (predictable) to 1.0 (adaptive)
+    pub aggression: f32,               // 0.0 (defensive) to 1.0 (aggressive)
+    pub caution: f32,                  // 0.0 (reckless) to 1.0 (cautious)
+    pub skill_level: f32,              // 0.0 (novice) to 1.0 (expert)
+    pub preferred_range: f32,          // 0.0 (melee) to 1.0 (ranged)
+    pub adaptability: f32,             // 0.0 (predictable) to 1.0 (adaptive)
     pub session_performance: Vec<f32>, // Recent performance scores
     pub preferred_tactics: Vec<String>,
     pub weaknesses: Vec<String>,
@@ -49,7 +49,8 @@ impl PlayerBehaviorModel {
 
         // Calculate average distance to enemies
         let avg_distance = if !enemies.is_empty() {
-            let total_distance: i32 = enemies.iter()
+            let total_distance: i32 = enemies
+                .iter()
                 .map(|e| (player_pos.x - e.pos.x).abs() + (player_pos.y - e.pos.y).abs())
                 .sum();
             total_distance as f32 / enemies.len() as f32
@@ -65,10 +66,13 @@ impl PlayerBehaviorModel {
         }
 
         // Analyze movement patterns for aggression
-        let enemies_nearby = enemies.iter().filter(|e| {
-            let dist = (player_pos.x - e.pos.x).abs() + (player_pos.y - e.pos.y).abs();
-            dist < 6
-        }).count();
+        let enemies_nearby = enemies
+            .iter()
+            .filter(|e| {
+                let dist = (player_pos.x - e.pos.x).abs() + (player_pos.y - e.pos.y).abs();
+                dist < 6
+            })
+            .count();
 
         if enemies_nearby > 2 && avg_distance < 5.0 {
             self.aggression = (self.aggression + 0.05).min(1.0);
@@ -84,9 +88,16 @@ impl PlayerBehaviorModel {
             Preferred range {:.2}, Adaptability {:.2}. Current positioning: {} enemies \
             nearby, average distance {:.1}. Encounter count: {}. Recent tactics: {:?}. \
             Identified weaknesses: {:?}",
-            self.aggression, self.caution, self.skill_level, self.preferred_range,
-            self.adaptability, enemies_nearby, avg_distance, self.encounter_count,
-            self.preferred_tactics, self.weaknesses
+            self.aggression,
+            self.caution,
+            self.skill_level,
+            self.preferred_range,
+            self.adaptability,
+            enemies_nearby,
+            avg_distance,
+            self.encounter_count,
+            self.preferred_tactics,
+            self.weaknesses
         )
     }
 
@@ -100,8 +111,8 @@ impl PlayerBehaviorModel {
         }
 
         // Update skill level based on performance
-        let avg_performance = self.session_performance.iter().sum::<f32>()
-            / self.session_performance.len() as f32;
+        let avg_performance =
+            self.session_performance.iter().sum::<f32>() / self.session_performance.len() as f32;
 
         if avg_performance > 0.7 {
             self.skill_level = (self.skill_level + 0.02).min(1.0);
@@ -196,10 +207,11 @@ impl LlmDirector {
         rag_pipeline: Arc<RagPipeline>,
         config: LlmDirectorConfig,
     ) -> Result<Self> {
-        let context_config = ContextConfig { max_tokens: config.context_window_size, ..Default::default() };
-        let conversation_history = Arc::new(RwLock::new(
-            ConversationHistory::new(context_config)
-        ));
+        let context_config = ContextConfig {
+            max_tokens: config.context_window_size,
+            ..Default::default()
+        };
+        let conversation_history = Arc::new(RwLock::new(ConversationHistory::new(context_config)));
 
         let mut prompt_library = PromptLibrary::new();
 
@@ -239,8 +251,11 @@ Guidelines:
             "#.trim().to_string()
         ));
 
-        prompt_library.add_template("difficulty_adjustment", PromptTemplate::new("difficulty_adjustment".to_string(),
-            r#"
+        prompt_library.add_template(
+            "difficulty_adjustment",
+            PromptTemplate::new(
+                "difficulty_adjustment".to_string(),
+                r#"
 You are adjusting the difficulty of a boss encounter based on player performance.
 
 Player Performance History: {{performance_history}}
@@ -258,8 +273,11 @@ Consider:
 - Player improvement over time
 - Frustration vs challenge balance
 - Learning curve progression
-            "#.trim().to_string()
-        ));
+            "#
+                .trim()
+                .to_string(),
+            ),
+        );
 
         Ok(Self {
             llm_client,
@@ -273,7 +291,11 @@ Consider:
     }
 
     /// Generate adaptive tactics based on player behavior and past encounters
-    pub async fn adapt_tactics(&self, snapshot: &WorldSnapshot, budget: &DirectorBudget) -> Result<TacticPlan> {
+    pub async fn adapt_tactics(
+        &self,
+        snapshot: &WorldSnapshot,
+        budget: &DirectorBudget,
+    ) -> Result<TacticPlan> {
         debug!("Generating adaptive tactics for director AI");
 
         // Analyze current player behavior
@@ -282,32 +304,41 @@ Consider:
         drop(player_model);
 
         // Retrieve similar past encounters from RAG
-        let past_encounters_raw = self.rag_pipeline
+        let past_encounters_raw = self
+            .rag_pipeline
             .retrieve(&player_analysis, 5)
             .await
             .unwrap_or_else(|e| {
                 warn!("Failed to retrieve past encounters: {}", e);
                 Vec::new()
             });
-        let past_encounters: Vec<String> = past_encounters_raw.iter().map(|m| m.memory.text.clone()).collect();
+        let past_encounters: Vec<String> = past_encounters_raw
+            .iter()
+            .map(|m| m.memory.text.clone())
+            .collect();
 
         // Build context for LLM
-        let context = self.build_tactic_context(snapshot, budget, &player_analysis, &past_encounters).await?;
+        let context = self
+            .build_tactic_context(snapshot, budget, &player_analysis, &past_encounters)
+            .await?;
 
         // Generate tactics using LLM
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("tactic_generation")?;
-    let prompt = template.render_map(&context)?;
+        let prompt = template.render_map(&context)?;
         drop(prompt_library);
 
         // Add to conversation history
         let mut history = self.conversation_history.write().await;
-    history.add_message(Role::User, prompt.clone()).await?;
-    let full_prompt = history.get_context(2048).await?;
+        history.add_message(Role::User, prompt.clone()).await?;
+        let full_prompt = history.get_context(2048).await?;
         drop(history);
 
         // Generate response
-        let response = self.llm_client.complete(&full_prompt).await
+        let response = self
+            .llm_client
+            .complete(&full_prompt)
+            .await
             .map_err(|e| anyhow!("LLM completion failed: {}", e))?;
 
         // Parse tactic plan
@@ -319,7 +350,9 @@ Consider:
 
         // Update conversation history
         let mut history = self.conversation_history.write().await;
-    history.add_message(Role::Assistant, response.clone()).await?;
+        history
+            .add_message(Role::Assistant, response.clone())
+            .await?;
         drop(history);
 
         info!("Generated tactic plan: {}", validated_plan.strategy);
@@ -337,23 +370,33 @@ Consider:
             .iter()
             .rev()
             .take(5)
-            .map(|outcome| format!("Tactic: {}, Effectiveness: {:.2}",
-                                 outcome.tactic_used, outcome.effectiveness))
+            .map(|outcome| {
+                format!(
+                    "Tactic: {}, Effectiveness: {:.2}",
+                    outcome.tactic_used, outcome.effectiveness
+                )
+            })
             .collect();
         drop(encounter_memory);
 
         let context = HashMap::from([
             ("skill_level".to_string(), player_skill.to_string()),
-            ("performance_history".to_string(), format!("{:?}", performance_history)),
+            (
+                "performance_history".to_string(),
+                format!("{:?}", performance_history),
+            ),
             ("recent_results".to_string(), recent_results.join("; ")),
         ]);
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("difficulty_adjustment")?;
-    let prompt = template.render_map(&context)?;
+        let prompt = template.render_map(&context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Difficulty adjustment failed: {}", e))?;
 
         #[derive(Deserialize)]
@@ -365,11 +408,15 @@ Consider:
         let difficulty_response: DifficultyResponse = serde_json::from_str(&response)
             .map_err(|e| anyhow!("Failed to parse difficulty response: {}", e))?;
 
-        let clamped_difficulty = difficulty_response.new_difficulty
+        let clamped_difficulty = difficulty_response
+            .new_difficulty
             .max(self.config.min_difficulty)
             .min(self.config.max_difficulty);
 
-        debug!("Adjusted difficulty to {}: {}", clamped_difficulty, difficulty_response.reasoning);
+        debug!(
+            "Adjusted difficulty to {}: {}",
+            clamped_difficulty, difficulty_response.reasoning
+        );
         Ok(clamped_difficulty)
     }
 
@@ -379,8 +426,10 @@ Consider:
             return Ok(());
         }
 
-        debug!("Recording tactic outcome: {} (effectiveness: {:.2})",
-               outcome.tactic_used, outcome.effectiveness);
+        debug!(
+            "Recording tactic outcome: {} (effectiveness: {:.2})",
+            outcome.tactic_used, outcome.effectiveness
+        );
 
         // Update player model
         let mut player_model = self.player_model.write().await;
@@ -400,7 +449,10 @@ Consider:
         // Store in RAG for future retrieval
         let memory_text = format!(
             "Encounter: {} | Effectiveness: {:.2} | Player Response: {} | Duration: {}s",
-            outcome.tactic_used, outcome.effectiveness, outcome.player_response, outcome.duration_actual
+            outcome.tactic_used,
+            outcome.effectiveness,
+            outcome.player_response,
+            outcome.duration_actual
         );
 
         // If the pipeline has an LLM client configured, we could use it for summaries
@@ -445,10 +497,19 @@ Consider:
 
         context.insert("player_analysis".to_string(), player_analysis.to_string());
         context.insert("past_encounters".to_string(), past_encounters.join(" | "));
-        context.insert("player_pos".to_string(), format!("({}, {})", snapshot.player.pos.x, snapshot.player.pos.y));
-        context.insert("enemy_count".to_string(), snapshot.enemies.len().to_string());
+        context.insert(
+            "player_pos".to_string(),
+            format!("({}, {})", snapshot.player.pos.x, snapshot.player.pos.y),
+        );
+        context.insert(
+            "enemy_count".to_string(),
+            snapshot.enemies.len().to_string(),
+        );
         context.insert("spawn_budget".to_string(), budget.spawns.to_string());
-        context.insert("terrain_budget".to_string(), budget.terrain_edits.to_string());
+        context.insert(
+            "terrain_budget".to_string(),
+            budget.terrain_edits.to_string(),
+        );
 
         Ok(context)
     }
@@ -469,7 +530,7 @@ Consider:
                     } else {
                         warn!("Skipping spawn operation due to budget constraints");
                     }
-                },
+                }
                 DirectorOp::Fortify { .. } | DirectorOp::Collapse { .. } => {
                     if terrain_count < budget.terrain_edits {
                         terrain_count += 1;
@@ -477,7 +538,7 @@ Consider:
                     } else {
                         warn!("Skipping terrain operation due to budget constraints");
                     }
-                },
+                }
             }
         }
 
@@ -499,11 +560,33 @@ mod tests {
         let mut model = PlayerBehaviorModel::default();
         let snapshot = WorldSnapshot {
             t: 0.0,
-            player: astraweave_core::PlayerState { hp: 100, pos: IVec2 { x: 5, y: 5 }, stance: "stand".to_string(), orders: vec![] },
-            me: astraweave_core::CompanionState { ammo: 10, cooldowns: std::collections::BTreeMap::new(), morale: 1.0, pos: IVec2 { x: 10, y: 10 } },
+            player: astraweave_core::PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".to_string(),
+                orders: vec![],
+            },
+            me: astraweave_core::CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 10, y: 10 },
+            },
             enemies: vec![
-                astraweave_core::EnemyState { id: 1, pos: IVec2 { x: 3, y: 3 }, hp: 100, cover: "none".to_string(), last_seen: 0.0 },
-                astraweave_core::EnemyState { id: 2, pos: IVec2 { x: 7, y: 7 }, hp: 100, cover: "none".to_string(), last_seen: 0.0 },
+                astraweave_core::EnemyState {
+                    id: 1,
+                    pos: IVec2 { x: 3, y: 3 },
+                    hp: 100,
+                    cover: "none".to_string(),
+                    last_seen: 0.0,
+                },
+                astraweave_core::EnemyState {
+                    id: 2,
+                    pos: IVec2 { x: 7, y: 7 },
+                    hp: 100,
+                    cover: "none".to_string(),
+                    last_seen: 0.0,
+                },
             ],
             pois: vec![],
             obstacles: vec![],

@@ -1,13 +1,12 @@
 use anyhow::Result;
+use chrono::Utc;
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
-use chrono::Utc;
 
-use crate::llm_quests::{LlmQuestGenerator, QuestContext, BranchingChoice, QuestValidation};
 use crate::components::{
-    CQuestGenerator, CActiveQuest, CQuestMetrics, CQuestJournal,
-    QuestState, ChoiceRecord
+    CActiveQuest, CQuestGenerator, CQuestJournal, CQuestMetrics, ChoiceRecord, QuestState,
 };
+use crate::llm_quests::{BranchingChoice, LlmQuestGenerator, QuestContext, QuestValidation};
 
 /// System for managing LLM-powered quest generation and execution
 pub struct QuestLlmSystem {
@@ -40,12 +39,14 @@ impl QuestLlmSystem {
     ) -> Result<()> {
         // Check for quest generation
         if self.should_generate_quest(generator, journal, current_time_ms) {
-            self.generate_quest(generator, metrics, journal, current_time_ms).await?;
+            self.generate_quest(generator, metrics, journal, current_time_ms)
+                .await?;
         }
 
         // Update active quests
         for active_quest in active_quests.iter_mut() {
-            self.update_active_quest(active_quest, metrics, journal).await?;
+            self.update_active_quest(active_quest, metrics, journal)
+                .await?;
         }
 
         // Clean up completed/abandoned quests
@@ -62,7 +63,10 @@ impl QuestLlmSystem {
         journal: &mut CQuestJournal,
         current_time_ms: u64,
     ) -> Result<()> {
-        debug!("Generating new quest for player {}", generator.context.player_id);
+        debug!(
+            "Generating new quest for player {}",
+            generator.context.player_id
+        );
 
         if !journal.can_accept_new_quest() {
             debug!("Player has reached maximum active quest limit");
@@ -75,17 +79,27 @@ impl QuestLlmSystem {
         generator.context.preferred_quest_types = journal.get_preferred_categories();
 
         // Generate quest
-        match self.quest_generator.generate_quest(&generator.context).await {
+        match self
+            .quest_generator
+            .generate_quest(&generator.context)
+            .await
+        {
             Ok(quest) => {
                 let generation_time = start_time.elapsed().as_millis() as f32;
 
                 // Validate quest
-                let validation = self.quest_generator.validate_quest(&quest, &generator.context).await?;
+                let validation = self
+                    .quest_generator
+                    .validate_quest(&quest, &generator.context)
+                    .await?;
 
                 metrics.record_quest_generation(generation_time, true, Some(&validation));
 
                 if validation.is_valid {
-                    info!("Generated quest: '{}' (Quality: {:.2})", quest.title, validation.quality_score);
+                    info!(
+                        "Generated quest: '{}' (Quality: {:.2})",
+                        quest.title, validation.quality_score
+                    );
 
                     // Add to journal
                     journal.add_quest(&quest);
@@ -129,7 +143,10 @@ impl QuestLlmSystem {
             let step_id = current_step.id.clone();
             // Generate dynamic content if not cached
             if !active_quest.dynamic_content.contains_key(&step_id) {
-                match self.generate_dynamic_content_for_step(active_quest, step_id.clone()).await {
+                match self
+                    .generate_dynamic_content_for_step(active_quest, step_id.clone())
+                    .await
+                {
                     Ok(content) => {
                         active_quest.add_dynamic_content(step_id.clone(), content);
                         debug!("Generated dynamic content for step '{}'", step_id);
@@ -160,17 +177,26 @@ impl QuestLlmSystem {
         let duration = active_quest.get_duration();
         let completion_time_minutes = duration.num_minutes() as f64;
 
-        info!("Quest '{}' completed in {:.1} minutes",
-              active_quest.quest.title, completion_time_minutes);
+        info!(
+            "Quest '{}' completed in {:.1} minutes",
+            active_quest.quest.title, completion_time_minutes
+        );
 
         // Calculate quality score based on completion
         let quality_score = self.calculate_completion_quality(active_quest);
 
         // Update metrics
-        metrics.record_quest_completion(&active_quest.quest, completion_time_minutes, quality_score);
+        metrics.record_quest_completion(
+            &active_quest.quest,
+            completion_time_minutes,
+            quality_score,
+        );
 
         // Update journal
-        journal.complete_quest(&active_quest.quest.id, "Quest completed successfully".to_string());
+        journal.complete_quest(
+            &active_quest.quest.id,
+            "Quest completed successfully".to_string(),
+        );
 
         Ok(())
     }
@@ -183,11 +209,16 @@ impl QuestLlmSystem {
         metrics: &mut CQuestMetrics,
         journal: &mut CQuestJournal,
     ) -> Result<()> {
-        let step_id = active_quest.get_current_step()
+        let step_id = active_quest
+            .get_current_step()
             .ok_or_else(|| anyhow::anyhow!("No current step for choice"))?
-            .id.clone();
+            .id
+            .clone();
 
-        info!("Player chose '{}' in quest '{}'", choice.description, active_quest.quest.title);
+        info!(
+            "Player chose '{}' in quest '{}'",
+            choice.description, active_quest.quest.title
+        );
 
         // Record choice
         active_quest.record_choice(step_id.clone(), choice.clone());
@@ -197,11 +228,20 @@ impl QuestLlmSystem {
         // Generate branch if needed
         if choice.leads_to_step.is_some() {
             // Branch the narrative
-            match self.quest_generator.branch_narrative(&active_quest.quest, &choice, &self.create_context_from_quest(active_quest)).await {
+            match self
+                .quest_generator
+                .branch_narrative(
+                    &active_quest.quest,
+                    &choice,
+                    &self.create_context_from_quest(active_quest),
+                )
+                .await
+            {
                 Ok(branch) => {
                     info!("Generated quest branch: {}", branch.name);
                     // Apply branch consequences (would need more integration with game systems)
-                    self.apply_choice_consequences(active_quest, &choice, &branch).await?;
+                    self.apply_choice_consequences(active_quest, &choice, &branch)
+                        .await?;
                 }
                 Err(e) => {
                     error!("Failed to generate quest branch: {}", e);
@@ -252,12 +292,18 @@ impl QuestLlmSystem {
             step.completed = true;
         }
 
-        info!("Force completed quest '{}': {}", active_quest.quest.title, completion_notes);
+        info!(
+            "Force completed quest '{}': {}",
+            active_quest.quest.title, completion_notes
+        );
 
         // Update metrics with admin completion
         let duration = active_quest.get_duration();
         metrics.record_quest_completion(&active_quest.quest, duration.num_minutes() as f64, 1.0);
-        journal.complete_quest(&active_quest.quest.id, format!("Force completed: {}", completion_notes));
+        journal.complete_quest(
+            &active_quest.quest.id,
+            format!("Force completed: {}", completion_notes),
+        );
 
         Ok(())
     }
@@ -296,9 +342,8 @@ impl QuestLlmSystem {
     ) {
         let initial_count = active_quests.len();
 
-        active_quests.retain(|quest| {
-            matches!(quest.state, QuestState::Active | QuestState::Paused)
-        });
+        active_quests
+            .retain(|quest| matches!(quest.state, QuestState::Active | QuestState::Paused));
 
         let removed = initial_count - active_quests.len();
         if removed > 0 {
@@ -312,12 +357,17 @@ impl QuestLlmSystem {
         active_quest: &CActiveQuest,
         step_id: String,
     ) -> Result<crate::llm_quests::DynamicContent> {
-        let step = active_quest.quest.steps.iter()
+        let step = active_quest
+            .quest
+            .steps
+            .iter()
             .find(|s| s.id == step_id)
             .ok_or_else(|| anyhow::anyhow!("Step not found: {}", step_id))?;
 
         let context = self.create_context_from_quest(active_quest);
-        self.quest_generator.generate_dynamic_content(step, &context).await
+        self.quest_generator
+            .generate_dynamic_content(step, &context)
+            .await
     }
 
     /// Create quest context from active quest
@@ -326,10 +376,14 @@ impl QuestLlmSystem {
             player_id: active_quest.quest.personalization.player_id.clone(),
             player_level: active_quest.quest.metadata.player_level_range.0, // Use minimum for safety
             location: "current_location".to_string(), // Would come from game state
-            available_npcs: Vec::new(), // Would come from game state
+            available_npcs: Vec::new(),               // Would come from game state
             world_state: std::collections::HashMap::new(), // Would come from game state
-            recent_activities: Vec::new(), // Would come from game state
-            preferred_quest_types: active_quest.quest.personalization.player_preferences.clone(),
+            recent_activities: Vec::new(),            // Would come from game state
+            preferred_quest_types: active_quest
+                .quest
+                .personalization
+                .player_preferences
+                .clone(),
         }
     }
 
@@ -349,7 +403,10 @@ impl QuestLlmSystem {
     /// Check if choice completes the current step
     fn choice_completes_step(&self, choice: &BranchingChoice) -> bool {
         // Simple heuristic - could be more sophisticated
-        choice.consequences.iter().any(|c| c.contains("complete") || c.contains("finish"))
+        choice
+            .consequences
+            .iter()
+            .any(|c| c.contains("complete") || c.contains("finish"))
     }
 
     /// Calculate quality score for completed quest
@@ -393,10 +450,15 @@ pub mod integration {
     pub fn to_basic_quest(active_quest: &CActiveQuest) -> crate::Quest {
         crate::Quest {
             title: active_quest.quest.title.clone(),
-            steps: active_quest.quest.steps.iter().map(|step| crate::QuestStep {
-                description: step.description.clone(),
-                completed: step.completed,
-            }).collect(),
+            steps: active_quest
+                .quest
+                .steps
+                .iter()
+                .map(|step| crate::QuestStep {
+                    description: step.description.clone(),
+                    completed: step.completed,
+                })
+                .collect(),
         }
     }
 
@@ -406,10 +468,10 @@ pub mod integration {
         journal: &CQuestJournal,
         current_time_ms: u64,
     ) -> bool {
-        journal.auto_discover &&
-        journal.can_accept_new_quest() &&
-        generator.can_generate_quest(current_time_ms) &&
-        !generator.context.recent_activities.is_empty()
+        journal.auto_discover
+            && journal.can_accept_new_quest()
+            && generator.can_generate_quest(current_time_ms)
+            && !generator.context.recent_activities.is_empty()
     }
 
     /// Get quest recommendations for player
@@ -420,7 +482,8 @@ pub mod integration {
         let mut recommendations = Vec::new();
 
         if stats.completion_rate < 0.3 {
-            recommendations.push("Consider shorter, simpler quests to build confidence".to_string());
+            recommendations
+                .push("Consider shorter, simpler quests to build confidence".to_string());
         }
 
         if preferences.contains(&"exploration".to_string()) {
@@ -438,16 +501,17 @@ pub mod integration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::llm_quests::{LlmQuestGenerator, QuestGenerationConfig};
     use astraweave_llm::MockLlmClient;
     use astraweave_rag::MockRagPipeline;
-    use crate::llm_quests::{LlmQuestGenerator, QuestGenerationConfig};
 
     #[tokio::test]
     async fn test_quest_system_creation() {
         let llm_client = Arc::new(MockLlmClient::new());
         let rag_pipeline = Arc::new(MockRagPipeline::new());
         let quest_generator = Arc::new(
-            LlmQuestGenerator::new(llm_client, rag_pipeline, QuestGenerationConfig::default()).unwrap()
+            LlmQuestGenerator::new(llm_client, rag_pipeline, QuestGenerationConfig::default())
+                .unwrap(),
         );
 
         let system = QuestLlmSystem::new(quest_generator, 300000, 3);
@@ -475,6 +539,8 @@ mod tests {
         let recommendations = integration::get_quest_recommendations(&journal);
 
         assert!(!recommendations.is_empty());
-        assert!(recommendations.iter().any(|r| r.contains("No active quests")));
+        assert!(recommendations
+            .iter()
+            .any(|r| r.contains("No active quests")));
     }
 }

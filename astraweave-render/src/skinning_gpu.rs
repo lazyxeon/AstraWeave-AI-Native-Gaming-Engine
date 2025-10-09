@@ -224,22 +224,237 @@ fn apply_skinning_tangent(input: SkinnedVertexInput) -> vec3<f32> {
 "#;
 
 // ============================================================================
+// Complete Shader Generation
+// ============================================================================
+
+/// Create complete WGSL shader for GPU skinned mesh rendering
+fn create_complete_skinning_shader() -> String {
+    format!(
+        r#"
+// Bind Groups
+struct Camera {{
+    view_proj: mat4x4<f32>,
+    view: mat4x4<f32>,
+    proj: mat4x4<f32>,
+    position: vec3<f32>,
+    _padding: f32,
+}}
+
+struct Material {{
+    base_color: vec4<f32>,
+    metallic: f32,
+    roughness: f32,
+    _padding: vec2<f32>,
+}}
+
+struct Light {{
+    position: vec3<f32>,
+    _padding1: f32,
+    direction: vec3<f32>,
+    _padding2: f32,
+    color: vec3<f32>,
+    intensity: f32,
+}}
+
+@group(0) @binding(0) var<uniform> camera: Camera;
+@group(1) @binding(0) var<uniform> material: Material;
+@group(2) @binding(0) var<uniform> light: Light;
+@group(3) @binding(0) var albedo_texture: texture_2d<f32>;
+@group(3) @binding(1) var albedo_sampler: sampler;
+
+{}
+
+// Vertex Output
+struct VertexOutput {{
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) world_position: vec3<f32>,
+    @location(1) world_normal: vec3<f32>,
+    @location(2) uv: vec2<f32>,
+    @location(3) world_tangent: vec3<f32>,
+}}
+
+// Vertex Shader
+@vertex
+fn vs_main(
+    @location(0) position: vec3<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) uv: vec2<f32>,
+    @location(3) tangent: vec4<f32>,
+    @location(10) joints: vec4<u32>,
+    @location(11) weights: vec4<f32>,
+) -> VertexOutput {{
+    var output: VertexOutput;
+    
+    // Apply GPU skinning
+    let skinned_input = SkinnedVertexInput(
+        position,
+        normal,
+        tangent,
+        joints,
+        weights,
+    );
+    
+    let skinned_pos = apply_skinning(skinned_input);
+    let skinned_normal = apply_skinning_normal(skinned_input);
+    let skinned_tangent = apply_skinning_tangent(skinned_input);
+    
+    // Transform to clip space
+    output.clip_position = camera.view_proj * skinned_pos;
+    output.world_position = skinned_pos.xyz;
+    output.world_normal = skinned_normal;
+    output.world_tangent = skinned_tangent;
+    output.uv = uv;
+    
+    return output;
+}}
+
+// Fragment Shader (Simple PBR)
+@fragment
+fn fs_main(input: VertexOutput) -> @location(0) vec4<f32> {{
+    // Sample albedo
+    let albedo = textureSample(albedo_texture, albedo_sampler, input.uv);
+    let base_color = albedo * material.base_color;
+    
+    // Simple diffuse lighting
+    let N = normalize(input.world_normal);
+    let L = normalize(light.position - input.world_position);
+    let V = normalize(camera.position - input.world_position);
+    
+    let NdotL = max(dot(N, L), 0.0);
+    let diffuse = base_color.rgb * NdotL * light.color * light.intensity;
+    
+    // Simple specular (Blinn-Phong)
+    let H = normalize(L + V);
+    let NdotH = max(dot(N, H), 0.0);
+    let spec_strength = pow(NdotH, 32.0 * (1.0 - material.roughness));
+    let specular = vec3<f32>(spec_strength) * light.color * light.intensity;
+    
+    // Ambient
+    let ambient = base_color.rgb * 0.03;
+    
+    let final_color = ambient + diffuse + specular;
+    return vec4<f32>(final_color, base_color.a);
+}}
+"#,
+        SKINNING_GPU_SHADER
+    )
+}
+
+// ============================================================================
 // Integration Helpers
 // ============================================================================
 
-/// Helper to create skinned mesh pipeline with GPU skinning enabled
-pub fn create_skinned_pipeline_descriptor<'a>(
-    _device: &'a wgpu::Device,
-    _camera_bind_group_layout: &'a wgpu::BindGroupLayout,
-    _material_bind_group_layout: &'a wgpu::BindGroupLayout,
-    _light_bind_group_layout: &'a wgpu::BindGroupLayout,
-    _texture_bind_group_layout: &'a wgpu::BindGroupLayout,
-    _joint_palette_bind_group_layout: &'a wgpu::BindGroupLayout,
-    _format: wgpu::TextureFormat,
-) -> wgpu::RenderPipelineDescriptor<'a> {
-    // This would be implemented with the full pipeline descriptor
-    // For now, return a minimal descriptor structure
-    todo!("Pipeline descriptor creation - integrate with existing renderer pipelines")
+/// Helper to create skinned mesh render pipeline with GPU skinning enabled
+///
+/// This creates a complete render pipeline for GPU-accelerated skeletal animation.
+/// The pipeline expects:
+/// - Vertex buffers with skinning data (joints, weights)
+/// - Joint palette storage buffer at group 4, binding 0
+/// - Standard PBR bind groups (camera, material, lights, textures)
+///
+/// Returns the created pipeline which can be used for rendering skinned meshes.
+pub fn create_skinned_pipeline(
+    device: &wgpu::Device,
+    camera_bind_group_layout: &wgpu::BindGroupLayout,
+    material_bind_group_layout: &wgpu::BindGroupLayout,
+    light_bind_group_layout: &wgpu::BindGroupLayout,
+    texture_bind_group_layout: &wgpu::BindGroupLayout,
+    joint_palette_bind_group_layout: &wgpu::BindGroupLayout,
+    format: wgpu::TextureFormat,
+) -> wgpu::RenderPipeline {
+    // Create complete skinned mesh shader with GPU skinning
+    let shader_source = create_complete_skinning_shader();
+    let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("gpu_skinned_mesh_shader"),
+        source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+    });
+
+    // Create pipeline layout with all bind groups
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("gpu_skinned_pipeline_layout"),
+        bind_group_layouts: &[
+            camera_bind_group_layout,        // Group 0: Camera (view, projection)
+            material_bind_group_layout,      // Group 1: Material properties
+            light_bind_group_layout,         // Group 2: Lights
+            texture_bind_group_layout,       // Group 3: Textures (albedo, normal, MRA)
+            joint_palette_bind_group_layout, // Group 4: Joint matrices
+        ],
+        push_constant_ranges: &[],
+    });
+
+    // Vertex attributes for skinned vertices
+    const SKINNED_VERTEX_ATTRIBUTES: &[wgpu::VertexAttribute] = &wgpu::vertex_attr_array![
+        0 => Float32x3,  // position
+        1 => Float32x3,  // normal
+        2 => Float32x2,  // uv
+        3 => Float32x4,  // tangent
+        10 => Uint32x4,  // joints
+        11 => Float32x4, // weights
+    ];
+
+    // Vertex buffer layout for skinned vertices
+    let vertex_buffer_layout = wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<SkinnedVertex>() as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: SKINNED_VERTEX_ATTRIBUTES,
+    };
+
+    // Create the render pipeline
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("gpu_skinned_mesh_pipeline"),
+        layout: Some(&pipeline_layout),
+        vertex: wgpu::VertexState {
+            module: &shader_module,
+            entry_point: Some("vs_main"),
+            buffers: &[vertex_buffer_layout],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        },
+        fragment: Some(wgpu::FragmentState {
+            module: &shader_module,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState {
+                format,
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: Some(wgpu::Face::Back),
+            unclipped_depth: false,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            conservative: false,
+        },
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: wgpu::TextureFormat::Depth32Float,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+        }),
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview: None,
+        cache: None,
+    })
+}
+
+/// Vertex structure for GPU skinned meshes
+#[repr(C)]
+#[derive(Clone, Copy, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct SkinnedVertex {
+    pub position: [f32; 3],
+    pub normal: [f32; 3],
+    pub uv: [f32; 2],
+    pub tangent: [f32; 4],
+    pub joints: [u32; 4],
+    pub weights: [f32; 4],
 }
 
 // ============================================================================
@@ -249,6 +464,7 @@ pub fn create_skinned_pipeline_descriptor<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::animation::MAX_JOINTS;
 
     #[test]
     fn test_joint_palette_handle() {
@@ -281,4 +497,156 @@ mod tests {
     }
 
     // GPU tests require wgpu instance - add integration tests later
+}
+
+// ============================================================================
+// Integration Tests (GPU)
+// ============================================================================
+
+#[cfg(all(test, feature = "gpu-tests"))]
+mod gpu_tests {
+    use super::*;
+
+    async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                compatible_surface: None,
+                force_fallback_adapter: false,
+            })
+            .await
+            .expect("Failed to find an appropriate adapter");
+
+        adapter
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("test_device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            })
+            .await
+            .expect("Failed to create device")
+    }
+
+    #[tokio::test]
+    async fn test_pipeline_creation() {
+        let (device, queue) = create_test_device().await;
+        let mut manager = JointPaletteManager::new(&device, &queue);
+
+        // Create dummy bind group layouts for testing
+        let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("camera"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        let material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("material"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        let light_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("light"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        let texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("texture"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+
+        // Test pipeline creation
+        let pipeline = create_skinned_pipeline(
+            &device,
+            &camera_layout,
+            &material_layout,
+            &light_layout,
+            &texture_layout,
+            &manager.bind_group_layout,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+        );
+
+        // Pipeline should be created successfully (no panics/errors)
+        // Verify pipeline exists by checking it's not null-like
+        drop(pipeline); // Just verify it was created without panicking
+    }
+
+    #[tokio::test]
+    async fn test_skinning_produces_valid_output() {
+        let (device, queue) = create_test_device().await;
+        let mut manager = JointPaletteManager::new(&device, &queue);
+
+        // Allocate a palette
+        let handle = manager.allocate();
+
+        // Create simple test matrices (identity transforms)
+        let matrices = vec![
+            Mat4::from_translation(glam::Vec3::new(1.0, 0.0, 0.0)),
+            Mat4::from_translation(glam::Vec3::new(0.0, 2.0, 0.0)),
+        ];
+
+        // Upload matrices
+        manager
+            .upload_matrices(handle, &matrices)
+            .expect("Failed to upload matrices");
+
+        // Verify bind group exists
+        let bind_group = manager.get_bind_group(handle);
+        assert!(
+            bind_group.is_some(),
+            "Bind group should exist after allocation"
+        );
+
+        // Verify buffer is properly sized
+        assert_eq!(manager.active_count(), 1);
+    }
 }

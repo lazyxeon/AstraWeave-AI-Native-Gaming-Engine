@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -86,8 +86,10 @@ impl ModelRateLimit {
         self.reset_window_if_needed();
 
         // Check if we have capacity
-        let has_request_capacity = self.current_requests < (self.requests_per_minute as f32 * self.adaptive_multiplier) as u32;
-        let has_token_capacity = self.current_tokens + token_estimate < (self.tokens_per_minute as f32 * self.adaptive_multiplier) as u32;
+        let has_request_capacity = self.current_requests
+            < (self.requests_per_minute as f32 * self.adaptive_multiplier) as u32;
+        let has_token_capacity = self.current_tokens + token_estimate
+            < (self.tokens_per_minute as f32 * self.adaptive_multiplier) as u32;
 
         has_request_capacity && has_token_capacity
     }
@@ -96,12 +98,21 @@ impl ModelRateLimit {
         self.reset_window_if_needed();
 
         // Try to acquire semaphore permits
-        let request_permit = self.request_semaphore.clone().try_acquire_owned()
+        let request_permit = self
+            .request_semaphore
+            .clone()
+            .try_acquire_owned()
             .map_err(|_| anyhow!("Request rate limit exceeded for model {}", self.model_name))?;
 
         let token_permits = if token_estimate > 0 {
-            Some(self.token_semaphore.clone().try_acquire_many_owned(token_estimate)
-                .map_err(|_| anyhow!("Token rate limit exceeded for model {}", self.model_name))?)
+            Some(
+                self.token_semaphore
+                    .clone()
+                    .try_acquire_many_owned(token_estimate)
+                    .map_err(|_| {
+                        anyhow!("Token rate limit exceeded for model {}", self.model_name)
+                    })?,
+            )
         } else {
             None
         };
@@ -167,7 +178,10 @@ impl UserRateLimit {
     async fn acquire(&mut self) -> Result<tokio::sync::OwnedSemaphorePermit> {
         self.reset_window_if_needed();
 
-        let permit = self.semaphore.clone().try_acquire_owned()
+        let permit = self
+            .semaphore
+            .clone()
+            .try_acquire_owned()
             .map_err(|_| anyhow!("User rate limit exceeded for user {}", self.user_id))?;
 
         self.current_requests += 1;
@@ -209,7 +223,10 @@ impl GlobalRateLimit {
     async fn acquire(&self) -> Result<tokio::sync::OwnedSemaphorePermit> {
         self.reset_window_if_needed().await;
 
-        let permit = self.semaphore.clone().try_acquire_owned()
+        let permit = self
+            .semaphore
+            .clone()
+            .try_acquire_owned()
             .map_err(|_| anyhow!("Global rate limit exceeded"))?;
 
         let mut current = self.current_requests.write().await;
@@ -283,7 +300,8 @@ impl RateLimiter {
         // Check user limit if user_id provided
         if let Some(user_id) = &context.user_id {
             let mut user_limits = self.user_limits.write().await;
-            let user_limit = user_limits.entry(user_id.clone())
+            let user_limit = user_limits
+                .entry(user_id.clone())
                 .or_insert_with(|| UserRateLimit::new(user_id.clone(), self.config.user_rpm));
 
             if !user_limit.can_proceed().await {
@@ -297,18 +315,24 @@ impl RateLimiter {
 
         // Check model limit
         let mut model_limits = self.model_limits.write().await;
-        let model_limit = model_limits.entry(context.model.clone())
-            .or_insert_with(|| ModelRateLimit::new(
-                context.model.clone(),
-                self.config.default_rpm,
-                self.config.default_tpm,
-            ));
+        let model_limit = model_limits
+            .entry(context.model.clone())
+            .or_insert_with(|| {
+                ModelRateLimit::new(
+                    context.model.clone(),
+                    self.config.default_rpm,
+                    self.config.default_tpm,
+                )
+            });
 
         if !model_limit.can_proceed(context.estimated_tokens).await {
             return RateLimitResult {
                 allowed: false,
                 retry_after: Some(Duration::from_secs(1)),
-                reason: Some(format!("Model rate limit exceeded for model {}", context.model)),
+                reason: Some(format!(
+                    "Model rate limit exceeded for model {}",
+                    context.model
+                )),
             };
         }
 
@@ -327,7 +351,8 @@ impl RateLimiter {
         // Acquire user permit if needed
         let user_permit = if let Some(user_id) = &context.user_id {
             let mut user_limits = self.user_limits.write().await;
-            let user_limit = user_limits.entry(user_id.clone())
+            let user_limit = user_limits
+                .entry(user_id.clone())
                 .or_insert_with(|| UserRateLimit::new(user_id.clone(), self.config.user_rpm));
             Some(user_limit.acquire().await?)
         } else {
@@ -337,17 +362,22 @@ impl RateLimiter {
         // Acquire model permit
         let model_permit = {
             let mut model_limits = self.model_limits.write().await;
-            let model_limit = model_limits.entry(context.model.clone())
-                .or_insert_with(|| ModelRateLimit::new(
-                    context.model.clone(),
-                    self.config.default_rpm,
-                    self.config.default_tpm,
-                ));
+            let model_limit = model_limits
+                .entry(context.model.clone())
+                .or_insert_with(|| {
+                    ModelRateLimit::new(
+                        context.model.clone(),
+                        self.config.default_rpm,
+                        self.config.default_tpm,
+                    )
+                });
             model_limit.acquire(context.estimated_tokens).await?
         };
 
-        debug!("Acquired rate limit permits for model {} (tokens: {})",
-               context.model, context.estimated_tokens);
+        debug!(
+            "Acquired rate limit permits for model {} (tokens: {})",
+            context.model, context.estimated_tokens
+        );
 
         Ok(RateLimitPermits {
             _global_permit: global_permit,
@@ -365,8 +395,10 @@ impl RateLimiter {
         let mut model_limits = self.model_limits.write().await;
         if let Some(model_limit) = model_limits.get_mut(&context.model) {
             model_limit.update_success_rate(success);
-            debug!("Updated success rate for model {}: {} (multiplier: {})",
-                   context.model, model_limit.success_rate, model_limit.adaptive_multiplier);
+            debug!(
+                "Updated success rate for model {}: {} (multiplier: {})",
+                context.model, model_limit.success_rate, model_limit.adaptive_multiplier
+            );
         }
     }
 
@@ -375,25 +407,33 @@ impl RateLimiter {
         let model_limits = self.model_limits.read().await;
         let user_limits = self.user_limits.read().await;
 
-        let model_status: HashMap<String, ModelLimitStatus> = model_limits.iter()
+        let model_status: HashMap<String, ModelLimitStatus> = model_limits
+            .iter()
             .map(|(name, limit)| {
-                (name.clone(), ModelLimitStatus {
-                    current_requests: limit.current_requests,
-                    max_requests: limit.requests_per_minute,
-                    current_tokens: limit.current_tokens,
-                    max_tokens: limit.tokens_per_minute,
-                    success_rate: limit.success_rate,
-                    adaptive_multiplier: limit.adaptive_multiplier,
-                })
+                (
+                    name.clone(),
+                    ModelLimitStatus {
+                        current_requests: limit.current_requests,
+                        max_requests: limit.requests_per_minute,
+                        current_tokens: limit.current_tokens,
+                        max_tokens: limit.tokens_per_minute,
+                        success_rate: limit.success_rate,
+                        adaptive_multiplier: limit.adaptive_multiplier,
+                    },
+                )
             })
             .collect();
 
-        let user_status: HashMap<String, UserLimitStatus> = user_limits.iter()
+        let user_status: HashMap<String, UserLimitStatus> = user_limits
+            .iter()
             .map(|(id, limit)| {
-                (id.clone(), UserLimitStatus {
-                    current_requests: limit.current_requests,
-                    max_requests: limit.requests_per_minute,
-                })
+                (
+                    id.clone(),
+                    UserLimitStatus {
+                        current_requests: limit.current_requests,
+                        max_requests: limit.requests_per_minute,
+                    },
+                )
             })
             .collect();
 

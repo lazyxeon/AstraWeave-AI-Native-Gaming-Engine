@@ -23,7 +23,7 @@ async fn main() -> anyhow::Result<()> {
     let embedding_client = Arc::new(MockEmbeddingClient::new());
     let vector_store = Arc::new(VectorStore::new(384));
     let llm_client = Arc::new(MockLlm);
-    
+
     // Create RAG pipeline
     let config = RagConfig::default();
     let mut rag = RagPipeline::new(
@@ -32,63 +32,63 @@ async fn main() -> anyhow::Result<()> {
         Some(llm_client),
         config
     );
-    
+
     // Add some memories
     rag.add_memory("Player defeated the dragon boss in epic battle".to_string()).await?;
     rag.add_memory("Found magical sword in hidden cave".to_string()).await?;
-    
+
     // Retrieve relevant memories
     let memories = rag.retrieve("combat with boss", 3).await?;
     println!("Retrieved {} relevant memories", memories.len());
-    
+
     // Inject into prompt
     let base_prompt = "You are a game companion. Help the player with their quest.";
     let enhanced_prompt = rag.inject_context(base_prompt, "boss fight strategy").await?;
     println!("Enhanced prompt: {}", enhanced_prompt);
-    
+
     Ok(())
 }
 ```
 */
 
+pub mod consolidation;
+pub mod forgetting;
+pub mod injection;
 pub mod pipeline;
 pub mod retrieval;
-pub mod consolidation;
-pub mod injection;
-pub mod forgetting;
 
+pub use consolidation::*;
+pub use forgetting::*;
+pub use injection::*;
 pub use pipeline::*;
 pub use retrieval::*;
-pub use consolidation::*;
-pub use injection::*;
-pub use forgetting::*;
 
 use anyhow::Result;
+use astraweave_embeddings::{Memory, MemoryCategory};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use astraweave_embeddings::{Memory, MemoryCategory};
 
 /// Configuration for RAG pipeline
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RagConfig {
     /// Maximum number of memories to retrieve
     pub max_retrieval_count: usize,
-    
+
     /// Minimum similarity score for retrieval
     pub min_similarity_score: f32,
-    
+
     /// Memory consolidation settings
     pub consolidation: ConsolidationConfig,
-    
+
     /// Forgetting mechanism settings
     pub forgetting: ForgettingConfig,
-    
+
     /// Context injection settings
     pub injection: InjectionConfig,
-    
+
     /// Diversity settings for retrieval
     pub diversity: DiversityConfig,
-    
+
     /// Performance tuning
     pub performance: PerformanceConfig,
 }
@@ -112,19 +112,19 @@ impl Default for RagConfig {
 pub struct ConsolidationConfig {
     /// Enable automatic memory consolidation
     pub enabled: bool,
-    
+
     /// Number of memories to trigger consolidation
     pub trigger_threshold: usize,
-    
+
     /// Similarity threshold for merging memories
     pub merge_similarity_threshold: f32,
-    
+
     /// Maximum memories to keep per consolidation
     pub max_memories_per_batch: usize,
-    
+
     /// Consolidation strategy
     pub strategy: ConsolidationStrategy,
-    
+
     /// How often to run consolidation (in seconds)
     pub consolidation_interval: u64,
 }
@@ -160,19 +160,19 @@ pub enum ConsolidationStrategy {
 pub struct ForgettingConfig {
     /// Enable memory forgetting
     pub enabled: bool,
-    
+
     /// Base decay rate (memories decay over time)
     pub base_decay_rate: f32,
-    
+
     /// Importance factor (important memories decay slower)
     pub importance_factor: f32,
-    
+
     /// Minimum importance to prevent forgetting
     pub min_importance_threshold: f32,
-    
+
     /// Maximum age before forced forgetting (in seconds)
     pub max_memory_age: u64,
-    
+
     /// Memory cleanup interval (in seconds)
     pub cleanup_interval: u64,
 }
@@ -185,7 +185,7 @@ impl Default for ForgettingConfig {
             importance_factor: 2.0,
             min_importance_threshold: 0.1,
             max_memory_age: 30 * 24 * 3600, // 30 days
-            cleanup_interval: 24 * 3600, // Daily cleanup
+            cleanup_interval: 24 * 3600,    // Daily cleanup
         }
     }
 }
@@ -195,16 +195,16 @@ impl Default for ForgettingConfig {
 pub struct InjectionConfig {
     /// Template for injecting memories into prompts
     pub injection_template: String,
-    
+
     /// Maximum tokens for injected context
     pub max_context_tokens: usize,
-    
+
     /// Whether to include memory metadata
     pub include_metadata: bool,
-    
+
     /// Strategy for ordering retrieved memories
     pub ordering_strategy: OrderingStrategy,
-    
+
     /// Whether to summarize long memory lists
     pub enable_summarization: bool,
 }
@@ -212,7 +212,8 @@ pub struct InjectionConfig {
 impl Default for InjectionConfig {
     fn default() -> Self {
         Self {
-            injection_template: "Relevant memories:\n{memories}\n\nNow respond to: {query}".to_string(),
+            injection_template: "Relevant memories:\n{memories}\n\nNow respond to: {query}"
+                .to_string(),
             max_context_tokens: 1024,
             include_metadata: true,
             ordering_strategy: OrderingStrategy::SimilarityDesc,
@@ -245,13 +246,13 @@ pub enum OrderingStrategy {
 pub struct DiversityConfig {
     /// Enable diversity in retrieval results
     pub enabled: bool,
-    
+
     /// Diversity factor (0.0 = no diversity, 1.0 = maximum diversity)
     pub diversity_factor: f32,
-    
+
     /// Diversity strategy
     pub strategy: DiversityStrategy,
-    
+
     /// Minimum distance between diverse results
     pub min_diversity_distance: f32,
 }
@@ -285,19 +286,19 @@ pub enum DiversityStrategy {
 pub struct PerformanceConfig {
     /// Enable result caching
     pub enable_caching: bool,
-    
+
     /// Cache size (number of cached queries)
     pub cache_size: usize,
-    
+
     /// Cache TTL in seconds
     pub cache_ttl: u64,
-    
+
     /// Batch size for memory processing
     pub batch_size: usize,
-    
+
     /// Parallel processing threads
     pub max_threads: usize,
-    
+
     /// Enable performance metrics
     pub enable_metrics: bool,
 }
@@ -320,13 +321,13 @@ impl Default for PerformanceConfig {
 pub struct RetrievedMemory {
     /// The memory content
     pub memory: Memory,
-    
+
     /// Similarity score to query
     pub similarity_score: f32,
-    
+
     /// Relevance ranking
     pub rank: usize,
-    
+
     /// Additional retrieval metadata
     pub metadata: RetrievalMetadata,
 }
@@ -336,16 +337,16 @@ pub struct RetrievedMemory {
 pub struct RetrievalMetadata {
     /// Query used for retrieval
     pub query: String,
-    
+
     /// Retrieval method used
     pub method: RetrievalMethod,
-    
+
     /// Timestamp of retrieval
     pub retrieved_at: u64,
-    
+
     /// Processing time in milliseconds
     pub processing_time_ms: f32,
-    
+
     /// Additional context about retrieval
     pub context: HashMap<String, serde_json::Value>,
 }
@@ -370,31 +371,31 @@ pub enum RetrievalMethod {
 pub struct RagMetrics {
     /// Total queries processed
     pub total_queries: u64,
-    
+
     /// Successful retrievals
     pub successful_retrievals: u64,
-    
+
     /// Failed retrievals
     pub failed_retrievals: u64,
-    
+
     /// Average retrieval time (ms)
     pub avg_retrieval_time_ms: f32,
-    
+
     /// Average memories per query
     pub avg_memories_per_query: f32,
-    
+
     /// Cache hit rate
     pub cache_hit_rate: f32,
-    
+
     /// Memory consolidations performed
     pub consolidations_performed: u64,
-    
+
     /// Memories forgotten
     pub memories_forgotten: u64,
-    
+
     /// Total memories stored
     pub total_memories_stored: u64,
-    
+
     /// Average memory importance
     pub avg_memory_importance: f32,
 }
@@ -404,13 +405,13 @@ pub struct RagMetrics {
 pub struct InjectionResult {
     /// The enhanced prompt with injected context
     pub enhanced_prompt: String,
-    
+
     /// Memories that were injected
     pub injected_memories: Vec<RetrievedMemory>,
-    
+
     /// Token count of injected context
     pub context_tokens: usize,
-    
+
     /// Injection metadata
     pub metadata: InjectionMetadata,
 }
@@ -420,16 +421,16 @@ pub struct InjectionResult {
 pub struct InjectionMetadata {
     /// Original prompt
     pub original_prompt: String,
-    
+
     /// Query used for retrieval
     pub query: String,
-    
+
     /// Injection strategy used
     pub strategy: InjectionStrategy,
-    
+
     /// Processing time
     pub processing_time_ms: f32,
-    
+
     /// Whether summarization was applied
     pub summarized: bool,
 }
@@ -454,22 +455,22 @@ pub enum InjectionStrategy {
 pub struct MemoryQuery {
     /// Text query for semantic search
     pub text: String,
-    
+
     /// Time range filter
     pub time_range: Option<(u64, u64)>,
-    
+
     /// Category filter
     pub categories: Vec<MemoryCategory>,
-    
+
     /// Entity filter (involved characters/objects)
     pub entities: Vec<String>,
-    
+
     /// Minimum importance threshold
     pub min_importance: Option<f32>,
-    
+
     /// Maximum age in seconds
     pub max_age: Option<u64>,
-    
+
     /// Custom metadata filters
     pub metadata_filters: HashMap<String, serde_json::Value>,
 }
@@ -487,25 +488,25 @@ impl MemoryQuery {
             metadata_filters: HashMap::new(),
         }
     }
-    
+
     /// Add category filter
     pub fn with_category(mut self, category: MemoryCategory) -> Self {
         self.categories.push(category);
         self
     }
-    
+
     /// Add entity filter
     pub fn with_entity(mut self, entity: impl Into<String>) -> Self {
         self.entities.push(entity.into());
         self
     }
-    
+
     /// Add importance filter
     pub fn with_min_importance(mut self, importance: f32) -> Self {
         self.min_importance = Some(importance);
         self
     }
-    
+
     /// Add time range filter
     pub fn with_time_range(mut self, start: u64, end: u64) -> Self {
         self.time_range = Some((start, end));
@@ -539,7 +540,7 @@ mod tests {
             .with_category(MemoryCategory::Combat)
             .with_entity("player")
             .with_min_importance(0.5);
-        
+
         assert_eq!(query.text, "combat");
         assert_eq!(query.categories.len(), 1);
         assert_eq!(query.entities.len(), 1);
@@ -554,7 +555,7 @@ mod tests {
             ConsolidationStrategy::Similarity,
             ConsolidationStrategy::Hybrid,
         ];
-        
+
         assert_eq!(strategies.len(), 4);
     }
 
@@ -562,11 +563,11 @@ mod tests {
     fn test_rag_metrics() {
         let mut metrics = RagMetrics::default();
         assert_eq!(metrics.total_queries, 0);
-        
+
         metrics.total_queries = 100;
         metrics.successful_retrievals = 95;
         metrics.failed_retrievals = 5;
-        
+
         let success_rate = metrics.successful_retrievals as f32 / metrics.total_queries as f32;
         assert_eq!(success_rate, 0.95);
     }
@@ -588,7 +589,7 @@ mod tests {
             InjectionStrategy::Interleave,
             InjectionStrategy::Replace,
         ];
-        
+
         assert_eq!(strategies.len(), 5);
     }
 }

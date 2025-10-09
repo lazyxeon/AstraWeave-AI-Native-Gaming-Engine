@@ -1,17 +1,17 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, warn, info, error};
+use tracing::{debug, error, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
-use astraweave_llm::LlmClient;
-use astraweave_rag::RagPipeline;
 use astraweave_context::ConversationHistory;
-use astraweave_prompts::template::PromptTemplate;
+use astraweave_llm::LlmClient;
 use astraweave_prompts::library::PromptLibrary;
+use astraweave_prompts::template::PromptTemplate;
+use astraweave_rag::RagPipeline;
 
 use crate::{Quest, QuestStep};
 
@@ -45,7 +45,7 @@ pub struct LlmQuestStep {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuestMetadata {
     pub category: String,
-    pub difficulty_level: f32, // 0.0 to 1.0
+    pub difficulty_level: f32,   // 0.0 to 1.0
     pub estimated_duration: u32, // minutes
     pub player_level_range: (u32, u32),
     pub required_skills: Vec<String>,
@@ -225,9 +225,7 @@ impl LlmQuestGenerator {
             max_tokens: config.context_window_size,
             ..Default::default()
         };
-        let conversation_history = Arc::new(RwLock::new(
-            ConversationHistory::new(context_config)
-        ));
+        let conversation_history = Arc::new(RwLock::new(ConversationHistory::new(context_config)));
 
         let mut prompt_library = PromptLibrary::new();
 
@@ -337,8 +335,11 @@ Consider:
             "#.trim().to_string()
         ));
 
-        prompt_library.add_template("quest_validation", PromptTemplate::new("quest_validation".to_string(),
-            r#"
+        prompt_library.add_template(
+            "quest_validation",
+            PromptTemplate::new(
+                "quest_validation".to_string(),
+                r#"
 You are validating a generated quest for quality, coherence, and balance.
 
 Quest to Validate: {{quest_json}}
@@ -370,8 +371,11 @@ Validation Criteria:
 - Player engagement potential
 - Technical feasibility
 - World consistency
-            "#.trim().to_string()
-        ));
+            "#
+                .trim()
+                .to_string(),
+            ),
+        );
 
         Ok(Self {
             llm_client,
@@ -388,25 +392,34 @@ Validation Criteria:
         debug!("Generating quest for player {}", context.player_id);
 
         // Retrieve player quest history from RAG
-        let player_history_raw = self.rag_pipeline
+        let player_history_raw = self
+            .rag_pipeline
             .retrieve(&format!("player:{} quests", context.player_id), 10)
             .await
             .unwrap_or_else(|e| {
                 warn!("Failed to retrieve player history: {}", e);
                 Vec::new()
             });
-        let player_history: Vec<String> = player_history_raw.iter().map(|m| m.memory.text.clone()).collect();
+        let player_history: Vec<String> = player_history_raw
+            .iter()
+            .map(|m| m.memory.text.clone())
+            .collect();
 
         // Build generation context
-    let generation_context = self.build_generation_context(context, &player_history).await?;
+        let generation_context = self
+            .build_generation_context(context, &player_history)
+            .await?;
 
         // Generate quest using LLM
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("quest_generation")?;
-    let prompt = template.render_map(&generation_context)?;
+        let prompt = template.render_map(&generation_context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Quest generation failed: {}", e))?;
 
         // Parse generated quest
@@ -434,7 +447,10 @@ Validation Criteria:
         // Store quest in RAG for future reference
         let quest_summary = format!(
             "Quest: {} | Category: {} | Difficulty: {:.2} | Player: {}",
-            quest.title, quest.metadata.category, quest.metadata.difficulty_level, context.player_id
+            quest.title,
+            quest.metadata.category,
+            quest.metadata.difficulty_level,
+            context.player_id
         );
         // Store quest summary as memory - attempt to get a mutable reference to the inner pipeline
         let cloned_pipeline = self.rag_pipeline.clone();
@@ -445,26 +461,43 @@ Validation Criteria:
             // cannot obtain mutable access; skip storing to avoid panics
         }
 
-        info!("Generated quest '{}' for player {}", quest.title, context.player_id);
+        info!(
+            "Generated quest '{}' for player {}",
+            quest.title, context.player_id
+        );
         Ok(quest)
     }
 
     /// Branch narrative based on player choice
-    pub async fn branch_narrative(&self, quest: &LlmQuest, choice: &BranchingChoice, context: &QuestContext) -> Result<QuestBranch> {
-        debug!("Branching quest narrative for choice: {}", choice.description);
+    pub async fn branch_narrative(
+        &self,
+        quest: &LlmQuest,
+        choice: &BranchingChoice,
+        context: &QuestContext,
+    ) -> Result<QuestBranch> {
+        debug!(
+            "Branching quest narrative for choice: {}",
+            choice.description
+        );
 
         let branch_context = HashMap::from([
             ("current_quest".to_string(), serde_json::to_string(quest)?),
             ("player_choice".to_string(), serde_json::to_string(choice)?),
-            ("player_preferences".to_string(), context.preferred_quest_types.join(", ")),
+            (
+                "player_preferences".to_string(),
+                context.preferred_quest_types.join(", "),
+            ),
         ]);
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("quest_branching")?;
-    let prompt = template.render_map(&branch_context)?;
+        let prompt = template.render_map(&branch_context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Quest branching failed: {}", e))?;
 
         let branch: QuestBranch = serde_json::from_str(&response)
@@ -474,21 +507,34 @@ Validation Criteria:
     }
 
     /// Validate generated quest for quality and coherence
-    pub async fn validate_quest(&self, quest: &LlmQuest, context: &QuestContext) -> Result<QuestValidation> {
+    pub async fn validate_quest(
+        &self,
+        quest: &LlmQuest,
+        context: &QuestContext,
+    ) -> Result<QuestValidation> {
         debug!("Validating quest: {}", quest.title);
 
         let validation_context = HashMap::from([
             ("quest_json".to_string(), serde_json::to_string(quest)?),
-            ("world_context".to_string(), serde_json::to_string(&context.world_state)?),
-            ("player_context".to_string(), serde_json::to_string(context)?),
+            (
+                "world_context".to_string(),
+                serde_json::to_string(&context.world_state)?,
+            ),
+            (
+                "player_context".to_string(),
+                serde_json::to_string(context)?,
+            ),
         ]);
 
         let prompt_library = self.prompt_library.read().await;
         let template = prompt_library.get_template("quest_validation")?;
-    let prompt = template.render_map(&validation_context)?;
+        let prompt = template.render_map(&validation_context)?;
         drop(prompt_library);
 
-        let response = self.llm_client.complete(&prompt).await
+        let response = self
+            .llm_client
+            .complete(&prompt)
+            .await
             .map_err(|e| anyhow!("Quest validation failed: {}", e))?;
 
         let validation: QuestValidation = serde_json::from_str(&response)
@@ -498,7 +544,11 @@ Validation Criteria:
     }
 
     /// Generate dynamic content for quest step
-    pub async fn generate_dynamic_content(&self, step: &LlmQuestStep, context: &QuestContext) -> Result<DynamicContent> {
+    pub async fn generate_dynamic_content(
+        &self,
+        step: &LlmQuestStep,
+        context: &QuestContext,
+    ) -> Result<DynamicContent> {
         if !self.config.enable_dynamic_content {
             return Ok(DynamicContent {
                 dialogue: None,
@@ -514,14 +564,20 @@ Validation Criteria:
             step.description, context.location, context.available_npcs
         );
 
-        let response = self.llm_client.complete(&content_prompt).await
+        let response = self
+            .llm_client
+            .complete(&content_prompt)
+            .await
             .map_err(|e| anyhow!("Dynamic content generation failed: {}", e))?;
 
         // Parse and structure the response
         let content = DynamicContent {
             dialogue: Some(response),
             flavor_text: Some(format!("Dynamic content for {}", step.description)),
-            environmental_description: Some(format!("Environmental context for {}", context.location)),
+            environmental_description: Some(format!(
+                "Environmental context for {}",
+                context.location
+            )),
             npc_interactions: context.available_npcs.clone(),
         };
 
@@ -529,7 +585,12 @@ Validation Criteria:
     }
 
     /// Update quest based on player progress and choices
-    pub async fn update_quest_progress(&self, quest: &mut LlmQuest, step_id: &str, choice: Option<&BranchingChoice>) -> Result<()> {
+    pub async fn update_quest_progress(
+        &self,
+        quest: &mut LlmQuest,
+        step_id: &str,
+        choice: Option<&BranchingChoice>,
+    ) -> Result<()> {
         // Find and complete the step
         if let Some(step) = quest.steps.iter_mut().find(|s| s.id == step_id) {
             step.completed = true;
@@ -538,8 +599,12 @@ Validation Criteria:
             if let Some(choice) = choice {
                 if let Some(next_step_id) = &choice.leads_to_step {
                     // Activate next step based on choice
-                    if let Some(next_step) = quest.steps.iter_mut().find(|s| s.id == *next_step_id) {
-                        info!("Player chose '{}', activating step '{}'", choice.description, next_step.description);
+                    if let Some(next_step) = quest.steps.iter_mut().find(|s| s.id == *next_step_id)
+                    {
+                        info!(
+                            "Player chose '{}', activating step '{}'",
+                            choice.description, next_step.description
+                        );
                     }
                 }
             }
@@ -557,25 +622,42 @@ Validation Criteria:
     pub fn to_basic_quest(&self, llm_quest: &LlmQuest) -> Quest {
         Quest {
             title: llm_quest.title.clone(),
-            steps: llm_quest.steps.iter().map(|step| QuestStep {
-                description: step.description.clone(),
-                completed: step.completed,
-            }).collect(),
+            steps: llm_quest
+                .steps
+                .iter()
+                .map(|step| QuestStep {
+                    description: step.description.clone(),
+                    completed: step.completed,
+                })
+                .collect(),
         }
     }
 
     /// Build context for quest generation
-    async fn build_generation_context(&self, context: &QuestContext, player_history: &[String]) -> Result<HashMap<String, String>> {
+    async fn build_generation_context(
+        &self,
+        context: &QuestContext,
+        player_history: &[String],
+    ) -> Result<HashMap<String, String>> {
         let mut generation_context = HashMap::new();
 
         generation_context.insert("player_id".to_string(), context.player_id.clone());
         generation_context.insert("player_level".to_string(), context.player_level.to_string());
         generation_context.insert("location".to_string(), context.location.clone());
-        generation_context.insert("play_style".to_string(), self.infer_play_style(player_history));
+        generation_context.insert(
+            "play_style".to_string(),
+            self.infer_play_style(player_history),
+        );
         generation_context.insert("previous_quests".to_string(), player_history.join(", "));
         generation_context.insert("player_history".to_string(), player_history.join(" | "));
-        generation_context.insert("world_state".to_string(), serde_json::to_string(&context.world_state)?);
-        generation_context.insert("available_npcs".to_string(), context.available_npcs.join(", "));
+        generation_context.insert(
+            "world_state".to_string(),
+            serde_json::to_string(&context.world_state)?,
+        );
+        generation_context.insert(
+            "available_npcs".to_string(),
+            context.available_npcs.join(", "),
+        );
 
         Ok(generation_context)
     }
@@ -601,7 +683,10 @@ Validation Criteria:
             return 0.5; // Default medium difficulty
         }
 
-        let hard_quests = history.iter().filter(|h| h.contains("difficult") || h.contains("challenge")).count();
+        let hard_quests = history
+            .iter()
+            .filter(|h| h.contains("difficult") || h.contains("challenge"))
+            .count();
         hard_quests as f32 / history.len() as f32
     }
 }
@@ -661,10 +746,15 @@ mod tests {
     fn test_play_style_inference() {
         let llm_client = Arc::new(MockLlmClient::new());
         let rag_pipeline = Arc::new(MockRagPipeline::new());
-        let generator = LlmQuestGenerator::new(llm_client, rag_pipeline, QuestGenerationConfig::default()).unwrap();
+        let generator =
+            LlmQuestGenerator::new(llm_client, rag_pipeline, QuestGenerationConfig::default())
+                .unwrap();
 
         let combat_history = vec!["combat quest completed".to_string()];
-        assert_eq!(generator.infer_play_style(&combat_history), "Combat-oriented");
+        assert_eq!(
+            generator.infer_play_style(&combat_history),
+            "Combat-oriented"
+        );
 
         let exploration_history = vec!["exploration quest completed".to_string()];
         assert_eq!(generator.infer_play_style(&exploration_history), "Explorer");

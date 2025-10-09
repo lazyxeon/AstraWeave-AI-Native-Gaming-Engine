@@ -14,46 +14,46 @@ pub struct MaterialGpuExtended {
     pub normal_index: u32,
     pub orm_index: u32,
     pub flags: u32,
-    
+
     pub base_color_factor: [f32; 4],
     pub metallic_factor: f32,
     pub roughness_factor: f32,
     pub occlusion_strength: f32,
     pub _pad0: f32,
-    
+
     pub emissive_factor: [f32; 3],
     pub _pad1: f32,
-    
+
     // Clearcoat (car paint, lacquer) - 16 bytes
     pub clearcoat_strength: f32,
     pub clearcoat_roughness: f32,
     pub clearcoat_normal_index: u32,
     pub _pad2: f32,
-    
+
     // Anisotropy (brushed metal, hair) - 16 bytes
     pub anisotropy_strength: f32,
     pub anisotropy_rotation: f32,
     pub _pad3: [f32; 2],
-    
+
     // Subsurface Scattering (skin, wax) - 32 bytes
     pub subsurface_color: [f32; 3],
     pub subsurface_scale: f32,
     pub subsurface_radius: f32,
     pub thickness_index: u32,
     pub _pad4: [f32; 2],
-    
+
     // Sheen (velvet, fabric) - 16 bytes
     pub sheen_color: [f32; 3],
     pub sheen_roughness: f32,
-    
+
     // Transmission (glass, water) - 48 bytes (increased for alignment)
     pub transmission_factor: f32,
     pub ior: f32,
     pub _pad5: [f32; 2],
-    
+
     pub attenuation_color: [f32; 3],
     pub attenuation_distance: f32,
-    
+
     // Additional padding to reach 256 bytes - 80 bytes
     pub _pad_final: [f32; 20],
 }
@@ -80,29 +80,29 @@ impl Default for MaterialGpuExtended {
             _pad0: 0.0,
             emissive_factor: [0.0, 0.0, 0.0],
             _pad1: 0.0,
-            
+
             // Clearcoat defaults (disabled)
             clearcoat_strength: 0.0,
             clearcoat_roughness: 0.03,
             clearcoat_normal_index: 0,
             _pad2: 0.0,
-            
+
             // Anisotropy defaults (disabled)
             anisotropy_strength: 0.0,
             anisotropy_rotation: 0.0,
             _pad3: [0.0, 0.0],
-            
+
             // Subsurface defaults (disabled)
             subsurface_color: [1.0, 1.0, 1.0],
             subsurface_scale: 0.0,
             subsurface_radius: 1.0,
             thickness_index: 0,
             _pad4: [0.0, 0.0],
-            
+
             // Sheen defaults (disabled)
             sheen_color: [0.0, 0.0, 0.0],
             sheen_roughness: 0.5,
-            
+
             // Transmission defaults (disabled)
             transmission_factor: 0.0,
             ior: 1.5,
@@ -126,7 +126,7 @@ impl MaterialGpuExtended {
         mat.flags |= MATERIAL_FLAG_CLEARCOAT;
         mat
     }
-    
+
     /// Create a brushed metal material (anisotropic reflections)
     pub fn brushed_metal(base_color: Vec3, roughness: f32, anisotropy: f32, rotation: f32) -> Self {
         let mut mat = Self::default();
@@ -138,7 +138,7 @@ impl MaterialGpuExtended {
         mat.flags |= MATERIAL_FLAG_ANISOTROPY;
         mat
     }
-    
+
     /// Create a skin material (subsurface scattering)
     pub fn skin(base_color: Vec3, subsurface_tint: Vec3, radius: f32, scale: f32) -> Self {
         let mut mat = Self::default();
@@ -151,7 +151,7 @@ impl MaterialGpuExtended {
         mat.flags |= MATERIAL_FLAG_SUBSURFACE;
         mat
     }
-    
+
     /// Create a velvet/fabric material (sheen)
     pub fn velvet(base_color: Vec3, sheen_color: Vec3, sheen_roughness: f32) -> Self {
         let mut mat = Self::default();
@@ -163,7 +163,7 @@ impl MaterialGpuExtended {
         mat.flags |= MATERIAL_FLAG_SHEEN;
         mat
     }
-    
+
     /// Create a glass material (transmission)
     pub fn glass(
         tint: Vec3,
@@ -171,7 +171,7 @@ impl MaterialGpuExtended {
         transmission: f32,
         ior: f32,
         attenuation_color: Vec3,
-        attenuation_dist: f32
+        attenuation_dist: f32,
     ) -> Self {
         let mut mat = Self::default();
         mat.base_color_factor = [tint.x, tint.y, tint.z, 1.0];
@@ -179,22 +179,26 @@ impl MaterialGpuExtended {
         mat.roughness_factor = roughness;
         mat.transmission_factor = transmission;
         mat.ior = ior;
-        mat.attenuation_color = [attenuation_color.x, attenuation_color.y, attenuation_color.z];
+        mat.attenuation_color = [
+            attenuation_color.x,
+            attenuation_color.y,
+            attenuation_color.z,
+        ];
         mat.attenuation_distance = attenuation_dist;
         mat.flags |= MATERIAL_FLAG_TRANSMISSION;
         mat
     }
-    
+
     /// Check if a feature is enabled
     pub fn has_feature(&self, flag: u32) -> bool {
         (self.flags & flag) != 0
     }
-    
+
     /// Enable a feature flag
     pub fn enable_feature(&mut self, flag: u32) {
         self.flags |= flag;
     }
-    
+
     /// Disable a feature flag
     pub fn disable_feature(&mut self, flag: u32) {
         self.flags &= !flag;
@@ -205,7 +209,7 @@ impl MaterialGpuExtended {
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 pub struct MaterialDefinitionExtended {
     pub name: String,
-    
+
     // Base PBR
     pub albedo: Option<String>,
     pub normal: Option<String>,
@@ -220,20 +224,20 @@ pub struct MaterialDefinitionExtended {
     pub occlusion_strength: f32,
     #[serde(default)]
     pub emissive_factor: [f32; 3],
-    
+
     // Clearcoat
     #[serde(default)]
     pub clearcoat_strength: f32,
     #[serde(default = "default_clearcoat_roughness")]
     pub clearcoat_roughness: f32,
     pub clearcoat_normal: Option<String>,
-    
+
     // Anisotropy
     #[serde(default)]
     pub anisotropy_strength: f32,
     #[serde(default)]
     pub anisotropy_rotation: f32,
-    
+
     // Subsurface
     #[serde(default = "default_one_vec3")]
     pub subsurface_color: [f32; 3],
@@ -242,13 +246,13 @@ pub struct MaterialDefinitionExtended {
     #[serde(default = "default_one")]
     pub subsurface_radius: f32,
     pub thickness_map: Option<String>,
-    
+
     // Sheen
     #[serde(default)]
     pub sheen_color: [f32; 3],
     #[serde(default = "default_half")]
     pub sheen_roughness: f32,
-    
+
     // Transmission
     #[serde(default)]
     pub transmission_factor: f32,
@@ -261,12 +265,24 @@ pub struct MaterialDefinitionExtended {
 }
 
 // TOML default helpers
-fn default_one() -> f32 { 1.0 }
-fn default_half() -> f32 { 0.5 }
-fn default_one_vec3() -> [f32; 3] { [1.0, 1.0, 1.0] }
-fn default_one_vec4() -> [f32; 4] { [1.0, 1.0, 1.0, 1.0] }
-fn default_clearcoat_roughness() -> f32 { 0.03 }
-fn default_ior() -> f32 { 1.5 }
+fn default_one() -> f32 {
+    1.0
+}
+fn default_half() -> f32 {
+    0.5
+}
+fn default_one_vec3() -> [f32; 3] {
+    [1.0, 1.0, 1.0]
+}
+fn default_one_vec4() -> [f32; 4] {
+    [1.0, 1.0, 1.0, 1.0]
+}
+fn default_clearcoat_roughness() -> f32 {
+    0.03
+}
+fn default_ior() -> f32 {
+    1.5
+}
 
 impl MaterialDefinitionExtended {
     /// Convert TOML definition to GPU representation
@@ -276,7 +292,7 @@ impl MaterialDefinitionExtended {
         normal_index: u32,
         orm_index: u32,
         clearcoat_normal_index: u32,
-        thickness_index: u32
+        thickness_index: u32,
     ) -> MaterialGpuExtended {
         let mut gpu = MaterialGpuExtended {
             albedo_index,
@@ -290,25 +306,25 @@ impl MaterialDefinitionExtended {
             _pad0: 0.0,
             emissive_factor: self.emissive_factor,
             _pad1: 0.0,
-            
+
             clearcoat_strength: self.clearcoat_strength,
             clearcoat_roughness: self.clearcoat_roughness,
             clearcoat_normal_index,
             _pad2: 0.0,
-            
+
             anisotropy_strength: self.anisotropy_strength,
             anisotropy_rotation: self.anisotropy_rotation,
             _pad3: [0.0, 0.0],
-            
+
             subsurface_color: self.subsurface_color,
             subsurface_scale: self.subsurface_scale,
             subsurface_radius: self.subsurface_radius,
             thickness_index,
             _pad4: [0.0, 0.0],
-            
+
             sheen_color: self.sheen_color,
             sheen_roughness: self.sheen_roughness,
-            
+
             transmission_factor: self.transmission_factor,
             ior: self.ior,
             _pad5: [0.0, 0.0],
@@ -316,7 +332,7 @@ impl MaterialDefinitionExtended {
             attenuation_distance: self.attenuation_distance,
             _pad_final: [0.0; 20],
         };
-        
+
         // Set feature flags based on non-zero parameters
         if self.clearcoat_strength > 0.0 {
             gpu.flags |= MATERIAL_FLAG_CLEARCOAT;
@@ -334,7 +350,7 @@ impl MaterialDefinitionExtended {
         if self.transmission_factor > 0.0 {
             gpu.flags |= MATERIAL_FLAG_TRANSMISSION;
         }
-        
+
         gpu
     }
 }
@@ -342,14 +358,14 @@ impl MaterialDefinitionExtended {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_material_size() {
         // Verify 256-byte size for GPU alignment
         assert_eq!(std::mem::size_of::<MaterialGpuExtended>(), 256);
         assert_eq!(std::mem::align_of::<MaterialGpuExtended>(), 16);
     }
-    
+
     #[test]
     fn test_car_paint_material() {
         let mat = MaterialGpuExtended::car_paint(Vec3::new(0.8, 0.0, 0.0), 0.9, 0.3);
@@ -357,7 +373,7 @@ mod tests {
         assert_eq!(mat.clearcoat_strength, 1.0);
         assert_eq!(mat.metallic_factor, 0.9);
     }
-    
+
     #[test]
     fn test_brushed_metal_material() {
         let mat = MaterialGpuExtended::brushed_metal(Vec3::new(0.9, 0.9, 0.9), 0.4, 0.8, 0.0);
@@ -365,58 +381,48 @@ mod tests {
         assert_eq!(mat.metallic_factor, 1.0);
         assert_eq!(mat.anisotropy_strength, 0.8);
     }
-    
+
     #[test]
     fn test_skin_material() {
         let mat = MaterialGpuExtended::skin(
             Vec3::new(0.95, 0.8, 0.7),
             Vec3::new(0.9, 0.3, 0.3),
             1.5,
-            0.7
+            0.7,
         );
         assert!(mat.has_feature(MATERIAL_FLAG_SUBSURFACE));
         assert_eq!(mat.subsurface_scale, 0.7);
         assert_eq!(mat.metallic_factor, 0.0);
     }
-    
+
     #[test]
     fn test_velvet_material() {
-        let mat = MaterialGpuExtended::velvet(
-            Vec3::new(0.5, 0.0, 0.1),
-            Vec3::ONE,
-            0.3
-        );
+        let mat = MaterialGpuExtended::velvet(Vec3::new(0.5, 0.0, 0.1), Vec3::ONE, 0.3);
         assert!(mat.has_feature(MATERIAL_FLAG_SHEEN));
         assert_eq!(mat.sheen_roughness, 0.3);
     }
-    
+
     #[test]
     fn test_glass_material() {
-        let mat = MaterialGpuExtended::glass(
-            Vec3::ONE,
-            0.05,
-            0.95,
-            1.5,
-            Vec3::new(0.9, 1.0, 0.9),
-            10.0
-        );
+        let mat =
+            MaterialGpuExtended::glass(Vec3::ONE, 0.05, 0.95, 1.5, Vec3::new(0.9, 1.0, 0.9), 10.0);
         assert!(mat.has_feature(MATERIAL_FLAG_TRANSMISSION));
         assert_eq!(mat.ior, 1.5);
         assert_eq!(mat.transmission_factor, 0.95);
     }
-    
+
     #[test]
     fn test_feature_flags() {
         let mut mat = MaterialGpuExtended::default();
         assert!(!mat.has_feature(MATERIAL_FLAG_CLEARCOAT));
-        
+
         mat.enable_feature(MATERIAL_FLAG_CLEARCOAT);
         assert!(mat.has_feature(MATERIAL_FLAG_CLEARCOAT));
-        
+
         mat.disable_feature(MATERIAL_FLAG_CLEARCOAT);
         assert!(!mat.has_feature(MATERIAL_FLAG_CLEARCOAT));
     }
-    
+
     #[test]
     fn test_toml_conversion() {
         let def = MaterialDefinitionExtended {
@@ -445,7 +451,7 @@ mod tests {
             attenuation_color: [1.0, 1.0, 1.0],
             attenuation_distance: 1.0,
         };
-        
+
         let gpu = def.to_gpu(0, 1, 2, 0, 0);
         assert!(gpu.has_feature(MATERIAL_FLAG_CLEARCOAT));
         assert!(!gpu.has_feature(MATERIAL_FLAG_ANISOTROPY));

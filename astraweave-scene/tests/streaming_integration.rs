@@ -16,7 +16,10 @@ async fn create_test_cell_file(path: &Path, coord: [i32; 3]) -> anyhow::Result<(
     // Add test entities
     cell_data.add_entity(
         EntityData::new([coord[0] as f32 * 100.0, 0.0, coord[2] as f32 * 100.0])
-            .with_name(format!("entity_cell_{}_{}_{}", coord[0], coord[1], coord[2]))
+            .with_name(format!(
+                "entity_cell_{}_{}_{}",
+                coord[0], coord[1], coord[2]
+            ))
             .with_mesh("models/cube.glb")
             .with_material(0),
     );

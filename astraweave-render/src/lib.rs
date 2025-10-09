@@ -21,14 +21,14 @@ pub mod graph; // minimal render graph scaffolding (Phase 2)
 pub mod graph_adapter; // runs a graph on Renderer frames
 pub mod material; // shared authored materials API + GPU arrays
 pub mod material_extended; // Phase PBR-E: Advanced materials (clearcoat, anisotropy, SSS, sheen, transmission)
-pub mod terrain_material; // Phase PBR-F: Terrain layering with splat maps and triplanar projection
 #[cfg(feature = "textures")]
 pub mod material_loader; // internal builder helpers
 #[cfg(any(feature = "gltf-assets", feature = "assets"))]
 pub mod mesh_gltf; // glTF loader
 #[cfg(any(feature = "obj-assets", feature = "assets"))]
 pub mod mesh_obj;
-pub mod residency; // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
+pub mod residency;
+pub mod terrain_material; // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
 
 #[cfg(feature = "skinning-gpu")]
 pub mod skinning_gpu; // Phase 2 Task 5 Phase D: GPU skinning pipeline
@@ -69,14 +69,14 @@ pub use material_extended::{
     MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE,
     MATERIAL_FLAG_TRANSMISSION,
 };
-pub use terrain_material::{
-    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
-};
 pub use mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
 pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
 #[cfg(feature = "bloom")]
 pub use post::{BloomConfig, BloomPipeline};
 pub use residency::ResidencyManager;
+pub use terrain_material::{
+    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
+};
 
 // Phase 2 Task 5: Skeletal Animation exports
 pub use animation::{

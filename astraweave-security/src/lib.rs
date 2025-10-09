@@ -172,7 +172,7 @@ impl Plugin for SecurityPlugin {
 /// Input validation system
 fn input_validation_system(world: &mut World) {
     let entities: Vec<_> = world.entities_with::<CAntiCheat>();
-    
+
     for entity in entities {
         // Get anti_cheat component to read
         let validation_result = if let Some(anti_cheat) = world.get::<CAntiCheat>(entity) {
@@ -247,7 +247,7 @@ fn anomaly_detection_system(world: &mut World) {
     let mut total_players = 0;
 
     let entities: Vec<_> = world.entities_with::<CAntiCheat>();
-    
+
     for entity in &entities {
         if let Some(anti_cheat) = world.get::<CAntiCheat>(*entity) {
             total_anomalies += anti_cheat.anomaly_flags.len() as u64;
@@ -370,8 +370,10 @@ pub async fn execute_script_sandboxed(
     let result = tokio::time::timeout(
         std::time::Duration::from_millis(timeout_ms),
         tokio::task::spawn_blocking(move || -> Result<rhai::Dynamic> {
-            let engine = engine.lock().map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
-            
+            let engine = engine
+                .lock()
+                .map_err(|e| anyhow::anyhow!("Lock error: {}", e))?;
+
             // Compile the script
             let ast = engine.compile(&script)?;
 
@@ -484,7 +486,7 @@ mod tests {
     async fn script_sandbox_execution() {
         let mut engine = rhai::Engine::new();
         engine.set_max_operations(1000);
-        
+
         let sandbox = ScriptSandbox {
             engine: Arc::new(Mutex::new(engine)),
             allowed_functions: HashMap::new(),

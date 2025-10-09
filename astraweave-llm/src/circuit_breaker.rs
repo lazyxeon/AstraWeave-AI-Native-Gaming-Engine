@@ -1,10 +1,10 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
-use serde::{Deserialize, Serialize};
 
 /// Circuit breaker pattern implementation for LLM API calls
 pub struct CircuitBreakerManager {
@@ -95,7 +95,9 @@ impl CircuitBreaker {
             CircuitState::Closed => Ok(()),
             CircuitState::Open => {
                 // Check if recovery timeout has passed
-                if self.state_changed_time.elapsed() >= Duration::from_secs(self.config.recovery_timeout) {
+                if self.state_changed_time.elapsed()
+                    >= Duration::from_secs(self.config.recovery_timeout)
+                {
                     self.transition_to_half_open();
                     Ok(())
                 } else {
@@ -128,8 +130,10 @@ impl CircuitBreaker {
             }
         }
 
-        debug!("Circuit breaker success recorded for {}: state={:?}, failures={}, successes={}",
-               self.model, self.state, self.failure_count, self.success_count);
+        debug!(
+            "Circuit breaker success recorded for {}: state={:?}, failures={}, successes={}",
+            self.model, self.state, self.failure_count, self.success_count
+        );
     }
 
     /// Record a failed request
@@ -153,14 +157,16 @@ impl CircuitBreaker {
             }
         }
 
-        debug!("Circuit breaker failure recorded for {}: state={:?}, failures={}, requests={}",
-               self.model, self.state, self.failure_count, self.request_count);
+        debug!(
+            "Circuit breaker failure recorded for {}: state={:?}, failures={}, requests={}",
+            self.model, self.state, self.failure_count, self.request_count
+        );
     }
 
     /// Check if circuit should open
     fn should_open_circuit(&self) -> bool {
-        self.request_count >= self.config.minimum_requests &&
-            self.failure_count >= self.config.failure_threshold
+        self.request_count >= self.config.minimum_requests
+            && self.failure_count >= self.config.failure_threshold
     }
 
     /// Transition to open state
@@ -169,8 +175,10 @@ impl CircuitBreaker {
         self.state_changed_time = Instant::now();
         self.success_count = 0;
 
-        warn!("Circuit breaker opened for model {} - failures: {}/{} requests in window",
-              self.model, self.failure_count, self.request_count);
+        warn!(
+            "Circuit breaker opened for model {} - failures: {}/{} requests in window",
+            self.model, self.failure_count, self.request_count
+        );
     }
 
     /// Transition to half-open state
@@ -180,7 +188,10 @@ impl CircuitBreaker {
         self.success_count = 0;
         self.failure_count = 0;
 
-        info!("Circuit breaker transitioning to half-open for model {}", self.model);
+        info!(
+            "Circuit breaker transitioning to half-open for model {}",
+            self.model
+        );
     }
 
     /// Transition to closed state
@@ -190,7 +201,10 @@ impl CircuitBreaker {
         self.failure_count = 0;
         self.success_count = 0;
 
-        info!("Circuit breaker closed for model {} - service recovered", self.model);
+        info!(
+            "Circuit breaker closed for model {} - service recovered",
+            self.model
+        );
     }
 
     /// Reset failure window if needed
@@ -243,7 +257,8 @@ impl CircuitBreakerManager {
         // Check if request can proceed
         let can_proceed = {
             let mut breakers = self.breakers.write().await;
-            let breaker = breakers.entry(model.to_string())
+            let breaker = breakers
+                .entry(model.to_string())
                 .or_insert_with(|| CircuitBreaker::new(model.to_string(), self.config.clone()));
 
             let state = breaker.state.clone();
@@ -278,20 +293,19 @@ impl CircuitBreakerManager {
                     execution_time,
                 }
             }
-            Err((error, state)) => {
-                CircuitBreakerResult {
-                    result: Err(error),
-                    state,
-                    execution_time,
-                }
-            }
+            Err((error, state)) => CircuitBreakerResult {
+                result: Err(error),
+                state,
+                execution_time,
+            },
         }
     }
 
     /// Manually record success for a model
     pub async fn record_success(&self, model: &str) {
         let mut breakers = self.breakers.write().await;
-        let breaker = breakers.entry(model.to_string())
+        let breaker = breakers
+            .entry(model.to_string())
             .or_insert_with(|| CircuitBreaker::new(model.to_string(), self.config.clone()));
         breaker.record_success();
     }
@@ -299,7 +313,8 @@ impl CircuitBreakerManager {
     /// Manually record failure for a model
     pub async fn record_failure(&self, model: &str) {
         let mut breakers = self.breakers.write().await;
-        let breaker = breakers.entry(model.to_string())
+        let breaker = breakers
+            .entry(model.to_string())
             .or_insert_with(|| CircuitBreaker::new(model.to_string(), self.config.clone()));
         breaker.record_failure();
     }
@@ -313,7 +328,8 @@ impl CircuitBreakerManager {
             failure_count: breaker.failure_count,
             success_count: breaker.success_count,
             request_count: breaker.request_count,
-            last_failure_time: breaker.last_failure_time
+            last_failure_time: breaker
+                .last_failure_time
                 .map(|t| format!("{:?} ago", t.elapsed())),
             time_in_current_state: breaker.state_changed_time.elapsed().as_secs(),
         })
@@ -322,22 +338,27 @@ impl CircuitBreakerManager {
     /// Get status for all circuit breakers
     pub async fn get_all_status(&self) -> Vec<CircuitBreakerStatus> {
         let breakers = self.breakers.read().await;
-        breakers.iter().map(|(model, breaker)| CircuitBreakerStatus {
-            model: model.clone(),
-            state: breaker.state.clone(),
-            failure_count: breaker.failure_count,
-            success_count: breaker.success_count,
-            request_count: breaker.request_count,
-            last_failure_time: breaker.last_failure_time
-                .map(|t| format!("{:?} ago", t.elapsed())),
-            time_in_current_state: breaker.state_changed_time.elapsed().as_secs(),
-        }).collect()
+        breakers
+            .iter()
+            .map(|(model, breaker)| CircuitBreakerStatus {
+                model: model.clone(),
+                state: breaker.state.clone(),
+                failure_count: breaker.failure_count,
+                success_count: breaker.success_count,
+                request_count: breaker.request_count,
+                last_failure_time: breaker
+                    .last_failure_time
+                    .map(|t| format!("{:?} ago", t.elapsed())),
+                time_in_current_state: breaker.state_changed_time.elapsed().as_secs(),
+            })
+            .collect()
     }
 
     /// Manually open a circuit breaker
     pub async fn open_circuit(&self, model: &str) {
         let mut breakers = self.breakers.write().await;
-        let breaker = breakers.entry(model.to_string())
+        let breaker = breakers
+            .entry(model.to_string())
             .or_insert_with(|| CircuitBreaker::new(model.to_string(), self.config.clone()));
         breaker.transition_to_open();
         warn!("Manually opened circuit breaker for model {}", model);
@@ -346,7 +367,8 @@ impl CircuitBreakerManager {
     /// Manually close a circuit breaker
     pub async fn close_circuit(&self, model: &str) {
         let mut breakers = self.breakers.write().await;
-        let breaker = breakers.entry(model.to_string())
+        let breaker = breakers
+            .entry(model.to_string())
             .or_insert_with(|| CircuitBreaker::new(model.to_string(), self.config.clone()));
         breaker.transition_to_closed();
         info!("Manually closed circuit breaker for model {}", model);
@@ -373,9 +395,18 @@ impl CircuitBreakerManager {
         let breakers = self.breakers.read().await;
 
         let total_breakers = breakers.len();
-        let open_count = breakers.values().filter(|b| b.state == CircuitState::Open).count();
-        let half_open_count = breakers.values().filter(|b| b.state == CircuitState::HalfOpen).count();
-        let closed_count = breakers.values().filter(|b| b.state == CircuitState::Closed).count();
+        let open_count = breakers
+            .values()
+            .filter(|b| b.state == CircuitState::Open)
+            .count();
+        let half_open_count = breakers
+            .values()
+            .filter(|b| b.state == CircuitState::HalfOpen)
+            .count();
+        let closed_count = breakers
+            .values()
+            .filter(|b| b.state == CircuitState::Closed)
+            .count();
 
         let total_failures: u32 = breakers.values().map(|b| b.failure_count).sum();
         let total_requests: u32 = breakers.values().map(|b| b.request_count).sum();
@@ -428,9 +459,11 @@ mod tests {
         let config = CircuitBreakerConfig::default();
         let manager = CircuitBreakerManager::new(config);
 
-        let result = manager.execute("test-model", || async {
-            Ok::<String, anyhow::Error>("success".to_string())
-        }).await;
+        let result = manager
+            .execute("test-model", || async {
+                Ok::<String, anyhow::Error>("success".to_string())
+            })
+            .await;
 
         assert!(result.result.is_ok());
         assert_eq!(result.state, CircuitState::Closed);
@@ -447,15 +480,19 @@ mod tests {
 
         // Execute failing operations
         for _ in 0..3 {
-            let _result = manager.execute("test-model", || async {
-                Err::<String, anyhow::Error>(anyhow!("test failure"))
-            }).await;
+            let _result = manager
+                .execute("test-model", || async {
+                    Err::<String, anyhow::Error>(anyhow!("test failure"))
+                })
+                .await;
         }
 
         // Next request should be rejected due to open circuit
-        let result = manager.execute("test-model", || async {
-            Ok::<String, anyhow::Error>("should not execute".to_string())
-        }).await;
+        let result = manager
+            .execute("test-model", || async {
+                Ok::<String, anyhow::Error>("should not execute".to_string())
+            })
+            .await;
 
         assert!(result.result.is_err());
         assert_eq!(result.state, CircuitState::Open);
@@ -474,18 +511,22 @@ mod tests {
 
         // Force circuit to open
         for _ in 0..3 {
-            let _result = manager.execute("test-model", || async {
-                Err::<String, anyhow::Error>(anyhow!("test failure"))
-            }).await;
+            let _result = manager
+                .execute("test-model", || async {
+                    Err::<String, anyhow::Error>(anyhow!("test failure"))
+                })
+                .await;
         }
 
         // Wait for recovery timeout
         sleep(Duration::from_secs(2)).await;
 
         // Should transition to half-open and allow request
-        let result = manager.execute("test-model", || async {
-            Ok::<String, anyhow::Error>("recovery success".to_string())
-        }).await;
+        let result = manager
+            .execute("test-model", || async {
+                Ok::<String, anyhow::Error>("recovery success".to_string())
+            })
+            .await;
 
         assert!(result.result.is_ok());
 
@@ -501,15 +542,19 @@ mod tests {
 
         // Execute some operations
         for _ in 0..5 {
-            let _result = manager.execute("model1", || async {
-                Ok::<String, anyhow::Error>("success".to_string())
-            }).await;
+            let _result = manager
+                .execute("model1", || async {
+                    Ok::<String, anyhow::Error>("success".to_string())
+                })
+                .await;
         }
 
         for _ in 0..3 {
-            let _result = manager.execute("model2", || async {
-                Err::<String, anyhow::Error>(anyhow!("failure"))
-            }).await;
+            let _result = manager
+                .execute("model2", || async {
+                    Err::<String, anyhow::Error>(anyhow!("failure"))
+                })
+                .await;
         }
 
         let metrics = manager.get_metrics().await;

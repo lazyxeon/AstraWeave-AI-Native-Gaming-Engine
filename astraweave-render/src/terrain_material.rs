@@ -11,28 +11,28 @@ use std::path::PathBuf;
 #[derive(Clone, Copy, Debug, Pod, Zeroable)]
 pub struct TerrainLayerGpu {
     /// Texture indices: [albedo, normal, orm, height]
-    pub texture_indices: [u32; 4],           // 16 bytes (offset 0)
-    
+    pub texture_indices: [u32; 4], // 16 bytes (offset 0)
+
     /// UV scale for this layer (allows different tiling per layer)
-    pub uv_scale: [f32; 2],                  // 8 bytes (offset 16)
-    
+    pub uv_scale: [f32; 2], // 8 bytes (offset 16)
+
     /// Height blend range: [min_height, max_height]
     /// Used for height-based layer transitions
-    pub height_range: [f32; 2],              // 8 bytes (offset 24)
-    
+    pub height_range: [f32; 2], // 8 bytes (offset 24)
+
     /// Blend sharpness: higher values = sharper transitions
     /// Range: [0.0, 1.0], default 0.5
-    pub blend_sharpness: f32,                // 4 bytes (offset 32)
-    
+    pub blend_sharpness: f32, // 4 bytes (offset 32)
+
     /// Triplanar blend power (steepness threshold)
     /// Higher values = more aggressive triplanar on slopes
-    pub triplanar_power: f32,                // 4 bytes (offset 36)
-    
+    pub triplanar_power: f32, // 4 bytes (offset 36)
+
     /// Material properties: [metallic, roughness]
-    pub material_factors: [f32; 2],          // 8 bytes (offset 40)
-    
+    pub material_factors: [f32; 2], // 8 bytes (offset 40)
+
     /// Padding to reach 64 bytes (48 bytes used, need 16 more)
-    pub _pad: [u32; 4],                      // 16 bytes (offset 48)
+    pub _pad: [u32; 4], // 16 bytes (offset 48)
 }
 
 impl Default for TerrainLayerGpu {
@@ -56,26 +56,26 @@ impl Default for TerrainLayerGpu {
 pub struct TerrainMaterialGpu {
     /// Four terrain layers (grass, rock, sand, snow, etc.)
     pub layers: [TerrainLayerGpu; 4],
-    
+
     /// Splat map texture index (R=layer0, G=layer1, B=layer2, A=layer3)
     pub splat_map_index: u32,
-    
+
     /// Global UV scale for splat map sampling
     pub splat_uv_scale: f32,
-    
+
     /// Triplanar enable flag (0=off, 1=on)
     pub triplanar_enabled: u32,
-    
+
     /// Normal blend method: 0=Linear, 1=Reoriented Normal Mapping (RNM), 2=UDN
     pub normal_blend_method: u32,
-    
+
     /// Global triplanar threshold (slope angle in degrees where triplanar kicks in)
     /// Default: 45.0 (typical steep slope threshold)
     pub triplanar_slope_threshold: f32,
-    
+
     /// Height blend enable (use height maps for smoother transitions)
     pub height_blend_enabled: u32,
-    
+
     /// Padding to complete 64-byte common params block
     pub _pad: [u32; 10],
 }
@@ -86,7 +86,7 @@ impl Default for TerrainMaterialGpu {
             layers: [TerrainLayerGpu::default(); 4],
             splat_map_index: 0,
             splat_uv_scale: 1.0,
-            triplanar_enabled: 1, // Enable by default
+            triplanar_enabled: 1,   // Enable by default
             normal_blend_method: 1, // RNM by default (best quality)
             triplanar_slope_threshold: 45.0,
             height_blend_enabled: 1,
@@ -100,33 +100,33 @@ impl Default for TerrainMaterialGpu {
 pub struct TerrainLayerDesc {
     /// Layer name (e.g., "grass", "rock", "sand")
     pub name: String,
-    
+
     /// Texture paths
     pub albedo: Option<PathBuf>,
     pub normal: Option<PathBuf>,
     pub orm: Option<PathBuf>,
     pub height: Option<PathBuf>,
-    
+
     /// UV tiling scale
     #[serde(default = "default_uv_scale")]
     pub uv_scale: [f32; 2],
-    
+
     /// Height range for automatic blending
     #[serde(default)]
     pub height_range: Option<[f32; 2]>,
-    
+
     /// Blend sharpness (0.0-1.0)
     #[serde(default = "default_blend_sharpness")]
     pub blend_sharpness: f32,
-    
+
     /// Triplanar power
     #[serde(default = "default_triplanar_power")]
     pub triplanar_power: f32,
-    
+
     /// Material properties
     #[serde(default)]
     pub metallic: f32,
-    
+
     #[serde(default = "default_roughness")]
     pub roughness: f32,
 }
@@ -170,32 +170,32 @@ impl Default for TerrainLayerDesc {
 pub struct TerrainMaterialDesc {
     /// Material name
     pub name: String,
-    
+
     /// Biome identifier (grassland, desert, forest, etc.)
     pub biome: String,
-    
+
     /// Splat map path (RGBA image defining layer weights)
     pub splat_map: Option<PathBuf>,
-    
+
     /// Global splat UV scale
     #[serde(default = "default_splat_scale")]
     pub splat_uv_scale: f32,
-    
+
     /// Triplanar settings
     #[serde(default = "default_triplanar_enabled")]
     pub triplanar_enabled: bool,
-    
+
     #[serde(default = "default_triplanar_threshold")]
     pub triplanar_slope_threshold: f32,
-    
+
     /// Normal blending: "linear", "rnm" (Reoriented Normal Mapping), "udn" (UDN)
     #[serde(default = "default_normal_blend")]
     pub normal_blend_method: String,
-    
+
     /// Height-based blending
     #[serde(default = "default_height_blend")]
     pub height_blend_enabled: bool,
-    
+
     /// Up to 4 layers
     pub layers: Vec<TerrainLayerDesc>,
 }
@@ -454,22 +454,22 @@ impl TerrainMaterialDesc {
     /// Convert to GPU representation (requires texture index mapping)
     pub fn to_gpu(&self, texture_resolver: &dyn Fn(&PathBuf) -> u32) -> TerrainMaterialGpu {
         let mut gpu_material = TerrainMaterialGpu::default();
-        
+
         // Splat map
         if let Some(splat_path) = &self.splat_map {
             gpu_material.splat_map_index = texture_resolver(splat_path);
         }
-        
+
         gpu_material.splat_uv_scale = self.splat_uv_scale;
         gpu_material.triplanar_enabled = if self.triplanar_enabled { 1 } else { 0 };
         gpu_material.normal_blend_method = self.normal_blend_to_gpu();
         gpu_material.triplanar_slope_threshold = self.triplanar_slope_threshold;
         gpu_material.height_blend_enabled = if self.height_blend_enabled { 1 } else { 0 };
-        
+
         // Convert up to 4 layers
         for (i, layer_desc) in self.layers.iter().take(4).enumerate() {
             let layer = &mut gpu_material.layers[i];
-            
+
             // Texture indices
             if let Some(albedo) = &layer_desc.albedo {
                 layer.texture_indices[0] = texture_resolver(albedo);
@@ -483,18 +483,18 @@ impl TerrainMaterialDesc {
             if let Some(height) = &layer_desc.height {
                 layer.texture_indices[3] = texture_resolver(height);
             }
-            
+
             layer.uv_scale = layer_desc.uv_scale;
-            
+
             if let Some(height_range) = layer_desc.height_range {
                 layer.height_range = height_range;
             }
-            
+
             layer.blend_sharpness = layer_desc.blend_sharpness;
             layer.triplanar_power = layer_desc.triplanar_power;
             layer.material_factors = [layer_desc.metallic, layer_desc.roughness];
         }
-        
+
         gpu_material
     }
 }
@@ -566,16 +566,16 @@ mod tests {
     #[test]
     fn test_normal_blend_parsing() {
         let mut desc = TerrainMaterialDesc::default();
-        
+
         desc.normal_blend_method = "linear".to_string();
         assert_eq!(desc.normal_blend_to_gpu(), 0);
-        
+
         desc.normal_blend_method = "rnm".to_string();
         assert_eq!(desc.normal_blend_to_gpu(), 1);
-        
+
         desc.normal_blend_method = "udn".to_string();
         assert_eq!(desc.normal_blend_to_gpu(), 2);
-        
+
         desc.normal_blend_method = "invalid".to_string();
         assert_eq!(desc.normal_blend_to_gpu(), 1); // Falls back to RNM
     }
@@ -583,7 +583,7 @@ mod tests {
     #[test]
     fn test_to_gpu_conversion() {
         let desc = TerrainMaterialDesc::grassland();
-        
+
         // Mock texture resolver (returns sequential indices)
         use std::cell::Cell;
         let counter = Cell::new(0u32);
@@ -592,15 +592,15 @@ mod tests {
             counter.set(val + 1);
             val
         };
-        
+
         let gpu = desc.to_gpu(&resolver);
-        
+
         // Check basic properties transferred
         assert_eq!(gpu.splat_uv_scale, 0.5);
         assert_eq!(gpu.triplanar_enabled, 1);
         assert_eq!(gpu.normal_blend_method, 1); // RNM
         assert_eq!(gpu.triplanar_slope_threshold, 35.0);
-        
+
         // Check first layer got texture indices
         assert!(gpu.layers[0].texture_indices[0] < 100); // albedo index assigned
         assert_eq!(gpu.layers[0].uv_scale, [8.0, 8.0]);

@@ -1,12 +1,12 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use std::hash::{Hash, Hasher, DefaultHasher};
 
 /// A/B testing framework for LLM prompts and models
 pub struct ABTestFramework {
@@ -239,7 +239,8 @@ impl ABTestFramework {
         // Check concurrent experiment limit
         {
             let experiments = self.experiments.read().await;
-            let running_count = experiments.values()
+            let running_count = experiments
+                .values()
                 .filter(|e| e.status == ExperimentStatus::Running)
                 .count();
 
@@ -257,18 +258,24 @@ impl ABTestFramework {
         // Initialize results
         {
             let mut results = self.results.write().await;
-            results.insert(experiment.id.clone(), ExperimentResults {
-                experiment_id: experiment.id.clone(),
-                status: ResultStatus::InProgress,
-                variant_results: HashMap::new(),
-                statistical_analysis: None,
-                winner: None,
-                confidence_level: 0.0,
-                last_updated: Utc::now(),
-            });
+            results.insert(
+                experiment.id.clone(),
+                ExperimentResults {
+                    experiment_id: experiment.id.clone(),
+                    status: ResultStatus::InProgress,
+                    variant_results: HashMap::new(),
+                    statistical_analysis: None,
+                    winner: None,
+                    confidence_level: 0.0,
+                    last_updated: Utc::now(),
+                },
+            );
         }
 
-        info!("Created experiment: {} ({})", experiment.name, experiment.id);
+        info!(
+            "Created experiment: {} ({})",
+            experiment.name, experiment.id
+        );
         Ok(experiment.id)
     }
 
@@ -284,7 +291,10 @@ impl ABTestFramework {
             experiment.status = ExperimentStatus::Running;
             experiment.started_at = Some(Utc::now());
 
-            info!("Started experiment: {} ({})", experiment.name, experiment.id);
+            info!(
+                "Started experiment: {} ({})",
+                experiment.name, experiment.id
+            );
             Ok(())
         } else {
             Err(anyhow!("Experiment {} not found", experiment_id))
@@ -303,7 +313,10 @@ impl ABTestFramework {
             experiment.status = ExperimentStatus::Stopped;
             experiment.ended_at = Some(Utc::now());
 
-            info!("Stopped experiment: {} ({})", experiment.name, experiment.id);
+            info!(
+                "Stopped experiment: {} ({})",
+                experiment.name, experiment.id
+            );
             Ok(())
         } else {
             Err(anyhow!("Experiment {} not found", experiment_id))
@@ -311,7 +324,11 @@ impl ABTestFramework {
     }
 
     /// Assign a user to a variant
-    pub async fn assign_variant(&self, experiment_id: &str, user_id: &str) -> Result<Option<VariantAssignment>> {
+    pub async fn assign_variant(
+        &self,
+        experiment_id: &str,
+        user_id: &str,
+    ) -> Result<Option<VariantAssignment>> {
         let experiments = self.experiments.read().await;
 
         if let Some(experiment) = experiments.get(experiment_id) {
@@ -361,7 +378,8 @@ impl ABTestFramework {
 
                 // Perform statistical analysis if we have enough data
                 if self.has_sufficient_data(experiment_results) {
-                    experiment_results.statistical_analysis = Some(self.perform_statistical_analysis(experiment_results)?);
+                    experiment_results.statistical_analysis =
+                        Some(self.perform_statistical_analysis(experiment_results)?);
 
                     // Check for significance
                     if let Some(analysis) = &experiment_results.statistical_analysis {
@@ -369,10 +387,13 @@ impl ABTestFramework {
                             experiment_results.status = ResultStatus::SignificantResult;
 
                             // Determine winner
-                            experiment_results.winner = self.determine_winner(experiment_results).await;
+                            experiment_results.winner =
+                                self.determine_winner(experiment_results).await;
 
                             // Auto-stop experiment if configured
-                            if self.config.auto_winner_selection && experiment_results.winner.is_some() {
+                            if self.config.auto_winner_selection
+                                && experiment_results.winner.is_some()
+                            {
                                 self.stop_experiment(&outcome.experiment_id).await?;
                             }
                         }
@@ -381,7 +402,10 @@ impl ABTestFramework {
             }
         }
 
-        debug!("Recorded outcome for experiment {} variant {}", outcome.experiment_id, outcome.variant_id);
+        debug!(
+            "Recorded outcome for experiment {} variant {}",
+            outcome.experiment_id, outcome.variant_id
+        );
         Ok(())
     }
 
@@ -389,7 +413,8 @@ impl ABTestFramework {
     pub async fn get_results(&self, experiment_id: &str) -> Result<ExperimentResults> {
         let results = self.results.read().await;
 
-        results.get(experiment_id)
+        results
+            .get(experiment_id)
             .cloned()
             .ok_or_else(|| anyhow!("Results for experiment {} not found", experiment_id))
     }
@@ -443,11 +468,18 @@ impl ABTestFramework {
         }
 
         // Check traffic allocation sums to 1.0
-        let total_traffic = experiment.control_variant.traffic_allocation +
-            experiment.test_variants.iter().map(|v| v.traffic_allocation).sum::<f32>();
+        let total_traffic = experiment.control_variant.traffic_allocation
+            + experiment
+                .test_variants
+                .iter()
+                .map(|v| v.traffic_allocation)
+                .sum::<f32>();
 
         if (total_traffic - 1.0).abs() > 0.01 {
-            return Err(anyhow!("Traffic allocation must sum to 1.0 (currently: {})", total_traffic));
+            return Err(anyhow!(
+                "Traffic allocation must sum to 1.0 (currently: {})",
+                total_traffic
+            ));
         }
 
         // Validate variant IDs are unique
@@ -470,7 +502,11 @@ impl ABTestFramework {
     }
 
     /// Assign variant based on assignment strategy
-    fn assign_variant_by_strategy(&self, user_id: &str, experiment: &Experiment) -> Result<Variant> {
+    fn assign_variant_by_strategy(
+        &self,
+        user_id: &str,
+        experiment: &Experiment,
+    ) -> Result<Variant> {
         match experiment.assignment_strategy {
             AssignmentStrategy::Hash => self.assign_variant_hash(user_id, experiment),
             AssignmentStrategy::WeightedRandom => self.assign_variant_weighted_random(experiment),
@@ -552,8 +588,13 @@ impl ABTestFramework {
     }
 
     /// Update variant results with new outcome
-    fn update_variant_results(&self, experiment_results: &mut ExperimentResults, outcome: &Outcome) {
-        let variant_results = experiment_results.variant_results
+    fn update_variant_results(
+        &self,
+        experiment_results: &mut ExperimentResults,
+        outcome: &Outcome,
+    ) {
+        let variant_results = experiment_results
+            .variant_results
             .entry(outcome.variant_id.clone())
             .or_insert_with(|| VariantResults {
                 variant_id: outcome.variant_id.clone(),
@@ -571,7 +612,8 @@ impl ABTestFramework {
 
         // Update metrics
         for (metric_name, value) in &outcome.metrics {
-            let metric_result = variant_results.metrics
+            let metric_result = variant_results
+                .metrics
                 .entry(metric_name.clone())
                 .or_insert_with(|| MetricResult {
                     metric_name: metric_name.clone(),
@@ -595,17 +637,24 @@ impl ABTestFramework {
         // Update conversion rate
         let successes = variant_results.sample_size;
         let success_count = if outcome.success { 1 } else { 0 };
-        variant_results.conversion_rate = (variant_results.conversion_rate * (successes - 1) as f32 + success_count as f32) / successes as f32;
+        variant_results.conversion_rate =
+            (variant_results.conversion_rate * (successes - 1) as f32 + success_count as f32)
+                / successes as f32;
     }
 
     /// Check if experiment has sufficient data for analysis
     fn has_sufficient_data(&self, results: &ExperimentResults) -> bool {
-        results.variant_results.values()
+        results
+            .variant_results
+            .values()
             .all(|v| v.sample_size >= self.config.min_sample_size)
     }
 
     /// Perform statistical analysis
-    fn perform_statistical_analysis(&self, _results: &ExperimentResults) -> Result<StatisticalAnalysis> {
+    fn perform_statistical_analysis(
+        &self,
+        _results: &ExperimentResults,
+    ) -> Result<StatisticalAnalysis> {
         // Simplified statistical analysis
         // In practice, would use proper statistical libraries like `statrs`
 
@@ -633,7 +682,10 @@ impl ABTestFramework {
             };
 
             for (variant_id, variant_results) in &results.variant_results {
-                if let Some(metric) = variant_results.metrics.get(&experiment.success_criteria.primary_metric) {
+                if let Some(metric) = variant_results
+                    .metrics
+                    .get(&experiment.success_criteria.primary_metric)
+                {
                     let is_better = match experiment.success_criteria.direction {
                         OptimizationDirection::Maximize => metric.mean > best_value,
                         OptimizationDirection::Minimize => metric.mean < best_value,
@@ -734,7 +786,10 @@ mod tests {
         let experiment_id = framework.create_experiment(experiment).await.unwrap();
         framework.start_experiment(&experiment_id).await.unwrap();
 
-        let assignment = framework.assign_variant(&experiment_id, "user123").await.unwrap();
+        let assignment = framework
+            .assign_variant(&experiment_id, "user123")
+            .await
+            .unwrap();
         assert!(assignment.is_some());
 
         let assignment = assignment.unwrap();

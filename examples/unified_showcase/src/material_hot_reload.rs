@@ -37,22 +37,22 @@ pub enum ReloadEvent {
 /// Material type classification for GPU buffer routing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MaterialType {
-    Standard,       // Basic PBR material
-    Extended,       // Phase PBR-E (clearcoat, anisotropy, SSS, sheen, transmission)
-    Terrain,        // Phase PBR-F (splat blending, triplanar, height blending)
-    Biome,          // Environment-specific material pack
+    Standard, // Basic PBR material
+    Extended, // Phase PBR-E (clearcoat, anisotropy, SSS, sheen, transmission)
+    Terrain,  // Phase PBR-F (splat blending, triplanar, height blending)
+    Biome,    // Environment-specific material pack
 }
 
 /// Texture type for array index routing
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TextureType {
-    Albedo,     // Base color (sRGB)
-    Normal,     // Normal map (linear)
-    ORM,        // Occlusion-Roughness-Metallic (linear)
-    MRA,        // Metallic-Roughness-AO (alternative packing, linear)
-    Emissive,   // Emission map (sRGB)
-    Height,     // Height map for parallax/displacement (linear)
-    Splat,      // Splat mask for terrain blending (linear)
+    Albedo,   // Base color (sRGB)
+    Normal,   // Normal map (linear)
+    ORM,      // Occlusion-Roughness-Metallic (linear)
+    MRA,      // Metallic-Roughness-AO (alternative packing, linear)
+    Emissive, // Emission map (sRGB)
+    Height,   // Height map for parallax/displacement (linear)
+    Splat,    // Splat mask for terrain blending (linear)
 }
 
 /// Color space handling for texture uploads
@@ -129,20 +129,20 @@ impl FileWatcher {
         // Check for TOML files
         if extension == "toml" {
             let filename = path.file_name()?.to_str()?;
-            
+
             if filename == "arrays.toml" {
                 return Some(ReloadEvent::ArrayManifest {
                     path: path.to_path_buf(),
                 });
             }
-            
+
             if filename == "materials.toml" {
                 return Some(ReloadEvent::Material {
                     path: path.to_path_buf(),
                     material_type: MaterialType::Biome,
                 });
             }
-            
+
             // Classify individual material files
             let material_type = if path_str.contains("terrain") {
                 MaterialType::Terrain
@@ -151,7 +151,7 @@ impl FileWatcher {
             } else {
                 MaterialType::Standard
             };
-            
+
             return Some(ReloadEvent::Material {
                 path: path.to_path_buf(),
                 material_type,
@@ -161,9 +161,12 @@ impl FileWatcher {
         // Check for texture files
         if matches!(extension, "png" | "ktx2" | "dds" | "basis") {
             let filename = path.file_stem()?.to_str()?.to_lowercase();
-            
+
             // Classify texture type and color space
-            let (texture_type, color_space) = if filename.contains("albedo") || filename.contains("color") || filename.contains("diffuse") {
+            let (texture_type, color_space) = if filename.contains("albedo")
+                || filename.contains("color")
+                || filename.contains("diffuse")
+            {
                 (TextureType::Albedo, ColorSpace::SRGB)
             } else if filename.contains("normal") || filename.contains("_n") {
                 (TextureType::Normal, ColorSpace::Linear)
@@ -180,7 +183,7 @@ impl FileWatcher {
             } else {
                 return None; // Unknown texture type
             };
-            
+
             return Some(ReloadEvent::Texture {
                 path: path.to_path_buf(),
                 texture_type,
@@ -203,14 +206,14 @@ impl FileWatcher {
             };
 
             let now = Instant::now();
-            
+
             // Check if we should debounce this event
             if let Some(last_time) = self.debounce_map.get(path) {
                 if now.duration_since(*last_time) < self.debounce_duration {
                     continue; // Debounce this event
                 }
             }
-            
+
             // Update debounce map and return event
             self.debounce_map.insert(path.clone(), now);
             return Some(event);
@@ -233,17 +236,17 @@ impl FileWatcher {
 pub struct MaterialReloadManager {
     /// Material ID to file path mapping
     material_mappings: HashMap<u32, MaterialMapping>,
-    
+
     /// Biome name to base directory mapping
     biome_directories: HashMap<String, PathBuf>,
-    
+
     /// Current active biome
     current_biome: Option<String>,
-    
+
     /// Reload statistics
     reload_count: u64,
     last_reload_time: Instant,
-    
+
     /// Performance tracking
     total_reload_time_ms: f64,
 }
@@ -287,7 +290,7 @@ impl MaterialReloadManager {
             orm_path: None,
             array_indices,
         };
-        
+
         self.material_mappings.insert(material_id, mapping);
     }
 
@@ -312,26 +315,26 @@ impl MaterialReloadManager {
             if mapping.toml_path == path {
                 return Some(*material_id);
             }
-            
+
             if let Some(ref albedo) = mapping.albedo_path {
                 if albedo == path {
                     return Some(*material_id);
                 }
             }
-            
+
             if let Some(ref normal) = mapping.normal_path {
                 if normal == path {
                     return Some(*material_id);
                 }
             }
-            
+
             if let Some(ref orm) = mapping.orm_path {
                 if orm == path {
                     return Some(*material_id);
                 }
             }
         }
-        
+
         None
     }
 
@@ -355,15 +358,16 @@ impl MaterialReloadManager {
         material_type: MaterialType,
     ) -> Result<()> {
         let start = Instant::now();
-        
+
         // Parse TOML file
         let toml_content = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read material TOML: {}", path.display()))?;
-        
+
         // Find material ID for this path
-        let material_id = self.find_material_by_path(path)
+        let material_id = self
+            .find_material_by_path(path)
             .ok_or_else(|| anyhow::anyhow!("Material not registered: {}", path.display()))?;
-        
+
         // Convert based on material type
         match material_type {
             MaterialType::Standard | MaterialType::Biome => {
@@ -394,15 +398,19 @@ impl MaterialReloadManager {
                 )?;
             }
         }
-        
+
         // Update statistics
         let elapsed = start.elapsed().as_secs_f64() * 1000.0;
         self.reload_count += 1;
         self.last_reload_time = Instant::now();
         self.total_reload_time_ms += elapsed;
-        
-        println!("✅ Hot-reloaded material: {} ({:.2}ms)", path.display(), elapsed);
-        
+
+        println!(
+            "✅ Hot-reloaded material: {} ({:.2}ms)",
+            path.display(),
+            elapsed
+        );
+
         Ok(())
     }
 
@@ -416,18 +424,19 @@ impl MaterialReloadManager {
         toml_content: &str,
     ) -> Result<()> {
         // Parse material from TOML
-        let material: crate::material::Material = toml::from_str(toml_content)
-            .context("Failed to parse material TOML")?;
-        
+        let material: crate::material::Material =
+            toml::from_str(toml_content).context("Failed to parse material TOML")?;
+
         // Convert to GPU representation
         let material_gpu = crate::material::MaterialGpu::from(&material);
-        
+
         // Calculate buffer offset
-        let offset = (material_id as u64) * std::mem::size_of::<crate::material::MaterialGpu>() as u64;
-        
+        let offset =
+            (material_id as u64) * std::mem::size_of::<crate::material::MaterialGpu>() as u64;
+
         // Write to GPU buffer
         queue.write_buffer(material_buffer, offset, bytemuck::bytes_of(&material_gpu));
-        
+
         Ok(())
     }
 
@@ -443,10 +452,10 @@ impl MaterialReloadManager {
         // Parse TOML to get material parameters
         let toml_value: toml::Value = toml::from_str(toml_content)
             .with_context(|| "Failed to parse extended material TOML")?;
-        
+
         // Start with default material
         let mut material = astraweave_render::MaterialGpuExtended::default();
-        
+
         // Parse base PBR properties
         if let Some(mat) = toml_value.get("material").and_then(|v| v.as_table()) {
             if let Some(albedo) = mat.get("base_color_factor").and_then(|v| v.as_array()) {
@@ -457,35 +466,35 @@ impl MaterialReloadManager {
                     albedo.get(3).and_then(|v| v.as_float()).unwrap_or(1.0) as f32,
                 ];
             }
-            
+
             if let Some(metallic) = mat.get("metallic_factor").and_then(|v| v.as_float()) {
                 material.metallic_factor = metallic as f32;
             }
-            
+
             if let Some(roughness) = mat.get("roughness_factor").and_then(|v| v.as_float()) {
                 material.roughness_factor = roughness as f32;
             }
-            
+
             // Parse clearcoat properties
             if let Some(clearcoat) = mat.get("clearcoat_strength").and_then(|v| v.as_float()) {
                 material.clearcoat_strength = clearcoat as f32;
                 material.flags |= astraweave_render::MATERIAL_FLAG_CLEARCOAT;
             }
-            
+
             if let Some(clear_rough) = mat.get("clearcoat_roughness").and_then(|v| v.as_float()) {
                 material.clearcoat_roughness = clear_rough as f32;
             }
-            
+
             // Parse anisotropy properties
             if let Some(aniso) = mat.get("anisotropy_strength").and_then(|v| v.as_float()) {
                 material.anisotropy_strength = aniso as f32;
                 material.flags |= astraweave_render::MATERIAL_FLAG_ANISOTROPY;
             }
-            
+
             if let Some(rot) = mat.get("anisotropy_rotation").and_then(|v| v.as_float()) {
                 material.anisotropy_rotation = rot as f32;
             }
-            
+
             // Parse subsurface properties
             if let Some(sss_color) = mat.get("subsurface_color").and_then(|v| v.as_array()) {
                 material.subsurface_color = [
@@ -495,11 +504,11 @@ impl MaterialReloadManager {
                 ];
                 material.flags |= astraweave_render::MATERIAL_FLAG_SUBSURFACE;
             }
-            
+
             if let Some(sss_scale) = mat.get("subsurface_scale").and_then(|v| v.as_float()) {
                 material.subsurface_scale = sss_scale as f32;
             }
-            
+
             // Parse sheen properties
             if let Some(sheen_color) = mat.get("sheen_color").and_then(|v| v.as_array()) {
                 material.sheen_color = [
@@ -509,24 +518,25 @@ impl MaterialReloadManager {
                 ];
                 material.flags |= astraweave_render::MATERIAL_FLAG_SHEEN;
             }
-            
+
             // Parse transmission properties
             if let Some(trans) = mat.get("transmission_factor").and_then(|v| v.as_float()) {
                 material.transmission_factor = trans as f32;
                 material.flags |= astraweave_render::MATERIAL_FLAG_TRANSMISSION;
             }
-            
+
             if let Some(ior) = mat.get("ior").and_then(|v| v.as_float()) {
                 material.ior = ior as f32;
             }
         }
-        
+
         // Calculate GPU buffer offset (256 bytes per extended material)
-        let offset = (material_id as u64) * std::mem::size_of::<astraweave_render::MaterialGpuExtended>() as u64;
-        
+        let offset = (material_id as u64)
+            * std::mem::size_of::<astraweave_render::MaterialGpuExtended>() as u64;
+
         // Upload to GPU
         queue.write_buffer(material_buffer, offset, bytemuck::bytes_of(&material));
-        
+
         println!("✅ Extended material reloaded: material_id={} (clearcoat={}, aniso={}, sss={}, sheen={}, trans={})",
             material_id,
             material.has_feature(astraweave_render::MATERIAL_FLAG_CLEARCOAT),
@@ -535,7 +545,7 @@ impl MaterialReloadManager {
             material.has_feature(astraweave_render::MATERIAL_FLAG_SHEEN),
             material.has_feature(astraweave_render::MATERIAL_FLAG_TRANSMISSION),
         );
-        
+
         Ok(())
     }
 
@@ -551,32 +561,41 @@ impl MaterialReloadManager {
         // Parse TOML to get terrain material parameters
         let toml_value: toml::Value = toml::from_str(toml_content)
             .with_context(|| "Failed to parse terrain material TOML")?;
-        
+
         // Start with default material
         let mut material = astraweave_render::TerrainMaterialGpu::default();
-        
+
         // Parse terrain properties
         if let Some(terrain) = toml_value.get("terrain").and_then(|v| v.as_table()) {
             if let Some(splat_scale) = terrain.get("splat_uv_scale").and_then(|v| v.as_float()) {
                 material.splat_uv_scale = splat_scale as f32;
             }
-            
+
             if let Some(triplanar) = terrain.get("triplanar_enabled").and_then(|v| v.as_bool()) {
                 material.triplanar_enabled = if triplanar { 1 } else { 0 };
             }
-            
-            if let Some(threshold) = terrain.get("triplanar_slope_threshold").and_then(|v| v.as_float()) {
+
+            if let Some(threshold) = terrain
+                .get("triplanar_slope_threshold")
+                .and_then(|v| v.as_float())
+            {
                 material.triplanar_slope_threshold = threshold as f32;
             }
-            
-            if let Some(blend_method) = terrain.get("normal_blend_method").and_then(|v| v.as_integer()) {
+
+            if let Some(blend_method) = terrain
+                .get("normal_blend_method")
+                .and_then(|v| v.as_integer())
+            {
                 material.normal_blend_method = blend_method as u32;
             }
-            
-            if let Some(height_blend) = terrain.get("height_blend_enabled").and_then(|v| v.as_bool()) {
+
+            if let Some(height_blend) = terrain
+                .get("height_blend_enabled")
+                .and_then(|v| v.as_bool())
+            {
                 material.height_blend_enabled = if height_blend { 1 } else { 0 };
             }
-            
+
             // Parse layers
             if let Some(layers) = terrain.get("layers").and_then(|v| v.as_array()) {
                 for (i, layer_value) in layers.iter().enumerate().take(4) {
@@ -588,30 +607,41 @@ impl MaterialReloadManager {
                                 uv_scale.get(1).and_then(|v| v.as_float()).unwrap_or(1.0) as f32,
                             ];
                         }
-                        
+
                         // Parse height range
-                        if let Some(height_range) = layer.get("height_range").and_then(|v| v.as_array()) {
+                        if let Some(height_range) =
+                            layer.get("height_range").and_then(|v| v.as_array())
+                        {
                             material.layers[i].height_range = [
-                                height_range.get(0).and_then(|v| v.as_float()).unwrap_or(0.0) as f32,
-                                height_range.get(1).and_then(|v| v.as_float()).unwrap_or(100.0) as f32,
+                                height_range
+                                    .get(0)
+                                    .and_then(|v| v.as_float())
+                                    .unwrap_or(0.0) as f32,
+                                height_range
+                                    .get(1)
+                                    .and_then(|v| v.as_float())
+                                    .unwrap_or(100.0) as f32,
                             ];
                         }
-                        
+
                         // Parse blend sharpness
-                        if let Some(sharpness) = layer.get("blend_sharpness").and_then(|v| v.as_float()) {
+                        if let Some(sharpness) =
+                            layer.get("blend_sharpness").and_then(|v| v.as_float())
+                        {
                             material.layers[i].blend_sharpness = sharpness as f32;
                         }
-                        
+
                         // Parse triplanar power
-                        if let Some(power) = layer.get("triplanar_power").and_then(|v| v.as_float()) {
+                        if let Some(power) = layer.get("triplanar_power").and_then(|v| v.as_float())
+                        {
                             material.layers[i].triplanar_power = power as f32;
                         }
-                        
+
                         // Parse material factors
                         if let Some(metallic) = layer.get("metallic").and_then(|v| v.as_float()) {
                             material.layers[i].material_factors[0] = metallic as f32;
                         }
-                        
+
                         if let Some(roughness) = layer.get("roughness").and_then(|v| v.as_float()) {
                             material.layers[i].material_factors[1] = roughness as f32;
                         }
@@ -619,19 +649,20 @@ impl MaterialReloadManager {
                 }
             }
         }
-        
+
         // Calculate GPU buffer offset (320 bytes per terrain material)
-        let offset = (material_id as u64) * std::mem::size_of::<astraweave_render::TerrainMaterialGpu>() as u64;
-        
+        let offset = (material_id as u64)
+            * std::mem::size_of::<astraweave_render::TerrainMaterialGpu>() as u64;
+
         // Upload to GPU
         queue.write_buffer(material_buffer, offset, bytemuck::bytes_of(&material));
-        
+
         println!("✅ Terrain material reloaded: material_id={} (triplanar={}, height_blend={}, layers=4)",
             material_id,
             material.triplanar_enabled == 1,
             material.height_blend_enabled == 1,
         );
-        
+
         Ok(())
     }
 
@@ -647,21 +678,21 @@ impl MaterialReloadManager {
         color_space: ColorSpace,
     ) -> Result<()> {
         let start = Instant::now();
-        
+
         // Load image file
         let img = image::open(path)
             .with_context(|| format!("Failed to load texture: {}", path.display()))?;
-        
+
         // Convert to RGBA8
         let rgba = img.to_rgba8();
         let (width, height) = rgba.dimensions();
-        
+
         // Determine texture format based on color space
         let format = match color_space {
             ColorSpace::SRGB => wgpu::TextureFormat::Rgba8UnormSrgb,
             ColorSpace::Linear => wgpu::TextureFormat::Rgba8Unorm,
         };
-        
+
         // Validate texture format matches array format
         if texture_array.format() != format {
             anyhow::bail!(
@@ -671,7 +702,7 @@ impl MaterialReloadManager {
                 path.display()
             );
         }
-        
+
         // Write texture data to GPU array
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
@@ -696,13 +727,13 @@ impl MaterialReloadManager {
                 depth_or_array_layers: 1,
             },
         );
-        
+
         // Update statistics
         let elapsed = start.elapsed().as_secs_f64() * 1000.0;
         self.reload_count += 1;
         self.last_reload_time = Instant::now();
         self.total_reload_time_ms += elapsed;
-        
+
         println!(
             "✅ Hot-reloaded texture: {} → array[{}] ({:.2}ms, {}x{}, {:?})",
             path.display(),
@@ -712,37 +743,39 @@ impl MaterialReloadManager {
             height,
             color_space
         );
-        
+
         Ok(())
     }
 
     /// Get array indices for a material (for texture array routing)
     pub fn get_array_indices(&self, material_id: u32) -> Option<&MaterialArrayIndices> {
-        self.material_mappings.get(&material_id).map(|m| &m.array_indices)
+        self.material_mappings
+            .get(&material_id)
+            .map(|m| &m.array_indices)
     }
 
     /// Get texture type from file path (for hot-reload event routing)
     pub fn get_texture_type_for_path(&self, material_id: u32, path: &Path) -> Option<TextureType> {
         let mapping = self.material_mappings.get(&material_id)?;
-        
+
         if let Some(ref albedo) = mapping.albedo_path {
             if albedo == path {
                 return Some(TextureType::Albedo);
             }
         }
-        
+
         if let Some(ref normal) = mapping.normal_path {
             if normal == path {
                 return Some(TextureType::Normal);
             }
         }
-        
+
         if let Some(ref orm) = mapping.orm_path {
             if orm == path {
                 return Some(TextureType::ORM);
             }
         }
-        
+
         None
     }
 

@@ -1,6 +1,6 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 /// Core memory structure representing different types of memories in the system
@@ -166,11 +166,11 @@ pub struct MemoryCluster {
 /// Types of memory clusters
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ClusterType {
-    Event,      // Memories of a specific event
-    Person,     // Memories related to a person
-    Location,   // Memories tied to a location
-    Concept,    // Memories about a concept
-    Skill,      // Memories forming a skill
+    Event,        // Memories of a specific event
+    Person,       // Memories related to a person
+    Location,     // Memories tied to a location
+    Concept,      // Memories about a concept
+    Skill,        // Memories forming a skill
     Relationship, // Memories about a relationship
 }
 
@@ -261,10 +261,10 @@ pub enum SharingType {
 /// Privacy levels for memories
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PrivacyLevel {
-    Public,     // Can be shared with anyone
-    Group,      // Can be shared within group
-    Personal,   // Only for this entity
-    Secret,     // Highly protected
+    Public,   // Can be shared with anyone
+    Group,    // Can be shared within group
+    Personal, // Only for this entity
+    Secret,   // Highly protected
 }
 
 impl Memory {
@@ -363,7 +363,7 @@ impl Memory {
     pub fn accessed(&mut self) {
         self.metadata.last_accessed = Utc::now();
         self.metadata.access_count += 1;
-        
+
         // Strengthen memory through access (spaced repetition effect)
         self.metadata.strength = (self.metadata.strength + 0.1).min(1.0);
     }
@@ -373,7 +373,7 @@ impl Memory {
         if self.metadata.permanent {
             return false;
         }
-        
+
         let current_strength = self.calculate_current_strength();
         current_strength < threshold
     }
@@ -382,29 +382,31 @@ impl Memory {
     pub fn calculate_current_strength(&self) -> f32 {
         let age_days = (Utc::now() - self.metadata.created_at).num_days() as f32;
         let time_since_access = (Utc::now() - self.metadata.last_accessed).num_days() as f32;
-        
+
         // Apply forgetting curve: strength = initial * e^(-decay * time)
-        let base_strength = self.metadata.strength * (-0.1 * age_days * self.metadata.decay_factor).exp();
-        
+        let base_strength =
+            self.metadata.strength * (-0.1 * age_days * self.metadata.decay_factor).exp();
+
         // Boost from recent access
-        let access_boost = if time_since_access < 1.0 {
-            0.2
-        } else {
-            0.0
-        };
-        
+        let access_boost = if time_since_access < 1.0 { 0.2 } else { 0.0 };
+
         (base_strength + access_boost).min(1.0).max(0.0)
     }
 
     /// Add an association to another memory
-    pub fn add_association(&mut self, memory_id: String, association_type: AssociationType, strength: f32) {
+    pub fn add_association(
+        &mut self,
+        memory_id: String,
+        association_type: AssociationType,
+        strength: f32,
+    ) {
         let association = MemoryAssociation {
             memory_id,
             association_type,
             strength: strength.max(0.0).min(1.0),
             formed_at: Utc::now(),
         };
-        
+
         self.associations.push(association);
     }
 
@@ -419,17 +421,19 @@ impl Memory {
     /// Check if memory matches retrieval context
     pub fn matches_context(&self, context: &RetrievalContext) -> bool {
         // Check memory type preference
-        if !context.preferred_types.is_empty() && !context.preferred_types.contains(&self.memory_type) {
+        if !context.preferred_types.is_empty()
+            && !context.preferred_types.contains(&self.memory_type)
+        {
             return false;
         }
-        
+
         // Check time window
         if let Some(window) = &context.time_window {
             if self.metadata.created_at < window.start || self.metadata.created_at > window.end {
                 return false;
             }
         }
-        
+
         // Check location
         if let Some(query_location) = &context.location {
             if let Some(memory_location) = &self.content.context.location {
@@ -438,35 +442,35 @@ impl Memory {
                 }
             }
         }
-        
+
         true
     }
 
     /// Calculate relevance score for a query
     pub fn calculate_relevance(&self, context: &RetrievalContext) -> f32 {
         let mut relevance = 0.0;
-        
+
         // Text similarity (simplified - would use embeddings in practice)
         let query_words: Vec<&str> = context.query.split_whitespace().collect();
         let memory_words: Vec<&str> = self.content.text.split_whitespace().collect();
-        
+
         let common_words = query_words
             .iter()
             .filter(|word| memory_words.contains(word))
             .count();
-        
+
         let text_similarity = if !query_words.is_empty() {
             common_words as f32 / query_words.len() as f32
         } else {
             0.0
         };
-        
+
         relevance += text_similarity * 0.4;
-        
+
         // Importance and strength
         relevance += self.metadata.importance * 0.3;
         relevance += self.calculate_current_strength() * 0.2;
-        
+
         // Recency bonus
         let age_days = (Utc::now() - self.metadata.created_at).num_days() as f32;
         let recency_bonus = if age_days < 7.0 {
@@ -475,7 +479,7 @@ impl Memory {
             0.0
         };
         relevance += recency_bonus;
-        
+
         relevance.min(1.0)
     }
 }
@@ -516,10 +520,10 @@ impl MemoryCluster {
 
         let total_importance: f32 = memories.iter().map(|m| m.metadata.importance).sum();
         let avg_importance = total_importance / memories.len() as f32;
-        
+
         // Boost importance for larger clusters
         let size_bonus = (memories.len() as f32 / 10.0).min(0.2);
-        
+
         (avg_importance + size_bonus).min(1.0)
     }
 }
@@ -540,11 +544,11 @@ mod tests {
     fn test_memory_strength_calculation() {
         let mut memory = Memory::sensory("Test memory".to_string(), None);
         let initial_strength = memory.calculate_current_strength();
-        
+
         // Simulate aging
         memory.metadata.created_at = Utc::now() - chrono::Duration::days(10);
         let aged_strength = memory.calculate_current_strength();
-        
+
         assert!(aged_strength < initial_strength);
     }
 
@@ -556,10 +560,17 @@ mod tests {
             Some("market".to_string()),
         );
 
-        memory.add_association("other_memory_id".to_string(), AssociationType::Temporal, 0.8);
+        memory.add_association(
+            "other_memory_id".to_string(),
+            AssociationType::Temporal,
+            0.8,
+        );
 
         assert_eq!(memory.associations.len(), 1);
-        assert_eq!(memory.associations[0].association_type, AssociationType::Temporal);
+        assert_eq!(
+            memory.associations[0].association_type,
+            AssociationType::Temporal
+        );
     }
 
     #[test]

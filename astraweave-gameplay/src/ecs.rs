@@ -88,7 +88,7 @@ pub struct CQuestProgress {
 /// Combat system that ticks attack states
 pub fn combat_system(world: &mut astraweave_ecs::World) {
     let dt = *world.get_resource::<f32>().unwrap_or(&0.016); // default 60fps
-                                                         // Collect entities with attacks
+                                                             // Collect entities with attacks
     let mut attackers = Vec::new();
     {
         let q = Query2::<CAttackState, CTarget>::new(world);

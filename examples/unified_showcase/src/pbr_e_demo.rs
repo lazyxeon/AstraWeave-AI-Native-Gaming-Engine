@@ -1,5 +1,5 @@
 //! PBR-E Advanced Materials Demo Module
-//! 
+//!
 //! This module provides helper functions to generate demonstration scenes
 //! for Phase PBR-E advanced material features (clearcoat, anisotropy, SSS, sheen, transmission).
 
@@ -26,7 +26,7 @@ impl DemoMaterialType {
             DemoMaterialType::Transmission,
         ]
     }
-    
+
     pub fn name(&self) -> &'static str {
         match self {
             DemoMaterialType::Clearcoat => "Clearcoat (Car Paint)",
@@ -63,14 +63,14 @@ impl Default for PbrEDemoConfig {
 pub fn generate_demo_scene(config: &PbrEDemoConfig) -> (Vec<MaterialGpuExtended>, Vec<Vec3>) {
     let mut materials = Vec::with_capacity(config.grid_size * config.grid_size);
     let mut positions = Vec::with_capacity(config.grid_size * config.grid_size);
-    
+
     let offset = (config.grid_size as f32 - 1.0) * config.sphere_spacing * 0.5;
-    
+
     for y in 0..config.grid_size {
         for x in 0..config.grid_size {
             let param_x = x as f32 / (config.grid_size - 1) as f32;
             let param_y = y as f32 / (config.grid_size - 1) as f32;
-            
+
             let mat = match config.material_type {
                 DemoMaterialType::Clearcoat => generate_clearcoat(param_x, param_y),
                 DemoMaterialType::Anisotropy => generate_anisotropy(param_x, param_y),
@@ -78,27 +78,27 @@ pub fn generate_demo_scene(config: &PbrEDemoConfig) -> (Vec<MaterialGpuExtended>
                 DemoMaterialType::Sheen => generate_sheen(param_x, param_y),
                 DemoMaterialType::Transmission => generate_transmission(param_x, param_y),
             };
-            
+
             let pos = Vec3::new(
                 x as f32 * config.sphere_spacing - offset,
                 config.sphere_radius, // Elevate spheres off ground
                 y as f32 * config.sphere_spacing - offset,
             );
-            
+
             materials.push(mat);
             positions.push(pos);
         }
     }
-    
+
     (materials, positions)
 }
 
 /// Clearcoat grid: X = strength (0→1), Y = roughness (0→1)
 fn generate_clearcoat(strength: f32, roughness: f32) -> MaterialGpuExtended {
     let mut mat = MaterialGpuExtended::car_paint(
-        Vec3::new(0.8, 0.0, 0.0),  // Red base
-        0.9,  // High metallic
-        0.3,  // Base roughness
+        Vec3::new(0.8, 0.0, 0.0), // Red base
+        0.9,                      // High metallic
+        0.3,                      // Base roughness
     );
     mat.clearcoat_strength = strength;
     mat.clearcoat_roughness = roughness;
@@ -107,12 +107,12 @@ fn generate_clearcoat(strength: f32, roughness: f32) -> MaterialGpuExtended {
 
 /// Anisotropy grid: X = strength (-1→1), Y = rotation (0→2π)
 fn generate_anisotropy(strength_norm: f32, rotation_norm: f32) -> MaterialGpuExtended {
-    let strength = strength_norm * 2.0 - 1.0;  // Map [0,1] → [-1,1]
-    let rotation = rotation_norm * std::f32::consts::TAU;  // Map [0,1] → [0,2π]
-    
+    let strength = strength_norm * 2.0 - 1.0; // Map [0,1] → [-1,1]
+    let rotation = rotation_norm * std::f32::consts::TAU; // Map [0,1] → [0,2π]
+
     MaterialGpuExtended::brushed_metal(
-        Vec3::new(0.9, 0.9, 0.9),  // Silver
-        0.4,  // Medium roughness
+        Vec3::new(0.9, 0.9, 0.9), // Silver
+        0.4,                      // Medium roughness
         strength,
         rotation,
     )
@@ -120,10 +120,10 @@ fn generate_anisotropy(strength_norm: f32, rotation_norm: f32) -> MaterialGpuExt
 
 /// Subsurface grid: X = scale (0→1), Y = radius (0→5mm)
 fn generate_subsurface(scale: f32, radius_norm: f32) -> MaterialGpuExtended {
-    let radius = radius_norm * 5.0;  // Map [0,1] → [0,5mm]
-    
+    let radius = radius_norm * 5.0; // Map [0,1] → [0,5mm]
+
     MaterialGpuExtended::skin(
-        Vec3::new(0.95, 0.8, 0.7),  // Skin tone
+        Vec3::new(0.95, 0.8, 0.7), // Skin tone
         Vec3::new(0.9, 0.3, 0.3),  // Reddish subsurface
         radius,
         scale,
@@ -132,10 +132,10 @@ fn generate_subsurface(scale: f32, radius_norm: f32) -> MaterialGpuExtended {
 
 /// Sheen grid: X = sheen intensity (0→1), Y = roughness (0→1)
 fn generate_sheen(intensity: f32, roughness: f32) -> MaterialGpuExtended {
-    let sheen_color = Vec3::ONE * intensity;  // White sheen with variable intensity
-    
+    let sheen_color = Vec3::ONE * intensity; // White sheen with variable intensity
+
     MaterialGpuExtended::velvet(
-        Vec3::new(0.5, 0.0, 0.1),  // Deep red base
+        Vec3::new(0.5, 0.0, 0.1), // Deep red base
         sheen_color,
         roughness,
     )
@@ -143,15 +143,15 @@ fn generate_sheen(intensity: f32, roughness: f32) -> MaterialGpuExtended {
 
 /// Transmission grid: X = transmission factor (0→1), Y = IOR (1.0→2.5)
 fn generate_transmission(transmission: f32, ior_norm: f32) -> MaterialGpuExtended {
-    let ior = 1.0 + ior_norm * 1.5;  // Map [0,1] → [1.0,2.5]
-    
+    let ior = 1.0 + ior_norm * 1.5; // Map [0,1] → [1.0,2.5]
+
     MaterialGpuExtended::glass(
-        Vec3::ONE,  // Clear tint
-        0.05,  // Very smooth
+        Vec3::ONE, // Clear tint
+        0.05,      // Very smooth
         transmission,
         ior,
-        Vec3::new(0.9, 1.0, 0.9),  // Slight green tint
-        10.0,  // 10cm attenuation distance
+        Vec3::new(0.9, 1.0, 0.9), // Slight green tint
+        10.0,                     // 10cm attenuation distance
     )
 }
 
@@ -209,12 +209,12 @@ mod tests {
             sphere_spacing: 2.0,
             sphere_radius: 0.5,
         };
-        
+
         let (materials, positions) = generate_demo_scene(&config);
-        
+
         assert_eq!(materials.len(), 16);
         assert_eq!(positions.len(), 16);
-        
+
         // Verify positions are centered
         let offset = (4.0 - 1.0) * 2.0 * 0.5;
         assert!((positions[0].x - (-offset)).abs() < 1e-5);
@@ -229,11 +229,11 @@ mod tests {
                 grid_size: 3,
                 ..Default::default()
             };
-            
+
             let (materials, positions) = generate_demo_scene(&config);
             assert_eq!(materials.len(), 9);
             assert_eq!(positions.len(), 9);
-            
+
             // Verify material has correct feature flag
             let expected_flag = match material_type {
                 DemoMaterialType::Clearcoat => MATERIAL_FLAG_CLEARCOAT,
@@ -242,7 +242,7 @@ mod tests {
                 DemoMaterialType::Sheen => MATERIAL_FLAG_SHEEN,
                 DemoMaterialType::Transmission => MATERIAL_FLAG_TRANSMISSION,
             };
-            
+
             assert_eq!(materials[0].flags & expected_flag, expected_flag);
         }
     }

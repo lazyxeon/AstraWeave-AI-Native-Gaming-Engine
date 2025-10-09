@@ -27,7 +27,9 @@ pub struct PromptLibrary {
 impl PromptLibrary {
     /// Create a new prompt library
     pub fn new() -> Self {
-        Self { templates: HashMap::new() }
+        Self {
+            templates: HashMap::new(),
+        }
     }
 
     /// Add a template to the library

@@ -1,4 +1,7 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use chrono::{DateTime, Datelike, Timelike, Utc};
+use dashmap::DashMap;
+use hdrhistogram::Histogram;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
@@ -6,9 +9,6 @@ use std::time::Instant;
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Datelike, Timelike};
-use dashmap::DashMap;
-use hdrhistogram::Histogram;
 
 /// Comprehensive LLM telemetry system for production observability
 pub struct LlmTelemetry {
@@ -81,8 +81,8 @@ pub struct AlertThresholds {
 impl Default for AlertThresholds {
     fn default() -> Self {
         Self {
-            latency_p95_ms: 5000,  // 5 seconds
-            error_rate: 0.1,       // 10%
+            latency_p95_ms: 5000, // 5 seconds
+            error_rate: 0.1,      // 10%
             cost_per_hour_usd: 10.0,
             queue_depth: 100,
             token_rate: 10000,
@@ -96,7 +96,7 @@ pub struct LlmTrace {
     pub request_id: String,
     pub session_id: Option<String>,
     pub user_id: Option<String>,
-    pub prompt: Option<String>, // Optional for privacy
+    pub prompt: Option<String>,   // Optional for privacy
     pub response: Option<String>, // Optional for privacy
     pub prompt_hash: Option<u64>, // Hash for deduplication
     pub model: String,
@@ -364,7 +364,13 @@ impl LlmTelemetry {
     }
 
     /// Start tracking an LLM request
-    pub fn start_request(&self, request_id: String, model: String, source: String, prompt_tokens: usize) -> RequestTracker {
+    pub fn start_request(
+        &self,
+        request_id: String,
+        model: String,
+        source: String,
+        prompt_tokens: usize,
+    ) -> RequestTracker {
         let active_request = ActiveRequest {
             request_id: request_id.clone(),
             start_time: Instant::now(),
@@ -373,7 +379,8 @@ impl LlmTelemetry {
             prompt_tokens,
         };
 
-        self.active_requests.insert(request_id.clone(), active_request);
+        self.active_requests
+            .insert(request_id.clone(), active_request);
 
         RequestTracker {
             request_id,
@@ -420,8 +427,10 @@ impl LlmTelemetry {
             self.track_error(&trace).await?;
         }
 
-        debug!("Recorded LLM request: {} ({}ms, {} tokens, ${:.4})",
-               trace.request_id, trace.latency_ms, trace.total_tokens, trace.cost_usd);
+        debug!(
+            "Recorded LLM request: {} ({}ms, {} tokens, ${:.4})",
+            trace.request_id, trace.latency_ms, trace.total_tokens, trace.cost_usd
+        );
 
         Ok(())
     }
@@ -435,33 +444,47 @@ impl LlmTelemetry {
         let histograms = self.histograms.read().await;
 
         let cost_summary = CostSummary {
-            current_hour_cost: cost_tracker.hourly_costs.back().map(|h| h.cost_usd).unwrap_or(0.0),
+            current_hour_cost: cost_tracker
+                .hourly_costs
+                .back()
+                .map(|h| h.cost_usd)
+                .unwrap_or(0.0),
             today_cost: cost_tracker.current_day_spend,
             month_cost: cost_tracker.current_month_spend,
-            daily_budget_remaining: (cost_tracker.daily_budget_usd - cost_tracker.current_day_spend).max(0.0),
-            monthly_budget_remaining: (cost_tracker.monthly_budget_usd - cost_tracker.current_month_spend).max(0.0),
+            daily_budget_remaining: (cost_tracker.daily_budget_usd
+                - cost_tracker.current_day_spend)
+                .max(0.0),
+            monthly_budget_remaining: (cost_tracker.monthly_budget_usd
+                - cost_tracker.current_month_spend)
+                .max(0.0),
             projected_monthly_cost: self.calculate_projected_monthly_cost(&cost_tracker),
         };
 
-        let model_breakdown: Vec<_> = metrics.model_usage.iter().map(|(model, model_metrics)| {
-            ModelBreakdown {
+        let model_breakdown: Vec<_> = metrics
+            .model_usage
+            .iter()
+            .map(|(model, model_metrics)| ModelBreakdown {
                 model: model.clone(),
                 requests: model_metrics.requests,
                 cost: model_metrics.total_cost_usd as f32,
                 avg_latency: model_metrics.average_latency_ms,
                 error_rate: model_metrics.error_rate,
-            }
-        }).collect();
+            })
+            .collect();
 
-        let hourly_stats: Vec<_> = cost_tracker.hourly_costs.iter().map(|hourly| {
-            HourlyStats {
-                hour: hourly.hour,
-                requests: hourly.requests,
-                cost: hourly.cost_usd,
-                avg_latency: 0.0, // Would calculate from stored data
-                error_rate: 0.0,   // Would calculate from stored data
-            }
-        }).collect();
+        let hourly_stats: Vec<_> = cost_tracker
+            .hourly_costs
+            .iter()
+            .map(|hourly| {
+                HourlyStats {
+                    hour: hourly.hour,
+                    requests: hourly.requests,
+                    cost: hourly.cost_usd,
+                    avg_latency: 0.0, // Would calculate from stored data
+                    error_rate: 0.0,  // Would calculate from stored data
+                }
+            })
+            .collect();
 
         let performance_percentiles = PerformancePercentiles {
             latency_p50: histograms.latency_histogram.value_at_quantile(0.5),
@@ -487,11 +510,19 @@ impl LlmTelemetry {
     }
 
     /// Export traces in various formats
-    pub async fn export_traces(&self, format: ExportFormat, filter: Option<TraceFilter>) -> Result<String> {
+    pub async fn export_traces(
+        &self,
+        format: ExportFormat,
+        filter: Option<TraceFilter>,
+    ) -> Result<String> {
         let traces = self.traces.read().await;
 
         let filtered_traces: Vec<_> = if let Some(filter) = filter {
-            traces.iter().filter(|trace| self.matches_filter(trace, &filter)).cloned().collect()
+            traces
+                .iter()
+                .filter(|trace| self.matches_filter(trace, &filter))
+                .cloned()
+                .collect()
         } else {
             traces.iter().cloned().collect()
         };
@@ -570,30 +601,52 @@ impl LlmTelemetry {
 
         // Update averages
         let total_requests = metrics.total_requests as f32;
-        metrics.average_latency_ms = (metrics.average_latency_ms * (total_requests - 1.0) + trace.latency_ms as f32) / total_requests;
+        metrics.average_latency_ms = (metrics.average_latency_ms * (total_requests - 1.0)
+            + trace.latency_ms as f32)
+            / total_requests;
         metrics.error_rate = metrics.failed_requests as f32 / metrics.total_requests as f32;
 
         // Update model-specific metrics
-        let model_metrics = metrics.model_usage.entry(trace.model.clone()).or_insert_with(ModelMetrics::default);
+        let model_metrics = metrics
+            .model_usage
+            .entry(trace.model.clone())
+            .or_insert_with(ModelMetrics::default);
         model_metrics.requests += 1;
         model_metrics.total_tokens += trace.total_tokens as u64;
         model_metrics.total_cost_usd += trace.cost_usd;
-        model_metrics.average_latency_ms = (model_metrics.average_latency_ms * (model_metrics.requests - 1) as f32 + trace.latency_ms as f32) / model_metrics.requests as f32;
+        model_metrics.average_latency_ms = (model_metrics.average_latency_ms
+            * (model_metrics.requests - 1) as f32
+            + trace.latency_ms as f32)
+            / model_metrics.requests as f32;
         if !trace.success {
-            model_metrics.error_rate = (model_metrics.error_rate * (model_metrics.requests - 1) as f32 + 1.0) / model_metrics.requests as f32;
+            model_metrics.error_rate =
+                (model_metrics.error_rate * (model_metrics.requests - 1) as f32 + 1.0)
+                    / model_metrics.requests as f32;
         } else {
-            model_metrics.error_rate = (model_metrics.error_rate * (model_metrics.requests - 1) as f32) / model_metrics.requests as f32;
+            model_metrics.error_rate = (model_metrics.error_rate
+                * (model_metrics.requests - 1) as f32)
+                / model_metrics.requests as f32;
         }
 
         // Update source-specific metrics
-        let source_metrics = metrics.source_metrics.entry(trace.request_source.clone()).or_insert_with(SourceMetrics::default);
+        let source_metrics = metrics
+            .source_metrics
+            .entry(trace.request_source.clone())
+            .or_insert_with(SourceMetrics::default);
         source_metrics.requests += 1;
         source_metrics.total_tokens += trace.total_tokens as u64;
-        source_metrics.average_latency_ms = (source_metrics.average_latency_ms * (source_metrics.requests - 1) as f32 + trace.latency_ms as f32) / source_metrics.requests as f32;
+        source_metrics.average_latency_ms = (source_metrics.average_latency_ms
+            * (source_metrics.requests - 1) as f32
+            + trace.latency_ms as f32)
+            / source_metrics.requests as f32;
         if !trace.success {
-            source_metrics.error_rate = (source_metrics.error_rate * (source_metrics.requests - 1) as f32 + 1.0) / source_metrics.requests as f32;
+            source_metrics.error_rate =
+                (source_metrics.error_rate * (source_metrics.requests - 1) as f32 + 1.0)
+                    / source_metrics.requests as f32;
         } else {
-            source_metrics.error_rate = (source_metrics.error_rate * (source_metrics.requests - 1) as f32) / source_metrics.requests as f32;
+            source_metrics.error_rate = (source_metrics.error_rate
+                * (source_metrics.requests - 1) as f32)
+                / source_metrics.requests as f32;
         }
 
         metrics.active_requests = self.active_requests.len();
@@ -607,8 +660,12 @@ impl LlmTelemetry {
         let mut histograms = self.histograms.write().await;
 
         histograms.latency_histogram.record(trace.latency_ms)?;
-        histograms.token_histogram.record(trace.total_tokens as u64)?;
-        histograms.cost_histogram.record((trace.cost_usd * 100.0) as u64)?; // Convert to cents
+        histograms
+            .token_histogram
+            .record(trace.total_tokens as u64)?;
+        histograms
+            .cost_histogram
+            .record((trace.cost_usd * 100.0) as u64)?; // Convert to cents
 
         Ok(())
     }
@@ -618,7 +675,14 @@ impl LlmTelemetry {
         let mut cost_tracker = self.cost_tracker.write().await;
 
         // Update hourly costs
-        let current_hour = trace.start_time.with_minute(0).unwrap().with_second(0).unwrap().with_nanosecond(0).unwrap();
+        let current_hour = trace
+            .start_time
+            .with_minute(0)
+            .unwrap()
+            .with_second(0)
+            .unwrap()
+            .with_nanosecond(0)
+            .unwrap();
 
         if let Some(hourly) = cost_tracker.hourly_costs.back_mut() {
             if hourly.hour == current_hour {
@@ -643,7 +707,8 @@ impl LlmTelemetry {
         }
 
         // Keep only recent hourly data
-        while cost_tracker.hourly_costs.len() > 168 { // Keep 1 week
+        while cost_tracker.hourly_costs.len() > 168 {
+            // Keep 1 week
             cost_tracker.hourly_costs.pop_front();
         }
 
@@ -652,10 +717,16 @@ impl LlmTelemetry {
         cost_tracker.current_month_spend += trace.cost_usd as f32;
 
         // Update cost by model
-        *cost_tracker.cost_by_model.entry(trace.model.clone()).or_insert(0.0) += trace.cost_usd as f32;
+        *cost_tracker
+            .cost_by_model
+            .entry(trace.model.clone())
+            .or_insert(0.0) += trace.cost_usd as f32;
 
         // Update cost by source
-        *cost_tracker.cost_by_source.entry(trace.request_source.clone()).or_insert(0.0) += trace.cost_usd as f32;
+        *cost_tracker
+            .cost_by_source
+            .entry(trace.request_source.clone())
+            .or_insert(0.0) += trace.cost_usd as f32;
 
         Ok(())
     }
@@ -672,7 +743,10 @@ impl LlmTelemetry {
                 &mut alert_manager,
                 AlertType::HighLatency,
                 AlertSeverity::Warning,
-                format!("P95 latency is {}ms (threshold: {}ms)", metrics.p95_latency_ms, self.config.alert_thresholds.latency_p95_ms),
+                format!(
+                    "P95 latency is {}ms (threshold: {}ms)",
+                    metrics.p95_latency_ms, self.config.alert_thresholds.latency_p95_ms
+                ),
                 metrics.p95_latency_ms as f32,
                 self.config.alert_thresholds.latency_p95_ms as f32,
             );
@@ -684,7 +758,11 @@ impl LlmTelemetry {
                 &mut alert_manager,
                 AlertType::HighErrorRate,
                 AlertSeverity::Critical,
-                format!("Error rate is {:.2}% (threshold: {:.2}%)", metrics.error_rate * 100.0, self.config.alert_thresholds.error_rate * 100.0),
+                format!(
+                    "Error rate is {:.2}% (threshold: {:.2}%)",
+                    metrics.error_rate * 100.0,
+                    self.config.alert_thresholds.error_rate * 100.0
+                ),
                 metrics.error_rate,
                 self.config.alert_thresholds.error_rate,
             );
@@ -697,7 +775,10 @@ impl LlmTelemetry {
                     &mut alert_manager,
                     AlertType::HighCost,
                     AlertSeverity::Warning,
-                    format!("Hourly cost is ${:.2} (threshold: ${:.2})", hourly.cost_usd, self.config.alert_thresholds.cost_per_hour_usd),
+                    format!(
+                        "Hourly cost is ${:.2} (threshold: ${:.2})",
+                        hourly.cost_usd, self.config.alert_thresholds.cost_per_hour_usd
+                    ),
                     hourly.cost_usd,
                     self.config.alert_thresholds.cost_per_hour_usd,
                 );
@@ -710,7 +791,10 @@ impl LlmTelemetry {
                 &mut alert_manager,
                 AlertType::QueueBacklog,
                 AlertSeverity::Warning,
-                format!("Queue depth is {} (threshold: {})", metrics.queue_depth, self.config.alert_thresholds.queue_depth),
+                format!(
+                    "Queue depth is {} (threshold: {})",
+                    metrics.queue_depth, self.config.alert_thresholds.queue_depth
+                ),
                 metrics.queue_depth as f32,
                 self.config.alert_thresholds.queue_depth as f32,
             );
@@ -720,7 +804,15 @@ impl LlmTelemetry {
     }
 
     /// Trigger an alert
-    fn trigger_alert(&self, alert_manager: &mut AlertManager, alert_type: AlertType, severity: AlertSeverity, message: String, value: f32, threshold: f32) {
+    fn trigger_alert(
+        &self,
+        alert_manager: &mut AlertManager,
+        alert_type: AlertType,
+        severity: AlertSeverity,
+        message: String,
+        value: f32,
+        threshold: f32,
+    ) {
         let alert_key = format!("{:?}", alert_type);
         let now = Utc::now();
 
@@ -758,21 +850,29 @@ impl LlmTelemetry {
         if let Some(error_type) = &trace.error_type {
             let mut error_tracker = self.error_tracker.write().await;
 
-            *error_tracker.error_counts.entry(error_type.clone()).or_insert(0) += 1;
+            *error_tracker
+                .error_counts
+                .entry(error_type.clone())
+                .or_insert(0) += 1;
 
-            let error_pattern = error_tracker.error_patterns.entry(error_type.clone()).or_insert_with(|| ErrorPattern {
-                error_type: error_type.clone(),
-                frequency: 0,
-                first_seen: trace.start_time,
-                last_seen: trace.start_time,
-                sample_messages: Vec::new(),
-            });
+            let error_pattern = error_tracker
+                .error_patterns
+                .entry(error_type.clone())
+                .or_insert_with(|| ErrorPattern {
+                    error_type: error_type.clone(),
+                    frequency: 0,
+                    first_seen: trace.start_time,
+                    last_seen: trace.start_time,
+                    sample_messages: Vec::new(),
+                });
 
             error_pattern.frequency += 1;
             error_pattern.last_seen = trace.start_time;
 
             if let Some(error_message) = &trace.error_message {
-                if error_pattern.sample_messages.len() < 5 && !error_pattern.sample_messages.contains(error_message) {
+                if error_pattern.sample_messages.len() < 5
+                    && !error_pattern.sample_messages.contains(error_message)
+                {
                     error_pattern.sample_messages.push(error_message.clone());
                 }
             }
@@ -909,7 +1009,10 @@ impl RequestTracker {
         let end_time = Utc::now();
         let latency = self.start_time.elapsed();
 
-        let active_request = self.telemetry.active_requests.get(&self.request_id)
+        let active_request = self
+            .telemetry
+            .active_requests
+            .get(&self.request_id)
             .ok_or_else(|| anyhow!("Active request not found"))?;
 
         let trace = LlmTrace {
@@ -983,18 +1086,21 @@ mod tests {
 
         assert_eq!(telemetry.active_requests.len(), 1);
 
-        tracker.complete(
-            "gpt-3.5-turbo".to_string(),
-            true,
-            200,
-            0.01,
-            None,
-            None,
-            "test-source".to_string(),
-            None,
-            None,
-            HashMap::new(),
-        ).await.unwrap();
+        tracker
+            .complete(
+                "gpt-3.5-turbo".to_string(),
+                true,
+                200,
+                0.01,
+                None,
+                None,
+                "test-source".to_string(),
+                None,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
 
         assert_eq!(telemetry.active_requests.len(), 0);
 

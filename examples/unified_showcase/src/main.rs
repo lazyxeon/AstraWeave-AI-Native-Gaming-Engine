@@ -35,12 +35,7 @@ use std::{
     time::Instant,
 };
 use wgpu::util::DeviceExt;
-use winit::{
-    event::*,
-    event_loop::EventLoop,
-    keyboard::*,
-    window::CursorGrabMode,
-};
+use winit::{event::*, event_loop::EventLoop, keyboard::*, window::CursorGrabMode};
 //
 fn generate_house_impostor_mesh() -> MeshData {
     let mut builder = MeshBuilder::new();
@@ -1736,7 +1731,9 @@ impl MeshCategory {
 
 fn default_material_id_for(category: MeshCategory) -> u32 {
     fn idx(key: &str, fallback: u32) -> u32 {
-        material_layer_index(key).map(|i| i as u32).unwrap_or(fallback)
+        material_layer_index(key)
+            .map(|i| i as u32)
+            .unwrap_or(fallback)
     }
     match category {
         MeshCategory::Terrain => idx("grass", 0),
@@ -1946,13 +1943,13 @@ struct RenderStuff {
     mesh_registry: MeshRegistry,
     // Optional overrides: if a glTF/GLB variant exists for a category+variant, use its GPU mesh
     mesh_overrides: HashMap<MeshKey, MeshHandle>,
-    
+
     // Phase PBR-E: Advanced materials infrastructure
     pbr_e_material_buffer: Option<wgpu::Buffer>,
     pbr_e_material_bind_group: Option<wgpu::BindGroup>,
     pbr_e_material_bind_group_layout: wgpu::BindGroupLayout,
-    pbr_e_demo_instances: Vec<(Vec3, f32, u32)>,  // (position, radius, material_id)
-    
+    pbr_e_demo_instances: Vec<(Vec3, f32, u32)>, // (position, radius, material_id)
+
     // Phase PBR-G: GPU Hot-Reload Infrastructure
     file_watcher: Option<FileWatcher>,
     reload_manager: MaterialReloadManager,
@@ -3824,13 +3821,15 @@ async fn run() -> Result<()> {
     // Setup renderer, UI, physics
     let mut render = setup_renderer(window.clone()).await?;
     let mut physics = build_physics_world();
-    
+
     // CRITICAL FIX: Calculate correct aspect ratio BEFORE first render
     // Prevents geometry explosion from incorrect 1:1 aspect ratio on first frame
     let window_size = window.inner_size();
     let initial_aspect = (window_size.width as f32).max(1.0) / (window_size.height as f32).max(1.0);
-    println!("✓ Window size: {}x{}, initial aspect ratio: {:.3}", 
-             window_size.width, window_size.height, initial_aspect);
+    println!(
+        "✓ Window size: {}x{}, initial aspect ratio: {:.3}",
+        window_size.width, window_size.height, initial_aspect
+    );
 
     // Initialize default environment via shared texture/material pipeline
     println!("🌱 Initializing with grassland biome...");
@@ -5802,18 +5801,18 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         .unwrap_or(caps.formats[0]);
 
     println!("Selected surface format: {:?}", surface_format);
-    
+
     // CRITICAL FIX: Prefer VSync (Fifo) or Mailbox for smooth, tear-free presentation
     // Immediate mode can cause flickering/tearing on many systems
     let present_mode = if caps.present_modes.contains(&wgpu::PresentMode::Mailbox) {
-        wgpu::PresentMode::Mailbox  // Triple buffering - smooth, low latency
+        wgpu::PresentMode::Mailbox // Triple buffering - smooth, low latency
     } else if caps.present_modes.contains(&wgpu::PresentMode::Fifo) {
-        wgpu::PresentMode::Fifo  // VSync - guaranteed smooth
+        wgpu::PresentMode::Fifo // VSync - guaranteed smooth
     } else {
-        caps.present_modes[0]  // Fallback to whatever is available
+        caps.present_modes[0] // Fallback to whatever is available
     };
     println!("Selected present mode: {:?}", present_mode);
-    
+
     // CRITICAL FIX: Explicitly use Opaque alpha mode to avoid premultiplied alpha issues
     // that can cause color shifting or unexpected blending behavior
     let alpha_mode = if caps.alpha_modes.contains(&wgpu::CompositeAlphaMode::Opaque) {
@@ -5822,7 +5821,7 @@ async fn setup_renderer(window: std::sync::Arc<winit::window::Window>) -> Result
         caps.alpha_modes[0]
     };
     println!("Selected alpha mode: {:?}", alpha_mode);
-    
+
     let surface_cfg = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: surface_format,
@@ -6379,19 +6378,20 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
     });
 
     // Phase PBR-E: Advanced materials bind group layout (group 6 - SSBO for MaterialGpuExtended array)
-    let pbr_e_material_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("pbr-e-material-layout"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Storage { read_only: true },
-                has_dynamic_offset: false,
-                min_binding_size: None,  // Dynamic array size
-            },
-            count: None,
-        }],
-    });
+    let pbr_e_material_bind_group_layout =
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("pbr-e-material-layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: None, // Dynamic array size
+                },
+                count: None,
+            }],
+        });
 
     // Shadow map layout: depth texture + comparison sampler + light uniforms (merged group 2)
     let shadow_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -6528,7 +6528,8 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
     // Build authored pack and use its bind group
     let ground_bind_group = {
         // Note: hot-reload registration happens after initial setup (reload_manager not created yet)
-        let pack_rt = pollster::block_on(material_integrator.load(&device, &queue, current_biome, None))?;
+        let pack_rt =
+            pollster::block_on(material_integrator.load(&device, &queue, current_biome, None))?;
         // move the bind group by recreating it from the runtime's gpu views to satisfy ownership here
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("materials-pack (scene)"),
@@ -7270,7 +7271,7 @@ struct Bloom { threshold: f32, intensity: f32, _pad: vec2<f32> };
         pbr_e_material_bind_group: None,
         pbr_e_material_bind_group_layout,
         pbr_e_demo_instances: Vec::new(),
-        
+
         // Phase PBR-G: GPU Hot-Reload Infrastructure
         file_watcher: match FileWatcher::new("assets/materials") {
             Ok(watcher) => {
@@ -8466,7 +8467,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   
     return vec4<f32>(col, 1.0);
 }
-"#);
+"#
+);
 
 // ---------------- physics world build/step & instance sync ----------------
 
@@ -8763,12 +8765,9 @@ fn classify_body(user_data: u128) -> ([f32; 4], MeshCategory, u32, f32) {
 }
 
 // Phase PBR-E: Generate demo instances for advanced materials showcase
-fn generate_pbr_e_demo_instances(
-    ui: &UiState,
-    render: &mut RenderStuff,
-) {
+fn generate_pbr_e_demo_instances(ui: &UiState, render: &mut RenderStuff) {
     use astraweave_render::material_extended::MaterialGpuExtended;
-    
+
     // Generate demo scene with material grid
     let config = pbr_e_demo::PbrEDemoConfig {
         material_type: ui.pbr_e_material_type,
@@ -8776,48 +8775,54 @@ fn generate_pbr_e_demo_instances(
         sphere_spacing: 2.5,
         sphere_radius: 0.8,
     };
-    
+
     let (materials, positions) = pbr_e_demo::generate_demo_scene(&config);
-    
+
     // Upload materials to GPU SSBO
-    let material_buffer_size = (materials.len() * std::mem::size_of::<MaterialGpuExtended>()) as u64;
-    
+    let material_buffer_size =
+        (materials.len() * std::mem::size_of::<MaterialGpuExtended>()) as u64;
+
     // Create or resize material buffer if needed
-    if render.pbr_e_material_buffer.is_none() || 
-       render.pbr_e_material_buffer.as_ref().unwrap().size() < material_buffer_size 
+    if render.pbr_e_material_buffer.is_none()
+        || render.pbr_e_material_buffer.as_ref().unwrap().size() < material_buffer_size
     {
         use wgpu::util::DeviceExt;
-        
+
         render.pbr_e_material_buffer = Some(render.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("PBR-E Material Buffer"),
                 contents: bytemuck::cast_slice(&materials),
                 usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            }
+            },
         ));
-        
+
         // Create bind group
-        render.pbr_e_material_bind_group = Some(render.device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
+        render.pbr_e_material_bind_group = Some(
+            render.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("PBR-E Material Bind Group"),
                 layout: &render.pbr_e_material_bind_group_layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: render.pbr_e_material_buffer.as_ref().unwrap().as_entire_binding(),
+                    resource: render
+                        .pbr_e_material_buffer
+                        .as_ref()
+                        .unwrap()
+                        .as_entire_binding(),
                 }],
-            }
-        ));
+            }),
+        );
     } else {
         // Update existing buffer
         render.queue.write_buffer(
             render.pbr_e_material_buffer.as_ref().unwrap(),
             0,
-            bytemuck::cast_slice(&materials)
+            bytemuck::cast_slice(&materials),
         );
     }
-    
+
     // Store instance data for rendering
-    render.pbr_e_demo_instances = positions.iter()
+    render.pbr_e_demo_instances = positions
+        .iter()
         .enumerate()
         .map(|(i, pos)| (*pos, config.sphere_radius, i as u32))
         .collect();
@@ -8953,4 +8958,3 @@ fn sync_instances_from_physics(
 fn build_show_instances() -> Vec<InstanceRaw> {
     Vec::with_capacity(MAX_INSTANCE_COUNT)
 }
-

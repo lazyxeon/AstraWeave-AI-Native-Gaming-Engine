@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Minimal persona and companion types to satisfy cross-crate references in tests and examples.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -66,7 +66,11 @@ impl CompanionProfile {
     pub fn distill(&mut self) {
         // naive distill: turn episodes into facts
         for e in &self.episodes {
-            self.facts.push(Fact { k: e.title.clone(), v: e.summary.clone(), t: "".to_string() });
+            self.facts.push(Fact {
+                k: e.title.clone(),
+                v: e.summary.clone(),
+                t: "".to_string(),
+            });
         }
     }
 

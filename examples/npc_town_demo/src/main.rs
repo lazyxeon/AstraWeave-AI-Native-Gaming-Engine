@@ -87,7 +87,7 @@ impl ApplicationHandler for App {
             let window_attributes = Window::default_attributes()
                 .with_title("NPC Town Demo")
                 .with_inner_size(PhysicalSize::new(1280, 720));
-            
+
             match event_loop.create_window(window_attributes) {
                 Ok(window) => {
                     let window = std::sync::Arc::new(window);
@@ -116,8 +116,12 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let Some(_window) = self.window.as_ref() else { return };
-        let Some(renderer) = self.renderer.as_mut() else { return };
+        let Some(_window) = self.window.as_ref() else {
+            return;
+        };
+        let Some(renderer) = self.renderer.as_mut() else {
+            return;
+        };
 
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
@@ -195,7 +199,11 @@ impl ApplicationHandler for App {
                                 &view_merchant,
                                 utter,
                             );
-                            let _ = self.npcs.handle_player_utterance(self.guard_id, &view_guard, utter);
+                            let _ = self.npcs.handle_player_utterance(
+                                self.guard_id,
+                                &view_guard,
+                                utter,
+                            );
                             drop(glue);
                         }
                         _ => {}
@@ -204,10 +212,8 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 if button == MouseButton::Right {
-                    self.cam_ctl.process_mouse_button(
-                        MouseButton::Right,
-                        state == ElementState::Pressed,
-                    );
+                    self.cam_ctl
+                        .process_mouse_button(MouseButton::Right, state == ElementState::Pressed);
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {

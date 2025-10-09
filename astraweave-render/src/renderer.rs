@@ -448,25 +448,23 @@ impl Renderer {
             .await?;
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("device"),
-                    required_features: {
-                        let _f = wgpu::Features::empty();
-                        #[cfg(feature = "gpu-tests")]
-                        {
-                            wgpu::Features::TIMESTAMP_QUERY
-                        }
-                        #[cfg(not(feature = "gpu-tests"))]
-                        {
-                            _f
-                        }
-                    },
-                    required_limits: wgpu::Limits::default(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: wgpu::Trace::Off,
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("device"),
+                required_features: {
+                    let _f = wgpu::Features::empty();
+                    #[cfg(feature = "gpu-tests")]
+                    {
+                        wgpu::Features::TIMESTAMP_QUERY
+                    }
+                    #[cfg(not(feature = "gpu-tests"))]
+                    {
+                        _f
+                    }
                 },
-            )
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            })
             .await?;
 
         // Surface config
@@ -3913,4 +3911,3 @@ fn aabb_in_view_space(view: &glam::Mat4, corners_ws: &[glam::Vec3; 8]) -> (glam:
 }
 
 // End of file
-

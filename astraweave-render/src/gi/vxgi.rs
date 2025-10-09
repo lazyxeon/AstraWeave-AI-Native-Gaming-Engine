@@ -4,7 +4,6 @@
 //! It uses voxel cone tracing to sample indirect lighting from a sparse voxel
 //! radiance field built from the terrain SVO.
 
-
 /// Configuration for VXGI
 #[derive(Debug, Clone, Copy)]
 pub struct VxgiConfig {

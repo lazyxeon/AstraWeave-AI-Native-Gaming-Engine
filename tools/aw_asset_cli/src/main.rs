@@ -21,7 +21,9 @@ mod texture_baker;
 mod validators;
 
 use texture_baker::{bake_texture, infer_config_from_path, ColorSpace};
-use validators::{validate_ktx2_mipmaps, validate_material_toml, validate_texture, TextureValidationConfig};
+use validators::{
+    validate_ktx2_mipmaps, validate_material_toml, validate_texture, TextureValidationConfig,
+};
 
 #[derive(Parser)]
 #[command(name = "aw_asset_cli")]
@@ -81,7 +83,7 @@ fn main() -> Result<()> {
             normal_map,
         } => {
             let mut config = infer_config_from_path(&input);
-            
+
             if let Some(cs) = color_space {
                 config.color_space = match cs.to_lowercase().as_str() {
                     "srgb" => ColorSpace::Srgb,
@@ -89,7 +91,7 @@ fn main() -> Result<()> {
                     _ => anyhow::bail!("Invalid color space: {} (use 'srgb' or 'linear')", cs),
                 };
             }
-            
+
             if normal_map {
                 config.is_normal_map = true;
                 config.color_space = ColorSpace::Linear;
@@ -105,9 +107,7 @@ fn main() -> Result<()> {
             config,
             format,
             strict,
-        } => {
-            validate_assets_command(&path, config.as_deref(), &format, strict)
-        }
+        } => validate_assets_command(&path, config.as_deref(), &format, strict),
     }
 }
 
@@ -472,7 +472,7 @@ fn validate_assets_command(
     format: &str,
     strict: bool,
 ) -> Result<()> {
-    use validators::{ValidationResult, TextureValidationConfig};
+    use validators::{TextureValidationConfig, ValidationResult};
 
     // Load validation config or use defaults
     let config = if let Some(cfg_path) = config_path {
@@ -496,7 +496,7 @@ fn validate_assets_command(
             let entry = entry?;
             if entry.file_type().is_file() {
                 let file_path = entry.path();
-                
+
                 // Check if file is a supported asset type
                 if let Some(ext) = file_path.extension().and_then(|e| e.to_str()) {
                     match ext.to_lowercase().as_str() {
@@ -534,7 +534,7 @@ fn validate_assets_command(
         _ => {
             // Text format (default)
             println!("\n=== Asset Validation Results ===\n");
-            
+
             let mut passed_count = 0;
             let mut failed_count = 0;
             let mut warning_count = 0;
@@ -546,7 +546,11 @@ fn validate_assets_command(
                 } else if result.passed && !result.warnings.is_empty() {
                     passed_count += 1;
                     warning_count += result.warnings.len();
-                    println!("⚠️  {} ({} warnings)", result.asset_path, result.warnings.len());
+                    println!(
+                        "⚠️  {} ({} warnings)",
+                        result.asset_path,
+                        result.warnings.len()
+                    );
                 } else {
                     failed_count += 1;
                     println!("❌ {} ({} errors)", result.asset_path, result.errors.len());
@@ -592,7 +596,10 @@ fn validate_assets_command(
 }
 
 /// Validate a single asset file
-fn validate_single_asset(path: &Path, config: &TextureValidationConfig) -> Result<validators::ValidationResult> {
+fn validate_single_asset(
+    path: &Path,
+    config: &TextureValidationConfig,
+) -> Result<validators::ValidationResult> {
     let ext = path
         .extension()
         .and_then(|e| e.to_str())
