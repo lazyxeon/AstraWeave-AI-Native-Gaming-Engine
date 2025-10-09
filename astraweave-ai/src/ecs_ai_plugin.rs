@@ -303,7 +303,7 @@ mod tests {
         // Event should be published
         let evs = app
             .world
-            .resource_mut::<Events<AiPlannedEvent>>()
+            .get_resource_mut::<Events<AiPlannedEvent>>()
             .ok_or_else(|| anyhow!("Events<AiPlannedEvent> resource missing"))?;
         let mut rdr = evs.reader();
         let v: Vec<_> = rdr.drain().collect();

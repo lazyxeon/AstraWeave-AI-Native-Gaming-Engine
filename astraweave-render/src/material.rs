@@ -222,7 +222,9 @@ impl MaterialManager {
                 },
             ));
         }
-        self.bind_group_layout.as_ref().unwrap()
+        self.bind_group_layout
+            .as_ref()
+            .expect("BUG: bind_group_layout should be Some after creation above")
     }
 
     /// Create a bind group from the current material arrays

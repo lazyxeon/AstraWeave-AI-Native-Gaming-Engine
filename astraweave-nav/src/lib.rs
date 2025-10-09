@@ -69,7 +69,10 @@ impl NavMesh {
         if s.is_none() || g.is_none() {
             return vec![];
         }
-        let (s, g) = (s.unwrap(), g.unwrap());
+        let (s, g) = (
+            s.expect("BUG: start triangle should be Some after is_none check"),
+            g.expect("BUG: goal triangle should be Some after is_none check")
+        );
         let idx_path = astar_tri(&self.tris, s, g);
         if idx_path.is_empty() {
             return vec![];

@@ -22,21 +22,26 @@ pub fn validate_and_execute(
     for (i, step) in intent.steps.iter().enumerate() {
         match step {
             ActionStep::MoveTo { x, y } => {
-                let from = w.pos_of(actor).unwrap();
+                let from = w.pos_of(actor)
+                    .ok_or_else(|| EngineError::InvalidAction("Actor has no position".to_string()))?;
                 let to = IVec2 { x: *x, y: *y };
                 if !path_exists(&w.obstacles, from, to, cfg.world_bounds) {
                     return Err(EngineError::NoPath);
                 }
-                w.pose_mut(actor).unwrap().pos = to;
+                w.pose_mut(actor)
+                    .ok_or_else(|| EngineError::InvalidAction("Actor has no pose".to_string()))?
+                    .pos = to;
                 log(format!("  [{}] MOVE_TO -> ({},{})", i, x, y));
             }
             ActionStep::Throw { item, x, y } => {
-                let from = w.pos_of(actor).unwrap();
+                let from = w.pos_of(actor)
+                    .ok_or_else(|| EngineError::InvalidAction("Actor has no position".to_string()))?;
                 let target = IVec2 { x: *x, y: *y };
                 if !los_clear(&w.obstacles, from, target) {
                     return Err(EngineError::LosBlocked);
                 }
-                let cds = w.cooldowns_mut(actor).unwrap();
+                let cds = w.cooldowns_mut(actor)
+                    .ok_or_else(|| EngineError::InvalidAction("Actor has no cooldowns".to_string()))?;
                 let cd_key = format!("throw:{}", item);
                 if cds.map.get(&cd_key).copied().unwrap_or(0.0) > 0.0 {
                     return Err(EngineError::Cooldown(cd_key));

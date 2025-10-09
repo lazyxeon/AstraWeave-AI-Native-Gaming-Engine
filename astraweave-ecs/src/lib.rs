@@ -112,7 +112,8 @@ impl World {
         let empty_sig = ArchetypeSignature::new(vec![]);
         let archetype_id = self.archetypes.get_or_create_archetype(empty_sig);
         self.archetypes.set_entity_archetype(e, archetype_id);
-        let archetype = self.archetypes.get_archetype_mut(archetype_id).unwrap();
+        let archetype = self.archetypes.get_archetype_mut(archetype_id)
+            .expect("BUG: archetype should exist after get_or_create_archetype");
         archetype.add_entity(e, HashMap::new());
         e
     }
@@ -133,20 +134,24 @@ impl World {
         is_removing: bool,
     ) {
         // 1. Get current archetype and component data
-        let old_archetype_id = self.archetypes.get_entity_archetype(entity).unwrap();
+        let old_archetype_id = self.archetypes.get_entity_archetype(entity)
+            .expect("BUG: entity should have archetype");
 
         let mut current_components = {
-            let old_archetype = self.archetypes.get_archetype_mut(old_archetype_id).unwrap();
+            let old_archetype = self.archetypes.get_archetype_mut(old_archetype_id)
+                .expect("BUG: archetype should exist for entity");
             old_archetype.remove_entity_components(entity)
         };
 
         // 2. Determine new signature
         let new_sig_types = {
-            let old_archetype = self.archetypes.get_archetype(old_archetype_id).unwrap();
+            let old_archetype = self.archetypes.get_archetype(old_archetype_id)
+                .expect("BUG: archetype should exist");
             let mut sig_types: Vec<_> = old_archetype.signature.components.clone();
             if is_removing {
                 // For removal, the `new_components` map just contains the TypeId of the component to remove.
-                let type_to_remove = new_components.keys().next().unwrap();
+                let type_to_remove = new_components.keys().next()
+                    .expect("BUG: remove should have at least one component type");
                 sig_types.retain(|&tid| tid != *type_to_remove);
             } else {
                 sig_types.extend(new_components.keys());
@@ -162,14 +167,15 @@ impl World {
         // 4. Move entity's archetype mapping
         self.archetypes
             .get_archetype_mut(old_archetype_id)
-            .unwrap()
+            .expect("BUG: old archetype should exist")
             .remove_entity(entity);
         self.archetypes
             .set_entity_archetype(entity, new_archetype_id);
 
         // 5. Add entity with all components to new archetype
         let final_components = if is_removing {
-            let type_to_remove = new_components.keys().next().unwrap();
+            let type_to_remove = new_components.keys().next()
+                .expect("BUG: remove should have at least one component type");
             current_components.remove(type_to_remove);
             current_components
         } else {
@@ -177,7 +183,8 @@ impl World {
             current_components
         };
 
-        let new_archetype = self.archetypes.get_archetype_mut(new_archetype_id).unwrap();
+        let new_archetype = self.archetypes.get_archetype_mut(new_archetype_id)
+            .expect("BUG: archetype should exist after get_or_create_archetype");
         new_archetype.add_entity(entity, final_components);
     }
 
@@ -213,7 +220,8 @@ impl World {
             .collect::<Vec<_>>();
 
         for archetype_id in archetypes_with_t {
-            let archetype = self.archetypes.get_archetype_mut(archetype_id).unwrap();
+            let archetype = self.archetypes.get_archetype_mut(archetype_id)
+                .expect("BUG: archetype should exist from archetypes_with_component");
             let entities = archetype.entities_vec();
             for entity in entities {
                 if let Some(component) = archetype.get_mut::<T>(entity) {
@@ -261,7 +269,8 @@ impl World {
 
     pub fn despawn(&mut self, entity: Entity) -> bool {
         if let Some(archetype_id) = self.archetypes.get_entity_archetype(entity) {
-            let archetype = self.archetypes.get_archetype_mut(archetype_id).unwrap();
+            let archetype = self.archetypes.get_archetype_mut(archetype_id)
+                .expect("BUG: archetype should exist for entity");
             archetype.remove_entity(entity);
             self.archetypes.remove_entity(entity);
             true

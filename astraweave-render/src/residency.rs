@@ -60,7 +60,10 @@ impl ResidencyManager {
 
         // Get asset metadata
         let (meta, memory_mb) = {
-            let db = self.db.lock().unwrap();
+            let db = self
+                .db
+                .lock()
+                .expect("Database mutex poisoned - cannot recover");
             if let Some(meta) = db.get_asset(guid) {
                 let memory_mb = (meta.size_bytes / (1024 * 1024)) as usize + 1;
                 (meta.clone(), memory_mb)

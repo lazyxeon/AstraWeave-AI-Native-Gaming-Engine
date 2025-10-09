@@ -254,7 +254,11 @@ impl SkyRenderer {
             layout: &bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: self.uniform_buffer.as_ref().unwrap().as_entire_binding(),
+                resource: self
+                    .uniform_buffer
+                    .as_ref()
+                    .expect("BUG: uniform_buffer should be Some after creation above")
+                    .as_entire_binding(),
             }],
         }));
 

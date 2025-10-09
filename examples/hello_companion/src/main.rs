@@ -52,9 +52,12 @@ fn main() -> anyhow::Result<()> {
     println!("--- Post-plan world state @ t={:.2}", w.t);
     println!(
         "Companion @ {:?}, Enemy @ {:?}, Enemy HP = {:?}",
-        w.pos_of(comp).unwrap(),
-        w.pos_of(enemy).unwrap(),
-        w.health(enemy).unwrap().hp
+        w.pos_of(comp)
+            .expect("Companion entity should have Position component"),
+        w.pos_of(enemy)
+            .expect("Enemy entity should have Position component"),
+        w.health(enemy)
+            .expect("Enemy entity should have Health component").hp
     );
 
     Ok(())

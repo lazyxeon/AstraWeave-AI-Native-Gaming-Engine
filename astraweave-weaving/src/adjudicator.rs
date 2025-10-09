@@ -107,7 +107,7 @@ impl WeaveAdjudicator {
         intents.sort_by(|a, b| {
             b.priority
                 .partial_cmp(&a.priority)
-                .unwrap()
+                .unwrap_or(std::cmp::Ordering::Equal)
                 .then_with(|| a.cost.cmp(&b.cost))
                 .then_with(|| a.kind.cmp(&b.kind))
         });

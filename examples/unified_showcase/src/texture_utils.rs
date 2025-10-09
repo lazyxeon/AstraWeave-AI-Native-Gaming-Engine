@@ -32,10 +32,11 @@ pub fn find_normal_map(albedo_path: &Path) -> Option<std::path::PathBuf> {
     // Try without file extension change
     let name_without_ext = file_stem.to_string();
     if name_without_ext.ends_with(".png") || name_without_ext.ends_with(".ktx2") {
-        let base_name = name_without_ext.rsplit_once('.').unwrap().0;
-        let normal_path = albedo_path.with_file_name(format!("{}_n.{}", base_name, ext));
-        if normal_path.exists() {
-            return Some(normal_path);
+        if let Some((base_name, _)) = name_without_ext.rsplit_once('.') {
+            let normal_path = albedo_path.with_file_name(format!("{}_n.{}", base_name, ext));
+            if normal_path.exists() {
+                return Some(normal_path);
+            }
         }
     }
 

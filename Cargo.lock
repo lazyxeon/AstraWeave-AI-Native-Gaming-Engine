@@ -424,6 +424,7 @@ dependencies = [
  "astraweave-llm",
  "astraweave-nav",
  "async-trait",
+ "criterion 0.7.0",
  "futures",
  "glam",
  "rapier3d",
@@ -487,6 +488,7 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "astraweave-ecs",
+ "criterion 0.7.0",
  "serde",
  "serde_json",
 ]

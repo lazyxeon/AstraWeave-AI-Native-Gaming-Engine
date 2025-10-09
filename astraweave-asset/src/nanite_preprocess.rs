@@ -619,8 +619,11 @@ fn simplify_mesh(
     let target_face_count = target_triangle_count;
     let mut current_face_count = current_triangle_count;
 
-    while current_face_count > target_face_count && !collapse_heap.is_empty() {
-        let collapse = collapse_heap.pop().unwrap();
+    while current_face_count > target_face_count {
+        // Safe: checked !is_empty() in loop condition, but use if let for extra safety
+        let Some(collapse) = collapse_heap.pop() else {
+            break; // Heap exhausted
+        };
 
         // Skip if vertices already collapsed
         let v0 = *collapsed_vertices.get(&collapse.v0).unwrap_or(&collapse.v0);
