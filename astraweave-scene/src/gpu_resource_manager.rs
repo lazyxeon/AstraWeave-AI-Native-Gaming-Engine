@@ -376,4 +376,3 @@ mod tests {
         assert_eq!(stats.utilization, 50.0);
     }
 }
-

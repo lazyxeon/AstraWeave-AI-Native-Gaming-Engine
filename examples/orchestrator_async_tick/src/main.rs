@@ -34,7 +34,7 @@ fn mk_snap_from_world(w: &World, me: Entity, player: Entity, enemy: Entity) -> W
             last_seen: 0.0,
         }],
         pois: vec![],
-        obstacles: vec![],  // No obstacles in this test scenario
+        obstacles: vec![], // No obstacles in this test scenario
         objective: None,
     }
 }

@@ -7,9 +7,7 @@
 //! - Clean handoff between planners
 
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
-use astraweave_core::{
-    CompanionState, IVec2, PlayerState, WorldSnapshot,
-};
+use astraweave_core::{CompanionState, IVec2, PlayerState, WorldSnapshot};
 use std::collections::BTreeMap;
 
 /// Helper to create test snapshot

@@ -277,10 +277,19 @@ impl PromptAnalyzer {
         let mut stats = HashMap::new();
 
         stats.insert("character_count".to_string(), prompt.len().to_string());
-        stats.insert("word_count".to_string(), prompt.split_whitespace().count().to_string());
+        stats.insert(
+            "word_count".to_string(),
+            prompt.split_whitespace().count().to_string(),
+        );
         stats.insert("line_count".to_string(), prompt.lines().count().to_string());
-        stats.insert("variable_count".to_string(), Self::extract_variables(prompt).len().to_string());
-        stats.insert("estimated_tokens".to_string(), Self::estimate_tokens(prompt).to_string());
+        stats.insert(
+            "variable_count".to_string(),
+            Self::extract_variables(prompt).len().to_string(),
+        );
+        stats.insert(
+            "estimated_tokens".to_string(),
+            Self::estimate_tokens(prompt).to_string(),
+        );
 
         stats
     }

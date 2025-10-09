@@ -75,7 +75,10 @@ impl TextureMetadata {
     pub fn load_for_texture(texture_path: &Path) -> Result<Self> {
         let meta_path = texture_path.with_extension(format!(
             "{}.meta.json",
-            texture_path.extension().and_then(|e| e.to_str()).unwrap_or("ktx2")
+            texture_path
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("ktx2")
         ));
         Self::load_from_file(&meta_path)
     }
@@ -122,7 +125,7 @@ pub fn bake_texture(
         .with_context(|| format!("Failed to load texture: {}", input_path.display()))?;
 
     let (width, height) = img.dimensions();
-    
+
     // Generate mipmaps if requested
     let mipmaps = if config.generate_mipmaps {
         generate_mipmap_chain(&img)?
@@ -222,23 +225,23 @@ fn write_texture_with_mipmaps(
     // Determine Vulkan format based on compression and color space
     let vk_format = match (config.compression, config.color_space) {
         // BC1 (DXT1) - RGB + 1-bit alpha
-        (CompressionFormat::Bc1, ColorSpace::Srgb) => 83,  // VK_FORMAT_BC1_RGB_SRGB_BLOCK
+        (CompressionFormat::Bc1, ColorSpace::Srgb) => 83, // VK_FORMAT_BC1_RGB_SRGB_BLOCK
         (CompressionFormat::Bc1, ColorSpace::Linear) => 71, // VK_FORMAT_BC1_RGB_UNORM_BLOCK
-        
+
         // BC3 (DXT5) - RGBA with smooth alpha
-        (CompressionFormat::Bc3, ColorSpace::Srgb) => 87,  // VK_FORMAT_BC3_SRGB_BLOCK
+        (CompressionFormat::Bc3, ColorSpace::Srgb) => 87, // VK_FORMAT_BC3_SRGB_BLOCK
         (CompressionFormat::Bc3, ColorSpace::Linear) => 75, // VK_FORMAT_BC3_UNORM_BLOCK
-        
+
         // BC5 - Two-channel (RG) for normal maps (always linear)
         (CompressionFormat::Bc5, _) => 143, // VK_FORMAT_BC5_UNORM_BLOCK
-        
+
         // BC7 - High-quality RGBA
-        (CompressionFormat::Bc7, ColorSpace::Srgb) => 99,  // VK_FORMAT_BC7_SRGB_BLOCK
+        (CompressionFormat::Bc7, ColorSpace::Srgb) => 99, // VK_FORMAT_BC7_SRGB_BLOCK
         (CompressionFormat::Bc7, ColorSpace::Linear) => 98, // VK_FORMAT_BC7_UNORM_BLOCK
-        
+
         // No compression - RGBA8
-        (CompressionFormat::None, ColorSpace::Srgb) => 43,   // VK_FORMAT_R8G8B8A8_SRGB
-        (CompressionFormat::None, ColorSpace::Linear) => 37,  // VK_FORMAT_R8G8B8A8_UNORM
+        (CompressionFormat::None, ColorSpace::Srgb) => 43, // VK_FORMAT_R8G8B8A8_SRGB
+        (CompressionFormat::None, ColorSpace::Linear) => 37, // VK_FORMAT_R8G8B8A8_UNORM
     };
 
     // Collect mipmap data
@@ -256,24 +259,30 @@ fn write_texture_with_mipmaps(
             compress_to_bc(&rgba, width, height, config.compression)?
         };
 
-        println!("  [mip {}] {}x{} → {} bytes", mip_level, width, height, mip_data.len());
+        println!(
+            "  [mip {}] {}x{} → {} bytes",
+            mip_level,
+            width,
+            height,
+            mip_data.len()
+        );
         mip_data_vec.push(mip_data);
     }
 
     // Build KTX2 file manually since the API is unclear
     // For now, write a simpler format that can be loaded later
     // TODO: Use proper KTX2 builder API when available or use libktx-rs
-    
+
     // Temporary solution: write raw data with a simple header
     let mut output_data = Vec::new();
-    
+
     // Write a simple custom format header (to be replaced with proper KTX2)
     output_data.extend_from_slice(b"AW_TEX2\0"); // Magic number
     output_data.extend_from_slice(&(vk_format as u32).to_le_bytes());
     output_data.extend_from_slice(&base_width.to_le_bytes());
     output_data.extend_from_slice(&base_height.to_le_bytes());
     output_data.extend_from_slice(&(mipmaps.len() as u32).to_le_bytes());
-    
+
     // Write mip data
     for mip_data in &mip_data_vec {
         output_data.extend_from_slice(&(mip_data.len() as u32).to_le_bytes());
@@ -307,10 +316,10 @@ fn compress_to_bc(
     let num_blocks = (block_width * block_height) as usize;
 
     let block_size = match format {
-        CompressionFormat::Bc1 => 8,   // 64 bits per 4x4 block
-        CompressionFormat::Bc3 => 16,  // 128 bits per 4x4 block
-        CompressionFormat::Bc5 => 16,  // 128 bits per 4x4 block
-        CompressionFormat::Bc7 => 16,  // 128 bits per 4x4 block
+        CompressionFormat::Bc1 => 8,  // 64 bits per 4x4 block
+        CompressionFormat::Bc3 => 16, // 128 bits per 4x4 block
+        CompressionFormat::Bc5 => 16, // 128 bits per 4x4 block
+        CompressionFormat::Bc7 => 16, // 128 bits per 4x4 block
         CompressionFormat::None => return Ok(rgba.to_vec()),
     };
 
@@ -356,8 +365,10 @@ fn compress_to_bc(
                     let rgb565 = ((r_avg as u16 & 0xF8) << 8)
                         | ((g_avg as u16 & 0xFC) << 3)
                         | ((b_avg as u16 & 0xF8) >> 3);
-                    compressed[block_offset..block_offset + 2].copy_from_slice(&rgb565.to_le_bytes());
-                    compressed[block_offset + 2..block_offset + 4].copy_from_slice(&rgb565.to_le_bytes());
+                    compressed[block_offset..block_offset + 2]
+                        .copy_from_slice(&rgb565.to_le_bytes());
+                    compressed[block_offset + 2..block_offset + 4]
+                        .copy_from_slice(&rgb565.to_le_bytes());
                     // Indices (4 bytes of zeros)
                 }
                 CompressionFormat::Bc5 => {
@@ -374,8 +385,10 @@ fn compress_to_bc(
                     let rgb565 = ((r_avg as u16 & 0xF8) << 8)
                         | ((g_avg as u16 & 0xFC) << 3)
                         | ((b_avg as u16 & 0xF8) >> 3);
-                    compressed[block_offset + 8..block_offset + 10].copy_from_slice(&rgb565.to_le_bytes());
-                    compressed[block_offset + 10..block_offset + 12].copy_from_slice(&rgb565.to_le_bytes());
+                    compressed[block_offset + 8..block_offset + 10]
+                        .copy_from_slice(&rgb565.to_le_bytes());
+                    compressed[block_offset + 10..block_offset + 12]
+                        .copy_from_slice(&rgb565.to_le_bytes());
                     // Alpha for BC3
                     if format == CompressionFormat::Bc3 {
                         compressed[block_offset] = a_avg;
@@ -463,7 +476,7 @@ mod tests {
         ));
 
         let mipmaps = generate_mipmap_chain(&img).unwrap();
-        
+
         // Should have 9 mips: 256, 128, 64, 32, 16, 8, 4, 2, 1
         assert_eq!(mipmaps.len(), 9);
         assert_eq!(mipmaps[0].dimensions(), (256, 256));

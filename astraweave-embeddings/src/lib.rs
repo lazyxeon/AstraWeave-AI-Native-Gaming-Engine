@@ -17,21 +17,21 @@ use astraweave_embeddings::{EmbeddingClient, MockEmbeddingClient, VectorStore};
 async fn main() -> anyhow::Result<()> {
     // Create embedding client
     let client = MockEmbeddingClient::new();
-    
+
     // Create vector store
     let mut store = VectorStore::new(384); // 384-dimensional vectors
-    
+
     // Embed and store text
     let text = "The player approached the mysterious door";
     let embedding = client.embed(text).await?;
     store.insert("memory_1", embedding, text.to_string())?;
-    
+
     // Search for similar memories
     let query_embedding = client.embed("The player walked to a door").await?;
     let results = store.search(&query_embedding, 5)?;
-    
+
     println!("Found {} similar memories", results.len());
-    
+
     Ok(())
 }
 ```
@@ -195,7 +195,7 @@ mod tests {
             entities: vec!["player_1".to_string(), "dragon_boss".to_string()],
             context: HashMap::new(),
         };
-        
+
         assert_eq!(memory.importance, 0.8);
         assert_eq!(memory.entities.len(), 2);
     }

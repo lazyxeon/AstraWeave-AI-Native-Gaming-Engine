@@ -119,14 +119,22 @@ impl World {
 
     pub fn insert<T: Component>(&mut self, e: Entity, c: T) {
         let mut components_to_add = HashMap::new();
-        components_to_add.insert(TypeId::of::<T>(), Box::new(c) as Box<dyn std::any::Any + Send + Sync>);
+        components_to_add.insert(
+            TypeId::of::<T>(),
+            Box::new(c) as Box<dyn std::any::Any + Send + Sync>,
+        );
         self.move_entity_to_new_archetype(e, components_to_add, false);
     }
 
-    fn move_entity_to_new_archetype(&mut self, entity: Entity, new_components: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>, is_removing: bool) {
+    fn move_entity_to_new_archetype(
+        &mut self,
+        entity: Entity,
+        new_components: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>,
+        is_removing: bool,
+    ) {
         // 1. Get current archetype and component data
         let old_archetype_id = self.archetypes.get_entity_archetype(entity).unwrap();
-        
+
         let mut current_components = {
             let old_archetype = self.archetypes.get_archetype_mut(old_archetype_id).unwrap();
             old_archetype.remove_entity_components(entity)
@@ -145,15 +153,19 @@ impl World {
             }
             sig_types
         };
-        
+
         let new_signature = ArchetypeSignature::new(new_sig_types);
 
         // 3. Get or create new archetype
         let new_archetype_id = self.archetypes.get_or_create_archetype(new_signature);
 
         // 4. Move entity's archetype mapping
-        self.archetypes.get_archetype_mut(old_archetype_id).unwrap().remove_entity(entity);
-        self.archetypes.set_entity_archetype(entity, new_archetype_id);
+        self.archetypes
+            .get_archetype_mut(old_archetype_id)
+            .unwrap()
+            .remove_entity(entity);
+        self.archetypes
+            .set_entity_archetype(entity, new_archetype_id);
 
         // 5. Add entity with all components to new archetype
         let final_components = if is_removing {
@@ -235,7 +247,10 @@ impl World {
         }
         let mut components_to_remove = HashMap::new();
         // We just need the type id for the signature change. The value is irrelevant.
-        components_to_remove.insert(TypeId::of::<T>(), Box::new(0) as Box<dyn std::any::Any + Send + Sync>);
+        components_to_remove.insert(
+            TypeId::of::<T>(),
+            Box::new(0) as Box<dyn std::any::Any + Send + Sync>,
+        );
         self.move_entity_to_new_archetype(e, components_to_remove, true);
         true
     }
@@ -336,10 +351,6 @@ impl App {
         self
     }
 }
-
-
-
-
 
 // SECTION: System Execution
 

@@ -23,31 +23,31 @@ async fn main() -> anyhow::Result<()> {
         sliding_window_size: 10,
         ..Default::default()
     };
-    
+
     let mut history = ConversationHistory::new(config);
-    
+
     // Add messages
     history.add_message(Role::User, "Hello, how are you?".to_string()).await?;
     history.add_message(Role::Assistant, "I'm doing well, thank you!".to_string()).await?;
-    
+
     // Get context for LLM prompt
     let context = history.get_context(2048).await?;
     println!("Context: {}", context);
-    
+
     Ok(())
 }
 ```
 */
 
 pub mod history;
-pub mod window;
 pub mod summarizer;
 pub mod token_counter;
+pub mod window;
 
 pub use history::*;
-pub use window::*;
 pub use summarizer::*;
 pub use token_counter::*;
+pub use window::*;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -58,25 +58,25 @@ use std::collections::HashMap;
 pub struct ContextConfig {
     /// Maximum tokens allowed in context window
     pub max_tokens: usize,
-    
+
     /// Number of recent messages to keep in sliding window
     pub sliding_window_size: usize,
-    
+
     /// Strategy for handling context overflow
     pub overflow_strategy: OverflowStrategy,
-    
+
     /// Whether to enable automatic summarization
     pub enable_summarization: bool,
-    
+
     /// Minimum messages before triggering summarization
     pub summarization_threshold: usize,
-    
+
     /// Token encoding model (e.g., "cl100k_base" for GPT-4)
     pub encoding_model: String,
-    
+
     /// Whether to preserve system messages
     pub preserve_system_messages: bool,
-    
+
     /// Context sharing settings
     pub sharing_config: SharingConfig,
 }
@@ -116,13 +116,13 @@ pub enum OverflowStrategy {
 pub struct SharingConfig {
     /// Whether this context can be shared with other agents
     pub allow_sharing: bool,
-    
+
     /// Maximum number of agents that can share this context
     pub max_shared_agents: usize,
-    
+
     /// Whether to isolate sensitive information
     pub isolate_sensitive: bool,
-    
+
     /// Tags for context categorization
     pub tags: Vec<String>,
 }
@@ -171,22 +171,22 @@ impl Role {
 pub struct Message {
     /// Unique message ID
     pub id: String,
-    
+
     /// Role of the message sender
     pub role: Role,
-    
+
     /// Message content
     pub content: String,
-    
+
     /// Timestamp when message was created
     pub timestamp: u64,
-    
+
     /// Token count for this message
     pub token_count: usize,
-    
+
     /// Message metadata
     pub metadata: HashMap<String, String>,
-    
+
     /// Whether this message should be preserved during pruning
     pub preserve: bool,
 }
@@ -204,7 +204,7 @@ impl Message {
             preserve: false,
         }
     }
-    
+
     /// Create a preserved message (won't be pruned)
     pub fn new_preserved(role: Role, content: String) -> Self {
         Self {
@@ -217,13 +217,13 @@ impl Message {
             preserve: true,
         }
     }
-    
+
     /// Add metadata to the message
     pub fn with_metadata(mut self, key: String, value: String) -> Self {
         self.metadata.insert(key, value);
         self
     }
-    
+
     /// Format message for LLM prompt
     pub fn format_for_prompt(&self) -> String {
         match self.role {
@@ -241,25 +241,25 @@ impl Message {
 pub struct ContextMetrics {
     /// Total messages in history
     pub total_messages: usize,
-    
+
     /// Current token count
     pub current_tokens: usize,
-    
+
     /// Maximum tokens allowed
     pub max_tokens: usize,
-    
+
     /// Token utilization (0.0 to 1.0)
     pub utilization: f32,
-    
+
     /// Number of times context was pruned
     pub prune_count: u64,
-    
+
     /// Number of messages summarized
     pub summarized_messages: usize,
-    
+
     /// Average message length in tokens
     pub avg_message_tokens: f32,
-    
+
     /// Time spent on context operations (ms)
     pub processing_time_ms: u64,
 }
@@ -312,7 +312,7 @@ mod tests {
         let user_msg = Message::new(Role::User, "Hello".to_string());
         let assistant_msg = Message::new(Role::Assistant, "Hi there".to_string());
         let agent_msg = Message::new(Role::Agent(1), "Agent response".to_string());
-        
+
         assert_eq!(user_msg.format_for_prompt(), "USER: Hello");
         assert_eq!(assistant_msg.format_for_prompt(), "ASSISTANT: Hi there");
         assert_eq!(agent_msg.format_for_prompt(), "AGENT_1: Agent response");

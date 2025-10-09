@@ -71,9 +71,9 @@ impl MaterialIntegrator {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<astraweave_render::MaterialGpu>() as u64,
-                        ),
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<
+                            astraweave_render::MaterialGpu,
+                        >() as u64),
                     },
                     count: None,
                 },
@@ -142,9 +142,9 @@ impl MaterialIntegrator {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<astraweave_render::MaterialGpu>() as u64,
-                        ),
+                        min_binding_size: wgpu::BufferSize::new(std::mem::size_of::<
+                            astraweave_render::MaterialGpu,
+                        >() as u64),
                     },
                     count: None,
                 },
@@ -182,50 +182,63 @@ impl MaterialIntegrator {
         // Auto-register materials for hot-reload (optimization: zero-allocation iteration)
         if let Some(reload_mgr) = hot_reload_manager {
             use crate::material_hot_reload::{MaterialArrayIndices, MaterialType};
-            
+
             reload_mgr.register_biome(biome, base.clone());
             reload_mgr.set_current_biome(biome);
-            
+
             // Extract indices from layout (zero-allocation: iterate by reference)
             for (material_name, &array_index) in &gpu.layout.layer_indices {
                 let material_id = array_index;
-                
+
                 // Optimize: construct path once, avoiding repeated allocations
                 let toml_path = base.join(format!("{}.toml", material_name));
-                
+
                 let array_indices = MaterialArrayIndices {
                     albedo_index: array_index,
                     normal_index: array_index,
                     orm_index: array_index,
                 };
-                
+
                 reload_mgr.register_material(
                     material_id,
                     MaterialType::Standard,
                     toml_path,
                     array_indices,
                 );
-                
+
                 // Register texture paths (cache for fast hot-reload routing)
                 // Optimization: check existence once, store result
                 let albedo_path = base.join(format!("{}_albedo.png", material_name));
                 let normal_path = base.join(format!("{}_normal.png", material_name));
                 let orm_path = base.join(format!("{}_orm.png", material_name));
-                
+
                 // Only check filesystem if any texture path might exist
                 // Optimization: short-circuit evaluation, minimal I/O
-                let has_textures = albedo_path.exists() || normal_path.exists() || orm_path.exists();
-                
+                let has_textures =
+                    albedo_path.exists() || normal_path.exists() || orm_path.exists();
+
                 if has_textures {
                     reload_mgr.update_material_textures(
                         material_id,
-                        if albedo_path.exists() { Some(albedo_path) } else { None },
-                        if normal_path.exists() { Some(normal_path) } else { None },
-                        if orm_path.exists() { Some(orm_path) } else { None },
+                        if albedo_path.exists() {
+                            Some(albedo_path)
+                        } else {
+                            None
+                        },
+                        if normal_path.exists() {
+                            Some(normal_path)
+                        } else {
+                            None
+                        },
+                        if orm_path.exists() {
+                            Some(orm_path)
+                        } else {
+                            None
+                        },
                     );
                 }
             }
-            
+
             println!(
                 "[hot-reload] Auto-registered {} materials for biome '{}'",
                 gpu.layout.layer_indices.len(),

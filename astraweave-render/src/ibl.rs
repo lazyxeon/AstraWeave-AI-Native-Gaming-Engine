@@ -235,19 +235,20 @@ impl IblManager {
         });
 
         // Bind group layout for prefilter params (roughness, face_idx, sample_count)
-        let prefilter_params_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("ibl-prefilter-params-bgl"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
+        let prefilter_params_bgl =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("ibl-prefilter-params-bgl"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
 
         // Separate layouts: sky has no bindings; irradiance samples env (group 0); spec samples env (group 0) + params (group 1)
         let sky_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -507,12 +508,14 @@ impl IblManager {
             .textures
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("IBL textures not baked"))?;
-        let view = textures._specular.create_view(&wgpu::TextureViewDescriptor {
-            dimension: Some(wgpu::TextureViewDimension::Cube),
-            base_mip_level: 0,
-            mip_level_count: Some(textures._spec_mips),
-            ..Default::default()
-        });
+        let view = textures
+            ._specular
+            .create_view(&wgpu::TextureViewDescriptor {
+                dimension: Some(wgpu::TextureViewDimension::Cube),
+                base_mip_level: 0,
+                mip_level_count: Some(textures._spec_mips),
+                ..Default::default()
+            });
         Ok(view)
     }
 
@@ -828,7 +831,7 @@ impl IblManager {
                     },
                 ],
             });
-            
+
             // Create uniform buffer for prefilter params (16 bytes aligned)
             let params_buf = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("ibl-prefilter-params-ub"),
@@ -836,21 +839,39 @@ impl IblManager {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
-            
+
             let mut enc = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("ibl-spec-enc"),
             });
-            
+
             for mip in 0..spec_mips {
                 // Calculate roughness from mip level (linear mapping)
                 let roughness = (mip as f32) / ((spec_mips - 1) as f32).max(1.0);
                 // Quality-based sample count: higher for low mips, lower for high mips
                 let sample_count: u32 = match quality {
-                    IblQuality::Low => if mip == 0 { 128 } else { 64 },
-                    IblQuality::Medium => if mip == 0 { 256 } else { 128 },
-                    IblQuality::High => if mip == 0 { 512 } else { 256 },
+                    IblQuality::Low => {
+                        if mip == 0 {
+                            128
+                        } else {
+                            64
+                        }
+                    }
+                    IblQuality::Medium => {
+                        if mip == 0 {
+                            256
+                        } else {
+                            128
+                        }
+                    }
+                    IblQuality::High => {
+                        if mip == 0 {
+                            512
+                        } else {
+                            256
+                        }
+                    }
                 };
-                
+
                 for face in 0..6u32 {
                     // Update params uniform for this mip/face combination
                     let params_data: [u32; 4] = [
@@ -860,7 +881,7 @@ impl IblManager {
                         0, // padding
                     ];
                     queue.write_buffer(&params_buf, 0, bytemuck::cast_slice(&params_data));
-                    
+
                     let params_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
                         label: Some("ibl-prefilter-params-bg"),
                         layout: &self.prefilter_params_bgl,
@@ -869,7 +890,7 @@ impl IblManager {
                             resource: params_buf.as_entire_binding(),
                         }],
                     });
-                    
+
                     let dst = spec_tex.create_view(&wgpu::TextureViewDescriptor {
                         usage: None,
                         label: Some("ibl-spec-sub"),
@@ -1314,7 +1335,10 @@ mod tests {
             recapture_interval: 60.0,
         };
         match procedural {
-            SkyMode::Procedural { last_capture_time, recapture_interval } => {
+            SkyMode::Procedural {
+                last_capture_time,
+                recapture_interval,
+            } => {
                 assert_eq!(last_capture_time, 0.0);
                 assert_eq!(recapture_interval, 60.0);
             }
@@ -1339,18 +1363,21 @@ mod tests {
     fn test_prefilter_params_roughness_calculation() {
         // Test roughness calculation for mip chain
         // Roughness should be linear from 0.0 (mip 0) to 1.0 (last mip)
-        
+
         let spec_mips = 10u32;
         for mip in 0..spec_mips {
             let roughness = (mip as f32) / ((spec_mips - 1) as f32).max(1.0);
-            
+
             if mip == 0 {
                 assert_eq!(roughness, 0.0, "Mip 0 should have roughness 0.0");
             } else if mip == spec_mips - 1 {
                 assert_eq!(roughness, 1.0, "Last mip should have roughness 1.0");
             } else {
-                assert!(roughness > 0.0 && roughness < 1.0, 
-                    "Mid mips should have roughness between 0 and 1, got {}", roughness);
+                assert!(
+                    roughness > 0.0 && roughness < 1.0,
+                    "Mid mips should have roughness between 0 and 1, got {}",
+                    roughness
+                );
             }
         }
     }
@@ -1358,26 +1385,32 @@ mod tests {
     #[test]
     fn test_sample_count_by_quality() {
         // Test sample counts for different quality levels and mip levels
-        
+
         // Low quality
         let low_mip0_samples = 128u32;
         let low_other_samples = 64u32;
-        assert!(low_mip0_samples > low_other_samples, 
-            "Mip 0 should have more samples than other mips");
+        assert!(
+            low_mip0_samples > low_other_samples,
+            "Mip 0 should have more samples than other mips"
+        );
 
         // Medium quality
         let med_mip0_samples = 256u32;
         let med_other_samples = 128u32;
         assert!(med_mip0_samples > med_other_samples);
-        assert!(med_mip0_samples > low_mip0_samples, 
-            "Medium quality should have more samples than Low");
+        assert!(
+            med_mip0_samples > low_mip0_samples,
+            "Medium quality should have more samples than Low"
+        );
 
         // High quality
         let high_mip0_samples = 512u32;
         let high_other_samples = 256u32;
         assert!(high_mip0_samples > high_other_samples);
-        assert!(high_mip0_samples > med_mip0_samples, 
-            "High quality should have more samples than Medium");
+        assert!(
+            high_mip0_samples > med_mip0_samples,
+            "High quality should have more samples than Medium"
+        );
     }
 
     #[test]
@@ -1396,17 +1429,15 @@ mod tests {
         let face = 2u32;
         let sample_count = 256u32;
         let pad = 0u32;
-        
-        let params_data = [
-            f32::to_bits(roughness),
-            face,
-            sample_count,
-            pad
-        ];
-        
+
+        let params_data = [f32::to_bits(roughness), face, sample_count, pad];
+
         assert_eq!(params_data.len(), 4, "Params should have 4 elements");
-        assert_eq!(std::mem::size_of_val(&params_data), 16, 
-            "Params should be 16 bytes for alignment");
+        assert_eq!(
+            std::mem::size_of_val(&params_data),
+            16,
+            "Params should be 16 bytes for alignment"
+        );
     }
 
     #[test]
@@ -1426,16 +1457,31 @@ mod tests {
     fn test_shader_constant_consistency() {
         // Verify shader constants are defined
         assert!(!SKY_WGSL.is_empty(), "Sky shader should not be empty");
-        assert!(!IRRADIANCE_WGSL.is_empty(), "Irradiance shader should not be empty");
-        assert!(!SPECULAR_PREFILTER_WGSL.is_empty(), "Specular prefilter shader should not be empty");
-        assert!(!BRDF_LUT_WGSL.is_empty(), "BRDF LUT shader should not be empty");
-        
+        assert!(
+            !IRRADIANCE_WGSL.is_empty(),
+            "Irradiance shader should not be empty"
+        );
+        assert!(
+            !SPECULAR_PREFILTER_WGSL.is_empty(),
+            "Specular prefilter shader should not be empty"
+        );
+        assert!(
+            !BRDF_LUT_WGSL.is_empty(),
+            "BRDF LUT shader should not be empty"
+        );
+
         // Check for key shader patterns
-        assert!(SPECULAR_PREFILTER_WGSL.contains("PrefilterParams"), 
-            "Specular shader should use PrefilterParams");
-        assert!(SPECULAR_PREFILTER_WGSL.contains("roughness"), 
-            "Specular shader should reference roughness");
-        assert!(IRRADIANCE_WGSL.contains("irradiance"), 
-            "Irradiance shader should compute irradiance");
+        assert!(
+            SPECULAR_PREFILTER_WGSL.contains("PrefilterParams"),
+            "Specular shader should use PrefilterParams"
+        );
+        assert!(
+            SPECULAR_PREFILTER_WGSL.contains("roughness"),
+            "Specular shader should reference roughness"
+        );
+        assert!(
+            IRRADIANCE_WGSL.contains("irradiance"),
+            "Irradiance shader should compute irradiance"
+        );
     }
 }

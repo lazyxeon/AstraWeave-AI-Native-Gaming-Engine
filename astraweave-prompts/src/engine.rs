@@ -2,13 +2,13 @@
 //!
 //! This module provides the core templating engine for AstraWeave prompt management.
 
+use crate::context::PromptContext;
+use crate::template::ProcessorConfig;
+use crate::template::PromptTemplate;
+use crate::template::TemplateProcessor;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::template::PromptTemplate;
-use crate::template::TemplateProcessor;
-use crate::template::ProcessorConfig;
-use crate::context::PromptContext;
 
 /// Core prompt templating engine
 #[derive(Debug, Clone)]
@@ -49,8 +49,11 @@ impl PromptEngine {
     /// Register a template
     pub fn register_template(&mut self, name: String, template: String) -> Result<()> {
         if template.len() > self.config.max_template_size {
-            anyhow::bail!("Template too large: {} bytes > {} bytes",
-                         template.len(), self.config.max_template_size);
+            anyhow::bail!(
+                "Template too large: {} bytes > {} bytes",
+                template.len(),
+                self.config.max_template_size
+            );
         }
 
         self.templates.insert(name, template);
@@ -76,11 +79,14 @@ pub struct TemplateEngine {
 
 impl TemplateEngine {
     pub fn new() -> Self {
-        Self { inner: PromptEngine::new(EngineConfig::default()) }
+        Self {
+            inner: PromptEngine::new(EngineConfig::default()),
+        }
     }
 
     pub fn register_template(&mut self, name: &str, template: PromptTemplate) -> Result<()> {
-        self.inner.register_template(name.to_string(), template.template);
+        self.inner
+            .register_template(name.to_string(), template.template);
         Ok(())
     }
 

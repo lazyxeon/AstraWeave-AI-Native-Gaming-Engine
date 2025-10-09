@@ -325,10 +325,9 @@ mod tests {
             force_fallback_adapter: false,
         }))
         .expect("adapter");
-        let (device, _queue) = pollster::block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor::default(),
-        ))
-        .expect("device");
+        let (device, _queue) =
+            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default()))
+                .expect("device");
 
         let mut table = ResourceTable::default();
         let desc = wgpu::TextureDescriptor {

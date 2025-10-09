@@ -61,7 +61,7 @@ impl ApplicationHandler for App {
             let window_attributes = Window::default_attributes()
                 .with_title("Audio Spatial Demo")
                 .with_inner_size(PhysicalSize::new(1280, 720));
-            
+
             match event_loop.create_window(window_attributes) {
                 Ok(window) => {
                     let window = Arc::new(window);
@@ -90,8 +90,12 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let Some(_window) = self.window.as_ref() else { return };
-        let Some(renderer) = self.renderer.as_mut() else { return };
+        let Some(_window) = self.window.as_ref() else {
+            return;
+        };
+        let Some(renderer) = self.renderer.as_mut() else {
+            return;
+        };
 
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
@@ -108,7 +112,8 @@ impl ApplicationHandler for App {
                     },
                 ..
             } => {
-                self.cam_ctl.process_keyboard(code, state == ElementState::Pressed);
+                self.cam_ctl
+                    .process_keyboard(code, state == ElementState::Pressed);
                 if state == ElementState::Pressed {
                     match code {
                         KeyCode::Digit1 => {
@@ -157,10 +162,8 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 if button == MouseButton::Right {
-                    self.cam_ctl.process_mouse_button(
-                        MouseButton::Right,
-                        state == ElementState::Pressed,
-                    );
+                    self.cam_ctl
+                        .process_mouse_button(MouseButton::Right, state == ElementState::Pressed);
                 }
             }
             WindowEvent::CursorMoved { position, .. } => self.cam_ctl.process_mouse_move(
@@ -174,9 +177,12 @@ impl ApplicationHandler for App {
                 renderer.update_camera(&self.camera);
 
                 // update listener from camera (Y-up, forward from yaw/pitch)
-                let forward =
-                    glam::Quat::from_euler(glam::EulerRot::YXZ, self.camera.yaw, self.camera.pitch, 0.0)
-                        * vec3(0.0, 0.0, -1.0);
+                let forward = glam::Quat::from_euler(
+                    glam::EulerRot::YXZ,
+                    self.camera.yaw,
+                    self.camera.pitch,
+                    0.0,
+                ) * vec3(0.0, 0.0, -1.0);
                 self.audio.update_listener(ListenerPose {
                     position: self.camera.position,
                     forward,
@@ -202,5 +208,7 @@ impl ApplicationHandler for App {
 fn main() -> anyhow::Result<()> {
     let event_loop = EventLoop::new()?;
     let mut app = App::new()?;
-    event_loop.run_app(&mut app).map_err(|e| anyhow::anyhow!("Event loop error: {}", e))
+    event_loop
+        .run_app(&mut app)
+        .map_err(|e| anyhow::anyhow!("Event loop error: {}", e))
 }

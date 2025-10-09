@@ -2,11 +2,10 @@ use anyhow::Result;
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
-use astraweave_core::{DirectorBudget, WorldSnapshot};
 use crate::{
-    LlmDirector, CDirectorState, CTacticExecution, CDirectorMetrics,
-    TacticOutcome, TacticPlan
+    CDirectorMetrics, CDirectorState, CTacticExecution, LlmDirector, TacticOutcome, TacticPlan,
 };
+use astraweave_core::{DirectorBudget, WorldSnapshot};
 
 /// System for updating director AI with LLM integration
 pub struct DirectorLlmSystem {
@@ -34,12 +33,21 @@ impl DirectorLlmSystem {
     ) -> Result<()> {
         // Check if we should adapt tactics
         if director_state.should_adapt(current_time_ms, self.adaptation_interval_ms) {
-            self.adapt_tactics(director_state, tactic_execution, metrics, snapshot, budget, current_time_ms).await?;
+            self.adapt_tactics(
+                director_state,
+                tactic_execution,
+                metrics,
+                snapshot,
+                budget,
+                current_time_ms,
+            )
+            .await?;
         }
 
         // Update tactic execution if active
         if let Some(execution) = tactic_execution {
-            self.update_execution(execution, director_state, metrics, current_time_ms).await?;
+            self.update_execution(execution, director_state, metrics, current_time_ms)
+                .await?;
         }
 
         // Periodic difficulty adjustment
@@ -94,7 +102,13 @@ impl DirectorLlmSystem {
                 // Fall back to previous plan or default behavior
                 if director_state.current_plan.is_none() {
                     warn!("No fallback plan available, using default tactics");
-                    self.use_fallback_tactics(director_state, tactic_execution, snapshot, budget, current_time_ms);
+                    self.use_fallback_tactics(
+                        director_state,
+                        tactic_execution,
+                        snapshot,
+                        budget,
+                        current_time_ms,
+                    );
                 }
 
                 Err(e)
@@ -129,7 +143,8 @@ impl DirectorLlmSystem {
                 timestamp: current_time_ms,
             };
 
-            self.complete_execution(execution, director_state, metrics, outcome).await?;
+            self.complete_execution(execution, director_state, metrics, outcome)
+                .await?;
         }
 
         Ok(())
@@ -144,8 +159,10 @@ impl DirectorLlmSystem {
         let current_skill = director_state.player_model.skill_level;
         let recent_effectiveness = director_state.get_recent_effectiveness();
 
-        debug!("Current player skill: {:.2}, Recent effectiveness: {:.2}",
-               current_skill, recent_effectiveness);
+        debug!(
+            "Current player skill: {:.2}, Recent effectiveness: {:.2}",
+            current_skill, recent_effectiveness
+        );
 
         let start_time = std::time::Instant::now();
 
@@ -155,8 +172,10 @@ impl DirectorLlmSystem {
                 metrics.record_difficulty_adjustment(adjustment_time);
 
                 if (new_difficulty - director_state.difficulty_modifier).abs() > 0.1 {
-                    info!("Adjusted difficulty from {:.2} to {:.2}",
-                          director_state.difficulty_modifier, new_difficulty);
+                    info!(
+                        "Adjusted difficulty from {:.2} to {:.2}",
+                        director_state.difficulty_modifier, new_difficulty
+                    );
 
                     director_state.difficulty_modifier = new_difficulty;
                 }
@@ -178,8 +197,10 @@ impl DirectorLlmSystem {
         metrics: &mut CDirectorMetrics,
         outcome: TacticOutcome,
     ) -> Result<()> {
-        debug!("Completing tactic execution: {} (effectiveness: {:.2})",
-               outcome.tactic_used, outcome.effectiveness);
+        debug!(
+            "Completing tactic execution: {} (effectiveness: {:.2})",
+            outcome.tactic_used, outcome.effectiveness
+        );
 
         // Record outcome
         director_state.record_outcome(outcome.clone());
@@ -211,7 +232,7 @@ impl DirectorLlmSystem {
         let plan = TacticPlan {
             strategy: "fallback_spawn".to_string(),
             reasoning: "LLM failure fallback - spawn enemies near player".to_string(),
-                operations: vec![DirectorOp::SpawnWave {
+            operations: vec![DirectorOp::SpawnWave {
                 archetype: "minion".into(),
                 // budget.spawns is i32; ensure we produce a u32 count safely
                 count: {
@@ -286,7 +307,15 @@ impl DirectorLlmSystem {
         info!("Forcing immediate director adaptation");
 
         director_state.last_adaptation_time = 0; // Force adaptation
-        self.adapt_tactics(director_state, tactic_execution, metrics, snapshot, budget, current_time_ms).await
+        self.adapt_tactics(
+            director_state,
+            tactic_execution,
+            metrics,
+            snapshot,
+            budget,
+            current_time_ms,
+        )
+        .await
     }
 
     /// Reset director learning (for new encounters)
@@ -343,24 +372,23 @@ pub mod integration {
         current_time_ms: u64,
         feedback_interval_ms: u64,
     ) -> bool {
-        !execution.is_complete() &&
-            current_time_ms - last_feedback_time >= feedback_interval_ms
+        !execution.is_complete() && current_time_ms - last_feedback_time >= feedback_interval_ms
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::LlmDirectorConfig;
     use astraweave_llm::MockLlmClient;
     use astraweave_rag::MockRagPipeline;
-    use crate::LlmDirectorConfig;
 
     #[tokio::test]
     async fn test_director_system_creation() {
         let llm_client = Arc::new(MockLlmClient::new());
         let rag_pipeline = Arc::new(MockRagPipeline::new());
         let llm_director = Arc::new(
-            LlmDirector::new(llm_client, rag_pipeline, LlmDirectorConfig::default()).unwrap()
+            LlmDirector::new(llm_client, rag_pipeline, LlmDirectorConfig::default()).unwrap(),
         );
 
         let system = DirectorLlmSystem::new(llm_director, 5000);

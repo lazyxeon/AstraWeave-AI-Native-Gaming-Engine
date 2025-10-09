@@ -1,10 +1,9 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
 
 use crate::llm_quests::{
-    LlmQuest, QuestContext, BranchingChoice, QuestValidation,
-    QuestGenerationConfig, DynamicContent
+    BranchingChoice, DynamicContent, LlmQuest, QuestContext, QuestGenerationConfig, QuestValidation,
 };
 
 /// ECS component for quest generation system
@@ -78,7 +77,12 @@ impl CQuestGenerator {
     }
 
     /// Update context with new information
-    pub fn update_context(&mut self, location: Option<String>, available_npcs: Option<Vec<String>>, world_state: Option<HashMap<String, serde_json::Value>>) {
+    pub fn update_context(
+        &mut self,
+        location: Option<String>,
+        available_npcs: Option<Vec<String>>,
+        world_state: Option<HashMap<String, serde_json::Value>>,
+    ) {
         if let Some(loc) = location {
             self.context.location = loc;
         }
@@ -165,8 +169,7 @@ impl CActiveQuest {
 
     /// Check if quest is complete
     pub fn is_complete(&self) -> bool {
-        matches!(self.state, QuestState::Completed) ||
-        self.quest.steps.iter().all(|s| s.completed)
+        matches!(self.state, QuestState::Completed) || self.quest.steps.iter().all(|s| s.completed)
     }
 
     /// Advance to next step
@@ -247,15 +250,24 @@ pub struct GenerationMetrics {
 
 impl CQuestMetrics {
     /// Record a completed quest
-    pub fn record_quest_completion(&mut self, quest: &LlmQuest, completion_time_minutes: f64, quality_score: f32) {
+    pub fn record_quest_completion(
+        &mut self,
+        quest: &LlmQuest,
+        completion_time_minutes: f64,
+        quality_score: f32,
+    ) {
         self.quests_completed += 1;
 
         // Update average completion time
-        let total_time = self.average_completion_time * (self.quests_completed - 1) as f64 + completion_time_minutes;
+        let total_time = self.average_completion_time * (self.quests_completed - 1) as f64
+            + completion_time_minutes;
         self.average_completion_time = total_time / self.quests_completed as f64;
 
         // Track category popularity
-        *self.category_popularity.entry(quest.metadata.category.clone()).or_insert(0) += 1;
+        *self
+            .category_popularity
+            .entry(quest.metadata.category.clone())
+            .or_insert(0) += 1;
 
         // Record quality score
         self.quality_scores.push(quality_score);
@@ -269,11 +281,19 @@ impl CQuestMetrics {
         self.quests_abandoned += 1;
 
         // Track abandonment reasons (could add more sophisticated tracking)
-        *self.choice_statistics.entry(format!("abandoned:{}", reason)).or_insert(0) += 1;
+        *self
+            .choice_statistics
+            .entry(format!("abandoned:{}", reason))
+            .or_insert(0) += 1;
     }
 
     /// Record a quest generation
-    pub fn record_quest_generation(&mut self, generation_time_ms: f32, success: bool, validation: Option<&QuestValidation>) {
+    pub fn record_quest_generation(
+        &mut self,
+        generation_time_ms: f32,
+        success: bool,
+        validation: Option<&QuestValidation>,
+    ) {
         self.quests_generated += 1;
         self.generation_metrics.total_generations += 1;
 
@@ -282,8 +302,11 @@ impl CQuestMetrics {
         }
 
         // Update average generation time
-        let total_time = self.generation_metrics.average_generation_time * (self.generation_metrics.total_generations - 1) as f32 + generation_time_ms;
-        self.generation_metrics.average_generation_time = total_time / self.generation_metrics.total_generations as f32;
+        let total_time = self.generation_metrics.average_generation_time
+            * (self.generation_metrics.total_generations - 1) as f32
+            + generation_time_ms;
+        self.generation_metrics.average_generation_time =
+            total_time / self.generation_metrics.total_generations as f32;
 
         if let Some(validation) = validation {
             if !validation.is_valid {
@@ -291,9 +314,13 @@ impl CQuestMetrics {
             }
 
             // Update average quality score
-            let quality_count = (self.generation_metrics.total_generations - self.generation_metrics.failed_generations) as f32;
+            let quality_count = (self.generation_metrics.total_generations
+                - self.generation_metrics.failed_generations)
+                as f32;
             if quality_count > 0.0 {
-                let total_quality = self.generation_metrics.average_quality_score * (quality_count - 1.0) + validation.quality_score;
+                let total_quality = self.generation_metrics.average_quality_score
+                    * (quality_count - 1.0)
+                    + validation.quality_score;
                 self.generation_metrics.average_quality_score = total_quality / quality_count;
             }
         }
@@ -336,7 +363,8 @@ impl CQuestMetrics {
         if self.generation_metrics.total_generations == 0 {
             0.0
         } else {
-            1.0 - (self.generation_metrics.failed_generations as f32 / self.generation_metrics.total_generations as f32)
+            1.0 - (self.generation_metrics.failed_generations as f32
+                / self.generation_metrics.total_generations as f32)
         }
     }
 
@@ -404,18 +432,28 @@ impl CQuestJournal {
         self.active_quest_ids.push(quest.id.clone());
 
         // Update preferences based on quest acceptance
-        *self.learned_preferences.entry(quest.metadata.category.clone()).or_insert(0.0) += 0.1;
+        *self
+            .learned_preferences
+            .entry(quest.metadata.category.clone())
+            .or_insert(0.0) += 0.1;
     }
 
     /// Complete a quest in the journal
     pub fn complete_quest(&mut self, quest_id: &str, completion_notes: String) {
-        if let Some(entry) = self.quest_history.iter_mut().find(|e| e.quest_id == quest_id) {
+        if let Some(entry) = self
+            .quest_history
+            .iter_mut()
+            .find(|e| e.quest_id == quest_id)
+        {
             entry.completed_at = Some(Utc::now());
             entry.final_state = QuestState::Completed;
             entry.completion_notes = completion_notes;
 
             // Increase preference for completed quest type
-            *self.learned_preferences.entry(entry.category.clone()).or_insert(0.0) += 0.2;
+            *self
+                .learned_preferences
+                .entry(entry.category.clone())
+                .or_insert(0.0) += 0.2;
         }
 
         self.active_quest_ids.retain(|id| id != quest_id);
@@ -423,13 +461,20 @@ impl CQuestJournal {
 
     /// Abandon a quest in the journal
     pub fn abandon_quest(&mut self, quest_id: &str, reason: String) {
-        if let Some(entry) = self.quest_history.iter_mut().find(|e| e.quest_id == quest_id) {
+        if let Some(entry) = self
+            .quest_history
+            .iter_mut()
+            .find(|e| e.quest_id == quest_id)
+        {
             entry.abandoned_at = Some(Utc::now());
             entry.final_state = QuestState::Abandoned;
             entry.completion_notes = format!("Abandoned: {}", reason);
 
             // Decrease preference for abandoned quest type
-            *self.learned_preferences.entry(entry.category.clone()).or_insert(0.0) -= 0.1;
+            *self
+                .learned_preferences
+                .entry(entry.category.clone())
+                .or_insert(0.0) -= 0.1;
         }
 
         self.active_quest_ids.retain(|id| id != quest_id);
@@ -437,7 +482,11 @@ impl CQuestJournal {
 
     /// Record a choice made in a quest
     pub fn record_choice(&mut self, quest_id: &str, choice_description: String) {
-        if let Some(entry) = self.quest_history.iter_mut().find(|e| e.quest_id == quest_id) {
+        if let Some(entry) = self
+            .quest_history
+            .iter_mut()
+            .find(|e| e.quest_id == quest_id)
+        {
             entry.choices_made.push(choice_description);
         }
     }
@@ -456,13 +505,25 @@ impl CQuestJournal {
     pub fn get_preferred_categories(&self) -> Vec<String> {
         let mut preferences: Vec<_> = self.learned_preferences.iter().collect();
         preferences.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap_or(std::cmp::Ordering::Equal));
-        preferences.into_iter().take(3).map(|(cat, _)| cat.clone()).collect()
+        preferences
+            .into_iter()
+            .take(3)
+            .map(|(cat, _)| cat.clone())
+            .collect()
     }
 
     /// Get quest statistics
     pub fn get_statistics(&self) -> QuestJournalStats {
-        let completed = self.quest_history.iter().filter(|e| matches!(e.final_state, QuestState::Completed)).count();
-        let abandoned = self.quest_history.iter().filter(|e| matches!(e.final_state, QuestState::Abandoned)).count();
+        let completed = self
+            .quest_history
+            .iter()
+            .filter(|e| matches!(e.final_state, QuestState::Completed))
+            .count();
+        let abandoned = self
+            .quest_history
+            .iter()
+            .filter(|e| matches!(e.final_state, QuestState::Abandoned))
+            .count();
         let total = self.quest_history.len();
 
         QuestJournalStats {
@@ -470,7 +531,11 @@ impl CQuestJournal {
             completed_quests: completed,
             abandoned_quests: abandoned,
             active_quests: self.active_quest_ids.len(),
-            completion_rate: if total > 0 { completed as f32 / total as f32 } else { 0.0 },
+            completion_rate: if total > 0 {
+                completed as f32 / total as f32
+            } else {
+                0.0
+            },
         }
     }
 }
@@ -487,7 +552,7 @@ pub struct QuestJournalStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::llm_quests::{QuestMetadata, QuestBranching, QuestRewards, PersonalizationData};
+    use crate::llm_quests::{PersonalizationData, QuestBranching, QuestMetadata, QuestRewards};
 
     fn create_test_quest() -> LlmQuest {
         LlmQuest {

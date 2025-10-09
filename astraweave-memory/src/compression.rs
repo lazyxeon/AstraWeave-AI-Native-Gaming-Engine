@@ -127,7 +127,10 @@ impl CompressionEngine {
                 sensory.visual = sensory.visual.as_ref().map(|v| self.compress_text(v));
                 sensory.auditory = sensory.auditory.as_ref().map(|a| self.compress_text(a));
                 sensory.tactile = sensory.tactile.as_ref().map(|t| self.compress_text(t));
-                sensory.environmental = sensory.environmental.as_ref().map(|e| self.compress_text(e));
+                sensory.environmental = sensory
+                    .environmental
+                    .as_ref()
+                    .map(|e| self.compress_text(e));
             }
         }
 
@@ -190,8 +193,18 @@ impl CompressionEngine {
         }
 
         // Context
-        size += memory.content.context.location.as_ref().map_or(0, |l| l.len());
-        size += memory.content.context.time_period.as_ref().map_or(0, |t| t.len());
+        size += memory
+            .content
+            .context
+            .location
+            .as_ref()
+            .map_or(0, |l| l.len());
+        size += memory
+            .content
+            .context
+            .time_period
+            .as_ref()
+            .map_or(0, |t| t.len());
 
         // Participants and events
         for participant in &memory.content.context.participants {
@@ -220,15 +233,9 @@ impl CompressionEngine {
     /// Get compression statistics
     pub fn get_compression_stats(&self, memories: &[Memory]) -> CompressionStats {
         let total_memories = memories.len();
-        let compressed_memories = memories
-            .iter()
-            .filter(|m| self.is_compressed(m))
-            .count();
+        let compressed_memories = memories.iter().filter(|m| self.is_compressed(m)).count();
 
-        let total_size: usize = memories
-            .iter()
-            .map(|m| self.estimate_memory_size(m))
-            .sum();
+        let total_size: usize = memories.iter().map(|m| self.estimate_memory_size(m)).sum();
 
         let avg_size = if total_memories > 0 {
             total_size / total_memories

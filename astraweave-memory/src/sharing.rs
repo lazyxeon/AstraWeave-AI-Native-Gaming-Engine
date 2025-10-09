@@ -123,7 +123,9 @@ impl SharingEngine {
         let sharing_metadata = self.get_or_create_sharing_metadata(memory);
 
         // Validate sharing permissions
-        if let Err(error) = self.validate_sharing_request(request, &sharing_metadata, requesting_entity) {
+        if let Err(error) =
+            self.validate_sharing_request(request, &sharing_metadata, requesting_entity)
+        {
             let result = SharingResult {
                 success: false,
                 error_message: Some(error.to_string()),
@@ -142,8 +144,13 @@ impl SharingEngine {
 
         // Create successful result
         let mut updated_metadata = sharing_metadata.clone();
-        if !updated_metadata.authorized_entities.contains(&request.target_entity) {
-            updated_metadata.authorized_entities.push(request.target_entity.clone());
+        if !updated_metadata
+            .authorized_entities
+            .contains(&request.target_entity)
+        {
+            updated_metadata
+                .authorized_entities
+                .push(request.target_entity.clone());
         }
 
         let result = SharingResult {
@@ -174,17 +181,28 @@ impl SharingEngine {
         // Check privacy level
         match metadata.privacy_level {
             PrivacyLevel::Secret => {
-                return Err(anyhow!("Memory has secret privacy level and cannot be shared"));
+                return Err(anyhow!(
+                    "Memory has secret privacy level and cannot be shared"
+                ));
             }
             PrivacyLevel::Personal => {
-                if !metadata.authorized_entities.contains(&requesting_entity.to_string()) {
-                    return Err(anyhow!("Requesting entity not authorized for personal memory"));
+                if !metadata
+                    .authorized_entities
+                    .contains(&requesting_entity.to_string())
+                {
+                    return Err(anyhow!(
+                        "Requesting entity not authorized for personal memory"
+                    ));
                 }
             }
             PrivacyLevel::Group => {
                 // For group level, check if both entities are in authorized list
-                if !metadata.authorized_entities.contains(&requesting_entity.to_string())
-                    || !metadata.authorized_entities.contains(&request.target_entity)
+                if !metadata
+                    .authorized_entities
+                    .contains(&requesting_entity.to_string())
+                    || !metadata
+                        .authorized_entities
+                        .contains(&request.target_entity)
                 {
                     return Err(anyhow!("Entity not in authorized group"));
                 }
@@ -225,12 +243,15 @@ impl SharingEngine {
         let content = match sharing_type {
             SharingType::Full => memory.content.text.clone(),
             SharingType::Summary => self.generate_summary(&memory.content.text),
-            SharingType::Metadata => format!("Memory of type {:?} created on {}",
+            SharingType::Metadata => format!(
+                "Memory of type {:?} created on {}",
                 memory.memory_type,
                 memory.metadata.created_at.format("%Y-%m-%d")
             ),
             SharingType::Restricted => {
-                return Err(anyhow!("Cannot generate content for restricted sharing type"));
+                return Err(anyhow!(
+                    "Cannot generate content for restricted sharing type"
+                ));
             }
         };
 
@@ -324,11 +345,7 @@ impl SharingEngine {
     }
 
     /// Get all memories that an entity has access to
-    pub fn get_accessible_memories(
-        &self,
-        entity_id: &str,
-        all_memories: &[Memory],
-    ) -> Vec<String> {
+    pub fn get_accessible_memories(&self, entity_id: &str, all_memories: &[Memory]) -> Vec<String> {
         let mut accessible = Vec::new();
 
         for memory in all_memories {
@@ -337,9 +354,9 @@ impl SharingEngine {
             // Check if entity has access
             let has_access = match metadata.privacy_level {
                 PrivacyLevel::Public => true,
-                PrivacyLevel::Group | PrivacyLevel::Personal => {
-                    metadata.authorized_entities.contains(&entity_id.to_string())
-                }
+                PrivacyLevel::Group | PrivacyLevel::Personal => metadata
+                    .authorized_entities
+                    .contains(&entity_id.to_string()),
                 PrivacyLevel::Secret => false,
             };
 

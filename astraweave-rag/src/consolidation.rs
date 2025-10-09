@@ -3,9 +3,9 @@
 //! This module handles consolidating and compressing memories to optimize storage and retrieval.
 
 use anyhow::Result;
+use astraweave_embeddings::{Memory, MemoryCategory};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use astraweave_embeddings::{Memory, MemoryCategory};
 
 /// Consolidation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -147,10 +147,7 @@ impl ConsolidationEngine {
             return 0.0;
         }
 
-        let common_words = words1
-            .iter()
-            .filter(|word| words2.contains(word))
-            .count();
+        let common_words = words1.iter().filter(|word| words2.contains(word)).count();
 
         let total_unique_words = words1.len() + words2.len() - common_words;
         common_words as f32 / total_unique_words as f32

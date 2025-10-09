@@ -3,9 +3,9 @@
 //! This module handles injecting relevant memories into conversations and contexts.
 
 use anyhow::Result;
+use astraweave_embeddings::{Memory, MemoryCategory};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use astraweave_embeddings::{Memory, MemoryCategory};
 
 /// Injection configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -101,7 +101,9 @@ impl InjectionEngine {
                 // Combine relevance and recency
                 let score_a = a.1 + self.recency_boost(&a.0);
                 let score_b = b.1 + self.recency_boost(&b.0);
-                score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+                score_b
+                    .partial_cmp(&score_a)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             } else {
                 b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal)
             }
@@ -110,7 +112,8 @@ impl InjectionEngine {
         // Limit number of memories
         memory_score_pairs.truncate(self.config.max_memories);
 
-        let injected_memories: Vec<Memory> = memory_score_pairs.iter().map(|(m, _)| m.clone()).collect();
+        let injected_memories: Vec<Memory> =
+            memory_score_pairs.iter().map(|(m, _)| m.clone()).collect();
         let final_scores: Vec<f32> = memory_score_pairs.iter().map(|(_, s)| *s).collect();
 
         // Generate context text
@@ -169,17 +172,22 @@ impl InjectionEngine {
 
     /// Calculate text similarity (simplified)
     fn calculate_text_similarity(&self, text1: &str, text2: &str) -> f32 {
-        let words1: Vec<String> = text1.to_lowercase().split_whitespace().map(|s| s.to_string()).collect();
-        let words2: Vec<String> = text2.to_lowercase().split_whitespace().map(|s| s.to_string()).collect();
+        let words1: Vec<String> = text1
+            .to_lowercase()
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
+        let words2: Vec<String> = text2
+            .to_lowercase()
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
 
         if words1.is_empty() || words2.is_empty() {
             return 0.0;
         }
 
-        let common_words = words1
-            .iter()
-            .filter(|word| words2.contains(word))
-            .count();
+        let common_words = words1.iter().filter(|word| words2.contains(word)).count();
 
         common_words as f32 / words1.len() as f32
     }
@@ -190,9 +198,7 @@ impl InjectionEngine {
             return Ok(String::new());
         }
 
-        let mut context_parts = vec![
-            "Relevant memories:".to_string(),
-        ];
+        let mut context_parts = vec!["Relevant memories:".to_string()];
 
         for (i, memory) in memories.iter().enumerate() {
             context_parts.push(format!("{}. {}", i + 1, memory.text));
@@ -218,18 +224,16 @@ mod tests {
             preferred_categories: vec![MemoryCategory::Social],
         };
 
-        let memories = vec![
-            Memory {
-                id: "1".to_string(),
-                text: "Cats are independent animals".to_string(),
-                category: MemoryCategory::Social,
-                timestamp: chrono::Utc::now().timestamp() as u64,
-                importance: 0.5,
-                valence: 0.0,
-                entities: vec![],
-                context: HashMap::new(),
-            },
-        ];
+        let memories = vec![Memory {
+            id: "1".to_string(),
+            text: "Cats are independent animals".to_string(),
+            category: MemoryCategory::Social,
+            timestamp: chrono::Utc::now().timestamp() as u64,
+            importance: 0.5,
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        }];
 
         let result = engine.inject(&context, &memories).unwrap();
         assert!(!result.injected_memories.is_empty());

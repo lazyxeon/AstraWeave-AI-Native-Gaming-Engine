@@ -98,7 +98,10 @@ impl Archetype {
     }
 
     /// Remove entity from archetype and return its components
-    pub fn remove_entity_components(&mut self, entity: Entity) -> HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>> {
+    pub fn remove_entity_components(
+        &mut self,
+        entity: Entity,
+    ) -> HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>> {
         let row = match self.entities.remove(&entity) {
             Some(r) => r,
             None => return HashMap::new(),
@@ -113,7 +116,11 @@ impl Archetype {
         // Update the index of the entity that was swapped into the removed slot
         if row < self.entities.len() {
             // Find which entity was at the end and now is in the `row` slot
-            let swapped_entity = self.entities.iter().find(|(_, &r)| r == self.entities.len()).map(|(e, _)| *e);
+            let swapped_entity = self
+                .entities
+                .iter()
+                .find(|(_, &r)| r == self.entities.len())
+                .map(|(e, _)| *e);
             if let Some(swapped_entity) = swapped_entity {
                 *self.entities.get_mut(&swapped_entity).unwrap() = row;
             }

@@ -85,10 +85,7 @@ impl Default for TextureValidationConfig {
 }
 
 /// Validate a texture file
-pub fn validate_texture(
-    path: &Path,
-    config: &TextureValidationConfig,
-) -> Result<ValidationResult> {
+pub fn validate_texture(path: &Path, config: &TextureValidationConfig) -> Result<ValidationResult> {
     let mut result = ValidationResult::new(path.display().to_string());
 
     // Load image
@@ -143,10 +140,7 @@ pub fn validate_texture(
     }
 
     // Infer texture type from filename and validate accordingly
-    let filename = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    let filename = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
     let filename_lower = filename.to_lowercase();
 
     if filename_lower.contains("_n.") || filename_lower.contains("_normal.") {
@@ -292,17 +286,16 @@ fn validate_orm_map(
 
     // Warn if channels appear unused
     if !r_used {
-        result.warning(
-            "R channel (Occlusion) appears unused (all values near 0 or 255)".to_string(),
-        );
+        result
+            .warning("R channel (Occlusion) appears unused (all values near 0 or 255)".to_string());
     }
     if !g_used {
-        result.warning(
-            "G channel (Roughness) appears unused (all values near 0 or 255)".to_string(),
-        );
+        result
+            .warning("G channel (Roughness) appears unused (all values near 0 or 255)".to_string());
     }
     if !b_used {
-        result.warning("B channel (Metallic) appears unused (all values near 0 or 255)".to_string());
+        result
+            .warning("B channel (Metallic) appears unused (all values near 0 or 255)".to_string());
     }
 
     result.info(
@@ -342,7 +335,9 @@ fn validate_albedo_map(img: &DynamicImage, result: &mut ValidationResult) {
 
     // Check for pure grayscale (all channels equal)
     if (r - g).abs() < 0.05 && (g - b).abs() < 0.05 {
-        result.info("Albedo appears grayscale (all channels similar) - consider adding color variation");
+        result.info(
+            "Albedo appears grayscale (all channels similar) - consider adding color variation",
+        );
     }
 
     result.info("Albedo should be in sRGB color space for correct rendering");
@@ -392,7 +387,10 @@ pub fn validate_material_toml(path: &Path) -> Result<ValidationResult> {
     Ok(result)
 }
 
-fn validate_biome_material_structure(table: &toml::map::Map<String, toml::Value>, result: &mut ValidationResult) {
+fn validate_biome_material_structure(
+    table: &toml::map::Map<String, toml::Value>,
+    result: &mut ValidationResult,
+) {
     // Check for required fields
     if !table.contains_key("biome") {
         result.error("Missing 'biome' field");

@@ -31,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
             last_seen: 1.0,
         }],
         pois: vec![],
-        obstacles: vec![],  // No obstacles in this test scenario
+        obstacles: vec![], // No obstacles in this test scenario
         objective: Some("extract".into()),
     };
 

@@ -288,9 +288,8 @@ impl App {
                         renderer.set_albedo_from_rgba8(img.width, img.height, &img.rgba8);
                     }
                     if let Some(img) = mat.metallic_roughness_texture {
-                        renderer.set_metallic_roughness_from_rgba8(
-                            img.width, img.height, &img.rgba8,
-                        );
+                        renderer
+                            .set_metallic_roughness_from_rgba8(img.width, img.height, &img.rgba8);
                     }
                     if let Some(img) = mat.normal_texture {
                         renderer.set_normal_from_rgba8(img.width, img.height, &img.rgba8);
@@ -308,10 +307,34 @@ impl App {
         if self.skinned_demo && !self.skinned_setup_done {
             // Build a unit quad in XZ plane centered at origin
             let verts = [
-                SkinnedVertex { position: [-0.5, 0.0, -0.5], normal: [0.0, 1.0, 0.0], tangent: [1.0, 0.0, 0.0, 1.0], joints: [0, 0, 0, 0], weights: [1.0, 0.0, 0.0, 0.0] },
-                SkinnedVertex { position: [0.5, 0.0, -0.5], normal: [0.0, 1.0, 0.0], tangent: [1.0, 0.0, 0.0, 1.0], joints: [0, 0, 0, 0], weights: [1.0, 0.0, 0.0, 0.0] },
-                SkinnedVertex { position: [0.5, 0.0, 0.5], normal: [0.0, 1.0, 0.0], tangent: [1.0, 0.0, 0.0, 1.0], joints: [0, 0, 0, 0], weights: [1.0, 0.0, 0.0, 0.0] },
-                SkinnedVertex { position: [-0.5, 0.0, 0.5], normal: [0.0, 1.0, 0.0], tangent: [1.0, 0.0, 0.0, 1.0], joints: [0, 0, 0, 0], weights: [1.0, 0.0, 0.0, 0.0] },
+                SkinnedVertex {
+                    position: [-0.5, 0.0, -0.5],
+                    normal: [0.0, 1.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0, 1.0],
+                    joints: [0, 0, 0, 0],
+                    weights: [1.0, 0.0, 0.0, 0.0],
+                },
+                SkinnedVertex {
+                    position: [0.5, 0.0, -0.5],
+                    normal: [0.0, 1.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0, 1.0],
+                    joints: [0, 0, 0, 0],
+                    weights: [1.0, 0.0, 0.0, 0.0],
+                },
+                SkinnedVertex {
+                    position: [0.5, 0.0, 0.5],
+                    normal: [0.0, 1.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0, 1.0],
+                    joints: [0, 0, 0, 0],
+                    weights: [1.0, 0.0, 0.0, 0.0],
+                },
+                SkinnedVertex {
+                    position: [-0.5, 0.0, 0.5],
+                    normal: [0.0, 1.0, 0.0],
+                    tangent: [1.0, 0.0, 0.0, 1.0],
+                    joints: [0, 0, 0, 0],
+                    weights: [1.0, 0.0, 0.0, 0.0],
+                },
             ];
             let indices: [u32; 6] = [0, 1, 2, 0, 2, 3];
             renderer.set_skinned_mesh(&verts, &indices);
@@ -334,19 +357,35 @@ impl App {
             use astraweave_asset::gltf_loader as gl;
             let path = "assets/skinned_demo.gltf"; // expected to be placed by user in assets/
             if let Ok(bytes) = std::fs::read(path) {
-                if let Ok((mesh, _skeleton, animations, mat_opt)) = gl::load_skinned_mesh_complete(&bytes) {
+                if let Ok((mesh, _skeleton, animations, mat_opt)) =
+                    gl::load_skinned_mesh_complete(&bytes)
+                {
                     // Convert to renderer format
-                    let verts: Vec<SkinnedVertex> = mesh.vertices.into_iter().map(|v| SkinnedVertex {
-                        position: v.position, normal: v.normal, tangent: v.tangent, joints: v.joints, weights: v.weights,
-                    }).collect();
+                    let verts: Vec<SkinnedVertex> = mesh
+                        .vertices
+                        .into_iter()
+                        .map(|v| SkinnedVertex {
+                            position: v.position,
+                            normal: v.normal,
+                            tangent: v.tangent,
+                            joints: v.joints,
+                            weights: v.weights,
+                        })
+                        .collect();
                     renderer.set_skinned_mesh(&verts, &mesh.indices);
                     if let Some(mat) = mat_opt {
-                        renderer.set_material_params(mat.base_color_factor, mat.metallic_factor, mat.roughness_factor);
+                        renderer.set_material_params(
+                            mat.base_color_factor,
+                            mat.metallic_factor,
+                            mat.roughness_factor,
+                        );
                         if let Some(img) = mat.base_color_texture {
                             renderer.set_albedo_from_rgba8(img.width, img.height, &img.rgba8);
                         }
                         if let Some(img) = mat.metallic_roughness_texture {
-                            renderer.set_metallic_roughness_from_rgba8(img.width, img.height, &img.rgba8);
+                            renderer.set_metallic_roughness_from_rgba8(
+                                img.width, img.height, &img.rgba8,
+                            );
                         }
                         if let Some(img) = mat.normal_texture {
                             renderer.set_normal_from_rgba8(img.width, img.height, &img.rgba8);
@@ -362,9 +401,14 @@ impl App {
                     // Store clip if present - extract first rotation channel from first animation
                     if let Some(clip) = animations.first() {
                         // Find first rotation channel
-                        if let Some(channel) = clip.channels.iter().find(|ch| matches!(ch.data, gl::ChannelData::Rotation(_))) {
+                        if let Some(channel) = clip
+                            .channels
+                            .iter()
+                            .find(|ch| matches!(ch.data, gl::ChannelData::Rotation(_)))
+                        {
                             if let gl::ChannelData::Rotation(ref rotations) = channel.data {
-                                self.skinned_gltf_clip = Some((channel.times.clone(), rotations.clone()));
+                                self.skinned_gltf_clip =
+                                    Some((channel.times.clone(), rotations.clone()));
                             }
                         }
                     }
@@ -395,8 +439,18 @@ impl App {
                     let t0 = times[i0];
                     let t1 = times[i1].max(t0 + 1e-5);
                     let a = ((lt - t0) / (t1 - t0)).clamp(0.0, 1.0);
-                    let q0 = glam::Quat::from_xyzw(rotations[i0][0], rotations[i0][1], rotations[i0][2], rotations[i0][3]);
-                    let q1 = glam::Quat::from_xyzw(rotations[i1][0], rotations[i1][1], rotations[i1][2], rotations[i1][3]);
+                    let q0 = glam::Quat::from_xyzw(
+                        rotations[i0][0],
+                        rotations[i0][1],
+                        rotations[i0][2],
+                        rotations[i0][3],
+                    );
+                    let q1 = glam::Quat::from_xyzw(
+                        rotations[i1][0],
+                        rotations[i1][1],
+                        rotations[i1][2],
+                        rotations[i1][3],
+                    );
                     let q = q0.slerp(q1, a);
                     // Build palette: rotate first joint; rest identity
                     let mut mats = Vec::with_capacity(self.skinned_gltf_joint_count.max(1));
@@ -455,9 +509,9 @@ impl ApplicationHandler for App {
             self.egui_renderer = Some(EguiRenderer::new(
                 renderer.device(),
                 renderer.surface_format(),
-                None,    // depth_format
-                1,       // msaa_samples
-                false,   // prefer_srgb
+                None,  // depth_format
+                1,     // msaa_samples
+                false, // prefer_srgb
             ));
 
             self.renderer = Some(renderer);

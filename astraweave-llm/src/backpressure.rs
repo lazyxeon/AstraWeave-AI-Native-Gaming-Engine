@@ -1,10 +1,10 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{RwLock, Semaphore, oneshot};
+use tokio::sync::{oneshot, RwLock, Semaphore};
 use tracing::{debug, info};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Backpressure management system for LLM requests
@@ -126,7 +126,9 @@ impl PriorityQueues {
     }
 
     fn enqueue(&mut self, request: QueuedRequest, max_size: usize) -> Result<()> {
-        let queue = self.queues.get_mut(&request.priority)
+        let queue = self
+            .queues
+            .get_mut(&request.priority)
             .ok_or_else(|| anyhow!("Invalid priority: {:?}", request.priority))?;
 
         if queue.len() >= max_size {
@@ -194,9 +196,7 @@ pub enum BackpressureResult {
         retry_after: Option<Duration>,
     },
     /// Request was degraded (lower quality response)
-    Degraded {
-        reason: String,
-    },
+    Degraded { reason: String },
 }
 
 /// Backpressure metrics
@@ -392,7 +392,8 @@ impl BackpressureManager {
 
             // Adjust adaptive concurrency if enabled
             if self.config.adaptive_concurrency {
-                self.adjust_concurrency(&mut metrics, success, duration).await;
+                self.adjust_concurrency(&mut metrics, success, duration)
+                    .await;
             }
         }
 
@@ -407,10 +408,13 @@ impl BackpressureManager {
 
         metrics.current_queue_size = queues.total_queued();
         metrics.current_active_requests = self.active_requests.read().await.len();
-        metrics.load_factor = metrics.current_active_requests as f32 / metrics.adaptive_concurrency_limit as f32;
+        metrics.load_factor =
+            metrics.current_active_requests as f32 / metrics.adaptive_concurrency_limit as f32;
 
         for priority in Priority::all() {
-            metrics.queue_sizes_by_priority.insert(priority, queues.queued_by_priority(priority));
+            metrics
+                .queue_sizes_by_priority
+                .insert(priority, queues.queued_by_priority(priority));
         }
 
         metrics.last_updated = chrono::Utc::now().to_rfc3339();
@@ -502,7 +506,8 @@ impl BackpressureManager {
         }
 
         let metrics = self.metrics.read().await;
-        let load_factor = metrics.current_active_requests as f32 / metrics.adaptive_concurrency_limit as f32;
+        let load_factor =
+            metrics.current_active_requests as f32 / metrics.adaptive_concurrency_limit as f32;
 
         // Only reject lower priority requests when system is heavily loaded
         match priority {
@@ -521,7 +526,8 @@ impl BackpressureManager {
         }
 
         let metrics = self.metrics.read().await;
-        let load_factor = metrics.current_active_requests as f32 / metrics.adaptive_concurrency_limit as f32;
+        let load_factor =
+            metrics.current_active_requests as f32 / metrics.adaptive_concurrency_limit as f32;
 
         // Degrade lower priority requests when system is moderately loaded
         match priority {
@@ -547,7 +553,12 @@ impl BackpressureManager {
     }
 
     /// Adjust adaptive concurrency based on performance
-    async fn adjust_concurrency(&self, metrics: &mut BackpressureMetrics, success: bool, latency: Duration) {
+    async fn adjust_concurrency(
+        &self,
+        metrics: &mut BackpressureMetrics,
+        success: bool,
+        latency: Duration,
+    ) {
         let current_limit = metrics.adaptive_concurrency_limit.max(1);
         let target_latency = Duration::from_millis(self.config.target_latency_ms);
 
@@ -563,7 +574,10 @@ impl BackpressureManager {
 
         if new_limit != current_limit {
             metrics.adaptive_concurrency_limit = new_limit;
-            debug!("Adjusted adaptive concurrency limit: {} -> {}", current_limit, new_limit);
+            debug!(
+                "Adjusted adaptive concurrency limit: {} -> {}",
+                current_limit, new_limit
+            );
         }
     }
 }
@@ -603,7 +617,10 @@ mod tests {
             tags: HashMap::new(),
         };
 
-        let result = manager.submit_request(Priority::Normal, None, metadata).await.unwrap();
+        let result = manager
+            .submit_request(Priority::Normal, None, metadata)
+            .await
+            .unwrap();
 
         match result {
             BackpressureResult::Accepted => {
@@ -633,10 +650,16 @@ mod tests {
         };
 
         // First request should be accepted
-        let _result1 = manager.submit_request(Priority::Normal, None, metadata.clone()).await.unwrap();
+        let _result1 = manager
+            .submit_request(Priority::Normal, None, metadata.clone())
+            .await
+            .unwrap();
 
         // Second request should be queued
-        let result2 = manager.submit_request(Priority::Normal, None, metadata).await.unwrap();
+        let result2 = manager
+            .submit_request(Priority::Normal, None, metadata)
+            .await
+            .unwrap();
 
         match result2 {
             BackpressureResult::Queued { position, .. } => {
@@ -666,9 +689,18 @@ mod tests {
         };
 
         // Submit requests in reverse priority order
-        let _low = manager.submit_request(Priority::Low, None, metadata.clone()).await.unwrap();
-        let _normal = manager.submit_request(Priority::Normal, None, metadata.clone()).await.unwrap();
-        let _high = manager.submit_request(Priority::High, None, metadata).await.unwrap();
+        let _low = manager
+            .submit_request(Priority::Low, None, metadata.clone())
+            .await
+            .unwrap();
+        let _normal = manager
+            .submit_request(Priority::Normal, None, metadata.clone())
+            .await
+            .unwrap();
+        let _high = manager
+            .submit_request(Priority::High, None, metadata)
+            .await
+            .unwrap();
 
         let metrics = manager.get_metrics().await;
         assert_eq!(metrics.current_queue_size, 3);

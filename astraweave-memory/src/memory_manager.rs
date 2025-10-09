@@ -3,13 +3,14 @@
 //! This module provides the core memory management functionality,
 //! including storage, retrieval, and organization of memories.
 
-use anyhow::{Result, anyhow};
-use std::collections::HashMap;
+use anyhow::{anyhow, Result};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::{
-    Memory, MemoryType, MemoryCluster, RetrievalContext, MemoryContent, MemoryMetadata, MemorySource
+    Memory, MemoryCluster, MemoryContent, MemoryMetadata, MemorySource, MemoryType,
+    RetrievalContext,
 };
 
 /// Simple memory manager for basic memory operations
@@ -113,13 +114,17 @@ impl MemoryManager {
 
         // Check capacity limits
         if let Some(&max_count) = self.config.max_memories_per_type.get(&memory_type) {
-            let current_count = self.memories
+            let current_count = self
+                .memories
                 .values()
                 .filter(|m| m.memory_type == memory_type)
                 .count();
 
             if current_count >= max_count {
-                return Err(anyhow!("Memory type {:?} has reached maximum capacity", memory_type));
+                return Err(anyhow!(
+                    "Memory type {:?} has reached maximum capacity",
+                    memory_type
+                ));
             }
         }
 
@@ -149,7 +154,8 @@ impl MemoryManager {
         for memory in self.memories.values() {
             if memory.matches_context(context) {
                 let relevance = memory.calculate_relevance(context);
-                if relevance > 0.3 { // Basic relevance threshold
+                if relevance > 0.3 {
+                    // Basic relevance threshold
                     results.push(memory);
                 }
             }
@@ -159,7 +165,9 @@ impl MemoryManager {
         results.sort_by(|a, b| {
             let relevance_a = a.calculate_relevance(context);
             let relevance_b = b.calculate_relevance(context);
-            relevance_b.partial_cmp(&relevance_a).unwrap_or(std::cmp::Ordering::Equal)
+            relevance_b
+                .partial_cmp(&relevance_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         // Limit results
@@ -242,7 +250,9 @@ impl MemoryManager {
         let mut total_importance = 0.0;
 
         for memory in self.memories.values() {
-            *memories_by_type.entry(memory.memory_type.clone()).or_insert(0) += 1;
+            *memories_by_type
+                .entry(memory.memory_type.clone())
+                .or_insert(0) += 1;
             total_importance += memory.metadata.importance;
         }
 
@@ -266,7 +276,8 @@ impl MemoryManager {
         let mut to_remove = Vec::new();
 
         for (id, memory) in &self.memories {
-            if !memory.metadata.permanent && memory.should_forget(self.config.importance_threshold) {
+            if !memory.metadata.permanent && memory.should_forget(self.config.importance_threshold)
+            {
                 to_remove.push(id.clone());
             }
         }
@@ -338,7 +349,9 @@ mod tests {
         manager.store_memory(memory1).unwrap();
         manager.store_memory(memory2).unwrap();
 
-        let cluster_id = manager.create_cluster("Test Cluster".to_string(), vec![id1, id2]).unwrap();
+        let cluster_id = manager
+            .create_cluster("Test Cluster".to_string(), vec![id1, id2])
+            .unwrap();
 
         let cluster_memories = manager.get_cluster_memories(&cluster_id).unwrap();
         assert_eq!(cluster_memories.len(), 2);

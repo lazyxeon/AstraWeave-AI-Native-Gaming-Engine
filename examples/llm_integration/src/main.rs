@@ -6,13 +6,13 @@ use astraweave_llm::{LlmClient, LocalHttpClient};
 use std::env;
 
 /// Comprehensive LLM integration example demonstrating multiple client types
-/// 
+///
 /// This example is configured to use Phi-3 Medium (locally downloaded) by default.
 /// To use Phi-3 Medium with Ollama:
 ///   1. Make sure Ollama is running: `ollama serve`
 ///   2. Pull Phi-3 Medium: `ollama pull phi3:medium`
 ///   3. Run this example: `cargo run -p llm_integration --features ollama`
-/// 
+///
 /// Or set environment variables:
 ///   OLLAMA_URL=http://localhost:11434
 ///   OLLAMA_MODEL=phi3:medium
@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     {
         let ollama_url =
             env::var("OLLAMA_URL").unwrap_or_else(|_| "http://127.0.0.1:11434".to_string());
-        
+
         println!("\n2. Testing Ollama Chat Client at {}", ollama_url);
         println!("   Default Model: Phi-3 Medium (phi3:medium)");
         println!("-------------------------");
@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
 
         test_ollama_client(&world_snapshot, &tool_registry, &ollama_url).await?;
     }
-    
+
     #[cfg(not(feature = "ollama"))]
     {
         println!("\n2. Ollama Chat Client (Skipped - rebuild with --features ollama to enable)");
@@ -74,7 +74,7 @@ async fn main() -> anyhow::Result<()> {
             "\n3. Local HTTP Client (Skipped - set LOCAL_LLM_URL environment variable to test)"
         );
     }
-    
+
     #[cfg(not(feature = "ollama"))]
     {
         println!("\n3. Local HTTP Client (Skipped - requires --features ollama)");

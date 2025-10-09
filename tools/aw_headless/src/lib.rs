@@ -12,15 +12,13 @@ pub async fn render_wgsl_to_image(wgsl_src: &str, width: u32, height: u32) -> Re
         .await?;
 
     let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("aw_headless device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-                memory_hints: wgpu::MemoryHints::default(),
-                trace: wgpu::Trace::Off,
-            },
-        )
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("aw_headless device"),
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: wgpu::Trace::Off,
+        })
         .await?;
 
     // Create a simple RGBA8 target texture with COPY_SRC so we can read it back
@@ -228,4 +226,3 @@ mod tests {
         assert!(avg <= 0.5, "avg delta {} too high", avg);
     }
 }
-

@@ -72,7 +72,9 @@ pub enum RetrievalPath {
     /// Found through association with another memory
     Associative { source_memory_id: String },
     /// Found through temporal proximity
-    Temporal { reference_time: chrono::DateTime<chrono::Utc> },
+    Temporal {
+        reference_time: chrono::DateTime<chrono::Utc>,
+    },
     /// Found through clustering
     Cluster { cluster_id: String },
 }
@@ -117,7 +119,8 @@ impl RetrievalEngine {
 
         // Second pass: associative retrieval
         if self.config.follow_associations {
-            let associated_results = self.retrieve_associated_memories(context, memories, &results)?;
+            let associated_results =
+                self.retrieve_associated_memories(context, memories, &results)?;
             results.extend(associated_results);
         }
 
@@ -157,7 +160,8 @@ impl RetrievalEngine {
         context: &RetrievalContext,
         memory: &Memory,
     ) -> Result<ScoreBreakdown> {
-        let semantic_score = self.calculate_semantic_similarity(&context.query, &memory.content.text);
+        let semantic_score =
+            self.calculate_semantic_similarity(&context.query, &memory.content.text);
         let temporal_score = self.calculate_temporal_score(context, memory);
         let associative_score = self.calculate_associative_score(context, memory);
         let importance_score = memory.metadata.importance;
@@ -196,13 +200,18 @@ impl RetrievalEngine {
     fn calculate_temporal_score(&self, context: &RetrievalContext, memory: &Memory) -> f32 {
         if let Some(time_window) = &context.time_window {
             if memory.metadata.created_at >= time_window.start
-                && memory.metadata.created_at <= time_window.end {
+                && memory.metadata.created_at <= time_window.end
+            {
                 return 1.0;
             }
 
             // Calculate distance from time window
-            let distance_start = (memory.metadata.created_at - time_window.start).num_days().abs();
-            let distance_end = (memory.metadata.created_at - time_window.end).num_days().abs();
+            let distance_start = (memory.metadata.created_at - time_window.start)
+                .num_days()
+                .abs();
+            let distance_end = (memory.metadata.created_at - time_window.end)
+                .num_days()
+                .abs();
             let min_distance = distance_start.min(distance_end) as f32;
 
             // Exponential decay based on distance
@@ -265,9 +274,8 @@ impl RetrievalEngine {
                 }
 
                 // Find the associated memory
-                if let Some(associated_memory) = all_memories
-                    .iter()
-                    .find(|m| m.id == association.memory_id)
+                if let Some(associated_memory) =
+                    all_memories.iter().find(|m| m.id == association.memory_id)
                 {
                     // Calculate relevance for associated memory
                     let base_relevance = self.calculate_relevance(context, associated_memory)?;
@@ -275,7 +283,8 @@ impl RetrievalEngine {
                     let final_relevance = (base_relevance + association_boost).min(1.0);
 
                     if final_relevance >= self.config.relevance_threshold {
-                        let score_breakdown = self.calculate_score_breakdown(context, associated_memory)?;
+                        let score_breakdown =
+                            self.calculate_score_breakdown(context, associated_memory)?;
 
                         associated_results.push(RetrievalResult {
                             memory: associated_memory.clone(),
@@ -296,7 +305,11 @@ impl RetrievalEngine {
     }
 
     /// Find memories similar to a given memory
-    pub fn find_similar(&self, target_memory: &Memory, all_memories: &[Memory]) -> Result<Vec<RetrievalResult>> {
+    pub fn find_similar(
+        &self,
+        target_memory: &Memory,
+        all_memories: &[Memory],
+    ) -> Result<Vec<RetrievalResult>> {
         let mut results = Vec::new();
 
         for memory in all_memories {
@@ -340,7 +353,8 @@ impl RetrievalEngine {
         let mut similarity = 0.0;
 
         // Text similarity
-        let text_sim = self.calculate_semantic_similarity(&memory1.content.text, &memory2.content.text);
+        let text_sim =
+            self.calculate_semantic_similarity(&memory1.content.text, &memory2.content.text);
         similarity += text_sim * 0.5;
 
         // Type similarity
@@ -365,7 +379,8 @@ impl RetrievalEngine {
             .count();
 
         if !memory1.content.context.participants.is_empty() {
-            let participant_sim = common_participants as f32 / memory1.content.context.participants.len() as f32;
+            let participant_sim =
+                common_participants as f32 / memory1.content.context.participants.len() as f32;
             similarity += participant_sim * 0.2;
         }
 

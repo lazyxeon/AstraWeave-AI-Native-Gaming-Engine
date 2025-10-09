@@ -22,32 +22,32 @@ use crate::file_watcher::{FileWatcher, ReloadEvent};
 pub struct MaterialInspector {
     /// Currently loaded material TOML path
     pub material_path: Option<PathBuf>,
-    
+
     /// Parsed material data (from TOML)
     pub material_data: Option<MaterialData>,
-    
+
     /// Loaded texture images
     pub textures: MaterialTextures,
-    
+
     /// Display settings
     pub display_mode: DisplayMode,
     pub channel_filter: ChannelFilter,
     pub color_space: ColorSpace,
     pub zoom_level: f32,
     pub pan_offset: (f32, f32),
-    
+
     /// Validation results (from Task 1 validators)
     pub validation_results: Vec<ValidationResult>,
-    
+
     /// egui texture handles (cached)
     texture_handles: TextureHandles,
-    
+
     /// BRDF preview (Task 2.2)
     pub brdf_preview: BrdfPreview,
-    
+
     /// Status message
     pub status: String,
-    
+
     /// Task 2.3: Advanced features
     /// Recent material paths history
     pub recent_materials: Vec<PathBuf>,
@@ -57,7 +57,7 @@ pub struct MaterialInspector {
     pub material_input: String,
     /// Show material browser
     pub show_browser: bool,
-    
+
     /// Task 3: Hot-reload support
     /// File watcher for automatic reloading
     file_watcher: Option<FileWatcher>,
@@ -65,7 +65,7 @@ pub struct MaterialInspector {
     last_reload_time: Option<std::time::Instant>,
     /// Reload count (for debugging)
     reload_count: usize,
-    
+
     /// Task 4: Debug UI components
     /// Show UV grid overlay
     pub show_uv_grid: bool,
@@ -123,7 +123,7 @@ pub enum DisplayMode {
     Albedo,
     Normal,
     Orm,
-    Split,  // Side-by-side comparison
+    Split, // Side-by-side comparison
 }
 
 impl Default for DisplayMode {
@@ -135,7 +135,7 @@ impl Default for DisplayMode {
 /// Channel isolation filter
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChannelFilter {
-    All,    // RGB
+    All, // RGB
     Red,
     Green,
     Blue,
@@ -188,7 +188,7 @@ impl MaterialInspector {
                 e
             })
             .ok();
-        
+
         let mut inspector = Self {
             material_path: None,
             material_data: None,
@@ -214,30 +214,30 @@ impl MaterialInspector {
             show_histogram: false,
             histogram_data: vec![0; 256],
         };
-        
+
         // Discover materials in default assets directory
         inspector.discover_materials();
-        
+
         inspector
     }
-    
+
     /// Load a material from TOML file
     pub fn load_material(&mut self, path: &Path) -> Result<()> {
         self.status = format!("Loading {}...", path.display());
         self.validation_results.clear();
-        
+
         // Parse TOML
         let content = std::fs::read_to_string(path)
             .with_context(|| format!("Failed to read {}", path.display()))?;
-        
+
         let material: MaterialData = toml::from_str(&content)
             .with_context(|| format!("Failed to parse TOML from {}", path.display()))?;
-        
+
         // For terrain materials, load textures from first layer
         if !material.layers.is_empty() {
             let layer = &material.layers[0];
             let base_dir = path.parent().unwrap_or(Path::new("."));
-            
+
             // Load albedo
             let albedo_path = base_dir.join(&layer.albedo);
             if albedo_path.exists() {
@@ -249,9 +249,11 @@ impl MaterialInspector {
                             passed: true,
                             errors: Vec::new(),
                             warnings: Vec::new(),
-                            info: vec![format!("Loaded albedo: {}×{}", 
+                            info: vec![format!(
+                                "Loaded albedo: {}×{}",
                                 self.textures.albedo.as_ref().unwrap().width(),
-                                self.textures.albedo.as_ref().unwrap().height())],
+                                self.textures.albedo.as_ref().unwrap().height()
+                            )],
                         });
                     }
                     Err(e) => {
@@ -273,7 +275,7 @@ impl MaterialInspector {
                     info: Vec::new(),
                 });
             }
-            
+
             // Load normal
             let normal_path = base_dir.join(&layer.normal);
             if normal_path.exists() {
@@ -285,9 +287,11 @@ impl MaterialInspector {
                             passed: true,
                             errors: Vec::new(),
                             warnings: Vec::new(),
-                            info: vec![format!("Loaded normal: {}×{}", 
+                            info: vec![format!(
+                                "Loaded normal: {}×{}",
                                 self.textures.normal.as_ref().unwrap().width(),
-                                self.textures.normal.as_ref().unwrap().height())],
+                                self.textures.normal.as_ref().unwrap().height()
+                            )],
                         });
                     }
                     Err(e) => {
@@ -301,9 +305,13 @@ impl MaterialInspector {
                     }
                 }
             }
-            
+
             // Load ORM/MRA
-            let orm_name = if !layer.orm.is_empty() { &layer.orm } else { &layer.mra };
+            let orm_name = if !layer.orm.is_empty() {
+                &layer.orm
+            } else {
+                &layer.mra
+            };
             if !orm_name.is_empty() {
                 let orm_path = base_dir.join(orm_name);
                 if orm_path.exists() {
@@ -315,9 +323,11 @@ impl MaterialInspector {
                                 passed: true,
                                 errors: Vec::new(),
                                 warnings: Vec::new(),
-                                info: vec![format!("Loaded ORM: {}×{}", 
+                                info: vec![format!(
+                                    "Loaded ORM: {}×{}",
                                     self.textures.orm.as_ref().unwrap().width(),
-                                    self.textures.orm.as_ref().unwrap().height())],
+                                    self.textures.orm.as_ref().unwrap().height()
+                                )],
                             });
                         }
                         Err(e) => {
@@ -333,17 +343,17 @@ impl MaterialInspector {
                 }
             }
         }
-        
+
         self.material_path = Some(path.to_path_buf());
         self.material_data = Some(material);
-        
+
         // Invalidate cached textures
         self.texture_handles = TextureHandles::default();
-        
+
         self.status = format!("Loaded {}", path.display());
         Ok(())
     }
-    
+
     /// Convert DynamicImage to egui ColorImage with channel filtering
     fn to_color_image(&self, img: &DynamicImage) -> ColorImage {
         let rgba = img.to_rgba8();
@@ -352,7 +362,7 @@ impl MaterialInspector {
             .pixels()
             .flat_map(|p| {
                 let [r, g, b, a] = p.0;
-                
+
                 // Apply channel filter
                 let (r, g, b, a) = match self.channel_filter {
                     ChannelFilter::All => (r, g, b, a),
@@ -361,7 +371,7 @@ impl MaterialInspector {
                     ChannelFilter::Blue => (0, 0, b, 255),
                     ChannelFilter::Alpha => (a, a, a, 255),
                 };
-                
+
                 // Apply color space conversion
                 let (r, g, b) = match self.color_space {
                     ColorSpace::Srgb => (r, g, b), // Already in sRGB
@@ -379,11 +389,11 @@ impl MaterialInspector {
                         (srgb_to_linear(r), srgb_to_linear(g), srgb_to_linear(b))
                     }
                 };
-                
+
                 [r, g, b, a]
             })
             .collect();
-        
+
         ColorImage {
             size,
             pixels: pixels
@@ -393,19 +403,19 @@ impl MaterialInspector {
             source_size: egui::Vec2::new(size[0] as f32, size[1] as f32),
         }
     }
-    
+
     // Task 2.3: Advanced Inspector Features
-    
+
     /// Discover materials in assets directory
     fn discover_materials(&mut self) {
         self.available_materials.clear();
-        
+
         // Start from assets/materials directory
         let materials_dir = Path::new("assets/materials");
         if !materials_dir.exists() {
             return;
         }
-        
+
         // Walk directory recursively
         if let Ok(walker) = walkdir::WalkDir::new(materials_dir)
             .follow_links(false)
@@ -419,25 +429,25 @@ impl MaterialInspector {
                 }
             }
         }
-        
+
         // Sort alphabetically for consistent display
         self.available_materials.sort();
     }
-    
+
     /// Add material to recent history (LRU cache)
     fn add_to_history(&mut self, path: PathBuf) {
         // Remove if already in history
         self.recent_materials.retain(|p| p != &path);
-        
+
         // Add to front (most recent)
         self.recent_materials.insert(0, path);
-        
+
         // Truncate to max 10
         if self.recent_materials.len() > 10 {
             self.recent_materials.truncate(10);
         }
     }
-    
+
     /// Load material and update history
     fn load_material_with_history(&mut self, path: &Path) {
         if let Err(e) = self.load_material(path) {
@@ -446,7 +456,7 @@ impl MaterialInspector {
             self.add_to_history(path.to_path_buf());
         }
     }
-    
+
     /// Process hot-reload events from file watcher (Task 3)
     ///
     /// Call this frequently (e.g., in show() or update loop) to process
@@ -455,13 +465,13 @@ impl MaterialInspector {
         let Some(ref watcher) = self.file_watcher else {
             return; // File watcher not available
         };
-        
+
         // Collect all pending events first (to avoid borrow issues)
         let mut events = Vec::new();
         while let Ok(event) = watcher.try_recv() {
             events.push(event);
         }
-        
+
         // Process collected events
         for event in events {
             match event {
@@ -469,13 +479,18 @@ impl MaterialInspector {
                     // Only reload if this is the currently loaded material
                     if let Some(ref current_path) = self.material_path {
                         if current_path == &path {
-                            println!("[MaterialInspector] Hot-reloading material: {}", path.display());
+                            println!(
+                                "[MaterialInspector] Hot-reloading material: {}",
+                                path.display()
+                            );
                             if let Err(e) = self.load_material(&path) {
                                 self.status = format!("⚠ Hot-reload failed: {}", e);
                             } else {
-                                self.status = format!("✅ Hot-reloaded: {} ({})", 
+                                self.status = format!(
+                                    "✅ Hot-reloaded: {} ({})",
                                     path.file_name().unwrap_or_default().to_string_lossy(),
-                                    self.reload_count + 1);
+                                    self.reload_count + 1
+                                );
                                 self.last_reload_time = Some(std::time::Instant::now());
                                 self.reload_count += 1;
                             }
@@ -487,29 +502,36 @@ impl MaterialInspector {
                     let should_reload = if let Some(ref data) = self.material_data {
                         // Check if texture is referenced by current material
                         data.layers.iter().any(|layer| {
-                            let base_dir = self.material_path.as_ref()
+                            let base_dir = self
+                                .material_path
+                                .as_ref()
                                 .and_then(|p| p.parent())
                                 .unwrap_or(Path::new("."));
-                            
-                            base_dir.join(&layer.albedo) == path ||
-                            base_dir.join(&layer.normal) == path ||
-                            base_dir.join(&layer.orm) == path ||
-                            base_dir.join(&layer.mra) == path
+
+                            base_dir.join(&layer.albedo) == path
+                                || base_dir.join(&layer.normal) == path
+                                || base_dir.join(&layer.orm) == path
+                                || base_dir.join(&layer.mra) == path
                         })
                     } else {
                         false
                     };
-                    
+
                     if should_reload {
-                        println!("[MaterialInspector] Hot-reloading texture: {}", path.display());
-                        
+                        println!(
+                            "[MaterialInspector] Hot-reloading texture: {}",
+                            path.display()
+                        );
+
                         // Reload the entire material (simplest approach)
                         if let Some(mat_path) = self.material_path.clone() {
                             if let Err(e) = self.load_material(&mat_path) {
                                 self.status = format!("⚠ Texture reload failed: {}", e);
                             } else {
-                                self.status = format!("✅ Texture hot-reloaded: {}", 
-                                    path.file_name().unwrap_or_default().to_string_lossy());
+                                self.status = format!(
+                                    "✅ Texture hot-reloaded: {}",
+                                    path.file_name().unwrap_or_default().to_string_lossy()
+                                );
                                 self.last_reload_time = Some(std::time::Instant::now());
                                 self.reload_count += 1;
                             }
@@ -519,20 +541,20 @@ impl MaterialInspector {
             }
         }
     }
-    
+
     // Task 4: Debug UI Components
-    
+
     /// Update histogram data for current texture and channel
     fn update_histogram(&mut self, img: &DynamicImage) {
         // Reset histogram
         self.histogram_data.fill(0);
-        
+
         let rgba = img.to_rgba8();
-        
+
         // Count pixel values based on current channel filter
         for pixel in rgba.pixels() {
             let [r, g, b, a] = pixel.0;
-            
+
             // Get value based on channel filter
             let value = match self.channel_filter {
                 ChannelFilter::All => {
@@ -544,68 +566,74 @@ impl MaterialInspector {
                 ChannelFilter::Blue => b,
                 ChannelFilter::Alpha => a,
             };
-            
+
             self.histogram_data[value as usize] += 1;
         }
     }
-    
+
     /// Draw histogram visualization
     fn draw_histogram(&self, ui: &mut egui::Ui) {
         let max_count = *self.histogram_data.iter().max().unwrap_or(&1);
-        
+
         // Calculate statistics
         let mut min_val = 255;
         let mut max_val = 0;
         let mut sum = 0u64;
         let mut total_pixels = 0u64;
-        
+
         for (val, &count) in self.histogram_data.iter().enumerate() {
             if count > 0 {
-                if val < min_val { min_val = val; }
-                if val > max_val { max_val = val; }
+                if val < min_val {
+                    min_val = val;
+                }
+                if val > max_val {
+                    max_val = val;
+                }
                 sum += (val as u64) * (count as u64);
                 total_pixels += count as u64;
             }
         }
-        
+
         let avg = if total_pixels > 0 {
             (sum / total_pixels) as u8
         } else {
             0
         };
-        
+
         // Display statistics
-        ui.label(format!("Min: {} | Max: {} | Avg: {} | Pixels: {}",
-            min_val, max_val, avg, total_pixels));
-        
+        ui.label(format!(
+            "Min: {} | Max: {} | Avg: {} | Pixels: {}",
+            min_val, max_val, avg, total_pixels
+        ));
+
         ui.add_space(4.0);
-        
+
         // Draw histogram bars
         let desired_height = 100.0;
         let desired_width = 256.0;
-        
+
         let (response, painter) = ui.allocate_painter(
             egui::vec2(desired_width, desired_height),
             egui::Sense::hover(),
         );
-        
+
         let rect = response.rect;
-        
+
         // Background
         painter.rect_filled(rect, 0.0, egui::Color32::from_gray(30));
-        
+
         // Draw histogram bars
         for (i, &count) in self.histogram_data.iter().enumerate() {
             if count > 0 {
                 let normalized = (count as f32) / (max_count as f32);
                 let bar_height = normalized * desired_height;
-                
+
                 let x = rect.left() + (i as f32 / 256.0) * desired_width;
                 let bar_rect = egui::Rect::from_min_max(
                     egui::pos2(x, rect.bottom() - bar_height),
                     egui::pos2(x + (desired_width / 256.0), rect.bottom()),
                 );
-                
+
                 // Color based on channel filter
                 let color = match self.channel_filter {
                     ChannelFilter::Red => egui::Color32::from_rgb(200, 50, 50),
@@ -614,11 +642,11 @@ impl MaterialInspector {
                     ChannelFilter::Alpha => egui::Color32::from_gray(200),
                     ChannelFilter::All => egui::Color32::from_gray(150),
                 };
-                
+
                 painter.rect_filled(bar_rect, 0.0, color);
             }
         }
-        
+
         // Draw grid lines (quartiles)
         for i in 0..=4 {
             let x = rect.left() + (i as f32 / 4.0) * desired_width;
@@ -628,14 +656,20 @@ impl MaterialInspector {
             );
         }
     }
-    
+
     /// Draw UV grid overlay on texture
-    fn draw_uv_grid_overlay(&self, ui: &mut egui::Ui, rect: egui::Rect, _tex_width: u32, _tex_height: u32) {
+    fn draw_uv_grid_overlay(
+        &self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        _tex_width: u32,
+        _tex_height: u32,
+    ) {
         let painter = ui.painter();
-        
+
         let grid_color = egui::Color32::from_rgba_premultiplied(255, 255, 0, 128); // Semi-transparent yellow
         let stroke = egui::Stroke::new(1.0, grid_color);
-        
+
         // Draw vertical lines
         for i in 0..=self.uv_grid_density {
             let u = (i as f32) / (self.uv_grid_density as f32);
@@ -645,7 +679,7 @@ impl MaterialInspector {
                 stroke,
             );
         }
-        
+
         // Draw horizontal lines
         for i in 0..=self.uv_grid_density {
             let v = (i as f32) / (self.uv_grid_density as f32);
@@ -655,11 +689,11 @@ impl MaterialInspector {
                 stroke,
             );
         }
-        
+
         // Draw corner labels (UV coordinates)
         let font_id = egui::FontId::proportional(10.0);
         let text_color = egui::Color32::YELLOW;
-        
+
         // (0, 0) - top left
         painter.text(
             egui::pos2(rect.left() + 4.0, rect.top() + 4.0),
@@ -668,7 +702,7 @@ impl MaterialInspector {
             font_id.clone(),
             text_color,
         );
-        
+
         // (1, 0) - top right
         painter.text(
             egui::pos2(rect.right() - 4.0, rect.top() + 4.0),
@@ -677,7 +711,7 @@ impl MaterialInspector {
             font_id.clone(),
             text_color,
         );
-        
+
         // (0, 1) - bottom left
         painter.text(
             egui::pos2(rect.left() + 4.0, rect.bottom() - 4.0),
@@ -686,7 +720,7 @@ impl MaterialInspector {
             font_id.clone(),
             text_color,
         );
-        
+
         // (1, 1) - bottom right
         painter.text(
             egui::pos2(rect.right() - 4.0, rect.bottom() - 4.0),
@@ -696,36 +730,39 @@ impl MaterialInspector {
             text_color,
         );
     }
-    
+
     /// Render the inspector UI
     pub fn show(&mut self, ui: &mut Ui, ctx: &egui::Context) {
         // Process hot-reload events first
         self.process_hot_reload();
-        
+
         ui.heading("Material Inspector");
         ui.add_space(4.0);
         ui.separator();
         ui.add_space(8.0);
-        
+
         // Task 2.3: Material Browser & History
         ui.collapsing("📁 Material Browser", |ui| {
             ui.add_space(4.0);
-            
+
             // History dropdown
             if !self.recent_materials.is_empty() {
                 ui.horizontal(|ui| {
-                    ui.label("Recent:").on_hover_text("Last 10 loaded materials (most recent first)");
+                    ui.label("Recent:")
+                        .on_hover_text("Last 10 loaded materials (most recent first)");
                     egui::ComboBox::from_label("")
                         .width(300.0)
                         .selected_text(
-                            self.recent_materials.first()
+                            self.recent_materials
+                                .first()
                                 .and_then(|p| p.file_name())
                                 .and_then(|n| n.to_str())
-                                .unwrap_or("Select...")
+                                .unwrap_or("Select..."),
                         )
                         .show_ui(ui, |ui| {
                             for path in self.recent_materials.clone() {
-                                let name = path.file_name()
+                                let name = path
+                                    .file_name()
                                     .and_then(|n| n.to_str())
                                     .unwrap_or("Unknown");
                                 if ui.selectable_label(false, name).clicked() {
@@ -736,28 +773,34 @@ impl MaterialInspector {
                 });
                 ui.add_space(4.0);
             }
-            
+
             // Browser toggle
             ui.horizontal(|ui| {
-                if ui.button(if self.show_browser { "▼ Hide Browser" } else { "▶ Show Browser" })
+                if ui
+                    .button(if self.show_browser {
+                        "▼ Hide Browser"
+                    } else {
+                        "▶ Show Browser"
+                    })
                     .on_hover_text("Toggle material list visibility")
-                    .clicked() 
+                    .clicked()
                 {
                     self.show_browser = !self.show_browser;
                 }
-                if ui.button("🔄 Refresh")
+                if ui
+                    .button("🔄 Refresh")
                     .on_hover_text("Rescan assets/materials/ directory")
-                    .clicked() 
+                    .clicked()
                 {
                     self.discover_materials();
                 }
-                
+
                 // Show count
                 if !self.available_materials.is_empty() {
                     ui.label(format!("({} materials)", self.available_materials.len()));
                 }
             });
-            
+
             // Material list (when expanded)
             if self.show_browser {
                 ui.add_space(4.0);
@@ -767,18 +810,20 @@ impl MaterialInspector {
                         if self.available_materials.is_empty() {
                             ui.colored_label(
                                 egui::Color32::from_rgb(200, 150, 100),
-                                "⚠ No materials found in assets/materials/"
+                                "⚠ No materials found in assets/materials/",
                             );
                             ui.label("Create .toml files or click Refresh to scan again.");
                         } else {
                             for path in &self.available_materials.clone() {
-                                let name = path.strip_prefix("assets/materials/")
+                                let name = path
+                                    .strip_prefix("assets/materials/")
                                     .unwrap_or(path)
                                     .display()
                                     .to_string();
-                                if ui.selectable_label(false, &name)
+                                if ui
+                                    .selectable_label(false, &name)
                                     .on_hover_text(format!("Load: {}", name))
-                                    .clicked() 
+                                    .clicked()
                                 {
                                     self.load_material_with_history(path);
                                 }
@@ -786,15 +831,18 @@ impl MaterialInspector {
                         }
                     });
             }
-            
+
             // Manual path input
             ui.add_space(4.0);
             ui.horizontal(|ui| {
-                ui.label("Path:").on_hover_text("Enter relative path to material TOML");
+                ui.label("Path:")
+                    .on_hover_text("Enter relative path to material TOML");
                 let response = ui.text_edit_singleline(&mut self.material_input);
                 response.on_hover_text("Example: assets/materials/terrain/grassland_demo.toml");
-                
-                let load_button = ui.button("Load").on_hover_text("Load material from typed path");
+
+                let load_button = ui
+                    .button("Load")
+                    .on_hover_text("Load material from typed path");
                 if load_button.clicked() && !self.material_input.is_empty() {
                     let path = PathBuf::from(&self.material_input);
                     self.load_material_with_history(&path);
@@ -802,25 +850,28 @@ impl MaterialInspector {
             });
             ui.add_space(4.0);
         });
-        
+
         ui.add_space(8.0);
         ui.separator();
         ui.add_space(8.0);
-        
+
         // File picker (legacy, kept for compatibility)
         ui.horizontal(|ui| {
-            if ui.button("📂 Load Demo Material")
+            if ui
+                .button("📂 Load Demo Material")
                 .on_hover_text("Load grassland_demo.toml (for quick testing)")
-                .clicked() 
+                .clicked()
             {
                 // For now, hardcoded to demo materials
-                if let Err(e) = self.load_material(Path::new("assets/materials/terrain/grassland_demo.toml")) {
+                if let Err(e) =
+                    self.load_material(Path::new("assets/materials/terrain/grassland_demo.toml"))
+                {
                     self.status = format!("❌ Error: {}", e);
                 } else {
                     self.status = "✅ Loaded: grassland_demo.toml".to_string();
                 }
             }
-            
+
             // Status with color coding
             let status_color = if self.status.starts_with("✅") {
                 egui::Color32::from_rgb(100, 200, 100)
@@ -832,32 +883,32 @@ impl MaterialInspector {
                 egui::Color32::GRAY
             };
             ui.colored_label(status_color, &self.status);
-            
+
             // Hot-reload indicator (Task 3)
             if self.file_watcher.is_some() {
                 ui.add_space(8.0);
-                ui.label("🔄")
-                    .on_hover_text(format!(
-                        "Hot-reload: ENABLED\nReload count: {}\nLast reload: {}",
-                        self.reload_count,
-                        self.last_reload_time
-                            .map(|t| format!("{:.1}s ago", t.elapsed().as_secs_f32()))
-                            .unwrap_or_else(|| "Never".to_string())
-                    ));
+                ui.label("🔄").on_hover_text(format!(
+                    "Hot-reload: ENABLED\nReload count: {}\nLast reload: {}",
+                    self.reload_count,
+                    self.last_reload_time
+                        .map(|t| format!("{:.1}s ago", t.elapsed().as_secs_f32()))
+                        .unwrap_or_else(|| "Never".to_string())
+                ));
             } else {
                 ui.add_space(8.0);
                 ui.label("⭕")
                     .on_hover_text("Hot-reload: DISABLED\n(assets/materials directory not found)");
             }
         });
-        
+
         ui.add_space(8.0);
         ui.separator();
         ui.add_space(8.0);
-        
+
         // Display controls
         ui.horizontal(|ui| {
-            ui.label("Display Mode:").on_hover_text("Select which texture to view");
+            ui.label("Display Mode:")
+                .on_hover_text("Select which texture to view");
             ui.radio_value(&mut self.display_mode, DisplayMode::Albedo, "Albedo")
                 .on_hover_text("Base color (sRGB)");
             ui.radio_value(&mut self.display_mode, DisplayMode::Normal, "Normal")
@@ -865,46 +916,51 @@ impl MaterialInspector {
             ui.radio_value(&mut self.display_mode, DisplayMode::Orm, "ORM")
                 .on_hover_text("Occlusion (R), Roughness (G), Metallic (B)");
         });
-        
+
         ui.add_space(4.0);
         ui.horizontal(|ui| {
-            ui.label("Channel:").on_hover_text("Isolate individual color channels");
+            ui.label("Channel:")
+                .on_hover_text("Isolate individual color channels");
             ui.radio_value(&mut self.channel_filter, ChannelFilter::All, "All (RGB)");
             ui.radio_value(&mut self.channel_filter, ChannelFilter::Red, "R");
             ui.radio_value(&mut self.channel_filter, ChannelFilter::Green, "G");
             ui.radio_value(&mut self.channel_filter, ChannelFilter::Blue, "B");
             ui.radio_value(&mut self.channel_filter, ChannelFilter::Alpha, "A");
         });
-        
+
         ui.add_space(4.0);
         ui.horizontal(|ui| {
-            ui.label("Color Space:").on_hover_text("Toggle between sRGB (gamma-corrected) and Linear");
+            ui.label("Color Space:")
+                .on_hover_text("Toggle between sRGB (gamma-corrected) and Linear");
             ui.radio_value(&mut self.color_space, ColorSpace::Srgb, "sRGB")
                 .on_hover_text("Standard display color space");
             ui.radio_value(&mut self.color_space, ColorSpace::Linear, "Linear")
                 .on_hover_text("Raw texture values (darker)");
         });
-        
+
         ui.add_space(4.0);
         ui.horizontal(|ui| {
-            ui.label("Zoom:").on_hover_text("Texture magnification (0.1x to 4.0x)");
-            ui.add(egui::Slider::new(&mut self.zoom_level, 0.1..=4.0)
-                .step_by(0.1)
-                .text("×"));
+            ui.label("Zoom:")
+                .on_hover_text("Texture magnification (0.1x to 4.0x)");
+            ui.add(
+                egui::Slider::new(&mut self.zoom_level, 0.1..=4.0)
+                    .step_by(0.1)
+                    .text("×"),
+            );
         });
-        
+
         ui.add_space(8.0);
         ui.separator();
         ui.add_space(8.0);
-        
+
         // Task 4: Debug UI components
         ui.collapsing("🔧 Debug Tools", |ui| {
             ui.add_space(4.0);
-            
+
             // UV Grid overlay
             ui.checkbox(&mut self.show_uv_grid, "Show UV Grid")
                 .on_hover_text("Overlay UV coordinate grid (0-1 range)");
-            
+
             if self.show_uv_grid {
                 ui.horizontal(|ui| {
                     ui.label("Grid Density:");
@@ -912,13 +968,13 @@ impl MaterialInspector {
                         .on_hover_text("Number of grid lines per UV unit");
                 });
             }
-            
+
             ui.add_space(4.0);
-            
+
             // Histogram
             ui.checkbox(&mut self.show_histogram, "Show Histogram")
                 .on_hover_text("Display value distribution for current channel");
-            
+
             if self.show_histogram {
                 // Calculate histogram for current texture
                 // Get image reference based on display mode
@@ -928,22 +984,22 @@ impl MaterialInspector {
                     DisplayMode::Orm => self.textures.orm.as_ref(),
                     DisplayMode::Split => self.textures.albedo.as_ref(),
                 };
-                
+
                 if let Some(img) = img_opt {
                     // Clone image to avoid borrow issues (only clones pointer, not data)
                     let img_clone = img.clone();
                     self.update_histogram(&img_clone);
-                    
+
                     // Draw histogram
                     self.draw_histogram(ui);
                 }
             }
         });
-        
+
         ui.add_space(8.0);
         ui.separator();
         ui.add_space(8.0);
-        
+
         // Texture viewer
         if let Some(img) = match self.display_mode {
             DisplayMode::Albedo => self.textures.albedo.as_ref(),
@@ -953,7 +1009,7 @@ impl MaterialInspector {
         } {
             // Convert to ColorImage with channel filtering
             let color_image = self.to_color_image(img);
-            
+
             // Get or create texture handle
             let texture_handle = match self.display_mode {
                 DisplayMode::Albedo => &mut self.texture_handles.albedo,
@@ -961,7 +1017,7 @@ impl MaterialInspector {
                 DisplayMode::Orm => &mut self.texture_handles.orm,
                 DisplayMode::Split => &mut self.texture_handles.albedo,
             };
-            
+
             let handle = texture_handle.get_or_insert_with(|| {
                 ctx.load_texture(
                     format!("{:?}", self.display_mode),
@@ -969,29 +1025,32 @@ impl MaterialInspector {
                     Default::default(),
                 )
             });
-            
+
             // Update texture if channel filter or color space changed
             // Note: This is inefficient but works for MVP
             // TODO: Only update when filter/colorspace changes
             *handle = ctx.load_texture(
-                format!("{:?}_{:?}_{:?}", self.display_mode, self.channel_filter, self.color_space),
+                format!(
+                    "{:?}_{:?}_{:?}",
+                    self.display_mode, self.channel_filter, self.color_space
+                ),
                 color_image,
                 Default::default(),
             );
-            
+
             // Display texture with zoom
             let size = egui::vec2(
                 img.width() as f32 * self.zoom_level,
                 img.height() as f32 * self.zoom_level,
             );
-            
+
             let response = ui.image((handle.id(), size));
-            
+
             // Task 4: Draw UV grid overlay
             if self.show_uv_grid {
                 self.draw_uv_grid_overlay(ui, response.rect, img.width(), img.height());
             }
-            
+
             // Texture info
             ui.label(format!(
                 "Size: {}×{} | Zoom: {:.1}x | Format: {:?}",
@@ -1003,9 +1062,9 @@ impl MaterialInspector {
         } else {
             ui.label("No texture loaded for this mode");
         }
-        
+
         ui.separator();
-        
+
         // Validation results
         ui.collapsing("Validation Results", |ui| {
             if self.validation_results.is_empty() {
@@ -1014,7 +1073,7 @@ impl MaterialInspector {
                 for result in &self.validation_results {
                     let icon = if result.passed { "✅" } else { "❌" };
                     ui.label(format!("{} {}", icon, result.asset_path));
-                    
+
                     for error in &result.errors {
                         ui.colored_label(egui::Color32::RED, format!("  ERROR: {}", error));
                     }
@@ -1027,13 +1086,13 @@ impl MaterialInspector {
                 }
             }
         });
-        
+
         // Material data
         if let Some(data) = &self.material_data {
             ui.collapsing("Material Data", |ui| {
                 ui.label(format!("Name: {}", data.name));
                 ui.label(format!("Layers: {}", data.layers.len()));
-                
+
                 for (i, layer) in data.layers.iter().enumerate() {
                     ui.collapsing(format!("Layer {}: {}", i, layer.name), |ui| {
                         ui.label(format!("  Albedo: {}", layer.albedo));
@@ -1051,27 +1110,31 @@ impl MaterialInspector {
                 }
             });
         }
-        
+
         ui.separator();
-        
+
         // BRDF Preview (Task 2.2)
         ui.collapsing("BRDF Preview", |ui| {
             // Update BRDF preview with current material parameters
             if let Some(data) = &self.material_data {
                 if let Some(layer) = data.layers.first() {
                     // Extract albedo from first layer (or use material defaults)
-                    let albedo = [
-                        data.base_color[0],
-                        data.base_color[1],
-                        data.base_color[2],
-                    ];
-                    let metallic = if layer.metallic >= 0.0 { layer.metallic } else { data.metallic };
-                    let roughness = if layer.roughness >= 0.0 { layer.roughness } else { data.roughness };
-                    
+                    let albedo = [data.base_color[0], data.base_color[1], data.base_color[2]];
+                    let metallic = if layer.metallic >= 0.0 {
+                        layer.metallic
+                    } else {
+                        data.metallic
+                    };
+                    let roughness = if layer.roughness >= 0.0 {
+                        layer.roughness
+                    } else {
+                        data.roughness
+                    };
+
                     self.brdf_preview.set_material(albedo, metallic, roughness);
                 }
             }
-            
+
             self.brdf_preview.show(ui, ctx);
         });
     }

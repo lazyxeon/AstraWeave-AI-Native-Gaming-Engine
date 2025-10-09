@@ -142,7 +142,7 @@ pub fn generate_network_stress_entities(config: &StressTestConfig) -> Vec<CNetwo
 /// Physics simulation system for stress testing
 fn physics_stress_system(world: &mut World) {
     let entities: Vec<_> = world.entities_with::<CStressEntity>();
-    
+
     for entity in entities {
         if let Some(entity_data) = world.get_mut::<CStressEntity>(entity) {
             // Update position based on velocity

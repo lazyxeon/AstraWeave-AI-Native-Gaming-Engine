@@ -3,8 +3,8 @@
 //! This module provides Bevy ECS components for integrating the memory system
 //! with the game engine's entity-component architecture.
 
-use crate::memory_types::*;
 use crate::memory_manager::MemoryManager;
+use crate::memory_types::*;
 use bevy_ecs::component::Component;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
@@ -132,7 +132,7 @@ impl Default for WorkingMemoryComponent {
     fn default() -> Self {
         Self {
             active_tasks: Vec::new(),
-            max_concurrent_tasks: 7, // Miller's magic number
+            max_concurrent_tasks: 7,   // Miller's magic number
             retention_duration: 300.0, // 5 minutes
         }
     }
@@ -411,7 +411,12 @@ impl MemoryComponent {
 
 impl WorkingMemoryComponent {
     /// Add a new task to working memory
-    pub fn add_task(&mut self, description: String, priority: f32, data: serde_json::Value) -> String {
+    pub fn add_task(
+        &mut self,
+        description: String,
+        priority: f32,
+        data: serde_json::Value,
+    ) -> String {
         let task_id = uuid::Uuid::new_v4().to_string();
         let task = WorkingMemoryTask {
             id: task_id.clone(),
@@ -424,7 +429,11 @@ impl WorkingMemoryComponent {
 
         // Remove lowest priority task if at capacity
         if self.active_tasks.len() >= self.max_concurrent_tasks {
-            self.active_tasks.sort_by(|a, b| a.priority.partial_cmp(&b.priority).unwrap_or(std::cmp::Ordering::Equal));
+            self.active_tasks.sort_by(|a, b| {
+                a.priority
+                    .partial_cmp(&b.priority)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            });
             self.active_tasks.remove(0);
         }
 
@@ -448,19 +457,25 @@ impl WorkingMemoryComponent {
 
 impl SocialMemoryComponent {
     /// Add or update a social relationship
-    pub fn update_relationship(&mut self, entity_id: String, name: String, relationship_type: RelationshipType) {
-        let relationship = self.known_entities
-            .entry(entity_id.clone())
-            .or_insert(SocialRelationship {
-                entity_id: entity_id.clone(),
-                name,
-                relationship_type,
-                strength: 0.5,
-                trust: 0.5,
-                established_at: chrono::Utc::now(),
-                last_interaction: chrono::Utc::now(),
-                interaction_count: 0,
-            });
+    pub fn update_relationship(
+        &mut self,
+        entity_id: String,
+        name: String,
+        relationship_type: RelationshipType,
+    ) {
+        let relationship =
+            self.known_entities
+                .entry(entity_id.clone())
+                .or_insert(SocialRelationship {
+                    entity_id: entity_id.clone(),
+                    name,
+                    relationship_type,
+                    strength: 0.5,
+                    trust: 0.5,
+                    established_at: chrono::Utc::now(),
+                    last_interaction: chrono::Utc::now(),
+                    interaction_count: 0,
+                });
 
         relationship.last_interaction = chrono::Utc::now();
         relationship.interaction_count += 1;
@@ -475,7 +490,9 @@ impl SocialMemoryComponent {
 
                 // Adjust relationship strength based on interaction valence
                 let strength_adjustment = interaction.valence * 0.1;
-                relationship.strength = (relationship.strength + strength_adjustment).max(0.0).min(1.0);
+                relationship.strength = (relationship.strength + strength_adjustment)
+                    .max(0.0)
+                    .min(1.0);
             }
         }
 
@@ -490,7 +507,13 @@ impl SocialMemoryComponent {
 
 impl LearningMemoryComponent {
     /// Record a practice session in a learning domain
-    pub fn record_practice(&mut self, domain_name: String, duration: f32, performance_score: f32, difficulty: f32) {
+    pub fn record_practice(
+        &mut self,
+        domain_name: String,
+        duration: f32,
+        performance_score: f32,
+        difficulty: f32,
+    ) {
         let session = PracticeSession {
             timestamp: chrono::Utc::now(),
             duration,
@@ -510,7 +533,8 @@ impl LearningMemoryComponent {
             });
         }
 
-        let domain = self.learning_domains
+        let domain = self
+            .learning_domains
             .iter_mut()
             .find(|d| d.name == domain_name)
             .unwrap();

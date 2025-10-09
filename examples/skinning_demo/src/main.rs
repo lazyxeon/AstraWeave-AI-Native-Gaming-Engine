@@ -161,7 +161,7 @@ impl ApplicationHandler for DemoApp {
             let window_attributes = Window::default_attributes()
                 .with_title("AstraWeave - Skeletal Animation Demo (Phase 2 Task 5)")
                 .with_inner_size(winit::dpi::LogicalSize::new(800, 600));
-            
+
             match event_loop.create_window(window_attributes) {
                 Ok(window) => {
                     self.window = Some(window);
@@ -182,8 +182,10 @@ impl ApplicationHandler for DemoApp {
         window_id: WindowId,
         event: WindowEvent,
     ) {
-        let Some(window) = self.window.as_ref() else { return };
-        
+        let Some(window) = self.window.as_ref() else {
+            return;
+        };
+
         if window_id != window.id() {
             return;
         }
@@ -311,7 +313,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
-    
+
     let mut app = DemoApp::new();
     event_loop.run_app(&mut app)?;
 

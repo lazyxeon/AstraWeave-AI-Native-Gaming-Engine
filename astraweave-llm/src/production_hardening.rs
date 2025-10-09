@@ -1,15 +1,15 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn, error};
-use serde::{Deserialize, Serialize};
+use tracing::{debug, error, info, warn};
 
-use crate::rate_limiter::{RateLimiter, RateLimiterConfig, RateLimitContext, RequestPriority};
-use crate::circuit_breaker::{CircuitBreakerManager, CircuitBreakerConfig};
-use crate::backpressure::{BackpressureManager, BackpressureConfig, Priority, RequestMetadata};
-use crate::ab_testing::{ABTestFramework, ABTestConfig};
+use crate::ab_testing::{ABTestConfig, ABTestFramework};
+use crate::backpressure::{BackpressureConfig, BackpressureManager, Priority, RequestMetadata};
+use crate::circuit_breaker::{CircuitBreakerConfig, CircuitBreakerManager};
+use crate::rate_limiter::{RateLimitContext, RateLimiter, RateLimiterConfig, RequestPriority};
 use astraweave_observability::llm_telemetry::{LlmTelemetry, TelemetryConfig};
 
 /// Production hardening layer that integrates all reliability systems
@@ -165,14 +165,23 @@ impl HealthChecker {
         let mut components = HashMap::new();
 
         // Initialize component health status
-        for component in ["rate_limiter", "circuit_breaker", "backpressure", "telemetry", "ab_testing"] {
-            components.insert(component.to_string(), ComponentHealth {
-                status: HealthStatus::Healthy,
-                last_check: chrono::Utc::now().to_rfc3339(),
-                consecutive_failures: 0,
-                last_error: None,
-                response_time_ms: None,
-            });
+        for component in [
+            "rate_limiter",
+            "circuit_breaker",
+            "backpressure",
+            "telemetry",
+            "ab_testing",
+        ] {
+            components.insert(
+                component.to_string(),
+                ComponentHealth {
+                    status: HealthStatus::Healthy,
+                    last_check: chrono::Utc::now().to_rfc3339(),
+                    consecutive_failures: 0,
+                    last_error: None,
+                    response_time_ms: None,
+                },
+            );
         }
 
         Self {
@@ -182,12 +191,18 @@ impl HealthChecker {
         }
     }
 
-    async fn check_health(&mut self, component: &str, check_fn: impl std::future::Future<Output = Result<Duration>>) {
+    async fn check_health(
+        &mut self,
+        component: &str,
+        check_fn: impl std::future::Future<Output = Result<Duration>>,
+    ) {
         let start = Instant::now();
         let result = tokio::time::timeout(self.config.check_timeout, check_fn).await;
         let elapsed = start.elapsed();
 
-        let component_health = self.components.entry(component.to_string())
+        let component_health = self
+            .components
+            .entry(component.to_string())
             .or_insert_with(|| ComponentHealth {
                 status: HealthStatus::Healthy,
                 last_check: chrono::Utc::now().to_rfc3339(),
@@ -267,7 +282,9 @@ impl ProductionHardeningLayer {
     pub fn new(config: HardeningConfig) -> Self {
         let rate_limiter = Arc::new(RateLimiter::new(config.rate_limiter.clone()));
         let circuit_breaker = Arc::new(CircuitBreakerManager::new(config.circuit_breaker.clone()));
-        let backpressure_manager = Arc::new(RwLock::new(BackpressureManager::new(config.backpressure.clone())));
+        let backpressure_manager = Arc::new(RwLock::new(BackpressureManager::new(
+            config.backpressure.clone(),
+        )));
         let ab_testing = Arc::new(ABTestFramework::new(config.ab_testing.clone()));
         let telemetry = Arc::new(LlmTelemetry::new(config.telemetry.clone()));
         let health_checker = Arc::new(RwLock::new(HealthChecker::new(config.health_check.clone())));
@@ -299,7 +316,11 @@ impl ProductionHardeningLayer {
     }
 
     /// Process a request through all hardening layers
-    pub async fn process_request<F, T, Fut>(&self, request: HardenedRequest, operation: F) -> HardeningResult<T>
+    pub async fn process_request<F, T, Fut>(
+        &self,
+        request: HardenedRequest,
+        operation: F,
+    ) -> HardeningResult<T>
     where
         F: FnOnce() -> Fut,
         Fut: std::future::Future<Output = Result<T>>,
@@ -328,71 +349,95 @@ impl ProductionHardeningLayer {
             },
         };
 
-        let rate_limit_check = self.rate_limiter.check_rate_limit(&rate_limit_context).await;
+        let rate_limit_check = self
+            .rate_limiter
+            .check_rate_limit(&rate_limit_context)
+            .await;
         if !rate_limit_check.allowed {
-            let error_msg = rate_limit_check.reason.unwrap_or("Rate limited".to_string());
+            let error_msg = rate_limit_check
+                .reason
+                .unwrap_or("Rate limited".to_string());
             self.record_failure(&request.model, &error_msg).await;
 
-            tracker.complete(
-                request.model.clone(),
-                false,
-                0,
-                0.0,
-                Some(error_msg.clone()),
-                Some("rate_limit".to_string()),
-                "production_hardening".to_string(),
-                None,
-                None,
-                HashMap::new(),
-            ).await.ok();
+            tracker
+                .complete(
+                    request.model.clone(),
+                    false,
+                    0,
+                    0.0,
+                    Some(error_msg.clone()),
+                    Some("rate_limit".to_string()),
+                    "production_hardening".to_string(),
+                    None,
+                    None,
+                    HashMap::new(),
+                )
+                .await
+                .ok();
 
             return HardeningResult::RateLimited {
-                retry_after: rate_limit_check.retry_after.unwrap_or(Duration::from_secs(1)),
+                retry_after: rate_limit_check
+                    .retry_after
+                    .unwrap_or(Duration::from_secs(1)),
                 reason: error_msg,
             };
         }
 
         // 2. Circuit breaker check
-        let circuit_result = self.circuit_breaker.execute(&request.model, || async {
-            // 3. Backpressure management
-            let backpressure_metadata = RequestMetadata {
-                user_id: request.user_id.clone(),
-                model: request.model.clone(),
-                estimated_tokens: request.estimated_tokens,
-                estimated_cost: request.estimated_tokens as f64 * 0.0001, // Rough estimate
-                tags: request.metadata.clone(),
-            };
+        let circuit_result = self
+            .circuit_breaker
+            .execute(&request.model, || async {
+                // 3. Backpressure management
+                let backpressure_metadata = RequestMetadata {
+                    user_id: request.user_id.clone(),
+                    model: request.model.clone(),
+                    estimated_tokens: request.estimated_tokens,
+                    estimated_cost: request.estimated_tokens as f64 * 0.0001, // Rough estimate
+                    tags: request.metadata.clone(),
+                };
 
-            let backpressure_result = self.backpressure_manager.read().await
-                .submit_request(request.priority, request.timeout, backpressure_metadata).await?;
+                let backpressure_result = self
+                    .backpressure_manager
+                    .read()
+                    .await
+                    .submit_request(request.priority, request.timeout, backpressure_metadata)
+                    .await?;
 
-            match backpressure_result {
-                crate::backpressure::BackpressureResult::Accepted => {
-                    // 4. A/B testing (if applicable)
-                    let _assignment: Option<String> = if let Some(_user_id) = &request.user_id {
-                        // This would be used to determine which model variant to use
-                        // For now, just use the requested model
-                        None
-                    } else {
-                        None
-                    };
+                match backpressure_result {
+                    crate::backpressure::BackpressureResult::Accepted => {
+                        // 4. A/B testing (if applicable)
+                        let _assignment: Option<String> = if let Some(_user_id) = &request.user_id {
+                            // This would be used to determine which model variant to use
+                            // For now, just use the requested model
+                            None
+                        } else {
+                            None
+                        };
 
-                    // 5. Execute the actual operation
-                    operation().await
+                        // 5. Execute the actual operation
+                        operation().await
+                    }
+                    crate::backpressure::BackpressureResult::Queued {
+                        position,
+                        estimated_wait,
+                    } => {
+                        return Err(anyhow!(
+                            "Request queued: position {}, wait time: {:?}",
+                            position,
+                            estimated_wait
+                        ));
+                    }
+                    crate::backpressure::BackpressureResult::Rejected { reason, .. } => {
+                        return Err(anyhow!("Request rejected: {}", reason));
+                    }
+                    crate::backpressure::BackpressureResult::Degraded { reason } => {
+                        warn!("Request degraded: {}", reason);
+                        // Continue with degraded processing
+                        operation().await
+                    }
                 }
-                crate::backpressure::BackpressureResult::Queued { position, estimated_wait } => {
-                    return Err(anyhow!("Request queued: position {}, wait time: {:?}", position, estimated_wait));
-                }
-                crate::backpressure::BackpressureResult::Rejected { reason, .. } => {
-                    return Err(anyhow!("Request rejected: {}", reason));
-                }
-                crate::backpressure::BackpressureResult::Degraded { reason } => {
-                    warn!("Request degraded: {}", reason);
-                    // Continue with degraded processing
-                    operation().await
-                }
-            }
-        }).await;
+            })
+            .await;
 
         // Process circuit breaker result
         match circuit_result.result {
@@ -400,18 +445,21 @@ impl ProductionHardeningLayer {
                 // Record success
                 self.record_success(&request.model).await;
 
-                tracker.complete(
-                    request.model.clone(),
-                    true,
-                    0, // Response tokens would be counted here
-                    0.001, // Cost would be calculated here
-                    None,
-                    None,
-                    "production_hardening".to_string(),
-                    Some(request.prompt),
-                    None, // Response would be logged here if enabled
-                    request.metadata,
-                ).await.ok();
+                tracker
+                    .complete(
+                        request.model.clone(),
+                        true,
+                        0,     // Response tokens would be counted here
+                        0.001, // Cost would be calculated here
+                        None,
+                        None,
+                        "production_hardening".to_string(),
+                        Some(request.prompt),
+                        None, // Response would be logged here if enabled
+                        request.metadata,
+                    )
+                    .await
+                    .ok();
 
                 HardeningResult::Success(result)
             }
@@ -419,26 +467,27 @@ impl ProductionHardeningLayer {
                 // Record failure
                 self.record_failure(&request.model, &e.to_string()).await;
 
-                tracker.complete(
-                    request.model.clone(),
-                    false,
-                    0,
-                    0.0,
-                    Some(e.to_string()),
-                    Some("execution_error".to_string()),
-                    "production_hardening".to_string(),
-                    Some(request.prompt),
-                    None,
-                    request.metadata,
-                ).await.ok();
+                tracker
+                    .complete(
+                        request.model.clone(),
+                        false,
+                        0,
+                        0.0,
+                        Some(e.to_string()),
+                        Some("execution_error".to_string()),
+                        "production_hardening".to_string(),
+                        Some(request.prompt),
+                        None,
+                        request.metadata,
+                    )
+                    .await
+                    .ok();
 
                 match circuit_result.state {
-                    crate::circuit_breaker::CircuitState::Open => {
-                        HardeningResult::CircuitOpen {
-                            model: request.model,
-                            retry_after: Duration::from_secs(30),
-                        }
-                    }
+                    crate::circuit_breaker::CircuitState::Open => HardeningResult::CircuitOpen {
+                        model: request.model,
+                        retry_after: Duration::from_secs(30),
+                    },
                     _ => HardeningResult::Error(e),
                 }
             }
@@ -498,28 +547,36 @@ impl ProductionHardeningLayer {
                 let mut checker = health_checker.write().await;
 
                 // Check rate limiter health
-                checker.check_health("rate_limiter", async {
-                    let _status = rate_limiter.get_status().await;
-                    Ok(Duration::from_millis(1))
-                }).await;
+                checker
+                    .check_health("rate_limiter", async {
+                        let _status = rate_limiter.get_status().await;
+                        Ok(Duration::from_millis(1))
+                    })
+                    .await;
 
                 // Check circuit breaker health
-                checker.check_health("circuit_breaker", async {
-                    let _status = circuit_breaker.get_all_status().await;
-                    Ok(Duration::from_millis(1))
-                }).await;
+                checker
+                    .check_health("circuit_breaker", async {
+                        let _status = circuit_breaker.get_all_status().await;
+                        Ok(Duration::from_millis(1))
+                    })
+                    .await;
 
                 // Check backpressure health
-                checker.check_health("backpressure", async {
-                    let _metrics = backpressure_manager.read().await.get_metrics().await;
-                    Ok(Duration::from_millis(1))
-                }).await;
+                checker
+                    .check_health("backpressure", async {
+                        let _metrics = backpressure_manager.read().await.get_metrics().await;
+                        Ok(Duration::from_millis(1))
+                    })
+                    .await;
 
                 // Check telemetry health
-                checker.check_health("telemetry", async {
-                    let _metrics = telemetry.get_metrics().await;
-                    Ok(Duration::from_millis(1))
-                }).await;
+                checker
+                    .check_health("telemetry", async {
+                        let _metrics = telemetry.get_metrics().await;
+                        Ok(Duration::from_millis(1))
+                    })
+                    .await;
             }
         });
     }
@@ -603,9 +660,11 @@ mod tests {
             metadata: HashMap::new(),
         };
 
-        let result = layer.process_request(request, || async {
-            Ok::<String, anyhow::Error>("Hello response".to_string())
-        }).await;
+        let result = layer
+            .process_request(request, || async {
+                Ok::<String, anyhow::Error>("Hello response".to_string())
+            })
+            .await;
 
         match result {
             HardeningResult::Success(response) => {

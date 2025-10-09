@@ -3,9 +3,9 @@
 //! This module handles retrieving and searching through memories in the RAG system.
 
 use anyhow::Result;
+use astraweave_embeddings::{Memory, MemoryCategory};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use astraweave_embeddings::{Memory, MemoryCategory};
 
 /// Retrieval configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -66,7 +66,11 @@ impl RetrievalEngine {
     }
 
     /// Search for memories matching a query
-    pub fn search(&self, query: &RetrievalQuery, memories: &[Memory]) -> Result<Vec<RetrievalResult>> {
+    pub fn search(
+        &self,
+        query: &RetrievalQuery,
+        memories: &[Memory],
+    ) -> Result<Vec<RetrievalResult>> {
         let mut results = Vec::new();
 
         for (index, memory) in memories.iter().enumerate() {
@@ -88,7 +92,11 @@ impl RetrievalEngine {
         }
 
         // Sort by score descending
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
 
         // Apply limit
         let limit = query.limit.unwrap_or(self.config.max_results);

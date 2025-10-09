@@ -207,7 +207,11 @@ impl Instance {
 
     pub fn from_pos_scale_color(pos: Vec3, scale: Vec3, color: [f32; 4]) -> Self {
         let transform = Mat4::from_scale_rotation_translation(scale, glam::Quat::IDENTITY, pos);
-        Self { transform, color, material_id: 0 }
+        Self {
+            transform,
+            color,
+            material_id: 0,
+        }
     }
 }
 

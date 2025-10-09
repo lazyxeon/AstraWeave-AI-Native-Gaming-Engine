@@ -18,7 +18,7 @@ use astraweave_prompts::{PromptTemplate, TemplateEngine, TemplateContext};
 async fn main() -> anyhow::Result<()> {
     // Create template engine
     let mut engine = TemplateEngine::new();
-    
+
     // Register a template
     let template = PromptTemplate::new(
         "dialogue".to_string(),
@@ -26,38 +26,38 @@ async fn main() -> anyhow::Result<()> {
          Your personality is {{character.personality}}. \
          Respond to: {{user_input}}".to_string()
     );
-    
+
     engine.register_template("dialogue", template)?;
-    
+
     // Create context with variables
     let mut context = TemplateContext::new();
     context.set("character.name", "Elena");
     context.set("character.role", "wise mage");
     context.set("character.personality", "mysterious and helpful");
     context.set("user_input", "What magic can you teach me?");
-    
+
     // Render the prompt
     let prompt = engine.render("dialogue", &context)?;
     println!("Generated prompt: {}", prompt);
-    
+
     Ok(())
 }
 ```
 */
 
-pub mod engine;
-pub mod template;
 pub mod context;
+pub mod engine;
+pub mod helpers;
 pub mod library;
 pub mod optimization;
-pub mod helpers;
+pub mod template;
 
-pub use engine::*;
-pub use template::*;
 pub use context::*;
+pub use engine::*;
+pub use helpers::*;
 pub use library::*;
 pub use optimization::*;
-pub use helpers::*;
+pub use template::*;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -68,19 +68,19 @@ use std::collections::HashMap;
 pub struct PromptsConfig {
     /// Directory containing template files
     pub templates_dir: String,
-    
+
     /// Whether to enable hot reloading of templates
     pub hot_reload: bool,
-    
+
     /// Default template format
     pub default_format: TemplateFormat,
-    
+
     /// Maximum template size in bytes
     pub max_template_size: usize,
-    
+
     /// Cache configuration
     pub cache_config: CacheConfig,
-    
+
     /// Validation settings
     pub validation: ValidationConfig,
 }
@@ -114,10 +114,10 @@ pub enum TemplateFormat {
 pub struct CacheConfig {
     /// Enable template caching
     pub enabled: bool,
-    
+
     /// Maximum cached templates
     pub max_templates: usize,
-    
+
     /// Cache TTL in seconds
     pub ttl_seconds: u64,
 }
@@ -137,13 +137,13 @@ impl Default for CacheConfig {
 pub struct ValidationConfig {
     /// Enable template validation
     pub enabled: bool,
-    
+
     /// Require all variables to be defined
     pub strict_variables: bool,
-    
+
     /// Maximum recursion depth
     pub max_recursion_depth: usize,
-    
+
     /// Schema validation for contexts
     pub schema_validation: bool,
 }
@@ -164,34 +164,34 @@ impl Default for ValidationConfig {
 pub struct TemplateMetadata {
     /// Template name/identifier
     pub name: String,
-    
+
     /// Human-readable description
     pub description: String,
-    
+
     /// Template category
     pub category: TemplateCategory,
-    
+
     /// Author information
     pub author: Option<String>,
-    
+
     /// Template version
     pub version: String,
-    
+
     /// Creation timestamp
     pub created_at: u64,
-    
+
     /// Last modified timestamp
     pub updated_at: u64,
-    
+
     /// Tags for searching and filtering
     pub tags: Vec<String>,
-    
+
     /// Required variables
     pub required_variables: Vec<String>,
-    
+
     /// Optional variables with defaults
     pub optional_variables: HashMap<String, serde_json::Value>,
-    
+
     /// Template usage statistics
     pub usage_stats: UsageStats,
 }
@@ -201,25 +201,25 @@ pub struct TemplateMetadata {
 pub enum TemplateCategory {
     /// Character dialogue templates
     Dialogue,
-    
+
     /// NPC behavior and actions
     Behavior,
-    
+
     /// Quest and story generation
     Narrative,
-    
+
     /// Combat and tactics
     Combat,
-    
+
     /// System instructions
     System,
-    
+
     /// General conversation
     Conversation,
-    
+
     /// World building and descriptions
     WorldBuilding,
-    
+
     /// Custom category
     Custom,
 }
@@ -229,16 +229,16 @@ pub enum TemplateCategory {
 pub struct UsageStats {
     /// Total times this template was used
     pub usage_count: u64,
-    
+
     /// Average render time in milliseconds
     pub avg_render_time_ms: f32,
-    
+
     /// Success rate (successful renders / total attempts)
     pub success_rate: f32,
-    
+
     /// Last used timestamp
     pub last_used: Option<u64>,
-    
+
     /// Performance score (0.0 to 1.0)
     pub performance_score: f32,
 }
@@ -248,19 +248,19 @@ pub struct UsageStats {
 pub struct RenderMetrics {
     /// Total templates rendered
     pub total_renders: u64,
-    
+
     /// Successful renders
     pub successful_renders: u64,
-    
+
     /// Failed renders
     pub failed_renders: u64,
-    
+
     /// Average render time
     pub avg_render_time_ms: f32,
-    
+
     /// Cache hit rate
     pub cache_hit_rate: f32,
-    
+
     /// Total rendering time
     pub total_render_time_ms: u64,
 }
@@ -270,22 +270,22 @@ pub struct RenderMetrics {
 pub enum TemplateError {
     #[error("Template not found: {name}")]
     TemplateNotFound { name: String },
-    
+
     #[error("Template syntax error: {message}")]
     SyntaxError { message: String },
-    
+
     #[error("Variable not defined: {variable}")]
     UndefinedVariable { variable: String },
-    
+
     #[error("Circular template dependency: {templates:?}")]
     CircularDependency { templates: Vec<String> },
-    
+
     #[error("Template too large: {size} bytes > {max} bytes")]
     TemplateTooLarge { size: usize, max: usize },
-    
+
     #[error("Invalid template format: {format:?}")]
     InvalidFormat { format: TemplateFormat },
-    
+
     #[error("Validation failed: {message}")]
     ValidationFailed { message: String },
 }
@@ -325,7 +325,7 @@ mod tests {
             optional_variables: HashMap::new(),
             usage_stats: UsageStats::default(),
         };
-        
+
         assert_eq!(metadata.name, "test_template");
         assert_eq!(metadata.tags.len(), 2);
     }
@@ -339,7 +339,7 @@ mod tests {
             TemplateCategory::Combat,
             TemplateCategory::System,
         ];
-        
+
         assert_eq!(categories.len(), 5);
     }
 
@@ -348,11 +348,11 @@ mod tests {
         let mut metrics = RenderMetrics::default();
         assert_eq!(metrics.total_renders, 0);
         assert_eq!(metrics.successful_renders, 0);
-        
+
         metrics.total_renders = 100;
         metrics.successful_renders = 95;
         metrics.failed_renders = 5;
-        
+
         let success_rate = metrics.successful_renders as f32 / metrics.total_renders as f32;
         assert_eq!(success_rate, 0.95);
     }

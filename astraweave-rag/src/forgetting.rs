@@ -3,9 +3,9 @@
 //! This module handles memory decay, forgetting, and cleanup processes.
 
 use anyhow::Result;
+use astraweave_embeddings::{Memory, MemoryCategory};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use astraweave_embeddings::{Memory, MemoryCategory};
 
 /// Forgetting configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -93,7 +93,10 @@ impl ForgettingEngine {
     }
 
     /// Process memory forgetting and decay
-    pub fn process_forgetting(&mut self, memories: Vec<Memory>) -> Result<(Vec<Memory>, ForgettingResult)> {
+    pub fn process_forgetting(
+        &mut self,
+        memories: Vec<Memory>,
+    ) -> Result<(Vec<Memory>, ForgettingResult)> {
         let start_time = std::time::Instant::now();
         let processed_count = memories.len();
         let mut retained_memories = Vec::new();
@@ -106,17 +109,21 @@ impl ForgettingEngine {
             // Get or create strength tracking for this memory
             let memory_id = memory.id.clone();
             let should_forget = {
-                let strength = self.memory_strengths
+                let strength = self
+                    .memory_strengths
                     .entry(memory_id.clone())
                     .or_insert_with(|| {
                         let mut strength = MemoryStrength::default();
-                        strength.protected = self.config.protected_categories.contains(&memory.category);
+                        strength.protected =
+                            self.config.protected_categories.contains(&memory.category);
                         strength
                     });
 
                 // Calculate current strength based on time decay
                 let hours_since_access = (current_time - strength.last_access) as f32 / 3600.0;
-                strength.current_strength = (strength.initial_strength * (-self.config.decay_rate * hours_since_access).exp()).max(0.0);
+                strength.current_strength = (strength.initial_strength
+                    * (-self.config.decay_rate * hours_since_access).exp())
+                .max(0.0);
 
                 // Check if memory should be forgotten
                 Self::should_forget_static(&self.config, &memory, strength, current_time)
@@ -147,7 +154,12 @@ impl ForgettingEngine {
     }
 
     /// Static version of should_forget to avoid borrowing issues
-    fn should_forget_static(config: &ForgettingConfig, memory: &Memory, strength: &MemoryStrength, current_time: i64) -> bool {
+    fn should_forget_static(
+        config: &ForgettingConfig,
+        memory: &Memory,
+        strength: &MemoryStrength,
+        current_time: i64,
+    ) -> bool {
         // Protected memories are never forgotten
         if strength.protected {
             return false;
@@ -201,7 +213,11 @@ impl ForgettingEngine {
     /// Get statistics about memory strengths
     pub fn get_statistics(&self) -> ForgettingStatistics {
         let total_memories = self.memory_strengths.len();
-        let protected_memories = self.memory_strengths.values().filter(|s| s.protected).count();
+        let protected_memories = self
+            .memory_strengths
+            .values()
+            .filter(|s| s.protected)
+            .count();
 
         let mut strength_sum = 0.0;
         let mut weak_memories = 0;
