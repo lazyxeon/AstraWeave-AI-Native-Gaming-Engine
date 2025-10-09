@@ -125,7 +125,7 @@ fn init_crash_reporting() {
 
 /// System that collects observability metrics
 fn observability_system(world: &mut astraweave_ecs::World) {
-    if let Some(state) = world.resource::<ObservabilityState>() {
+    if let Some(state) = world.get_resource::<ObservabilityState>() {
         if state.config.metrics_enabled {
             // For now, just log metrics instead of using metrics crate
             info!("Tick recorded");
@@ -201,6 +201,6 @@ mod tests {
         plugin.build(&mut app);
 
         // Check that the resource was inserted
-        assert!(app.world.resource::<ObservabilityState>().is_some());
+        assert!(app.world.get_resource::<ObservabilityState>().is_some());
     }
 }

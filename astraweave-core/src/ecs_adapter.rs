@@ -195,7 +195,7 @@ mod tests {
         let mut w = World::new();
         let _e = w.spawn("ally", IVec2 { x: 0, y: 0 }, crate::Team { id: 1 }, 100, 5);
         let app = build_app(w, 0.010).run_fixed(5);
-        let w2 = app.world.resource::<World>().unwrap();
+        let w2 = app.world.get_resource::<World>().unwrap();
         assert!((w2.t - 0.050).abs() < 1e-6);
     }
 
@@ -233,7 +233,7 @@ mod tests {
         let e = app.world.spawn();
         // For Phase 1 tests we demonstrate populating the entity bridge when
         // creating ECS entities that correspond to legacy world entities.
-        if let Some(bridge) = app.world.resource_mut::<EntityBridge>() {
+        if let Some(bridge) = app.world.get_resource_mut::<EntityBridge>() {
             // Use a synthetic legacy id 1 for test purposes
             bridge.insert_pair(1, e);
         }
@@ -259,7 +259,7 @@ mod tests {
         let w = World::new();
         let mut app = build_app(w, 0.016);
         let e = app.world.spawn();
-        if let Some(bridge) = app.world.resource_mut::<EntityBridge>() {
+        if let Some(bridge) = app.world.get_resource_mut::<EntityBridge>() {
             bridge.insert_pair(1, e);
         }
         app.world.insert(
@@ -275,7 +275,7 @@ mod tests {
             },
         );
         app = app.run_fixed(1);
-        let evs = app.world.resource_mut::<Events<MovedEvent>>().unwrap();
+        let evs = app.world.get_resource_mut::<Events<MovedEvent>>().unwrap();
         let mut rdr = evs.reader();
         let collected: Vec<_> = rdr.drain().collect();
         assert_eq!(collected.len(), 1);
@@ -304,7 +304,7 @@ mod tests {
         let mut ecs_app = build_app(ecs_world, 0.016);
         // Create ECS entity and set up bridge
         let ecs_entity = ecs_app.world.spawn();
-        if let Some(bridge) = ecs_app.world.resource_mut::<EntityBridge>() {
+        if let Some(bridge) = ecs_app.world.get_resource_mut::<EntityBridge>() {
             bridge.insert_pair(legacy_entity, ecs_entity);
         }
         // Set initial position in ECS
