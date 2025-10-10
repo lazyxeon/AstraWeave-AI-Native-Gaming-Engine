@@ -300,7 +300,7 @@ astraweave-ui/          # UI framework integration
 examples/               # 20+ demos covering engine features
 assets/                 # Sample content (models, audio, data)
 docs/                   # Technical documentation
-Game/                   # Veilweaver reference implementation docs
+Games-VEILWEAVER/       # Veilweaver reference implementation
 AI Engine/              # Detailed AstraWeave engine specifications
 ```
 
