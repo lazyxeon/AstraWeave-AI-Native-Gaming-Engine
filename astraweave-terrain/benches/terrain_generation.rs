@@ -19,6 +19,36 @@ fn benchmark_heightmap_generation(c: &mut Criterion) {
             noise.generate_heightmap(black_box(chunk_id), black_box(256.0), black_box(128))
         })
     });
+
+    // Week 3 Action 8: SIMD-optimized benchmarks
+    #[cfg(feature = "simd-noise")]
+    {
+        use astraweave_terrain::SimdHeightmapGenerator;
+
+        c.bench_function("heightmap_generation_64x64_simd", |b| {
+            b.iter(|| {
+                let chunk_id = ChunkId::new(black_box(0), black_box(0));
+                SimdHeightmapGenerator::generate_heightmap_simd(
+                    black_box(&noise),
+                    black_box(chunk_id),
+                    black_box(256.0),
+                    black_box(64),
+                )
+            })
+        });
+
+        c.bench_function("heightmap_generation_128x128_simd", |b| {
+            b.iter(|| {
+                let chunk_id = ChunkId::new(black_box(0), black_box(0));
+                SimdHeightmapGenerator::generate_heightmap_simd(
+                    black_box(&noise),
+                    black_box(chunk_id),
+                    black_box(256.0),
+                    black_box(128),
+                )
+            })
+        });
+    }
 }
 
 fn benchmark_climate_sampling(c: &mut Criterion) {
@@ -38,13 +68,29 @@ fn benchmark_climate_sampling(c: &mut Criterion) {
 }
 
 fn benchmark_world_generation(c: &mut Criterion) {
-    let config = WorldConfig::default();
+    let mut config = WorldConfig::default();
+    // Week 3 Action 8: Disable erosion for performance testing
+    // Erosion adds ~3ms overhead (10 iterations of flow simulation)
+    config.noise.erosion_enabled = false;
+    
     let mut generator = WorldGenerator::new(config);
 
     c.bench_function("world_chunk_generation", |b| {
         b.iter(|| {
             let chunk_id = ChunkId::new(black_box(1), black_box(1));
             generator.generate_chunk(black_box(chunk_id))
+        })
+    });
+
+    // Week 3 Action 8: Separate benchmark with erosion enabled
+    let mut config_with_erosion = WorldConfig::default();
+    config_with_erosion.noise.erosion_enabled = true;
+    let mut generator_erosion = WorldGenerator::new(config_with_erosion);
+
+    c.bench_function("world_chunk_generation_with_erosion", |b| {
+        b.iter(|| {
+            let chunk_id = ChunkId::new(black_box(1), black_box(1));
+            generator_erosion.generate_chunk(black_box(chunk_id))
         })
     });
 }

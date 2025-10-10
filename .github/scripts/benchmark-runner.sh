@@ -5,7 +5,17 @@
 set -euo pipefail
 
 # Configuration
-BENCHMARK_PACKAGES_STATIC=(astraweave-core astraweave-input)
+# Week 3 Action 11: Updated to include all Week 2-3 benchmark packages
+# Week 3 Action 12: Added astraweave-physics (raycast, character controller, rigid body benchmarks)
+BENCHMARK_PACKAGES_STATIC=(
+    astraweave-core
+    astraweave-input
+    astraweave-ai
+    astraweave-behavior
+    astraweave-stress-test
+    astraweave-terrain
+    astraweave-physics
+)
 RESULTS_DIR="${BENCHMARK_RESULTS_DIR:-benchmark_results}"
 SUMMARY_FILE="$RESULTS_DIR/summary.txt"
 JSON_FILE="$RESULTS_DIR/benchmarks.json"

@@ -100,9 +100,13 @@ pub fn combat_system(world: &mut astraweave_ecs::World) {
         if !attack.active {
             continue;
         }
-        // Get positions
-        let pos = world.get::<CPos>(e).unwrap();
-        let target_pos = world.get::<CPos>(target).unwrap();
+        // Week 3 Action 10: Safe component access with proper error handling
+        let Some(pos) = world.get::<CPos>(e) else {
+            continue; // Skip if attacker has no position
+        };
+        let Some(target_pos) = world.get::<CPos>(target) else {
+            continue; // Skip if target has no position
+        };
         let distance =
             ((pos.pos.x - target_pos.pos.x).abs() + (pos.pos.y - target_pos.pos.y).abs()) as f32;
         // Simplified tick

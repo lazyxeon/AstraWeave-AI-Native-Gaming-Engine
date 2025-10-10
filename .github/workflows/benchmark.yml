@@ -122,7 +122,7 @@ jobs:
           alert-threshold: '150%'
           gh-repository: ${{ github.repository }}
           
-      - name: Validate benchmark results
+      - name: Validate benchmark results (Basic)
         run: |
           echo "=== Benchmark Validation ==="
           
@@ -174,3 +174,32 @@ jobs:
           echo "Fastest operation: ${min_time} ns"
           echo "Slowest operation: ${max_time} ns" 
           echo "Average time: ${avg_time} ns"
+      
+      - name: Validate benchmark thresholds (Week 3 Action 11)
+        shell: pwsh
+        run: |
+          # Install PowerShell on Linux if needed
+          if (!(Get-Command pwsh -ErrorAction SilentlyContinue)) {
+            Write-Host "Installing PowerShell..."
+            sudo apt-get update
+            sudo apt-get install -y powershell
+          }
+          
+          # Run threshold validation (non-strict mode for warnings only)
+          Write-Host "=== Running Threshold Validation ===" -ForegroundColor Cyan
+          & ./scripts/check_benchmark_thresholds.ps1 `
+            -BenchmarkJsonPath "benchmark_results/benchmarks.json" `
+            -ThresholdsJsonPath ".github/benchmark_thresholds.json" `
+            -ShowDetails
+        continue-on-error: true
+      
+      - name: Strict threshold validation (main branch only)
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          Write-Host "=== Strict Threshold Validation (Main Branch) ===" -ForegroundColor Red
+          & ./scripts/check_benchmark_thresholds.ps1 `
+            -BenchmarkJsonPath "benchmark_results/benchmarks.json" `
+            -ThresholdsJsonPath ".github/benchmark_thresholds.json" `
+            -Strict `
+            -ShowDetails

@@ -282,43 +282,41 @@ impl VoxelizationPipeline {
     /// Upload mesh data to GPU
     fn upload_mesh(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, mesh: &VoxelizationMesh) {
         // Create or recreate vertex buffer
-        if self.vertex_buffer.is_none()
-            || self.vertex_buffer.as_ref().unwrap().size()
-                < (mesh.vertices.len() * std::mem::size_of::<VoxelVertex>()) as u64
-        {
-            self.vertex_buffer = Some(device.create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Voxelization Vertex Buffer"),
-                    contents: bytemuck::cast_slice(&mesh.vertices),
-                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-                },
-            ));
-        } else {
-            queue.write_buffer(
-                self.vertex_buffer.as_ref().unwrap(),
-                0,
-                bytemuck::cast_slice(&mesh.vertices),
-            );
+        let vertex_size = (mesh.vertices.len() * std::mem::size_of::<VoxelVertex>()) as u64;
+        match &self.vertex_buffer {
+            Some(buffer) if buffer.size() >= vertex_size => {
+                // Reuse existing buffer
+                queue.write_buffer(buffer, 0, bytemuck::cast_slice(&mesh.vertices));
+            }
+            _ => {
+                // Create new buffer (either None or too small)
+                self.vertex_buffer = Some(device.create_buffer_init(
+                    &wgpu::util::BufferInitDescriptor {
+                        label: Some("Voxelization Vertex Buffer"),
+                        contents: bytemuck::cast_slice(&mesh.vertices),
+                        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                    },
+                ));
+            }
         }
 
         // Create or recreate index buffer
-        if self.index_buffer.is_none()
-            || self.index_buffer.as_ref().unwrap().size()
-                < (mesh.indices.len() * std::mem::size_of::<u32>()) as u64
-        {
-            self.index_buffer = Some(device.create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Voxelization Index Buffer"),
-                    contents: bytemuck::cast_slice(&mesh.indices),
-                    usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-                },
-            ));
-        } else {
-            queue.write_buffer(
-                self.index_buffer.as_ref().unwrap(),
-                0,
-                bytemuck::cast_slice(&mesh.indices),
-            );
+        let index_size = (mesh.indices.len() * std::mem::size_of::<u32>()) as u64;
+        match &self.index_buffer {
+            Some(buffer) if buffer.size() >= index_size => {
+                // Reuse existing buffer
+                queue.write_buffer(buffer, 0, bytemuck::cast_slice(&mesh.indices));
+            }
+            _ => {
+                // Create new buffer (either None or too small)
+                self.index_buffer = Some(device.create_buffer_init(
+                    &wgpu::util::BufferInitDescriptor {
+                        label: Some("Voxelization Index Buffer"),
+                        contents: bytemuck::cast_slice(&mesh.indices),
+                        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                    },
+                ));
+            }
         }
 
         // Update material buffer
@@ -409,6 +407,16 @@ impl VoxelizationPipeline {
         device: &wgpu::Device,
         voxel_texture_view: &wgpu::TextureView,
     ) -> wgpu::BindGroup {
+        // Week 3 Action 10: Safe buffer access (buffers guaranteed to exist after upload_mesh)
+        let vertex_buffer = self
+            .vertex_buffer
+            .as_ref()
+            .expect("vertex_buffer must be initialized before create_bind_group (call upload_mesh first)");
+        let index_buffer = self
+            .index_buffer
+            .as_ref()
+            .expect("index_buffer must be initialized before create_bind_group (call upload_mesh first)");
+
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Voxelization Bind Group"),
             layout: &self.bind_group_layout,
@@ -419,11 +427,11 @@ impl VoxelizationPipeline {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: self.vertex_buffer.as_ref().unwrap().as_entire_binding(),
+                    resource: vertex_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: self.index_buffer.as_ref().unwrap().as_entire_binding(),
+                    resource: index_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,

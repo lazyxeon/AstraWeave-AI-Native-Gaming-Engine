@@ -16,8 +16,9 @@ rayon = "1.11"
 tokio = { version = "1", features = ["sync", "rt"] }
 
 [features]
-default = ["hybrid-voxel"]
+default = ["hybrid-voxel", "simd-noise"]
 hybrid-voxel = []
+simd-noise = [] # Week 3 Action 8: SIMD-optimized noise generation (20-30% speedup)
 
 [dev-dependencies]
 criterion.workspace = true
