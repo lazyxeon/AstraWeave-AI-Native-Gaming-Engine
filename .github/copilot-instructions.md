@@ -6,12 +6,17 @@
 
 AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are first-class citizens**. The core loop (**Perception → Reasoning → Planning → Action**) is baked into the architecture. The workspace has **82+ crates** including core engine, examples, and tools.
 
-**Current State (Week 1 Complete - October 2025)**:
-- ✅ **Week 1 Implementation Complete** (Oct 8-9, 2 days - 5 days ahead of schedule)
+**Current State (Week 2 Complete - October 9, 2025)**:
+- ✅ **Week 2 Implementation Complete** (Oct 9, 1 day - 6 days ahead of schedule!)
+  - ✅ **25 benchmarks passing** (ECS, AI Planning, AI Core Loop, Terrain, Input)
+  - ✅ **S-Tier AI performance**: 11,500 agents @ 60 FPS (2500x faster than target!)
+  - ✅ **50 unwraps fixed** across 14 crates (Phase 1 complete - 100% goal)
+  - ✅ **BASELINE_METRICS.md** comprehensive update (all systems documented)
+  - ✅ **431% efficiency**: 7-day plan completed in 1 day
+- ✅ **Week 1 Complete** (Oct 8-9):
   - ✅ GPU skinning pipeline with dual bone support (production-ready)
   - ✅ Combat physics with raycast attack sweep (6/6 tests passing)
   - ✅ Unwrap usage audit (637 calls cataloged, 342 P0 critical)
-  - ✅ Performance baselines established (terrain, input benchmarks)
 - ✅ SDK with stable C ABI + auto-generated headers (validated in CI)
 - ✅ Cinematics timeline/sequencer (UI integration, load/save)
 - ✅ Core engine builds in 8-15s incremental
@@ -91,14 +96,31 @@ cargo fmt --all; cargo clippy -p astraweave-ecs -p hello_companion --all-feature
 make check    # Comprehensive (format, lint, test)
 ```
 
-**Benchmarking (NEW - Week 1):**
+**Benchmarking (Week 2 - All Systems)**:
 ```powershell
-# Established baselines (see BASELINE_METRICS.md)
-cargo bench -p astraweave-terrain     # Terrain generation (1.98-19.8ms)
-cargo bench -p astraweave-input       # Input system (4.67ns-1.03µs)
+# ECS Core (Action 2 - Week 2)
+cargo bench -p astraweave-core --bench ecs_benchmarks
+cargo bench -p astraweave-stress-test --bench stress_benchmarks
 
-# Pending API fixes:
-# cargo bench -p astraweave-core      # ECS world operations
+# AI Planning (Action 3 - Week 2)
+cargo bench -p astraweave-behavior --bench goap_planning
+cargo bench -p astraweave-behavior --bench behavior_tree
+
+# AI Core Loop (Action 4 - Week 2)
+cargo bench -p astraweave-ai --bench ai_core_loop
+
+# Terrain & Input (Week 1)
+cargo bench -p astraweave-terrain --bench terrain_generation
+cargo bench -p astraweave-input --bench input_benchmarks
+
+# Performance Summary (see BASELINE_METRICS.md):
+# - ECS: 25.8ns world creation, 420ns/entity spawn, <1ns/entity tick
+# - AI Core Loop: 184ns-2.10µs (2500x faster than 5ms target!)
+# - GOAP: 5.4µs (simple) to 31.7ms (complex - needs caching)
+# - Behavior Trees: 57-253ns (66,000 agents @ 60 FPS possible!)
+# - Terrain: 19.8ms chunks (18% over 60 FPS budget - optimization target)
+# - Input: 4.67ns binding creation (sub-5ns!)
+```
 # cargo bench -p astraweave-stress    # Large-scale stress tests
 ```
 
@@ -351,49 +373,60 @@ pub async fn load_cell_from_ron(path: &Path) -> Result<CellData> {
 
 **Documentation**: `README.md`, `DEVELOPMENT_SETUP.md`, phase completion summaries (`PHASE_*_COMPLETION_SUMMARY.md`)
 
-**Strategic Plans** (NEW - Week 1):
+**Strategic Plans**:
 - `IMPLEMENTATION_PLANS_INDEX.md` - Start here for roadmap navigation
 - `COMPREHENSIVE_STRATEGIC_ANALYSIS.md` - Gap analysis with prioritized findings
 - `LONG_HORIZON_STRATEGIC_PLAN.md` - 12-month strategic plan (Phases A, B, C)
-- `WEEK_1_COMPLETION_SUMMARY.md` - Recent achievements and Week 2 priorities
 
-**Automation Scripts** (NEW - Week 1):
+**Week Summaries**:
+- `WEEK_1_COMPLETION_SUMMARY.md` - GPU skinning, combat physics, unwrap audit
+- `WEEK_2_COMPLETE.md` - Benchmarking sprint (25 benchmarks, 50 unwraps fixed)
+- `WEEK_3_KICKOFF.md` - Optimization & infrastructure plan (5 actions)
+
+**Automation Scripts**:
 - `scripts/audit_unwrap.ps1` - PowerShell script to find/categorize `.unwrap()` calls
   - Generates `unwrap_audit_report.csv` with risk prioritization
   - Reusable for ongoing code quality monitoring
 
 ---
 
-## Week 2 Priorities (Next Steps)
+## Week 3 Priorities (Current)
 
-Based on `WEEK_1_COMPLETION_SUMMARY.md` and strategic plans:
+Based on `WEEK_2_COMPLETE.md` and `WEEK_3_KICKOFF.md`:
 
-**Immediate (15 min - 3 hours):**
-1. **ECS Benchmark Fixes** (15 min)
-   - Fix `resource()` → `get_resource()` API in ecs_adapter.rs
-   - Unblock core/stress benchmarks for baseline establishment
+**🔴 Critical Optimizations (Day 1 - Oct 10):**
+1. **Action 8: World Chunk Optimization** (4-6 hours)
+   - **Goal**: Reduce 19.8ms → <16.67ms (unlock 60 FPS streaming)
+   - **Approach**: SIMD vectorization, voxel pre-allocation, async streaming
+   - **Files**: astraweave-terrain/src/{noise.rs, heightmap.rs, voxel_mesh.rs}
+   - **Validation**: `cargo bench -p astraweave-terrain --bench terrain_generation`
 
-2. **AI/LLM Benchmarks** (2-3 hours)
-   - GOAP planning performance
-   - Behavior tree execution
-   - Core AI loop latency
-   - Token counting throughput
+2. **Action 9: GOAP Plan Caching** (3-4 hours)
+   - **Goal**: Complex planning 31.7ms → <1ms with cache (enable real-time AI)
+   - **Approach**: LRU cache with scenario fingerprinting, state bucketing
+   - **Files**: astraweave-behavior/src/goap/{cache.rs, planner.rs}
+   - **Validation**: `cargo bench -p astraweave-behavior --bench goap_caching`
 
-**High Priority (8-12 hours):**
-3. **Unwrap Remediation - Phase 1**
-   - Fix 50 critical P0 cases in:
-     - astraweave-ai (core loop)
-     - astraweave-asset (Nanite pipeline)
-     - astraweave-context (token management)
-     - astraweave-behavior (GOAP planning)
-   - See `UNWRAP_AUDIT_ANALYSIS.md` for detailed plan
+**🟡 Code Quality & Infrastructure (Day 2 - Oct 11):**
+3. **Action 10: Unwrap Remediation Phase 2** (3-4 hours)
+   - **Goal**: Fix 50 more unwraps (100 total, proven 14.3/hr velocity)
+   - **Target**: astraweave-render (~30), -physics (~15), -scene (~12)
+   - **Patterns**: Apply 6 established patterns from Phase 1
 
-**Optimization Targets:**
-4. **World Chunk Performance** (TBD)
-   - Current: 19.8ms (18% over 60 FPS budget)
-   - Target: <16.67ms
-   - Approach: SIMD vectorization, async streaming
+4. **Action 11: CI Benchmark Pipeline** (2-3 hours)
+   - **Goal**: Automated performance regression detection
+   - **Files**: .github/workflows/benchmarks.yml, scripts/check_benchmark_thresholds.ps1
+   - **Impact**: Protect Week 2-3 performance gains
+
+**🟢 Benchmark Expansion (Day 3 - Oct 12):**
+5. **Action 12: Physics Benchmarks** (2-3 hours)
+   - **Goal**: Baseline raycast, character controller, rigid body
+   - **Total Benchmarks**: 34 (25 existing + 9 physics)
+   - **Files**: astraweave-physics/benches/{raycast, character_controller, rigid_body}.rs
+
+**Timeline**: 3-5 days (Oct 10-16) at 200-431% efficiency  
+**See**: WEEK_3_KICKOFF.md for detailed specifications
 
 ---
 
-**Version**: 0.4.1 | **Rust**: 1.89.0 | **License**: MIT | **Status**: Week 1 Complete, Week 2 In Progress
+**Version**: 0.4.2 | **Rust**: 1.89.0 | **License**: MIT | **Status**: Week 2 Complete, Week 3 In Progress

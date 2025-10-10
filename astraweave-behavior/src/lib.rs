@@ -2,6 +2,7 @@
 
 pub mod ecs;
 pub mod goap;
+pub mod goap_cache; // Week 3 Action 9: GOAP plan caching with LRU eviction
 
 use std::collections::HashMap;
 

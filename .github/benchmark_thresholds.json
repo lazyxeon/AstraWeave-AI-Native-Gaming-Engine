@@ -1,0 +1,315 @@
+{
+  "version": "1.0",
+  "generated": "2025-10-09T00:00:00Z",
+  "description": "Baseline performance thresholds for AstraWeave engine (Week 2-3 benchmarks)",
+  "policy": {
+    "default_max_regression": "50%",
+    "default_warn_threshold": "25%",
+    "strict_enforcement": false,
+    "comment": "Thresholds set from Week 2 baseline metrics + Week 3 optimizations"
+  },
+  "benchmarks": {
+    "astraweave-core::ecs_benchmarks/world_creation": {
+      "baseline": 25.8,
+      "max_allowed": 38.7,
+      "warn_threshold": 32.25,
+      "unit": "ns",
+      "description": "ECS World creation time (Week 2 Action 2)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-core::ecs_benchmarks/entity_spawn": {
+      "baseline": 420,
+      "max_allowed": 630,
+      "warn_threshold": 525,
+      "unit": "ns",
+      "description": "Single entity spawn time (Week 2 Action 2)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-core::ecs_benchmarks/entity_tick_empty": {
+      "baseline": 0.95,
+      "max_allowed": 1.5,
+      "warn_threshold": 1.2,
+      "unit": "ns",
+      "description": "Empty entity tick (sub-nanosecond, Week 2 Action 2)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-stress-test::ecs_performance/stress_10k_entities": {
+      "baseline": 5000000,
+      "max_allowed": 7500000,
+      "warn_threshold": 6250000,
+      "unit": "ns",
+      "description": "10,000 entities spawn stress test (Week 2 Action 2)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::goap_planning/goap_planning_simple": {
+      "baseline": 6050,
+      "max_allowed": 9075,
+      "warn_threshold": 7562.5,
+      "unit": "ns",
+      "description": "Simple GOAP planning (2 actions, Week 2 Action 3)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::goap_planning/goap_planning_10_actions": {
+      "baseline": 3650000,
+      "max_allowed": 5475000,
+      "warn_threshold": 4562500,
+      "unit": "ns",
+      "description": "Moderate GOAP planning (10 actions, Week 2 Action 3)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::goap_planning/goap_planning_20_actions": {
+      "baseline": 25400000,
+      "max_allowed": 38100000,
+      "warn_threshold": 31750000,
+      "unit": "ns",
+      "description": "Complex GOAP planning (20 actions, Week 2 Action 3)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::goap_planning/goap_caching_cold_cache": {
+      "baseline": 364900,
+      "max_allowed": 547350,
+      "warn_threshold": 456125,
+      "unit": "ns",
+      "description": "GOAP cache cold access (Week 3 Action 9)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::goap_planning/goap_caching_warm_cache_90pct": {
+      "baseline": 737,
+      "max_allowed": 1105.5,
+      "warn_threshold": 921.25,
+      "unit": "ns",
+      "description": "GOAP cache 90% hit rate (Week 3 Action 9 - CRITICAL)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z",
+      "critical": true
+    },
+    "astraweave-behavior::goap_planning/goap_cache_comparison/cache_miss": {
+      "baseline": 47190,
+      "max_allowed": 70785,
+      "warn_threshold": 58987.5,
+      "unit": "ns",
+      "description": "GOAP cache miss baseline (Week 3 Action 9)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::goap_planning/goap_cache_comparison/cache_hit": {
+      "baseline": 1010,
+      "max_allowed": 1515,
+      "warn_threshold": 1262.5,
+      "unit": "ns",
+      "description": "GOAP cache hit (Week 3 Action 9 - CRITICAL)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z",
+      "critical": true
+    },
+    "astraweave-behavior::behavior_tree/behavior_tree_simple": {
+      "baseline": 57,
+      "max_allowed": 85.5,
+      "warn_threshold": 71.25,
+      "unit": "ns",
+      "description": "Simple behavior tree (Week 2 Action 3)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-behavior::behavior_tree/behavior_tree_complex": {
+      "baseline": 253,
+      "max_allowed": 379.5,
+      "warn_threshold": 316.25,
+      "unit": "ns",
+      "description": "Complex behavior tree (Week 2 Action 3)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-ai::ai_core_loop/ai_core_loop_simple": {
+      "baseline": 184,
+      "max_allowed": 276,
+      "warn_threshold": 230,
+      "unit": "ns",
+      "description": "Simple AI core loop (Week 2 Action 4 - CRITICAL)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z",
+      "critical": true
+    },
+    "astraweave-ai::ai_core_loop/ai_core_loop_moderate": {
+      "baseline": 736,
+      "max_allowed": 1104,
+      "warn_threshold": 920,
+      "unit": "ns",
+      "description": "Moderate AI core loop (Week 2 Action 4)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-ai::ai_core_loop/ai_core_loop_complex": {
+      "baseline": 2100,
+      "max_allowed": 3150,
+      "warn_threshold": 2625,
+      "unit": "ns",
+      "description": "Complex AI core loop (Week 2 Action 4)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-terrain::terrain_generation/chunk_64x64": {
+      "baseline": 1980000,
+      "max_allowed": 2970000,
+      "warn_threshold": 2475000,
+      "unit": "ns",
+      "description": "64x64 terrain chunk generation (Week 1 baseline)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-terrain::terrain_generation/world_chunk_streaming": {
+      "baseline": 15060000,
+      "max_allowed": 16670000,
+      "warn_threshold": 16000000,
+      "unit": "ns",
+      "description": "World chunk with streaming (Week 3 Action 8 - CRITICAL 60 FPS target)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z",
+      "critical": true,
+      "comment": "MUST stay under 16.67ms for 60 FPS - optimized from 19.8ms"
+    },
+    "astraweave-input::input_benchmarks/input_binding_creation": {
+      "baseline": 4.67,
+      "max_allowed": 7.0,
+      "warn_threshold": 5.84,
+      "unit": "ns",
+      "description": "Input binding creation (Week 1 baseline - sub-5ns target)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-input::input_benchmarks/input_binding_lookup": {
+      "baseline": 12.3,
+      "max_allowed": 18.45,
+      "warn_threshold": 15.38,
+      "unit": "ns",
+      "description": "Input binding lookup (Week 1 baseline)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-input::input_benchmarks/full_input_set_processing": {
+      "baseline": 1030,
+      "max_allowed": 1545,
+      "warn_threshold": 1287.5,
+      "unit": "ns",
+      "description": "Full input set processing (Week 1 baseline)",
+      "created": "2025-10-08T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::raycast/raycast_empty_scene": {
+      "baseline": 48,
+      "max_allowed": 72,
+      "warn_threshold": 60,
+      "unit": "ns",
+      "description": "Raycast against empty scene (Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::raycast/raycast_ground_plane": {
+      "baseline": 44,
+      "max_allowed": 66,
+      "warn_threshold": 55,
+      "unit": "ns",
+      "description": "Raycast vs ground plane (Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::raycast/raycast_batch_8_rays": {
+      "baseline": 273,
+      "max_allowed": 409.5,
+      "warn_threshold": 341.25,
+      "unit": "ns",
+      "description": "8 raycasts in circle (vision simulation, Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::character_controller/character_move_straight": {
+      "baseline": 114,
+      "max_allowed": 171,
+      "warn_threshold": 142.5,
+      "unit": "ns",
+      "description": "Character movement update (straight, Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::character_controller/character_move_diagonal": {
+      "baseline": 190,
+      "max_allowed": 285,
+      "warn_threshold": 237.5,
+      "unit": "ns",
+      "description": "Character movement update (diagonal, Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::character_controller/character_full_tick": {
+      "baseline": 6518,
+      "max_allowed": 9777,
+      "warn_threshold": 8147.5,
+      "unit": "ns",
+      "description": "Full character tick (move + physics step, Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z",
+      "critical": true
+    },
+    "astraweave-physics::rigid_body/rigid_body_single_step": {
+      "baseline": 2971,
+      "max_allowed": 4456.5,
+      "warn_threshold": 3713.75,
+      "unit": "ns",
+      "description": "Physics step with single rigid body (Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::rigid_body/rigid_body_batch_step/1": {
+      "baseline": 2569,
+      "max_allowed": 3853.5,
+      "warn_threshold": 3211.25,
+      "unit": "ns",
+      "description": "Physics step with 1 dynamic body (Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    },
+    "astraweave-physics::rigid_body/rigid_body_creation": {
+      "baseline": 3264,
+      "max_allowed": 4896,
+      "warn_threshold": 4080,
+      "unit": "ns",
+      "description": "Dynamic box creation time (Week 3 Action 12)",
+      "created": "2025-10-09T00:00:00Z",
+      "last_updated": "2025-10-09T00:00:00Z"
+    }
+  },
+  "critical_benchmarks": [
+    "astraweave-ai::ai_core_loop/ai_core_loop_simple",
+    "astraweave-behavior::goap_planning/goap_caching_warm_cache_90pct",
+    "astraweave-behavior::goap_planning/goap_cache_comparison/cache_hit",
+    "astraweave-terrain::terrain_generation/world_chunk_streaming",
+    "astraweave-physics::character_controller/character_full_tick"
+  ],
+  "metadata": {
+    "total_benchmarks": 30,
+    "baseline_source": "Week 2-3 completion reports",
+    "optimization_actions": [
+      "Week 2 Action 2: ECS Performance Baseline",
+      "Week 2 Action 3: AI Planning Benchmarks",
+      "Week 2 Action 4: AI Core Loop Benchmarks",
+      "Week 3 Action 8: World Chunk Optimization",
+      "Week 3 Action 9: GOAP Plan Caching",
+      "Week 3 Action 12: Physics Benchmarks (raycast, character controller, rigid body)"
+    ],
+    "performance_targets": {
+      "ai_core_loop_simple": "< 5ms for real-time AI (achieved: 184ns)",
+      "goap_cache_hit": "< 1ms for real-time planning (achieved: 1.01µs)",
+      "terrain_streaming": "< 16.67ms for 60 FPS (achieved: 15.06ms)",
+      "behavior_tree_simple": "< 1µs for 60K agents @ 60 FPS (achieved: 57ns)",
+      "character_full_tick": "< 16.67ms for 60 FPS (achieved: 6.52µs)"
+    }
+  }
+}

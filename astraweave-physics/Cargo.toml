@@ -10,3 +10,18 @@ glam = { workspace = true }
 rapier3d = { workspace = true }
 rand = { workspace = true }
 bitflags = "2"
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "raycast"
+harness = false
+
+[[bench]]
+name = "character_controller"
+harness = false
+
+[[bench]]
+name = "rigid_body"
+harness = false

@@ -12,6 +12,7 @@ pub mod lod_blending;
 pub mod marching_cubes_tables;
 pub mod meshing;
 pub mod noise_gen;
+pub mod noise_simd; // SIMD-optimized noise generation (Week 3 Action 8)
 pub mod partition_integration;
 pub mod scatter;
 pub mod structures;
@@ -26,6 +27,7 @@ pub use meshing::{
     AsyncMeshGenerator, ChunkMesh, DualContouring, LodConfig, LodMeshGenerator, MeshVertex,
 };
 pub use noise_gen::{NoiseConfig, TerrainNoise};
+pub use noise_simd::SimdHeightmapGenerator; // Week 3 Action 8: SIMD optimization
 pub use partition_integration::{
     PartitionCoord, VoxelPartitionConfig, VoxelPartitionEvent, VoxelPartitionManager,
     VoxelPartitionStats,
@@ -169,7 +171,16 @@ impl WorldGenerator {
         Ok(result)
     }
     pub fn generate_chunk(&mut self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
-        // Generate heightmap for this chunk
+        // Generate heightmap for this chunk (using SIMD if enabled)
+        #[cfg(feature = "simd-noise")]
+        let heightmap = noise_simd::SimdHeightmapGenerator::generate_heightmap_simd(
+            &self.noise,
+            chunk_id,
+            self.config.chunk_size,
+            self.config.heightmap_resolution,
+        )?;
+
+        #[cfg(not(feature = "simd-noise"))]
         let heightmap = self.noise.generate_heightmap(
             chunk_id,
             self.config.chunk_size,
