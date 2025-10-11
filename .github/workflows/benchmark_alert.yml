@@ -1,0 +1,292 @@
+name: Benchmark Regression Alerts
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  RUSTC_WRAPPER: sccache
+  SCCACHE_CACHE_SIZE: "10G"
+
+jobs:
+  check-regressions:
+    name: Check for Performance Regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config cmake ninja-build \
+            libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
+            libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb1-dev \
+            libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev libxcb-xkb-dev \
+            libgl1-mesa-dev libegl1-mesa-dev wayland-protocols libwayland-dev \
+            libasound2-dev libpulse-dev libudev-dev mesa-vulkan-drivers vulkan-tools \
+            bc jq coreutils
+      
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.9
+      
+      - name: Set up Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: benchmark-alerts-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          cache-all-crates: true
+          shared-key: "bench"
+      
+      - name: Run benchmarks
+        run: |
+          export BENCHMARK_RESULTS_DIR="benchmark_results"
+          export VERBOSE="true"
+          ./.github/scripts/benchmark-runner.sh
+      
+      - name: Check for regressions
+        id: regression_check
+        shell: pwsh
+        run: |
+          Write-Host "=== Checking for Performance Regressions ===" -ForegroundColor Cyan
+          
+          # Run threshold validation
+          & ./scripts/check_benchmark_thresholds.ps1 `
+            -BenchmarkJsonPath "benchmark_results/benchmarks.json" `
+            -ThresholdsJsonPath ".github/benchmark_thresholds.json" `
+            -Strict `
+            -ShowDetails
+          
+          # Capture exit code
+          $exitCode = $LASTEXITCODE
+          
+          # Set output for next step
+          if ($exitCode -ne 0) {
+            Write-Host "Regressions detected (exit code $exitCode)" -ForegroundColor Red
+            echo "has_regressions=true" >> $env:GITHUB_OUTPUT
+            
+            # Parse regression details
+            $results = Get-Content "benchmark_results/benchmarks.json" | ConvertFrom-Json
+            $thresholds = Get-Content ".github/benchmark_thresholds.json" | ConvertFrom-Json
+            
+            $regressions = @()
+            foreach ($result in $results) {
+              $threshold = $thresholds.benchmarks.($result.name)
+              if ($threshold -and $result.value -gt $threshold.max_allowed) {
+                $overPercent = [math]::Round((($result.value - $threshold.max_allowed) / $threshold.max_allowed) * 100, 1)
+                $regressions += "- **$($result.name)**: $($result.value) ns (baseline: $($threshold.baseline) ns, max: $($threshold.max_allowed) ns, **+$overPercent% over limit**)"
+              }
+            }
+            
+            $regressionList = $regressions -join "`n"
+            
+            # Save to file for issue creation
+            @"
+          ## 🚨 Performance Regression Detected
+          
+          Automated benchmark validation found performance regressions in the following benchmarks:
+          
+          $regressionList
+          
+          **Commit**: ${{ github.sha }}
+          **Branch**: ${{ github.ref_name }}
+          **Workflow**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          
+          ### Action Required
+          
+          1. **Review the regression**: Check the [benchmark results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          2. **Investigate the cause**: Use \`git bisect\` to find the introducing commit
+          3. **Optimize or document**: Either fix the regression or update thresholds with justification
+          4. **Update baselines** (if intentional): Run \`./scripts/check_benchmark_thresholds.ps1 -UpdateBaseline\`
+          
+          ### Benchmark Threshold Policy
+          
+          - **Default max regression**: 50% slower than baseline
+          - **Critical benchmarks**: May have stricter limits
+          - **Baseline updates**: Require review and approval
+          
+          ### Related Documentation
+          
+          - [CI Benchmark Pipeline](../blob/main/CI_BENCHMARK_PIPELINE.md)
+          - [Baseline Metrics](../blob/main/BASELINE_METRICS.md)
+          - [Week 3 Action 11](../blob/main/WEEK_3_ACTION_11_COMPLETE.md)
+          
+          ---
+          
+          *This issue was automatically created by the Benchmark Regression Alerts workflow.*
+          *To disable alerts, update \`.github/workflows/benchmark_alert.yml\`.*
+          "@" | Out-File -FilePath "regression_report.md" -Encoding utf8
+            
+          } else {
+            Write-Host "No regressions detected" -ForegroundColor Green
+            echo "has_regressions=false" >> $env:GITHUB_OUTPUT
+          }
+      
+      - name: Create GitHub issue for regression
+        if: steps.regression_check.outputs.has_regressions == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportContent = fs.readFileSync('regression_report.md', 'utf8');
+            
+            // Check if there's already an open issue for this
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'performance-regression,automated',
+              per_page: 10
+            });
+            
+            // Only create if no recent issue exists
+            const recentIssue = existingIssues.data.find(issue => {
+              const createdAt = new Date(issue.created_at);
+              const hoursSinceCreation = (Date.now() - createdAt) / (1000 * 60 * 60);
+              return hoursSinceCreation < 24; // Within last 24 hours
+            });
+            
+            if (recentIssue) {
+              console.log(`Recent regression issue already exists: #${recentIssue.number}`);
+              
+              // Add comment to existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: recentIssue.number,
+                body: `### Additional Regression Detected\n\n${reportContent}\n\n**Latest commit**: ${context.sha.substring(0, 7)}`
+              });
+            } else {
+              // Create new issue
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🚨 Performance Regression Detected (${new Date().toISOString().split('T')[0]})`,
+                body: reportContent,
+                labels: ['performance-regression', 'automated', 'bug', 'high-priority'],
+                assignees: ['lazyxeon']
+              });
+              
+              console.log(`Created issue #${issue.data.number}`);
+            }
+      
+      - name: Upload regression report
+        if: steps.regression_check.outputs.has_regressions == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-report-${{ github.sha }}
+          path: regression_report.md
+          retention-days: 90
+      
+      - name: Update dashboard data
+        if: always()
+        run: |
+          # Export benchmark history to JSONL
+          bash scripts/export_benchmark_history.sh
+          
+          # Create docs directory if it doesn't exist
+          mkdir -p docs/benchmark_data
+          
+          # Copy results if export was successful
+          if [ -f "docs/benchmark_data/benchmark_history.jsonl" ]; then
+            echo "✅ Benchmark history exported successfully"
+            echo "   Lines: $(wc -l < docs/benchmark_data/benchmark_history.jsonl)"
+          else
+            echo "⚠️ Export script completed but no history file generated"
+            echo "   This is normal if no gh-pages branch exists yet"
+          fi
+      
+      - name: Deploy dashboard to GitHub Pages
+        if: success()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
+          destination_dir: dashboard
+          commit_message: "Update benchmark dashboard (${{ github.sha }})"
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+      
+      - name: Comment on commit with results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read benchmark results
+            let resultsJson;
+            try {
+              resultsJson = JSON.parse(fs.readFileSync('benchmark_results/benchmarks.json', 'utf8'));
+            } catch (e) {
+              console.log('Could not read benchmark results');
+              return;
+            }
+            
+            // Format results
+            const tableRows = resultsJson.slice(0, 10).map(bench => {
+              const valueFormatted = bench.value < 1000 
+                ? `${bench.value.toFixed(2)} ns`
+                : bench.value < 1000000
+                ? `${(bench.value / 1000).toFixed(2)} µs`
+                : `${(bench.value / 1000000).toFixed(2)} ms`;
+              
+              return `| ${bench.name} | ${valueFormatted} |`;
+            }).join('\n');
+            
+            const moreCount = resultsJson.length - 10;
+            const moreText = moreCount > 0 ? `\n\n*...and ${moreCount} more benchmarks*` : '';
+            
+            const dashboardUrl = `https://${context.repo.owner}.github.io/${context.repo.repo}/dashboard/benchmark_dashboard/`;
+            
+            const comment = `## 📊 Benchmark Results
+            
+            | Benchmark | Time |
+            |-----------|------|
+            ${tableRows}${moreText}
+            
+            📈 [View Interactive Dashboard](${dashboardUrl})
+            
+            <details>
+            <summary>Regression Status</summary>
+            
+            ${process.env.has_regressions === 'true' 
+              ? '❌ **Performance regressions detected** - See issue for details'
+              : '✅ All benchmarks within acceptable thresholds'}
+            
+            </details>
+            `;
+            
+            // Create commit comment
+            await github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: comment
+            });
+      
+      - name: Display summary
+        if: always()
+        run: |
+          echo "=== Benchmark Regression Check Complete ===" 
+          echo ""
+          echo "Dashboard: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/dashboard/benchmark_dashboard/"
+          echo ""
+          if [ -f "regression_report.md" ]; then
+            echo "⚠️ Regressions detected - Issue created"
+          else
+            echo "✅ No regressions - All benchmarks within thresholds"
+          fi

@@ -1,0 +1,14 @@
+# Optimized Phi-3 Medium for low-latency game AI
+# Build with: ollama create phi3:fast -f Modelfile.phi3-fast
+
+FROM phi3:medium
+
+PARAMETER num_gpu 99
+PARAMETER num_ctx 4096
+PARAMETER num_predict 256
+PARAMETER temperature 0.5
+PARAMETER top_k 40
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """You are a tactical AI agent in a real-time game. Your responses must be valid JSON following this schema: {"plan_id": "unique_id", "reasoning": "brief explanation", "steps": [{"act": "MoveTo", "x": 10, "y": 5}]}. Available actions: MoveTo, Throw, CoverFire, Revive. Always prioritize team survival and tactical advantage."""

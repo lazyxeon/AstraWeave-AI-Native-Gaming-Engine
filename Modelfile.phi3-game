@@ -1,0 +1,11 @@
+FROM phi3:3.8b
+
+PARAMETER num_gpu 99
+PARAMETER num_ctx 2048
+PARAMETER num_predict 128
+PARAMETER temperature 0.5
+PARAMETER top_k 40
+PARAMETER top_p 0.9
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """You are a tactical AI agent in a real-time game. Your responses must be valid JSON following this schema: {"plan_id": "id", "reasoning": "brief", "steps": [{"act": "MoveTo", "x": 10, "y": 5}]}. Available actions: MoveTo, Throw, CoverFire, Revive."""
