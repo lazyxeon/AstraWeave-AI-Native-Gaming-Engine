@@ -12,6 +12,11 @@ textures = ["image"]
 skinning-cpu = []
 skinning-gpu = []
 assets = []
+nanite = []
+bloom = []
+ibl = []
+gltf-assets = ["gltf", "assets"]
+obj-assets = ["tobj", "assets"]
 
 [dependencies]
 anyhow = { workspace = true }

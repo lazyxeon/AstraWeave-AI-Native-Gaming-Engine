@@ -33,6 +33,7 @@ members = [
   "astraweave-render",
   "astraweave-materials",
   "astraweave-asset",
+  "astraweave-asset-pipeline",
   "examples/visual_3d",
   "astraweave-physics",
   "astraweave-nav",

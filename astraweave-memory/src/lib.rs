@@ -6,12 +6,49 @@
 //! - Context-aware memory retrieval
 //! - Memory compression and summarization
 //! - Cross-agent memory sharing
+//! - Episode-based interaction recording for companion learning
 
 pub mod memory_types;
 pub use memory_types::*;
 
 pub mod memory_manager;
 pub use memory_manager::*;
+
+// Episode recording system (note: different from persona::Episode)
+pub mod episode;
+pub use episode::{
+    ActionResult, CompanionResponse, Episode as GameEpisode, EpisodeCategory, EpisodeOutcome,
+    Observation, PlayerAction,
+};
+
+pub mod episode_recorder;
+pub use episode_recorder::EpisodeRecorder;
+
+// SQLite persistence layer
+pub mod storage;
+pub use storage::{MemoryStorage, StorageStats};
+
+// Behavioral pattern detection and learning
+pub mod pattern_detection;
+pub use pattern_detection::{
+    ActionPattern, PatternDetector, PatternStrength, PlaystylePattern,
+};
+
+pub mod preference_profile;
+pub use preference_profile::{
+    CompanionActionPreference, PreferenceProfile, ProfileBuilder,
+};
+
+// Adaptive behavior trees (Phase 4)
+pub mod dynamic_weighting;
+pub use dynamic_weighting::{
+    AdaptiveWeightManager, BehaviorNodeType, NodeWeight,
+};
+
+pub mod learned_behavior_validator;
+pub use learned_behavior_validator::{
+    BehaviorValidator, SafetyRule, ValidationResult, ValidationStats,
+};
 
 pub mod consolidation;
 pub use consolidation::*;

@@ -132,7 +132,7 @@ pub struct MemoryAssociation {
 }
 
 /// Types of associations between memories
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AssociationType {
     /// Temporal - happened at the same time
     Temporal,

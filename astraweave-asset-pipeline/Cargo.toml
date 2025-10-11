@@ -1,0 +1,42 @@
+[package]
+name = "astraweave-asset-pipeline"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Asset processing pipeline for AstraWeave (texture compression, mesh optimization)"
+
+[dependencies]
+# Core
+anyhow = "1.0"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Texture compression
+# Note: intel-tex requires native build, basis-universal more portable
+# We'll use intel-tex for BC7/BC5 (desktop) and add ASTC support separately
+basis-universal = { version = "0.3", optional = true }
+
+# Mesh optimization (already added in Week 5 Action 19)
+meshopt = "0.3"
+
+# Byte manipulation
+bytemuck = "1.14"
+
+# Image loading
+image = "0.25"
+
+# Async support
+tokio = { version = "1.41", features = ["full"] }
+
+# Logging
+tracing = "0.1"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[features]
+default = ["bc7"]
+bc7 = [] # BC7 compression for desktop (will use basis-universal or custom impl)
+astc = ["basis-universal"] # ASTC compression for mobile
+all = ["bc7", "astc"]
