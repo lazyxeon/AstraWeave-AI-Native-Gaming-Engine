@@ -1176,6 +1176,10 @@ pub mod phi3_ollama;
 // Prompt engineering for game AI
 pub mod prompts;
 
+// Prompt compression utilities (Week 5 Action 22)
+pub mod compression;
+pub mod few_shot;
+
 /// Generate a plan using LLM with guardrails and fallback to heuristic if needed
 pub async fn plan_from_llm(
     client: &dyn LlmClient,

@@ -1,0 +1,27 @@
+[package]
+name = "astraweave-math"
+version = "0.1.0"
+edition = "2021"
+authors = ["AstraWeave Team"]
+description = "SIMD-accelerated math operations for AstraWeave game engine"
+license = "MIT"
+
+[dependencies]
+glam = { version = "0.29", features = ["bytemuck", "serde"] }
+bytemuck = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+approx = "0.5"
+
+[features]
+default = []
+# Enable SIMD optimizations (SSE2/AVX2 on x86_64, NEON on ARM)
+simd = []
+
+[[bench]]
+name = "simd_benchmarks"
+harness = false
+
+[lib]
+path = "src/lib.rs"

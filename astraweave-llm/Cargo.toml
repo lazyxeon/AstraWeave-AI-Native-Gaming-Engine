@@ -19,6 +19,7 @@ chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
 dashmap = "6.0"
 rand = "0.8"
+lazy_static = "1.4"
 
 # Phi-3 Medium Q4 inference (optional - requires GPU or CPU with AVX2)
 candle-core = { version = "0.8", optional = true }
