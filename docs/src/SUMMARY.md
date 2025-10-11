@@ -52,10 +52,10 @@
 
 # Reference Implementation
 
-- [Veilweaver Overview](./veilweaver/overview.md)
-- [Game Mechanics](./veilweaver/mechanics.md)
-- [AI Integration](./veilweaver/ai-integration.md)
-- [World Design](./veilweaver/world-design.md)
+- [Veilweaver Overview](../../Games-VEILWEAVER/documentation/overview.md)
+- [Game Mechanics](../../Games-VEILWEAVER/documentation/mechanics.md)
+- [AI Integration](../../Games-VEILWEAVER/documentation/ai-integration.md)
+- [World Design](../../Games-VEILWEAVER/documentation/world-design.md)
 
 # Engine Development
 
