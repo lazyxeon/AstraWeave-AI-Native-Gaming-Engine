@@ -350,7 +350,9 @@ impl Phi3Medium {
         
         // Top-p (nucleus) sampling
         let mut indices: Vec<usize> = (0..probs.len()).collect();
-        indices.sort_by(|&a, &b| probs[b].partial_cmp(&probs[a]).unwrap());
+        indices.sort_by(|&a, &b| {
+            probs[b].partial_cmp(&probs[a]).unwrap_or(std::cmp::Ordering::Equal)
+        });
         
         let mut cumulative = 0.0;
         let mut nucleus_size = 0;

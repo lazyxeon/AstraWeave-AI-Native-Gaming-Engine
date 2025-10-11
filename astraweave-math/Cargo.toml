@@ -23,5 +23,13 @@ simd = []
 name = "simd_benchmarks"
 harness = false
 
+[[bench]]
+name = "simd_mat_benchmarks"
+harness = false
+
+[[bench]]
+name = "simd_quat_benchmarks"
+harness = false
+
 [lib]
 path = "src/lib.rs"

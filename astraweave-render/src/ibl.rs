@@ -10,8 +10,11 @@
 //! that consumers can bind into their shading pipelines.
 
 use anyhow::{Context, Result};
+#[cfg(feature = "textures")]
 use image::GenericImageView;
-use std::{borrow::Cow, collections::HashMap, path::Path};
+#[cfg(feature = "textures")]
+use std::collections::HashMap;
+use std::{borrow::Cow, path::Path};
 
 /// Quality presets for IBL resource sizes
 #[derive(Clone, Copy, Debug)]
@@ -99,6 +102,7 @@ pub struct IblManager {
     eqr_face_bgl: wgpu::BindGroupLayout,
     eqr_pipeline: wgpu::RenderPipeline,
     // Cache decoded HDR equirectangular images by path to avoid repeated IO/decoding
+    #[cfg(feature = "textures")]
     hdr_cache: HashMap<String, image::DynamicImage>,
 }
 
@@ -434,6 +438,7 @@ impl IblManager {
             eqr_bgl,
             eqr_face_bgl,
             eqr_pipeline,
+            #[cfg(feature = "textures")]
             hdr_cache: HashMap::new(),
         };
         // Avoid unused warning for quality for now
@@ -680,6 +685,7 @@ impl IblManager {
                 }
                 queue.submit(Some(enc.finish()));
             }
+            #[cfg(feature = "textures")]
             SkyMode::HdrPath { biome: _, path } => {
                 let img = if let Some(img) = self.hdr_cache.get(path) {
                     img.clone()
@@ -758,6 +764,10 @@ impl IblManager {
                     drop(rp);
                 }
                 queue.submit(Some(enc.finish()));
+            }
+            #[cfg(not(feature = "textures"))]
+            SkyMode::HdrPath { .. } => {
+                anyhow::bail!("HdrPath sky mode requires 'textures' feature");
             }
         }
 
@@ -1212,12 +1222,14 @@ fn dir_to_equirect_uv(dir: vec3<f32>) -> vec2<f32> {
 "#;
 
 // Host-side helpers for HDR equirectangular upload
+#[cfg(feature = "textures")]
 fn load_hdr_equirectangular(path: &Path) -> Result<image::DynamicImage> {
     let reader = image::ImageReader::open(path)?;
     let img = reader.decode()?;
     Ok(img)
 }
 
+#[cfg(feature = "textures")]
 fn create_hdr2d(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
