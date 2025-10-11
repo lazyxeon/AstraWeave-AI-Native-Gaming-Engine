@@ -2,6 +2,13 @@ use glam::{vec3, Mat4, Vec3};
 use rapier3d::prelude::*;
 use std::collections::HashMap;
 
+// Async physics scheduler (feature-gated)
+#[cfg(feature = "async-physics")]
+pub mod async_scheduler;
+
+#[cfg(feature = "async-physics")]
+pub use async_scheduler::{AsyncPhysicsScheduler, PhysicsStepProfile};
+
 pub type BodyId = u64;
 
 #[derive(Clone, Copy, Debug)]
@@ -50,6 +57,10 @@ pub struct PhysicsWorld {
     body_kinds: HashMap<RigidBodyHandle, ActorKind>,
     next_body_id: BodyId,
     pub char_map: HashMap<BodyId, CharacterController>,
+    
+    /// Async physics scheduler (feature-gated)
+    #[cfg(feature = "async-physics")]
+    pub async_scheduler: Option<AsyncPhysicsScheduler>,
 }
 
 impl PhysicsWorld {
@@ -71,7 +82,34 @@ impl PhysicsWorld {
             body_kinds: HashMap::new(),
             next_body_id: 1,
             char_map: HashMap::new(),
+            #[cfg(feature = "async-physics")]
+            async_scheduler: None,
         }
+    }
+    
+    /// Enable async physics with optional thread count (0 = auto-detect)
+    /// This configures Rayon's global thread pool, which Rapier3D uses for parallel solving
+    #[cfg(feature = "async-physics")]
+    pub fn enable_async_physics(&mut self, thread_count: usize) {
+        // Configure Rayon thread pool if not already initialized
+        if thread_count > 0 {
+            // Try to build thread pool (may fail if already initialized, which is fine)
+            let _ = rayon::ThreadPoolBuilder::new()
+                .num_threads(thread_count)
+                .build_global();
+        }
+        
+        self.async_scheduler = Some(if thread_count > 0 {
+            AsyncPhysicsScheduler::with_threads(thread_count)
+        } else {
+            AsyncPhysicsScheduler::new()
+        });
+    }
+    
+    /// Get last physics step profile (for telemetry)
+    #[cfg(feature = "async-physics")]
+    pub fn get_last_profile(&self) -> Option<PhysicsStepProfile> {
+        self.async_scheduler.as_ref().map(|s| s.get_last_profile())
     }
 
     fn alloc_id(&mut self) -> BodyId {
@@ -81,6 +119,34 @@ impl PhysicsWorld {
     }
 
     pub fn step(&mut self) {
+        #[cfg(feature = "async-physics")]
+        {
+            // When async scheduler is enabled, Rapier3D automatically uses
+            // Rayon's global thread pool for parallel island solving.
+            // The thread count was configured when enable_async_physics was called.
+            if self.async_scheduler.is_some() {
+                use std::time::Instant;
+                let start = Instant::now();
+                
+                self.step_internal();
+                
+                let duration = start.elapsed();
+                
+                // Update telemetry
+                if let Some(scheduler) = &mut self.async_scheduler {
+                    scheduler.record_step_telemetry(duration);
+                }
+                return;
+            }
+        }
+
+        // Fallback to regular step (single-threaded)
+        self.step_internal();
+    }
+
+    /// Internal physics step (shared by sync and async paths)
+    /// When called with async scheduler enabled, Rapier3D uses Rayon for parallel solving
+    fn step_internal(&mut self) {
         let events = ();
         self.pipeline.step(
             &self.gravity,

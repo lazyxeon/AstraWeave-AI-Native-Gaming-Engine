@@ -4,12 +4,18 @@ version = "0.1.0"
 license.workspace = true
 edition = "2021"
 
+[features]
+default = []
+async-physics = ["rayon"]
+
 [dependencies]
 anyhow = { workspace = true }
 glam = { workspace = true }
 rapier3d = { workspace = true }
 rand = { workspace = true }
 bitflags = "2"
+rayon = { version = "1.10", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }
@@ -25,3 +31,8 @@ harness = false
 [[bench]]
 name = "rigid_body"
 harness = false
+
+[[bench]]
+name = "physics_async"
+harness = false
+required-features = ["async-physics"]

@@ -1,0 +1,179 @@
+name: Benchmark Dashboard
+
+on:
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/benchmark-dashboard.yml'
+      - 'scripts/export_benchmark_jsonl.ps1'
+      - 'tools/benchmark-dashboard/**'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  issues: write
+
+jobs:
+  benchmark-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for gh-pages
+      
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      
+      - name: Run Benchmarks (Subset)
+        run: |
+          # Run core benchmarks (limit to 30 min)
+          cargo bench -p astraweave-core --bench ecs_benchmarks || true
+          cargo bench -p astraweave-ai --bench ai_core_loop || true
+          cargo bench -p astraweave-behavior --bench goap_planning || true
+          cargo bench -p astraweave-behavior --bench behavior_tree || true
+          cargo bench -p astraweave-terrain --bench terrain_generation || true
+          cargo bench -p astraweave-input --bench input_benchmarks || true
+          cargo bench -p astraweave-physics --bench raycast || true
+          cargo bench -p astraweave-physics --bench character_controller || true
+          cargo bench -p astraweave-physics --bench rigid_body || true
+        continue-on-error: true
+      
+      - name: Install PowerShell
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y powershell
+      
+      - name: Export Benchmark JSONL
+        run: |
+          pwsh -File scripts/export_benchmark_jsonl.ps1 -Verbose
+      
+      - name: Check for Regressions
+        id: regression-check
+        run: |
+          pwsh -File scripts/check_benchmark_thresholds.ps1 -ShowDetails
+        continue-on-error: true
+      
+      - name: Prepare Dashboard Assets
+        run: |
+          mkdir -p gh-pages
+          cp tools/benchmark-dashboard/index.html gh-pages/
+          cp tools/benchmark-dashboard/dashboard.js gh-pages/
+          
+          # Copy benchmark data
+          mkdir -p gh-pages/benchmark-data
+          if [ -f target/benchmark-data/history.jsonl ]; then
+            cp target/benchmark-data/history.jsonl gh-pages/benchmark-data/
+          fi
+          
+          # Create README for gh-pages
+          cat > gh-pages/README.md << 'EOF'
+          # AstraWeave Benchmark Dashboard
+          
+          Live performance telemetry dashboard for the AstraWeave AI-native game engine.
+          
+          **View Dashboard**: https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/
+          
+          ## Features
+          - 30-day performance trends
+          - System filtering (ECS, AI, Physics, Terrain, Input)
+          - Interactive d3.js charts
+          - Regression detection
+          
+          ## Data Source
+          Updated nightly via GitHub Actions from Criterion benchmark results.
+          
+          Last Updated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          EOF
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: 'Update benchmark dashboard: ${{ github.sha }}'
+      
+      - name: Create Regression Issue (if needed)
+        if: steps.regression-check.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '⚠️ Benchmark Regression Detected';
+            const body = `## Automated Regression Alert
+            
+            **Date**: ${new Date().toISOString()}
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            
+            One or more benchmarks exceeded the 10% regression threshold.
+            
+            ### Next Steps
+            1. Review benchmark results: [View Dashboard](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)
+            2. Check recent commits for performance-impacting changes
+            3. Run local benchmarks: \`cargo bench\`
+            4. Validate thresholds: \`./scripts/check_benchmark_thresholds.ps1 -ShowDetails\`
+            
+            ### Investigation Checklist
+            - [ ] Identify regressed benchmark(s)
+            - [ ] Bisect commits to find culprit
+            - [ ] Profile hot paths with \`cargo flamegraph\`
+            - [ ] Fix or update threshold if intentional
+            - [ ] Verify fix with local benchmarks
+            
+            **Auto-generated by benchmark-dashboard.yml workflow**
+            `;
+            
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'performance,regression'
+            });
+            
+            const existingIssue = issues.data.find(issue => issue.title === title);
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['performance', 'regression', 'automated']
+              });
+              console.log('Created new regression issue');
+            } else {
+              console.log('Regression issue already exists: #' + existingIssue.number);
+            }
+      
+      - name: Summary
+        run: |
+          echo "### Benchmark Dashboard Updated ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Dashboard URL**: https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f target/benchmark-data/history.jsonl ]; then
+            ENTRY_COUNT=$(wc -l < target/benchmark-data/history.jsonl)
+            echo "**Benchmark Entries**: $ENTRY_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Last Updated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY

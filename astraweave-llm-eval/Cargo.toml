@@ -1,0 +1,28 @@
+[package]
+name = "astraweave-llm-eval"
+version = "0.1.0"
+license.workspace = true
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+astraweave-core = { path = "../astraweave-core" }
+astraweave-llm = { path = "../astraweave-llm" }
+tokio = { workspace = true }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+rand = "0.8"
+
+[dev-dependencies]
+tokio = { workspace = true }
+
+[[bin]]
+name = "evaluate"
+path = "src/bin/evaluate.rs"
+
+[[bench]]
+name = "evaluate_mock_llm"
+harness = false
+path = "benches/evaluate_mock_llm.rs"

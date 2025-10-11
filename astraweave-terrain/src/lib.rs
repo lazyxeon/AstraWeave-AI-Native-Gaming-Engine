@@ -3,26 +3,31 @@
 //! This module provides procedural terrain generation using noise functions,
 //! heightmaps, and biome classification for the AstraWeave engine.
 
+pub mod background_loader; // Week 4 Action 14: Async chunk streaming
 pub mod biome;
 pub mod chunk;
 pub mod climate;
 pub mod erosion;
 pub mod heightmap;
 pub mod lod_blending;
+pub mod lod_manager; // Week 4 Action 14: LOD with hysteresis
 pub mod marching_cubes_tables;
 pub mod meshing;
 pub mod noise_gen;
 pub mod noise_simd; // SIMD-optimized noise generation (Week 3 Action 8)
 pub mod partition_integration;
 pub mod scatter;
+pub mod streaming_diagnostics; // Week 4 Action 14: Diagnostics overlay
 pub mod structures;
 pub mod voxel_data;
 
+pub use background_loader::{BackgroundChunkLoader, StreamingConfig, StreamingStats}; // Week 4
 pub use biome::{Biome, BiomeConfig, BiomeType};
 pub use chunk::{ChunkId, ChunkManager, TerrainChunk};
 pub use climate::{ClimateConfig, ClimateMap};
 pub use heightmap::{Heightmap, HeightmapConfig};
 pub use lod_blending::{LodBlender, MorphConfig, MorphedMesh, MorphingLodManager};
+pub use lod_manager::{ChunkLodState, LodConfig as LodHysteresisConfig, LodLevel, LodManager, LodStats}; // Week 4
 pub use meshing::{
     AsyncMeshGenerator, ChunkMesh, DualContouring, LodConfig, LodMeshGenerator, MeshVertex,
 };
@@ -33,6 +38,10 @@ pub use partition_integration::{
     VoxelPartitionStats,
 };
 pub use scatter::{ScatterConfig, ScatterResult, VegetationInstance, VegetationScatter};
+pub use streaming_diagnostics::{
+    ChunkLoadState, DiagnosticReport, FrameStats, HitchDetector, MemoryStats,
+    StreamingDiagnostics,
+}; // Week 4
 pub use structures::{
     StructureConfig, StructureGenerator, StructureInstance, StructureResult, StructureType,
 };
@@ -113,8 +122,11 @@ impl WorldGenerator {
         &mut self,
         chunk_id: ChunkId,
     ) -> anyhow::Result<(TerrainChunk, ScatterResult)> {
-        // Generate the basic terrain chunk
+        // Generate the basic terrain chunk (lock-free)
         let chunk = self.generate_chunk(chunk_id)?;
+        
+        // Register with chunk manager
+        self.chunk_manager.add_chunk(chunk.clone());
 
         // Generate scatter for the chunk
         let scatter_result = self.scatter_chunk_content(&chunk)?;
@@ -170,7 +182,10 @@ impl WorldGenerator {
 
         Ok(result)
     }
-    pub fn generate_chunk(&mut self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
+    
+    /// Generate a terrain chunk at the given position (lock-free, parallel-safe)
+    /// NOTE: Does NOT add to chunk_manager - caller must handle that separately
+    pub fn generate_chunk(&self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
         // Generate heightmap for this chunk (using SIMD if enabled)
         #[cfg(feature = "simd-noise")]
         let heightmap = noise_simd::SimdHeightmapGenerator::generate_heightmap_simd(
@@ -205,6 +220,13 @@ impl WorldGenerator {
             chunk.apply_erosion(self.config.noise.erosion_strength)?;
         }
 
+        // NOTE: chunk_manager.add_chunk() removed - caller handles registration
+        Ok(chunk)
+    }
+    
+    /// Generate and register a chunk (mutable version for compatibility)
+    pub fn generate_and_register_chunk(&mut self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
+        let chunk = self.generate_chunk(chunk_id)?;
         self.chunk_manager.add_chunk(chunk.clone());
         Ok(chunk)
     }
@@ -221,7 +243,7 @@ impl WorldGenerator {
 
         for chunk_id in chunks_to_load {
             if !self.chunk_manager.has_chunk(chunk_id) {
-                self.generate_chunk(chunk_id)?;
+                self.generate_and_register_chunk(chunk_id)?;
                 loaded.push(chunk_id);
             }
         }

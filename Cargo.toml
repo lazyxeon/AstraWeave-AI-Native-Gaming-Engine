@@ -7,6 +7,7 @@ members = [
   "astraweave-memory",
   "astraweave-ipc",
   "astraweave-llm",       
+  "astraweave-llm-eval",
   "astraweave-persona",   
   "astraweave-author",
   # Phase 1 LLM Integration Foundation Crates
@@ -98,7 +99,10 @@ members = [
   "examples/core_loop_bt_demo",
   "examples/core_loop_goap_demo",
   "examples/weaving_pcg_demo",
-     "examples/world_partition_demo",
+  # Week 4 demos
+  "examples/phi3_demo",
+  "examples/veilweaver_demo",
+  "examples/world_partition_demo",
 ]
 resolver = "2"
 

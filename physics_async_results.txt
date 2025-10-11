@@ -1,0 +1,122 @@
+
+Benchmarking physics_full_tick_baseline/100
+Benchmarking physics_full_tick_baseline/100: Warming up for 3.0000 s
+Benchmarking physics_full_tick_baseline/100: Collecting 100 samples in estimated 5.4775 s (56k iterations)
+Benchmarking physics_full_tick_baseline/100: Analyzing
+                        time:   [80.932 ┬╡s 82.077 ┬╡s 83.324 ┬╡s]
+                        thrpt:  [1.2001 Melem/s 1.2184 Melem/s 1.2356 Melem/s]
+                        time:   [+90.481% +104.20% +124.29%] (p = 0.00 < 0.05)
+                        thrpt:  [ΓêÆ55.414% ΓêÆ51.028% ΓêÆ47.501%]
+Benchmarking physics_full_tick_baseline/500
+Benchmarking physics_full_tick_baseline/500: Warming up for 3.0000 s
+Benchmarking physics_full_tick_baseline/500: Collecting 100 samples in estimated 6.8175 s (15k iterations)
+Benchmarking physics_full_tick_baseline/500: Analyzing
+                        time:   [393.77 ┬╡s 411.54 ┬╡s 433.02 ┬╡s]
+                        thrpt:  [1.1547 Melem/s 1.2150 Melem/s 1.2698 Melem/s]
+Benchmarking physics_full_tick_baseline/1000
+Benchmarking physics_full_tick_baseline/1000: Warming up for 3.0000 s
+Benchmarking physics_full_tick_baseline/1000: Collecting 100 samples in estimated 9.4425 s (10k iterations)
+Benchmarking physics_full_tick_baseline/1000: Analyzing
+                        time:   [877.19 ┬╡s 963.18 ┬╡s 1.0822 ms]
+                        thrpt:  [924.05 Kelem/s 1.0382 Melem/s 1.1400 Melem/s]
+                        time:   [+104.06% +115.46% +131.20%] (p = 0.00 < 0.05)
+                        thrpt:  [ΓêÆ56.747% ΓêÆ53.587% ΓêÆ50.994%]
+Benchmarking physics_full_tick_baseline/2500
+Benchmarking physics_full_tick_baseline/2500: Warming up for 3.0000 s
+Benchmarking physics_full_tick_baseline/2500: Collecting 100 samples in estimated 5.2361 s (2000 iterations)
+Benchmarking physics_full_tick_baseline/2500: Analyzing
+                        time:   [2.7510 ms 2.9255 ms 3.1342 ms]
+                        thrpt:  [797.66 Kelem/s 854.55 Kelem/s 908.78 Kelem/s]
+                        time:   [+129.36% +151.90% +175.35%] (p = 0.00 < 0.05)
+                        thrpt:  [ΓêÆ63.683% ΓêÆ60.302% ΓêÆ56.401%]
+Benchmarking physics_async_full_tick/100
+Benchmarking physics_async_full_tick/100: Warming up for 3.0000 s
+Benchmarking physics_async_full_tick/100: Collecting 100 samples in estimated 5.3757 s (56k iterations)
+Benchmarking physics_async_full_tick/100: Analyzing
+                        time:   [91.979 ┬╡s 97.919 ┬╡s 105.61 ┬╡s]
+                        thrpt:  [946.85 Kelem/s 1.0213 Melem/s 1.0872 Melem/s]
+Benchmarking physics_async_full_tick/500
+Benchmarking physics_async_full_tick/500: Warming up for 3.0000 s
+Benchmarking physics_async_full_tick/500: Collecting 100 samples in estimated 6.7802 s (15k iterations)
+Benchmarking physics_async_full_tick/500: Analyzing
+                        time:   [457.89 ┬╡s 485.41 ┬╡s 517.02 ┬╡s]
+                        thrpt:  [967.09 Kelem/s 1.0301 Melem/s 1.0920 Melem/s]
+Benchmarking physics_async_full_tick/1000
+Benchmarking physics_async_full_tick/1000: Warming up for 3.0000 s
+Benchmarking physics_async_full_tick/1000: Collecting 100 samples in estimated 5.3518 s (5050 iterations)
+Benchmarking physics_async_full_tick/1000: Analyzing
+                        time:   [884.44 ┬╡s 924.65 ┬╡s 971.24 ┬╡s]
+                        thrpt:  [1.0296 Melem/s 1.0815 Melem/s 1.1307 Melem/s]
+Benchmarking physics_async_full_tick/2500
+Benchmarking physics_async_full_tick/2500: Warming up for 3.0000 s
+Benchmarking physics_async_full_tick/2500: Collecting 100 samples in estimated 5.1151 s (2000 iterations)
+Benchmarking physics_async_full_tick/2500: Analyzing
+                        time:   [2.7921 ms 2.9574 ms 3.1432 ms]
+                        thrpt:  [795.37 Kelem/s 845.33 Kelem/s 895.37 Kelem/s]
+                        time:   [+162.88% +178.08% +199.34%] (p = 0.00 < 0.05)
+                        thrpt:  [ΓêÆ66.593% ΓêÆ64.039% ΓêÆ61.960%]
+Benchmarking physics_async_thread_scaling/1
+Benchmarking physics_async_thread_scaling/1: Warming up for 3.0000 s
+Benchmarking physics_async_thread_scaling/1: Collecting 100 samples in estimated 5.2038 s (2100 iterations)
+Benchmarking physics_async_thread_scaling/1: Analyzing
+                        time:   [2.9444 ms 3.2216 ms 3.5568 ms]
+                        thrpt:  [702.88 Kelem/s 776.01 Kelem/s 849.07 Kelem/s]
+Benchmarking physics_async_thread_scaling/2
+Benchmarking physics_async_thread_scaling/2: Warming up for 3.0000 s
+Benchmarking physics_async_thread_scaling/2: Collecting 100 samples in estimated 5.1694 s (2100 iterations)
+Benchmarking physics_async_thread_scaling/2: Analyzing
+                        time:   [2.5911 ms 2.7502 ms 2.9296 ms]
+                        thrpt:  [853.35 Kelem/s 909.03 Kelem/s 964.86 Kelem/s]
+Benchmarking physics_async_thread_scaling/4
+Benchmarking physics_async_thread_scaling/4: Warming up for 3.0000 s
+Benchmarking physics_async_thread_scaling/4: Collecting 100 samples in estimated 5.2080 s (2200 iterations)
+Benchmarking physics_async_thread_scaling/4: Analyzing
+                        time:   [2.3802 ms 2.4882 ms 2.6332 ms]
+                        thrpt:  [949.43 Kelem/s 1.0047 Melem/s 1.0503 Melem/s]
+Benchmarking physics_async_thread_scaling/8
+Benchmarking physics_async_thread_scaling/8: Warming up for 3.0000 s
+Benchmarking physics_async_thread_scaling/8: Collecting 100 samples in estimated 5.2034 s (2100 iterations)
+Benchmarking physics_async_thread_scaling/8: Analyzing
+                        time:   [2.7019 ms 2.9373 ms 3.2519 ms]
+                        thrpt:  [768.79 Kelem/s 851.13 Kelem/s 925.29 Kelem/s]
+Benchmarking physics_async_rigid_bodies/sync
+Benchmarking physics_async_rigid_bodies/sync: Warming up for 3.0000 s
+Benchmarking physics_async_rigid_bodies/sync: Collecting 100 samples in estimated 5.7152 s (30k iterations)
+Benchmarking physics_async_rigid_bodies/sync: Analyzing
+                        time:   [167.05 ┬╡s 184.32 ┬╡s 206.00 ┬╡s]
+                        thrpt:  [2.4271 Melem/s 2.7126 Melem/s 2.9931 Melem/s]
+Benchmarking physics_async_rigid_bodies/async_4_threads
+Benchmarking physics_async_rigid_bodies/async_4_threads: Warming up for 3.0000 s
+Benchmarking physics_async_rigid_bodies/async_4_threads: Collecting 100 samples in estimated 5.0928 s (30k iterations)
+Benchmarking physics_async_rigid_bodies/async_4_threads: Analyzing
+                        time:   [167.44 ┬╡s 176.68 ┬╡s 187.13 ┬╡s]
+                        thrpt:  [2.6720 Melem/s 2.8299 Melem/s 2.9861 Melem/s]
+Benchmarking physics_async_telemetry_overhead
+Benchmarking physics_async_telemetry_overhead: Warming up for 3.0000 s
+Benchmarking physics_async_telemetry_overhead: Collecting 100 samples in estimated 9.5338 s (10k iterations)
+Benchmarking physics_async_telemetry_overhead: Analyzing
+                        time:   [873.65 ┬╡s 889.98 ┬╡s 909.75 ┬╡s]
+Benchmarking physics_async_character_simulation
+Benchmarking physics_async_character_simulation: Warming up for 3.0000 s
+Benchmarking physics_async_character_simulation: Collecting 100 samples in estimated 6.0894 s (300 iterations)
+Benchmarking physics_async_character_simulation: Analyzing
+                        time:   [17.958 ms 18.621 ms 19.408 ms]
+Benchmarking physics_async_mixed_workload/500chars_200bodies
+Benchmarking physics_async_mixed_workload/500chars_200bodies: Warming up for 3.0000 s
+Benchmarking physics_async_mixed_workload/500chars_200bodies: Collecting 100 samples in estimated 6.8685 s (10k iterations)
+Benchmarking physics_async_mixed_workload/500chars_200bodies: Analyzing
+                        time:   [514.33 ┬╡s 535.41 ┬╡s 562.36 ┬╡s]
+                        thrpt:  [1.2448 Melem/s 1.3074 Melem/s 1.3610 Melem/s]
+Benchmarking physics_async_mixed_workload/1000chars_400bodies
+Benchmarking physics_async_mixed_workload/1000chars_400bodies: Warming up for 3.0000 s
+Benchmarking physics_async_mixed_workload/1000chars_400bodies: Collecting 100 samples in estimated 6.3176 s (5050 iterations)
+Benchmarking physics_async_mixed_workload/1000chars_400bodies: Analyzing
+                        time:   [1.1601 ms 1.2424 ms 1.3424 ms]
+                        thrpt:  [1.0429 Melem/s 1.1268 Melem/s 1.2068 Melem/s]
+Benchmarking physics_async_mixed_workload/2000chars_800bodies
+Benchmarking physics_async_mixed_workload/2000chars_800bodies: Warming up for 3.0000 s
+Benchmarking physics_async_mixed_workload/2000chars_800bodies: Collecting 100 samples in estimated 5.6096 s (900 iterations)
+Benchmarking physics_async_mixed_workload/2000chars_800bodies: Analyzing
+                        time:   [3.1655 ms 3.4476 ms 3.9109 ms]
+                        thrpt:  [715.96 Kelem/s 812.15 Kelem/s 884.52 Kelem/s]
+
