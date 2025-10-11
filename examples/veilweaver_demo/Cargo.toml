@@ -1,0 +1,34 @@
+[package]
+name = "veilweaver_demo"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+winit = { workspace = true }
+wgpu = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }
+glam = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tracing = { workspace = true }
+tracing-subscriber = "0.3"
+
+# AstraWeave core systems
+astraweave-ecs = { path = "../../astraweave-ecs" }
+astraweave-ai = { path = "../../astraweave-ai" }
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-render = { path = "../../astraweave-render", features = ["assets", "image"] }
+astraweave-audio = { path = "../../astraweave-audio" }
+astraweave-behavior = { path = "../../astraweave-behavior" }
+
+# LLM integration for AI companions
+astraweave-llm = { path = "../../astraweave-llm", features = ["ollama"] }
+
+[[bin]]
+name = "veilweaver_demo"
+path = "src/main.rs"

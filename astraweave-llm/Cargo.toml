@@ -20,10 +20,18 @@ tracing = "0.1"
 dashmap = "6.0"
 rand = "0.8"
 
+# Phi-3 Medium Q4 inference (optional - requires GPU or CPU with AVX2)
+candle-core = { version = "0.8", optional = true }
+candle-nn = { version = "0.8", optional = true }
+candle-transformers = { version = "0.8", optional = true }
+tokenizers = { version = "0.20", optional = true }
+hf-hub = { version = "0.3", optional = true, features = ["tokio"] }
+
 [dev-dependencies]
 tokio = { workspace = true }
 
 [features]
 default = []
 ollama = ["dep:reqwest"]
+phi3 = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub"]
 debug_io = []

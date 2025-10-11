@@ -1162,6 +1162,19 @@ pub mod backpressure;
 pub mod circuit_breaker;
 pub mod production_hardening;
 pub mod rate_limiter;
+pub mod scheduler;
+pub mod tool_guard;
+
+// Phi-3 Medium Q4 integration (optional, requires --features phi3)
+#[cfg(feature = "phi3")]
+pub mod phi3;
+
+// Phi-3 via Ollama (recommended, no feature flag needed)
+#[cfg(feature = "ollama")]
+pub mod phi3_ollama;
+
+// Prompt engineering for game AI
+pub mod prompts;
 
 /// Generate a plan using LLM with guardrails and fallback to heuristic if needed
 pub async fn plan_from_llm(
