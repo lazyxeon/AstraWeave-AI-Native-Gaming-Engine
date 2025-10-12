@@ -36,7 +36,6 @@ egui-wgpu = { workspace = true }
 half = "2"
 toml = { workspace = true }
 gltf = { version = "1.4", optional = true, features = ["import"] }
-mikktspace = { version = "0.3", optional = true }
 tobj = { version = "4", optional = true }
 astraweave-asset = { path = "../astraweave-asset" }
 aw_asset_cli = { path = "../tools/aw_asset_cli" }
