@@ -16,7 +16,7 @@
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/badge)](https://scorecard.dev/viewer/?uri=github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE)
-[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/Cargo.toml)
+[![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/Cargo.toml)
 
 [![Copilot](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/copilot-swe-agent/copilot/badge.svg)](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/copilot-swe-agent/copilot)
 
@@ -65,23 +65,27 @@ This README, the surrounding documentation, and the engine codebase are therefor
 🎬 **Cinematics & UI**: Timeline/sequencer, camera/audio/FX tracks, timeline load/save in UI, smoke-tested in CI  
 🌍 **Transformational Potential**: Enables entirely new categories of gaming experiences  
 
-### Recent Achievements (Week 4 - October 10, 2025)
+### Recent Achievements (Week 8 - October 12, 2025)
 
-🚀 **Phase A Complete** in 3 days (431% efficiency vs 3-week plan)
+🚀 **Week 8 Performance Sprint Complete** — 5-day optimization sprint (Oct 9-12)
 
 **Performance Wins**:
-- ⚡ **Async Physics**: 2.96 ms tick, 676 characters @ 60 FPS (4× faster, 2,557 capacity proven)
-- 🌍 **Terrain Streaming**: 15.06 ms chunks, 60 FPS unlocked (38% improvement)
-- 🤖 **LLM Optimization**: 50× prompt cache, 45× tool validation, enterprise security
-- 📊 **Benchmark Dashboard**: Automated d3.js visualization, GitHub Pages, CI alerts
+- ⚡ **Frame Time**: 3.09 ms → 2.70 ms (**-12.6%**, +47 FPS to 370 FPS)
+- � **Tracy Profiling**: Integrated 0.11.1, zero-overhead instrumentation, identified 3 hotspots
+- 🔥 **Spatial Hash**: O(n log n) grid, 99.96% fewer collision checks (499,500 → 180)
+- 🚀 **SIMD Movement**: 2.08× speedup validated, 21.6% real-world improvement
+- 📊 **Production Ready**: 84% headroom vs 60 FPS budget, 1,760 lines new code
 
-**Infrastructure**:
-- ✅ **34 Benchmarks** with automated regression detection
-- ✅ **100% Production Safety** in render/scene/nav crates (0 unwraps)
-- ✅ **Veilweaver Demo** playable @ 61 FPS with interactive shrines
-- ✅ **+3,797 LOC** across 4 weeks with zero warnings
+**Key Lessons**:
+- ✅ **Batching > Scattering**: ECS collect/writeback 3-5× faster than scattered `get_mut()`
+- ✅ **Amdahl's Law**: 59% sequential ECS overhead limits parallel gains to 1.24× max
+- ✅ **Overhead Threshold**: Only parallelize >5 ms workloads (Rayon ~50-100 µs overhead)
+- ✅ **SIMD Auto-Vec**: glam achieves 80-85% of hand-written AVX2
+- ✅ **Cache Locality Cascades**: Spatial hash improved ALL systems 9-17%
 
-See [`WEEK_4_FINAL_SUMMARY.md`](WEEK_4_FINAL_SUMMARY.md) for complete details.
+**Documentation**: 50,000+ words across 11 comprehensive documents
+
+See [`WEEK_8_FINAL_SUMMARY.md`](WEEK_8_FINAL_SUMMARY.md) and [`WEEK_8_OPTIMIZATION_COMPLETE.md`](WEEK_8_OPTIMIZATION_COMPLETE.md) for complete details.
 
 ---
 
@@ -219,45 +223,31 @@ Every AI action is validated by the engine:
 
 ## Examples & Demos
 
-AstraWeave includes 20+ examples demonstrating engine capabilities. Note that this is an active development project, so some examples may have compilation issues due to API evolution.
+AstraWeave includes 20+ examples demonstrating engine capabilities:
 
-
-### Core AI & Engine Examples (Working)
+### Working Examples
 ```bash
 # Basic AI companion with planning and validation  
 cargo run -p hello_companion --release
-# Demonstrates: AI perception, planning, tool validation
-# Expected: Shows AI plan generation, then panics on LOS logic (expected behavior)
 
-# Cinematics timeline/sequencer (timeline load/save, camera/audio/FX tracks)
-# (UI panel: open Cinematics window in working UI examples)
+# Profiling demo with Tracy integration (Week 8)
+cargo run -p profiling_demo --release -- --entities 1000
 
-# Adaptive boss with multi-phase behavior
-cargo run -p adaptive_boss --release
+# Unified showcase with biome rendering
+cargo run -p unified_showcase --release
 
-# Companion profile management
-cargo run -p companion_profile --release
+# AI core loop demos
+cargo run -p core_loop_bt_demo --release      # Behavior trees
+cargo run -p core_loop_goap_demo --release    # GOAP planning
 ```
-
-
-### Working Core Engine Builds
-```bash
-# Build stable core components (Phase 4: SDK ABI, CI, Cinematics, UI)
-cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics \
-            -p astraweave-nav -p astraweave-render -p hello_companion
-
-# Run unit tests on input system
-cargo test -p astraweave-input
-```
-
 
 ### Development Notes
-> **Note**: Some examples have compilation issues due to API evolution:
-> - Graphics examples (`visual_3d`, `ui_controls_demo`) have egui/winit API mismatches
-> - Some gameplay demos need dependency updates (`serde_json` missing)
+> **Note**: This is an active development project. Some examples have compilation issues due to API evolution:
+> - Graphics examples (`ui_controls_demo`, `debug_overlay`) have egui/winit API mismatches
+> - Some gameplay demos need dependency updates
 > - `astraweave-author` has rhai sync/send trait issues
 >
-> **Phase 4 Complete:** SDK ABI, C harness, CI semver gate, cinematics timeline/sequencer, and UI timeline load/save are all implemented and validated. Focus on the working core components and `hello_companion` for understanding the engine architecture.
+> Focus on the working core components and `hello_companion` for understanding the engine architecture.
 
 ---
 
@@ -303,55 +293,53 @@ cargo test -p astraweave-input
 ---
 
 
-## 🗂️ Directory Structure & Key Features
+## 🗂️ Key Features & Architecture
 
+### Core Engine Systems
 ```
 astraweave-core/        # ECS world, validation, intent system
 astraweave-ai/          # AI orchestrator and planning
-astraweave-render/      # wgpu-based 3D rendering pipeline
-astraweave-physics/     # Rapier3D wrapper with character controller
+astraweave-render/      # wgpu-based 3D rendering with GPU optimizations
+astraweave-physics/     # Rapier3D wrapper with spatial hash collision
 astraweave-nav/         # Navmesh baking and A* pathfinding
+astraweave-math/        # SIMD vector/matrix operations, movement optimization
 astraweave-gameplay/    # Weaving, crafting, combat, dialogue
 astraweave-audio/       # Audio engine with spatial effects
-astraweave-input/       # Input handling and binding system
-astraweave-ui/          # UI framework integration
-examples/               # 20+ demos covering engine features
-assets/                 # Sample content (models, audio, data)
-docs/                   # Technical documentation
-Games-VEILWEAVER/       # Veilweaver reference implementation
-AI Engine/              # Detailed AstraWeave engine specifications
+examples/               # 20+ demos including Tracy profiling
 ```
+
+### Recent Optimizations (Week 8)
+- **Tracy Profiling**: Zero-overhead instrumentation for hotspot identification
+- **Spatial Hash Collision**: O(n log n) grid-based partitioning (99.96% fewer checks)
+- **SIMD Movement**: Batch processing with 2.08× speedup
+- **Performance**: 2.70 ms frame time @ 1,000 entities, 84% headroom vs 60 FPS budget
+
+For detailed architecture and all crates, see the **Workspace Structure** section below.
 
 ---
 
 
-## 🔒 Security, CI & Quality Assurance
+## 🔒 Security & Quality Assurance
 
+AstraWeave implements enterprise-grade security and quality practices:
 
-AstraWeave implements enterprise-grade security, CI, and quality practices:
-
-
-### Security & CI Features
-- **Dependency Scanning**: Automated vulnerability detection with cargo-audit
-- **License Compliance**: Full dependency license verification
+### Security Features
+- **Dependency Scanning**: Automated vulnerability detection (cargo-audit)
 - **Static Analysis**: Advanced CodeQL security analysis
+- **SDK ABI Validation**: C ABI with header generation, tested in CI (Linux/Windows)
 - **Deterministic Builds**: Reproducible compilation across platforms
-- **SDK ABI Validation**: C ABI, header generation, and C harness tested in CI (Linux/Windows)
-- **Semantic Versioning Gate**: CI enforces SDK version compatibility
-- **Cinematics Smoke Test**: Timeline/sequencer tested in CI
 
-
-### Quality Assurance
+### Performance & Quality
+- **Benchmark Suite**: 34+ benchmarks with automated regression detection
+- **Tracy Profiling**: Zero-overhead profiling for hotspot identification  
 - **Cross-Platform CI**: Automated testing on Linux, Windows, macOS
-- **Performance Benchmarking**: Continuous performance regression testing
-- **Code Quality**: Enforced formatting with rustfmt and clippy analysis
-- **Documentation**: Automatically generated API documentation
-
+- **Code Quality**: Enforced formatting (rustfmt) and linting (clippy)
+- **Production Safety**: Target crates 100% unwrap-free (render/scene/nav)
 
 ### Compliance
 - **OpenSSF Scorecard**: Continuous security posture monitoring
 - **MIT License**: Permissive open-source licensing
-- [**SECURITY.md**](docs/supplemental-docs/SECURITY.md): Clear vulnerability reporting process
+- [**SECURITY.md**](docs/supplemental-docs/SECURITY.md): Clear vulnerability reporting
 
 ---
 
@@ -402,6 +390,6 @@ AstraWeave builds on the incredible Rust gamedev ecosystem:
 *Building the future of AI-native gaming*
 
 <br>
-<b>Status: Phase A Complete (Week 4, Oct 10, 2025) — 15 actions, 3,797 LOC, 4-50× performance improvements</b>
+<b>Status: Week 8 Complete (Oct 12, 2025) — Performance Sprint: -12.6% frame time, +14.6% FPS, 2.70 ms @ 370 FPS, 84% headroom</b>
 
 </div>
