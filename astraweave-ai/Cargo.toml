@@ -16,6 +16,8 @@ glam = { workspace = true }
 async-trait = "0.1"
 tokio = { workspace = true, optional = true }
 tracing = { workspace = true }
+astraweave-profiling = { path = "../astraweave-profiling", optional = true }
+tracy-client = { version = "0.17", optional = true }
 
 [features]
 default = []
@@ -23,6 +25,7 @@ default = []
 llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio"]
 ai-goap = []
 ai-bt = []
+profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
 
 [dependencies.astraweave-llm]
 workspace = true

@@ -7,6 +7,7 @@ edition = "2021"
 [features]
 default = []
 async-physics = ["rayon"]
+profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -16,6 +17,8 @@ rand = { workspace = true }
 bitflags = "2"
 rayon = { version = "1.10", optional = true }
 serde = { version = "1.0", features = ["derive"], optional = true }
+astraweave-profiling = { path = "../astraweave-profiling", optional = true }
+tracy-client = { version = "0.17", optional = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

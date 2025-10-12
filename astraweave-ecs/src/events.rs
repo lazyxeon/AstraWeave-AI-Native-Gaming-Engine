@@ -3,6 +3,9 @@
 //! Events are crucial for AI perception and reactive behaviors.
 //! This system provides deterministic event ordering and efficient queries.
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
+
 use std::any::{Any, TypeId};
 use std::collections::{HashMap, VecDeque};
 use std::marker::PhantomData;
@@ -145,6 +148,9 @@ impl Events {
 
     /// Advance frame and cleanup old events
     pub fn update(&mut self) {
+        #[cfg(feature = "profiling")]
+        span!("ECS::Events::update");
+        
         self.current_frame += 1;
 
         // Cleanup old events from all queues

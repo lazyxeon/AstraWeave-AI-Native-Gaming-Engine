@@ -3,6 +3,9 @@
 //! Week 3 Action 9: Reduces complex planning from 31.7ms → <1ms with 90% cache hit rate.
 //! Uses scenario fingerprinting and state bucketing for high cache efficiency.
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
+
 use crate::goap::{GoapAction, GoapGoal, WorldState};
 use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
@@ -158,6 +161,9 @@ impl PlanCache {
         goal: &GoapGoal,
         available_actions: &[GoapAction],
     ) -> Option<Vec<GoapAction>> {
+        #[cfg(feature = "profiling")]
+        span!("AI::PlanCache::get");
+        
         let (key, action_hash) = PlanCacheKey::with_action_validation(
             current_state,
             goal,

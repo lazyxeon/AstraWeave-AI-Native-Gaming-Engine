@@ -44,6 +44,9 @@
 //! app = app.run_fixed(100); // Run 100 ticks
 //! ```
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::{span, plot};
+
 pub mod archetype;
 pub mod events;
 mod system_param;
@@ -106,8 +109,15 @@ impl World {
     }
 
     pub fn spawn(&mut self) -> Entity {
+        #[cfg(feature = "profiling")]
+        span!("ECS::World::spawn");
+        
         let e = Entity(self.next_entity_id);
         self.next_entity_id += 1;
+        
+        #[cfg(feature = "profiling")]
+        plot!("ECS::entity_count", self.next_entity_id);
+        
         // An entity with no components lives in the empty archetype.
         let empty_sig = ArchetypeSignature::new(vec![]);
         let archetype_id = self.archetypes.get_or_create_archetype(empty_sig);
@@ -189,6 +199,9 @@ impl World {
     }
 
     pub fn get<T: Component>(&self, e: Entity) -> Option<&T> {
+        #[cfg(feature = "profiling")]
+        span!("ECS::World::get");
+        
         let archetype_id = self.archetypes.get_entity_archetype(e)?;
         let archetype = self.archetypes.get_archetype(archetype_id)?;
         archetype.get::<T>(e)
@@ -307,6 +320,9 @@ impl Schedule {
         }
     }
     pub fn run(&self, world: &mut World) {
+        #[cfg(feature = "profiling")]
+        span!("ECS::Schedule::run");
+        
         for s in &self.stages {
             for f in &s.systems {
                 (f)(world);
