@@ -82,6 +82,18 @@ Current ignored advisories (not security vulnerabilities):
 - RUSTSEC-2024-0388: derivative crate unmaintained
 - RUSTSEC-2024-0384: instant crate unmaintained  
 - RUSTSEC-2024-0436: paste crate unmaintained
+- RUSTSEC-2025-0052: async-std has been discontinued
+- RUSTSEC-2023-0089: atomic-polyfill is unmaintained
+- RUSTSEC-2025-0057: fxhash no longer maintained
+
+### Recently Resolved Vulnerabilities
+- **RUSTSEC-2021-0070** (2025-10-12): nalgebra 0.26.2 memory corruption vulnerability
+  - **Fix**: Removed unused mikktspace dependency from astraweave-render
+  - **Impact**: No functional changes; mikktspace was not used in code
+  
+- **RUSTSEC-2024-0437** (2025-10-12): protobuf 2.28.0 DoS via uncontrolled recursion
+  - **Fix**: Updated prometheus from 0.13 to 0.14 in astraweave-observability
+  - **Impact**: Protobuf updated from 2.28.0 to 3.7.2 (secure version)
 
 ## Troubleshooting
 
