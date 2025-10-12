@@ -57,13 +57,16 @@ cargo bench -p astraweave-physics --bench character_controller
 ### 3. View Dashboard Locally
 
 ```powershell
-# Start local HTTP server
-cd tools/benchmark-dashboard
+# IMPORTANT: Start HTTP server from repository root (not from tools/benchmark-dashboard/)
+# This ensures relative paths work correctly for data loading
+cd /path/to/AstraWeave-AI-Native-Gaming-Engine  # Navigate to repo root
 python -m http.server 8000
 
 # Open in browser
-# http://localhost:8000
+# http://localhost:8000/tools/benchmark-dashboard/
 ```
+
+**Note**: The dashboard must be served from the repository root to access data files via relative paths. Serving from `tools/benchmark-dashboard/` will cause a 404 error when loading benchmark data.
 
 ### 4. Validate Thresholds
 
@@ -288,6 +291,36 @@ Edit `tools/benchmark-dashboard/dashboard.js` to:
 
 ## Troubleshooting
 
+### Issue: "Failed to load ../../target/benchmark-data/history.jsonl"
+
+**Root Cause**: Dashboard is being served from the wrong directory or data file doesn't exist.
+
+**Solutions**:
+
+1. **Ensure HTTP server runs from repository root**:
+   ```bash
+   # CORRECT - serve from repo root
+   cd /path/to/AstraWeave-AI-Native-Gaming-Engine
+   python -m http.server 8000
+   # Then open: http://localhost:8000/tools/benchmark-dashboard/
+   
+   # INCORRECT - serving from dashboard directory will fail
+   cd tools/benchmark-dashboard  # ❌ Don't do this
+   python -m http.server 8000     # ❌ Data won't be accessible
+   ```
+
+2. **Generate benchmark data**:
+   ```powershell
+   cargo bench
+   .\scripts\export_benchmark_jsonl.ps1
+   ```
+
+3. **Verify data file exists**:
+   ```bash
+   # Check if data file was created
+   ls -la target/benchmark-data/history.jsonl
+   ```
+
 ### Issue: "No data available"
 
 **Solution**: Run benchmarks and export JSONL first:
@@ -296,14 +329,29 @@ cargo bench
 .\scripts\export_benchmark_jsonl.ps1
 ```
 
-### Issue: Dashboard not loading
+### Issue: "D3.js library failed to load"
 
-**Solution**: Check file paths in `dashboard.js`:
-```javascript
-const HISTORY_FILE = '../../target/benchmark-data/history.jsonl';
-```
+**Root Cause**: CDN blocked by ad blocker, firewall, or network issues.
 
-Adjust relative path based on your HTTP server root.
+**Solutions**:
+1. Disable ad blocker for localhost
+2. Check browser console for specific error
+3. Download d3.v7.min.js locally (optional):
+   ```bash
+   cd tools/benchmark-dashboard
+   curl https://d3js.org/d3.v7.min.js -o d3.v7.min.js
+   # Update index.html to use local file instead of CDN
+   ```
+
+**Note**: Stats cards will still display correctly even if D3.js fails to load - only the chart will be unavailable.
+
+### Issue: Dashboard shows data from wrong source
+
+**Explanation**: Dashboard tries multiple data sources in order:
+1. `target/benchmark-data/history.jsonl` (local development)
+2. `docs/benchmark_data/benchmark_history.jsonl` (production/GitHub Pages)
+
+Check browser console to see which source was used.
 
 ### Issue: GitHub Pages 404
 
@@ -334,9 +382,9 @@ git commit -m "chore: update benchmark thresholds"
 # 2. Check for any regressions
 .\scripts\check_benchmark_thresholds.ps1 -ShowDetails
 
-# 3. Open dashboard in browser
-cd tools/benchmark-dashboard
+# 3. Open dashboard in browser (serve from repo root)
 python -m http.server 8000
+# Navigate to: http://localhost:8000/tools/benchmark-dashboard/
 
 # 4. Review 7-day trends (select "Last 7 Days" in UI)
 ```
