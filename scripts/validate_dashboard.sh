@@ -28,7 +28,7 @@ if [ ! -f "target/benchmark-data/history.jsonl" ]; then
     echo ""
     echo "⚠️  No benchmark data found. Creating sample data for testing..."
     
-    # Create sample JSONL data
+    # Create sample JSONL data (one JSON object per line)
     cat > target/benchmark-data/history.jsonl << 'EOF'
 {"timestamp":"2025-10-10T10:00:00Z","benchmark_name":"astraweave-core::ecs_benchmarks/world_creation","value":125000,"stddev":5000,"unit":"ns","git_sha":"abc12345","git_branch":"main","git_dirty":false,"crate":"astraweave-core","group":"ecs_benchmarks","name":"world_creation"}
 {"timestamp":"2025-10-10T10:00:00Z","benchmark_name":"astraweave-ai::ai_core_loop/simple","value":980000,"stddev":15000,"unit":"ns","git_sha":"abc12345","git_branch":"main","git_dirty":false,"crate":"astraweave-ai","group":"ai_core_loop","name":"simple"}
@@ -36,6 +36,7 @@ if [ ! -f "target/benchmark-data/history.jsonl" ]; then
 EOF
     
     echo "✓ Created sample data (3 entries)"
+    echo "   Note: This is test data. Run 'cargo bench' for real benchmarks."
 else
     LINE_COUNT=$(wc -l < target/benchmark-data/history.jsonl)
     echo "✓ Found existing benchmark data ($LINE_COUNT entries)"
@@ -67,5 +68,6 @@ echo "  2. Open: http://localhost:8000/tools/benchmark-dashboard/"
 echo ""
 echo "To generate real benchmark data:"
 echo "  1. Run: cargo bench"
-echo "  2. Run: ./scripts/export_benchmark_jsonl.ps1"
+echo "  2. Run (Windows): .\\scripts\\export_benchmark_jsonl.ps1"
+echo "     Run (Unix):    bash scripts/export_benchmark_history.sh"
 echo ""
