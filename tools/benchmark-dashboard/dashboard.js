@@ -1,7 +1,12 @@
 // AstraWeave Benchmark Dashboard - Data Visualization & Analysis
 // Reads history.jsonl and renders interactive d3.js charts
 
-const HISTORY_FILE = '../../target/benchmark-data/history.jsonl';
+// Try multiple data source paths for flexibility
+const DATA_SOURCES = [
+    '../../target/benchmark-data/history.jsonl',  // Local dev (from criterion benchmarks)
+    '../../docs/benchmark_data/benchmark_history.jsonl',  // Production (from gh-pages)
+];
+
 const COLOR_SCHEME = {
     ecs: '#4facfe',
     ai: '#00f2fe',
@@ -19,16 +24,43 @@ let currentFilters = {
     benchmark: null
 };
 
+// Try to load data from multiple sources
+async function tryLoadFromSource(source) {
+    const response = await fetch(source);
+    if (!response.ok) {
+        return null;
+    }
+    
+    const text = await response.text();
+    const lines = text.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#'));
+    
+    if (lines.length === 0) {
+        return null;
+    }
+    
+    return lines;
+}
+
 // Parse JSONL file (one JSON object per line)
 async function loadBenchmarkData() {
     try {
-        const response = await fetch(HISTORY_FILE);
-        if (!response.ok) {
-            throw new Error(`Failed to load ${HISTORY_FILE}: ${response.statusText}`);
+        let lines = null;
+        let sourceUsed = null;
+        
+        // Try each data source in order
+        for (const source of DATA_SOURCES) {
+            console.log(`Trying to load from: ${source}`);
+            lines = await tryLoadFromSource(source);
+            if (lines) {
+                sourceUsed = source;
+                console.log(`Successfully loaded from: ${source}`);
+                break;
+            }
         }
         
-        const text = await response.text();
-        const lines = text.split('\n').filter(line => line.trim() !== '');
+        if (!lines || lines.length === 0) {
+            throw new Error(`No benchmark data found. Tried sources:\n${DATA_SOURCES.join('\n')}`);
+        }
         
         benchmarkData = lines.map(line => {
             const entry = JSON.parse(line);
@@ -36,7 +68,7 @@ async function loadBenchmarkData() {
             return entry;
         });
         
-        console.log(`Loaded ${benchmarkData.length} benchmark entries`);
+        console.log(`Loaded ${benchmarkData.length} benchmark entries from ${sourceUsed}`);
         
         // Sort by timestamp (oldest first for charting)
         benchmarkData.sort((a, b) => a.timestamp - b.timestamp);
@@ -125,10 +157,15 @@ function getSystemColor(crate) {
 
 // Render entire dashboard
 function renderDashboard() {
-    applyFilters();
-    renderStatCards();
-    renderChart();
-    updateGeneratedTime();
+    try {
+        applyFilters();
+        renderStatCards();
+        renderChart();
+        updateGeneratedTime();
+    } catch (error) {
+        console.error('Error rendering dashboard:', error);
+        showError(`Rendering error: ${error.message}`);
+    }
 }
 
 // Render stat cards (summary metrics)
@@ -218,6 +255,25 @@ function renderChart() {
     
     if (filteredData.length === 0) {
         chartDiv.innerHTML = '<div class="loading">No data to display</div>';
+        return;
+    }
+    
+    // Check if d3 is available
+    if (typeof d3 === 'undefined') {
+        chartDiv.innerHTML = `
+            <div class="loading" style="color: #ff6b6b;">
+                D3.js library failed to load. This may be due to:
+                <ul style="text-align: left; max-width: 500px; margin: 20px auto;">
+                    <li>Network connectivity issues</li>
+                    <li>Ad blockers blocking CDN access</li>
+                    <li>Corporate firewalls</li>
+                </ul>
+                <p>Stats cards above show the data successfully loaded.</p>
+                <p style="margin-top: 10px; font-size: 0.9em;">
+                    To fix: Disable ad blocker for this page, or download d3.v7.min.js locally.
+                </p>
+            </div>
+        `;
         return;
     }
     
@@ -407,10 +463,18 @@ function showError(message) {
     statsGrid.innerHTML = `
         <div class="error">
             <h2>Error Loading Dashboard</h2>
-            <p>${message}</p>
-            <p>Please run benchmarks and export JSONL data:</p>
-            <pre>cargo bench
+            <p>${message.replace(/\n/g, '<br>')}</p>
+            <h3 style="margin-top: 20px;">How to Generate Benchmark Data:</h3>
+            <div style="text-align: left; max-width: 600px; margin: 20px auto;">
+                <p><strong>Option 1: From Local Criterion Benchmarks (Development)</strong></p>
+                <pre style="text-align: left;">cargo bench
 .\\scripts\\export_benchmark_jsonl.ps1</pre>
+                <p style="margin-top: 10px;">Creates: <code>target/benchmark-data/history.jsonl</code></p>
+                
+                <p style="margin-top: 20px;"><strong>Option 2: From GitHub Pages Data (Production)</strong></p>
+                <pre style="text-align: left;">bash scripts/export_benchmark_history.sh</pre>
+                <p style="margin-top: 10px;">Creates: <code>docs/benchmark_data/benchmark_history.jsonl</code></p>
+            </div>
         </div>
     `;
 }

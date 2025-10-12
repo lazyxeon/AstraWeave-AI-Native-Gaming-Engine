@@ -19,7 +19,7 @@ uuid = { version = "1.0", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 dashmap = "6.0"
 async-trait = "0.1"
-prometheus = { version = "0.13", optional = true }
+prometheus = { version = "0.14", optional = true }
 opentelemetry = { version = "0.23", optional = true }
 opentelemetry-jaeger = { version = "0.22", optional = true }
 histogram = "0.6"
