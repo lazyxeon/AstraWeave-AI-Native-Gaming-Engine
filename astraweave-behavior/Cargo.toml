@@ -11,6 +11,12 @@ serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
 astraweave-ecs.workspace = true
+astraweave-profiling = { path = "../astraweave-profiling", optional = true }
+tracy-client = { version = "0.17", optional = true }
+
+[features]
+profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
+
 [dev-dependencies]
 criterion = { workspace = true }
 

@@ -1,5 +1,8 @@
 //! Tool Sandbox: Validated action verbs and error taxonomy
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
+
 use anyhow::Result;
 use astraweave_core::{IVec2, WorldSnapshot};
 use astraweave_nav::NavMesh;
@@ -121,6 +124,9 @@ pub fn validate_tool_action(
     context: &ValidationContext,
     target_pos: Option<IVec2>,
 ) -> Result<()> {
+    #[cfg(feature = "profiling")]
+    span!("AI::ToolSandbox::validate");
+    
     // Cooldown checks
     if let Some(cd) = world
         .me

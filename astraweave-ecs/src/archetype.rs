@@ -1,5 +1,10 @@
+//! AstraWeave ECS — Production-grade, AI-native ECS for game development.
+
 use std::any::TypeId;
 use std::collections::{BTreeMap, HashMap};
+
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
 
 use crate::{Component, Entity};
 
@@ -214,6 +219,9 @@ impl ArchetypeStorage {
 
     /// Find archetypes that contain a specific component
     pub fn archetypes_with_component(&self, ty: TypeId) -> impl Iterator<Item = &Archetype> {
+        #[cfg(feature = "profiling")]
+        span!("ECS::Archetype::archetypes_with_component");
+        
         self.archetypes
             .values()
             .filter(move |arch| arch.signature.contains(ty))

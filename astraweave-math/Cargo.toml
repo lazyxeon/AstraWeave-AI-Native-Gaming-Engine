@@ -7,7 +7,7 @@ description = "SIMD-accelerated math operations for AstraWeave game engine"
 license = "MIT"
 
 [dependencies]
-glam = { version = "0.29", features = ["bytemuck", "serde"] }
+glam = { workspace = true }
 bytemuck = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
@@ -29,6 +29,10 @@ harness = false
 
 [[bench]]
 name = "simd_quat_benchmarks"
+harness = false
+
+[[bench]]
+name = "simd_movement"
 harness = false
 
 [lib]

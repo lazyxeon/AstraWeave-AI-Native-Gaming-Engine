@@ -2,6 +2,9 @@
 //!
 //! Implements A* planning over symbolic world states with deterministic execution.
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
+
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, VecDeque};
 
@@ -214,6 +217,9 @@ impl GoapPlanner {
         goal: &GoapGoal,
         available_actions: &[GoapAction],
     ) -> Option<Vec<GoapAction>> {
+        #[cfg(feature = "profiling")]
+        span!("AI::GOAP::plan");
+        
         // Early exit if goal already satisfied
         if goal.is_satisfied(current_state) {
             return Some(Vec::new());

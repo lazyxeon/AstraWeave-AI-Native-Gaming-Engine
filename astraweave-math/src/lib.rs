@@ -68,6 +68,7 @@ Typical speedups vs scalar glam operations (x86_64 SSE2):
 pub mod simd_vec;
 pub mod simd_mat;
 pub mod simd_quat;
+pub mod simd_movement;
 
 // Re-exports for convenience
 pub use simd_vec::{

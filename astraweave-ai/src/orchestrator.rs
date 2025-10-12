@@ -1,5 +1,8 @@
 //! Orchestrator trait implementations and selection utilities for AstraWeave AI planning.
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
+
 use anyhow::Result;
 #[cfg(feature = "llm_orchestrator")]
 use astraweave_core::{default_tool_registry, ToolRegistry};
@@ -28,6 +31,9 @@ pub struct RuleOrchestrator;
 
 impl Orchestrator for RuleOrchestrator {
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent {
+        #[cfg(feature = "profiling")]
+        span!("AI::RuleOrchestrator::propose_plan");
+        
         let plan_id = format!("plan-{}", (snap.t * 1000.0) as i64);
         if let Some(first) = snap.enemies.first() {
             let m = &snap.me;

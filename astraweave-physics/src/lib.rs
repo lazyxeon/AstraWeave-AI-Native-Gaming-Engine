@@ -2,12 +2,19 @@ use glam::{vec3, Mat4, Vec3};
 use rapier3d::prelude::*;
 use std::collections::HashMap;
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::{span, plot};
+
 // Async physics scheduler (feature-gated)
 #[cfg(feature = "async-physics")]
 pub mod async_scheduler;
 
 #[cfg(feature = "async-physics")]
 pub use async_scheduler::{AsyncPhysicsScheduler, PhysicsStepProfile};
+
+// Spatial hash grid for broad-phase collision optimization
+pub mod spatial_hash;
+pub use spatial_hash::{SpatialHash, SpatialHashStats, AABB};
 
 pub type BodyId = u64;
 
@@ -119,6 +126,9 @@ impl PhysicsWorld {
     }
 
     pub fn step(&mut self) {
+        #[cfg(feature = "profiling")]
+        span!("Physics::World::step");
+        
         #[cfg(feature = "async-physics")]
         {
             // When async scheduler is enabled, Rapier3D automatically uses
@@ -147,6 +157,12 @@ impl PhysicsWorld {
     /// Internal physics step (shared by sync and async paths)
     /// When called with async scheduler enabled, Rapier3D uses Rayon for parallel solving
     fn step_internal(&mut self) {
+        #[cfg(feature = "profiling")]
+        {
+            span!("Physics::Rapier::pipeline");
+            plot!("Physics::collider_count", self.colliders.len() as u64);
+        }
+        
         let events = ();
         self.pipeline.step(
             &self.gravity,
@@ -202,6 +218,12 @@ impl PhysicsWorld {
     }
 
     pub fn add_dynamic_box(&mut self, pos: Vec3, half: Vec3, mass: f32, groups: Layers) -> BodyId {
+        #[cfg(feature = "profiling")]
+        {
+            span!("Physics::RigidBody::create");
+            plot!("Physics::rigid_body_count", self.bodies.len() as u64);
+        }
+        
         let rb = RigidBodyBuilder::dynamic()
             .translation(vector![pos.x, pos.y, pos.z])
             .build();
@@ -219,6 +241,12 @@ impl PhysicsWorld {
     }
 
     pub fn add_character(&mut self, pos: Vec3, half: Vec3) -> BodyId {
+        #[cfg(feature = "profiling")]
+        {
+            span!("Physics::Character::create");
+            plot!("Physics::character_count", self.char_map.len() as u64);
+        }
+        
         let rb = RigidBodyBuilder::kinematic_position_based()
             .translation(vector![pos.x, pos.y, pos.z])
             .build();
@@ -246,6 +274,9 @@ impl PhysicsWorld {
     }
 
     pub fn control_character(&mut self, id: BodyId, desired_move: Vec3, dt: f32, _climb: bool) {
+        #[cfg(feature = "profiling")]
+        span!("Physics::CharacterController::move");
+        
         let Some(ctrl) = self.char_map.get(&id).copied() else {
             return;
         };

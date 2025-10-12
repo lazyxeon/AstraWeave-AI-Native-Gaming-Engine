@@ -95,6 +95,7 @@ members = [
   "astraweave-stress-test",
   "astraweave-security",
   "astraweave-observability",
+  "astraweave-profiling",
   "examples/ecs_ai_demo",
   "examples/ecs_ai_showcase",
   # Phase 3 demos
@@ -105,6 +106,7 @@ members = [
   "examples/phi3_demo",
   "examples/veilweaver_demo",
   "examples/world_partition_demo",
+  "examples/profiling_demo",
 ]
 resolver = "2"
 
@@ -172,8 +174,12 @@ astraweave-memory = { path = "astraweave-memory" }
 astraweave-nav = { path = "astraweave-nav" }
 astraweave-llm = { path = "astraweave-llm" }
 astraweave-physics = { path = "astraweave-physics" }
+astraweave-math = { path = "astraweave-math" }
+astraweave-render = { path = "astraweave-render" }
 astraweave-net-ecs = { path = "astraweave-net-ecs" }
 astraweave-persistence-ecs = { path = "astraweave-persistence-ecs" }
 astraweave-stress-test = { path = "astraweave-stress-test" }
 astraweave-security = { path = "astraweave-security" }
 astraweave-observability = { path = "astraweave-observability" }
+astraweave-profiling = { path = "astraweave-profiling" }
+

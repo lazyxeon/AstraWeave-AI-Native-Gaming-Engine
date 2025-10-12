@@ -6,6 +6,9 @@ use glam::{vec3, Mat4};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::{span, plot};
+
 use crate::camera::Camera;
 use crate::clustered::{bin_lights_cpu, ClusterDims, CpuLight, WGSL_CLUSTER_BIN};
 use crate::depth::Depth;
@@ -2504,6 +2507,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         normals: &[[f32; 3]],
         indices: &[u32],
     ) -> Mesh {
+        #[cfg(feature = "profiling")]
+        span!("Render::MeshUpload");
+
         // Interleave into Vertex, derive simple defaults for tangent (+X) and uv (planar XZ)
         let verts: Vec<crate::types::Vertex> = vertices
             .iter()
@@ -2544,6 +2550,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         uvs: &[[f32; 2]],
         indices: &[u32],
     ) -> Mesh {
+        #[cfg(feature = "profiling")]
+        span!("Render::MeshUpload::Full");
+
         assert!(
             positions.len() == normals.len()
                 && positions.len() == tangents.len()
@@ -2630,6 +2639,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     pub fn render(&mut self) -> Result<()> {
+        #[cfg(feature = "profiling")]
+        span!("Render::Frame");
+
         let frame = self.surface.get_current_texture()?;
         let view = frame
             .texture
@@ -2664,6 +2676,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // self.sky.render(&mut enc, &self.main_color_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         {
+            #[cfg(feature = "profiling")]
+            span!("Render::ClusteredLighting");
+
             // Prepare clustered lighting for this frame: simple demo lights around origin
             if self.point_lights.is_empty() {
                 self.point_lights.push(CpuLight {
@@ -2759,11 +2774,19 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // Frustum cull instances
         let (vis_raws, vis_count) = self.build_visible_instances();
         if vis_count > 0 {
+            #[cfg(feature = "profiling")]
+            {
+                span!("Render::BufferWrite::Instances");
+                plot!("Render::visible_instances", vis_count as u64);
+            }
             self.queue
                 .write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&vis_raws));
         }
         // Shadow passes (depth only) - one per cascade layer
         // Write cascade0 matrix, render to layer0; then cascade1, render to layer1
+        #[cfg(feature = "profiling")]
+        span!("Render::ShadowMaps");
+
         for (idx, layer_view) in [&self.shadow_layer0_view, &self.shadow_layer1_view]
             .iter()
             .enumerate()
@@ -2835,6 +2858,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
 
         // Render sky first into HDR target so we can layer geometry on top
+        #[cfg(feature = "profiling")]
+        span!("Render::Sky");
+
         self.sky.render(
             &mut enc,
             &self.hdr_view,
@@ -2844,6 +2870,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         )?;
 
         {
+            #[cfg(feature = "profiling")]
+            span!("Render::MainPass");
+
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main pass"),
                 // Render the main scene into the HDR color target; a post-pass will tonemap to the surface.
@@ -2874,6 +2903,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(2, &self.light_bg, &[]);
             rp.set_bind_group(3, &self.tex_bg, &[]);
 
+            #[cfg(feature = "profiling")]
+            let mut draw_calls = 0u64;
+
             // Ground plane (scaled)
             rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
             rp.set_index_buffer(
@@ -2882,6 +2914,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             );
             rp.set_vertex_buffer(1, plane_buf.slice(..));
             rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
+            #[cfg(feature = "profiling")]
+            {
+                draw_calls += 1;
+            }
 
             // Tokens as lit spheres (instances)
             rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
@@ -2893,6 +2929,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let inst_count = vis_count as u32;
             if inst_count > 0 {
                 rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
+                #[cfg(feature = "profiling")]
+                {
+                    draw_calls += 1;
+                }
             }
 
             // External mesh if present
@@ -2901,7 +2941,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 rp.set_vertex_buffer(1, ibuf.slice(..));
                 rp.draw_indexed(0..mesh.index_count, 0, 0..1);
+                #[cfg(feature = "profiling")]
+                {
+                    draw_calls += 1;
+                }
             }
+
+            #[cfg(feature = "profiling")]
+            plot!("Render::draw_calls", draw_calls);
         }
 
         // Optional feature-gated post chain
@@ -2970,6 +3017,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
         // Postprocess HDR to surface
         {
+            #[cfg(feature = "profiling")]
+            span!("Render::Postprocess");
+
             let mut pp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("post pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -3000,8 +3050,22 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             pp.draw(0..3, 0..1);
         }
 
+        #[cfg(feature = "profiling")]
+        {
+            span!("Render::QueueSubmit");
+            self.queue.submit(Some(enc.finish()));
+        }
+        #[cfg(not(feature = "profiling"))]
         self.queue.submit(Some(enc.finish()));
+
+        #[cfg(feature = "profiling")]
+        {
+            span!("Render::Present");
+            frame.present();
+        }
+        #[cfg(not(feature = "profiling"))]
         frame.present();
+
         Ok(())
     }
 

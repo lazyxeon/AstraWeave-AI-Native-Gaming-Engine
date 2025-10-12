@@ -5,6 +5,9 @@
 //! - `CAiController`: Component to attach to entities for AI planning
 //! - `dispatch_planner()`: Dispatcher that routes WorldSnapshot to appropriate planner
 
+#[cfg(feature = "profiling")]
+use astraweave_profiling::span;
+
 use anyhow::Result;
 use astraweave_core::{PlanIntent, WorldSnapshot};
 
@@ -104,6 +107,9 @@ pub fn dispatch_planner(
     controller: &CAiController,
     snapshot: &WorldSnapshot,
 ) -> Result<PlanIntent> {
+    #[cfg(feature = "profiling")]
+    span!("AI::dispatch_planner");
+    
     match controller.mode {
         PlannerMode::Rule => {
             let orch = RuleOrchestrator;
@@ -145,6 +151,9 @@ fn dispatch_bt(_controller: &CAiController, _snapshot: &WorldSnapshot) -> Result
 /// Dispatch to GOAP planner (feature-gated).
 #[cfg(feature = "ai-goap")]
 fn dispatch_goap(controller: &CAiController, snapshot: &WorldSnapshot) -> Result<PlanIntent> {
+    #[cfg(feature = "profiling")]
+    span!("AI::dispatch_goap");
+    
     // Convert WorldSnapshot to GOAP WorldState
     let world_state = snapshot_to_goap_state(snapshot)?;
 
