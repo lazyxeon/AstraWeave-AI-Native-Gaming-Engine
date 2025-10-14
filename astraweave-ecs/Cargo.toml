@@ -9,6 +9,7 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+rand = { workspace = true }
 astraweave-profiling = { path = "../astraweave-profiling", optional = true }
 tracy-client = { version = "0.17", optional = true }
 
@@ -17,3 +18,11 @@ profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/ena
 
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }
+criterion = { workspace = true }
+proptest = "1.5"
+test-strategy = "0.3"
+loom = "0.7"  # Concurrency model checker for Phase 4.4
+
+[[bench]]
+name = "storage_benchmarks"
+harness = false

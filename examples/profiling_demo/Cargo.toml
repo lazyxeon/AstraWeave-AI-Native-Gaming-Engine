@@ -12,6 +12,7 @@ astraweave-math.workspace = true
 anyhow.workspace = true
 glam.workspace = true
 rayon = "1.10"
+lazy_static = "1.5"
 tracy-client = { version = "0.17", optional = true, default-features = false }
 
 [features]

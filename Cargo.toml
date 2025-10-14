@@ -108,6 +108,9 @@ members = [
   "examples/world_partition_demo",
   "examples/profiling_demo",
 ]
+exclude = [
+  "astraweave-ecs/fuzz",  # Fuzz targets must be built separately
+]
 resolver = "2"
 
 # Exclude crates with known compilation issues from workspace operations
