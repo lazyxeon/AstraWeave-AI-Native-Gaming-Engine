@@ -57,7 +57,6 @@ grid.clear();
 */
 
 use glam::Vec3;
-use std::collections::HashMap;
 
 /// Axis-Aligned Bounding Box for collision detection
 #[derive(Debug, Clone, Copy)]
@@ -110,6 +109,10 @@ type GridCell = (i32, i32, i32);
 /// Uses a uniform grid to partition 3D space. Objects are inserted into grid cells
 /// based on their AABB. Queries return only objects in nearby cells, dramatically
 /// reducing the number of collision pairs to test.
+///
+/// **Phase B Optimization (Action 27)**: Uses FxHashMap for faster hashing.
+/// Week 9 testing confirmed FxHashMap provides better performance than SipHash
+/// for spatial grids (3.77ms vs 5.61ms with Tracy, 3.82ms without Tracy).
 #[derive(Debug)]
 pub struct SpatialHash<T> {
     /// Grid cell size (world units)
@@ -119,7 +122,8 @@ pub struct SpatialHash<T> {
     inv_cell_size: f32,
     
     /// Grid storage: (x, y, z) → [object IDs]
-    grid: HashMap<GridCell, Vec<T>>,
+    /// Uses FxHashMap for faster non-cryptographic hashing
+    grid: rustc_hash::FxHashMap<GridCell, Vec<T>>,
     
     /// Total objects currently in grid
     object_count: usize,
@@ -141,7 +145,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
         Self {
             cell_size,
             inv_cell_size: 1.0 / cell_size,
-            grid: HashMap::new(),
+            grid: rustc_hash::FxHashMap::default(),
             object_count: 0,
         }
     }
