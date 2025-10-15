@@ -15,7 +15,7 @@
    - No normal-map or ORM channel validation beyond filename inference.
    - Mipmap generation does not enforce power-of-two or resize-to-block alignment.
 2. **Model & Material Authoring**
-   - Lack of mesh optimization stages (meshopt, nanite preprocessing) in the CLI pipeline.
+   - Lack of mesh optimization stages (meshopt, Nanite preprocessing) in the CLI pipeline.
    - No automatic tangent/bitangent rebuild or MikkTSpace alignment for imported assets.
    - Dependency graph for textures/materials is empty, so runtime hot-reload and package builds cannot reason about asset bundles.
 3. **Interchange Compatibility**
