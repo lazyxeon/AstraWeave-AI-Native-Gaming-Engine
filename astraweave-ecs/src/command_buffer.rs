@@ -22,7 +22,6 @@
 
 use crate::{Component, Entity, World};
 use std::any::{Any, TypeId};
-use std::collections::HashMap;
 
 /// A command that modifies the World structure.
 #[derive(Debug)]

@@ -263,7 +263,7 @@ pub fn draw_ui(
                 if ui.button("Step 0.5s").clicked() {
                     let mut seq_guard = seq.lock()
                         .expect("Sequencer mutex poisoned - cannot recover");
-                    if let (Some(ref mut seqv), Some(ref tlv)) =
+                    if let (Some(ref mut seqv), Some(tlv)) =
                         (seq_guard.as_mut(), tl.lock()
                             .expect("Timeline mutex poisoned - cannot recover").as_ref())
                     {

@@ -183,6 +183,42 @@ impl ToolGuard {
             ActionStep::Throw { .. } => "Throw",
             ActionStep::CoverFire { .. } => "CoverFire",
             ActionStep::Revive { .. } => "Revive",
+            // Phase 7: Handle all new tools
+            ActionStep::Approach { .. } => "Approach",
+            ActionStep::Retreat { .. } => "Retreat",
+            ActionStep::TakeCover { .. } => "TakeCover",
+            ActionStep::Strafe { .. } => "Strafe",
+            ActionStep::Patrol { .. } => "Patrol",
+            ActionStep::Attack { .. } => "Attack",
+            ActionStep::AimedShot { .. } => "AimedShot",
+            ActionStep::QuickAttack { .. } => "QuickAttack",
+            ActionStep::HeavyAttack { .. } => "HeavyAttack",
+            ActionStep::AoEAttack { .. } => "AoEAttack",
+            ActionStep::ThrowExplosive { .. } => "ThrowExplosive",
+            ActionStep::Charge { .. } => "Charge",
+            ActionStep::Block { .. } => "Block",
+            ActionStep::Dodge { .. } => "Dodge",
+            ActionStep::Parry { .. } => "Parry",
+            ActionStep::ThrowSmoke { .. } => "ThrowSmoke",
+            ActionStep::Heal { .. } => "Heal",
+            ActionStep::UseDefensiveAbility { .. } => "UseDefensiveAbility",
+            ActionStep::EquipWeapon { .. } => "EquipWeapon",
+            ActionStep::SwitchWeapon { .. } => "SwitchWeapon",
+            ActionStep::Reload => "Reload",
+            ActionStep::UseItem { .. } => "UseItem",
+            ActionStep::DropItem { .. } => "DropItem",
+            ActionStep::CallReinforcements { .. } => "CallReinforcements",
+            ActionStep::MarkTarget { .. } => "MarkTarget",
+            ActionStep::RequestCover { .. } => "RequestCover",
+            ActionStep::CoordinateAttack { .. } => "CoordinateAttack",
+            ActionStep::SetAmbush { .. } => "SetAmbush",
+            ActionStep::Distract { .. } => "Distract",
+            ActionStep::Regroup { .. } => "Regroup",
+            ActionStep::Scan { .. } => "Scan",
+            ActionStep::Wait { .. } => "Wait",
+            ActionStep::Interact { .. } => "Interact",
+            ActionStep::UseAbility { .. } => "UseAbility",
+            ActionStep::Taunt { .. } => "Taunt",
         }
     }
 
@@ -297,7 +333,7 @@ mod tests {
     fn test_tool_guard_basic() {
         let guard = ToolGuard::new();
 
-        let action = ActionStep::MoveTo { x: 5, y: 10 };
+        let action = ActionStep::MoveTo { x: 5, y: 10, speed: None };
 
         let result = guard.validate_action(&action, &|_| true);
         assert!(result.is_valid());
@@ -357,7 +393,7 @@ mod tests {
         let guard = ToolGuard::new();
 
         let actions = vec![
-            ActionStep::MoveTo { x: 5, y: 10 },
+            ActionStep::MoveTo { x: 5, y: 10, speed: None },
             ActionStep::CoverFire {
                 target_id: 99,
                 duration: 2.0,
@@ -396,7 +432,7 @@ mod tests {
         let guard = ToolGuard::new();
 
         // Valid
-        guard.validate_action(&ActionStep::MoveTo { x: 5, y: 10 }, &|_| true);
+        guard.validate_action(&ActionStep::MoveTo { x: 5, y: 10, speed: None }, &|_| true);
 
         // Invalid
         guard.validate_action(
@@ -424,9 +460,10 @@ mod tests {
         let guard = ToolGuard::new();
         guard.set_policy("MoveTo", ToolPolicy::Allowed);
 
-        let action = ActionStep::MoveTo { x: 5, y: 10 };
+        let action = ActionStep::MoveTo { x: 5, y: 10, speed: None };
 
         let result = guard.validate_action(&action, &|_| false); // Validator says no
         assert!(result.is_valid()); // But policy says yes (Allowed overrides validator)
     }
 }
+

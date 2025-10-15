@@ -198,7 +198,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
         for cell in cells {
             self.grid
                 .entry(cell)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(id);
         }
         

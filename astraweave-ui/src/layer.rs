@@ -72,6 +72,7 @@ impl UiLayer {
     }
 
     /// Paint the egui primitives. Must be called after end_frame.
+    #[allow(clippy::too_many_arguments)]
     pub fn paint(
         &mut self,
         device: &wgpu::Device,

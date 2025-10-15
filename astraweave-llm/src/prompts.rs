@@ -238,7 +238,7 @@ impl PromptBuilder {
     /// Convert ActionStep to JSON string
     fn action_to_json(step: &ActionStep) -> String {
         match step {
-            ActionStep::MoveTo { x, y } => {
+            ActionStep::MoveTo { x, y, speed: _ } => {
                 json!({"act": "MoveTo", "x": x, "y": y}).to_string()
             }
             ActionStep::Throw { item, x, y } => {
@@ -249,6 +249,10 @@ impl PromptBuilder {
             }
             ActionStep::Revive { ally_id } => {
                 json!({"act": "Revive", "ally_id": ally_id}).to_string()
+            }
+            // Phase 7: Handle all new tools with generic JSON serialization
+            _ => {
+                json!({"act": "Unknown", "note": "Phase 7 tool - implement specific serialization"}).to_string()
             }
         }
     }
@@ -401,7 +405,7 @@ mod tests {
     fn test_action_history() {
         let snapshot = create_test_snapshot();
         let history = vec![
-            ActionStep::MoveTo { x: 4, y: 4 },
+            ActionStep::MoveTo { x: 4, y: 4, speed: None },
             ActionStep::CoverFire { target_id: 99, duration: 2.0 },
         ];
         
@@ -429,3 +433,4 @@ mod tests {
         assert!(prompt.contains("Stay within 10 units"));
     }
 }
+

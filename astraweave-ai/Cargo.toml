@@ -15,6 +15,7 @@ rapier3d = { workspace = true }
 glam = { workspace = true }
 async-trait = "0.1"
 tokio = { workspace = true, optional = true }
+futures = { version = "0.3", optional = true }
 tracing = { workspace = true }
 astraweave-profiling = { path = "../astraweave-profiling", optional = true }
 tracy-client = { version = "0.17", optional = true }
@@ -22,7 +23,7 @@ tracy-client = { version = "0.17", optional = true }
 [features]
 default = []
 # Enabling llm_orchestrator will also enable the Ollama client in astraweave-llm and a tokio runtime for background warmup
-llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio"]
+llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio", "dep:futures"]
 ai-goap = []
 ai-bt = []
 profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
@@ -33,8 +34,14 @@ optional = true
 
 [dev-dependencies]
 futures = "0.3"
+futures-executor = "0.3"
 criterion = { workspace = true }
+tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
 
 [[bench]]
 name = "ai_core_loop"
+harness = false
+
+[[bench]]
+name = "goap_bench"
 harness = false

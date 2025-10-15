@@ -19,11 +19,60 @@ pub struct ToolBlock {
 /// Map engine validation errors to a stable tool taxonomy with light metadata.
 pub fn map_engine_error(step: &ActionStep, err: &EngineError) -> ToolBlock {
     let tool = match step {
+        // Movement
         ActionStep::MoveTo { .. } => "MoveTo",
-        ActionStep::Throw { .. } => "Throw",
+        ActionStep::Approach { .. } => "Approach",
+        ActionStep::Retreat { .. } => "Retreat",
+        ActionStep::TakeCover { .. } => "TakeCover",
+        ActionStep::Strafe { .. } => "Strafe",
+        ActionStep::Patrol { .. } => "Patrol",
+        
+        // Offensive
+        ActionStep::Attack { .. } => "Attack",
+        ActionStep::AimedShot { .. } => "AimedShot",
+        ActionStep::QuickAttack { .. } => "QuickAttack",
+        ActionStep::HeavyAttack { .. } => "HeavyAttack",
+        ActionStep::AoEAttack { .. } => "AoEAttack",
+        ActionStep::ThrowExplosive { .. } => "ThrowExplosive",
         ActionStep::CoverFire { .. } => "CoverFire",
+        ActionStep::Charge { .. } => "Charge",
+        
+        // Defensive
+        ActionStep::Block => "Block",
+        ActionStep::Dodge { .. } => "Dodge",
+        ActionStep::Parry => "Parry",
+        ActionStep::ThrowSmoke { .. } => "ThrowSmoke",
+        ActionStep::Heal { .. } => "Heal",
+        ActionStep::UseDefensiveAbility { .. } => "UseDefensiveAbility",
+        
+        // Equipment
+        ActionStep::EquipWeapon { .. } => "EquipWeapon",
+        ActionStep::SwitchWeapon { .. } => "SwitchWeapon",
+        ActionStep::Reload => "Reload",
+        ActionStep::UseItem { .. } => "UseItem",
+        ActionStep::DropItem { .. } => "DropItem",
+        
+        // Tactical
+        ActionStep::CallReinforcements { .. } => "CallReinforcements",
+        ActionStep::MarkTarget { .. } => "MarkTarget",
+        ActionStep::RequestCover { .. } => "RequestCover",
+        ActionStep::CoordinateAttack { .. } => "CoordinateAttack",
+        ActionStep::SetAmbush { .. } => "SetAmbush",
+        ActionStep::Distract { .. } => "Distract",
+        ActionStep::Regroup { .. } => "Regroup",
+        
+        // Utility
+        ActionStep::Scan { .. } => "Scan",
+        ActionStep::Wait { .. } => "Wait",
+        ActionStep::Interact { .. } => "Interact",
+        ActionStep::UseAbility { .. } => "UseAbility",
+        ActionStep::Taunt { .. } => "Taunt",
+        
+        // Legacy
+        ActionStep::Throw { .. } => "Throw",
         ActionStep::Revive { .. } => "Revive",
     };
+    
     match err {
         EngineError::Cooldown(s) => ToolBlock {
             reason: ToolBlockReason::Cooldown,
@@ -63,7 +112,7 @@ mod tests {
     };
     #[test]
     fn taxonomy_maps_correctly() {
-        let step = ActionStep::MoveTo { x: 0, y: 0 };
+        let step = ActionStep::MoveTo { x: 0, y: 0, speed: None };
         let b = map_engine_error(&step, &EngineError::NoPath);
         assert_eq!(b.reason, ToolBlockReason::PathBlocked);
         assert_eq!(b.tool, "MoveTo");
@@ -140,12 +189,12 @@ mod tests {
         let intent = PlanIntent {
             plan_id: "p3".into(),
             steps: vec![
-                ActionStep::MoveTo { x: 1, y: 0 },
+                ActionStep::MoveTo { x: 1, y: 0, speed: None },
                 ActionStep::CoverFire {
                     target_id: e,
                     duration: 1.0,
                 },
-                ActionStep::MoveTo { x: 2, y: 0 }, // should not execute
+                ActionStep::MoveTo { x: 2, y: 0, speed: None }, // should not execute
             ],
         };
         let cfg = ValidateCfg {

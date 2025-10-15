@@ -146,6 +146,11 @@ impl Events {
             .unwrap_or(0)
     }
 
+    /// Check if events queue is empty for type E
+    pub fn is_empty<E: Event>(&self) -> bool {
+        self.len::<E>() == 0
+    }
+
     /// Advance frame and cleanup old events
     pub fn update(&mut self) {
         #[cfg(feature = "profiling")]

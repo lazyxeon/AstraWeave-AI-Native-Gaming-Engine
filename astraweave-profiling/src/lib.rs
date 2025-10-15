@@ -235,7 +235,6 @@ macro_rules! span_color {
 /// ```
 // Note: This is a placeholder for future proc-macro implementation
 // For now, use span!() at function entry
-
 /// Profiling context for RAII-style span management
 ///
 /// Note: Due to Tracy 0.17 API constraints, this uses marker-based approach.

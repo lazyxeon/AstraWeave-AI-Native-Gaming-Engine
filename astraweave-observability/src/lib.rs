@@ -46,8 +46,10 @@ impl ObservabilityPlugin {
     pub fn new(config: ObservabilityConfig) -> Self {
         Self { config }
     }
+}
 
-    pub fn default() -> Self {
+impl Default for ObservabilityPlugin {
+    fn default() -> Self {
         Self::new(ObservabilityConfig::default())
     }
 }

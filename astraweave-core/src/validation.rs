@@ -21,7 +21,11 @@ pub fn validate_and_execute(
     ));
     for (i, step) in intent.steps.iter().enumerate() {
         match step {
-            ActionStep::MoveTo { x, y } => {
+            // ═══════════════════════════════════════
+            // MOVEMENT
+            // ═══════════════════════════════════════
+            
+            ActionStep::MoveTo { x, y, speed } => {
                 let from = w.pos_of(actor)
                     .ok_or_else(|| EngineError::InvalidAction("Actor has no position".to_string()))?;
                 let to = IVec2 { x: *x, y: *y };
@@ -31,8 +35,231 @@ pub fn validate_and_execute(
                 w.pose_mut(actor)
                     .ok_or_else(|| EngineError::InvalidAction("Actor has no pose".to_string()))?
                     .pos = to;
-                log(format!("  [{}] MOVE_TO -> ({},{})", i, x, y));
+                let speed_str = speed.as_ref().map(|s| format!("{:?}", s)).unwrap_or_default();
+                log(format!("  [{}] MOVE_TO -> ({},{}) {:?}", i, x, y, speed_str));
             }
+            
+            ActionStep::Approach { target_id, distance } => {
+                // Simplified: move toward target (full implementation would maintain distance)
+                let _target_pos = w.pos_of(*target_id)
+                    .ok_or_else(|| EngineError::InvalidAction("Target not found".to_string()))?;
+                log(format!("  [{}] APPROACH #{} at distance {:.1}", i, target_id, distance));
+                // Implementation stub - actual pathfinding would be here
+            }
+            
+            ActionStep::Retreat { target_id, distance } => {
+                log(format!("  [{}] RETREAT from #{} to distance {:.1}", i, target_id, distance));
+                // Implementation stub
+            }
+            
+            ActionStep::TakeCover { position } => {
+                log(format!("  [{}] TAKE_COVER at {:?}", i, position));
+                // Implementation stub
+            }
+            
+            ActionStep::Strafe { target_id, direction } => {
+                log(format!("  [{}] STRAFE {:?} around #{}", i, direction, target_id));
+                // Implementation stub
+            }
+            
+            ActionStep::Patrol { waypoints } => {
+                log(format!("  [{}] PATROL {} waypoints", i, waypoints.len()));
+                // Implementation stub
+            }
+            
+            // ═══════════════════════════════════════
+            // OFFENSIVE
+            // ═══════════════════════════════════════
+            
+            ActionStep::Attack { target_id } => {
+                log(format!("  [{}] ATTACK #{}", i, target_id));
+                // Simplified damage
+                if let Some(h) = w.health_mut(*target_id) {
+                    h.hp -= 10;
+                }
+            }
+            
+            ActionStep::AimedShot { target_id } => {
+                log(format!("  [{}] AIMED_SHOT #{}", i, target_id));
+                if let Some(h) = w.health_mut(*target_id) {
+                    h.hp -= 15; // Higher damage
+                }
+            }
+            
+            ActionStep::QuickAttack { target_id } => {
+                log(format!("  [{}] QUICK_ATTACK #{}", i, target_id));
+                if let Some(h) = w.health_mut(*target_id) {
+                    h.hp -= 5; // Lower damage
+                }
+            }
+            
+            ActionStep::HeavyAttack { target_id } => {
+                log(format!("  [{}] HEAVY_ATTACK #{}", i, target_id));
+                if let Some(h) = w.health_mut(*target_id) {
+                    h.hp -= 25; // High damage
+                }
+            }
+            
+            ActionStep::AoEAttack { x, y, radius } => {
+                log(format!("  [{}] AOE_ATTACK at ({},{}) radius {:.1}", i, x, y, radius));
+                // Implementation stub - would damage all entities in radius
+            }
+            
+            ActionStep::ThrowExplosive { x, y } => {
+                log(format!("  [{}] THROW_EXPLOSIVE at ({},{})", i, x, y));
+                // Implementation stub
+            }
+            
+            ActionStep::Charge { target_id } => {
+                log(format!("  [{}] CHARGE #{}", i, target_id));
+                // Implementation stub - move to target + attack
+            }
+            
+            // ═══════════════════════════════════════
+            // DEFENSIVE
+            // ═══════════════════════════════════════
+            
+            ActionStep::Block => {
+                log(format!("  [{}] BLOCK", i));
+                // Implementation stub
+            }
+            
+            ActionStep::Dodge { direction } => {
+                log(format!("  [{}] DODGE {:?}", i, direction));
+                // Implementation stub
+            }
+            
+            ActionStep::Parry => {
+                log(format!("  [{}] PARRY", i));
+                // Implementation stub
+            }
+            
+            ActionStep::ThrowSmoke { x, y } => {
+                let from = w.pos_of(actor)
+                    .ok_or_else(|| EngineError::InvalidAction("Actor has no position".to_string()))?;
+                let target = IVec2 { x: *x, y: *y };
+                if !los_clear(&w.obstacles, from, target) {
+                    return Err(EngineError::LosBlocked);
+                }
+                log(format!("  [{}] THROW_SMOKE -> ({},{})", i, x, y));
+            }
+            
+            ActionStep::Heal { target_id } => {
+                let tid = target_id.unwrap_or(actor);
+                log(format!("  [{}] HEAL #{}", i, tid));
+                if let Some(h) = w.health_mut(tid) {
+                    h.hp += 20;
+                }
+            }
+            
+            ActionStep::UseDefensiveAbility { ability_name } => {
+                log(format!("  [{}] USE_DEFENSIVE_ABILITY: {}", i, ability_name));
+                // Implementation stub
+            }
+            
+            // ═══════════════════════════════════════
+            // EQUIPMENT
+            // ═══════════════════════════════════════
+            
+            ActionStep::EquipWeapon { weapon_name } => {
+                log(format!("  [{}] EQUIP_WEAPON: {}", i, weapon_name));
+                // Implementation stub
+            }
+            
+            ActionStep::SwitchWeapon { slot } => {
+                log(format!("  [{}] SWITCH_WEAPON to slot {}", i, slot));
+                // Implementation stub
+            }
+            
+            ActionStep::Reload => {
+                log(format!("  [{}] RELOAD", i));
+                if let Some(ammo) = w.ammo_mut(actor) {
+                    ammo.rounds = 30; // Reload to full
+                }
+            }
+            
+            ActionStep::UseItem { item_name } => {
+                log(format!("  [{}] USE_ITEM: {}", i, item_name));
+                // Implementation stub
+            }
+            
+            ActionStep::DropItem { item_name } => {
+                log(format!("  [{}] DROP_ITEM: {}", i, item_name));
+                // Implementation stub
+            }
+            
+            // ═══════════════════════════════════════
+            // TACTICAL
+            // ═══════════════════════════════════════
+            
+            ActionStep::CallReinforcements { count } => {
+                log(format!("  [{}] CALL_REINFORCEMENTS: {}", i, count));
+                // Implementation stub
+            }
+            
+            ActionStep::MarkTarget { target_id } => {
+                log(format!("  [{}] MARK_TARGET #{}", i, target_id));
+                // Implementation stub
+            }
+            
+            ActionStep::RequestCover { duration } => {
+                log(format!("  [{}] REQUEST_COVER for {:.1}s", i, duration));
+                // Implementation stub
+            }
+            
+            ActionStep::CoordinateAttack { target_id } => {
+                log(format!("  [{}] COORDINATE_ATTACK on #{}", i, target_id));
+                // Implementation stub
+            }
+            
+            ActionStep::SetAmbush { position } => {
+                log(format!("  [{}] SET_AMBUSH at {:?}", i, position));
+                // Implementation stub
+            }
+            
+            ActionStep::Distract { target_id } => {
+                log(format!("  [{}] DISTRACT #{}", i, target_id));
+                // Implementation stub
+            }
+            
+            ActionStep::Regroup { rally_point } => {
+                log(format!("  [{}] REGROUP at {:?}", i, rally_point));
+                // Implementation stub
+            }
+            
+            // ═══════════════════════════════════════
+            // UTILITY
+            // ═══════════════════════════════════════
+            
+            ActionStep::Scan { radius } => {
+                log(format!("  [{}] SCAN radius {:.1}", i, radius));
+                // Implementation stub
+            }
+            
+            ActionStep::Wait { duration } => {
+                log(format!("  [{}] WAIT {:.1}s", i, duration));
+                // Implementation stub
+            }
+            
+            ActionStep::Interact { target_id } => {
+                log(format!("  [{}] INTERACT with #{}", i, target_id));
+                // Implementation stub
+            }
+            
+            ActionStep::UseAbility { ability_name } => {
+                log(format!("  [{}] USE_ABILITY: {}", i, ability_name));
+                // Implementation stub
+            }
+            
+            ActionStep::Taunt { target_id } => {
+                log(format!("  [{}] TAUNT #{}", i, target_id));
+                // Implementation stub
+            }
+            
+            // ═══════════════════════════════════════
+            // LEGACY
+            // ═══════════════════════════════════════
+            
             ActionStep::Throw { item, x, y } => {
                 let from = w.pos_of(actor)
                     .ok_or_else(|| EngineError::InvalidAction("Actor has no position".to_string()))?;

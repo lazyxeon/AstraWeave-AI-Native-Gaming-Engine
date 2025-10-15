@@ -114,14 +114,271 @@ pub struct PlanIntent {
     pub steps: Vec<ActionStep>,
 }
 
+// ============================================================================
+// MOVEMENT SPEED & DIRECTION ENUMS
+// ============================================================================
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum MovementSpeed {
+    Walk,
+    Run,
+    Sprint,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum StrafeDirection {
+    Left,
+    Right,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum AttackType {
+    Light,
+    Heavy,
+}
+
+// ============================================================================
+// ACTION STEP ENUM - 37 Tools Across 6 Categories
+// ============================================================================
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(tag = "act")]
 pub enum ActionStep {
-    MoveTo { x: i32, y: i32 },
-    Throw { item: String, x: i32, y: i32 },
-    CoverFire { target_id: Entity, duration: f32 },
-    Revive { ally_id: Entity },
-    // extend with Converse, UseAbility, etc.
+    // ═══════════════════════════════════════
+    // MOVEMENT (6 tools)
+    // ═══════════════════════════════════════
+    
+    /// Move to a specific position
+    MoveTo { 
+        x: i32, 
+        y: i32,
+        #[serde(default)]
+        speed: Option<MovementSpeed>,
+    },
+    
+    /// Move toward target entity while maintaining distance
+    Approach { 
+        target_id: Entity,
+        /// Desired distance (e.g., melee=2, ranged=15)
+        distance: f32,
+    },
+    
+    /// Move away from target entity
+    Retreat { 
+        target_id: Entity,
+        /// Safe distance to reach
+        distance: f32,
+    },
+    
+    /// Take cover behind nearest obstacle
+    TakeCover {
+        /// Optional: specific cover position
+        position: Option<IVec2>,
+    },
+    
+    /// Strafe around target (circle)
+    Strafe {
+        target_id: Entity,
+        direction: StrafeDirection,
+    },
+    
+    /// Patrol between waypoints
+    Patrol {
+        waypoints: Vec<IVec2>,
+    },
+    
+    // ═══════════════════════════════════════
+    // OFFENSIVE (8 tools)
+    // ═══════════════════════════════════════
+    
+    /// Basic attack targeting entity
+    Attack { 
+        target_id: Entity,
+    },
+    
+    /// Aimed shot with higher accuracy
+    AimedShot {
+        target_id: Entity,
+    },
+    
+    /// Quick attack with lower damage
+    QuickAttack {
+        target_id: Entity,
+    },
+    
+    /// Heavy attack with higher damage
+    HeavyAttack {
+        target_id: Entity,
+    },
+    
+    /// Area-of-effect attack
+    AoEAttack {
+        x: i32,
+        y: i32,
+        radius: f32,
+    },
+    
+    /// Throw explosive (grenade, etc.)
+    ThrowExplosive {
+        x: i32,
+        y: i32,
+    },
+    
+    /// Suppressive covering fire
+    CoverFire { 
+        target_id: Entity, 
+        duration: f32,
+    },
+    
+    /// Charge at target
+    Charge {
+        target_id: Entity,
+    },
+    
+    // ═══════════════════════════════════════
+    // DEFENSIVE (6 tools)
+    // ═══════════════════════════════════════
+    
+    /// Block incoming attack
+    Block,
+    
+    /// Dodge attack
+    Dodge {
+        direction: Option<StrafeDirection>,
+    },
+    
+    /// Parry incoming attack
+    Parry,
+    
+    /// Throw smoke grenade
+    ThrowSmoke {
+        x: i32,
+        y: i32,
+    },
+    
+    /// Heal self or ally
+    Heal {
+        target_id: Option<Entity>,
+    },
+    
+    /// Use defensive ability
+    UseDefensiveAbility {
+        ability_name: String,
+    },
+    
+    // ═══════════════════════════════════════
+    // EQUIPMENT (5 tools)
+    // ═══════════════════════════════════════
+    
+    /// Equip weapon
+    EquipWeapon {
+        weapon_name: String,
+    },
+    
+    /// Switch to different weapon
+    SwitchWeapon {
+        slot: u32,
+    },
+    
+    /// Reload current weapon
+    Reload,
+    
+    /// Use item from inventory
+    UseItem {
+        item_name: String,
+    },
+    
+    /// Drop item
+    DropItem {
+        item_name: String,
+    },
+    
+    // ═══════════════════════════════════════
+    // TACTICAL (7 tools)
+    // ═══════════════════════════════════════
+    
+    /// Call for reinforcements
+    CallReinforcements {
+        count: u32,
+    },
+    
+    /// Mark target for allies
+    MarkTarget {
+        target_id: Entity,
+    },
+    
+    /// Request covering fire
+    RequestCover {
+        duration: f32,
+    },
+    
+    /// Coordinate attack with allies
+    CoordinateAttack {
+        target_id: Entity,
+    },
+    
+    /// Set up ambush
+    SetAmbush {
+        position: IVec2,
+    },
+    
+    /// Distract enemy
+    Distract {
+        target_id: Entity,
+    },
+    
+    /// Regroup with allies
+    Regroup {
+        rally_point: IVec2,
+    },
+    
+    // ═══════════════════════════════════════
+    // UTILITY (5 tools)
+    // ═══════════════════════════════════════
+    
+    /// Scan area for threats
+    Scan {
+        radius: f32,
+    },
+    
+    /// Wait for duration
+    Wait {
+        duration: f32,
+    },
+    
+    /// Interact with object
+    Interact {
+        target_id: Entity,
+    },
+    
+    /// Use special ability
+    UseAbility {
+        ability_name: String,
+    },
+    
+    /// Taunt enemy
+    Taunt {
+        target_id: Entity,
+    },
+    
+    // ═══════════════════════════════════════
+    // LEGACY (kept for backward compatibility)
+    // ═══════════════════════════════════════
+    
+    /// Generic throw (now use ThrowSmoke or ThrowExplosive)
+    Throw { 
+        item: String, 
+        x: i32, 
+        y: i32,
+    },
+    
+    /// Revive ally
+    Revive { 
+        ally_id: Entity,
+    },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

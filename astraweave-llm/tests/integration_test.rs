@@ -38,6 +38,7 @@ async fn test_llm_integration_workflow() {
             astraweave_core::ActionStep::Revive { .. } => {
                 assert!(tool_registry.tools.iter().any(|t| t.name == "revive"));
             }
+            _ => {} // Accept all other valid actions from Phase 7 expansion
         }
     }
 
@@ -86,6 +87,10 @@ fn test_prompt_generation_comprehensive() {
 /// Test error handling for various invalid scenarios
 #[tokio::test]
 async fn test_error_handling_scenarios() {
+    // Clear global cache to prevent cross-test pollution
+    #[cfg(feature = "llm_cache")]
+    astraweave_llm::clear_global_cache();
+    
     let world_snapshot = create_complex_scenario();
     let tool_registry = create_comprehensive_registry();
 
@@ -101,11 +106,16 @@ async fn test_error_handling_scenarios() {
 
     let bad_client = BadJsonClient;
     let plan_source = plan_from_llm(&bad_client, &world_snapshot, &tool_registry).await;
-    // Should fallback to heuristic plan
+    // Should fallback to heuristic or emergency plan (Phase 7 multi-tier fallback)
     match plan_source {
         PlanSource::Llm(_) => panic!("Expected fallback"),
         PlanSource::Fallback { plan, .. } => {
-            assert_eq!(plan.plan_id, "heuristic-fallback");
+            // Phase 7: Plans use UUID-based IDs
+            assert!(
+                plan.plan_id.starts_with("heuristic-") || plan.plan_id.starts_with("emergency-"),
+                "Expected heuristic or emergency plan, got: {}",
+                plan.plan_id
+            );
         }
     }
 
@@ -124,11 +134,16 @@ async fn test_error_handling_scenarios() {
 
     let disallowed_client = DisallowedToolClient;
     let plan_source = plan_from_llm(&disallowed_client, &world_snapshot, &tool_registry).await;
-    // Should fallback to heuristic plan
+    // Should fallback to heuristic or emergency plan (Phase 7)
     match plan_source {
         PlanSource::Llm(_) => panic!("Expected fallback"),
         PlanSource::Fallback { plan, .. } => {
-            assert_eq!(plan.plan_id, "heuristic-fallback");
+            // Phase 7: Plans use UUID-based IDs
+            assert!(
+                plan.plan_id.starts_with("heuristic-") || plan.plan_id.starts_with("emergency-"),
+                "Expected heuristic or emergency plan, got: {}",
+                plan.plan_id
+            );
         }
     }
 }

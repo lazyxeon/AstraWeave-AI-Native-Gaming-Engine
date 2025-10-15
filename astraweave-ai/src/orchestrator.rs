@@ -60,7 +60,7 @@ impl Orchestrator for RuleOrchestrator {
                             x: mid.x,
                             y: mid.y,
                         },
-                        ActionStep::MoveTo {
+                        ActionStep::MoveTo { speed: None,
                             x: m.pos.x + (first.pos.x - m.pos.x).signum() * 2,
                             y: m.pos.y + (first.pos.y - m.pos.y).signum() * 2,
                         },
@@ -75,7 +75,7 @@ impl Orchestrator for RuleOrchestrator {
                 return PlanIntent {
                     plan_id,
                     steps: vec![
-                        ActionStep::MoveTo {
+                        ActionStep::MoveTo { speed: None,
                             x: m.pos.x + (first.pos.x - m.pos.x).signum(),
                             y: m.pos.y + (first.pos.y - m.pos.y).signum(),
                         },
@@ -132,7 +132,7 @@ impl Orchestrator for UtilityOrchestrator {
                         x: mid.x,
                         y: mid.y,
                     },
-                    ActionStep::MoveTo {
+                    ActionStep::MoveTo { speed: None,
                         x: me.pos.x + (enemy.pos.x - me.pos.x).signum() * 2,
                         y: me.pos.y + (enemy.pos.y - me.pos.y).signum() * 2,
                     },
@@ -147,7 +147,7 @@ impl Orchestrator for UtilityOrchestrator {
             let dx = (enemy.pos.x - me.pos.x).abs();
             let dy = (enemy.pos.y - me.pos.y).abs();
             let dist = (dx + dy) as f32;
-            let mut steps = vec![ActionStep::MoveTo {
+            let mut steps = vec![ActionStep::MoveTo { speed: None,
                 x: me.pos.x + (enemy.pos.x - me.pos.x).signum(),
                 y: me.pos.y + (enemy.pos.y - me.pos.y).signum(),
             }];
@@ -178,6 +178,65 @@ impl OrchestratorAsync for UtilityOrchestrator {
 /// Preconditions: enemy exists. Goal: be within 2 cells and apply CoverFire for 1.5s.
 pub struct GoapOrchestrator;
 
+impl GoapOrchestrator {
+    /// Fast-path action selection without full plan generation.
+    /// 
+    /// This is optimized for instant action returns (<100 µs target) by:
+    /// - Returning single ActionStep directly (not wrapped in PlanIntent)
+    /// - Minimal distance calculation (Manhattan distance)
+    /// - No allocations (returns stack-allocated ActionStep)
+    /// - Simple heuristic: move toward closest enemy or cover fire if in range
+    /// 
+    /// # Arguments
+    /// - `snap`: Current world snapshot
+    /// 
+    /// # Returns
+    /// An `ActionStep` to execute this frame, or `Wait { duration: 1.0 }` if no enemies
+    /// 
+    /// # Performance
+    /// - **Target**: <100 µs per call
+    /// - **Typical**: 5-30 µs (distance calc + conditional)
+    /// 
+    /// # Example
+    /// ```no_run
+    /// use astraweave_ai::GoapOrchestrator;
+    /// 
+    /// let goap = GoapOrchestrator;
+    /// let action = goap.next_action(&snapshot); // <100 µs
+    /// apply_action(action);
+    /// ```
+    pub fn next_action(&self, snap: &WorldSnapshot) -> ActionStep {
+        #[cfg(feature = "profiling")]
+        span!("AI::GoapOrchestrator::next_action");
+        
+        // Fast path: if enemy exists, move toward or engage
+        if let Some(enemy) = snap.enemies.first() {
+            let me = &snap.me;
+            let dx = enemy.pos.x - me.pos.x;
+            let dy = enemy.pos.y - me.pos.y;
+            let dist = dx.abs() + dy.abs();
+            
+            if dist <= 2 {
+                // In range: cover fire
+                ActionStep::CoverFire {
+                    target_id: enemy.id,
+                    duration: 1.5,
+                }
+            } else {
+                // Out of range: move one step closer
+                ActionStep::MoveTo {
+                    speed: None,
+                    x: me.pos.x + dx.signum(),
+                    y: me.pos.y + dy.signum(),
+                }
+            }
+        } else {
+            // No enemies: wait
+            ActionStep::Wait { duration: 1.0 }
+        }
+    }
+}
+
 impl Orchestrator for GoapOrchestrator {
     fn propose_plan(&self, snap: &WorldSnapshot) -> PlanIntent {
         let plan_id = format!("goap-{}", (snap.t * 1000.0) as i64);
@@ -198,7 +257,7 @@ impl Orchestrator for GoapOrchestrator {
                 // Move one step closer; replan next tick
                 return PlanIntent {
                     plan_id,
-                    steps: vec![ActionStep::MoveTo {
+                    steps: vec![ActionStep::MoveTo { speed: None,
                         x: me.pos.x + (enemy.pos.x - me.pos.x).signum(),
                         y: me.pos.y + (enemy.pos.y - me.pos.y).signum(),
                     }],
@@ -241,15 +300,39 @@ impl<C> OrchestratorAsync for LlmOrchestrator<C>
 where
     C: astraweave_llm::LlmClient + Send + Sync,
 {
-    async fn plan(&self, snap: WorldSnapshot, _budget_ms: u32) -> Result<PlanIntent> {
-        let plan_source = astraweave_llm::plan_from_llm(&self.client, &snap, &self.registry).await;
-        match plan_source {
-            astraweave_llm::PlanSource::Llm(plan) => Ok(plan),
-            astraweave_llm::PlanSource::Fallback { plan, reason } => {
-                tracing::warn!("plan_from_llm fell back: {}", reason); // Return the fallback plan with a modified plan_id to indicate it was a fallback
+    async fn plan(&self, snap: WorldSnapshot, budget_ms: u32) -> Result<PlanIntent> {
+        // Read timeout from environment or use budget_ms
+        let timeout_ms = std::env::var("LLM_TIMEOUT_MS")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(budget_ms.max(50)); // Use budget or minimum 50ms
+        
+        let timeout_duration = std::time::Duration::from_millis(timeout_ms as u64);
+        
+        // Enforce hard timeout using tokio::time::timeout
+        match tokio::time::timeout(
+            timeout_duration,
+            astraweave_llm::plan_from_llm(&self.client, &snap, &self.registry)
+        ).await {
+            Ok(plan_source) => {
+                // LLM completed within timeout
+                match plan_source {
+                    astraweave_llm::PlanSource::Llm(plan) => Ok(plan),
+                    astraweave_llm::PlanSource::Fallback { plan, reason } => {
+                        tracing::warn!("plan_from_llm fell back: {}", reason);
+                        Ok(PlanIntent {
+                            plan_id: "llm-fallback".into(),
+                            steps: plan.steps,
+                        })
+                    }
+                }
+            }
+            Err(_elapsed) => {
+                // Timeout exceeded - return fallback
+                tracing::warn!("LLM planning timed out after {}ms, using fallback", timeout_ms);
                 Ok(PlanIntent {
-                    plan_id: "llm-fallback".into(),
-                    steps: plan.steps,
+                    plan_id: "timeout-fallback".into(),
+                    steps: astraweave_llm::fallback_heuristic_plan(&snap, &self.registry).steps,
                 })
             }
         }
@@ -401,7 +484,7 @@ mod tests {
         let plan1 = goap.propose_plan(&s_far);
         assert!(matches!(
             plan1.steps.first(),
-            Some(ActionStep::MoveTo { .. })
+            Some(ActionStep::MoveTo { speed: None, .. })
         ));
         let s_close = snap_basic(0, 0, 1, 0, 10.0);
         let plan2 = goap.propose_plan(&s_close);

@@ -268,6 +268,18 @@ impl LlmClient for Phi3Ollama {
             }
         });
         
+        // ═══ PHASE 7 DEBUG LOGGING ═══
+        eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
+        eprintln!("║           PROMPT SENT TO PHI-3 (via Ollama)                  ║");
+        eprintln!("╠═══════════════════════════════════════════════════════════════╣");
+        eprintln!("Model: {}", self.model);
+        eprintln!("Temperature: {}", self.temperature);
+        eprintln!("Max Tokens: {}", self.max_tokens);
+        eprintln!("Prompt Length: {} chars", full_prompt.len());
+        eprintln!("╠═══════════════════════════════════════════════════════════════╣");
+        eprintln!("{}", full_prompt);
+        eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
+        
         tracing::debug!("Sending request to Ollama: {}", self.model);
         let start = std::time::Instant::now();
         
@@ -290,6 +302,17 @@ impl LlmClient for Phi3Ollama {
             .to_string();
         
         let duration = start.elapsed();
+        
+        // ═══ PHASE 7 DEBUG LOGGING ═══
+        eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
+        eprintln!("║           PHI-3 RAW RESPONSE (via Ollama)                    ║");
+        eprintln!("╠═══════════════════════════════════════════════════════════════╣");
+        eprintln!("Response Time: {:.2}s", duration.as_secs_f32());
+        eprintln!("Response Length: {} chars", text.len());
+        eprintln!("╠═══════════════════════════════════════════════════════════════╣");
+        eprintln!("{}", text);
+        eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
+        
         tracing::debug!("Received {} chars from Ollama in {:.2}s", text.len(), duration.as_secs_f32());
         
         Ok(text)

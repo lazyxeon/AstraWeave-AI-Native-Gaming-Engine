@@ -90,9 +90,9 @@ fn sys_ai_planning(world: &mut ecs::World) {
                 &PerceptionConfig { los_max: 10 },
             );
             let plan = orch.propose_plan(&snap);
-            if let Some(ActionStep::MoveTo { x, y }) = plan.steps.iter().find_map(|s| {
-                if let ActionStep::MoveTo { x, y } = s {
-                    Some(ActionStep::MoveTo { x: *x, y: *y })
+            if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.iter().find_map(|s| {
+                if let ActionStep::MoveTo { x, y, .. } = s {
+                    Some(ActionStep::MoveTo { x: *x, y: *y, speed: None })
                 } else {
                     None
                 }
@@ -197,9 +197,9 @@ fn sys_ai_planning(world: &mut ecs::World) {
             objective: None,
         };
         let plan = orch.propose_plan(&snap);
-        if let Some(ActionStep::MoveTo { x, y }) = plan.steps.iter().find_map(|s| {
-            if let ActionStep::MoveTo { x, y } = s {
-                Some(ActionStep::MoveTo { x: *x, y: *y })
+        if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.iter().find_map(|s| {
+            if let ActionStep::MoveTo { x, y, .. } = s {
+                Some(ActionStep::MoveTo { x: *x, y: *y, speed: None })
             } else {
                 None
             }

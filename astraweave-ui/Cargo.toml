@@ -14,6 +14,9 @@ winit = { workspace = true }
 glam = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+toml = "0.8"
+dirs = "5.0"
+log = "0.4"
 
 astraweave-input = { path = "../astraweave-input" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }

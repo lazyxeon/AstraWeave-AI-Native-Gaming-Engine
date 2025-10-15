@@ -8,3 +8,19 @@ edition = "2021"
 anyhow = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ai = { path = "../../astraweave-ai" }
+astraweave-behavior = { path = "../../astraweave-behavior" }
+
+# LLM integration (optional - enable with --features llm)
+astraweave-llm = { path = "../../astraweave-llm", optional = true }
+tokio = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+chrono = { version = "0.4", features = ["serde"], optional = true }
+
+[features]
+default = []
+llm = ["astraweave-llm", "astraweave-llm/llm_cache", "tokio"]
+ollama = ["llm", "astraweave-llm/ollama", "reqwest", "serde_json"]
+metrics = ["serde", "serde_json", "chrono"]
+llm_orchestrator = ["astraweave-ai/llm_orchestrator", "ollama"]

@@ -32,7 +32,7 @@ impl CTarget {
     /// Create a CTarget from an Entity
     pub fn from_entity(entity: Entity) -> Self {
         Self {
-            target_id: entity.id(),
+            target_id: entity.to_raw(),
         }
     }
 

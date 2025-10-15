@@ -1,0 +1,6 @@
+Run,ParseSuccess,Steps,Latency_ms,Tier,PlanID,FirstAction,Tools
+1,True,4,22197.888,FullLLM,unique_id,SCAN,SCAN
+2,True,3,18594.767,FullLLM,unique_id,APPROACH,APPROACH;RETREAT;THROW_SMOKE
+3,True,3,24996.912,FullLLM,unique_id,SCAN,COVER_FIRE;MOVE_TO;SCAN
+4,True,3,16059.798,FullLLM,unique_id,SCAN,COVER_FIRE;MOVE_TO;SCAN
+5,True,3,20413.789,FullLLM,unique_id,SCAN,SCAN

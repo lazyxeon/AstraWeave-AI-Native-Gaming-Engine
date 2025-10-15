@@ -65,7 +65,6 @@ mod property_tests;
 
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::hash::Hash;
 
 use archetype::{ArchetypeSignature, ArchetypeStorage};
 pub use command_buffer::CommandBuffer;
@@ -420,6 +419,12 @@ pub struct App {
     pub schedule: Schedule,
 }
 
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl App {
     pub fn new() -> Self {
         let mut schedule = Schedule::default();
@@ -434,6 +439,7 @@ impl App {
             schedule,
         }
     }
+    
     pub fn add_system(&mut self, stage: &'static str, sys: SystemFn) {
         self.schedule.add_system(stage, sys);
     }
@@ -474,7 +480,7 @@ impl World {
         &mut self,
         entity: Entity,
         type_id: TypeId,
-        component: Box<dyn std::any::Any + Send + Sync>,
+        _component: Box<dyn std::any::Any + Send + Sync>,
     ) {
         if !self.is_alive(entity) {
             return; // Stale entity, silently ignore

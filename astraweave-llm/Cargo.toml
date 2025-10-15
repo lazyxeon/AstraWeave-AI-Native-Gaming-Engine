@@ -30,9 +30,23 @@ hf-hub = { version = "0.3", optional = true, features = ["tokio"] }
 
 [dev-dependencies]
 tokio = { workspace = true }
+criterion = { version = "0.5", features = ["async_tokio"] }
+
+[[bench]]
+name = "llm_benchmarks"
+harness = false
+
+[[bench]]
+name = "cache_stress_test"
+harness = false
+
+[[bench]]
+name = "resilience_benchmarks"
+harness = false
 
 [features]
-default = []
+default = ["llm_cache"]
 ollama = ["dep:reqwest"]
 phi3 = ["candle-core", "candle-nn", "candle-transformers", "tokenizers", "hf-hub"]
 debug_io = []
+llm_cache = []
