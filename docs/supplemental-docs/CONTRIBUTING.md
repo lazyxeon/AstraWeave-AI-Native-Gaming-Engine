@@ -12,7 +12,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 
 - **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues).
 - If you're unable to find an open issue addressing the problem, [open a new one](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues/new/choose) using the bug report template.
-- **For security vulnerabilities**, please follow our [Security Policy](SECURITY.md) instead of opening a public issue.
+- **For security vulnerabilities**, please follow our [Security Policy](../../SECURITY.md) instead of opening a public issue.
 
 ### Suggesting Enhancements
 

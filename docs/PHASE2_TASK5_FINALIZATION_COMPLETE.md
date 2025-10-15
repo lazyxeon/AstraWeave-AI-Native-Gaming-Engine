@@ -27,7 +27,7 @@
   - Commands for CPU default and GPU suite with feature flags
   - Executive summary updated to reflect completion
 
-- [x] **Updated**: [`roadmap.md`](supplemental-docs/roadmap.md)
+- [x] **Updated**: [`roadmap.md`](root-archive/roadmap.md)
   - Phase 2 progress update dated October 2025
   - Task 5 marked as complete (✅)
   - Links to implementation summary and demo

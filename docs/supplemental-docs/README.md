@@ -8,7 +8,7 @@ Key highlights:
 - **Operational Reports**: Completion summaries, fix reports, and project status documents are preserved for historical reference.
 - **Guides & Playbooks**: Quick-start, verification, and setup guides sit alongside the reports for quick lookup when onboarding new contributors.
 
-If you maintain tooling that referenced any of these files by their old root-level paths, update the paths to `docs/supplemental-docs/<file-name>`. The root `README.md` and workspace automation have already been updated accordingly.
+If you maintain tooling that referenced any of these files by their old root-level paths, update the paths to `docs/supplemental-docs/<file-name>` or the new [`docs/root-archive/`](../root-archive/README.md) location. The root `README.md` and workspace automation have already been updated accordingly.
 
-**Note:** The canonical `roadmap.md` remains at the repository root to avoid ongoing merge conflicts. A mirrored copy lives in this folder so mdBook navigation continues to work. Update the root file first, then run `scripts/sync-roadmap.sh` to refresh this mirror.
+**Note:** The canonical `roadmap.md` now lives in `docs/root-archive/roadmap.md` alongside the other archived reports. A mirrored copy remains in this folder so mdBook navigation continues to work. Update the archive file first, then run `scripts/sync-roadmap.sh` to refresh this mirror.
 
