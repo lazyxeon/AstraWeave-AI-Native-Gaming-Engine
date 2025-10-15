@@ -13,3 +13,4 @@ See also existing docs:
 - Build Quick Reference: `BUILD_QUICK_REFERENCE.md`
 - Supplemental archive: `supplemental-docs/`
 - PBR Documentation Archive: `pbr/`
+- Root Documentation Archive: `root-archive/`

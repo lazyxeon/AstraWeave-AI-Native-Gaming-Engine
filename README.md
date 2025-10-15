@@ -10,7 +10,9 @@
 
 **The world's first AI-native game engine where artificial intelligence becomes genuinely intelligent gameplay**
 
-📊 **[Performance Report](AI_NATIVE_VALIDATION_REPORT.md)** • 🎯 **[Architecture Guide](#architecture-overview)** • ⚡ **[Quick Start](#quick-start)**
+📊 **[Performance Report](docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md)** • 🎯 **[Architecture Guide](#architecture-overview)** • ⚡ **[Quick Start](#quick-start)**
+
+> 📁 **Documentation update:** All legacy root-level reports now reside in [`docs/root-archive/`](docs/root-archive/README.md). The workspace root only tracks source code and the primary README.
 
 *AI agents are first-class citizens with genuine learning, adaptation, and emergent behavior*
 
@@ -66,7 +68,7 @@ Our comprehensive test suite proves AstraWeave can handle:---
 
 
 
-**[View Complete Validation Report →](AI_NATIVE_VALIDATION_REPORT.md)**- **A living experiment in specialized AI workflows**, showcasing how model ensembles can refine complex systems through continuous feedback, validation, and tooling integration.
+**[View Complete Validation Report →](docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md)**- **A living experiment in specialized AI workflows**, showcasing how model ensembles can refine complex systems through continuous feedback, validation, and tooling integration.
 
 - **An aspiring fully functional AI-native game engine**, proving that autonomous AI teams can design, implement, and evolve production-grade interactive technology end-to-end.
 
@@ -172,7 +174,7 @@ This README, the surrounding documentation, and the engine codebase are therefor
 
 | **Future Headroom** | 50,000+ | N/A | N/A | 🎯 Possible |
 
-See [`WEEK_8_FINAL_SUMMARY.md`](WEEK_8_FINAL_SUMMARY.md) and [`WEEK_8_OPTIMIZATION_COMPLETE.md`](WEEK_8_OPTIMIZATION_COMPLETE.md) for complete details.
+See [`WEEK_8_FINAL_SUMMARY.md`](docs/root-archive/WEEK_8_FINAL_SUMMARY.md) and [`WEEK_8_OPTIMIZATION_COMPLETE.md`](docs/root-archive/WEEK_8_OPTIMIZATION_COMPLETE.md) for complete details.
 
 ### Component Performance
 
@@ -210,7 +212,7 @@ cd AstraWeave-AI-Native-Gaming-Engine
 
 # Or use make for convenience
 
-**[View Detailed Benchmarks →](BASELINE_METRICS.md)** | **[Week 8 Summary →](WEEK_8_FINAL_SUMMARY.md)**make setup
+**[View Detailed Benchmarks →](docs/root-archive/BASELINE_METRICS.md)** | **[Week 8 Summary →](docs/root-archive/WEEK_8_FINAL_SUMMARY.md)**make setup
 
 ```
 
@@ -304,7 +306,7 @@ make lint                        # Run clippy + format check
 
 
 
-**[View LLM Integration Plan →](docs/planning/LONG_HORIZON_STRATEGIC_PLAN.md)**### System Requirements
+**[View LLM Integration Plan →](docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md)**### System Requirements
 
 
 
@@ -734,13 +736,13 @@ Every AI action is validated by the engine:- **SDK ABI Validation**: C ABI with 
 
 
 
-- **[AI Validation Report](AI_NATIVE_VALIDATION_REPORT.md)** - Complete performance analysis## License
+- **[AI Validation Report](docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md)** - Complete performance analysis## License
 
 - **[Test Suite Guide](astraweave-ai/tests/AI_NATIVE_TESTS_README.md)** - How to run and extend tests
 
-- **[Benchmark Dashboard](BASELINE_METRICS.md)** - Automated performance trackingLicensed under the [MIT License](LICENSE). You're free to use AstraWeave in commercial projects, fork it, or contribute back to the community.
+- **[Benchmark Dashboard](docs/root-archive/BASELINE_METRICS.md)** - Automated performance trackingLicensed under the [MIT License](docs/root-archive/LICENSE.md). You're free to use AstraWeave in commercial projects, fork it, or contribute back to the community.
 
-- **[Week 8 Summary](WEEK_8_FINAL_SUMMARY.md)** - Performance sprint results
+- **[Week 8 Summary](docs/root-archive/WEEK_8_FINAL_SUMMARY.md)** - Performance sprint results
 
 ---
 
@@ -748,9 +750,9 @@ Every AI action is validated by the engine:- **SDK ABI Validation**: C ABI with 
 
 ## Acknowledgments
 
-- **[Strategic Plan](docs/planning/LONG_HORIZON_STRATEGIC_PLAN.md)** - 12-month roadmap
+- **[Strategic Plan](docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md)** - 12-month roadmap
 
-- **[Implementation Plans](docs/planning/IMPLEMENTATION_PLANS_INDEX.md)** - Detailed action plansAstraWeave builds on the incredible Rust gamedev ecosystem:
+- **[Implementation Plans](docs/root-archive/IMPLEMENTATION_PLANS_INDEX.md)** - Detailed action plansAstraWeave builds on the incredible Rust gamedev ecosystem:
 
 - **[Contributing Guide](CONTRIBUTING.md)** - How to contribute- **wgpu team** for cross-platform GPU abstraction
 
@@ -814,7 +816,7 @@ Every AI action is validated by the engine:- **SDK ABI Validation**: C ABI with 
 ⚡ **6.48M Validations/sec** - Anti-cheat validated  
 🎮 **100% Deterministic** - Multiplayer/replay ready  
 
-**[View Complete Summary →](AI_NATIVE_VALIDATION_COMPLETE.md)**
+**[View Complete Summary →](docs/root-archive/AI_NATIVE_VALIDATION_COMPLETE.md)**
 
 ---
 
@@ -863,7 +865,7 @@ Every AI action is validated by the engine:- **SDK ABI Validation**: C ABI with 
 
 - **[Documentation](docs/)** - Architecture guides, API docs
 - **[Examples](examples/)** - 20+ demos covering engine features
-- **[Validation Reports](AI_NATIVE_VALIDATION_REPORT.md)** - Test suite, performance reports
+- **[Validation Reports](docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md)** - Test suite, performance reports
 
 ### Get Help
 
@@ -874,20 +876,20 @@ Every AI action is validated by the engine:- **SDK ABI Validation**: C ABI with 
 
 - **[GitHub Releases](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/releases)** - Watch for new versions
 - **[Changelog](CHANGELOG.md)** - Track feature additions
-- **[Roadmap](docs/planning/LONG_HORIZON_STRATEGIC_PLAN.md)** - See upcoming features
+- **[Roadmap](docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md)** - See upcoming features
 
 ---
 
 ## 📜 License
 
-Licensed under the [MIT License](LICENSE). You're free to:
+Licensed under the [MIT License](docs/root-archive/LICENSE.md). You're free to:
 
 ✅ Use in commercial projects  
 ✅ Modify and distribute  
 ✅ Use privately  
 ✅ Sublicense  
 
-See [LICENSE](LICENSE) for full details.
+See [LICENSE](docs/root-archive/LICENSE.md) for full details.
 
 ---
 
@@ -915,18 +917,18 @@ AstraWeave builds on the incredible Rust gamedev ecosystem:
 - Adaptive boss behavior synthesis
 - Dynamic quest generation
 
-**[View Full Roadmap →](docs/planning/LONG_HORIZON_STRATEGIC_PLAN.md)**
+**[View Full Roadmap →](docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md)**
 
 ---
 
 ## 🚀 Quick Links
 
 - 📖 **[Documentation](docs/)**
-- 🧪 **[Validation Report](AI_NATIVE_VALIDATION_REPORT.md)**
+- 🧪 **[Validation Report](docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md)**
 - 🎮 **[Examples](examples/)**
 - 🐛 **[Issues](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/issues)**
 - 💬 **[Discussions](https://github.com/lazyxeon/Veilweaver-Threads-of-Eternity/discussions)**
-- 🗺️ **[Roadmap](docs/planning/LONG_HORIZON_STRATEGIC_PLAN.md)**
+- 🗺️ **[Roadmap](docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md)**
 
 ---
 
