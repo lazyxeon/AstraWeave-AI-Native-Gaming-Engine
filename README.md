@@ -1,4 +1,40 @@
-# AstraWeave: Production-Validated AI-Native Game Engine
+<p align="center">
+  <img src="assets/Astraweave_logo.jpg" alt="AstraWeave nebula logomark" width="420" />
+</p>
+
+<h1 align="center">🌌 Astraweave</h1>
+
+<p align="center">
+  <b>AI Native Game Engine</b><br/>
+  <i>Procedural Intelligence • Real-Time Synthesis • Fractal Worlds</i>
+</p>
+
+<p align="center">
+  <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/stargazers">
+    <img src="https://img.shields.io/github/stars/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge&amp;color=00ccff&amp;logo=github" alt="GitHub stars" />
+  </a>
+  <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/issues">
+    <img src="https://img.shields.io/github/issues/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge&amp;color=ff007f" alt="Open issues" />
+  </a>
+  <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/lazyxeon/AstraWeave-AI-Native-Gaming-Engine?style=for-the-badge&amp;color=00ffaa" alt="License" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/Cargo.toml">
+    <img src="https://img.shields.io/badge/version-0.8.0-blue.svg?style=for-the-badge" alt="Current version" />
+  </a>
+  <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/blob/main/rust-toolchain.toml">
+    <img src="https://img.shields.io/badge/rust-1.89.0-orange.svg?style=for-the-badge" alt="Rust toolchain" />
+  </a>
+  <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/docs.yml">
+    <img src="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/actions/workflows/docs.yml/badge.svg" alt="Documentation status" />
+  </a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine">
+    <img src="https://api.scorecard.dev/projects/github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/badge" alt="OpenSSF Scorecard" />
+  </a>
+</p>
 
 # AstraWeave: AI-Native Game Engine
 
@@ -54,27 +90,49 @@ Our comprehensive test suite proves AstraWeave can handle:---
 
 - ✅ **12,700+ agents @ 60 FPS** (18.8× over initial target)## Overview
 
-- ✅ **6.48M validation checks/sec** (anti-cheat)
+## 🚀 Overview
 
-- ✅ **1.65M plans/sec** (GOAP + behavior trees)**AstraWeave** is a deterministic, ECS-based game engine where **AI agents are first-class citizens**. Unlike traditional engines where AI is bolted on as an afterthought, AstraWeave implements the core AI loop (**Perception → Reasoning → Planning → Action**) directly into the simulation architecture.
+AstraWeave is a **production-validated, deterministic, ECS-based game engine** where AI agents are first-class citizens. Built end-to-end in Rust and powered by WGPU, Rayon, and Tokio, the engine integrates neural inference directly into the simulation core so cognition and rendering evolve in lockstep. The project is fully AI-authored and has been vetted through a multi-stage validation program culminating in an **A+ readiness grade** documented in the [AI Native Validation Report](AI_NATIVE_VALIDATION_REPORT.md).
 
-- ✅ **100% deterministic** (perfect replay/multiplayer support)
+> 📊 Executive summaries, architecture notes, and quick-start guides are curated in the [documentation index](WEEK_8_DAY_2_QUICK_START.md) for fast onboarding.
 
-- ✅ **0.885ms average frame time** (19× performance headroom)### AI-Native Creation Process
+## 🌠 Core Features
 
+- 🧠 **AI-Native Architecture** – tightly-coupled ECS systems for perception, reasoning, planning, and action.
+- 🌀 **Fractal Rendering Pipeline** – hybrid voxel/polygon renderer with adaptive recursion and WGPU acceleration.
+- ⚙️ **Deterministic Simulation** – fixed 60 Hz tick, replay-safe networking, and validated concurrency safety.
+- 🌍 **Procedural Worlds** – terrain, biomes, and materials synthesized in real time with streaming asset pipelines.
+- 🎮 **Extensible Toolkit** – modular crates for gameplay logic, simulation, and agent cognition ready for production.
 
+## 🧩 Repository Structure
 
-**Grade**: ⭐⭐⭐⭐⭐ **A+ (Production Ready)**AstraWeave itself is the outcome of an **iterative, multi-model AI collaboration pipeline**. Every architectural decision, line of code, asset, and document in this repository was generated through coordinated AI workflows—no human-authored code or content is present. The project functions simultaneously as:
+```
+astraweave/
+├── astraweave-core/        # ECS runtime and scheduling primitives
+├── astraweave-render/      # WGPU renderer, GI, voxel/polygon hybrid pipeline
+├── astraweave-scene/       # Scene graph, world partitioning, and streaming
+├── astraweave-terrain/     # Procedural terrain generation & biome systems
+├── astraweave-ai/          # Agent behaviors, planners, and neural integration
+└── unified_showcase/       # End-to-end example combining engine subsystems
+```
 
+## 🧪 Validation Highlights
 
+- ✅ **12,700+ agents @ 60 FPS** – 18.8× headroom over the original scalability target.
+- ✅ **6.48 M validation checks/sec** – anti-cheat guardrails enforcing safe agent tooling.
+- ✅ **1.65 M plans/sec** – GOAP and behavior trees executing under one millisecond.
+- ✅ **0.885 ms average frame time** – deterministic simulation with 19× performance headroom.
+- ✅ **100% deterministic replays** – multiplayer-ready replication with hash-matched timelines.
 
 **[View Complete Validation Report →](docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md)**- **A living experiment in specialized AI workflows**, showcasing how model ensembles can refine complex systems through continuous feedback, validation, and tooling integration.
 
-- **An aspiring fully functional AI-native game engine**, proving that autonomous AI teams can design, implement, and evolve production-grade interactive technology end-to-end.
+- 📘 [Architecture Overview](#architecture-overview)
+- ⚡ [Quick Start Guide](#quick-start)
+- 🧭 [Executive Summary](EXECUTIVE_SUMMARY.md)
+- 📄 [Pitch Deck](PITCH_DECK.md)
+- 🧪 [Full Validation Report](AI_NATIVE_VALIDATION_REPORT.md)
 
 ---
-
-This README, the surrounding documentation, and the engine codebase are therefore both a technical artifact and a case study in AI-led software creation. Each iteration has been captured, validated, and merged by AI agents operating under deterministic processes to ensure reliability, traceability, and reproducibility without human intervention.
 
 ## 🏆 Key Differentiators
 
