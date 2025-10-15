@@ -36,7 +36,7 @@
 3. Expand validator metrics to compute per-channel histograms, detect normal-map swizzle errors, and enforce mip dimension alignment; surface failures via CLI strict mode and CI.【F:astraweave-asset-pipeline/src/validator.rs†L82-L189】
 
 ### Phase 2 – Asset Ingestion & Dependency Graph (2 sprints)
-1. Implement mesh baking in `process_model`: generate GPU vertex/index buffers, Mikktspace tangents, meshopt cache optimization, and optional nanite meshlet export for high-poly assets.【F:tools/aw_asset_cli/src/main.rs†L295-L375】
+1. Implement mesh baking in `process_model`: generate GPU vertex/index buffers, MikkTSpace tangents, meshopt cache optimization, and optional nanite meshlet export for high-poly assets.【F:tools/aw_asset_cli/src/main.rs†L295-L375】
 2. Populate dependency metadata by scanning glTF materials and texture references so manifests capture texture/mesh relationships for streaming and validation.【F:tools/aw_asset_cli/src/main.rs†L251-L292】
 3. Extend glTF loader to resolve external buffers/images, handle sparse accessors, and support glTF extensions used by DCC tools; add regression tests covering Blender, Substance, and Quixel exports.【F:astraweave-asset/src/lib.rs†L84-L198】
 
