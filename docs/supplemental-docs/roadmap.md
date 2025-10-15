@@ -1,4 +1,4 @@
-<!-- Mirror of the canonical roadmap at ../../root-archive/roadmap.md. Edit the archive file and copy changes here. -->
+<!-- Mirror of the canonical roadmap at ../root-archive/roadmap.md. Edit the archive file and copy changes here. -->
 # AstraWeave Roadmap — Aligning with Leading Rust Game Engines
 
 ## Current Snapshot (Q2 2025)
