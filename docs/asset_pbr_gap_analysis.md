@@ -42,7 +42,7 @@
 
 ### Phase 3 – Interchange & High-Poly Authoring (3 sprints)
 1. Add ingestion adapters for FBX (via `fbxcel`) and USD (via `usd-rs`) translating to glTF + material packs, ensuring round-trip from Maya/Houdini pipelines.
-2. Wire nanite preprocessing into the CLI so high-poly meshes automatically emit meshlets and LOD hierarchies for runtime streaming.【F:astraweave-asset/src/nanite_preprocess.rs†L1-L200】
+2. Wire Nanite preprocessing into the CLI so high-poly meshes automatically emit meshlets and LOD hierarchies for runtime streaming.【F:astraweave-asset/src/nanite_preprocess.rs†L1-L200】
 3. Provide Substance/Quixel template configs that map exported texture sets into the standardized bake (naming conventions, color-space tags, channel packing).
 
 ### Phase 4 – Renderer Feature Restoration & Iteration Loop (2–3 sprints)
