@@ -418,6 +418,7 @@ dependencies = [
  "async-trait",
  "criterion 0.7.0",
  "futures",
+ "futures-executor",
  "glam",
  "rapier3d",
  "serde",
@@ -688,6 +689,7 @@ dependencies = [
  "candle-nn 0.8.4",
  "candle-transformers 0.8.4",
  "chrono",
+ "criterion 0.5.1",
  "dashmap 6.1.0",
  "futures-util",
  "hf-hub",
@@ -1112,12 +1114,15 @@ dependencies = [
  "astraweave-cinematics",
  "astraweave-gameplay",
  "astraweave-input",
+ "dirs",
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
  "glam",
+ "log",
  "serde",
  "serde_json",
+ "toml 0.8.23",
  "wgpu",
  "winit",
 ]
@@ -2828,6 +2833,7 @@ dependencies = [
  "ciborium",
  "clap",
  "criterion-plot 0.5.0",
+ "futures",
  "is-terminal",
  "itertools 0.10.5",
  "num-traits",
@@ -2840,6 +2846,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tinytemplate",
+ "tokio",
  "walkdir",
 ]
 
@@ -4950,7 +4957,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-ai",
+ "astraweave-behavior",
  "astraweave-core",
+ "astraweave-llm",
+ "chrono",
+ "reqwest 0.12.23",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -10150,6 +10164,21 @@ dependencies = [
  "egui-wgpu",
  "egui-winit",
  "glam",
+ "pollster",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "ui_menu_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-audio",
+ "astraweave-ui",
+ "env_logger",
+ "glam",
+ "log",
  "pollster",
  "wgpu",
  "winit",

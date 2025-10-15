@@ -6,7 +6,6 @@ use std::collections::{BTreeMap, HashMap};
 #[cfg(feature = "profiling")]
 use astraweave_profiling::span;
 
-use crate::blob_vec::BlobVec;
 use crate::sparse_set::SparseSet;
 use crate::{Component, Entity};
 
