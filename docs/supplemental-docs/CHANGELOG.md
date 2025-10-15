@@ -233,7 +233,7 @@ cargo deny check
 #### Updated
 - [`docs/PHASE2_STATUS_REPORT.md`](docs/PHASE2_STATUS_REPORT.md): Task 5 marked as complete
 - [`docs/PHASE2_TASK5_PROGRESS_REPORT.md`](docs/PHASE2_TASK5_PROGRESS_REPORT.md): Progress set to 100%
-- [`roadmap.md`](roadmap.md): Phase 2 Task 5 marked as complete with links
+- [`roadmap.md`](../root-archive/roadmap.md): Phase 2 Task 5 marked as complete with links
 
 ### Links
 
