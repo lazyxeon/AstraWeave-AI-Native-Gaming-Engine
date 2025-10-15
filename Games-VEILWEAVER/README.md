@@ -73,7 +73,7 @@ Veilweaver is currently in the **design and prototyping phase**. Core engine fea
 
 ## 📝 License
 
-Veilweaver, as part of the AstraWeave project, is licensed under the MIT License. See the main [LICENSE](../LICENSE.md) file for details.
+Veilweaver, as part of the AstraWeave project, is licensed under the MIT License. See the main [LICENSE](../LICENSE) file for details.
 
 ---
 
