@@ -209,7 +209,7 @@ The bootstrap script will:
 
 ### Manual Setup
 
-For detailed manual setup or troubleshooting, see: **[DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md)**
+For detailed manual setup or troubleshooting, see: **[DEVELOPMENT_SETUP.md](docs/supplemental-docs/DEVELOPMENT_SETUP.md)**
 
 ### Hello World: Your First AI Companion
 
@@ -530,7 +530,7 @@ With **12,700+ agent capacity** and **perfect determinism**, AstraWeave enables:
 - Audio occlusion and reverb zones
 - In-editor audio tools
 
-**[View Roadmap →](GAME_ENGINE_READINESS_ROADMAP.md)**
+**[View Roadmap →](docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md)**
 
 ---
 
@@ -673,7 +673,7 @@ AstraWeave implements enterprise-grade security and quality practices:
 ### Stay Updated
 
 - **[GitHub Releases](https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/releases)** - Watch for new versions
-- **[Changelog](CHANGELOG.md)** - Track feature additions
+- **[Changelog](docs/supplemental-docs/CHANGELOG.md)** - Track feature additions
 - **[Roadmap](docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md)** - See upcoming features
 
 ---
@@ -697,7 +697,7 @@ AstraWeave implements enterprise-grade security and quality practices:
 
 **Roadmap**: 6-7 months to ship single-player game (Phases 8-9), optional 4-6 months for multiplayer (Phase 10)
 
-**[View Phase 8 Roadmap →](GAME_ENGINE_READINESS_ROADMAP.md)** | **[Phase 7 Report →](docs/root-archive/PHASE_7_VALIDATION_REPORT.md)**
+**[View Phase 8 Roadmap →](docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md)** | **[Phase 7 Report →](docs/root-archive/PHASE_7_VALIDATION_REPORT.md)**
 
 ---
 
