@@ -18,7 +18,6 @@ fn sys_sim(world: &mut ecs::World) {
         sim_cooldowns(w, dt);
     }
     // Phase 1: mirror basic cooldown decay into ECS components if present
-    let dt = dt;
     world.each_mut::<CCooldowns>(|_, cds| {
         for v in cds.map.values_mut() {
             *v = (*v - dt).max(0.0);

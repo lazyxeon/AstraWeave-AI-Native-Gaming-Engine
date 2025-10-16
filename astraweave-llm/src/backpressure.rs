@@ -103,6 +103,7 @@ pub struct RequestMetadata {
 
 /// Active request tracking
 #[derive(Debug)]
+#[allow(dead_code)]
 struct ActiveRequest {
     id: String,
     priority: Priority,
@@ -636,6 +637,7 @@ mod tests {
     async fn test_request_queuing() {
         let config = BackpressureConfig {
             max_concurrent_requests: 1, // Force queuing
+            enable_graceful_degradation: false, // Disable rejection logic for this test
             ..Default::default()
         };
         let mut manager = BackpressureManager::new(config);
@@ -650,22 +652,27 @@ mod tests {
         };
 
         // First request should be accepted
-        let _result1 = manager
+        let result1 = manager
             .submit_request(Priority::Normal, None, metadata.clone())
             .await
             .unwrap();
+        
+        // Verify first request was accepted
+        assert!(matches!(result1, BackpressureResult::Accepted), 
+                "First request should be accepted, got: {:?}", result1);
 
-        // Second request should be queued
+        // Second request should be queued immediately (semaphore exhausted)
+        // No delay needed - the permit is held for 100ms, so it's definitely still held
         let result2 = manager
             .submit_request(Priority::Normal, None, metadata)
             .await
             .unwrap();
 
-        match result2 {
+        match &result2 {
             BackpressureResult::Queued { position, .. } => {
-                assert_eq!(position, 1);
+                assert_eq!(*position, 1);
             }
-            _ => panic!("Expected request to be queued"),
+            _ => panic!("Expected request to be queued, got: {:?}", result2),
         }
 
         manager.stop().await;

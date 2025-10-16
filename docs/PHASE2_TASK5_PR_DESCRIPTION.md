@@ -243,7 +243,7 @@ Cargo.toml (added skinning_demo to workspace)
 ### Updated Reports
 - [`docs/PHASE2_STATUS_REPORT.md`](../docs/PHASE2_STATUS_REPORT.md): Task 5 marked complete with links
 - [`docs/PHASE2_TASK5_PROGRESS_REPORT.md`](../docs/PHASE2_TASK5_PROGRESS_REPORT.md): Progress 100% with all phases documented
-- [`roadmap.md`](supplemental-docs/roadmap.md): Phase 2 Task 5 complete with implementation links
+- [`roadmap.md`](root-archive/roadmap.md): Phase 2 Task 5 complete with implementation links
 - [`CHANGELOG.md`](supplemental-docs/CHANGELOG.md): Task 5 additions with commands and performance data
 
 ---

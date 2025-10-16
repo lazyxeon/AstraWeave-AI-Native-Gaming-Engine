@@ -8,6 +8,7 @@ pub mod perception;
 pub mod schema;
 pub mod sim;
 pub mod tool_sandbox;
+pub mod tool_vocabulary;
 pub mod tools;
 pub mod util;
 pub mod validation;
@@ -19,6 +20,7 @@ pub use sim::*;
 // Note: tools::Poi and schema::Poi are different types - using qualified imports where needed
 pub use ecs_components::*;
 pub use tool_sandbox::*;
+pub use tool_vocabulary::*;
 pub use tools::{
     astar_path, find_cover_positions, glam_to_schema, los_clear, path_exists, schema_to_glam,
 };

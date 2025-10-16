@@ -56,7 +56,7 @@ These are **not security vulnerabilities**, just maintenance notices:
    - **Fix**: Updated prometheus 0.13 → 0.14
    - **Impact**: protobuf 2.28.0 → 3.7.2
 
-See [SECURITY_VULNERABILITY_FIX_2025_10_12.md](../SECURITY_VULNERABILITY_FIX_2025_10_12.md) for full details.
+See [SECURITY_VULNERABILITY_FIX_2025_10_12.md](root-archive/SECURITY_VULNERABILITY_FIX_2025_10_12.md) for full details.
 
 ## Interpreting OpenSSF Reports
 
