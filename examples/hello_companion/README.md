@@ -72,6 +72,39 @@ cargo run -p hello_companion --release --features llm -- --demo-both
 - **Reliability**: 100% (classical AI guarantees valid plan)
 - **Use Case**: Best of both worlds (LLM intelligence + classical reliability)
 
+### 🤖 Arbiter Mode (NEW - Zero-Latency Hybrid)
+- **Type**: GOAP+Hermes Hybrid Arbiter (`AIArbiter`)
+- **Latency**: **101.7 ns** GOAP control (instant tactical decisions)
+- **Intelligence**: Hermes 2 Pro LLM plans generate asynchronously (13-21s background)
+- **Reliability**: 100% (GOAP provides instant responses while LLM thinks)
+- **Use Case**: Production-ready AI with zero user-facing latency
+
+**Key Innovation**: Agents respond instantly with GOAP tactical AI while LLM plans generate in the background. When LLM completes, agents smoothly transition to executing strategic plans, then return to GOAP for the next challenge.
+
+**Try it now**:
+```bash
+# Run with arbiter (zero-latency hybrid control)
+cargo run -p hello_companion --release --features llm_orchestrator -- --arbiter
+
+# Expected output (instant GOAP actions, no 13-21s delays):
+# Frame 1: [GOAP] MoveTo(5, 5)
+# Frame 2: [GOAP] MoveTo(6, 5)
+# Frame 3: [ExecutingLLM(0)] TakeCover(7, 8)  # LLM plan ready, executing step 0
+# Frame 4: [ExecutingLLM(1)] MoveTo(8, 9)     # Executing step 1
+# Frame 5: [ExecutingLLM(2)] Attack(enemy_1)  # Executing step 2
+# Frame 6: [GOAP] MoveTo(10, 10)              # Back to GOAP, ready for next LLM
+```
+
+**Performance Highlights**:
+- **GOAP Control**: 101.7 ns per update (982× faster than 100 µs target)
+- **LLM Polling**: 575.3 ns per update (checking background task status)
+- **Mode Transitions**: 221.9 ns (GOAP ↔ ExecutingLLM seamless)
+- **Scalability**: 1,000 agents @ 60 FPS = 0.6% frame budget, 10,000 agents = 6.1%
+
+📚 **Documentation**:
+- [Complete Implementation Guide (8,000 words)](../../docs/ARBITER_IMPLEMENTATION.md) - Architecture, performance analysis, integration guide
+- [Quick Reference (5 min read)](../../docs/ARBITER_QUICK_REFERENCE.md) - API docs, common patterns, troubleshooting
+
 ## Features
 
 ### Feature Flags

@@ -789,9 +789,10 @@ impl HudManager {
     
     /// Start dialogue (Week 3 Day 4)
     pub fn start_dialogue(&mut self, dialogue: DialogueNode) {
+        let speaker_name = dialogue.speaker_name.clone();
         self.active_dialogue = Some(dialogue);
         self.state.show_dialogue = true;
-        log::info!("Dialogue started: {}", self.active_dialogue.as_ref().unwrap().speaker_name);
+        log::info!("Dialogue started: {}", speaker_name);
     }
     
     /// End dialogue (Week 3 Day 4)

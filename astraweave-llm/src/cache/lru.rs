@@ -38,7 +38,8 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
 
     /// Get a value from the cache, updating its access time
     pub fn get(&self, key: &K) -> Option<V> {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock()
+            .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
         
         // Update access counter first
         inner.access_counter += 1;
@@ -57,7 +58,8 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     /// 
     /// Returns true if an item was evicted, false otherwise
     pub fn put(&self, key: K, value: V) -> bool {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock()
+            .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
         
         // Update access counter first
         inner.access_counter += 1;
@@ -94,7 +96,9 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
 
     /// Get the current number of items in the cache
     pub fn len(&self) -> usize {
-        self.inner.lock().unwrap().map.len()
+        self.inner.lock()
+            .expect("LruCache mutex poisoned: another thread panicked while holding the lock")
+            .map.len()
     }
 
     /// Check if the cache is empty
@@ -105,14 +109,16 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     /// Clear all items from the cache
     #[allow(dead_code)]
     pub fn clear(&self) {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock()
+            .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
         inner.map.clear();
         inner.access_counter = 0;
     }
 
     /// Phase 7: Get all keys in the cache (for similarity search)
     pub fn keys(&self) -> Vec<K> {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.lock()
+            .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
         inner.map.keys().cloned().collect()
     }
 }

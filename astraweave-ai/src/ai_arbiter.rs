@@ -385,7 +385,10 @@ impl AIArbiter {
     /// - Sets mode to `ExecutingLLM { step_index: 0 }`
     /// - Stores plan in `current_plan`
     /// - Increments `mode_transitions` and `llm_successes`
-    fn transition_to_llm(&mut self, plan: PlanIntent) {
+    ///
+    /// # Visibility
+    /// Public for testing purposes (allows manual plan injection)
+    pub fn transition_to_llm(&mut self, plan: PlanIntent) {
         let steps = plan.steps.len();
         self.current_plan = Some(plan);
         self.mode = AIControlMode::ExecutingLLM { step_index: 0 };

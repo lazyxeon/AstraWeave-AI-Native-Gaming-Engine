@@ -96,7 +96,9 @@ impl Events {
             .entry(TypeId::of::<E>())
             .or_insert_with(|| Box::new(EventQueue::<E>::new()));
 
-        let queue = queue.downcast_mut::<EventQueue<E>>().unwrap();
+        let queue = queue
+            .downcast_mut::<EventQueue<E>>()
+            .expect("EventQueue type mismatch: just inserted correct type, downcast should never fail");
         queue.send(event, self.current_frame);
     }
 

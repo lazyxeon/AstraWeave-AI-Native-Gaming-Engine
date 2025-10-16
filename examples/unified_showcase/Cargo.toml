@@ -19,7 +19,7 @@ toml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "hdr", "webp", "tga", "dds", "tiff"] }
 serde_json = "1.0"
-astraweave-render = { path = "../../astraweave-render", features = ["assets"] }
+astraweave-render = { path = "../../astraweave-render", features = ["assets", "textures", "postfx"] }
 noise = "0.9"
 notify = "8" # File system watching for GPU hot-reload (Phase PBR-G)
 

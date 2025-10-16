@@ -455,7 +455,8 @@ SIMPLE (no params or one param):
                 let example = if param_count == 0 {
                     format!("{{\"act\": \"{}\"}}", tool.name)
                 } else {
-                    let (key, val) = tool.args.iter().next().unwrap();
+                    let (key, val) = tool.args.iter().next()
+                        .expect("param_count check ensures at least one argument exists");
                     let example_val = match val.as_str() {
                         s if s.contains("f32") => "5.0",
                         _ => "null",
