@@ -18,7 +18,7 @@ serde_json = "1.0"
 basis-universal = { version = "0.3", optional = true }
 
 # Mesh optimization (already added in Week 5 Action 19)
-meshopt = "0.3"
+meshopt = "0.6"
 
 # Byte manipulation
 bytemuck = "1.14"
@@ -27,7 +27,7 @@ bytemuck = "1.14"
 image = "0.25"
 
 # Async support
-tokio = { version = "1.41", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 
 # Logging
 tracing = "0.1"
