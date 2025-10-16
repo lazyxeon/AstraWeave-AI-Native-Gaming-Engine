@@ -31,7 +31,7 @@ astraweave-materials = { path = "../astraweave-materials" }
 astraweave-cinematics = { path = "../astraweave-cinematics" }
 astraweave-terrain = { path = "../astraweave-terrain" }
 astraweave-profiling = { path = "../astraweave-profiling", optional = true }
-tracy-client = { version = "0.17", optional = true }
+tracy-client = { version = "0.18", optional = true }
 log = "0.4"
 egui = { workspace = true }
 egui-winit = { workspace = true }
@@ -42,7 +42,7 @@ gltf = { version = "1.4", optional = true, features = ["import"] }
 tobj = { version = "4", optional = true }
 astraweave-asset = { path = "../astraweave-asset" }
 aw_asset_cli = { path = "../tools/aw_asset_cli" }
-ktx2 = "0.3"
+ktx2 = "0.4"
 basis-universal = "0.3.1"
 texture2ddecoder = "0.1"
 serde = { workspace = true }
@@ -51,13 +51,13 @@ rand = { workspace = true }
 tokio = { version = "1", features = ["sync"] }
 
 [dev-dependencies]
-naga = "25.0"
+naga = "27.0"
 criterion = { workspace = true }
 tempfile = "3"
 pollster = { workspace = true }
 env_logger = "0.11"
 serde = { version = "1", features = ["derive"] }
-png = "0.17"
+png = "0.18"
 bytes = "1"
 approx = "0.5"
 

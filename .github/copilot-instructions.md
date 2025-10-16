@@ -29,7 +29,7 @@ AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are f
    - **All 6 AI modes functional**: Classical (0.20ms), BehaviorTree (0.17ms), Utility (0.46ms), LLM (3462ms), Hybrid (2155ms), Ensemble (2355ms)
    - **Metrics export working**: JSON/CSV tracking operational
    - **Production-ready infrastructure**: Proper error handling, feature flags, no unwraps
-   - **Documentation**: PHASE_6_COMPLETION_SUMMARY.md (comprehensive 15k-word report)
+   - **Documentation**: docs/root-archive/PHASE_6_COMPLETION_SUMMARY.md (comprehensive 15k-word report)
 
 - ✅ **Week 8 Performance Sprint COMPLETE** (Oct 9-12, 2025)
    - **Frame Time**: 3.09 ms → 2.70 ms (**-12.6%**, +47 FPS to 370 FPS)
@@ -76,13 +76,13 @@ AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are f
    - **Priority 3**: Save/Load System (2-3 weeks) - Deterministic ECS ready
    - **Priority 4**: Production Audio (2-3 weeks) - Mixer/crossfade already exist!
    - **Documentation**: 
-     - `GAME_ENGINE_READINESS_ROADMAP.md` - Overall strategy
-     - `PHASE_8_ROADMAP_REVIEW.md` - Roadmap validation vs actual codebase
-     - `PHASE_8_PRIORITY_1_UI_PLAN.md` - 5-week UI implementation (egui-wgpu)
-     - `PHASE_8_PRIORITY_2_RENDERING_PLAN.md` - 4-5 week rendering completion
-     - `PHASE_8_PRIORITY_3_SAVE_LOAD_PLAN.md` - 2-3 week save/load system
-     - `PHASE_8_PRIORITY_4_AUDIO_PLAN.md` - 2-3 week production audio
-     - `PHASE_8_MASTER_INTEGRATION_PLAN.md` - **START HERE** for coordination
+     - `docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md` - Overall strategy
+     - `docs/root-archive/PHASE_8_ROADMAP_REVIEW.md` - Roadmap validation vs actual codebase
+     - `docs/root-archive/PHASE_8_PRIORITY_1_UI_PLAN.md` - 5-week UI implementation (egui-wgpu)
+     - `docs/root-archive/PHASE_8_PRIORITY_2_RENDERING_PLAN.md` - 4-5 week rendering completion
+     - `docs/root-archive/PHASE_8_PRIORITY_3_SAVE_LOAD_PLAN.md` - 2-3 week save/load system
+     - `docs/root-archive/PHASE_8_PRIORITY_4_AUDIO_PLAN.md` - 2-3 week production audio
+     - `docs/root-archive/PHASE_8_MASTER_INTEGRATION_PLAN.md` - **START HERE** for coordination
      - **NEW**: `PHASE_8_1_DAY_1_COMPLETE.md` - Day 1 completion report (menu system)
      - **NEW**: `PHASE_8_1_DAY_2_COMPLETE.md` - Day 2 completion report (winit 0.30 migration)
      - **NEW**: `PHASE_8_1_DAY_3_COMPLETE.md` - Day 3 completion report (visual polish)
@@ -277,7 +277,7 @@ cargo bench -p astraweave-math --bench simd_movement
 #   Add -Strict when mirroring CI main-branch enforcement
 ```
 
-**Performance Summary** (see BASELINE_METRICS.md + WEEK_8_FINAL_SUMMARY.md + PHASE_6_COMPLETION_SUMMARY.md):
+**Performance Summary** (see docs/root-archive/BASELINE_METRICS.md + docs/root-archive/WEEK_8_FINAL_SUMMARY.md + docs/root-archive/PHASE_6_COMPLETION_SUMMARY.md):
 
 - **ECS**: 25.8 ns world creation, 420 ns/entity spawn, <1 ns/entity tick
 - **AI Core Loop**: 184 ns – 2.10 µs (2500× faster than 5 ms target)
@@ -405,7 +405,7 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Read these for long-term context:**
 
-1. **GAME_ENGINE_READINESS_ROADMAP.md** (NEW - October 14, 2025)
+1. **docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md** (NEW - October 14, 2025)
    - **START HERE**: Gap analysis for "ship a game" readiness
    - 8 critical missing features identified
    - 3-phase roadmap (6-12 months to full game engine)
@@ -419,7 +419,7 @@ tools/aw_asset_cli/     # Asset pipeline tooling
    - 12-month transformation roadmap
    - Risk assessment and mitigation strategies
 
-3. **LONG_HORIZON_STRATEGIC_PLAN.md** (12,000 words)
+3. **docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md** (12,000 words)
    - 12-month strategic roadmap (Phases A, B, C)
    - Measurable success metrics per phase
    - Monthly breakdowns with acceptance criteria
@@ -431,7 +431,7 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Phase 6 & 7 Documentation** (October 14, 2025):
 
-5. **PHASE_7_VALIDATION_REPORT.md** (Completion Summary)
+5. **docs/root-archive/PHASE_7_VALIDATION_REPORT.md** (Completion Summary)
    - Phase 7 completion status: COMPLETE (40-50% LLM success rate)
    - Optional validations: 3/3 complete
    - Deferred work: 6 test failures, 12 warnings, clippy validation
@@ -444,14 +444,14 @@ tools/aw_asset_cli/     # Asset pipeline tooling
    - Before/after comparison (40-50% → 75-85% success)
    - Production validation with live model
 
-7. **PHASE_6_COMPLETION_SUMMARY.md** (15,000 words)
+7. **docs/root-archive/PHASE_6_COMPLETION_SUMMARY.md** (15,000 words)
    - Comprehensive Phase 6 completion report
    - All 54 compilation fixes documented
    - Before/after metrics comparison
    - Current performance baseline
    - Success criteria validation
 
-8. **PHASE_7_TOOL_EXPANSION_PLAN.md** (26,000 words)
+8. **docs/root-archive/PHASE_7_TOOL_EXPANSION_PLAN.md** (26,000 words)
    - Complete implementation roadmap for Phase 7
    - Tool vocabulary expansion (3 → 37 tools)
    - Prompt engineering strategy (JSON schema, few-shot learning)
@@ -467,7 +467,7 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Phase 8 Documentation** (October 14, 2025):
 
-10. **PHASE_8_ROADMAP_REVIEW.md** (Roadmap Validation)
+10. **docs/root-archive/PHASE_8_ROADMAP_REVIEW.md** (Roadmap Validation)
    - Strategic review of Game Engine Readiness Roadmap vs actual codebase
    - **Key Finding**: Existing systems more advanced than roadmap suggested
    - Shadow mapping EXISTS (CSM infrastructure in renderer.rs)
@@ -530,9 +530,9 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Key Metrics Documents**:
 
-- **UNWRAP_AUDIT_ANALYSIS.md** - 637 `.unwrap()` calls cataloged (342 P0 critical)
-- **BASELINE_METRICS.md** - Performance baselines (all subsystems)
-- **AI_NATIVE_VALIDATION_REPORT.md** - 28 tests, A+ grade, 12,700+ capacity proven
+- **docs/root-archive/UNWRAP_AUDIT_ANALYSIS.md** - 637 `.unwrap()` calls cataloged (342 P0 critical)
+- **docs/root-archive/BASELINE_METRICS.md** - Performance baselines (all subsystems)
+- **docs/root-archive/AI_NATIVE_VALIDATION_REPORT.md** - 28 tests, A+ grade, 12,700+ capacity proven
 
 **Automation Scripts**:
 
@@ -578,9 +578,9 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 - **Build Config**: `.cargo/config.toml` (aliases, profiles, sccache)
 - **CI Tasks**: `.vscode/tasks.json` (Phase1-check, Phase1-tests)
 - **Exclusions**: See `check-all` alias for crates to skip
-- **Strategic Plans**: `IMPLEMENTATION_PLANS_INDEX.md` (roadmap navigation)
-- **Phase 6 Status**: `PHASE_6_COMPLETION_SUMMARY.md` (latest achievements)
-- **Phase 7 Roadmap**: `PHASE_7_TOOL_EXPANSION_PLAN.md` (next implementation)
+- **Strategic Plans**: `docs/root-archive/IMPLEMENTATION_PLANS_INDEX.md` (roadmap navigation)
+- **Phase 6 Status**: `docs/root-archive/PHASE_6_COMPLETION_SUMMARY.md` (latest achievements)
+- **Phase 7 Roadmap**: `docs/root-archive/PHASE_7_TOOL_EXPANSION_PLAN.md` (next implementation)
 
 ---
 
@@ -599,7 +599,7 @@ fn do_work() -> Result<()> {
 
 - ⚠️ **AVOID `.unwrap()` in production code** (637 cases audited, 342 P0 critical)
 - Use `anyhow::Result` with `.context()` for errors
-- See `UNWRAP_AUDIT_ANALYSIS.md` for safe patterns and remediation plan
+- See `docs/root-archive/UNWRAP_AUDIT_ANALYSIS.md` for safe patterns and remediation plan
 
 ### Component Definition (ECS)
 
@@ -854,7 +854,7 @@ fn bench_arbiter_goap_control(c: &mut Criterion) {
 - **Some Examples**: Missing `serde_json` or other deps (add manually if needed)
 - **LLM Crates**: `astraweave-llm`, `llm_toolcall` excluded from standard builds
 - **`.unwrap()` Usage**: 637 total occurrences cataloged (342 P0-Critical, 58 production unwraps fixed)
-  - See `UNWRAP_AUDIT_ANALYSIS.md` for remediation plan
+  - See `docs/root-archive/UNWRAP_AUDIT_ANALYSIS.md` for remediation plan
   - Use established safe patterns before introducing new unwraps
 
 🔥 **Error Handling Policy:**
@@ -872,7 +872,7 @@ fn bench_arbiter_goap_control(c: &mut Criterion) {
 
 📊 **Performance Baselines** (Weeks 1-8, Phase 6):
 
-- See `BASELINE_METRICS.md` + `WEEK_8_FINAL_SUMMARY.md` + `PHASE_6_COMPLETION_SUMMARY.md` for full metrics
+- See `docs/root-archive/BASELINE_METRICS.md` + `docs/root-archive/WEEK_8_FINAL_SUMMARY.md` + `docs/root-archive/PHASE_6_COMPLETION_SUMMARY.md` for full metrics
 - **Validated**: 12,700+ agents @ 60 FPS, 6.48M checks/sec, 100% determinism
 
 ✅ **Validation:**
@@ -899,18 +899,18 @@ fn bench_arbiter_goap_control(c: &mut Criterion) {
 **Tracy Profiling**: `examples/profiling_demo/src/main.rs` (Week 8 integration)  
 **Example Integration**: `examples/hello_companion/src/main.rs` (Phase 6 - 6 AI modes), `examples/unified_showcase/src/main.rs`
 
-**Documentation**: `README.md`, `DEVELOPMENT_SETUP.md`, weekly completion summaries
+**Documentation**: `README.md`, `docs/supplemental-docs/DEVELOPMENT_SETUP.md`, weekly completion summaries
 
 **Strategic Plans**:
 
-- `GAME_ENGINE_READINESS_ROADMAP.md` - **START HERE** for Phase 8-10 planning
-- `IMPLEMENTATION_PLANS_INDEX.md` - Navigation guide for all strategic docs
-- `COMPREHENSIVE_STRATEGIC_ANALYSIS.md` - Gap analysis with prioritized findings
-- `LONG_HORIZON_STRATEGIC_PLAN.md` - 12-month strategic plan (Phases A, B, C)
-- `PHASE_7_VALIDATION_REPORT.md` - Phase 7 completion summary and deferred work
-- `HERMES2PRO_MIGRATION_PHASE3_CODE.md` - Hermes 2 Pro migration technical details
-- `PHASE_6_COMPLETION_SUMMARY.md` - Phase 6 achievements and metrics
-- `PHASE_7_TOOL_EXPANSION_PLAN.md` - Phase 7 implementation roadmap
+- `docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md` - **START HERE** for Phase 8-10 planning
+- `docs/root-archive/IMPLEMENTATION_PLANS_INDEX.md` - Navigation guide for all strategic docs
+- `docs/root-archive/COMPREHENSIVE_STRATEGIC_ANALYSIS.md` - Gap analysis with prioritized findings
+- `docs/root-archive/LONG_HORIZON_STRATEGIC_PLAN.md` - 12-month strategic plan (Phases A, B, C)
+- `docs/root-archive/PHASE_7_VALIDATION_REPORT.md` - Phase 7 completion summary and deferred work
+- `docs/root-archive/HERMES2PRO_MIGRATION_PHASE3_CODE.md` - Hermes 2 Pro migration technical details
+- `docs/root-archive/PHASE_6_COMPLETION_SUMMARY.md` - Phase 6 achievements and metrics
+- `docs/root-archive/PHASE_7_TOOL_EXPANSION_PLAN.md` - Phase 7 implementation roadmap
 
 **Automation Scripts**:
 
@@ -920,7 +920,7 @@ fn bench_arbiter_goap_control(c: &mut Criterion) {
 
 ## Next Steps (Phase 8: Game Engine Readiness - IN PROGRESS)
 
-Consult `GAME_ENGINE_READINESS_ROADMAP.md` for comprehensive roadmap and gap analysis.
+Consult `docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md` for comprehensive roadmap and gap analysis.
 
 **🎯 Phase 8 Overview: Core Game Loop Essentials**
 
