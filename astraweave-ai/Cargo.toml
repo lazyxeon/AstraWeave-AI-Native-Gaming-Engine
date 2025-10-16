@@ -45,3 +45,7 @@ harness = false
 [[bench]]
 name = "goap_bench"
 harness = false
+
+[[bench]]
+name = "arbiter_bench"
+harness = false

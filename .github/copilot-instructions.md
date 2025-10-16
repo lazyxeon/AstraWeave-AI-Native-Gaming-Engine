@@ -710,6 +710,139 @@ let context = BehaviorContext::new(snap);
 let status = graph.tick(&context);     // Returns BehaviorStatus
 ```
 
+### GOAP+Hermes Hybrid Arbiter (NEW - Phase 7)
+
+```rust
+// See astraweave-ai/src/arbiter.rs
+use astraweave_ai::arbiter::{AIArbiter, AIControlMode};
+use astraweave_ai::llm_executor::LlmExecutor;
+
+// Pattern 1: Basic agent with arbiter
+struct Agent {
+    arbiter: AIArbiter,
+    llm_executor: Arc<LlmExecutor>,  // Shared across agents
+}
+
+impl Agent {
+    fn new(llm_executor: Arc<LlmExecutor>) -> Self {
+        Self {
+            arbiter: AIArbiter::new(llm_executor.clone()),
+            llm_executor,
+        }
+    }
+
+    fn update(&mut self, world: &mut World, snap: WorldSnapshot) -> Result<PlanIntent> {
+        // Update arbiter (polls LLM task, manages cooldown)
+        self.arbiter.update(world, &snap)?;
+
+        // Get current control mode
+        match self.arbiter.mode() {
+            AIControlMode::GOAP => {
+                // Execute GOAP plan (instant tactical decision)
+                let plan = goap_orchestrator.plan(world, &snap)?;
+                Ok(plan)
+            }
+            AIControlMode::ExecutingLLM { step_index } => {
+                // Execute LLM plan step (strategic action)
+                let llm_plan = self.arbiter.current_llm_plan().unwrap();
+                Ok(execute_step(&llm_plan, step_index))
+            }
+            AIControlMode::BehaviorTree => {
+                // Execute behavior tree (optional fallback)
+                let plan = bt_orchestrator.plan(world, &snap)?;
+                Ok(plan)
+            }
+        }
+    }
+}
+
+// Pattern 2: Shared LLM executor (efficient for many agents)
+let llm_executor = Arc::new(LlmExecutor::new(
+    hermes_client,  // OllamaClient with Hermes 2 Pro model
+    tool_registry,
+));
+
+// Create 100 agents sharing same executor
+let agents: Vec<Agent> = (0..100)
+    .map(|_| Agent::new(llm_executor.clone()))
+    .collect();
+
+// Pattern 3: Custom cooldown (adjust LLM request frequency)
+let arbiter = AIArbiter::new(llm_executor)
+    .with_llm_cooldown(Duration::from_secs(5));  // Aggressive (high LLM usage)
+    // .with_llm_cooldown(Duration::from_secs(30)); // Passive (low LLM usage)
+    // .with_llm_cooldown(Duration::ZERO);          // Immediate (testing only)
+
+// Pattern 4: Metrics monitoring
+let metrics = arbiter.metrics();
+let success_rate = metrics.llm_successes as f32 
+    / (metrics.llm_successes + metrics.llm_failures) as f32;
+
+if success_rate < 0.8 {
+    eprintln!("⚠️  LLM success rate low: {:.1}%", success_rate * 100.0);
+}
+
+// Pattern 5: Manual mode transitions (advanced usage)
+if emergency_situation {
+    // Force transition to GOAP for immediate response
+    arbiter.transition_to_goap();
+}
+```
+
+**Performance Characteristics**:
+- **GOAP Control**: 101.7 ns per update (982× faster than target)
+- **LLM Polling**: 575.3 ns per update (checking background task status)
+- **Mode Transitions**: 221.9 ns (GOAP ↔ ExecutingLLM seamless)
+- **Full Cycle**: 313.7 ns (GOAP update + LLM poll + metrics)
+- **Scalability**: 1,000 agents @ 60 FPS = 0.6% frame budget, 10,000 agents = 6.1%
+
+**Testing Patterns**:
+```rust
+// Pattern 6: Mock LLM orchestrator for testing
+use astraweave_ai::test_utils::MockLlmOrch;
+
+#[tokio::test]
+async fn test_arbiter_with_mock() {
+    let mock_llm = Arc::new(MockLlmOrch::new_with_delay(
+        Duration::from_millis(100),  // Simulate LLM latency
+        Some(mock_plan()),           // Return this plan
+    ));
+    
+    let llm_executor = Arc::new(LlmExecutor::new(mock_llm, tool_registry));
+    let mut arbiter = AIArbiter::new(llm_executor);
+    
+    // Test GOAP → ExecutingLLM transition
+    arbiter.update(&world, &snap)?;
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    arbiter.update(&world, &snap)?;
+    
+    assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { .. }));
+}
+
+// Pattern 7: Benchmarking with criterion
+use criterion::{black_box, Criterion};
+
+fn bench_arbiter_goap_control(c: &mut Criterion) {
+    let arbiter = setup_arbiter();
+    let world = setup_world();
+    let snap = setup_snapshot();
+    
+    c.bench_function("arbiter_goap_control", |b| {
+        b.iter(|| {
+            arbiter.update(
+                black_box(&mut world),
+                black_box(&snap)
+            )
+        })
+    });
+}
+```
+
+📚 **Documentation**:
+- [Complete Implementation Guide](docs/ARBITER_IMPLEMENTATION.md) - Architecture, performance analysis, integration
+- [Quick Reference](docs/ARBITER_QUICK_REFERENCE.md) - API docs, common patterns, troubleshooting
+- [Phase 7 Report](PHASE_7_ARBITER_PHASE_7_COMPLETE.md) - Completion summary
+
 ---
 
 ## Critical Warnings

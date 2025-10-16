@@ -3156,6 +3156,14 @@ fn recreate_shadow_resources(render: &mut RenderStuff, resolution: u32) {
                 binding: 1,
                 resource: wgpu::BindingResource::Sampler(&render.shadow_sampler),
             },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: render.light_ub.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 3,
+                resource: render.shadow_params_buf.as_entire_binding(),
+            },
         ],
     });
 

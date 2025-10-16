@@ -1,5 +1,8 @@
 #[cfg(feature = "postfx")]
-use crate::post::{WGSL_SSAO, WGSL_SSR};
+use crate::post::{
+    BLOOM_COMPOSITE_WGSL, BLOOM_DOWNSAMPLE_WGSL, BLOOM_THRESHOLD_WGSL, BLOOM_UPSAMPLE_WGSL,
+    WGSL_SSAO, WGSL_SSR,
+};
 use anyhow::Result;
 use glam::Vec4Swizzles;
 use glam::{vec3, Mat4};
@@ -302,6 +305,52 @@ pub struct Renderer {
     hdr_tex: wgpu::Texture,
     hdr_view: wgpu::TextureView,
     hdr_sampler: wgpu::Sampler,
+    // Post-FX auxiliary textures and pipeline
+    #[cfg(feature = "postfx")]
+    hdr_aux_tex: wgpu::Texture,
+    #[cfg(feature = "postfx")]
+    hdr_aux_view: wgpu::TextureView,
+    #[cfg(feature = "postfx")]
+    fx_gi_tex: wgpu::Texture,
+    #[cfg(feature = "postfx")]
+    fx_gi_view: wgpu::TextureView,
+    #[cfg(feature = "postfx")]
+    fx_ao_tex: wgpu::Texture,
+    #[cfg(feature = "postfx")]
+    fx_ao_view: wgpu::TextureView,
+    #[cfg(feature = "postfx")]
+    post_fx_bgl: wgpu::BindGroupLayout,
+    #[cfg(feature = "postfx")]
+    post_fx_bind_group: wgpu::BindGroup,
+    #[cfg(feature = "postfx")]
+    post_fx_pipeline: wgpu::RenderPipeline,
+    // Bloom pipeline infrastructure (5-mip pyramid)
+    #[cfg(feature = "postfx")]
+    bloom_threshold_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    bloom_downsample_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    bloom_upsample_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    bloom_composite_pipeline: wgpu::RenderPipeline,
+    #[cfg(feature = "postfx")]
+    bloom_mip_textures: Vec<wgpu::Texture>,
+    #[cfg(feature = "postfx")]
+    bloom_mip_views: Vec<wgpu::TextureView>,
+    #[cfg(feature = "postfx")]
+    bloom_threshold_buf: wgpu::Buffer,
+    #[cfg(feature = "postfx")]
+    bloom_intensity_buf: wgpu::Buffer,
+    #[cfg(feature = "postfx")]
+    bloom_bgl: wgpu::BindGroupLayout,
+    #[cfg(feature = "postfx")]
+    bloom_bind_groups_down: Vec<wgpu::BindGroup>,
+    #[cfg(feature = "postfx")]
+    bloom_bind_groups_up: Vec<wgpu::BindGroup>,
+    #[cfg(feature = "postfx")]
+    bloom_threshold_bg: wgpu::BindGroup,
+    #[cfg(feature = "postfx")]
+    bloom_composite_bg: wgpu::BindGroup,
     #[allow(dead_code)]
     shadow_tex: wgpu::Texture,
     #[allow(dead_code)]
@@ -1014,7 +1063,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let _post_fx_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let post_fx_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("post fx bg"),
             layout: &post_fx_bgl,
             entries: &[
@@ -1043,7 +1092,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _post_fx_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let post_fx_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("post fx pipeline"),
             layout: Some(&post_fx_pl),
             vertex: wgpu::VertexState {
@@ -1068,6 +1117,431 @@ impl Renderer {
             multiview: None,
             cache: None,
         });
+
+        // ========================================
+        // Bloom Pipeline Infrastructure (5-mip pyramid)
+        // ========================================
+        #[cfg(feature = "postfx")]
+        let (
+            bloom_threshold_pipeline,
+            bloom_downsample_pipeline,
+            bloom_upsample_pipeline,
+            bloom_composite_pipeline,
+            bloom_mip_textures,
+            bloom_mip_views,
+            bloom_threshold_buf,
+            bloom_intensity_buf,
+            bloom_bgl,
+            bloom_bind_groups_down,
+            bloom_bind_groups_up,
+            bloom_threshold_bg,
+            bloom_composite_bg,
+        ) = {
+            // Bloom configuration
+            const MIP_COUNT: u32 = 5;
+            let bloom_threshold = 1.0f32;
+            let bloom_intensity = 0.1f32;
+
+            // Create uniform buffers
+            let bloom_threshold_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("bloom threshold buf"),
+                contents: bytemuck::cast_slice(&[bloom_threshold, 0.0f32, 0.0f32, 0.0f32]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+            let bloom_intensity_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("bloom intensity buf"),
+                contents: bytemuck::cast_slice(&[bloom_intensity, 0.0f32, 0.0f32, 0.0f32]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+            // Create mip chain textures (half resolution each level)
+            let mut mip_textures = Vec::with_capacity(MIP_COUNT as usize);
+            let mut mip_views = Vec::with_capacity(MIP_COUNT as usize);
+
+            for i in 0..MIP_COUNT {
+                let divisor = 1 << (i + 1); // 2, 4, 8, 16, 32
+                let mip_width = (config.width / divisor).max(1);
+                let mip_height = (config.height / divisor).max(1);
+
+                let tex = device.create_texture(&wgpu::TextureDescriptor {
+                    label: Some(&format!("bloom mip {}", i)),
+                    size: wgpu::Extent3d {
+                        width: mip_width,
+                        height: mip_height,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba16Float,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                    view_formats: &[],
+                });
+
+                let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
+                mip_textures.push(tex);
+                mip_views.push(view);
+            }
+
+            // Bind group layout for bloom passes
+            let bloom_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("bloom bgl"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+
+            // Threshold bind group layout (adds uniform buffer)
+            let bloom_threshold_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("bloom threshold bgl"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+
+            // Composite bind group layout (2 textures + sampler + intensity uniform)
+            let bloom_composite_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("bloom composite bgl"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+
+            // Create shader modules
+            let threshold_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("bloom threshold shader"),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_THRESHOLD_WGSL)),
+            });
+
+            let downsample_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("bloom downsample shader"),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_DOWNSAMPLE_WGSL)),
+            });
+
+            let upsample_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("bloom upsample shader"),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_UPSAMPLE_WGSL)),
+            });
+
+            let composite_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("bloom composite shader"),
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_COMPOSITE_WGSL)),
+            });
+
+            // Create pipelines
+            let threshold_pl_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("bloom threshold layout"),
+                bind_group_layouts: &[&bloom_threshold_bgl],
+                push_constant_ranges: &[],
+            });
+
+            let bloom_threshold_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("bloom threshold pipeline"),
+                layout: Some(&threshold_pl_layout),
+                vertex: wgpu::VertexState {
+                    module: &threshold_shader,
+                    entry_point: Some("vs"),
+                    buffers: &[],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &threshold_shader,
+                    entry_point: Some("fs"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: wgpu::TextureFormat::Rgba16Float,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
+                cache: None,
+            });
+
+            let downsample_pl_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("bloom downsample layout"),
+                bind_group_layouts: &[&bloom_bgl],
+                push_constant_ranges: &[],
+            });
+
+            let bloom_downsample_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("bloom downsample pipeline"),
+                layout: Some(&downsample_pl_layout),
+                vertex: wgpu::VertexState {
+                    module: &downsample_shader,
+                    entry_point: Some("vs"),
+                    buffers: &[],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &downsample_shader,
+                    entry_point: Some("fs"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: wgpu::TextureFormat::Rgba16Float,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
+                cache: None,
+            });
+
+            let upsample_pl_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("bloom upsample layout"),
+                bind_group_layouts: &[&bloom_bgl],
+                push_constant_ranges: &[],
+            });
+
+            let bloom_upsample_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("bloom upsample pipeline"),
+                layout: Some(&upsample_pl_layout),
+                vertex: wgpu::VertexState {
+                    module: &upsample_shader,
+                    entry_point: Some("vs"),
+                    buffers: &[],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &upsample_shader,
+                    entry_point: Some("fs"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: wgpu::TextureFormat::Rgba16Float,
+                        blend: Some(wgpu::BlendState::ALPHA_BLENDING), // Additive blending for upsampling
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
+                cache: None,
+            });
+
+            let composite_pl_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("bloom composite layout"),
+                bind_group_layouts: &[&bloom_composite_bgl],
+                push_constant_ranges: &[],
+            });
+
+            let bloom_composite_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                label: Some("bloom composite pipeline"),
+                layout: Some(&composite_pl_layout),
+                vertex: wgpu::VertexState {
+                    module: &composite_shader,
+                    entry_point: Some("vs"),
+                    buffers: &[],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                },
+                fragment: Some(wgpu::FragmentState {
+                    module: &composite_shader,
+                    entry_point: Some("fs"),
+                    targets: &[Some(wgpu::ColorTargetState {
+                        format: wgpu::TextureFormat::Rgba16Float,
+                        blend: Some(wgpu::BlendState::REPLACE),
+                        write_mask: wgpu::ColorWrites::ALL,
+                    })],
+                    compilation_options: wgpu::PipelineCompilationOptions::default(),
+                }),
+                primitive: wgpu::PrimitiveState::default(),
+                depth_stencil: None,
+                multisample: wgpu::MultisampleState::default(),
+                multiview: None,
+                cache: None,
+            });
+
+            // Create bind groups
+            // Threshold bind group: HDR input + sampler + threshold uniform
+            let bloom_threshold_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("bloom threshold bg"),
+                layout: &bloom_threshold_bgl,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&hdr_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&hdr_sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: bloom_threshold_buf.as_entire_binding(),
+                    },
+                ],
+            });
+
+            // Downsample bind groups (chain: mip0 -> mip1 -> mip2 -> mip3 -> mip4)
+            let mut bloom_bind_groups_down = Vec::with_capacity(MIP_COUNT as usize);
+            for i in 0..MIP_COUNT {
+                let src_view = if i == 0 {
+                    &mip_views[0] // First downsample from threshold output (mip0)
+                } else {
+                    &mip_views[i as usize - 1]
+                };
+
+                let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some(&format!("bloom downsample bg {}", i)),
+                    layout: &bloom_bgl,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(src_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&hdr_sampler),
+                        },
+                    ],
+                });
+                bloom_bind_groups_down.push(bg);
+            }
+
+            // Upsample bind groups (chain: mip4 -> mip3 -> mip2 -> mip1 -> mip0)
+            let mut bloom_bind_groups_up = Vec::with_capacity(MIP_COUNT as usize);
+            for i in (0..MIP_COUNT).rev() {
+                let src_view = &mip_views[i as usize];
+
+                let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some(&format!("bloom upsample bg {}", i)),
+                    layout: &bloom_bgl,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(src_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&hdr_sampler),
+                        },
+                    ],
+                });
+                bloom_bind_groups_up.push(bg);
+            }
+
+            // Composite bind group: original HDR + bloom mip0 + sampler + intensity uniform
+            let bloom_composite_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("bloom composite bg"),
+                layout: &bloom_composite_bgl,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&hdr_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(&mip_views[0]),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(&hdr_sampler),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: bloom_intensity_buf.as_entire_binding(),
+                    },
+                ],
+            });
+
+            (
+                bloom_threshold_pipeline,
+                bloom_downsample_pipeline,
+                bloom_upsample_pipeline,
+                bloom_composite_pipeline,
+                mip_textures,
+                mip_views,
+                bloom_threshold_buf,
+                bloom_intensity_buf,
+                bloom_bgl,
+                bloom_bind_groups_down,
+                bloom_bind_groups_up,
+                bloom_threshold_bg,
+                bloom_composite_bg,
+            )
+        };
 
         // Shadow bind group layout (declared early so we can include it in main pipeline layout)
         let shadow_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -2194,6 +2668,50 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             hdr_tex,
             hdr_view,
             hdr_sampler,
+            #[cfg(feature = "postfx")]
+            hdr_aux_tex: hdr_aux,
+            #[cfg(feature = "postfx")]
+            hdr_aux_view,
+            #[cfg(feature = "postfx")]
+            fx_gi_tex: fx_gi,
+            #[cfg(feature = "postfx")]
+            fx_gi_view,
+            #[cfg(feature = "postfx")]
+            fx_ao_tex: fx_ao,
+            #[cfg(feature = "postfx")]
+            fx_ao_view,
+            #[cfg(feature = "postfx")]
+            post_fx_bgl,
+            #[cfg(feature = "postfx")]
+            post_fx_bind_group,
+            #[cfg(feature = "postfx")]
+            post_fx_pipeline,
+            #[cfg(feature = "postfx")]
+            bloom_threshold_pipeline,
+            #[cfg(feature = "postfx")]
+            bloom_downsample_pipeline,
+            #[cfg(feature = "postfx")]
+            bloom_upsample_pipeline,
+            #[cfg(feature = "postfx")]
+            bloom_composite_pipeline,
+            #[cfg(feature = "postfx")]
+            bloom_mip_textures,
+            #[cfg(feature = "postfx")]
+            bloom_mip_views,
+            #[cfg(feature = "postfx")]
+            bloom_threshold_buf,
+            #[cfg(feature = "postfx")]
+            bloom_intensity_buf,
+            #[cfg(feature = "postfx")]
+            bloom_bgl,
+            #[cfg(feature = "postfx")]
+            bloom_bind_groups_down,
+            #[cfg(feature = "postfx")]
+            bloom_bind_groups_up,
+            #[cfg(feature = "postfx")]
+            bloom_threshold_bg,
+            #[cfg(feature = "postfx")]
+            bloom_composite_bg,
             shadow_tex,
             shadow_view,
             shadow_layer0_view,
@@ -3015,6 +3533,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         */
 
+        // Bloom effect (threshold → downsample → upsample → composite)
+        #[cfg(feature = "postfx")]
+        {
+            #[cfg(feature = "profiling")]
+            span!("Render::Bloom");
+
+            self.render_bloom(&mut enc);
+        }
+
         // Postprocess HDR to surface
         {
             #[cfg(feature = "profiling")]
@@ -3036,11 +3563,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             });
             #[cfg(feature = "postfx")]
             {
-                // TODO: Restore when postfx pipeline fields are added
-                // pp.set_pipeline(&self.post_fx_pipeline);
-                // pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
-                pp.set_pipeline(&self.post_pipeline);
-                pp.set_bind_group(0, &self.post_bind_group, &[]);
+                pp.set_pipeline(&self.post_fx_pipeline);
+                pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
             }
             #[cfg(not(feature = "postfx"))]
             {
@@ -3067,6 +3591,94 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         frame.present();
 
         Ok(())
+    }
+
+    /// Render bloom effect: threshold → downsample pyramid → upsample with blending → composite
+    #[cfg(feature = "postfx")]
+    fn render_bloom(&self, enc: &mut wgpu::CommandEncoder) {
+        // Step 1: Threshold pass (HDR → mip0)
+        {
+            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("bloom threshold pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.bloom_mip_views[0],
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            pass.set_pipeline(&self.bloom_threshold_pipeline);
+            pass.set_bind_group(0, &self.bloom_threshold_bg, &[]);
+            pass.draw(0..3, 0..1);
+        }
+
+        // Step 2: Downsample pyramid (mip0 → mip1 → mip2 → mip3 → mip4)
+        for i in 1..self.bloom_mip_views.len() {
+            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some(&format!("bloom downsample pass {}", i)),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.bloom_mip_views[i],
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            pass.set_pipeline(&self.bloom_downsample_pipeline);
+            pass.set_bind_group(0, &self.bloom_bind_groups_down[i], &[]);
+            pass.draw(0..3, 0..1);
+        }
+
+        // Step 3: Upsample pyramid (mip4 → mip3 → mip2 → mip1 → mip0) with additive blending
+        for i in (0..self.bloom_mip_views.len() - 1).rev() {
+            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some(&format!("bloom upsample pass {}", i)),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.bloom_mip_views[i],
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load, // Preserve existing content for additive blending
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            pass.set_pipeline(&self.bloom_upsample_pipeline);
+            pass.set_bind_group(0, &self.bloom_bind_groups_up[i + 1], &[]);
+            pass.draw(0..3, 0..1);
+        }
+
+        // Step 4: Composite bloom result with original HDR (result written to hdr_aux)
+        {
+            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("bloom composite pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.hdr_aux_view, // Output to auxiliary HDR buffer
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            pass.set_pipeline(&self.bloom_composite_pipeline);
+            pass.set_bind_group(0, &self.bloom_composite_bg, &[]);
+            pass.draw(0..3, 0..1);
+        }
     }
 
     pub fn draw_into(
@@ -3426,11 +4038,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         });
         #[cfg(feature = "postfx")]
         {
-            // TODO: Restore when postfx pipeline fields are added
-            // pp.set_pipeline(&self.post_fx_pipeline);
-            // pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
-            pp.set_pipeline(&self.post_pipeline);
-            pp.set_bind_group(0, &self.post_bind_group, &[]);
+            pp.set_pipeline(&self.post_fx_pipeline);
+            pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
         }
         #[cfg(not(feature = "postfx"))]
         {
