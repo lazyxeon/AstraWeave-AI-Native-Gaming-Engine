@@ -393,13 +393,23 @@ impl RateLimiter {
         }
 
         let mut model_limits = self.model_limits.write().await;
-        if let Some(model_limit) = model_limits.get_mut(&context.model) {
-            model_limit.update_success_rate(success);
-            debug!(
-                "Updated success rate for model {}: {} (multiplier: {})",
-                context.model, model_limit.success_rate, model_limit.adaptive_multiplier
-            );
-        }
+        
+        // Get or create model limit entry
+        let model_limit = model_limits
+            .entry(context.model.clone())
+            .or_insert_with(|| {
+                ModelRateLimit::new(
+                    context.model.clone(),
+                    self.config.default_rpm,
+                    self.config.default_tpm,
+                )
+            });
+        
+        model_limit.update_success_rate(success);
+        debug!(
+            "Updated success rate for model {}: {} (multiplier: {})",
+            context.model, model_limit.success_rate, model_limit.adaptive_multiplier
+        );
     }
 
     /// Get current rate limit status

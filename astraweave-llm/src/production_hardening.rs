@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{info, warn};
 
 use crate::ab_testing::{ABTestConfig, ABTestFramework};
 use crate::backpressure::{BackpressureConfig, BackpressureManager, Priority, RequestMetadata};
@@ -21,6 +21,7 @@ pub struct ProductionHardeningLayer {
     /// Backpressure management
     backpressure_manager: Arc<RwLock<BackpressureManager>>,
     /// A/B testing framework
+    #[allow(dead_code)]
     ab_testing: Arc<ABTestFramework>,
     /// Telemetry system
     telemetry: Arc<LlmTelemetry>,
