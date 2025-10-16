@@ -5,7 +5,7 @@ edition = "2021"
 license = "MIT"
 
 [dependencies]
-tokio = { version = "1.38", features = ["rt-multi-thread", "macros", "time"] }
+tokio = { version = "1.48", features = ["rt-multi-thread", "macros", "time"] }
 tokio-tungstenite = "0.28"
 tungstenite = "0.28"
 url = "2"
