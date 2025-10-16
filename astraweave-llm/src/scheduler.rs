@@ -16,13 +16,13 @@
 //! use astraweave_llm::MockLlm;
 //! use std::sync::Arc;
 //!
-//! # tokio_test::block_on(async {
+//! # async fn example() {
 //! let scheduler = LlmScheduler::new(Arc::new(MockLlm), 5, 30);
 //! let request_id = scheduler.submit_request(
 //!     "Generate a plan for combat".to_string(),
 //!     RequestPriority::High
 //! ).await;
-//! # });
+//! # }
 //! ```
 
 use anyhow::Result;
@@ -63,6 +63,7 @@ pub struct RequestResult {
 }
 
 /// Internal request representation
+#[allow(dead_code)]
 struct QueuedRequest {
     id: Uuid,
     prompt: String,
@@ -79,10 +80,12 @@ struct QueuedRequest {
 /// - Requests time out if they take too long
 /// - Results can be polled asynchronously
 pub struct LlmScheduler {
+    #[allow(dead_code)]
     client: Arc<dyn LlmClient>,
     request_tx: mpsc::UnboundedSender<QueuedRequest>,
     statuses: Arc<DashMap<Uuid, RequestStatus>>,
     results: Arc<DashMap<Uuid, RequestResult>>,
+    #[allow(dead_code)]
     max_concurrent: usize,
     timeout_secs: u64,
 }

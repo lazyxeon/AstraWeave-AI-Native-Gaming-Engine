@@ -48,16 +48,31 @@
 use astraweave_profiling::{span, plot};
 
 pub mod archetype;
+pub mod blob_vec;
+pub mod command_buffer;
+pub mod entity_allocator;
 pub mod events;
+pub mod rng;
+pub mod sparse_set;
+pub mod type_registry;
 mod system_param;
+
+#[cfg(test)]
+mod determinism_tests;
+
+#[cfg(test)]
+mod property_tests;
 
 use std::any::TypeId;
 use std::collections::HashMap;
-use std::hash::Hash;
 
 use archetype::{ArchetypeSignature, ArchetypeStorage};
+pub use command_buffer::CommandBuffer;
+pub use entity_allocator::{Entity, EntityAllocator};
 pub use events::{Event, EventReader};
-pub use system_param::{Query, Query2, SystemParam};
+pub use rng::Rng;
+pub use system_param::{Query, Query2, Query2Mut, SystemParam};
+pub use type_registry::TypeRegistry;
 
 pub trait Component: 'static + Send + Sync {}
 impl<T: 'static + Send + Sync> Component for T {}
@@ -78,29 +93,14 @@ impl SystemStage {
     pub const POST_SIMULATION: &'static str = "post_simulation";
     pub const PRESENTATION: &'static str = "presentation";
 }
+// Entity and EntityAllocator are now exported from entity_allocator module
 
-/// Entity identifier - deterministic, ordered via u64
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[repr(transparent)]
-pub struct Entity(u64);
-
-impl Entity {
-    /// Get the raw entity ID. Use with caution.
-    pub fn id(&self) -> u64 {
-        self.0
-    }
-
-    /// # Safety
-    /// The caller must ensure the entity ID is valid in the target World.
-    pub unsafe fn from_raw(id: u64) -> Self {
-        Entity(id)
-    }
-}
 #[derive(Default)]
 pub struct World {
-    next_entity_id: u64,
+    entity_allocator: EntityAllocator,
     archetypes: ArchetypeStorage,
     resources: HashMap<TypeId, Box<dyn std::any::Any + Send + Sync>>, // singletons
+    type_registry: TypeRegistry,
 }
 
 impl World {
@@ -112,11 +112,10 @@ impl World {
         #[cfg(feature = "profiling")]
         span!("ECS::World::spawn");
         
-        let e = Entity(self.next_entity_id);
-        self.next_entity_id += 1;
+        let e = self.entity_allocator.spawn();
         
         #[cfg(feature = "profiling")]
-        plot!("ECS::entity_count", self.next_entity_id);
+        plot!("ECS::entity_count", self.entity_allocator.alive_count() as u64);
         
         // An entity with no components lives in the empty archetype.
         let empty_sig = ArchetypeSignature::new(vec![]);
@@ -128,7 +127,23 @@ impl World {
         e
     }
 
+    /// Check if an entity is alive in this world.
+    ///
+    /// # Returns
+    ///
+    /// - `true` if entity ID and generation match
+    /// - `false` if entity is dead or never existed
+    #[inline]
+    pub fn is_alive(&self, entity: Entity) -> bool {
+        self.entity_allocator.is_alive(entity)
+    }
+
     pub fn insert<T: Component>(&mut self, e: Entity, c: T) {
+        // Validate entity is alive
+        if !self.is_alive(e) {
+            return; // Silently ignore stale entities
+        }
+
         let mut components_to_add = HashMap::new();
         components_to_add.insert(
             TypeId::of::<T>(),
@@ -202,12 +217,22 @@ impl World {
         #[cfg(feature = "profiling")]
         span!("ECS::World::get");
         
+        // Validate entity is alive
+        if !self.is_alive(e) {
+            return None;
+        }
+        
         let archetype_id = self.archetypes.get_entity_archetype(e)?;
         let archetype = self.archetypes.get_archetype(archetype_id)?;
         archetype.get::<T>(e)
     }
 
     pub fn get_mut<T: Component>(&mut self, e: Entity) -> Option<&mut T> {
+        // Validate entity is alive
+        if !self.is_alive(e) {
+            return None;
+        }
+        
         let archetype_id = self.archetypes.get_entity_archetype(e)?;
         let archetype = self.archetypes.get_archetype_mut(archetype_id)?;
         archetype.get_mut::<T>(e)
@@ -235,7 +260,8 @@ impl World {
         for archetype_id in archetypes_with_t {
             let archetype = self.archetypes.get_archetype_mut(archetype_id)
                 .expect("BUG: archetype should exist from archetypes_with_component");
-            let entities = archetype.entities_vec();
+            // NEW: entities_vec() now returns &[Entity] (zero-cost!)
+            let entities: Vec<Entity> = archetype.entities_vec().to_vec();
             for entity in entities {
                 if let Some(component) = archetype.get_mut::<T>(entity) {
                     f(entity, component);
@@ -252,17 +278,26 @@ impl World {
     }
 
     pub fn has<T: Component>(&self, entity: Entity) -> bool {
+        // Validate entity is alive before checking components
+        if !self.is_alive(entity) {
+            return false;
+        }
         self.get::<T>(entity).is_some()
     }
 
     pub fn entities_with<T: Component>(&self) -> Vec<Entity> {
         self.archetypes
             .archetypes_with_component(TypeId::of::<T>())
-            .flat_map(|archetype| archetype.entities_vec())
+            .flat_map(|archetype| archetype.entities_vec().iter().copied())
             .collect()
     }
 
     pub fn remove<T: Component>(&mut self, e: Entity) -> bool {
+        // Validate entity is alive
+        if !self.is_alive(e) {
+            return false;
+        }
+        
         if !self.has::<T>(e) {
             return false;
         }
@@ -276,20 +311,67 @@ impl World {
         true
     }
 
-    pub fn is_alive(&self, entity: Entity) -> bool {
-        self.archetypes.get_entity_archetype(entity).is_some()
-    }
-
+    /// Despawn an entity, removing it from the world.
+    ///
+    /// # Returns
+    ///
+    /// - `true` if entity was alive and despawned
+    /// - `false` if entity was already dead (stale handle)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use astraweave_ecs::*;
+    ///
+    /// let mut world = World::new();
+    /// let e = world.spawn();
+    ///
+    /// assert!(world.despawn(e));  // First despawn succeeds
+    /// assert!(!world.despawn(e)); // Second despawn fails (stale)
+    /// ```
     pub fn despawn(&mut self, entity: Entity) -> bool {
+        // First validate entity is alive
+        if !self.entity_allocator.is_alive(entity) {
+            return false;
+        }
+
+        // Remove from archetype (removes entity AND all components)
         if let Some(archetype_id) = self.archetypes.get_entity_archetype(entity) {
             let archetype = self.archetypes.get_archetype_mut(archetype_id)
                 .expect("BUG: archetype should exist for entity");
-            archetype.remove_entity(entity);
+            // Use remove_entity_components to properly clean up packed storage
+            archetype.remove_entity_components(entity);
             self.archetypes.remove_entity(entity);
-            true
-        } else {
-            false
         }
+
+        // Despawn from allocator (increments generation)
+        self.entity_allocator.despawn(entity)
+    }
+
+    /// Get the number of entities currently alive.
+    pub fn entity_count(&self) -> usize {
+        self.entity_allocator.alive_count()
+    }
+
+    /// Get read-only access to the archetype storage.
+    ///
+    /// # Use Cases
+    ///
+    /// - Iterating all entities across all archetypes
+    /// - Querying archetype metadata (signatures, counts)
+    /// - Testing determinism properties
+    ///
+    /// # Example
+    ///
+    /// ```rust,ignore
+    /// for archetype in world.archetypes().iter() {
+    ///     for &entity in archetype.entities_vec() {
+    ///         // Process entity
+    ///     }
+    /// }
+    /// ```
+    pub fn archetypes(&self) -> &ArchetypeStorage {
+        &self.archetypes
     }
 }
 
@@ -337,6 +419,12 @@ pub struct App {
     pub schedule: Schedule,
 }
 
+impl Default for App {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl App {
     pub fn new() -> Self {
         let mut schedule = Schedule::default();
@@ -351,6 +439,7 @@ impl App {
             schedule,
         }
     }
+    
     pub fn add_system(&mut self, stage: &'static str, sys: SystemFn) {
         self.schedule.add_system(stage, sys);
     }
@@ -363,6 +452,65 @@ impl App {
             self.schedule.run(&mut self.world);
         }
         self
+    }
+}
+
+impl World {
+    /// Register a component type for type-erased operations (used by CommandBuffer).
+    ///
+    /// This must be called for any component type that will be used with CommandBuffer.
+    ///
+    /// # Example
+    /// ```
+    /// # use astraweave_ecs::World;
+    /// # #[derive(Clone, Copy)]
+    /// # struct Position { x: f32, y: f32 }
+    /// let mut world = World::new();
+    /// world.register_component::<Position>();
+    /// ```
+    pub fn register_component<T: Component>(&mut self) {
+        self.type_registry.register::<T>();
+    }
+
+    /// Insert a type-erased component (used by CommandBuffer).
+    ///
+    /// # Panics
+    /// Panics if the component type is not registered via `register_component<T>()`.
+    pub(crate) fn insert_boxed(
+        &mut self,
+        entity: Entity,
+        type_id: TypeId,
+        _component: Box<dyn std::any::Any + Send + Sync>,
+    ) {
+        if !self.is_alive(entity) {
+            return; // Stale entity, silently ignore
+        }
+        
+        // TODO: Full type registry dispatch with closures requires refactoring to avoid
+        // borrow checker issues (self is borrowed immutably for registry lookup, but
+        // handler needs &mut self). For now, this is a stub that will be improved in
+        // a follow-up commit using interior mutability or a different architecture.
+        panic!(
+            "insert_boxed not fully implemented - type_id {:?}. \
+             This is a known limitation. See PR #2 implementation notes.",
+            type_id
+        );
+    }
+
+    /// Remove a component by TypeId (used by CommandBuffer).
+    ///
+    /// # Panics
+    /// Panics if the component type is not registered via `register_component<T>()`.
+    pub(crate) fn remove_by_type_id(&mut self, entity: Entity, type_id: TypeId) {
+        if !self.is_alive(entity) {
+            return; // Stale entity, silently ignore
+        }
+        
+        panic!(
+            "remove_by_type_id not fully implemented - type_id {:?}. \
+             See PR #2 implementation notes.",
+            type_id
+        );
     }
 }
 
