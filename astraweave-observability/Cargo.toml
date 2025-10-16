@@ -17,14 +17,14 @@ tokio.workspace = true
 astraweave-ecs.workspace = true
 uuid = { version = "1.0", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
-dashmap = "6.0"
+dashmap = "6.1"
 async-trait = "0.1"
 prometheus = { version = "0.14", optional = true }
-opentelemetry = { version = "0.23", optional = true }
+opentelemetry = { version = "0.31", optional = true }
 opentelemetry-jaeger = { version = "0.22", optional = true }
-histogram = "0.6"
+histogram = "0.11"
 hdrhistogram = "7.5"
-rand = "0.8"
+rand = "0.9"
 
 [features]
 default = []

@@ -10,22 +10,22 @@ repository = "https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine"
 # Core dependencies
 anyhow = "1.0"
 async-trait = "0.1"
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.48", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Vector operations and indexing
-nalgebra = "0.32"
-rand = { version = "0.8", features = ["small_rng"] }
+nalgebra = "0.33"
+rand = { version = "0.9", features = ["small_rng"] }
 
 # ONNX Runtime for sentence transformers
 ort = { version = "2.0.0-rc.10", features = ["cuda", "tensorrt"], optional = true }
 
 # Alternative: candle for pure Rust inference
-candle-core = { version = "0.7", optional = true }
-candle-nn = { version = "0.7", optional = true }
-candle-transformers = { version = "0.7", optional = true }
+candle-core = { version = "0.8", optional = true }
+candle-nn = { version = "0.8", optional = true }
+candle-transformers = { version = "0.8", optional = true }
 
 # HNSW for approximate nearest neighbor search (optional)
 hnsw_rs = { version = "0.3", optional = true }
@@ -34,7 +34,7 @@ hnsw_rs = { version = "0.3", optional = true }
 reqwest = { version = "0.12", features = ["json"], optional = true }
 
 # Concurrent data structures
-dashmap = "5.5"
+dashmap = "6.1"
 parking_lot = "0.12"
 
 [features]
@@ -45,6 +45,6 @@ onnx = ["ort"]
 candle = ["candle-core", "candle-nn", "candle-transformers"]
 
 [dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 tokio-test = "0.4"
 

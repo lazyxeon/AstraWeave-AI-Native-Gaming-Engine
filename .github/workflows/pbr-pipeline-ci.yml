@@ -41,7 +41,7 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
@@ -50,7 +50,7 @@ jobs:
         components: rustfmt, clippy
     
     - name: Cache Cargo dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/bin/
@@ -111,13 +111,13 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     
     - name: Install Rust toolchain
       uses: dtolnay/rust-toolchain@stable
     
     - name: Cache Cargo dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cargo/bin/
@@ -171,7 +171,7 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
     
     - name: Install wgsl-analyzer
       run: |
