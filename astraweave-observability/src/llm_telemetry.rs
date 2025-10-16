@@ -993,6 +993,7 @@ pub struct RequestTracker {
 
 impl RequestTracker {
     /// Complete the request with results
+    #[allow(clippy::too_many_arguments)]
     pub async fn complete(
         self,
         model: String,

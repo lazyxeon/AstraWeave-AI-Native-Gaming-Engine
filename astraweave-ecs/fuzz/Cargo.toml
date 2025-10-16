@@ -1,0 +1,53 @@
+[package]
+name = "astraweave-ecs-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[workspace]
+# This is a separate workspace to avoid conflicts with the main workspace
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.astraweave-ecs]
+path = ".."
+
+[[bin]]
+name = "fuzz_target_1"
+path = "fuzz_targets/fuzz_target_1.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_component_operations"
+path = "fuzz_targets/fuzz_component_operations.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_archetype_transitions"
+path = "fuzz_targets/fuzz_archetype_transitions.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_command_buffer"
+path = "fuzz_targets/fuzz_command_buffer.rs"
+test = false
+doc = false
+bench = false
+
+# Uncomment if event system API is exposed in World
+# [[bin]]
+# name = "fuzz_event_system"
+# path = "fuzz_targets/fuzz_event_system.rs"
+# test = false
+# doc = false
+# bench = false

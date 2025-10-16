@@ -60,6 +60,12 @@ pub struct Sequencer {
     pub t: Time,
 }
 
+impl Default for Sequencer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Sequencer {
     pub fn new() -> Self {
         Self { t: Time(0.0) }
