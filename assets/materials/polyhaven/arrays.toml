@@ -1,0 +1,23 @@
+# PolyHaven Material Array Indices
+# Defines stable GPU texture array indices for materials
+
+[albedo]
+aerial_rocks = 0
+metal_plate = 1
+plastered_wall = 2
+wood_floor = 3
+cobblestone = 4
+
+[normal]
+aerial_rocks = 0
+metal_plate = 1
+plastered_wall = 2
+wood_floor = 3
+cobblestone = 4
+
+[mra]
+aerial_rocks = 0
+metal_plate = 1
+plastered_wall = 2
+wood_floor = 3
+cobblestone = 4

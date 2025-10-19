@@ -1,0 +1,94 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/astraweave-assets/**'
+      - '.github/workflows/coverage.yml'
+  pull_request:
+    paths:
+      - 'tools/astraweave-assets/**'
+
+jobs:
+  coverage:
+    name: Generate Code Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: tools/astraweave-assets/target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Install cargo-tarpaulin
+        run: cargo install cargo-tarpaulin
+      
+      - name: Generate coverage
+        run: |
+          cd tools/astraweave-assets
+          cargo tarpaulin --out Xml --output-dir coverage --exclude-files 'src/main.rs' --exclude-files 'tests/*'
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./tools/astraweave-assets/coverage/cobertura.xml
+          flags: astraweave-assets
+          name: astraweave-assets-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      
+      - name: Generate HTML report
+        if: always()
+        run: |
+          cd tools/astraweave-assets
+          cargo tarpaulin --out Html --output-dir coverage-html --exclude-files 'src/main.rs' --exclude-files 'tests/*'
+      
+      - name: Upload HTML coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: tools/astraweave-assets/coverage-html
+          retention-days: 30
+      
+      - name: Coverage summary
+        if: always()
+        run: |
+          cd tools/astraweave-assets
+          echo "## Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/cobertura.xml ]; then
+            COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage/cobertura.xml | head -1 | awk '{printf "%.1f", $1*100}')
+            echo "**Overall Coverage:** ${COVERAGE}%" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Target: 80%+ (Production Ready)" >> $GITHUB_STEP_SUMMARY
+            
+            if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
+              echo "✅ **Status:** PASS (meets target)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ **Status:** Below target (needs improvement)" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Coverage data not generated" >> $GITHUB_STEP_SUMMARY
+          fi

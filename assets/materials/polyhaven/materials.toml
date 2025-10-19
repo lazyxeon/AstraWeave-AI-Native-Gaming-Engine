@@ -1,0 +1,72 @@
+# PolyHaven Material Catalog
+# Download materials from polyhaven.com and follow README.md in each folder
+# CC0 License - Free for any use
+
+[biome]
+name = "polyhaven"
+
+# Aerial Rocks Material
+# Download from: https://polyhaven.com/a/aerial_rocks_02
+# ✅ AUTO-FETCHED via astraweave-assets (Phase B Integration)
+[[layer]]
+key = "aerial_rocks"
+albedo = "../../_downloaded/aerial_rocks/aerial_rocks_albedo.png"
+normal = "../../_downloaded/aerial_rocks/aerial_rocks_normal.png"
+roughness = "../../_downloaded/aerial_rocks/aerial_rocks_roughness.png"
+metallic = "../../_downloaded/aerial_rocks/aerial_rocks_metallic.png"
+ao = "../../_downloaded/aerial_rocks/aerial_rocks_ao.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 16.0
+
+# Metal Plate Material
+# Download from: https://polyhaven.com/a/metal_plate
+# ✅ AUTO-FETCHED via astraweave-assets (Phase B Integration)
+[[layer]]
+key = "metal_plate"
+albedo = "../../_downloaded/metal_plate/metal_plate_albedo.png"
+normal = "../../_downloaded/metal_plate/metal_plate_normal.png"
+roughness = "../../_downloaded/metal_plate/metal_plate_roughness.png"
+metallic = "../../_downloaded/metal_plate/metal_plate_metallic.png"
+ao = "../../_downloaded/metal_plate/metal_plate_ao.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 16.0
+
+# Plastered Wall Material
+# Download from: https://polyhaven.com/a/plastered_wall
+# ✅ AUTO-FETCHED via astraweave-assets (Phase B Integration)
+[[layer]]
+key = "plastered_wall"
+albedo = "../../_downloaded/plastered_wall/plastered_wall_albedo.png"
+normal = "../../_downloaded/plastered_wall/plastered_wall_normal.png"
+roughness = "../../_downloaded/plastered_wall/plastered_wall_roughness.png"
+metallic = "../../_downloaded/plastered_wall/plastered_wall_metallic.png"
+ao = "../../_downloaded/plastered_wall/plastered_wall_ao.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 16.0
+
+# Wood Floor Material
+# Download from: https://polyhaven.com/a/wood_floor_deck
+# ✅ AUTO-FETCHED via astraweave-assets (Phase B Integration)
+[[layer]]
+key = "wood_floor"
+albedo = "../../_downloaded/wood_floor/wood_floor_albedo.png"
+normal = "../../_downloaded/wood_floor/wood_floor_normal.png"
+roughness = "../../_downloaded/wood_floor/wood_floor_roughness.png"
+metallic = "../../_downloaded/wood_floor/wood_floor_metallic.png"
+ao = "../../_downloaded/wood_floor/wood_floor_ao.png"
+tiling = [1.0, 1.0]
+triplanar_scale = 16.0
+
+# Cobblestone Material
+# Download from: https://polyhaven.com/a/cobblestone_floor_01
+# ✅ AUTO-FETCHED via astraweave-assets (Phase B Integration)
+[[layer]]
+key = "cobblestone"
+albedo = "../../_downloaded/cobblestone/cobblestone_albedo.png"
+normal = "../../_downloaded/cobblestone/cobblestone_normal.png"
+roughness = "../../_downloaded/cobblestone/cobblestone_roughness.png"
+metallic = "../../_downloaded/cobblestone/cobblestone_metallic.png"
+ao = "../../_downloaded/cobblestone/cobblestone_ao.png"
+tiling = [2.0, 2.0]
+triplanar_scale = 20.0
+

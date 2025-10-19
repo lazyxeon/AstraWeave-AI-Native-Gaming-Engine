@@ -42,6 +42,11 @@ logs/
 tmp/
 .tmp/
 
+# PolyHaven downloaded assets (reproducible via manifest)
+assets/_downloaded/
+.asset_cache/
+# DO commit: assets/polyhaven_manifest.toml
+
 # Security and secrets (prevent accidental commit)
 .env
 .env.local

@@ -1,0 +1,210 @@
+# =============================================================================
+# AstraWeave Multi-Source Asset Manifest
+# =============================================================================
+# 
+# This manifest supports autonomous asset fetching from multiple providers:
+# - polyhaven: Textures, HDRIs (CC0, API-based)
+# - polypizza: 3D models (CC0, direct URL)
+# - opengameart: Audio, sprites, 2D/3D (CC0/CC-BY/CC-BY-SA, direct URL)
+#
+# ⚖️  LICENSE COMPLIANCE:
+# - All assets must be free to use (CC0, CC-BY, CC-BY-SA only)
+# - GPL and restrictive licenses are NOT supported
+# - Attribution is automatically generated per provider
+# - Verify license before adding to this manifest
+#
+# 📥 FETCH COMMAND:
+#   cargo run -p astraweave-assets -- fetch
+#   cargo run -p astraweave-assets -- fetch --provider polyhaven
+#
+# 📁 OUTPUT:
+#   assets/_downloaded/<provider>/<handle>/...
+#   assets/_downloaded/<provider>/ATTRIBUTION.txt
+#
+# =============================================================================
+
+# =============================================================================
+# POLYHAVEN ASSETS (API-based, CC0 only)
+# =============================================================================
+# Format: https://polyhaven.com/a/<asset_id>
+# License: CC0-1.0 (Public Domain)
+# Supported types: texture, hdri
+# =============================================================================
+
+[[assets]]
+handle = "aerial_rocks"
+provider = "polyhaven"
+type = "texture"
+id = "aerial_rocks_02"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "metal_plate"
+provider = "polyhaven"
+type = "texture"
+id = "metal_plate"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "plastered_wall"
+provider = "polyhaven"
+type = "texture"
+id = "plastered_wall_02"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "wood_floor"
+provider = "polyhaven"
+type = "texture"
+id = "wood_floor_deck"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "cobblestone"
+provider = "polyhaven"
+type = "texture"
+id = "old_stone_path"
+resolution = "2k"
+format = "png"
+
+[[assets]]
+handle = "sky_day"
+provider = "polyhaven"
+type = "hdri"
+id = "sunflowers_puresky"
+resolution = "2k"
+format = "exr"
+
+[[assets]]
+handle = "sky_night"
+provider = "polyhaven"
+type = "hdri"
+id = "night_street"
+resolution = "2k"
+format = "exr"
+
+[[assets]]
+handle = "sky_indoor"
+provider = "polyhaven"
+type = "hdri"
+id = "studio_small_08"
+resolution = "2k"
+format = "exr"
+
+
+# =============================================================================
+# POLY PIZZA ASSETS (Direct URL, CC0 only)
+# =============================================================================
+# Format: https://poly.pizza/m/<model_id>
+# License: CC0-1.0 (Public Domain) - verify before adding!
+# Supported types: model
+# =============================================================================
+# 
+# EXAMPLE (commented out - add after verifying license):
+#
+# [[assets]]
+# handle = "character_knight"
+# provider = "polypizza"
+# type = "model"
+# format = "glb"
+# url = "https://poly.pizza/files/Low_poly_Knight-9zzjdYXlcwJ.glb"
+# license = "CC0-1.0"
+# author = "Quaternius"
+# source_url = "https://poly.pizza/m/Low_poly_Knight-9zzjdYXlcwJ"
+#
+# [[assets]]
+# handle = "npc_villager"
+# provider = "polypizza"
+# type = "model"
+# format = "glb"
+# url = "https://poly.pizza/files/Villager-Ajn1nqKyiRS.glb"
+# license = "CC0-1.0"
+# author = "Quaternius"
+# source_url = "https://poly.pizza/m/Villager-Ajn1nqKyiRS"
+#
+# [[assets]]
+# handle = "prop_tree_oak"
+# provider = "polypizza"
+# type = "model"
+# format = "glb"
+# url = "https://poly.pizza/files/Oak_Tree-9BqkTpuRSK0.glb"
+# license = "CC0-1.0"
+# author = "Quaternius"
+# source_url = "https://poly.pizza/m/Oak_Tree-9BqkTpuRSK0"
+
+
+# =============================================================================
+# OPENGAMEART ASSETS (Direct URL, Mixed Licenses)
+# =============================================================================
+# Format: https://opengameart.org/content/<asset_name>
+# License: CC0, CC-BY-3.0, CC-BY-4.0, CC-BY-SA-3.0, CC-BY-SA-4.0 ONLY
+#          (NO GPL, NO OGA-BY unless absolutely necessary)
+# Supported types: audio, sprite, tileset, model
+# =============================================================================
+#
+# ⚠️  CRITICAL: Verify license on OpenGameArt page before adding!
+# - Look for "License(s)" section on asset page
+# - Only add assets with permissive licenses (CC0, CC-BY, CC-BY-SA)
+# - Avoid GPL assets (incompatible with commercial use)
+#
+# EXAMPLE (commented out - add after verifying license):
+#
+# [[assets]]
+# handle = "music_ambient_forest"
+# provider = "opengameart"
+# type = "audio"
+# format = "ogg"
+# url = "https://opengameart.org/sites/default/files/forest_ambience.ogg"
+# license = "CC0-1.0"
+# author = "ArtistName"
+# source_url = "https://opengameart.org/content/forest-ambience"
+#
+# [[assets]]
+# handle = "sfx_footstep_grass"
+# provider = "opengameart"
+# type = "audio"
+# format = "ogg"
+# url = "https://opengameart.org/sites/default/files/footsteps_grass.ogg"
+# license = "CC-BY-3.0"
+# author = "ArtistName"
+# source_url = "https://opengameart.org/content/footsteps-grass"
+#
+# [[assets]]
+# handle = "sprite_character_rpg"
+# provider = "opengameart"
+# type = "sprite"
+# format = "png"
+# url = "https://opengameart.org/sites/default/files/character_sheet.png"
+# license = "CC-BY-SA-3.0"
+# author = "ArtistName"
+# source_url = "https://opengameart.org/content/character-sheet"
+
+
+# =============================================================================
+# HOW TO ADD ASSETS
+# =============================================================================
+#
+# 1. POLYHAVEN (Automated):
+#    - Find asset on https://polyhaven.com
+#    - Copy asset ID from URL (e.g., "aerial_rocks_02")
+#    - Add entry with: handle, provider="polyhaven", type, id, resolution
+#    - License is automatically CC0
+#
+# 2. POLY PIZZA (Manual verification required):
+#    - Find model on https://poly.pizza
+#    - Verify license (look for CC0 badge or license info)
+#    - Right-click download button, copy link address
+#    - Add entry with: handle, provider="polypizza", type="model", url, license, author, source_url
+#
+# 3. OPENGAMEART (Manual verification CRITICAL):
+#    - Find asset on https://opengameart.org
+#    - Click asset to view detail page
+#    - Check "License(s)" section - ONLY add CC0, CC-BY, or CC-BY-SA
+#    - Download file, inspect URL from browser's download manager
+#    - Add entry with: handle, provider="opengameart", type, url, license, author, source_url
+#
+# =============================================================================

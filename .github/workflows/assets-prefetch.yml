@@ -1,0 +1,159 @@
+name: Prefetch PolyHaven Assets
+
+on:
+  workflow_dispatch:  # Manual trigger from Actions tab
+  pull_request:
+    paths:
+      - 'assets/polyhaven_manifest.toml'  # Only when manifest changes
+  push:
+    branches:
+      - main
+    paths:
+      - 'assets/polyhaven_manifest.toml'
+
+jobs:
+  prefetch:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Cache PolyHaven Assets
+        id: cache-assets
+        uses: actions/cache@v4
+        with:
+          path: |
+            assets/_downloaded
+            .asset_cache
+          key: polyhaven-${{ hashFiles('assets/polyhaven_manifest.toml') }}
+          restore-keys: |
+            polyhaven-
+      
+      - name: Install Rust Toolchain
+        if: steps.cache-assets.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Cache Cargo Dependencies
+        if: steps.cache-assets.outputs.cache-hit != 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Fetch Assets
+        if: steps.cache-assets.outputs.cache-hit != 'true'
+        run: |
+          cargo run -p astraweave-assets -- fetch --quiet --json > assets_summary.json
+          echo "📊 Asset Summary:"
+          cat assets_summary.json | jq .
+      
+      - name: Validate Downloads
+        if: steps.cache-assets.outputs.cache-hit != 'true'
+        run: |
+          cargo run -p astraweave-assets -- check --json > check_result.json
+          cat check_result.json
+          
+          # Fail if any assets invalid
+          INVALID=$(cat check_result.json | jq -r '.invalid')
+          if [ "$INVALID" != "0" ]; then
+            echo "❌ Asset validation failed: $INVALID invalid assets"
+            exit 1
+          fi
+      
+      - name: Upload Asset Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyhaven-assets
+          path: assets/_downloaded
+          retention-days: 30
+          compression-level: 6  # Balance between speed and size
+      
+      - name: Upload Attribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: polyhaven-attribution
+          path: assets/_downloaded/ATTRIBUTION.txt
+          retention-days: 90
+      
+      - name: Generate Asset Report
+        if: always()
+        run: |
+          echo "## 📦 PolyHaven Asset Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -f assets_summary.json ]; then
+            echo "### Downloaded Assets" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat assets_summary.json | jq . >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Cache Status" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.cache-assets.outputs.cache-hit }}" == "true" ]; then
+            echo "✅ Assets loaded from cache (instant)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📥 Assets downloaded from PolyHaven API" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            let summary = "## 📦 PolyHaven Assets Updated\n\n";
+            
+            if (fs.existsSync('assets_summary.json')) {
+              const data = JSON.parse(fs.readFileSync('assets_summary.json', 'utf8'));
+              summary += `- **Total Assets**: ${data.total_assets}\n`;
+              summary += `- **Downloaded**: ${data.downloaded}\n`;
+              summary += `- **Cached**: ${data.cached}\n`;
+              summary += `- **Failed**: ${data.failed}\n\n`;
+              
+              if (data.failed > 0) {
+                summary += "### ❌ Failed Assets\n\n";
+                data.assets.filter(a => a.status === 'failed').forEach(a => {
+                  summary += `- **${a.handle}** (${a.id}): ${a.error}\n`;
+                });
+              }
+            }
+            
+            summary += "\n✅ Asset artifact uploaded for build jobs to consume.";
+            
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summary
+            });
+
+  # Example build job that consumes prefetched assets
+  build-with-assets:
+    needs: prefetch
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: Download Assets
+        uses: actions/download-artifact@v4
+        with:
+          name: polyhaven-assets
+          path: assets/_downloaded
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Build Examples
+        run: |
+          # Assets are now available in assets/_downloaded/
+          # Examples can load them without fetching
+          cargo build --release -p unified_showcase
+          cargo build --release -p hello_companion
