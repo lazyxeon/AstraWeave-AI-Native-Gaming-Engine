@@ -1,0 +1,99 @@
+# Test Manifest for Parallel Downloads Validation
+# This manifest contains 10 assets from different providers to test parallel downloading
+
+output_dir = "assets/_downloaded"
+cache_dir = "assets/_cache"
+
+# PolyHaven Textures (3 assets)
+[[assets]]
+handle = "brick_wall"
+provider = "polyhaven"
+type = "texture"
+id = "brick_wall_001"
+resolution = "1k"
+
+[[assets]]
+handle = "wood_planks"
+provider = "polyhaven"
+type = "texture"
+id = "wooden_planks_02"
+resolution = "1k"
+
+[[assets]]
+handle = "metal_plate"
+provider = "polyhaven"
+type = "texture"
+id = "metal_plate_02"
+resolution = "1k"
+
+# Poly Pizza Models (2 assets)
+[[assets]]
+handle = "low_poly_knight"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://poly.pizza/files/Low_poly_Knight-9zzjdYXlcwJ.glb"
+license = "CC0-1.0"
+author = "Quaternius"
+source_url = "https://poly.pizza/m/Low_poly_Knight-9zzjdYXlcwJ"
+
+[[assets]]
+handle = "low_poly_tree"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://poly.pizza/files/Tree_1-9zzjdYXlcwJ.glb"
+license = "CC0-1.0"
+author = "Quaternius"
+source_url = "https://poly.pizza/m/Tree_1-9zzjdYXlcwJ"
+
+# OpenGameArt Assets (2 assets)
+[[assets]]
+handle = "fantasy_music"
+provider = "opengameart"
+type = "audio"
+format = "ogg"
+url = "https://opengameart.org/sites/default/files/music_sample.ogg"
+license = "CC-BY-4.0"
+author = "TestArtist"
+source_url = "https://opengameart.org/content/test-music"
+
+[[assets]]
+handle = "pixel_sprite"
+provider = "opengameart"
+type = "sprite"
+format = "png"
+url = "https://opengameart.org/sites/default/files/sprite_sample.png"
+license = "CC0-1.0"
+author = "PixelArtist"
+source_url = "https://opengameart.org/content/pixel-sprites"
+
+# Kenney Assets (2 assets)
+[[assets]]
+handle = "platformer_pack"
+provider = "kenney"
+type = "sprite"
+format = "zip"
+url = "https://kenney.nl/content/2-2d-assets/platformer-pack-redux.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/platformer-pack-redux"
+
+[[assets]]
+handle = "fantasy_town"
+provider = "kenney"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/fantasy-town-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/fantasy-town-kit"
+
+# itch.io Assets (1 asset)
+[[assets]]
+handle = "pixel_adventure"
+provider = "itchio"
+type = "sprite"
+format = "png"
+url = "https://img.itch.zone/aW1hZ2UvMTI4L2FydGlzdC5wbmc="
+license = "CC0-1.0"
+author = "PixelArtist"
+source_url = "https://pixelartist.itch.io/pixel-adventure"

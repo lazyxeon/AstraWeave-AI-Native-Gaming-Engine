@@ -1,0 +1,27 @@
+# Build artifacts
+target/
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Downloaded assets (reproducible from manifest)
+assets/_downloaded/
+.asset_cache/
+
+# Coverage reports
+coverage/
+coverage-html/
+cobertura.xml
+tarpaulin-report.html
+
+# Temporary files
+*.tmp
+*.bak
+.DS_Store
+
+# Test artifacts
+test_downloads/

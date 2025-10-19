@@ -1,0 +1,110 @@
+# PolyHaven Asset Manifest
+# This manifest defines which PolyHaven assets to fetch automatically.
+# The CLI resolves download URLs via the PolyHaven API - no manual URLs needed!
+
+# Output directory for downloaded assets (relative to repo root)
+output_dir = "assets/_downloaded"
+
+# Cache directory for temp files and lockfile
+cache_dir = ".asset_cache"
+
+# === TEXTURES (PBR Materials) ===
+# Format:
+#   [textures."<handle>"]  # Your custom name for the asset
+#   id = "<polyhaven_id>"  # Asset ID from https://polyhaven.com/a/<id>
+#   kind = "texture"
+#   res = "2k"             # "1k", "2k", "4k", "8k" (will fallback if unavailable)
+#   maps = ["albedo", "normal", "roughness", "metallic", "ao", "height"]
+#   tags = ["biome:forest", "usage:terrain"]  # Optional organizational tags
+
+[textures."aerial_rocks"]
+id = "aerial_rocks_02"
+kind = "texture"
+res = "2k"
+maps = ["albedo", "normal", "roughness", "ao", "height"]
+tags = ["biome:rocky", "usage:terrain"]
+
+[textures."metal_plate"]
+id = "metal_plate"
+kind = "texture"
+res = "2k"
+maps = ["albedo", "normal", "roughness", "metallic", "ao"]
+tags = ["material:metal", "usage:props"]
+
+[textures."cobblestone"]
+id = "cobblestone_floor_01"
+kind = "texture"
+res = "2k"
+maps = ["albedo", "normal", "roughness", "ao", "height"]
+tags = ["biome:urban", "usage:floor"]
+
+[textures."wood_floor"]
+id = "wood_floor_deck"
+kind = "texture"
+res = "2k"
+maps = ["albedo", "normal", "roughness", "ao"]
+tags = ["material:wood", "usage:floor"]
+
+[textures."plastered_wall"]
+id = "plastered_wall"
+kind = "texture"
+res = "2k"
+maps = ["albedo", "normal", "roughness", "ao"]
+tags = ["material:plaster", "usage:wall"]
+
+# === HDRIs (Environment Lighting) ===
+# Format:
+#   [hdris."<handle>"]
+#   id = "<polyhaven_id>"
+#   kind = "hdri"
+#   res = "2k"  # "1k", "2k", "4k", "8k"
+
+[hdris."kloppenheim"]
+id = "kloppenheim_06_puresky"
+kind = "hdri"
+res = "2k"
+tags = ["sky:clear", "time:day"]
+
+[hdris."spruit_sunrise"]
+id = "spruit_sunrise"
+kind = "hdri"
+res = "2k"
+tags = ["sky:sunrise", "time:morning"]
+
+[hdris."venice_sunset"]
+id = "venice_sunset"
+kind = "hdri"
+res = "2k"
+tags = ["sky:sunset", "time:evening"]
+
+# === 3D MODELS (Optional - if PolyHaven adds models) ===
+# Note: PolyHaven currently focuses on textures/HDRIs. Models section is prepared for future.
+# Format:
+#   [models."<handle>"]
+#   id = "<polyhaven_id>"
+#   kind = "model"
+#   res = "2k"            # Texture resolution for model materials
+#   format = "glb"        # "glb", "blend", "fbx" (will fallback)
+
+# Example (uncomment when PolyHaven has models):
+# [models."rock_set"]
+# id = "rock_collection_a"
+# kind = "model"
+# res = "2k"
+# format = "glb"
+# tags = ["nature:rock", "usage:scatter"]
+
+# === USAGE ===
+# 1. Run: cargo run -p astraweave-assets -- fetch
+#    - Fetches all assets via PolyHaven API
+#    - Downloads to assets/_downloaded/<handle>/
+#    - Caches lockfile at .asset_cache/polyhaven.lock
+#
+# 2. Files are named: <handle>_<map>.png
+#    Example: aerial_rocks_albedo.png, aerial_rocks_normal.png
+#
+# 3. Attribution is auto-generated at assets/_downloaded/ATTRIBUTION.txt
+#
+# 4. Integration with MaterialManager:
+#    let paths = ensure_asset(Path::new("assets/polyhaven_manifest.toml"), "aerial_rocks").await?;
+#    // Returns: ["assets/_downloaded/aerial_rocks/aerial_rocks_albedo.png", ...]

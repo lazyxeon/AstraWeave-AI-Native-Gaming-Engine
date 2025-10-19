@@ -70,6 +70,7 @@ members = [
   # New tooling crates
   "tools/aw_editor",
   "tools/aw_asset_cli",
+  "tools/astraweave-assets",  # Autonomous PolyHaven asset fetcher
   "astraweave-dialogue",
   "astraweave-quests",
   "astraweave-behavior",

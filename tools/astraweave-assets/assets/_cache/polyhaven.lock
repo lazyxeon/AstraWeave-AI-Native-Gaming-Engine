@@ -1,0 +1,54 @@
+version = 1
+
+[assets.brick_wall]
+handle = "brick_wall"
+id = "brick_wall_001"
+kind = "texture"
+timestamp = "2025-10-17T22:50:48.168481100+00:00"
+resolved_res = "1k"
+
+[assets.brick_wall.urls]
+roughness = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_rough_1k.png"
+normal = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_nor_gl_1k.png"
+albedo = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_diffuse_1k.png"
+ao = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/brick_wall_001/brick_wall_001_ao_1k.png"
+
+[assets.brick_wall.paths]
+albedo = 'assets/_downloaded\polyhaven\brick_wall\brick_wall_albedo.png'
+normal = 'assets/_downloaded\polyhaven\brick_wall\brick_wall_normal.png'
+roughness = 'assets/_downloaded\polyhaven\brick_wall\brick_wall_roughness.png'
+ao = 'assets/_downloaded\polyhaven\brick_wall\brick_wall_ao.png'
+
+[assets.brick_wall.hashes]
+roughness = "ee186ae7aeaf5857acc9efb34b16678b774dd5c28d43b208b6b7786fb646b6e8"
+normal = "0b51c30896a1706d8a5bb24448bcff791ec2e51458a90fef9498e61f74de9efe"
+albedo = "903f042853052b3b4dcbf9a511d688b77983f5af641a3effbb2e130d159daed0"
+ao = "9118618cca518fb3ef4fba9f2338a8265759b2143445347d732afaa181f4db76"
+
+[assets.metal_plate]
+handle = "metal_plate"
+id = "metal_plate_02"
+kind = "texture"
+timestamp = "2025-10-17T22:50:50.101476700+00:00"
+resolved_res = "1k"
+
+[assets.metal_plate.urls]
+ao = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_ao_1k.png"
+albedo = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_diff_1k.png"
+metallic = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_metal_1k.png"
+normal = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_nor_gl_1k.png"
+roughness = "https://dl.polyhaven.org/file/ph-assets/Textures/png/1k/metal_plate_02/metal_plate_02_rough_1k.png"
+
+[assets.metal_plate.paths]
+roughness = 'assets/_downloaded\polyhaven\metal_plate\metal_plate_roughness.png'
+normal = 'assets/_downloaded\polyhaven\metal_plate\metal_plate_normal.png'
+albedo = 'assets/_downloaded\polyhaven\metal_plate\metal_plate_albedo.png'
+ao = 'assets/_downloaded\polyhaven\metal_plate\metal_plate_ao.png'
+metallic = 'assets/_downloaded\polyhaven\metal_plate\metal_plate_metallic.png'
+
+[assets.metal_plate.hashes]
+ao = "0599dcb1ec5da322b20aaccd14635324ca80454ac1b467efc85d085d5bf4f4d5"
+albedo = "6565bd25062e3f724018cc6ddd83ba896bdae7a7026635d670491eced3294463"
+metallic = "9326171d53b5b40c407961807b4336f7a882d8e4f8fcf1bfe961eaba78d8c9bc"
+roughness = "feb85c25248a91f45dceefad846df61f10e246c14009014bcf7be5ce68e32ddd"
+normal = "a39eee156a992afef4f1453010f2f2ff3c01cd6b5e0ce408259954ce25dd049f"
