@@ -469,4 +469,169 @@ mod tests {
         assert_eq!(set.get(e1), Some(&20));
         assert_eq!(set.get(e2), Some(&40));
     }
+
+    // ====================
+    // Day 3: Surgical Coverage Improvements
+    // ====================
+
+    #[test]
+    fn test_sparse_set_with_capacity() {
+        let set = SparseSet::with_capacity(100);
+        assert_eq!(set.len(), 0);
+        assert!(set.capacity() >= 100);
+    }
+
+    #[test]
+    fn test_sparse_set_capacity_and_reserve() {
+        let mut set = SparseSet::new();
+        let initial_cap = set.capacity();
+        
+        set.reserve(50);
+        assert!(set.capacity() >= initial_cap + 50);
+    }
+
+    #[test]
+    fn test_sparse_set_insert_existing_entity() {
+        let mut set = SparseSet::new();
+        let e1 = unsafe { Entity::from_raw(5) };
+        
+        let idx1 = set.insert(e1);
+        let idx2 = set.insert(e1); // Idempotent insert
+        
+        assert_eq!(idx1, idx2);
+        assert_eq!(set.len(), 1); // Should not duplicate
+    }
+
+    #[test]
+    fn test_sparse_set_remove_nonexistent() {
+        let mut set = SparseSet::new();
+        let e1 = unsafe { Entity::from_raw(5) };
+        
+        let removed = set.remove(e1);
+        assert_eq!(removed, None);
+    }
+
+    #[test]
+    fn test_sparse_set_large_entity_ids() {
+        let mut set = SparseSet::new();
+        
+        // Large entity IDs force sparse array expansion
+        let e1 = unsafe { Entity::from_raw(1000) };
+        let e2 = unsafe { Entity::from_raw(5000) };
+        
+        set.insert(e1);
+        set.insert(e2);
+        
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(e1));
+        assert!(set.contains(e2));
+    }
+
+    #[test]
+    fn test_sparse_set_remove_last_element() {
+        let mut set = SparseSet::new();
+        
+        let e1 = unsafe { Entity::from_raw(5) };
+        let e2 = unsafe { Entity::from_raw(10) };
+        
+        set.insert(e1);
+        set.insert(e2);
+        
+        // Remove last element (no swap needed)
+        let removed = set.remove(e2);
+        assert_eq!(removed, Some(1));
+        assert_eq!(set.len(), 1);
+        assert_eq!(set.get(e1), Some(0));
+    }
+
+    #[test]
+    fn test_sparse_set_data_with_capacity() {
+        let set = SparseSetData::<i32>::with_capacity(100);
+        assert_eq!(set.len(), 0);
+        assert!(set.is_empty());
+    }
+
+    #[test]
+    fn test_sparse_set_data_get_mut() {
+        let mut set = SparseSetData::new();
+        
+        let e1 = unsafe { Entity::from_raw(5) };
+        set.insert(e1, 42);
+        
+        if let Some(value) = set.get_mut(e1) {
+            *value += 10;
+        }
+        
+        assert_eq!(set.get(e1), Some(&52));
+    }
+
+    #[test]
+    fn test_sparse_set_data_get_mut_nonexistent() {
+        let mut set = SparseSetData::<i32>::new();
+        let e1 = unsafe { Entity::from_raw(5) };
+        
+        assert!(set.get_mut(e1).is_none());
+    }
+
+    #[test]
+    fn test_sparse_set_data_contains() {
+        let mut set = SparseSetData::new();
+        
+        let e1 = unsafe { Entity::from_raw(5) };
+        let e2 = unsafe { Entity::from_raw(10) };
+        
+        set.insert(e1, 42);
+        
+        assert!(set.contains(e1));
+        assert!(!set.contains(e2));
+    }
+
+    #[test]
+    fn test_sparse_set_data_clear() {
+        let mut set = SparseSetData::new();
+        
+        set.insert(unsafe { Entity::from_raw(1) }, 10);
+        set.insert(unsafe { Entity::from_raw(2) }, 20);
+        
+        assert_eq!(set.len(), 2);
+        
+        set.clear();
+        
+        assert_eq!(set.len(), 0);
+        assert!(set.is_empty());
+    }
+
+    #[test]
+    fn test_sparse_set_data_arrays() {
+        let mut set = SparseSetData::new();
+        
+        let e1 = unsafe { Entity::from_raw(5) };
+        let e2 = unsafe { Entity::from_raw(10) };
+        
+        set.insert(e1, 100);
+        set.insert(e2, 200);
+        
+        assert_eq!(set.entities().len(), 2);
+        assert_eq!(set.data().len(), 2);
+        
+        // Mutate via data_mut()
+        set.data_mut()[0] += 50;
+        assert_eq!(set.get(e1), Some(&150));
+    }
+
+    #[test]
+    fn test_sparse_set_data_remove_last() {
+        let mut set = SparseSetData::new();
+        
+        let e1 = unsafe { Entity::from_raw(5) };
+        let e2 = unsafe { Entity::from_raw(10) };
+        
+        set.insert(e1, 1);
+        set.insert(e2, 2);
+        
+        // Remove last element (no swap needed)
+        let removed = set.remove(e2);
+        assert_eq!(removed, Some(2));
+        assert_eq!(set.len(), 1);
+    }
 }

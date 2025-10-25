@@ -517,4 +517,63 @@ mod tests {
             assert!(rng.gen_bool(1.0), "p=1.0 should always be true");
         }
     }
+
+    // === Additional Coverage Tests (Week 6 Day 3 Part 4) ===
+
+    #[test]
+    fn test_fill_bytes_deterministic() {
+        // Test RngCore::fill_bytes implementation
+        let mut rng1 = Rng::from_seed(2024);
+        let mut rng2 = Rng::from_seed(2024);
+
+        let mut buf1 = [0u8; 32];
+        let mut buf2 = [0u8; 32];
+
+        rng1.fill_bytes(&mut buf1);
+        rng2.fill_bytes(&mut buf2);
+
+        assert_eq!(
+            buf1, buf2,
+            "fill_bytes should be deterministic with same seed"
+        );
+
+        // Verify it actually filled with non-zero bytes (extremely high probability)
+        let non_zero_count = buf1.iter().filter(|&&b| b != 0).count();
+        assert!(
+            non_zero_count > 0,
+            "fill_bytes should produce non-zero bytes"
+        );
+    }
+
+    #[test]
+    fn test_gen_u64_wrapper() {
+        // Explicit test for gen_u64() wrapper method
+        let mut rng1 = Rng::from_seed(2025);
+        let mut rng2 = Rng::from_seed(2025);
+
+        // Generate via wrapper method
+        let val1 = rng1.gen_u64();
+        let val2 = rng2.gen_u64();
+
+        assert_eq!(val1, val2, "gen_u64 should be deterministic");
+
+        // Verify via RngCore trait (should be identical)
+        let mut rng3 = Rng::from_seed(2025);
+        let val3 = RngCore::next_u64(&mut rng3);
+        assert_eq!(val1, val3, "gen_u64 wrapper should match RngCore::next_u64");
+
+        // Verify range (u64::MAX is valid)
+        assert!(val1 <= u64::MAX, "gen_u64 should produce valid u64 values");
+    }
+
+    #[test]
+    fn test_fill_bytes_empty_buffer() {
+        // Edge case: fill_bytes with zero-length buffer
+        let mut rng = Rng::from_seed(12345);
+        let mut buf = [];
+
+        // Should not panic
+        rng.fill_bytes(&mut buf);
+        assert_eq!(buf.len(), 0, "Empty buffer should remain empty");
+    }
 }

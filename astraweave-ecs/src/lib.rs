@@ -657,4 +657,346 @@ mod tests {
         let pos = world.get::<Position>(entity).unwrap();
         assert_eq!(pos.x, 5.0);
     }
+
+    // ====================
+    // Day 2: World Advanced API Tests
+    // ====================
+
+    #[test]
+    fn test_count_single_component() {
+        let mut world = World::new();
+        
+        assert_eq!(world.count::<Position>(), 0);
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        assert_eq!(world.count::<Position>(), 1);
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        assert_eq!(world.count::<Position>(), 2);
+        
+        let _e3 = world.spawn();
+        world.insert(_e3, Velocity { vx: 1.0, vy: 1.0 });
+        assert_eq!(world.count::<Position>(), 2);
+        assert_eq!(world.count::<Velocity>(), 1);
+    }
+
+    #[test]
+    fn test_count_across_archetypes() {
+        let mut world = World::new();
+        
+        // Archetype 1: Position only
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        // Archetype 2: Position + Velocity
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        world.insert(e2, Velocity { vx: 1.0, vy: 1.0 });
+        
+        // Should count both
+        assert_eq!(world.count::<Position>(), 2);
+        assert_eq!(world.count::<Velocity>(), 1);
+    }
+
+    #[test]
+    fn test_entities_with_single_component() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        
+        let _e3 = world.spawn();
+        world.insert(_e3, Velocity { vx: 1.0, vy: 1.0 });
+        
+        let entities = world.entities_with::<Position>();
+        assert_eq!(entities.len(), 2);
+        assert!(entities.contains(&e1));
+        assert!(entities.contains(&e2));
+    }
+
+    #[test]
+    fn test_entities_with_empty_result() {
+        let world = World::new();
+        let entities = world.entities_with::<Position>();
+        assert_eq!(entities.len(), 0);
+    }
+
+    #[test]
+    fn test_entities_with_across_archetypes() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        world.insert(e2, Velocity { vx: 1.0, vy: 1.0 });
+        
+        let entities = world.entities_with::<Position>();
+        assert_eq!(entities.len(), 2);
+        assert!(entities.contains(&e1));
+        assert!(entities.contains(&e2));
+    }
+
+    #[test]
+    fn test_each_mut_modify_components() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        
+        world.each_mut::<Position>(|_e, pos| {
+            pos.x += 10.0;
+        });
+        
+        assert_eq!(world.get::<Position>(e1).unwrap().x, 11.0);
+        assert_eq!(world.get::<Position>(e2).unwrap().x, 12.0);
+    }
+
+    #[test]
+    fn test_each_mut_with_entity_access() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        
+        let mut visited = Vec::new();
+        world.each_mut::<Position>(|entity, _pos| {
+            visited.push(entity);
+        });
+        
+        assert_eq!(visited.len(), 2);
+        assert!(visited.contains(&e1));
+        assert!(visited.contains(&e2));
+    }
+
+    #[test]
+    fn test_entity_count() {
+        let mut world = World::new();
+        
+        assert_eq!(world.entity_count(), 0);
+        
+        let e1 = world.spawn();
+        assert_eq!(world.entity_count(), 1);
+        
+        let _e2 = world.spawn();
+        assert_eq!(world.entity_count(), 2);
+        
+        world.despawn(e1);
+        assert_eq!(world.entity_count(), 1);
+    }
+
+    // ====================
+    // Day 2: Stale Entity Handling Tests
+    // ====================
+
+    #[test]
+    fn test_insert_on_stale_entity_ignored() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.despawn(entity);
+        
+        // Insert on stale entity should be ignored silently
+        world.insert(entity, Position { x: 1.0, y: 1.0 });
+        
+        assert!(!world.has::<Position>(entity));
+        assert_eq!(world.count::<Position>(), 0);
+    }
+
+    #[test]
+    fn test_get_on_stale_entity_returns_none() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 1.0 });
+        world.despawn(entity);
+        
+        assert!(world.get::<Position>(entity).is_none());
+    }
+
+    #[test]
+    fn test_get_mut_on_stale_entity_returns_none() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 1.0 });
+        world.despawn(entity);
+        
+        assert!(world.get_mut::<Position>(entity).is_none());
+    }
+
+    #[test]
+    fn test_has_on_stale_entity_returns_false() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 1.0 });
+        world.despawn(entity);
+        
+        assert!(!world.has::<Position>(entity));
+    }
+
+    #[test]
+    fn test_remove_on_stale_entity_returns_false() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 1.0 });
+        world.despawn(entity);
+        
+        assert!(!world.remove::<Position>(entity));
+    }
+
+    #[test]
+    fn test_despawn_stale_entity_returns_false() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        
+        assert!(world.despawn(entity));
+        assert!(!world.despawn(entity)); // Second despawn should return false
+    }
+
+    #[test]
+    fn test_remove_nonexistent_component_returns_false() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 1.0 });
+        
+        // Removing component that doesn't exist
+        assert!(!world.remove::<Velocity>(entity));
+    }
+
+    // ====================
+    // Day 2: Resource Edge Cases
+    // ====================
+
+    #[test]
+    fn test_resource_get_nonexistent_returns_none() {
+        let world = World::new();
+        assert!(world.get_resource::<TestResource>().is_none());
+    }
+
+    #[test]
+    fn test_resource_get_mut_nonexistent_returns_none() {
+        let mut world = World::new();
+        assert!(world.get_resource_mut::<TestResource>().is_none());
+    }
+
+    #[test]
+    fn test_resource_replace() {
+        let mut world = World::new();
+        world.insert_resource(TestResource(10));
+        
+        world.insert_resource(TestResource(20));
+        
+        let resource = world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource.0, 20);
+    }
+
+    // ====================
+    // Day 2: App/Schedule API Tests
+    // ====================
+
+    #[test]
+    fn test_app_creation() {
+        let app = App::new();
+        assert_eq!(app.world.entity_count(), 0);
+        assert_eq!(app.schedule.stages.len(), 5);
+    }
+
+    #[test]
+    fn test_app_insert_resource() {
+        let app = App::new().insert_resource(TestResource(42));
+        
+        let resource = app.world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource.0, 42);
+    }
+
+    #[test]
+    fn test_schedule_execution() {
+        fn test_system(world: &mut World) {
+            world.insert_resource(TestResource(99));
+        }
+        
+        let mut app = App::new();
+        app.add_system("simulation", test_system);
+        app = app.run_fixed(1);
+        
+        let resource = app.world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource.0, 99);
+    }
+
+    #[test]
+    fn test_schedule_multiple_systems() {
+        fn system_a(world: &mut World) {
+            world.insert_resource(TestResource(10));
+        }
+        
+        fn system_b(world: &mut World) {
+            if let Some(resource) = world.get_resource_mut::<TestResource>() {
+                resource.0 += 5;
+            }
+        }
+        
+        let mut app = App::new();
+        app.add_system("simulation", system_a);
+        app.add_system("simulation", system_b);
+        app = app.run_fixed(1);
+        
+        let resource = app.world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource.0, 15);
+    }
+
+    #[test]
+    fn test_run_fixed_multiple_steps() {
+        fn increment_system(world: &mut World) {
+            if let Some(resource) = world.get_resource_mut::<TestResource>() {
+                resource.0 += 1;
+            } else {
+                world.insert_resource(TestResource(1));
+            }
+        }
+        
+        let mut app = App::new();
+        app.add_system("simulation", increment_system);
+        app = app.run_fixed(10);
+        
+        let resource = app.world.get_resource::<TestResource>().unwrap();
+        assert_eq!(resource.0, 10);
+    }
+
+    // ====================
+    // Day 2: Archetype Access Tests
+    // ====================
+
+    #[test]
+    fn test_archetypes_read_access() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        let archetypes = world.archetypes();
+        let archetype_count = archetypes.iter().count();
+        
+        // Should have at least 2 archetypes: empty and Position-only
+        assert!(archetype_count >= 2);
+    }
+
+    #[test]
+    fn test_spawn_creates_empty_archetype_entity() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        
+        // Entity should exist in empty archetype
+        assert!(world.is_alive(entity));
+        assert_eq!(world.entity_count(), 1);
+    }
 }

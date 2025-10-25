@@ -62,8 +62,9 @@ impl Orchestrator for RuleOrchestrator {
                         },
                         ActionStep::MoveTo {
                             speed: None,
-                            x: m.pos.x + (first.pos.x - m.pos.x).signum() * 2,
-                            y: m.pos.y + (first.pos.y - m.pos.y).signum() * 2,
+                            // Use saturating arithmetic to prevent overflow with extreme coordinates
+                            x: m.pos.x.saturating_add(first.pos.x.saturating_sub(m.pos.x).signum() * 2),
+                            y: m.pos.y.saturating_add(first.pos.y.saturating_sub(m.pos.y).signum() * 2),
                         },
                         ActionStep::CoverFire {
                             target_id: first.id,
@@ -246,9 +247,10 @@ impl Orchestrator for GoapOrchestrator {
         let plan_id = format!("goap-{}", (snap.t * 1000.0) as i64);
         if let Some(enemy) = snap.enemies.first() {
             let me = &snap.me;
-            let dx = (enemy.pos.x - me.pos.x).abs();
-            let dy = (enemy.pos.y - me.pos.y).abs();
-            let dist = dx + dy;
+            // Use saturating arithmetic to prevent overflow with extreme coordinates
+            let dx = enemy.pos.x.saturating_sub(me.pos.x).abs();
+            let dy = enemy.pos.y.saturating_sub(me.pos.y).abs();
+            let dist = dx.saturating_add(dy);
             if dist <= 2 {
                 return PlanIntent {
                     plan_id,
@@ -630,7 +632,7 @@ mod tests {
 
     #[test]
     fn system_orchestrator_config_default_parses_env() {
-        // Test default config parsing
+        // Test default config parsing - ensure clean environment first
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
         std::env::remove_var("OLLAMA_URL");
         std::env::remove_var("OLLAMA_MODEL");
@@ -669,6 +671,9 @@ mod tests {
 
     #[test]
     fn system_orchestrator_config_respects_ollama_url_env() {
+        // Clean environment first
+        std::env::remove_var("ASTRAWEAVE_USE_LLM");
+        std::env::remove_var("OLLAMA_MODEL");
         std::env::set_var("OLLAMA_URL", "http://custom-server:8080");
 
         let cfg = SystemOrchestratorConfig::default();
@@ -679,6 +684,9 @@ mod tests {
 
     #[test]
     fn system_orchestrator_config_respects_ollama_model_env() {
+        // Clean environment first, then set specific var
+        std::env::remove_var("ASTRAWEAVE_USE_LLM");
+        std::env::remove_var("OLLAMA_URL");
         std::env::set_var("OLLAMA_MODEL", "llama3:70b");
 
         let cfg = SystemOrchestratorConfig::default();
@@ -769,5 +777,363 @@ mod tests {
             "First action should be MoveTo when smoke cooldown not ready"
         );
         assert_eq!(plan.steps.len(), 2, "Should have 2 steps: MoveTo, CoverFire");
+    }
+
+    // ========================================
+    // UtilityOrchestrator Comprehensive Tests
+    // ========================================
+
+    #[test]
+    fn utility_returns_empty_plan_with_no_enemies() {
+        let snap = WorldSnapshot {
+            t: 2.5,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 5,
+                cooldowns: BTreeMap::new(),
+                morale: 0.8,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![], // No enemies = empty candidate list
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+
+        assert!(plan.steps.is_empty(), "Should return empty steps when no enemies");
+        assert!(plan.plan_id.starts_with("util-"), "Plan ID should start with 'util-'");
+    }
+
+    #[test]
+    fn utility_scores_candidates_deterministically() {
+        // Test that scoring uses total_cmp for deterministic f32 ordering
+        let snap = snap_basic(0, 0, 4, 0, 0.0); // Enemy at distance 4, smoke ready
+
+        let util = UtilityOrchestrator;
+        
+        // Run multiple times - should be deterministic
+        let plan1 = util.propose_plan(&snap);
+        let plan2 = util.propose_plan(&snap);
+        let plan3 = util.propose_plan(&snap);
+
+        assert_eq!(plan1.steps.len(), plan2.steps.len(), "Plans should be identical (deterministic)");
+        assert_eq!(plan2.steps.len(), plan3.steps.len(), "Plans should be identical (deterministic)");
+        
+        // All should choose smoke throw as first action (highest score)
+        assert!(matches!(plan1.steps.first(), Some(ActionStep::Throw { .. })));
+        assert!(matches!(plan2.steps.first(), Some(ActionStep::Throw { .. })));
+        assert!(matches!(plan3.steps.first(), Some(ActionStep::Throw { .. })));
+    }
+
+    #[test]
+    fn utility_prefers_advance_when_smoke_on_cooldown() {
+        let snap = snap_basic(0, 0, 4, 0, 5.0); // Enemy at distance 4, smoke on cooldown
+
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+
+        // Should only have advance candidate (smoke not available)
+        assert!(
+            matches!(plan.steps.first(), Some(ActionStep::MoveTo { .. })),
+            "First action should be MoveTo when smoke on cooldown"
+        );
+    }
+
+    #[test]
+    fn utility_adds_cover_fire_when_close() {
+        let snap = snap_basic(0, 0, 2, 0, 5.0); // Enemy at distance 2, smoke on cooldown
+
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+
+        // Distance <= 3, should add CoverFire after MoveTo
+        assert_eq!(plan.steps.len(), 2, "Should have MoveTo + CoverFire when close");
+        assert!(
+            matches!(plan.steps.get(1), Some(ActionStep::CoverFire { .. })),
+            "Second action should be CoverFire when enemy close"
+        );
+    }
+
+    #[test]
+    fn utility_no_cover_fire_when_far() {
+        let snap = snap_basic(0, 0, 10, 0, 5.0); // Enemy at distance 10, smoke on cooldown
+
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+
+        // Distance > 3, should only MoveTo (no CoverFire)
+        assert_eq!(plan.steps.len(), 1, "Should only have MoveTo when far");
+        assert!(
+            matches!(plan.steps.first(), Some(ActionStep::MoveTo { .. })),
+            "Should only MoveTo when enemy far"
+        );
+    }
+
+    #[test]
+    fn utility_calculates_midpoint_correctly() {
+        let snap = snap_basic(0, 0, 6, 4, 0.0); // Me at (0,0), enemy at (6,4), smoke ready
+
+        let util = UtilityOrchestrator;
+        let plan = util.propose_plan(&snap);
+
+        // Should throw smoke at midpoint (3, 2)
+        if let Some(ActionStep::Throw { item, x, y }) = plan.steps.first() {
+            assert_eq!(item, "smoke", "Should throw smoke");
+            assert_eq!(*x, 3, "Midpoint x should be (0+6)/2 = 3");
+            assert_eq!(*y, 2, "Midpoint y should be (0+4)/2 = 2");
+        } else {
+            panic!("Expected Throw as first action");
+        }
+    }
+
+    #[test]
+    fn utility_async_adapter_matches_sync() {
+        let snap = snap_basic(0, 0, 5, 3, 0.0);
+
+        let util = UtilityOrchestrator;
+        let plan_sync = util.propose_plan(&snap);
+        let plan_async = block_on(util.plan(snap, 100)).expect("utility async plan failed");
+
+        assert_eq!(plan_sync.steps.len(), plan_async.steps.len(), "Sync and async should produce same plan");
+        assert_eq!(plan_sync.plan_id.len(), plan_async.plan_id.len(), "Plan IDs should have same format");
+    }
+
+    // ========================================
+    // GoapOrchestrator Comprehensive Tests
+    // ========================================
+
+    #[test]
+    fn goap_next_action_moves_when_far() {
+        let snap = snap_basic(0, 0, 10, 5, 0.0); // Enemy far away (distance 15)
+
+        let goap = GoapOrchestrator;
+        let action = goap.next_action(&snap);
+
+        assert!(
+            matches!(action, ActionStep::MoveTo { .. }),
+            "next_action() should return MoveTo when enemy far"
+        );
+    }
+
+    #[test]
+    fn goap_next_action_covers_when_close() {
+        let snap = snap_basic(0, 0, 1, 1, 0.0); // Enemy at distance 2 (exactly at threshold)
+
+        let goap = GoapOrchestrator;
+        let action = goap.next_action(&snap);
+
+        assert!(
+            matches!(action, ActionStep::CoverFire { .. }),
+            "next_action() should return CoverFire when enemy at distance 2"
+        );
+    }
+
+    #[test]
+    fn goap_next_action_waits_with_no_enemies() {
+        let snap = WorldSnapshot {
+            t: 3.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![], // No enemies
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let goap = GoapOrchestrator;
+        let action = goap.next_action(&snap);
+
+        assert!(
+            matches!(action, ActionStep::Wait { duration: _ }),
+            "next_action() should return Wait when no enemies"
+        );
+    }
+
+    #[test]
+    fn goap_propose_plan_matches_next_action_logic() {
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+
+        let goap = GoapOrchestrator;
+        let plan = goap.propose_plan(&snap);
+        let action = goap.next_action(&snap);
+
+        // propose_plan should return single-step plan matching next_action
+        assert_eq!(plan.steps.len(), 1, "propose_plan should return single-step plan");
+        
+        // Both should produce same action type (MoveTo for distance > 2)
+        match (&plan.steps[0], &action) {
+            (ActionStep::MoveTo { .. }, ActionStep::MoveTo { .. }) => { /* OK */ }
+            (ActionStep::CoverFire { .. }, ActionStep::CoverFire { .. }) => { /* OK */ }
+            (ActionStep::Wait { .. }, ActionStep::Wait { .. }) => { /* OK */ }
+            _ => panic!("propose_plan and next_action should produce same action type"),
+        }
+    }
+
+    #[test]
+    fn goap_async_adapter_matches_sync() {
+        let snap = snap_basic(0, 0, 3, 0, 0.0);
+
+        let goap = GoapOrchestrator;
+        let plan_sync = goap.propose_plan(&snap);
+        let plan_async = block_on(goap.plan(snap, 100)).expect("goap async plan failed");
+
+        assert_eq!(plan_sync.steps.len(), plan_async.steps.len(), "Sync and async GOAP should produce same plan");
+    }
+
+    // ========================================
+    // RuleOrchestrator Comprehensive Tests
+    // ========================================
+
+    #[test]
+    fn rule_orchestrator_plan_id_format() {
+        let snap = snap_basic(0, 0, 5, 0, 0.0);
+
+        let rule = RuleOrchestrator;
+        let plan = rule.propose_plan(&snap);
+
+        assert!(plan.plan_id.starts_with("plan-"), "Plan ID should start with 'plan-'");
+        // Plan ID should be "plan-" + timestamp (t * 1000.0) as i64
+        // For snap.t = 1.234, should be "plan-1234"
+        assert_eq!(plan.plan_id, "plan-1234", "Plan ID should encode timestamp");
+    }
+
+    #[test]
+    fn rule_orchestrator_calculates_midpoint_correctly() {
+        let snap = snap_basic(0, 0, 10, 6, 0.0); // Me at (0,0), enemy at (10,6)
+
+        let rule = RuleOrchestrator;
+        let plan = rule.propose_plan(&snap);
+
+        // Should throw smoke at midpoint (5, 3)
+        if let Some(ActionStep::Throw { item, x, y }) = plan.steps.first() {
+            assert_eq!(item, "smoke", "Should throw smoke");
+            assert_eq!(*x, 5, "Midpoint x should be (0+10)/2 = 5");
+            assert_eq!(*y, 3, "Midpoint y should be (0+6)/2 = 3");
+        } else {
+            panic!("Expected Throw as first action when smoke ready");
+        }
+    }
+
+    #[test]
+    fn rule_orchestrator_move_direction_correctness() {
+        let snap = snap_basic(0, 0, 5, 3, 10.0); // Smoke on cooldown, enemy northeast
+
+        let rule = RuleOrchestrator;
+        let plan = rule.propose_plan(&snap);
+
+        // Should move toward enemy: (0,0) -> (1,1) using signum
+        if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.first() {
+            assert_eq!(*x, 1, "Should move one step in x direction (signum(5-0) = 1)");
+            assert_eq!(*y, 1, "Should move one step in y direction (signum(3-0) = 1)");
+        } else {
+            panic!("Expected MoveTo when smoke on cooldown");
+        }
+    }
+
+    #[test]
+    fn rule_orchestrator_async_adapter_matches_sync() {
+        let snap = snap_basic(0, 0, 4, 4, 0.0);
+
+        let rule = RuleOrchestrator;
+        let plan_sync = rule.propose_plan(&snap);
+        let plan_async = block_on(rule.plan(snap, 100)).expect("rule async plan failed");
+
+        assert_eq!(plan_sync.steps.len(), plan_async.steps.len(), "Sync and async RuleOrch should produce same plan");
+        // Verify first action matches
+        match (&plan_sync.steps.first(), &plan_async.steps.first()) {
+            (Some(ActionStep::Throw { .. }), Some(ActionStep::Throw { .. })) => { /* OK */ }
+            (Some(ActionStep::MoveTo { .. }), Some(ActionStep::MoveTo { .. })) => { /* OK */ }
+            _ => panic!("Sync and async should produce same first action"),
+        }
+    }
+
+    // ========================================
+    // SystemOrchestratorConfig Additional Tests
+    // ========================================
+
+    #[test]
+    fn system_orchestrator_config_clone_works() {
+        let cfg1 = SystemOrchestratorConfig {
+            use_llm: true,
+            ollama_url: "http://test:8080".into(),
+            ollama_model: "test-model".into(),
+        };
+
+        let cfg2 = cfg1.clone();
+
+        assert_eq!(cfg1.use_llm, cfg2.use_llm);
+        assert_eq!(cfg1.ollama_url, cfg2.ollama_url);
+        assert_eq!(cfg1.ollama_model, cfg2.ollama_model);
+    }
+
+    #[test]
+    fn system_orchestrator_config_debug_output() {
+        let cfg = SystemOrchestratorConfig {
+            use_llm: false,
+            ollama_url: "http://localhost:11434".into(),
+            ollama_model: "phi3:medium".into(),
+        };
+
+        let debug_str = format!("{:?}", cfg);
+        assert!(debug_str.contains("use_llm"), "Debug output should contain field names");
+        assert!(debug_str.contains("phi3:medium"), "Debug output should contain model name");
+    }
+
+    #[test]
+    fn system_orchestrator_config_handles_empty_env_vars() {
+        // NOTE: unwrap_or_else only triggers if var is NOT SET, not if it's empty string
+        // Empty strings are valid values, so they get used as-is
+        // This test verifies that empty strings are treated as empty (not defaulted)
+        std::env::set_var("ASTRAWEAVE_USE_LLM", "");
+        std::env::set_var("OLLAMA_URL", "");
+        std::env::set_var("OLLAMA_MODEL", "");
+
+        let cfg = SystemOrchestratorConfig::default();
+
+        // Empty string != "1" or "true", should be false
+        assert_eq!(cfg.use_llm, false);
+        // Empty strings ARE used as-is (unwrap_or_else doesn't treat "" as missing)
+        assert_eq!(cfg.ollama_url, "", "Empty URL should be used as-is");
+        assert_eq!(cfg.ollama_model, "", "Empty model should be used as-is");
+
+        std::env::remove_var("ASTRAWEAVE_USE_LLM");
+        std::env::remove_var("OLLAMA_URL");
+        std::env::remove_var("OLLAMA_MODEL");
+    }
+
+    #[test]
+    fn orchestrator_name_trait_defaults() {
+        // Test that default name() implementation returns type name
+        let rule = RuleOrchestrator;
+        let util = UtilityOrchestrator;
+        let goap = GoapOrchestrator;
+
+        // OrchestratorAsync trait has default name() using type_name
+        let rule_name = block_on(async { rule.name() });
+        let util_name = block_on(async { util.name() });
+        let goap_name = block_on(async { goap.name() });
+
+        // Type names should contain the struct names
+        assert!(rule_name.contains("RuleOrchestrator"), "Default name() should return type name");
+        assert!(util_name.contains("UtilityOrchestrator"), "Default name() should return type name");
+        assert!(goap_name.contains("GoapOrchestrator"), "Default name() should return type name");
     }
 }
