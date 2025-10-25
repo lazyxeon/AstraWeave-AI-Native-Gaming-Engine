@@ -1,0 +1,491 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Working Examples - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/examples/index.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="working-examples"><a class="header" href="#working-examples">Working Examples</a></h1>
+<p>AstraWeave includes over 20 examples demonstrating different aspects of the engine. This page focuses on the <strong>working examples</strong> that you can build and run to learn the engine.</p>
+<blockquote>
+<p><strong>Note</strong>: AstraWeave is under active development. Some examples have compilation issues due to API evolution. This page focuses on examples that are confirmed to work.</p>
+</blockquote>
+<h2 id="core-ai-examples"><a class="header" href="#core-ai-examples">Core AI Examples</a></h2>
+<p>These examples demonstrate the AI-native architecture:</p>
+<h3 id="hello-companion-"><a class="header" href="#hello-companion-">Hello Companion ✅</a></h3>
+<p><strong>Location</strong>: <code>examples/hello_companion</code><br />
+<strong>Status</strong>: ✅ Working (expected panic)</p>
+<p>The simplest example of AI perception, planning, and validation.</p>
+<pre><code class="language-bash">cargo run -p hello_companion --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>AI perception system capturing world state</li>
+<li>LLM-based planning generating intents</li>
+<li>Tool validation system (demonstrates failure case)</li>
+<li>Fixed-tick simulation loop</li>
+</ul>
+<p><strong>Expected behavior</strong>: Shows AI plan generation, then panics with "LosBlocked" error. This demonstrates that the AI cannot perform invalid actions.</p>
+<p><a href="./hello-companion.html">→ Detailed walkthrough</a></p>
+<h3 id="adaptive-boss-"><a class="header" href="#adaptive-boss-">Adaptive Boss ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/adaptive_boss</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Multi-phase boss that adapts its strategy based on player behavior.</p>
+<pre><code class="language-bash">cargo run -p adaptive_boss --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>Director system for complex AI behavior</li>
+<li>Phase-based AI state machines</li>
+<li>Dynamic strategy adaptation</li>
+<li>Boss pattern recognition</li>
+</ul>
+<h3 id="companion-profile-"><a class="header" href="#companion-profile-">Companion Profile ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/companion_profile</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Demonstrates persistent AI profiles that learn and adapt.</p>
+<pre><code class="language-bash">cargo run -p companion_profile --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>AI profile serialization/deserialization</li>
+<li>Learning from player interactions</li>
+<li>Personality trait adjustment</li>
+<li>Long-term memory systems</li>
+</ul>
+<h2 id="core-engine-examples"><a class="header" href="#core-engine-examples">Core Engine Examples</a></h2>
+<p>These examples showcase fundamental engine systems:</p>
+<h3 id="physics-demo-3d-"><a class="header" href="#physics-demo-3d-">Physics Demo 3D ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/physics_demo3d</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Demonstrates the Rapier3D physics integration.</p>
+<pre><code class="language-bash">cargo run -p physics_demo3d --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>3D physics simulation</li>
+<li>Character controller integration</li>
+<li>Collision detection and response</li>
+<li>Physics-based AI movement</li>
+</ul>
+<h3 id="navmesh-demo-"><a class="header" href="#navmesh-demo-">Navmesh Demo ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/navmesh_demo</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Shows navigation mesh generation and pathfinding.</p>
+<pre><code class="language-bash">cargo run -p navmesh_demo --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>Automatic navmesh generation</li>
+<li>A* pathfinding</li>
+<li>Dynamic obstacle avoidance</li>
+<li>AI navigation coordination</li>
+</ul>
+<h3 id="audio-spatial-demo-"><a class="header" href="#audio-spatial-demo-">Audio Spatial Demo ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/audio_spatial_demo</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Spatial audio system with 3D positioning.</p>
+<pre><code class="language-bash">cargo run -p audio_spatial_demo --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>3D positional audio</li>
+<li>Dynamic audio sources</li>
+<li>Environmental audio effects</li>
+<li>Audio-based AI perception</li>
+</ul>
+<h2 id="networking-examples"><a class="header" href="#networking-examples">Networking Examples</a></h2>
+<p>These examples show multiplayer and IPC capabilities:</p>
+<h3 id="ipc-loopback-"><a class="header" href="#ipc-loopback-">IPC Loopback ✅</a></h3>
+<p><strong>Location</strong>: <code>examples/ipc_loopback</code><br />
+<strong>Status</strong>: ✅ Should work</p>
+<p>Demonstrates inter-process communication for AI models.</p>
+<pre><code class="language-bash">cargo run -p ipc_loopback --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>Local/cloud AI model switching</li>
+<li>Process isolation for AI</li>
+<li>IPC message passing</li>
+<li>AI model hot-swapping</li>
+</ul>
+<h3 id="coop-serverclient-"><a class="header" href="#coop-serverclient-">Coop Server/Client ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/coop_server</code>, <code>examples/coop_client</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Basic multiplayer client-server architecture.</p>
+<pre><code class="language-bash"># Terminal 1
+cargo run -p coop_server --release
+
+# Terminal 2  
+cargo run -p coop_client --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>Server-authoritative validation</li>
+<li>Intent-based networking</li>
+<li>AI agent synchronization</li>
+<li>Anti-cheat through determinism</li>
+</ul>
+<h2 id="tool-and-planning-examples"><a class="header" href="#tool-and-planning-examples">Tool and Planning Examples</a></h2>
+<p>These examples focus on AI planning and tool usage:</p>
+<h3 id="llm-tool-call-"><a class="header" href="#llm-tool-call-">LLM Tool Call ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/llm_toolcall</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Direct demonstration of LLM tool calling.</p>
+<pre><code class="language-bash">cargo run -p llm_toolcall --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>LLM integration</li>
+<li>Tool definition and usage</li>
+<li>Structured AI responses</li>
+<li>Planning validation</li>
+</ul>
+<h3 id="phase-director-"><a class="header" href="#phase-director-">Phase Director ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/phase_director</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Complex AI director managing multiple phases.</p>
+<pre><code class="language-bash">cargo run -p phase_director --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>Multi-phase AI behavior</li>
+<li>Director pattern implementation</li>
+<li>State machine management</li>
+<li>Complex AI coordination</li>
+</ul>
+<h2 id="development-examples"><a class="header" href="#development-examples">Development Examples</a></h2>
+<p>These examples help with engine development:</p>
+<h3 id="debug-overlay-"><a class="header" href="#debug-overlay-">Debug Overlay ❌</a></h3>
+<p><strong>Location</strong>: <code>examples/debug_overlay</code><br />
+<strong>Status</strong>: ❌ Has compilation issues (egui API)</p>
+<p>Debug UI overlay for development.</p>
+<p><strong>Known issues</strong>: egui API mismatches with current version.</p>
+<h3 id="persona-loader-"><a class="header" href="#persona-loader-">Persona Loader ⚠️</a></h3>
+<p><strong>Location</strong>: <code>examples/persona_loader</code><br />
+<strong>Status</strong>: ⚠️ Check compilation</p>
+<p>Loading and managing AI personas from files.</p>
+<pre><code class="language-bash">cargo run -p persona_loader --release
+</code></pre>
+<p><strong>What it demonstrates:</strong></p>
+<ul>
+<li>AI persona definition files</li>
+<li>Dynamic persona loading</li>
+<li>Personality trait configuration</li>
+<li>Behavioral parameter tuning</li>
+</ul>
+<h2 id="known-compilation-issues"><a class="header" href="#known-compilation-issues">Known Compilation Issues</a></h2>
+<p>Some examples have known issues due to API evolution:</p>
+<h3 id="graphics-examples-"><a class="header" href="#graphics-examples-">Graphics Examples ❌</a></h3>
+<ul>
+<li><strong>visual_3d</strong>: winit API mismatches</li>
+<li><strong>ui_controls_demo</strong>: egui API compatibility issues</li>
+<li><strong>debug_overlay</strong>: egui API changes</li>
+</ul>
+<h3 id="authoring-examples-"><a class="header" href="#authoring-examples-">Authoring Examples ❌</a></h3>
+<ul>
+<li><strong>rhai_authoring</strong>: Depends on broken astraweave-author crate</li>
+<li>Issues with rhai sync/send traits</li>
+</ul>
+<h3 id="complex-demos-"><a class="header" href="#complex-demos-">Complex Demos ❌</a></h3>
+<ul>
+<li><strong>npc_town_demo</strong>: Multiple API mismatches</li>
+<li><strong>weaving_playground</strong>: Dependency issues</li>
+<li><strong>cutscene_render_demo</strong>: Graphics API issues</li>
+</ul>
+<h2 id="testing-examples"><a class="header" href="#testing-examples">Testing Examples</a></h2>
+<p>To verify your installation is working:</p>
+<h3 id="minimal-test-sequence"><a class="header" href="#minimal-test-sequence">Minimal Test Sequence</a></h3>
+<pre><code class="language-bash"># 1. Build core components
+cargo build -p astraweave-core -p astraweave-ai -p hello_companion
+
+# 2. Run the basic example
+cargo run -p hello_companion --release
+
+# 3. Run unit tests
+cargo test -p astraweave-input
+</code></pre>
+<h3 id="debugging-build-issues"><a class="header" href="#debugging-build-issues">Debugging Build Issues</a></h3>
+<p>If examples fail to compile:</p>
+<ol>
+<li><strong>Check Rust version</strong>: <code>rustc --version</code> should match <code>rust-toolchain.toml</code></li>
+<li><strong>Update dependencies</strong>: <code>cargo update</code></li>
+<li><strong>Clean build</strong>: <code>cargo clean &amp;&amp; cargo build</code></li>
+<li><strong>Check system dependencies</strong>: Ensure graphics and audio libraries are installed</li>
+</ol>
+<h3 id="reporting-issues"><a class="header" href="#reporting-issues">Reporting Issues</a></h3>
+<p>If you find compilation issues with examples marked as working:</p>
+<ol>
+<li>Check your platform and Rust version</li>
+<li>Ensure all system dependencies are installed</li>
+<li>Try a clean build</li>
+<li>Report the issue with full error output</li>
+</ol>
+<h2 id="building-your-own-examples"><a class="header" href="#building-your-own-examples">Building Your Own Examples</a></h2>
+<p>When creating new examples:</p>
+<h3 id="minimal-example-structure"><a class="header" href="#minimal-example-structure">Minimal Example Structure</a></h3>
+<pre><pre class="playground"><code class="language-rust">// examples/my_example/src/main.rs
+use astraweave_core::*;
+use astraweave_ai::*;
+
+fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+    // Initialize the engine
+    let mut world = World::new();
+    
+    // Add your systems
+    world.add_system(my_custom_system);
+    
+    // Run the simulation
+    world.run()?;
+    
+    Ok(())
+}</code></pre></pre>
+<h3 id="cargotoml-template"><a class="header" href="#cargotoml-template">Cargo.toml Template</a></h3>
+<pre><code class="language-toml">[package]
+name = "my_example"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-ai = { path = "../../astraweave-ai" }
+anyhow.workspace = true
+</code></pre>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<ul>
+<li><strong>Start Simple</strong>: Begin with <a href="./hello-companion.html">Hello Companion</a></li>
+<li><strong>Learn Architecture</strong>: Read <a href="../architecture/ai-native.html">AI-Native Design</a></li>
+<li><strong>Build Something</strong>: Follow <a href="../game-dev/first-game.html">Building Your First Game</a></li>
+<li><strong>Contribute</strong>: Help fix broken examples in <a href="../dev/contributing.html">Contributing Guide</a></li>
+</ul>
+<hr />
+<p><em>The working examples are your best introduction to AstraWeave's capabilities. Start with hello_companion and work your way up to more complex scenarios.</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../game-dev/procedural.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../examples/hello-companion.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../game-dev/procedural.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../examples/hello-companion.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

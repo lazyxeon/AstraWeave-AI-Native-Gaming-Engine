@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["compute_tangents"],"struct":["CpuMesh","MeshVertex","MeshVertexLayout"]};

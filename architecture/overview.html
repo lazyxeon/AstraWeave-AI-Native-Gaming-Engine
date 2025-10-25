@@ -1,0 +1,591 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Overview - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/architecture/overview.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="architecture-overview"><a class="header" href="#architecture-overview">Architecture Overview</a></h1>
+<p>AstraWeave represents a fundamental shift in game engine design: instead of treating AI as an afterthought, it places intelligent agents at the core of the architecture. This document explains the key architectural decisions and how they enable truly AI-native gameplay.</p>
+<h2 id="core-philosophy-ai-first-design"><a class="header" href="#core-philosophy-ai-first-design">Core Philosophy: AI-First Design</a></h2>
+<p>Traditional game engines follow this pattern:</p>
+<pre><code>Game Logic → AI System → Scripted Behaviors
+</code></pre>
+<p>AstraWeave inverts this relationship:</p>
+<pre><code>AI Agents ← Tool Validation ← Engine Authority
+</code></pre>
+<h3 id="why-this-matters"><a class="header" href="#why-this-matters">Why This Matters</a></h3>
+<ol>
+<li><strong>No Cheating AI</strong>: AI can only act through validated game systems</li>
+<li><strong>Emergent Behavior</strong>: Complex interactions emerge from simple, validated tools</li>
+<li><strong>Multiplayer Ready</strong>: Same validation works for human players and AI</li>
+<li><strong>Predictable Performance</strong>: Deterministic simulation enables reliable testing</li>
+</ol>
+<h2 id="high-level-architecture"><a class="header" href="#high-level-architecture">High-Level Architecture</a></h2>
+<pre><code class="language-mermaid">graph TB
+    subgraph "Fixed-Tick Simulation (60Hz)"
+        ECS[ECS World]
+        Physics[Physics System]
+        Audio[Audio System]
+        Render[Render System]
+    end
+    
+    subgraph "AI Pipeline"
+        Perception[Perception Bus]
+        Planning[AI Planning]
+        Tools[Tool Sandbox]
+        Validation[Engine Validation]
+    end
+    
+    subgraph "Game Layer"
+        Gameplay[Gameplay Systems]
+        Content[Content Systems]
+        UI[UI Systems]
+    end
+    
+    ECS --&gt; Perception
+    Perception --&gt; Planning
+    Planning --&gt; Tools
+    Tools --&gt; Validation
+    Validation --&gt; ECS
+    
+    ECS --&gt; Physics
+    ECS --&gt; Audio
+    ECS --&gt; Render
+    
+    Gameplay --&gt; ECS
+    Content --&gt; ECS
+    UI --&gt; ECS
+</code></pre>
+<h2 id="the-deterministic-core"><a class="header" href="#the-deterministic-core">The Deterministic Core</a></h2>
+<h3 id="fixed-tick-simulation"><a class="header" href="#fixed-tick-simulation">Fixed-Tick Simulation</a></h3>
+<p>AstraWeave runs the simulation at exactly 60Hz, regardless of rendering framerate:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>const TICK_RATE: f64 = 60.0;
+const TICK_DURATION: Duration = Duration::from_nanos(16_666_667); // 1/60 second
+
+// Simulation always advances by exactly this amount
+fn tick_simulation(&amp;mut self) {
+    self.world.step(TICK_DURATION);
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>Deterministic physics and AI behavior</li>
+<li>Consistent timing across different hardware</li>
+<li>Reliable networking and replay systems</li>
+<li>Predictable performance testing</li>
+</ul>
+<h3 id="entity-component-system-ecs"><a class="header" href="#entity-component-system-ecs">Entity-Component-System (ECS)</a></h3>
+<p>AstraWeave uses an archetype-based ECS for cache-friendly performance:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Components are pure data
+#[derive(Component)]
+struct Position(Vec3);
+
+#[derive(Component)]  
+struct AIAgent {
+    perception_range: f32,
+    planning_cooldown: Duration,
+}
+
+// Systems operate on component combinations
+fn ai_perception_system(
+    query: Query&lt;(&amp;Position, &amp;AIAgent, &amp;mut PerceptionState)&gt;
+) {
+    for (pos, agent, mut perception) in query.iter_mut() {
+        // Update agent perception based on world state
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Key Benefits:</strong></p>
+<ul>
+<li>Cache-friendly data layout</li>
+<li>Parallel system execution</li>
+<li>Clean separation of data and logic</li>
+<li>Easy to reason about and test</li>
+</ul>
+<h2 id="the-ai-pipeline"><a class="header" href="#the-ai-pipeline">The AI Pipeline</a></h2>
+<h3 id="1-perception-bus"><a class="header" href="#1-perception-bus">1. Perception Bus</a></h3>
+<p>AI agents receive structured snapshots of the world state:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Serialize, Deserialize)]
+pub struct PerceptionSnapshot {
+    pub timestamp: u64,
+    pub agent_id: EntityId,
+    pub visible_entities: Vec&lt;EntityData&gt;,
+    pub audio_events: Vec&lt;AudioEvent&gt;,
+    pub world_state: WorldState,
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Design Principles:</strong></p>
+<ul>
+<li><strong>Filtered Information</strong>: Agents only perceive what they should be able to see/hear</li>
+<li><strong>Structured Data</strong>: JSON-serializable for easy AI model consumption</li>
+<li><strong>Temporal Consistency</strong>: Snapshots include timing information</li>
+<li><strong>Bandwidth Efficient</strong>: Only relevant changes are included</li>
+</ul>
+<h3 id="2-planning-layer"><a class="header" href="#2-planning-layer">2. Planning Layer</a></h3>
+<p>AI models generate plans using the perception data:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct AIPlan {
+    pub agent_id: EntityId,
+    pub intent: Intent,
+    pub tools: Vec&lt;ToolUsage&gt;,
+    pub confidence: f32,
+    pub reasoning: String, // For debugging and learning
+}
+
+pub enum Intent {
+    MoveTo { target: Vec3, urgency: f32 },
+    AttackTarget { target: EntityId, weapon: Option&lt;EntityId&gt; },
+    Interact { target: EntityId, interaction_type: String },
+    Communicate { target: EntityId, message: String },
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Key Features:</strong></p>
+<ul>
+<li><strong>High-Level Intents</strong>: AI thinks in terms of goals, not implementation</li>
+<li><strong>Tool-Based Actions</strong>: All actions go through validated tools</li>
+<li><strong>Confidence Scoring</strong>: Enables dynamic difficulty and behavior tuning</li>
+<li><strong>Explainable Reasoning</strong>: For debugging and player understanding</li>
+</ul>
+<h3 id="3-tool-validation"><a class="header" href="#3-tool-validation">3. Tool Validation</a></h3>
+<p>Every AI action must be validated by the engine:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait Tool {
+    fn validate(&amp;self, world: &amp;World, usage: &amp;ToolUsage) -&gt; ValidationResult;
+    fn execute(&amp;self, world: &amp;mut World, usage: &amp;ToolUsage) -&gt; ExecutionResult;
+}
+
+// Example: Movement tool
+impl Tool for MovementTool {
+    fn validate(&amp;self, world: &amp;World, usage: &amp;ToolUsage) -&gt; ValidationResult {
+        let agent = world.get::&lt;Position&gt;(usage.agent_id)?;
+        let target = usage.target_position;
+        
+        // Check line of sight
+        if !world.line_of_sight(agent.0, target) {
+            return ValidationResult::Blocked(BlockReason::LineOfSight);
+        }
+        
+        // Check movement cooldown
+        if !self.cooldown_ready(usage.agent_id) {
+            return ValidationResult::Blocked(BlockReason::Cooldown);
+        }
+        
+        ValidationResult::Valid
+    }
+    
+    fn execute(&amp;self, world: &amp;mut World, usage: &amp;ToolUsage) -&gt; ExecutionResult {
+        // Actually perform the movement
+        world.get_mut::&lt;Position&gt;(usage.agent_id)?.0 = usage.target_position;
+        ExecutionResult::Success
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Validation Categories:</strong></p>
+<ul>
+<li><strong>Physics Constraints</strong>: Can the action physically happen?</li>
+<li><strong>Resource Requirements</strong>: Does the agent have what's needed?</li>
+<li><strong>Cooldowns</strong>: Is the action available now?</li>
+<li><strong>Line of Sight</strong>: Can the agent see the target?</li>
+<li><strong>Game Rules</strong>: Does this follow the game's rules?</li>
+</ul>
+<h2 id="networking-architecture"><a class="header" href="#networking-architecture">Networking Architecture</a></h2>
+<h3 id="server-authority"><a class="header" href="#server-authority">Server Authority</a></h3>
+<p>AstraWeave uses server-authoritative validation for multiplayer:</p>
+<pre><code>Client AI → Intent → Server Validation → World Update → State Broadcast
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>No client-side cheating possible</li>
+<li>Consistent world state across all clients</li>
+<li>AI agents validated same as human players</li>
+<li>Deterministic simulation enables easy rollback</li>
+</ul>
+<h3 id="intent-replication"><a class="header" href="#intent-replication">Intent Replication</a></h3>
+<p>Instead of replicating low-level actions, AstraWeave replicates high-level intents:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Serialize, Deserialize)]
+pub struct NetworkIntent {
+    pub player_id: PlayerId,
+    pub intent: Intent,
+    pub timestamp: u64,
+    pub predicted_outcome: Option&lt;PredictedResult&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Lower bandwidth than action replication</li>
+<li>Natural lag compensation through prediction</li>
+<li>AI and human intents handled identically</li>
+<li>Easy to implement anti-cheat</li>
+</ul>
+<h2 id="performance-architecture"><a class="header" href="#performance-architecture">Performance Architecture</a></h2>
+<h3 id="cpu-performance"><a class="header" href="#cpu-performance">CPU Performance</a></h3>
+<ul>
+<li><strong>ECS Archetype Iteration</strong>: Cache-friendly component access</li>
+<li><strong>Parallel Systems</strong>: Independent systems run in parallel</li>
+<li><strong>Incremental Updates</strong>: Only changed data is processed</li>
+<li><strong>Fixed Timestep</strong>: Predictable CPU load</li>
+</ul>
+<h3 id="memory-management"><a class="header" href="#memory-management">Memory Management</a></h3>
+<ul>
+<li><strong>Pool Allocation</strong>: Entities and components use object pools</li>
+<li><strong>Streaming</strong>: World chunks loaded/unloaded based on relevance</li>
+<li><strong>Compression</strong>: Perception data compressed before AI processing</li>
+<li><strong>Garbage Collection</strong>: Minimal allocations in hot paths</li>
+</ul>
+<h3 id="gpu-utilization"><a class="header" href="#gpu-utilization">GPU Utilization</a></h3>
+<ul>
+<li><strong>Deferred Rendering</strong>: Efficient handling of many lights</li>
+<li><strong>Instanced Rendering</strong>: Batch similar objects</li>
+<li><strong>Compute Shaders</strong>: Physics and AI calculations on GPU</li>
+<li><strong>Temporal Upsampling</strong>: Maintain quality at lower resolution</li>
+</ul>
+<h2 id="modularity-and-extensibility"><a class="header" href="#modularity-and-extensibility">Modularity and Extensibility</a></h2>
+<h3 id="crate-organization"><a class="header" href="#crate-organization">Crate Organization</a></h3>
+<pre><code>astraweave-core/     # ECS, validation, core types
+astraweave-ai/       # AI planning and perception
+astraweave-physics/  # Physics integration
+astraweave-render/   # Rendering pipeline
+astraweave-audio/    # Audio system
+astraweave-nav/      # Navigation and pathfinding
+astraweave-net/      # Networking layer
+</code></pre>
+<h3 id="plugin-system"><a class="header" href="#plugin-system">Plugin System</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait EnginePlugin {
+    fn build(&amp;self, app: &amp;mut App);
+}
+
+pub struct CustomGamePlugin;
+
+impl EnginePlugin for CustomGamePlugin {
+    fn build(&amp;self, app: &amp;mut App) {
+        app.add_system(custom_ai_behavior_system)
+           .add_tool(CustomInteractionTool)
+           .register_component::&lt;CustomComponent&gt;();
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="security-model"><a class="header" href="#security-model">Security Model</a></h2>
+<h3 id="ai-sandboxing"><a class="header" href="#ai-sandboxing">AI Sandboxing</a></h3>
+<p>AI agents cannot:</p>
+<ul>
+<li>Access arbitrary memory</li>
+<li>Execute arbitrary code</li>
+<li>Bypass tool validation</li>
+<li>Affect systems outside their permissions</li>
+</ul>
+<p>AI agents can only:</p>
+<ul>
+<li>Receive perception data</li>
+<li>Generate high-level intents</li>
+<li>Use validated tools</li>
+<li>Learn from feedback</li>
+</ul>
+<h3 id="deterministic-security"><a class="header" href="#deterministic-security">Deterministic Security</a></h3>
+<p>The deterministic simulation enables:</p>
+<ul>
+<li><strong>Replay Verification</strong>: Detect desync and cheating</li>
+<li><strong>Formal Verification</strong>: Mathematical proof of certain properties</li>
+<li><strong>Predictable Testing</strong>: Reliable automated testing</li>
+<li><strong>Audit Trails</strong>: Complete history of all decisions</li>
+</ul>
+<h2 id="development-philosophy"><a class="header" href="#development-philosophy">Development Philosophy</a></h2>
+<h3 id="composition-over-inheritance"><a class="header" href="#composition-over-inheritance">Composition Over Inheritance</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Instead of inheritance hierarchies
+class AIAgent extends Entity { ... }
+
+// Use component composition
+struct Entity {
+    components: HashMap&lt;ComponentId, Box&lt;dyn Component&gt;&gt;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="data-driven-design"><a class="header" href="#data-driven-design">Data-Driven Design</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Behavior configured through data
+#[derive(Deserialize)]
+struct AIProfile {
+    aggression: f32,
+    curiosity: f32,
+    risk_tolerance: f32,
+    preferred_tools: Vec&lt;String&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="testable-architecture"><a class="header" href="#testable-architecture">Testable Architecture</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Every system is pure and testable
+fn ai_planning_system(
+    world: &amp;World, 
+    perceptions: &amp;[PerceptionSnapshot]
+) -&gt; Vec&lt;AIPlan&gt; {
+    // Pure function - easy to test
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="comparison-with-traditional-engines"><a class="header" href="#comparison-with-traditional-engines">Comparison with Traditional Engines</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Aspect</th><th>Traditional Engine</th><th>AstraWeave</th></tr></thead><tbody>
+<tr><td>AI Integration</td><td>Bolted-on scripting</td><td>Core architecture</td></tr>
+<tr><td>Action Validation</td><td>Trust-based</td><td>Engine-validated</td></tr>
+<tr><td>Determinism</td><td>Variable</td><td>Fixed-tick</td></tr>
+<tr><td>Networking</td><td>Action replication</td><td>Intent replication</td></tr>
+<tr><td>Performance</td><td>Variable</td><td>Predictable</td></tr>
+<tr><td>Testing</td><td>Difficult</td><td>Deterministic</td></tr>
+</tbody></table>
+</div>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<p>To understand specific systems:</p>
+<ul>
+<li><a href="./ai-native.html">AI-Native Design</a> - Deep dive into AI architecture</li>
+<li><a href="./ecs.html">ECS Architecture</a> - Entity-Component-System details</li>
+<li><a href="./deterministic.html">Deterministic Simulation</a> - Fixed-tick simulation</li>
+<li><a href="./tool-validation.html">Tool Validation System</a> - How AI actions are validated</li>
+</ul>
+<p>To start building:</p>
+<ul>
+<li><a href="../game-dev/first-game.html">Building Your First Game</a></li>
+<li><a href="../core-systems/ai/index.html">Core Systems</a></li>
+<li><a href="../examples/index.html">Working Examples</a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../getting-started/requirements.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../architecture/ai-native.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../getting-started/requirements.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../architecture/ai-native.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,876 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>AI-Native Design - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/architecture/ai-native.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="ai-native-design"><a class="header" href="#ai-native-design">AI-Native Design</a></h1>
+<p>AstraWeave's AI-native design represents a fundamental shift in how game engines approach artificial intelligence. Instead of treating AI as an add-on feature, we've built the entire engine around the principle that <strong>AI agents are first-class citizens</strong>.</p>
+<h2 id="the-traditional-approach-and-why-it-fails"><a class="header" href="#the-traditional-approach-and-why-it-fails">The Traditional Approach (And Why It Fails)</a></h2>
+<p>Most game engines follow this pattern:</p>
+<pre><code>Game Engine → Game Logic → AI Scripting Layer → NPC Behaviors
+</code></pre>
+<p><strong>Problems with this approach:</strong></p>
+<ul>
+<li>AI is disconnected from core game systems</li>
+<li>AI agents can cheat (access hidden information, ignore physics)</li>
+<li>Difficult to create consistent multiplayer behavior</li>
+<li>AI behavior is scripted, not emergent</li>
+<li>Hard to test and debug AI interactions</li>
+</ul>
+<h2 id="astraweaves-ai-native-approach"><a class="header" href="#astraweaves-ai-native-approach">AstraWeave's AI-Native Approach</a></h2>
+<p>AstraWeave inverts this relationship:</p>
+<pre><code>AI Agents ← Tool Validation ← Engine Core ← Game Logic
+</code></pre>
+<p><strong>Benefits of this approach:</strong></p>
+<ul>
+<li>AI and human players use identical systems</li>
+<li>No AI cheating possible</li>
+<li>Emergent behavior from simple rules</li>
+<li>Natural multiplayer compatibility</li>
+<li>Testable and debuggable AI behavior</li>
+</ul>
+<h2 id="core-principles"><a class="header" href="#core-principles">Core Principles</a></h2>
+<h3 id="1-perception-based-decision-making"><a class="header" href="#1-perception-based-decision-making">1. Perception-Based Decision Making</a></h3>
+<p>AI agents only know what they can perceive:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Serialize, Deserialize)]
+pub struct PerceptionSnapshot {
+    // Only information the AI should have access to
+    pub visible_entities: Vec&lt;EntityData&gt;,
+    pub audible_events: Vec&lt;AudioEvent&gt;,
+    pub remembered_information: Vec&lt;MemoryItem&gt;,
+    pub world_constraints: Vec&lt;Constraint&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>No omniscience</strong>: AI cannot access:</p>
+<ul>
+<li>Hidden game state</li>
+<li>Other agents' thoughts</li>
+<li>Perfect world information</li>
+<li>Player UI state</li>
+<li>Debug information</li>
+</ul>
+<p><strong>Realistic limitations</strong>: AI must work within:</p>
+<ul>
+<li>Line of sight restrictions</li>
+<li>Hearing range limitations</li>
+<li>Memory capacity constraints</li>
+<li>Processing time limits</li>
+</ul>
+<h3 id="2-intent-based-actions"><a class="header" href="#2-intent-based-actions">2. Intent-Based Actions</a></h3>
+<p>AI generates high-level intents, not low-level commands:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum Intent {
+    // High-level goals
+    ExploreArea { target_region: Region, curiosity: f32 },
+    SeekCover { threat_direction: Vec3, urgency: f32 },
+    ProtectAlly { ally_id: EntityId, commitment: f32 },
+    
+    // Not low-level commands like "move left 3 pixels"
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>AI thinks strategically, not tactically</li>
+<li>Natural language mapping for LLMs</li>
+<li>Easy to understand and debug</li>
+<li>Platform and implementation independent</li>
+</ul>
+<h3 id="3-tool-based-execution"><a class="header" href="#3-tool-based-execution">3. Tool-Based Execution</a></h3>
+<p>All AI actions go through validated tools:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub trait Tool {
+    // Every action must be validated first
+    fn validate(&amp;self, world: &amp;World, usage: &amp;ToolUsage) -&gt; ValidationResult;
+    
+    // Only valid actions are executed
+    fn execute(&amp;self, world: &amp;mut World, usage: &amp;ToolUsage) -&gt; ExecutionResult;
+    
+    // Tools have constraints and cooldowns
+    fn get_constraints(&amp;self) -&gt; ToolConstraints;
+}
+<span class="boring">}</span></code></pre></pre>
+<p><strong>No direct world manipulation</strong>: AI cannot:</p>
+<ul>
+<li>Teleport entities</li>
+<li>Spawn infinite resources</li>
+<li>Ignore physics constraints</li>
+<li>Break game rules</li>
+</ul>
+<h2 id="the-ai-pipeline-architecture"><a class="header" href="#the-ai-pipeline-architecture">The AI Pipeline Architecture</a></h2>
+<h3 id="phase-1-perception"><a class="header" href="#phase-1-perception">Phase 1: Perception</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn perception_system(
+    mut agents: Query&lt;(&amp;Position, &amp;AIAgent, &amp;mut PerceptionState)&gt;,
+    world_entities: Query&lt;&amp;Position, &amp;EntityType&gt;,
+    audio_events: Res&lt;AudioEventBuffer&gt;,
+) {
+    for (pos, agent, mut perception) in agents.iter_mut() {
+        let mut snapshot = PerceptionSnapshot::new();
+        
+        // Gather visible entities (line of sight)
+        for (other_pos, entity_type) in world_entities.iter() {
+            if world.line_of_sight(pos.0, other_pos.0) {
+                let distance = pos.0.distance(other_pos.0);
+                if distance &lt;= agent.vision_range {
+                    snapshot.visible_entities.push(EntityData {
+                        position: other_pos.0,
+                        entity_type: entity_type.clone(),
+                        distance,
+                    });
+                }
+            }
+        }
+        
+        // Gather audible events
+        for event in audio_events.iter() {
+            let distance = pos.0.distance(event.position);
+            let volume = event.calculate_volume_at_distance(distance);
+            if volume &gt; agent.hearing_threshold {
+                snapshot.audible_events.push(event.clone());
+            }
+        }
+        
+        // Include relevant memories
+        snapshot.remembered_information = agent.memory.query_relevant(
+            &amp;snapshot, 
+            agent.memory_capacity
+        );
+        
+        perception.current_snapshot = Some(snapshot);
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="phase-2-planning"><a class="header" href="#phase-2-planning">Phase 2: Planning</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn ai_planning_system(
+    mut agents: Query&lt;(&amp;AIAgent, &amp;PerceptionState, &amp;mut PlanningState)&gt;,
+    ai_service: Res&lt;AIService&gt;,
+) {
+    for (agent, perception, mut planning) in agents.iter_mut() {
+        if let Some(snapshot) = &amp;perception.current_snapshot {
+            // Prepare input for AI model
+            let planning_request = PlanningRequest {
+                agent_profile: agent.profile.clone(),
+                perception_data: snapshot.clone(),
+                available_tools: tool_registry.get_available_tools(agent.id),
+                current_goals: agent.goal_stack.clone(),
+                recent_memory: agent.memory.get_recent(10),
+            };
+            
+            // Generate plan using LLM
+            match ai_service.generate_plan(planning_request) {
+                Ok(plan) =&gt; {
+                    info!("AI generated plan: {:?}", plan);
+                    planning.current_plan = Some(plan);
+                },
+                Err(e) =&gt; {
+                    warn!("AI planning failed: {}", e);
+                    // Fallback to simple behaviors
+                    planning.current_plan = Some(generate_fallback_plan(agent));
+                }
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="phase-3-validation"><a class="header" href="#phase-3-validation">Phase 3: Validation</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn tool_validation_system(
+    mut agents: Query&lt;(&amp;PlanningState, &amp;mut ActionQueue)&gt;,
+    tool_registry: Res&lt;ToolRegistry&gt;,
+    world: &amp;World,
+) {
+    for (planning, mut actions) in agents.iter_mut() {
+        if let Some(plan) = &amp;planning.current_plan {
+            for tool_usage in &amp;plan.tool_usages {
+                let tool = tool_registry.get_tool(&amp;tool_usage.tool_name)?;
+                
+                match tool.validate(world, tool_usage) {
+                    ValidationResult::Valid =&gt; {
+                        actions.push(ValidatedAction {
+                            tool_usage: tool_usage.clone(),
+                            validation_timestamp: world.current_tick(),
+                        });
+                    },
+                    ValidationResult::Blocked(reason) =&gt; {
+                        warn!("Tool validation failed: {:?}", reason);
+                        // AI learns from failure
+                        agent.memory.record_failure(tool_usage, reason);
+                    },
+                    ValidationResult::Delayed(wait_time) =&gt; {
+                        actions.push_delayed(tool_usage.clone(), wait_time);
+                    }
+                }
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="phase-4-execution"><a class="header" href="#phase-4-execution">Phase 4: Execution</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn action_execution_system(
+    mut agents: Query&lt;&amp;mut ActionQueue&gt;,
+    tool_registry: Res&lt;ToolRegistry&gt;,
+    mut world: ResMut&lt;World&gt;,
+) {
+    for mut actions in agents.iter_mut() {
+        while let Some(action) = actions.pop_ready() {
+            let tool = tool_registry.get_tool(&amp;action.tool_usage.tool_name)?;
+            
+            match tool.execute(&amp;mut world, &amp;action.tool_usage) {
+                ExecutionResult::Success =&gt; {
+                    // AI learns from success
+                    agent.memory.record_success(&amp;action.tool_usage);
+                },
+                ExecutionResult::Failed(reason) =&gt; {
+                    // Even validated actions can fail during execution
+                    warn!("Action execution failed: {:?}", reason);
+                    agent.memory.record_execution_failure(&amp;action.tool_usage, reason);
+                }
+            }
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="tool-design-philosophy"><a class="header" href="#tool-design-philosophy">Tool Design Philosophy</a></h2>
+<h3 id="tools-as-affordances"><a class="header" href="#tools-as-affordances">Tools as Affordances</a></h3>
+<p>In AstraWeave, tools represent what an agent <em>can do</em>, not what it <em>will do</em>:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct MovementTool {
+    max_speed: f32,
+    acceleration: f32,
+    valid_surfaces: Vec&lt;SurfaceType&gt;,
+}
+
+impl Tool for MovementTool {
+    fn validate(&amp;self, world: &amp;World, usage: &amp;ToolUsage) -&gt; ValidationResult {
+        // Check if movement is physically possible
+        let agent_pos = world.get::&lt;Position&gt;(usage.agent_id)?;
+        let target_pos = usage.parameters.get_vec3("target")?;
+        
+        // Line of sight check
+        if !world.line_of_sight(agent_pos.0, target_pos) {
+            return ValidationResult::Blocked(BlockReason::ObstructedPath);
+        }
+        
+        // Surface validity check
+        let surface_type = world.get_surface_type(target_pos);
+        if !self.valid_surfaces.contains(&amp;surface_type) {
+            return ValidationResult::Blocked(BlockReason::InvalidSurface);
+        }
+        
+        // Speed limit check
+        let distance = agent_pos.0.distance(target_pos);
+        let time_required = distance / self.max_speed;
+        if time_required &gt; usage.max_execution_time {
+            return ValidationResult::Blocked(BlockReason::TooSlow);
+        }
+        
+        ValidationResult::Valid
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="tool-composition"><a class="header" href="#tool-composition">Tool Composition</a></h3>
+<p>Complex behaviors emerge from combining simple tools:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI plans using multiple tools in sequence
+let complex_plan = AIPlan {
+    steps: vec![
+        ToolUsage {
+            tool_name: "MovementTool",
+            parameters: movement_params,
+        },
+        ToolUsage {
+            tool_name: "InteractionTool", 
+            parameters: interaction_params,
+        },
+        ToolUsage {
+            tool_name: "CommunicationTool",
+            parameters: communication_params,
+        },
+    ],
+};
+<span class="boring">}</span></code></pre></pre>
+<h2 id="learning-and-adaptation"><a class="header" href="#learning-and-adaptation">Learning and Adaptation</a></h2>
+<h3 id="memory-system-integration"><a class="header" href="#memory-system-integration">Memory System Integration</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct AIMemory {
+    // Short-term working memory
+    working_memory: VecDeque&lt;MemoryItem&gt;,
+    
+    // Long-term episodic memory
+    episodic_memory: Vec&lt;Episode&gt;,
+    
+    // Learned patterns and strategies
+    strategy_memory: HashMap&lt;Situation, Strategy&gt;,
+    
+    // Failed actions and why they failed
+    failure_memory: Vec&lt;FailureRecord&gt;,
+}
+
+impl AIMemory {
+    pub fn record_success(&amp;mut self, action: &amp;ToolUsage, outcome: &amp;ExecutionResult) {
+        // Reinforce successful strategies
+        let situation = self.extract_situation_features(action);
+        let strategy = self.extract_strategy_features(action);
+        self.strategy_memory.entry(situation)
+            .or_default()
+            .reinforce(strategy, outcome.success_metric());
+    }
+    
+    pub fn record_failure(&amp;mut self, action: &amp;ToolUsage, reason: &amp;BlockReason) {
+        // Learn from failures to avoid them
+        self.failure_memory.push(FailureRecord {
+            action: action.clone(),
+            reason: reason.clone(),
+            context: self.current_context.clone(),
+            timestamp: Instant::now(),
+        });
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="dynamic-behavior-adaptation"><a class="header" href="#dynamic-behavior-adaptation">Dynamic Behavior Adaptation</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn adaptation_system(
+    mut agents: Query&lt;(&amp;mut AIAgent, &amp;AIMemory)&gt;,
+) {
+    for (mut agent, memory) in agents.iter_mut() {
+        // Adjust behavior based on recent experiences
+        let recent_failures = memory.get_recent_failures(Duration::from_secs(300));
+        
+        if recent_failures.iter().any(|f| matches!(f.reason, BlockReason::TooAggressive)) {
+            agent.profile.aggression *= 0.9; // Become less aggressive
+        }
+        
+        if recent_failures.iter().any(|f| matches!(f.reason, BlockReason::TooSlow)) {
+            agent.profile.urgency *= 1.1; // Become more urgent
+        }
+        
+        // Adapt strategy preferences
+        let successful_strategies = memory.get_successful_strategies();
+        for (situation, strategy) in successful_strategies {
+            agent.strategy_preferences.insert(situation, strategy);
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="emergent-behavior-examples"><a class="header" href="#emergent-behavior-examples">Emergent Behavior Examples</a></h2>
+<h3 id="cooperative-pathfinding"><a class="header" href="#cooperative-pathfinding">Cooperative Pathfinding</a></h3>
+<p>When multiple AI agents need to navigate through a narrow passage:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// No explicit coordination code needed
+// Emergent behavior arises from:
+// 1. Each agent perceives others as obstacles
+// 2. Movement tool validates non-collision
+// 3. Agents naturally take turns or find alternate routes
+<span class="boring">}</span></code></pre></pre>
+<h3 id="dynamic-alliance-formation"><a class="header" href="#dynamic-alliance-formation">Dynamic Alliance Formation</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Agents can form alliances based on shared threats
+fn threat_response_planning(
+    agent: &amp;AIAgent,
+    perception: &amp;PerceptionSnapshot,
+) -&gt; Intent {
+    let threats = perception.identify_threats();
+    let potential_allies = perception.identify_potential_allies();
+    
+    if threats.is_empty() {
+        return Intent::Explore { target: random_area() };
+    }
+    
+    if potential_allies.is_empty() {
+        return Intent::Flee { threat_direction: threats[0].position };
+    }
+    
+    // Emergent alliance formation
+    Intent::CoordinateDefense {
+        allies: potential_allies,
+        threat: threats[0],
+        strategy: choose_defensive_strategy(threats, potential_allies),
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="adaptive-combat-tactics"><a class="header" href="#adaptive-combat-tactics">Adaptive Combat Tactics</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI learns and counters player strategies
+fn combat_planning(
+    agent: &amp;AIAgent,
+    perception: &amp;PerceptionSnapshot,
+    memory: &amp;AIMemory,
+) -&gt; Intent {
+    let player = perception.find_player()?;
+    
+    // Analyze player's recent tactics
+    let player_patterns = memory.analyze_player_behavior(&amp;player);
+    
+    // Choose counter-strategy
+    let counter_strategy = match player_patterns.primary_tactic {
+        PlayerTactic::RushAttack =&gt; CombatStrategy::DefensiveCounter,
+        PlayerTactic::RangedKiting =&gt; CombatStrategy::ClosingPincer,
+        PlayerTactic::DefensiveTurtle =&gt; CombatStrategy::AreaDenial,
+        PlayerTactic::Unpredictable =&gt; CombatStrategy::AdaptiveReactive,
+    };
+    
+    Intent::ExecuteCombatStrategy {
+        target: player.entity_id,
+        strategy: counter_strategy,
+        commitment: calculate_commitment(player_patterns.skill_level),
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h2>
+<h3 id="computational-efficiency"><a class="header" href="#computational-efficiency">Computational Efficiency</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI planning can be expensive, so we use various optimizations:
+
+pub struct AIService {
+    // LLM inference can be slow
+    model_cache: LRUCache&lt;PlanningRequest, AIPlan&gt;,
+    
+    // Batch multiple planning requests
+    batch_processor: BatchProcessor&lt;PlanningRequest&gt;,
+    
+    // Use cheaper models for simple decisions
+    model_hierarchy: Vec&lt;AIModel&gt;, // Fast → Accurate
+}
+
+impl AIService {
+    pub fn generate_plan(&amp;self, request: PlanningRequest) -&gt; Result&lt;AIPlan&gt; {
+        // Check cache first
+        if let Some(cached_plan) = self.model_cache.get(&amp;request) {
+            return Ok(cached_plan.clone());
+        }
+        
+        // Use appropriate model based on complexity
+        let model = self.select_model(request.complexity());
+        
+        // Generate plan
+        let plan = model.generate_plan(request)?;
+        
+        // Cache result
+        self.model_cache.insert(request, plan.clone());
+        
+        Ok(plan)
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="memory-management"><a class="header" href="#memory-management">Memory Management</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI memory systems need careful management
+impl AIMemory {
+    pub fn cleanup_old_memories(&amp;mut self) {
+        // Remove memories older than threshold
+        let cutoff = Instant::now() - Duration::from_secs(3600); // 1 hour
+        self.episodic_memory.retain(|episode| episode.timestamp &gt; cutoff);
+        
+        // Compress similar memories
+        self.compress_similar_episodes();
+        
+        // Keep only the most important failures
+        self.failure_memory.sort_by_key(|f| f.importance_score());
+        self.failure_memory.truncate(100); // Keep top 100
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="debugging-ai-behavior"><a class="header" href="#debugging-ai-behavior">Debugging AI Behavior</a></h2>
+<h3 id="explainable-ai"><a class="header" href="#explainable-ai">Explainable AI</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Debug, Serialize)]
+pub struct AIPlan {
+    pub intent: Intent,
+    pub reasoning: String, // Natural language explanation
+    pub confidence: f32,
+    pub alternative_plans: Vec&lt;AlternativePlan&gt;,
+    pub decision_factors: Vec&lt;DecisionFactor&gt;,
+}
+
+// Example reasoning output:
+"I can see an enemy at position (10, 5) who appears to be low on health. 
+My ally is engaged in combat nearby and could use support. I have a clear 
+line of sight and my weapon is ready. I'm choosing to attack rather than 
+flank because the enemy seems focused on my ally and won't see me coming."
+<span class="boring">}</span></code></pre></pre>
+<h3 id="debug-visualization"><a class="header" href="#debug-visualization">Debug Visualization</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// In development builds, expose AI decision making
+#[cfg(debug_assertions)]
+impl AIAgent {
+    pub fn get_debug_info(&amp;self) -&gt; AIDebugInfo {
+        AIDebugInfo {
+            current_perception: self.perception.clone(),
+            active_plan: self.planning.current_plan.clone(),
+            recent_decisions: self.memory.get_recent_decisions(10),
+            personality_state: self.profile.clone(),
+            tool_availability: self.get_available_tools(),
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="integration-with-traditional-game-systems"><a class="header" href="#integration-with-traditional-game-systems">Integration with Traditional Game Systems</a></h2>
+<h3 id="physics-integration"><a class="header" href="#physics-integration">Physics Integration</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI respects physics constraints
+impl Tool for MovementTool {
+    fn validate(&amp;self, world: &amp;World, usage: &amp;ToolUsage) -&gt; ValidationResult {
+        let physics_world = world.resource::&lt;PhysicsWorld&gt;();
+        let agent_body = physics_world.get_body(usage.agent_id)?;
+        
+        // Check if movement would cause collision
+        let proposed_movement = usage.parameters.get_vec3("target")?;
+        if physics_world.would_collide(agent_body, proposed_movement) {
+            return ValidationResult::Blocked(BlockReason::PhysicsCollision);
+        }
+        
+        ValidationResult::Valid
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="animation-integration"><a class="header" href="#animation-integration">Animation Integration</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI actions trigger appropriate animations
+impl Tool for CombatTool {
+    fn execute(&amp;self, world: &amp;mut World, usage: &amp;ToolUsage) -&gt; ExecutionResult {
+        let attack_type = usage.parameters.get_string("attack_type")?;
+        
+        // Trigger combat animation
+        world.get_mut::&lt;AnimationController&gt;(usage.agent_id)?
+             .play_animation(format!("attack_{}", attack_type));
+        
+        // Execute combat logic
+        self.resolve_combat(world, usage)
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="comparison-traditional-vs-ai-native"><a class="header" href="#comparison-traditional-vs-ai-native">Comparison: Traditional vs AI-Native</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Aspect</th><th>Traditional Approach</th><th>AstraWeave AI-Native</th></tr></thead><tbody>
+<tr><td><strong>Decision Making</strong></td><td>Scripted state machines</td><td>LLM-based planning</td></tr>
+<tr><td><strong>World Knowledge</strong></td><td>Omniscient access</td><td>Perception-limited</td></tr>
+<tr><td><strong>Action Execution</strong></td><td>Direct world manipulation</td><td>Tool-validated actions</td></tr>
+<tr><td><strong>Behavior Adaptation</strong></td><td>Manual script updates</td><td>Automatic learning</td></tr>
+<tr><td><strong>Multiplayer</strong></td><td>Separate AI/player code</td><td>Unified validation</td></tr>
+<tr><td><strong>Debugging</strong></td><td>Complex state inspection</td><td>Natural language reasoning</td></tr>
+<tr><td><strong>Performance</strong></td><td>Predictable overhead</td><td>Variable AI complexity</td></tr>
+<tr><td><strong>Emergence</strong></td><td>Limited by scripts</td><td>Unbounded combinations</td></tr>
+</tbody></table>
+</div>
+<h2 id="best-practices-for-ai-native-development"><a class="header" href="#best-practices-for-ai-native-development">Best Practices for AI-Native Development</a></h2>
+<h3 id="1-design-affordances-not-behaviors"><a class="header" href="#1-design-affordances-not-behaviors">1. Design Affordances, Not Behaviors</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Good: Define what an agent CAN do
+pub struct InteractionTool {
+    pub interaction_range: f32,
+    pub valid_targets: Vec&lt;EntityType&gt;,
+    pub cooldown: Duration,
+}
+
+// Avoid: Scripting what an agent WILL do
+// pub fn npc_behavior_script() { ... }
+<span class="boring">}</span></code></pre></pre>
+<h3 id="2-embrace-failure-as-learning"><a class="header" href="#2-embrace-failure-as-learning">2. Embrace Failure as Learning</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// AI failures are features, not bugs
+if let Err(validation_error) = tool.validate(world, usage) {
+    // Don't just log the error - let the AI learn from it
+    agent.memory.record_lesson(validation_error, current_context);
+    
+    // AI will avoid this mistake in similar situations
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="3-provide-rich-perception"><a class="header" href="#3-provide-rich-perception">3. Provide Rich Perception</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Give AI agents the information they need to make good decisions
+pub struct PerceptionSnapshot {
+    // Not just positions, but meaningful context
+    pub entities: Vec&lt;EntityPerception&gt;,
+    pub environmental_cues: Vec&lt;EnvironmentalCue&gt;,
+    pub social_context: SocialContext,
+    pub recent_events: Vec&lt;GameEvent&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="4-use-hierarchical-planning"><a class="header" href="#4-use-hierarchical-planning">4. Use Hierarchical Planning</a></h3>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Break complex goals into manageable sub-goals
+pub enum Intent {
+    // High-level strategic goals
+    DefendTerritory { area: Region },
+    
+    // Mid-level tactical goals  
+    EstablishDefensivePosition { chokepoint: Vec3 },
+    
+    // Low-level operational goals
+    MoveToCover { cover_position: Vec3 },
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="future-directions"><a class="header" href="#future-directions">Future Directions</a></h2>
+<h3 id="advanced-ai-architectures"><a class="header" href="#advanced-ai-architectures">Advanced AI Architectures</a></h3>
+<ul>
+<li><strong>Multi-Agent Planning</strong>: Coordinated group decision making</li>
+<li><strong>Hierarchical Temporal Memory</strong>: Better long-term memory systems</li>
+<li><strong>Causal Reasoning</strong>: Understanding cause-and-effect relationships</li>
+<li><strong>Meta-Learning</strong>: AI that learns how to learn better</li>
+</ul>
+<h3 id="performance-optimizations"><a class="header" href="#performance-optimizations">Performance Optimizations</a></h3>
+<ul>
+<li><strong>Neural Network Compression</strong>: Smaller, faster AI models</li>
+<li><strong>Predictive Caching</strong>: Pre-compute likely AI decisions</li>
+<li><strong>Distributed Processing</strong>: AI planning across multiple cores/machines</li>
+<li><strong>Hybrid Approaches</strong>: Combine neural networks with symbolic reasoning</li>
+</ul>
+<hr />
+<p><em>AI-native design is not just about making NPCs smarter - it's about creating fundamentally new types of interactive experiences where AI agents are true participants in the game world, subject to the same rules and constraints as human players.</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../architecture/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../architecture/ecs.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../architecture/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../architecture/ecs.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
