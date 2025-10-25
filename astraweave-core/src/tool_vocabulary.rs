@@ -830,7 +830,8 @@ mod tests {
         };
         
         let schema = generate_tool_schema(&tool);
-        assert!(schema.contains(r#""act": "MoveTo""#));
+        // Tool name is converted to snake_case
+        assert!(schema.contains(r#""act": "move_to""#));
         assert!(schema.contains(r#""x": <i32>"#));
         assert!(schema.contains(r#""y": <i32>"#));
     }

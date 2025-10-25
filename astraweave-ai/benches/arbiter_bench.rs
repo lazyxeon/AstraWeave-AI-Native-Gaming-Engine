@@ -82,8 +82,8 @@ mod benchmarks {
         fn propose_plan(&self, _snap: &WorldSnapshot) -> PlanIntent {
             PlanIntent {
                 plan_id: "bench-goap".into(),
-                steps: vec![ActionStep::MoveTo { 
-                    x: 5, 
+                steps: vec![ActionStep::MoveTo {
+                    x: 5,
                     y: 5,
                     speed: None,
                 }],

@@ -92,7 +92,11 @@ fn sys_ai_planning(world: &mut ecs::World) {
             let plan = orch.propose_plan(&snap);
             if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.iter().find_map(|s| {
                 if let ActionStep::MoveTo { x, y, .. } = s {
-                    Some(ActionStep::MoveTo { x: *x, y: *y, speed: None })
+                    Some(ActionStep::MoveTo {
+                        x: *x,
+                        y: *y,
+                        speed: None,
+                    })
                 } else {
                     None
                 }
@@ -199,7 +203,11 @@ fn sys_ai_planning(world: &mut ecs::World) {
         let plan = orch.propose_plan(&snap);
         if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.iter().find_map(|s| {
             if let ActionStep::MoveTo { x, y, .. } = s {
-                Some(ActionStep::MoveTo { x: *x, y: *y, speed: None })
+                Some(ActionStep::MoveTo {
+                    x: *x,
+                    y: *y,
+                    speed: None,
+                })
             } else {
                 None
             }
@@ -309,6 +317,317 @@ mod tests {
         let v: Vec<_> = rdr.drain().collect();
         assert_eq!(v.len(), 1);
         assert_eq!(v[0].entity, ally);
+        Ok(())
+    }
+
+    // =============================================================================
+    // Plugin Registration Tests (2 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_ai_plugin_name() {
+        // Verify plugin has correct name for debugging
+        let _plugin = AiPlanningPlugin;
+        // Plugin trait doesn't expose name() method, but we can verify type name
+        let type_name = std::any::type_name::<AiPlanningPlugin>();
+        assert!(type_name.contains("AiPlanningPlugin"));
+    }
+
+    #[test]
+    fn test_ai_plugin_setup() -> Result<()> {
+        // Verify plugin properly initializes resources and systems
+        let w = World::new();
+        let mut app = ecs::App::new();
+        app.world.insert_resource(w);
+
+        // Add plugin
+        app = app.add_plugin(AiPlanningPlugin);
+
+        // Verify Events<AiPlanningFailedEvent> resource was added
+        assert!(
+            app.world
+                .get_resource::<Events<AiPlanningFailedEvent>>()
+                .is_some(),
+            "Plugin should register AiPlanningFailedEvent resource"
+        );
+
+        // Verify system was added to schedule
+        // (No direct API to check system names, but we can verify app runs without panicking)
+        let _app = app.run_fixed(1);
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // build_app_with_ai Tests (3 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_build_app_with_ai_systems() -> Result<()> {
+        // Verify build_app_with_ai creates app with AI planning system
+        let w = World::new();
+        let app = build_app_with_ai(w, 0.016);
+
+        // Verify AI planning failed events resource exists
+        // (Note: AiPlannedEvent is emitted but not pre-registered as a resource)
+        assert!(
+            app.world
+                .get_resource::<Events<AiPlanningFailedEvent>>()
+                .is_some(),
+            "build_app_with_ai should include AI planning failed events"
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_build_app_with_ai_timestep() -> Result<()> {
+        // Verify timestep is correctly set
+        let w = World::new();
+        let dt = 0.033; // 30 FPS
+        let app = build_app_with_ai(w, dt);
+
+        // App should be runnable with the specified timestep
+        // (No direct API to verify dt, but run_fixed should work)
+        let app = app.run_fixed(1);
+
+        // Verify app is still valid after tick (check via resource existence)
+        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_some());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_build_app_with_legacy_world() -> Result<()> {
+        // Verify legacy World resource is properly integrated
+        use astraweave_core::Team;
+
+        let mut w = World::new();
+
+        // Use legacy World API to spawn entities
+        let _player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
+        let _companion = w.spawn("Companion", IVec2 { x: 1, y: 1 }, Team { id: 1 }, 80, 30);
+        let _enemy = w.spawn("Enemy", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 50, 15);
+
+        let app = build_app_with_ai(w, 0.016);
+
+        // Verify legacy World resource exists
+        assert!(
+            app.world.get_resource::<World>().is_some(),
+            "Legacy World should be preserved as resource"
+        );
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // System Function Tests (2 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_ai_planning_system_execution() -> Result<()> {
+        // Verify sys_ai_planning runs without errors
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn companion
+        let ally = app.world.spawn();
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
+
+        // Run system (via app tick)
+        app = app.run_fixed(1);
+
+        // System should have run successfully (no panic)
+        // Verify Events resource still exists
+        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_some());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ai_component_queries() -> Result<()> {
+        // Verify system correctly queries ECS components
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn multiple companions with different positions
+        let ally1 = app.world.spawn();
+        app.world.insert(
+            ally1,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(ally1, CTeam { id: 1 });
+        app.world.insert(ally1, CAmmo { rounds: 30 });
+        app.world.insert(
+            ally1,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
+
+        let ally2 = app.world.spawn();
+        app.world.insert(
+            ally2,
+            CPos {
+                pos: IVec2 { x: 10, y: 10 },
+            },
+        );
+        app.world.insert(ally2, CTeam { id: 1 });
+        app.world.insert(ally2, CAmmo { rounds: 15 });
+        app.world.insert(
+            ally2,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
+
+        // Spawn enemy
+        let enemy = app.world.spawn();
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 5 },
+            },
+        );
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        // Run system
+        app = app.run_fixed(1);
+
+        // Both allies should have CDesiredPos set (system queries all team 1 entities)
+        assert!(
+            app.world.get::<CDesiredPos>(ally1).is_some(),
+            "Ally 1 should have desired position"
+        );
+        assert!(
+            app.world.get::<CDesiredPos>(ally2).is_some(),
+            "Ally 2 should have desired position"
+        );
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // Additional Edge Case Tests (2 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_ai_planning_no_enemies() -> Result<()> {
+        // Verify system handles no enemies gracefully (should produce failed events)
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn companion without any enemies
+        let ally = app.world.spawn();
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
+
+        app = app.run_fixed(1);
+
+        // Should produce a failed event (no valid move)
+        let evs = app
+            .world
+            .get_resource_mut::<Events<AiPlanningFailedEvent>>()
+            .ok_or_else(|| anyhow!("AiPlanningFailedEvent resource missing"))?;
+        let mut rdr = evs.reader();
+        let v: Vec<_> = rdr.drain().collect();
+
+        assert_eq!(v.len(), 1, "Should have one failed event");
+        assert_eq!(v[0].entity, ally);
+        assert!(v[0].reason.contains("No valid"));
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_legacy_companion_to_ecs_fallback() -> Result<()> {
+        // Verify map_legacy_companion_to_ecs uses closest entity when no bridge exists
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn two companions at different distances from origin
+        let close_ally = app.world.spawn();
+        app.world.insert(
+            close_ally,
+            CPos {
+                pos: IVec2 { x: 1, y: 1 },
+            },
+        ); // Distance 2
+        app.world.insert(close_ally, CTeam { id: 1 });
+
+        let far_ally = app.world.spawn();
+        app.world.insert(
+            far_ally,
+            CPos {
+                pos: IVec2 { x: 10, y: 10 },
+            },
+        ); // Distance 20
+        app.world.insert(far_ally, CTeam { id: 1 });
+
+        // Create a snapshot with companion at origin
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 }, // At origin
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        // Build positions map
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(close_ally, IVec2 { x: 1, y: 1 });
+        positions.insert(far_ally, IVec2 { x: 10, y: 10 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(close_ally, 1);
+        teams.insert(far_ally, 1);
+
+        // Call mapping function
+        let legacy_id = 1; // Arbitrary legacy ID
+        let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, legacy_id, &app.world);
+
+        // Should map to closest companion (close_ally)
+        assert_eq!(mapped, Some(close_ally), "Should map to closest companion");
+
         Ok(())
     }
 }

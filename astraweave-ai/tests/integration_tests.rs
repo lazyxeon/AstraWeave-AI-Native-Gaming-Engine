@@ -89,10 +89,7 @@ fn test_full_ai_loop_60fps() {
 
     // Calculate statistics
     let total_avg: f64 = frame_times.iter().sum::<f64>() / frame_times.len() as f64;
-    let min_time = frame_times
-        .iter()
-        .cloned()
-        .fold(f64::INFINITY, f64::min);
+    let min_time = frame_times.iter().cloned().fold(f64::INFINITY, f64::min);
     let max_time = frame_times
         .iter()
         .cloned()
@@ -155,10 +152,7 @@ fn test_boss_ai_stress() {
 
     // Calculate statistics
     let avg_time: f64 = plan_times.iter().sum::<f64>() / plan_times.len() as f64;
-    let max_time = plan_times
-        .iter()
-        .cloned()
-        .fold(f64::NEG_INFINITY, f64::max);
+    let max_time = plan_times.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
     let p95_time = {
         let mut sorted = plan_times.clone();
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -178,7 +172,10 @@ fn test_boss_ai_stress() {
         avg_time
     );
 
-    println!("✅ Boss AI stress: {:.3} ms < {} ms", avg_time, target_time_ms);
+    println!(
+        "✅ Boss AI stress: {:.3} ms < {} ms",
+        avg_time, target_time_ms
+    );
 }
 
 #[test]
@@ -310,5 +307,8 @@ fn test_ai_loop_memory_efficiency() {
         per_iteration_us
     );
 
-    println!("✅ Memory efficiency validated: stable performance over {} iterations", iterations);
+    println!(
+        "✅ Memory efficiency validated: stable performance over {} iterations",
+        iterations
+    );
 }

@@ -109,7 +109,7 @@ pub fn dispatch_planner(
 ) -> Result<PlanIntent> {
     #[cfg(feature = "profiling")]
     span!("AI::dispatch_planner");
-    
+
     match controller.mode {
         PlannerMode::Rule => {
             let orch = RuleOrchestrator;
@@ -153,7 +153,7 @@ fn dispatch_bt(_controller: &CAiController, _snapshot: &WorldSnapshot) -> Result
 fn dispatch_goap(controller: &CAiController, snapshot: &WorldSnapshot) -> Result<PlanIntent> {
     #[cfg(feature = "profiling")]
     span!("AI::dispatch_goap");
-    
+
     // Convert WorldSnapshot to GOAP WorldState
     let world_state = snapshot_to_goap_state(snapshot)?;
 
@@ -401,5 +401,96 @@ mod tests {
         assert_eq!(actions[1].name, "ChopWood");
         assert_eq!(actions[2].name, "GoToCampfire");
         assert_eq!(actions[3].name, "CookFood");
+    }
+
+    // ===== NEW TESTS (5 tests added) =====
+
+    #[test]
+    fn test_controller_with_custom_policy() {
+        // Test CAiController with custom policy
+        let controller = CAiController {
+            mode: PlannerMode::GOAP,
+            policy: Some("custom_combat_policy".to_string()),
+        };
+
+        assert_eq!(controller.mode, PlannerMode::GOAP);
+        assert_eq!(controller.policy, Some("custom_combat_policy".to_string()));
+    }
+
+    #[test]
+    fn test_controller_clone() {
+        // Test that CAiController can be cloned
+        let controller1 = CAiController {
+            mode: PlannerMode::BehaviorTree,
+            policy: Some("patrol_policy".to_string()),
+        };
+
+        let controller2 = controller1.clone();
+
+        assert_eq!(controller2.mode, PlannerMode::BehaviorTree);
+        assert_eq!(controller2.policy, Some("patrol_policy".to_string()));
+    }
+
+    #[test]
+    fn test_planner_mode_equality() {
+        // Test PlannerMode equality comparisons
+        assert_eq!(PlannerMode::Rule, PlannerMode::Rule);
+        assert_eq!(PlannerMode::BehaviorTree, PlannerMode::BehaviorTree);
+        assert_eq!(PlannerMode::GOAP, PlannerMode::GOAP);
+
+        assert_ne!(PlannerMode::Rule, PlannerMode::GOAP);
+        assert_ne!(PlannerMode::BehaviorTree, PlannerMode::Rule);
+    }
+
+    #[test]
+    fn test_dispatch_rule_mode_no_enemies() {
+        // Test Rule orchestrator with no enemies (edge case)
+        let controller = CAiController {
+            mode: PlannerMode::Rule,
+            policy: None,
+        };
+
+        let snapshot = WorldSnapshot {
+            t: 0.0,
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            enemies: vec![], // No enemies
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let result = dispatch_planner(&controller, &snapshot);
+        assert!(result.is_ok());
+        let plan = result.unwrap();
+        // RuleOrchestrator returns empty plan when no enemies (fallback behavior)
+        assert!(plan.steps.is_empty());
+        assert!(plan.plan_id.starts_with("plan-")); // Should still have valid plan_id
+    }
+
+    #[test]
+    #[cfg(not(feature = "ai-goap"))]
+    fn test_dispatch_goap_mode_without_feature() {
+        // Test that GOAP mode fails gracefully when feature is disabled
+        let controller = CAiController {
+            mode: PlannerMode::GOAP,
+            policy: None,
+        };
+
+        let snapshot = make_test_snapshot();
+        let result = dispatch_planner(&controller, &snapshot);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("ai-goap' feature"));
     }
 }

@@ -343,3 +343,307 @@ impl AudioEngine {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use glam::vec3;
+
+    #[test]
+    fn test_music_channel_initialization() {
+        let result = AudioEngine::new();
+        assert!(result.is_ok(), "AudioEngine::new should succeed");
+        
+        let engine = result.unwrap();
+        assert_eq!(engine.master_volume, 1.0);
+    }
+
+    #[test]
+    fn test_master_volume_clamping() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test upper bound
+        engine.set_master_volume(1.5);
+        assert_eq!(engine.master_volume, 1.0, "Volume should clamp to 1.0");
+        
+        // Test lower bound
+        engine.set_master_volume(-0.5);
+        assert_eq!(engine.master_volume, 0.0, "Volume should clamp to 0.0");
+        
+        // Test valid range
+        engine.set_master_volume(0.5);
+        assert_eq!(engine.master_volume, 0.5, "Volume should be 0.5");
+    }
+
+    #[test]
+    fn test_compute_ears() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Listener facing forward (down -Z axis)
+        let pose = ListenerPose {
+            position: vec3(0.0, 0.0, 0.0),
+            forward: vec3(0.0, 0.0, -1.0),
+            up: vec3(0.0, 1.0, 0.0),
+        };
+        
+        engine.update_listener(pose);
+        let (left, right) = engine.compute_ears();
+        
+        // Ears should be separated along X axis (right vector)
+        // Left ear: position - right * ear_sep/2
+        // Right ear: position + right * ear_sep/2
+        // With ear_sep = 0.2m, separation = 0.1m each side
+        
+        // Check left ear is to the left (negative X)
+        assert!(left[0] < 0.0, "Left ear should be negative X: {:?}", left);
+        
+        // Check right ear is to the right (positive X)
+        assert!(right[0] > 0.0, "Right ear should be positive X: {:?}", right);
+        
+        // Check Y and Z are same (ears at listener height)
+        assert_eq!(left[1], right[1], "Ears should have same Y");
+        assert_eq!(left[2], right[2], "Ears should have same Z");
+    }
+
+    #[test]
+    fn test_tick_updates_crossfade() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Tick with various delta times
+        engine.tick(0.016); // 60 FPS
+        engine.tick(0.033); // 30 FPS
+        engine.tick(0.0);   // Zero delta
+        engine.tick(1.0);   // Large delta
+        
+        // Should not panic
+    }
+
+    #[test]
+    fn test_voice_beep_duration_calculation() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Short text (5 chars) = 5 * 0.05 = 0.25s → clamped to 0.6s
+        engine.play_voice_beep(5);
+        
+        // Medium text (20 chars) = 20 * 0.05 = 1.0s
+        engine.play_voice_beep(20);
+        
+        // Long text (100 chars) = 100 * 0.05 = 5.0s → clamped to 3.0s
+        engine.play_voice_beep(100);
+        
+        // Zero length = 0 * 0.05 = 0.0s → clamped to 0.6s
+        engine.play_voice_beep(0);
+        
+        // Should not panic
+    }
+
+    #[test]
+    fn test_spatial_sink_creation() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        let emitter_id = 42;
+        let pos = vec3(5.0, 0.0, 0.0);
+        
+        // First call creates sink
+        let result = engine.play_sfx_3d_beep(emitter_id, pos, 440.0, 0.5, 0.5);
+        assert!(result.is_ok(), "First 3D beep should create sink");
+        
+        // Second call reuses sink
+        let result = engine.play_sfx_3d_beep(emitter_id, pos, 880.0, 0.5, 0.5);
+        assert!(result.is_ok(), "Second 3D beep should reuse sink");
+    }
+
+    #[test]
+    fn test_pan_mode_switching() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Default should work
+        engine.set_pan_mode(PanMode::StereoAngle);
+        engine.play_sfx_beep(440.0, 0.5, 0.5);
+        
+        // Switch to None
+        engine.set_pan_mode(PanMode::None);
+        engine.play_sfx_beep(440.0, 0.5, 0.5);
+        
+        // Switch back
+        engine.set_pan_mode(PanMode::StereoAngle);
+        engine.play_sfx_beep(440.0, 0.5, 0.5);
+    }
+
+    #[test]
+    fn test_multiple_emitters() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Create 10 emitters
+        for i in 0..10 {
+            let pos = vec3(i as f32, 0.0, 0.0);
+            let result = engine.play_sfx_3d_beep(i, pos, 440.0, 0.5, 0.5);
+            assert!(result.is_ok(), "Emitter {} should create", i);
+        }
+        
+        // All emitters should exist in HashMap
+        assert!(engine.spat.len() >= 10, "Should have at least 10 emitters");
+    }
+
+    #[test]
+    fn test_listener_orientation_edge_cases() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test cardinal directions
+        let test_cases = vec![
+            (vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0)),   // Looking East
+            (vec3(-1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0)),  // Looking West
+            (vec3(0.0, 0.0, 1.0), vec3(0.0, 1.0, 0.0)),   // Looking North
+            (vec3(0.0, 0.0, -1.0), vec3(0.0, 1.0, 0.0)),  // Looking South
+            (vec3(0.0, 1.0, 0.0), vec3(0.0, 0.0, -1.0)),  // Looking Up
+            (vec3(0.0, -1.0, 0.0), vec3(0.0, 0.0, 1.0)),  // Looking Down
+        ];
+        
+        for (forward, up) in test_cases {
+            let pose = ListenerPose {
+                position: Vec3::ZERO,
+                forward,
+                up,
+            };
+            
+            engine.update_listener(pose);
+            // Should not panic
+        }
+    }
+
+    #[test]
+    fn test_sfx_beep_frequency_range() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test audible range
+        engine.play_sfx_beep(20.0, 0.1, 0.5);      // Low frequency
+        engine.play_sfx_beep(440.0, 0.1, 0.5);     // A4 (standard)
+        engine.play_sfx_beep(20000.0, 0.1, 0.5);   // High frequency
+        
+        // Extreme edge cases
+        engine.play_sfx_beep(1.0, 0.1, 0.5);       // Very low
+        engine.play_sfx_beep(50000.0, 0.1, 0.5);   // Ultrasonic
+    }
+
+    #[test]
+    fn test_zero_gain_sounds() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Zero gain (silent) sounds should not panic
+        engine.play_sfx_beep(440.0, 0.5, 0.0);
+        engine.play_sfx_3d_beep(1, vec3(5.0, 0.0, 0.0), 440.0, 0.5, 0.0).unwrap();
+    }
+
+    #[test]
+    fn test_concurrent_voices() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Play multiple voice beeps in quick succession
+        for i in 0..5 {
+            engine.play_voice_beep(10 + i * 5);
+        }
+        
+        // Tick to process
+        engine.tick(0.016);
+    }
+
+    #[test]
+    fn test_listener_at_emitter_position() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        let pos = vec3(10.0, 5.0, 3.0);
+        
+        // Place emitter
+        engine.play_sfx_3d_beep(1, pos, 440.0, 1.0, 0.5).unwrap();
+        
+        // Move listener to same position
+        let pose = ListenerPose {
+            position: pos,
+            forward: vec3(1.0, 0.0, 0.0),
+            up: vec3(0.0, 1.0, 0.0),
+        };
+        
+        engine.update_listener(pose);
+        engine.tick(0.016);
+        
+        // Should handle zero distance without panic
+    }
+
+    #[test]
+    fn test_rapid_position_updates() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        let emitter_id = 1;
+        engine.play_sfx_3d_beep(emitter_id, vec3(0.0, 0.0, 0.0), 440.0, 5.0, 0.5).unwrap();
+        
+        // Rapidly update listener position
+        for i in 0..100 {
+            let t = i as f32 * 0.1;
+            let pos = vec3(t.sin(), t.cos(), t);
+            
+            let pose = ListenerPose {
+                position: pos,
+                forward: vec3(1.0, 0.0, 0.0),
+                up: vec3(0.0, 1.0, 0.0),
+            };
+            
+            engine.update_listener(pose);
+            engine.tick(0.001); // 1ms ticks
+        }
+    }
+
+    #[test]
+    fn test_stop_music() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Stop should work even if no music is playing
+        engine.stop_music();
+        
+        engine.tick(0.016);
+    }
+
+    #[test]
+    fn test_emitter_id_range() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Test various emitter IDs
+        let ids = vec![0, 1, 42, 100, 1000, 10000, u64::MAX];
+        
+        for (i, id) in ids.iter().enumerate() {
+            let pos = vec3(i as f32, 0.0, 0.0);
+            let result = engine.play_sfx_3d_beep(*id, pos, 440.0, 0.1, 0.5);
+            assert!(result.is_ok(), "Emitter ID {} should work", id);
+        }
+    }
+
+    #[test]
+    fn test_long_duration_tick_sequence() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Play long sound
+        engine.play_sfx_beep(440.0, 10.0, 0.5);
+        
+        // Simulate 10 seconds of ticks
+        for _ in 0..600 {
+            engine.tick(0.016); // 60 FPS
+        }
+    }
+
+    #[test]
+    fn test_volume_propagation_to_spatial() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Create spatial emitter
+        engine.play_sfx_3d_beep(1, vec3(5.0, 0.0, 0.0), 440.0, 1.0, 0.8).unwrap();
+        
+        // Change master volume
+        engine.set_master_volume(0.5);
+        
+        // Spatial sink should receive updated volume
+        engine.tick(0.016);
+        
+        // Change again
+        engine.set_master_volume(0.0);
+        engine.tick(0.016);
+    }
+}

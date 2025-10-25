@@ -76,8 +76,8 @@
 //! # }
 //! ```
 
-use crate::llm_executor::LlmExecutor;
 use crate::async_task::AsyncTask;
+use crate::llm_executor::LlmExecutor;
 use crate::orchestrator::Orchestrator;
 use anyhow::Result;
 use astraweave_core::{ActionStep, PlanIntent, WorldSnapshot};
@@ -91,14 +91,14 @@ pub enum AIControlMode {
     /// GOAP provides instant tactical decisions (5-30 µs).
     /// This is the default mode and fallback when LLM plans are exhausted.
     GOAP,
-    
+
     /// Executing a multi-step LLM plan.
     /// Stores the current step index being executed.
     ExecutingLLM {
         /// Current step index in the plan (0-based)
         step_index: usize,
     },
-    
+
     /// Emergency fallback to behavior tree (if GOAP fails).
     /// Should rarely be used in practice.
     BehaviorTree,
@@ -133,46 +133,46 @@ pub struct AIArbiter {
     // === AI Modules ===
     /// LLM executor for async strategic planning
     llm_executor: LlmExecutor,
-    
+
     /// GOAP orchestrator for instant tactical decisions
     goap: Box<dyn Orchestrator>,
-    
+
     /// Behavior tree orchestrator (emergency fallback)
     bt: Box<dyn Orchestrator>,
-    
+
     // === State Management ===
     /// Current control mode
     mode: AIControlMode,
-    
+
     /// Active LLM task (if any)
     current_llm_task: Option<AsyncTask<Result<PlanIntent>>>,
-    
+
     /// Current LLM plan being executed (if any)
     current_plan: Option<PlanIntent>,
-    
+
     // === LLM Request Policy ===
     /// Minimum time between LLM requests (seconds)
     llm_request_cooldown: f32,
-    
+
     /// Time of last LLM request
     last_llm_request_time: f32,
-    
+
     // === Metrics (for debugging and tuning) ===
     /// Total number of mode transitions
     mode_transitions: u32,
-    
+
     /// Total LLM requests initiated
     llm_requests: u32,
-    
+
     /// Successful LLM plan generations
     llm_successes: u32,
-    
+
     /// Failed LLM plan generations
     llm_failures: u32,
-    
+
     /// Total GOAP actions returned
     goap_actions: u32,
-    
+
     /// Total LLM plan steps executed
     llm_steps_executed: u32,
 }
@@ -367,9 +367,11 @@ impl AIArbiter {
             AIControlMode::BehaviorTree => {
                 // Emergency fallback to BT
                 let bt_plan = self.bt.propose_plan(snap);
-                bt_plan.steps.first().cloned().unwrap_or_else(|| {
-                    ActionStep::Wait { duration: 1.0 }
-                })
+                bt_plan
+                    .steps
+                    .first()
+                    .cloned()
+                    .unwrap_or_else(|| ActionStep::Wait { duration: 1.0 })
             }
         };
 
@@ -394,10 +396,7 @@ impl AIArbiter {
         self.mode = AIControlMode::ExecutingLLM { step_index: 0 };
         self.mode_transitions += 1;
         self.llm_successes += 1;
-        info!(
-            "Mode transition: GOAP → ExecutingLLM ({} steps)",
-            steps
-        );
+        info!("Mode transition: GOAP → ExecutingLLM ({} steps)", steps);
     }
 
     /// Transition to GOAP mode.
@@ -603,9 +602,7 @@ mod tests {
         fn propose_plan(&self, _snap: &WorldSnapshot) -> PlanIntent {
             PlanIntent {
                 plan_id: "mock-bt".into(),
-                steps: vec![ActionStep::Scan {
-                    radius: 10.0,
-                }],
+                steps: vec![ActionStep::Scan { radius: 10.0 }],
             }
         }
     }
@@ -663,6 +660,308 @@ mod tests {
         assert_eq!(format!("{}", mode1), "GOAP");
         assert_eq!(format!("{}", mode2), "ExecutingLLM[step 5]");
         assert_eq!(format!("{}", mode3), "BehaviorTree");
+    }
+
+    #[test]
+    fn test_mode_equality() {
+        let goap1 = AIControlMode::GOAP;
+        let goap2 = AIControlMode::GOAP;
+        let llm1 = AIControlMode::ExecutingLLM { step_index: 3 };
+        let llm2 = AIControlMode::ExecutingLLM { step_index: 3 };
+        let llm3 = AIControlMode::ExecutingLLM { step_index: 4 };
+        let bt1 = AIControlMode::BehaviorTree;
+        let bt2 = AIControlMode::BehaviorTree;
+
+        assert_eq!(goap1, goap2);
+        assert_eq!(llm1, llm2);
+        assert_ne!(llm1, llm3); // Different step index
+        assert_eq!(bt1, bt2);
+        assert_ne!(goap1, llm1);
+        assert_ne!(goap1, bt1);
+        assert_ne!(llm1, bt1);
+    }
+
+    #[test]
+    fn test_mode_clone() {
+        let mode1 = AIControlMode::ExecutingLLM { step_index: 42 };
+        let mode2 = mode1.clone();
+
+        assert_eq!(mode1, mode2);
+        assert_eq!(mode2, AIControlMode::ExecutingLLM { step_index: 42 });
+    }
+
+    #[test]
+    fn test_mode_debug() {
+        let mode = AIControlMode::ExecutingLLM { step_index: 7 };
+        let debug_str = format!("{:?}", mode);
+
+        assert!(debug_str.contains("ExecutingLLM"));
+        assert!(debug_str.contains("step_index"));
+        assert!(debug_str.contains("7"));
+    }
+
+    #[test]
+    fn test_action_step_wait_boundary() {
+        // Test Wait action with zero duration (edge case)
+        let wait_zero = ActionStep::Wait { duration: 0.0 };
+        assert!(matches!(wait_zero, ActionStep::Wait { duration } if duration == 0.0));
+
+        // Test Wait action with very large duration
+        let wait_large = ActionStep::Wait { duration: 999999.0 };
+        assert!(matches!(wait_large, ActionStep::Wait { duration } if duration == 999999.0));
+
+        // Test Wait action with negative duration (invalid but should be handled)
+        let wait_negative = ActionStep::Wait { duration: -1.0 };
+        assert!(matches!(wait_negative, ActionStep::Wait { duration } if duration < 0.0));
+    }
+
+    #[test]
+    fn test_action_step_clone() {
+        let action1 = ActionStep::MoveTo {
+            x: 10,
+            y: 20,
+        };
+        let action2 = action1.clone();
+
+        assert!(matches!(action2, ActionStep::MoveTo { x: 10, y: 20 }));
+    }
+
+    #[test]
+    fn test_world_snapshot_edge_cases() {
+        // Test snapshot with no enemies
+        let snap_no_enemies = WorldSnapshot {
+            t: 1.0,
+            me: CompanionState {
+                ammo: 0, // Out of ammo
+                cooldowns: BTreeMap::new(),
+                morale: 0.0, // Zero morale
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            player: PlayerState {
+                hp: 0, // Player dead
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "".into(), // Empty stance
+                orders: vec![],
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None, // No objective
+        };
+
+        assert_eq!(snap_no_enemies.enemies.len(), 0);
+        assert_eq!(snap_no_enemies.me.ammo, 0);
+        assert_eq!(snap_no_enemies.player.hp, 0);
+
+        // Test snapshot with many enemies
+        let snap_many_enemies = WorldSnapshot {
+            t: 1.0,
+            me: CompanionState {
+                ammo: 1000,
+                cooldowns: BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            enemies: (0..100)
+                .map(|i| EnemyState {
+                    id: i as u32,
+                    pos: IVec2 { x: i, y: i },
+                    hp: 100,
+                    cover: "full".into(),
+                    last_seen: 0.0,
+                })
+                .collect(),
+            pois: vec![],
+            obstacles: vec![],
+            objective: Some("survive".into()),
+        };
+
+        assert_eq!(snap_many_enemies.enemies.len(), 100);
+    }
+
+    #[test]
+    fn test_plan_intent_empty_steps() {
+        let empty_plan = PlanIntent {
+            plan_id: "empty-plan".into(),
+            steps: vec![],
+        };
+
+        assert_eq!(empty_plan.steps.len(), 0);
+        assert!(empty_plan.steps.is_empty());
+    }
+
+    #[test]
+    fn test_plan_intent_single_step() {
+        let single_step_plan = PlanIntent {
+            plan_id: "single-step".into(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+
+        assert_eq!(single_step_plan.steps.len(), 1);
+        assert!(matches!(
+            single_step_plan.steps[0],
+            ActionStep::Wait { duration: 1.0 }
+        ));
+    }
+
+    #[test]
+    fn test_plan_intent_many_steps() {
+        let many_steps_plan = PlanIntent {
+            plan_id: "many-steps".into(),
+            steps: (0..100)
+                .map(|i| ActionStep::MoveTo { x: i, y: i })
+                .collect(),
+        };
+
+        assert_eq!(many_steps_plan.steps.len(), 100);
+    }
+
+    #[test]
+    fn test_mock_goap_success() {
+        let goap = MockGoap {
+            action_to_return: ActionStep::Scan { radius: 15.0 },
+            should_fail: false,
+        };
+
+        let snap = create_test_snapshot(1.0);
+        let plan = goap.propose_plan(&snap);
+
+        assert_eq!(plan.plan_id, "mock-goap");
+        assert_eq!(plan.steps.len(), 1);
+        assert!(matches!(plan.steps[0], ActionStep::Scan { radius: 15.0 }));
+    }
+
+    #[test]
+    fn test_mock_goap_failure() {
+        let goap = MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: true,
+        };
+
+        let snap = create_test_snapshot(1.0);
+        let plan = goap.propose_plan(&snap);
+
+        assert_eq!(plan.plan_id, "mock-fail");
+        assert_eq!(plan.steps.len(), 0);
+    }
+
+    #[test]
+    fn test_mock_bt_always_returns_scan() {
+        let bt = MockBT;
+        let snap = create_test_snapshot(1.0);
+        let plan = bt.propose_plan(&snap);
+
+        assert_eq!(plan.plan_id, "mock-bt");
+        assert_eq!(plan.steps.len(), 1);
+        assert!(matches!(plan.steps[0], ActionStep::Scan { radius: 10.0 }));
+    }
+
+    #[test]
+    fn test_create_test_snapshot_values() {
+        let snap = create_test_snapshot(5.0);
+
+        assert_eq!(snap.t, 5.0);
+        assert_eq!(snap.me.ammo, 10);
+        assert_eq!(snap.me.morale, 1.0);
+        assert_eq!(snap.me.pos, IVec2 { x: 5, y: 5 });
+        assert_eq!(snap.player.hp, 100);
+        assert_eq!(snap.player.pos, IVec2 { x: 5, y: 5 });
+        assert_eq!(snap.enemies.len(), 1);
+        assert_eq!(snap.enemies[0].id, 1);
+        assert_eq!(snap.enemies[0].pos, IVec2 { x: 10, y: 10 });
+        assert_eq!(snap.objective, Some("extract".into()));
+    }
+
+    #[test]
+    fn test_companion_state_zero_ammo() {
+        let companion = CompanionState {
+            ammo: 0,
+            cooldowns: BTreeMap::new(),
+            morale: 0.5,
+            pos: IVec2 { x: 0, y: 0 },
+        };
+
+        assert_eq!(companion.ammo, 0);
+    }
+
+    #[test]
+    fn test_companion_state_negative_morale() {
+        let companion = CompanionState {
+            ammo: 10,
+            cooldowns: BTreeMap::new(),
+            morale: -0.5, // Invalid but should be handled
+            pos: IVec2 { x: 0, y: 0 },
+        };
+
+        assert!(companion.morale < 0.0);
+    }
+
+    #[test]
+    fn test_companion_state_high_morale() {
+        let companion = CompanionState {
+            ammo: 10,
+            cooldowns: BTreeMap::new(),
+            morale: 2.0, // Above max (should be clamped by game logic)
+            pos: IVec2 { x: 0, y: 0 },
+        };
+
+        assert!(companion.morale > 1.0);
+    }
+
+    #[test]
+    fn test_enemy_state_dead() {
+        let enemy = EnemyState {
+            id: 1,
+            pos: IVec2 { x: 10, y: 10 },
+            hp: 0, // Dead
+            cover: "none".into(),
+            last_seen: 1.0,
+        };
+
+        assert_eq!(enemy.hp, 0);
+    }
+
+    #[test]
+    fn test_enemy_state_negative_hp() {
+        let enemy = EnemyState {
+            id: 1,
+            pos: IVec2 { x: 10, y: 10 },
+            hp: -50, // Overkill damage
+            cover: "none".into(),
+            last_seen: 1.0,
+        };
+
+        assert!(enemy.hp < 0);
+    }
+
+    #[test]
+    fn test_player_state_zero_hp() {
+        let player = PlayerState {
+            hp: 0, // Dead
+            pos: IVec2 { x: 0, y: 0 },
+            stance: "prone".into(),
+            orders: vec![],
+        };
+
+        assert_eq!(player.hp, 0);
+    }
+
+    #[test]
+    fn test_player_state_many_orders() {
+        let player = PlayerState {
+            hp: 100,
+            pos: IVec2 { x: 0, y: 0 },
+            stance: "stand".into(),
+            orders: (0..50).map(|i| format!("order_{}", i)).collect(),
+        };
+
+        assert_eq!(player.orders.len(), 50);
     }
 
     // Full arbiter tests will be in Phase 5 (astraweave-ai/tests/arbiter_tests.rs)

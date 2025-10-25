@@ -517,7 +517,7 @@ mod tests {
         assert_eq!(allocator.alive_count(), 1);
         assert_eq!(allocator.capacity(), 1);
 
-        let e2 = allocator.spawn();
+        let _e2 = allocator.spawn();
         assert_eq!(allocator.alive_count(), 2);
         assert_eq!(allocator.capacity(), 2);
 

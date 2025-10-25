@@ -346,5 +346,8 @@ fn test_planning_under_load() {
         plans_per_sec
     );
 
-    println!("✅ Sustained throughput: {:.0} plans/sec > 100k", plans_per_sec);
+    println!(
+        "✅ Sustained throughput: {:.0} plans/sec > 100k",
+        plans_per_sec
+    );
 }

@@ -71,6 +71,12 @@ pub struct ValidationContext<'a> {
     pub collider_set: Option<&'a ColliderSet>,
 }
 
+impl<'a> Default for ValidationContext<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> ValidationContext<'a> {
     pub fn new() -> Self {
         Self {
@@ -126,7 +132,7 @@ pub fn validate_tool_action(
 ) -> Result<()> {
     #[cfg(feature = "profiling")]
     span!("AI::ToolSandbox::validate");
-    
+
     // Cooldown checks
     if let Some(cd) = world
         .me
@@ -406,5 +412,303 @@ mod tests {
             .unwrap_err()
             .to_string()
             .contains("physics collision"));
+    }
+
+    // ===== NEW TESTS (8 tests added) =====
+
+    #[test]
+    fn test_cover_fire_insufficient_ammo() {
+        // CoverFire requires ammo, should fail when ammo = 0
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 0, // No ammo
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::CoverFire,
+            &world,
+            &context,
+            Some(IVec2 { x: 3, y: 3 }),
+        );
+
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("insufficient ammo"));
+    }
+
+    #[test]
+    fn test_cover_fire_no_line_of_sight() {
+        // CoverFire requires LoS, should fail when obstacles block
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![IVec2 { x: 1, y: 0 }, IVec2 { x: 2, y: 0 }], // Block path
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::CoverFire,
+            &world,
+            &context,
+            Some(IVec2 { x: 3, y: 0 }),
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("no line of sight"));
+    }
+
+    #[test]
+    fn test_cover_fire_success_with_ammo_and_los() {
+        // CoverFire should succeed when ammo > 0 and LoS is clear
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![], // No obstacles
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::CoverFire,
+            &world,
+            &context,
+            Some(IVec2 { x: 3, y: 3 }),
+        );
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_revive_low_morale() {
+        // Revive requires morale >= 0.5, should fail when low
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.3, // Too low
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world,
+            &context,
+            Some(IVec2 { x: 1, y: 1 }),
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("low morale"));
+    }
+
+    #[test]
+    fn test_revive_target_too_far() {
+        // Revive requires target within 2.0 distance
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::Revive,
+            &world,
+            &context,
+            Some(IVec2 { x: 5, y: 5 }), // Distance = ~7.07, exceeds 2.0
+        );
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("target too far"));
+    }
+
+    #[test]
+    fn test_validation_context_builders() {
+        // Test ValidationContext builder pattern
+        let nav = NavMesh {
+            tris: vec![],
+            max_step: 0.4,
+            max_slope_deg: 60.0,
+        };
+
+        let rigid_body_set = RigidBodySet::new();
+        let collider_set = ColliderSet::new();
+        let physics_pipeline = PhysicsPipeline::new();
+
+        // Test with_nav
+        let context1 = ValidationContext::new().with_nav(&nav);
+        assert!(context1.nav_mesh.is_some());
+        assert!(context1.physics_pipeline.is_none());
+
+        // Test with_physics
+        let context2 = ValidationContext::new().with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
+        assert!(context2.nav_mesh.is_none());
+        assert!(context2.physics_pipeline.is_some());
+        assert!(context2.rigid_body_set.is_some());
+        assert!(context2.collider_set.is_some());
+
+        // Test chaining both
+        let context3 = ValidationContext::new().with_nav(&nav).with_physics(
+            &physics_pipeline,
+            &rigid_body_set,
+            &collider_set,
+        );
+        assert!(context3.nav_mesh.is_some());
+        assert!(context3.physics_pipeline.is_some());
+    }
+
+    #[test]
+    fn test_cooldown_blocking() {
+        // Test that cooldowns block actions
+        let mut cooldowns = std::collections::BTreeMap::new();
+        cooldowns.insert("coverfire".to_string(), 2.5); // CoverFire on cooldown
+
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns,
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(
+            0,
+            ToolVerb::CoverFire,
+            &world,
+            &context,
+            Some(IVec2 { x: 3, y: 3 }),
+        );
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("cooldown"));
+        assert!(err_msg.contains("2.5")); // Cooldown value should be in error message
+    }
+
+    #[test]
+    fn test_stay_and_wander_always_valid() {
+        // Stay and Wander actions should always succeed (no validation checks)
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 0, // Even with no ammo
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.0, // Even with zero morale
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+
+        // Stay should always succeed
+        let result_stay = validate_tool_action(0, ToolVerb::Stay, &world, &context, None);
+        assert!(result_stay.is_ok());
+
+        // Wander should always succeed
+        let result_wander = validate_tool_action(0, ToolVerb::Wander, &world, &context, None);
+        assert!(result_wander.is_ok());
     }
 }

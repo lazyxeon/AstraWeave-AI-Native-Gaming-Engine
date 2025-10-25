@@ -331,7 +331,7 @@ fn fill_rect_obs(obs: &mut std::collections::HashSet<(i32, i32)>, r: Rect) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Team, World};
+    use crate::{MovementSpeed, Team, World};
 
     fn mk_world_clear() -> World {
         World::new()
@@ -384,6 +384,310 @@ mod tests {
         let ammo_after = w.ammo(actor).unwrap().rounds;
         assert!(hp_after < hp_before, "enemy should take damage");
         assert_eq!(ammo_after, (ammo_before - 3).max(0));
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // NEW TESTS (Week 2 Day 3 - Task 6)
+    // ════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_moveto_validation_success() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+
+        let intent = PlanIntent {
+            plan_id: "move-001".into(),
+            steps: vec![ActionStep::MoveTo {
+                x: 5,
+                y: 5,
+                speed: Some(MovementSpeed::Run),
+            }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        let final_pos = w.pos_of(actor).unwrap();
+        assert_eq!(final_pos, IVec2 { x: 5, y: 5 });
+    }
+
+    #[test]
+    fn test_moveto_path_blocked() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+
+        // Add obstacles creating a wall that blocks path
+        // Create vertical wall from (-10, -10) to (-10, 10) blocking path to (-5, 0)
+        for y in -10..=10 {
+            w.obstacles.insert((-5, y));
+        }
+
+        let intent = PlanIntent {
+            plan_id: "move-blocked".into(),
+            steps: vec![ActionStep::MoveTo {
+                x: -8,
+                y: 0,
+                speed: None,
+            }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        match res {
+            Err(EngineError::NoPath) => {}, // Expected
+            _ => panic!("Expected NoPath error"),
+        }
+    }
+
+    #[test]
+    fn test_attack_damages_target() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let enemy = w.spawn("enemy", IVec2 { x: 3, y: 0 }, Team { id: 2 }, 50, 0);
+
+        let intent = PlanIntent {
+            plan_id: "attack-001".into(),
+            steps: vec![ActionStep::Attack { target_id: enemy }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let hp_before = w.health(enemy).unwrap().hp;
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        let hp_after = w.health(enemy).unwrap().hp;
+        assert_eq!(hp_after, hp_before - 10); // Attack does 10 damage
+    }
+
+    #[test]
+    fn test_heal_self() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 50, 10);
+
+        let intent = PlanIntent {
+            plan_id: "heal-self".into(),
+            steps: vec![ActionStep::Heal { target_id: None }], // None = heal self
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let hp_before = w.health(actor).unwrap().hp;
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        let hp_after = w.health(actor).unwrap().hp;
+        assert_eq!(hp_after, hp_before + 20); // Heal restores 20 HP
+    }
+
+    #[test]
+    fn test_heal_ally() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let ally = w.spawn("ally", IVec2 { x: 1, y: 0 }, Team { id: 1 }, 30, 0);
+
+        let intent = PlanIntent {
+            plan_id: "heal-ally".into(),
+            steps: vec![ActionStep::Heal {
+                target_id: Some(ally),
+            }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let hp_before = w.health(ally).unwrap().hp;
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        let hp_after = w.health(ally).unwrap().hp;
+        assert_eq!(hp_after, hp_before + 20);
+    }
+
+    #[test]
+    fn test_reload_refills_ammo() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 5);
+
+        let intent = PlanIntent {
+            plan_id: "reload-001".into(),
+            steps: vec![ActionStep::Reload],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        let ammo_after = w.ammo(actor).unwrap().rounds;
+        assert_eq!(ammo_after, 30); // Reload fills to 30
+    }
+
+    #[test]
+    fn test_throw_smoke_los_blocked() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+
+        // Add obstacle blocking line of sight
+        w.obstacles.insert((2, 2));
+
+        let intent = PlanIntent {
+            plan_id: "smoke-blocked".into(),
+            steps: vec![ActionStep::ThrowSmoke { x: 5, y: 5 }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        match res {
+            Err(EngineError::LosBlocked) => {}, // Expected
+            _ => panic!("Expected LosBlocked error"),
+        }
+    }
+
+    #[test]
+    fn test_throw_with_cooldown() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+
+        let intent = PlanIntent {
+            plan_id: "throw-cd".into(),
+            steps: vec![ActionStep::Throw {
+                item: "grenade".into(),
+                x: 3,
+                y: 3,
+            }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        // First throw should succeed
+        let res1 = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res1.is_ok());
+
+        // Second throw should fail (cooldown active)
+        let res2 = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        match res2 {
+            Err(EngineError::Cooldown(cd)) => {
+                assert_eq!(cd, "throw:grenade");
+            }
+            _ => panic!("Expected Cooldown error"),
+        }
+    }
+
+    #[test]
+    fn test_revive_dead_ally() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let ally = w.spawn("ally", IVec2 { x: 1, y: 0 }, Team { id: 1 }, 0, 0); // Dead (0 HP)
+
+        let intent = PlanIntent {
+            plan_id: "revive-001".into(),
+            steps: vec![ActionStep::Revive { ally_id: ally }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        let hp_after = w.health(ally).unwrap().hp;
+        assert_eq!(hp_after, 20); // Revive sets HP to 20
+    }
+
+    #[test]
+    fn test_multi_step_execution() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 30);
+        let enemy = w.spawn("enemy", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+
+        let intent = PlanIntent {
+            plan_id: "multi-001".into(),
+            steps: vec![
+                ActionStep::MoveTo {
+                    x: 3,
+                    y: 3,
+                    speed: Some(MovementSpeed::Sprint),
+                },
+                ActionStep::Attack { target_id: enemy },
+                ActionStep::Reload,
+            ],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+
+        // Validate final state
+        let final_pos = w.pos_of(actor).unwrap();
+        assert_eq!(final_pos, IVec2 { x: 3, y: 3 });
+
+        let enemy_hp = w.health(enemy).unwrap().hp;
+        assert_eq!(enemy_hp, 90); // Took 10 damage
+
+        let ammo = w.ammo(actor).unwrap().rounds;
+        assert_eq!(ammo, 30); // Reloaded to full
+    }
+
+    #[test]
+    fn test_invalid_actor_not_found() {
+        let mut w = mk_world_clear();
+        let actor = 9999; // Non-existent entity
+
+        let intent = PlanIntent {
+            plan_id: "invalid".into(),
+            steps: vec![ActionStep::MoveTo {
+                x: 5,
+                y: 5,
+                speed: None,
+            }],
+        };
+
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut log = |_s: String| {};
+
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        match res {
+            Err(EngineError::InvalidAction(msg)) => {
+                assert!(msg.contains("no position"));
+            }
+            _ => panic!("Expected InvalidAction error for non-existent actor"),
+        }
     }
 }
 fn draw_line_obs(obs: &mut std::collections::HashSet<(i32, i32)>, a: IVec2, b: IVec2) {

@@ -198,6 +198,88 @@ fn smooth(pts: &mut [Vec3], _tris: &[NavTri]) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ===== NavMesh Baking Tests =====
+
+    #[test]
+    fn test_navmesh_bake_empty() {
+        let nav = NavMesh::bake(&[], 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 0);
+        assert_eq!(nav.max_step, 0.4);
+        assert_eq!(nav.max_slope_deg, 60.0);
+    }
+
+    #[test]
+    fn test_navmesh_bake_single_triangle() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 1.0), // CCW winding for +Y normal
+            c: Vec3::new(1.0, 0.0, 0.0),
+        }];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 1);
+        assert_eq!(nav.tris[0].idx, 0);
+        assert_eq!(nav.tris[0].neighbors.len(), 0);
+    }
+
+    #[test]
+    fn test_navmesh_bake_filters_steep_slopes() {
+        let tris = vec![
+            // Flat triangle (normal = +Y, slope 0°)
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 0.0),
+            },
+            // Steep triangle (normal pointing away from +Y, slope > 45°)
+            Triangle {
+                a: Vec3::new(2.0, 0.0, 0.0),
+                b: Vec3::new(2.0, 1.0, 0.0),
+                c: Vec3::new(2.0, 0.0, 1.0),
+            },
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 45.0); // max_slope_deg=45°
+        assert_eq!(nav.tris.len(), 1); // Only flat triangle included
+        assert_eq!(nav.tris[0].idx, 0);
+    }
+
+    #[test]
+    fn test_navmesh_bake_adjacency_two_triangles() {
+        let tris = vec![
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 0.0),
+            },
+            Triangle {
+                a: Vec3::new(1.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 1.0),
+            },
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 2);
+        assert_eq!(nav.tris[0].neighbors, vec![1]);
+        assert_eq!(nav.tris[1].neighbors, vec![0]);
+    }
+
+    #[test]
+    fn test_navmesh_bake_center_calculation() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 3.0),
+            c: Vec3::new(3.0, 0.0, 0.0),
+        }];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 1); // Verify triangle was included
+        let center = nav.tris[0].center;
+        assert!((center.x - 1.0).abs() < 1e-5);
+        assert!((center.y - 0.0).abs() < 1e-5);
+        assert!((center.z - 1.0).abs() < 1e-5);
+    }
+
+    // ===== Pathfinding Tests =====
+
     #[test]
     fn path_exists_simple_strip() {
         // Two triangles forming a square on XZ plane
@@ -224,5 +306,410 @@ mod tests {
         );
         assert!((path.first().unwrap().x - 0.1).abs() < 1e-3);
         assert!((path.last().unwrap().x - 0.45).abs() < 1e-3);
+    }
+
+    #[test]
+    fn test_find_path_empty_navmesh() {
+        let nav = NavMesh::bake(&[], 0.4, 60.0);
+        let path = nav.find_path(Vec3::ZERO, Vec3::ONE);
+        assert_eq!(path.len(), 0);
+    }
+
+    #[test]
+    fn test_find_path_same_triangle() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(0.0, 0.0, 10.0),
+            c: Vec3::new(10.0, 0.0, 0.0),
+        }];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 1); // Verify triangle was included
+        let path = nav.find_path(Vec3::new(1.0, 0.0, 1.0), Vec3::new(2.0, 0.0, 2.0));
+        assert!(path.len() >= 2);
+        assert!((path[0] - Vec3::new(1.0, 0.0, 1.0)).length() < 0.1);
+        assert!((path.last().unwrap() - Vec3::new(2.0, 0.0, 2.0)).length() < 0.1);
+    }
+
+    #[test]
+    fn test_find_path_across_triangles() {
+        // Three connected triangles in a line
+        let tris = vec![
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 0.0),
+            },
+            Triangle {
+                a: Vec3::new(1.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 1.0),
+            },
+            Triangle {
+                a: Vec3::new(1.0, 0.0, 0.0),
+                b: Vec3::new(1.0, 0.0, 1.0),
+                c: Vec3::new(2.0, 0.0, 0.0),
+            },
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert!(nav.tris.len() >= 2); // At least 2 triangles connected
+        let path = nav.find_path(Vec3::new(0.2, 0.0, 0.2), Vec3::new(1.8, 0.0, 0.2));
+        assert!(path.len() >= 2);
+        // Path should go from first to last triangle
+        assert!((path[0].x - 0.2).abs() < 0.1);
+        assert!((path.last().unwrap().x - 1.8).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_find_path_no_connection() {
+        // Two disconnected triangles
+        let tris = vec![
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 1.0),
+                c: Vec3::new(1.0, 0.0, 0.0),
+            },
+            Triangle {
+                a: Vec3::new(10.0, 0.0, 0.0),
+                b: Vec3::new(10.0, 0.0, 1.0),
+                c: Vec3::new(11.0, 0.0, 0.0),
+            },
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 60.0);
+        assert_eq!(nav.tris.len(), 2);
+        assert_eq!(nav.tris[0].neighbors.len(), 0);
+        assert_eq!(nav.tris[1].neighbors.len(), 0);
+        
+        let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(10.5, 0.0, 0.5));
+        assert_eq!(path.len(), 0); // No path possible
+    }
+
+    // ===== Helper Function Tests =====
+
+    #[test]
+    fn test_share_edge_true() {
+        let tri_a = NavTri {
+            idx: 0,
+            verts: [
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::ZERO,
+            neighbors: vec![],
+        };
+        let tri_b = NavTri {
+            idx: 1,
+            verts: [
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+                Vec3::new(1.0, 0.0, 1.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::ZERO,
+            neighbors: vec![],
+        };
+        assert!(share_edge(&tri_a, &tri_b, 1e-3));
+    }
+
+    #[test]
+    fn test_share_edge_false() {
+        let tri_a = NavTri {
+            idx: 0,
+            verts: [
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::ZERO,
+            neighbors: vec![],
+        };
+        let tri_b = NavTri {
+            idx: 1,
+            verts: [
+                Vec3::new(10.0, 0.0, 0.0),
+                Vec3::new(11.0, 0.0, 0.0),
+                Vec3::new(10.0, 0.0, 1.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::ZERO,
+            neighbors: vec![],
+        };
+        assert!(!share_edge(&tri_a, &tri_b, 1e-3));
+    }
+
+    #[test]
+    fn test_share_edge_epsilon_boundary() {
+        let tri_a = NavTri {
+            idx: 0,
+            verts: [
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(0.0, 0.0, 1.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::ZERO,
+            neighbors: vec![],
+        };
+        let tri_b = NavTri {
+            idx: 1,
+            verts: [
+                Vec3::new(1.0005, 0.0, 0.0), // Within 1e-3 epsilon
+                Vec3::new(0.0005, 0.0, 1.0), // Within 1e-3 epsilon
+                Vec3::new(2.0, 0.0, 0.0),
+            ],
+            normal: Vec3::Y,
+            center: Vec3::ZERO,
+            neighbors: vec![],
+        };
+        assert!(share_edge(&tri_a, &tri_b, 1e-3));
+    }
+
+    #[test]
+    fn test_closest_tri_empty() {
+        let result = closest_tri(&[], Vec3::ZERO);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_closest_tri_single() {
+        let tris = vec![NavTri {
+            idx: 0,
+            verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+            normal: Vec3::Y,
+            center: Vec3::new(0.5, 0.0, 0.5),
+            neighbors: vec![],
+        }];
+        let result = closest_tri(&tris, Vec3::new(0.6, 0.0, 0.6));
+        assert_eq!(result, Some(0));
+    }
+
+    #[test]
+    fn test_closest_tri_multiple() {
+        let tris = vec![
+            NavTri {
+                idx: 0,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(0.5, 0.0, 0.5),
+                neighbors: vec![],
+            },
+            NavTri {
+                idx: 1,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(10.0, 0.0, 10.0),
+                neighbors: vec![],
+            },
+            NavTri {
+                idx: 2,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(5.0, 0.0, 5.0),
+                neighbors: vec![],
+            },
+        ];
+        // Query point closest to tri 0
+        let result = closest_tri(&tris, Vec3::new(0.4, 0.0, 0.4));
+        assert_eq!(result, Some(0));
+        
+        // Query point closest to tri 1
+        let result = closest_tri(&tris, Vec3::new(10.1, 0.0, 10.1));
+        assert_eq!(result, Some(1));
+    }
+
+    #[test]
+    fn test_astar_tri_same_start_goal() {
+        let tris = vec![NavTri {
+            idx: 0,
+            verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+            normal: Vec3::Y,
+            center: Vec3::new(0.5, 0.0, 0.5),
+            neighbors: vec![],
+        }];
+        let path = astar_tri(&tris, 0, 0);
+        assert_eq!(path, vec![0]);
+    }
+
+    #[test]
+    fn test_astar_tri_simple_path() {
+        let tris = vec![
+            NavTri {
+                idx: 0,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(0.5, 0.0, 0.5),
+                neighbors: vec![1],
+            },
+            NavTri {
+                idx: 1,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(1.5, 0.0, 0.5),
+                neighbors: vec![0, 2],
+            },
+            NavTri {
+                idx: 2,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(2.5, 0.0, 0.5),
+                neighbors: vec![1],
+            },
+        ];
+        let path = astar_tri(&tris, 0, 2);
+        assert_eq!(path, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn test_astar_tri_no_path() {
+        let tris = vec![
+            NavTri {
+                idx: 0,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(0.5, 0.0, 0.5),
+                neighbors: vec![],
+            },
+            NavTri {
+                idx: 1,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(10.5, 0.0, 0.5),
+                neighbors: vec![],
+            },
+        ];
+        let path = astar_tri(&tris, 0, 1);
+        assert_eq!(path.len(), 0); // No connection
+    }
+
+    #[test]
+    fn test_astar_tri_branching_path() {
+        // Diamond graph: 0 → [1, 2] → 3
+        let tris = vec![
+            NavTri {
+                idx: 0,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(0.0, 0.0, 0.0),
+                neighbors: vec![1, 2],
+            },
+            NavTri {
+                idx: 1,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(1.0, 0.0, 0.0),
+                neighbors: vec![0, 3],
+            },
+            NavTri {
+                idx: 2,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(1.0, 0.0, 1.0),
+                neighbors: vec![0, 3],
+            },
+            NavTri {
+                idx: 3,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(2.0, 0.0, 0.5),
+                neighbors: vec![1, 2],
+            },
+        ];
+        let path = astar_tri(&tris, 0, 3);
+        assert!(path.len() == 3); // 0 → (1 or 2) → 3
+        assert_eq!(path[0], 0);
+        assert_eq!(path[2], 3);
+        assert!(path[1] == 1 || path[1] == 2); // Either route valid
+    }
+
+    // ===== Smoothing Tests =====
+
+    #[test]
+    fn test_smooth_empty() {
+        let mut pts = vec![];
+        smooth(&mut pts, &[]);
+        assert_eq!(pts.len(), 0);
+    }
+
+    #[test]
+    fn test_smooth_two_points() {
+        let mut pts = vec![Vec3::ZERO, Vec3::ONE];
+        smooth(&mut pts, &[]);
+        assert_eq!(pts.len(), 2);
+        // Endpoints unchanged
+        assert_eq!(pts[0], Vec3::ZERO);
+        assert_eq!(pts[1], Vec3::ONE);
+    }
+
+    #[test]
+    fn test_smooth_three_points() {
+        let mut pts = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(5.0, 0.0, 0.0),
+            Vec3::new(10.0, 0.0, 0.0),
+        ];
+        smooth(&mut pts, &[]);
+        
+        // Endpoints unchanged
+        assert_eq!(pts[0], Vec3::new(0.0, 0.0, 0.0));
+        assert_eq!(pts[2], Vec3::new(10.0, 0.0, 0.0));
+        
+        // Middle point smoothed (weighted average with neighbors)
+        // Formula: pts[1] = 0.25 * pts[0] + 0.5 * pts[1] + 0.25 * pts[2]
+        // After 2 iterations of smoothing, middle point moves toward line
+        // But with weight 0.5 on current position, it stays close to 5.0
+        assert!((pts[1].x - 5.0).abs() < 1.0); // Relaxed tolerance
+    }
+
+    // ===== Integration Tests =====
+
+    #[test]
+    fn test_full_pipeline_bake_and_path() {
+        // Create a simple 2x2 square navmesh (2 triangles sharing an edge)
+        let tris = vec![
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 2.0),
+                c: Vec3::new(2.0, 0.0, 0.0),
+            },
+            Triangle {
+                a: Vec3::new(2.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 2.0),
+                c: Vec3::new(2.0, 0.0, 2.0),
+            },
+        ];
+        
+        let nav = NavMesh::bake(&tris, 0.5, 70.0);
+        assert_eq!(nav.tris.len(), 2);
+        assert!(nav.tris[0].neighbors.len() > 0 || nav.tris[1].neighbors.len() > 0); // Connected
+        
+        // Path across the square
+        let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(1.5, 0.0, 1.5));
+        assert!(path.len() >= 2);
+        assert!((path[0] - Vec3::new(0.5, 0.0, 0.5)).length() < 0.2);
+        assert!((path.last().unwrap() - Vec3::new(1.5, 0.0, 1.5)).length() < 0.2);
+    }
+
+    #[test]
+    fn test_navmesh_with_max_step_parameter() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(1.0, 0.0, 0.0),
+            c: Vec3::new(0.0, 0.0, 1.0),
+        }];
+        let nav = NavMesh::bake(&tris, 0.8, 60.0);
+        assert_eq!(nav.max_step, 0.8);
+    }
+
+    #[test]
+    fn test_navmesh_with_max_slope_parameter() {
+        let tris = vec![Triangle {
+            a: Vec3::new(0.0, 0.0, 0.0),
+            b: Vec3::new(1.0, 0.0, 0.0),
+            c: Vec3::new(0.0, 0.0, 1.0),
+        }];
+        let nav = NavMesh::bake(&tris, 0.4, 30.0);
+        assert_eq!(nav.max_slope_deg, 30.0);
     }
 }

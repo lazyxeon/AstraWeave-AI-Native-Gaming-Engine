@@ -106,7 +106,7 @@
 //! 4. **Despawn/Respawn Cycles**: Generation increments work correctly
 //! 5. **Query Iteration**: Queries return entities in consistent order
 
-use crate::{Component, Entity, World};
+use crate::{Entity, World};
 use std::collections::HashSet;
 
 // === Test Components ===
@@ -130,6 +130,7 @@ struct Health {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 struct Tag;
 
 // === Helper Functions ===
@@ -561,7 +562,7 @@ fn test_query_iteration_deterministic() {
     let mut world = World::new();
 
     // Spawn entities with Position component
-    let entities: Vec<Entity> = (0..30)
+    let _entities: Vec<Entity> = (0..30)
         .map(|i| {
             let e = world.spawn();
             world.insert(e, Position { x: i as f32, y: i as f32 });

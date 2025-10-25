@@ -9,11 +9,11 @@
 
 #[cfg(feature = "llm_orchestrator")]
 mod arbiter_integration_tests {
+    use anyhow::{anyhow, Result};
     use astraweave_ai::{AIArbiter, AIControlMode, LlmExecutor, Orchestrator, OrchestratorAsync};
     use astraweave_core::{
         ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
     };
-    use anyhow::{anyhow, Result};
     use std::collections::BTreeMap;
     use std::sync::{Arc, Mutex};
 
@@ -407,7 +407,7 @@ mod arbiter_integration_tests {
         // Note: After detecting failure, maybe_request_llm spawns a new request
         // So we get: 1 initial + 1 after failure = 2 total requests
         let (_, requests, successes, failures, _, _) = arbiter.metrics();
-        assert_eq!(requests, 2);  // Initial request + retry after failure
+        assert_eq!(requests, 2); // Initial request + retry after failure
         assert_eq!(successes, 0);
         assert_eq!(failures, 1);
     }
@@ -428,8 +428,8 @@ mod arbiter_integration_tests {
 
         let mock_llm = Arc::new(
             MockLlmOrch::new()
-                .with_plan(create_mock_llm_plan(1))  // 1-step plan (executes quickly)
-                .with_delay(50),  // Fast completion
+                .with_plan(create_mock_llm_plan(1)) // 1-step plan (executes quickly)
+                .with_delay(50), // Fast completion
         );
 
         let runtime = tokio::runtime::Handle::current();
@@ -447,11 +447,11 @@ mod arbiter_integration_tests {
 
         // Wait for LLM to complete and transition to ExecutingLLM
         tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-        
+
         // Execute the 1-step plan (transitions back to GOAP)
         snap.t = 0.1;
         let _ = arbiter.update(&snap);
-        assert_eq!(arbiter.mode(), AIControlMode::GOAP);  // Back in GOAP after plan exhaustion
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP); // Back in GOAP after plan exhaustion
 
         // Second update at t=1: should NOT spawn (cooldown not expired: 1.0 - 0.0 = 1.0 < 5.0)
         snap.t = 1.0;
@@ -553,9 +553,7 @@ mod arbiter_integration_tests {
         let final_mode = arbiter.mode();
         assert!(matches!(
             final_mode,
-            AIControlMode::GOAP
-                | AIControlMode::ExecutingLLM { .. }
-                | AIControlMode::BehaviorTree
+            AIControlMode::GOAP | AIControlMode::ExecutingLLM { .. } | AIControlMode::BehaviorTree
         ));
     }
 

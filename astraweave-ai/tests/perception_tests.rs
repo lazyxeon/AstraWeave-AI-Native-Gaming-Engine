@@ -142,8 +142,14 @@ fn test_snapshot_accuracy() {
     println!("✅ Snapshot accuracy: 100% match");
     println!("   - Time: {} (expected 42.5)", snapshot.t);
     println!("   - Companion: {:?}", snapshot.me.pos);
-    println!("   - Player: HP {}, {:?}", snapshot.player.hp, snapshot.player.pos);
-    println!("   - Enemies: {} with correct IDs/positions", snapshot.enemies.len());
+    println!(
+        "   - Player: HP {}, {:?}",
+        snapshot.player.hp, snapshot.player.pos
+    );
+    println!(
+        "   - Enemies: {} with correct IDs/positions",
+        snapshot.enemies.len()
+    );
 }
 
 #[test]
@@ -218,10 +224,7 @@ fn test_perception_stress() {
     let degradation_percent = ((last_100_avg - first_100_avg) / first_100_avg) * 100.0;
 
     let total_avg: f64 = frame_times.iter().sum::<f64>() / frame_times.len() as f64;
-    let min_time = frame_times
-        .iter()
-        .cloned()
-        .fold(f64::INFINITY, f64::min);
+    let min_time = frame_times.iter().cloned().fold(f64::INFINITY, f64::min);
     let max_time = frame_times
         .iter()
         .cloned()
@@ -244,9 +247,15 @@ fn test_perception_stress() {
         degradation_percent
     );
 
-    println!("✅ Stress test passed: {:.2}% degradation < 50%", degradation_percent);
+    println!(
+        "✅ Stress test passed: {:.2}% degradation < 50%",
+        degradation_percent
+    );
     if degradation_percent < 0.0 {
-        println!("   (Performance improved by {:.2}% - CPU warmup/cache effects)", degradation_percent.abs());
+        println!(
+            "   (Performance improved by {:.2}% - CPU warmup/cache effects)",
+            degradation_percent.abs()
+        );
     }
 }
 
@@ -287,7 +296,10 @@ fn test_snapshot_cloning() {
         per_clone_us
     );
 
-    println!("✅ Clone performance: {:.2} µs < 10 µs target", per_clone_us);
+    println!(
+        "✅ Clone performance: {:.2} µs < 10 µs target",
+        per_clone_us
+    );
 }
 
 #[test]

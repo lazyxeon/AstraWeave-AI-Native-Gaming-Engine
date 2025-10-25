@@ -9,8 +9,8 @@
 
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
 use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
-use std::collections::BTreeMap;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 use std::time::Instant;
 
@@ -54,14 +54,21 @@ fn hash_plan(plan: &astraweave_core::PlanIntent) -> u64 {
     let mut hasher = DefaultHasher::new();
     plan.plan_id.hash(&mut hasher);
     plan.steps.len().hash(&mut hasher);
-    
+
     // Hash each action step based on its variant
     for step in &plan.steps {
         match step {
-            astraweave_core::ActionStep::MoveTo { x, y } => {
+            astraweave_core::ActionStep::MoveTo { x, y, speed } => {
                 "MoveTo".hash(&mut hasher);
                 x.hash(&mut hasher);
                 y.hash(&mut hasher);
+                // Hash speed (Option<MovementSpeed>)
+                match speed {
+                    Some(astraweave_core::MovementSpeed::Walk) => 1u8.hash(&mut hasher),
+                    Some(astraweave_core::MovementSpeed::Run) => 2u8.hash(&mut hasher),
+                    Some(astraweave_core::MovementSpeed::Sprint) => 3u8.hash(&mut hasher),
+                    None => 0u8.hash(&mut hasher),
+                }
             }
             astraweave_core::ActionStep::Throw { item, x, y } => {
                 "Throw".hash(&mut hasher);
@@ -69,7 +76,10 @@ fn hash_plan(plan: &astraweave_core::PlanIntent) -> u64 {
                 x.hash(&mut hasher);
                 y.hash(&mut hasher);
             }
-            astraweave_core::ActionStep::CoverFire { target_id, duration } => {
+            astraweave_core::ActionStep::CoverFire {
+                target_id,
+                duration,
+            } => {
                 "CoverFire".hash(&mut hasher);
                 target_id.hash(&mut hasher);
                 // Note: f32 can't be hashed directly, convert to bits
@@ -79,9 +89,13 @@ fn hash_plan(plan: &astraweave_core::PlanIntent) -> u64 {
                 "Revive".hash(&mut hasher);
                 ally_id.hash(&mut hasher);
             }
+            _ => {
+                // Other action variants - use discriminant for now
+                std::mem::discriminant(step).hash(&mut hasher);
+            }
         }
     }
-    
+
     hasher.finish()
 }
 
@@ -111,7 +125,11 @@ fn test_deterministic_planning() {
         }
 
         replay_hashes.push(frame_hashes);
-        println!("   Replay {} complete: {} frames", replay_id + 1, frame_count);
+        println!(
+            "   Replay {} complete: {} frames",
+            replay_id + 1,
+            frame_count
+        );
     }
 
     // Verify all replays match
@@ -133,8 +151,9 @@ fn test_deterministic_planning() {
         }
     }
 
-    let match_percentage =
-        ((frame_count * (replay_count - 1) - mismatches) as f64 / (frame_count * (replay_count - 1)) as f64) * 100.0;
+    let match_percentage = ((frame_count * (replay_count - 1) - mismatches) as f64
+        / (frame_count * (replay_count - 1)) as f64)
+        * 100.0;
 
     println!("   Total frames: {}", frame_count);
     println!("   Replays: {}", replay_count);
@@ -148,7 +167,10 @@ fn test_deterministic_planning() {
         mismatches
     );
 
-    println!("✅ Determinism verified: 100% hash match across {} replays", replay_count);
+    println!(
+        "✅ Determinism verified: 100% hash match across {} replays",
+        replay_count
+    );
 }
 
 #[test]
@@ -186,7 +208,10 @@ fn test_planning_stability() {
     // Validate no errors
     assert_eq!(error_count, 0, "Should have 0 errors during stability test");
 
-    println!("✅ Stability verified: {} plans with 0 errors", iteration_count);
+    println!(
+        "✅ Stability verified: {} plans with 0 errors",
+        iteration_count
+    );
 }
 
 #[test]
@@ -219,7 +244,10 @@ fn test_memory_stability_marathon() {
         if last_sample.elapsed().as_secs_f64() >= sample_interval_sec {
             let elapsed_min = start.elapsed().as_secs_f64() / 60.0;
             samples.push(elapsed_min);
-            println!("     {:.0} minutes elapsed, {} iterations", elapsed_min, iteration_count);
+            println!(
+                "     {:.0} minutes elapsed, {} iterations",
+                elapsed_min, iteration_count
+            );
             last_sample = Instant::now();
         }
     }
@@ -227,7 +255,10 @@ fn test_memory_stability_marathon() {
     let actual_duration = start.elapsed();
     let plans_per_sec = iteration_count as f64 / actual_duration.as_secs_f64();
 
-    println!("   Duration: {:.3} hours", actual_duration.as_secs_f64() / 3600.0);
+    println!(
+        "   Duration: {:.3} hours",
+        actual_duration.as_secs_f64() / 3600.0
+    );
     println!("   Total iterations: {}", iteration_count);
     println!("   Throughput: {:.0} plans/sec", plans_per_sec);
     println!("   Memory samples: {}", samples.len());
@@ -235,7 +266,8 @@ fn test_memory_stability_marathon() {
     // In a real test, we'd check actual memory usage here
     // For now, we validate that the test completes without crashes
 
-    println!("✅ Marathon complete: {} plans over {:.1} hours with no crashes",
+    println!(
+        "✅ Marathon complete: {} plans over {:.1} hours with no crashes",
         iteration_count,
         actual_duration.as_secs_f64() / 3600.0
     );
@@ -276,12 +308,13 @@ fn test_error_recovery() {
     println!("   Errors: {}", error_count);
 
     // All cases should succeed (graceful handling)
-    assert!(
-        success_count > 0,
-        "At least some cases should succeed"
-    );
+    assert!(success_count > 0, "At least some cases should succeed");
 
-    println!("✅ Error recovery: {}/{} cases handled gracefully", success_count, success_count + error_count);
+    println!(
+        "✅ Error recovery: {}/{} cases handled gracefully",
+        success_count,
+        success_count + error_count
+    );
 }
 
 /// Helper to create an empty snapshot
@@ -355,5 +388,8 @@ fn test_concurrent_planning() {
         "All threads should complete successfully"
     );
 
-    println!("✅ Thread safety verified: {} plans across {} threads", total_success, thread_count);
+    println!(
+        "✅ Thread safety verified: {} plans across {} threads",
+        total_success, thread_count
+    );
 }

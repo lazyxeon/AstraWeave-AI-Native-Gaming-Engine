@@ -13,8 +13,8 @@
 //! - ToolError: Display impl, all variants
 
 use astraweave_ai::{
-    GoapOrchestrator, Orchestrator, RuleOrchestrator, UtilityOrchestrator,
-    ToolError, ToolVerb, ValidationContext, validate_tool_action,
+    validate_tool_action, GoapOrchestrator, Orchestrator, RuleOrchestrator, ToolError, ToolVerb,
+    UtilityOrchestrator, ValidationContext,
 };
 use astraweave_core::{ActionStep, CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
 use astraweave_nav::NavMesh;
@@ -25,7 +25,11 @@ use std::collections::BTreeMap;
 // Helper Functions
 // ============================================================================
 
-fn make_snap_with_enemy(enemy_pos: IVec2, my_ammo: i32, cooldowns: BTreeMap<String, f32>) -> WorldSnapshot {
+fn make_snap_with_enemy(
+    enemy_pos: IVec2,
+    my_ammo: i32,
+    cooldowns: BTreeMap<String, f32>,
+) -> WorldSnapshot {
     WorldSnapshot {
         t: 1.0,
         player: PlayerState {
@@ -85,10 +89,10 @@ fn test_rule_orchestrator_smoke_logic() {
     let snap = make_snap_with_enemy(IVec2 { x: 6, y: 6 }, 10, BTreeMap::new());
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(!plan.steps.is_empty());
     assert_eq!(plan.steps.len(), 3);
-    
+
     // First step: throw smoke at midpoint
     match &plan.steps[0] {
         ActionStep::Throw { item, x, y } => {
@@ -98,7 +102,7 @@ fn test_rule_orchestrator_smoke_logic() {
         }
         _ => panic!("Expected Throw action"),
     }
-    
+
     // Second step: move closer
     match &plan.steps[1] {
         ActionStep::MoveTo { x, y, .. } => {
@@ -107,10 +111,13 @@ fn test_rule_orchestrator_smoke_logic() {
         }
         _ => panic!("Expected MoveTo action"),
     }
-    
+
     // Third step: cover fire
     match &plan.steps[2] {
-        ActionStep::CoverFire { target_id, duration } => {
+        ActionStep::CoverFire {
+            target_id,
+            duration,
+        } => {
             assert_eq!(*target_id, 42);
             assert_eq!(*duration, 2.5);
         }
@@ -126,9 +133,9 @@ fn test_rule_orchestrator_smoke_on_cooldown() {
     let snap = make_snap_with_enemy(IVec2 { x: 4, y: 4 }, 10, cooldowns);
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert_eq!(plan.steps.len(), 2);
-    
+
     // First step: advance one step closer
     match &plan.steps[0] {
         ActionStep::MoveTo { x, y, .. } => {
@@ -137,10 +144,13 @@ fn test_rule_orchestrator_smoke_on_cooldown() {
         }
         _ => panic!("Expected MoveTo action"),
     }
-    
+
     // Second step: cover fire
     match &plan.steps[1] {
-        ActionStep::CoverFire { target_id, duration } => {
+        ActionStep::CoverFire {
+            target_id,
+            duration,
+        } => {
             assert_eq!(*target_id, 42);
             assert_eq!(*duration, 1.5);
         }
@@ -154,7 +164,7 @@ fn test_rule_orchestrator_no_enemies() {
     let snap = make_snap_no_enemies();
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(plan.steps.is_empty());
     assert!(plan.plan_id.starts_with("plan-"));
 }
@@ -165,7 +175,7 @@ fn test_rule_orchestrator_plan_id_generation() {
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, BTreeMap::new());
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(plan.plan_id.starts_with("plan-"));
     assert_eq!(plan.plan_id, "plan-1000"); // t=1.0 * 1000 = 1000
 }
@@ -178,9 +188,9 @@ fn test_rule_orchestrator_smoke_cooldown_zero() {
     let snap = make_snap_with_enemy(IVec2 { x: 8, y: 8 }, 10, cooldowns);
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert_eq!(plan.steps.len(), 3);
-    
+
     // First step should be Throw (cooldown 0.0 is ready)
     match &plan.steps[0] {
         ActionStep::Throw { item, .. } => {
@@ -196,9 +206,9 @@ fn test_rule_orchestrator_negative_enemy_pos() {
     let snap = make_snap_with_enemy(IVec2 { x: -5, y: -5 }, 10, BTreeMap::new());
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert_eq!(plan.steps.len(), 3);
-    
+
     // Midpoint should be (-2, -2) - integer division rounds toward zero
     match &plan.steps[0] {
         ActionStep::Throw { x, y, .. } => {
@@ -207,7 +217,7 @@ fn test_rule_orchestrator_negative_enemy_pos() {
         }
         _ => panic!("Expected Throw action"),
     }
-    
+
     // MoveTo should be (-2, -2)
     match &plan.steps[1] {
         ActionStep::MoveTo { x, y, .. } => {
@@ -228,13 +238,13 @@ fn test_utility_orchestrator_smoke_candidate() {
     let snap = make_snap_with_enemy(IVec2 { x: 6, y: 6 }, 10, BTreeMap::new());
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(!plan.steps.is_empty());
     assert!(plan.plan_id.starts_with("util-"));
-    
+
     // Should have at least 2 steps (smoke + move)
     assert!(plan.steps.len() >= 2);
-    
+
     // First step should be Throw (smoke candidate has higher score)
     match &plan.steps[0] {
         ActionStep::Throw { item, x, y } => {
@@ -254,9 +264,9 @@ fn test_utility_orchestrator_advance_candidate() {
     let snap = make_snap_with_enemy(IVec2 { x: 2, y: 2 }, 10, cooldowns);
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(!plan.steps.is_empty());
-    
+
     // First step should be MoveTo (no smoke candidate due to cooldown)
     match &plan.steps[0] {
         ActionStep::MoveTo { x, y, .. } => {
@@ -276,13 +286,14 @@ fn test_utility_orchestrator_cover_fire_when_close() {
     let snap = make_snap_with_enemy(IVec2 { x: 2, y: 1 }, 10, cooldowns);
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(plan.steps.len() >= 2);
-    
+
     // Should have MoveTo + CoverFire (advance candidate with dist <= 3)
-    let has_cover_fire = plan.steps.iter().any(|step| {
-        matches!(step, ActionStep::CoverFire { .. })
-    });
+    let has_cover_fire = plan
+        .steps
+        .iter()
+        .any(|step| matches!(step, ActionStep::CoverFire { .. }));
     assert!(has_cover_fire, "Expected CoverFire when distance <= 3");
 }
 
@@ -294,7 +305,7 @@ fn test_utility_orchestrator_no_cover_fire_when_far() {
     let snap = make_snap_with_enemy(IVec2 { x: 10, y: 10 }, 10, cooldowns);
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     // Should have only MoveTo (distance > 3)
     assert_eq!(plan.steps.len(), 1);
     match &plan.steps[0] {
@@ -309,7 +320,7 @@ fn test_utility_orchestrator_no_enemies() {
     let snap = make_snap_no_enemies();
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(plan.steps.is_empty());
     assert!(plan.plan_id.starts_with("util-"));
 }
@@ -323,7 +334,7 @@ fn test_utility_orchestrator_candidate_sorting() {
     let snap = make_snap_with_enemy(IVec2 { x: 1, y: 1 }, 10, BTreeMap::new());
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     // Should prioritize smoke (higher score)
     match &plan.steps[0] {
         ActionStep::Throw { item, .. } => {
@@ -343,7 +354,7 @@ fn test_goap_orchestrator_next_action_move() {
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
     let action = orch.next_action(&snap);
-    
+
     match action {
         ActionStep::MoveTo { x, y, .. } => {
             assert_eq!(x, 1); // 0 + signum(5-0)
@@ -359,9 +370,12 @@ fn test_goap_orchestrator_next_action_cover_fire() {
     let snap = make_snap_with_enemy(IVec2 { x: 1, y: 1 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
     let action = orch.next_action(&snap);
-    
+
     match action {
-        ActionStep::CoverFire { target_id, duration } => {
+        ActionStep::CoverFire {
+            target_id,
+            duration,
+        } => {
             assert_eq!(target_id, 42);
             assert_eq!(duration, 1.5);
         }
@@ -375,7 +389,7 @@ fn test_goap_orchestrator_next_action_wait() {
     let snap = make_snap_no_enemies();
     let orch = GoapOrchestrator;
     let action = orch.next_action(&snap);
-    
+
     match action {
         ActionStep::Wait { duration } => {
             assert_eq!(duration, 1.0);
@@ -390,10 +404,10 @@ fn test_goap_orchestrator_propose_plan_move() {
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert_eq!(plan.steps.len(), 1);
     assert!(plan.plan_id.starts_with("goap-"));
-    
+
     match &plan.steps[0] {
         ActionStep::MoveTo { x, y, .. } => {
             assert_eq!(*x, 1);
@@ -409,11 +423,14 @@ fn test_goap_orchestrator_propose_plan_cover_fire() {
     let snap = make_snap_with_enemy(IVec2 { x: 2, y: 0 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert_eq!(plan.steps.len(), 1);
-    
+
     match &plan.steps[0] {
-        ActionStep::CoverFire { target_id, duration } => {
+        ActionStep::CoverFire {
+            target_id,
+            duration,
+        } => {
             assert_eq!(*target_id, 42);
             assert_eq!(*duration, 1.5);
         }
@@ -427,7 +444,7 @@ fn test_goap_orchestrator_propose_plan_no_enemies() {
     let snap = make_snap_no_enemies();
     let orch = GoapOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     assert!(plan.steps.is_empty());
     assert!(plan.plan_id.starts_with("goap-"));
 }
@@ -438,7 +455,7 @@ fn test_goap_orchestrator_boundary_distance() {
     let snap = make_snap_with_enemy(IVec2 { x: 1, y: 1 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     // Distance = 2, should cover fire (dist <= 2)
     assert_eq!(plan.steps.len(), 1);
     match &plan.steps[0] {
@@ -454,7 +471,7 @@ fn test_goap_orchestrator_boundary_distance() {
 #[test]
 fn test_validation_context_default() {
     let ctx = ValidationContext::new();
-    
+
     assert!(ctx.nav_mesh.is_none());
     assert!(ctx.physics_pipeline.is_none());
     assert!(ctx.rigid_body_set.is_none());
@@ -469,7 +486,7 @@ fn test_validation_context_with_nav() {
         max_slope_deg: 60.0,
     };
     let ctx = ValidationContext::new().with_nav(&nav);
-    
+
     assert!(ctx.nav_mesh.is_some());
     assert!(ctx.physics_pipeline.is_none());
 }
@@ -479,9 +496,9 @@ fn test_validation_context_with_physics() {
     let pipeline = PhysicsPipeline::new();
     let bodies = RigidBodySet::new();
     let colliders = ColliderSet::new();
-    
+
     let ctx = ValidationContext::new().with_physics(&pipeline, &bodies, &colliders);
-    
+
     assert!(ctx.physics_pipeline.is_some());
     assert!(ctx.rigid_body_set.is_some());
     assert!(ctx.collider_set.is_some());
@@ -498,11 +515,11 @@ fn test_validation_context_chained_builders() {
     let pipeline = PhysicsPipeline::new();
     let bodies = RigidBodySet::new();
     let colliders = ColliderSet::new();
-    
+
     let ctx = ValidationContext::new()
         .with_nav(&nav)
         .with_physics(&pipeline, &bodies, &colliders);
-    
+
     assert!(ctx.nav_mesh.is_some());
     assert!(ctx.physics_pipeline.is_some());
     assert!(ctx.rigid_body_set.is_some());
@@ -521,9 +538,9 @@ fn test_validation_context_multiple_with_nav_calls() {
         max_step: 0.5,
         max_slope_deg: 45.0,
     };
-    
+
     let ctx = ValidationContext::new().with_nav(&nav1).with_nav(&nav2);
-    
+
     assert!(ctx.nav_mesh.is_some());
     // Should have nav2 (last call wins)
     assert_eq!(ctx.nav_mesh.unwrap().max_step, 0.5);
@@ -538,7 +555,7 @@ fn test_validate_move_to_no_nav_no_physics() {
     // MoveTo without nav or physics should succeed (no validation)
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::MoveTo, &snap, &ctx, Some(IVec2 { x: 5, y: 5 }));
     assert!(result.is_ok());
 }
@@ -550,7 +567,7 @@ fn test_validate_move_to_cooldown() {
     cooldowns.insert("moveto".into(), 2.5);
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, cooldowns);
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::MoveTo, &snap, &ctx, Some(IVec2 { x: 5, y: 5 }));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("cooldown"));
@@ -561,10 +578,13 @@ fn test_validate_throw_insufficient_ammo() {
     // Throw with 0 ammo should fail
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 0, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Throw, &snap, &ctx, Some(IVec2 { x: 5, y: 5 }));
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("insufficient ammo"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("insufficient ammo"));
 }
 
 #[test]
@@ -573,7 +593,7 @@ fn test_validate_throw_no_line_of_sight() {
     let mut snap = make_snap_with_enemy(IVec2 { x: 5, y: 0 }, 10, BTreeMap::new());
     snap.obstacles = vec![IVec2 { x: 2, y: 0 }]; // Obstacle between (0,0) and (5,0)
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Throw, &snap, &ctx, Some(IVec2 { x: 5, y: 0 }));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("no line of sight"));
@@ -584,7 +604,7 @@ fn test_validate_throw_success() {
     // Throw with ammo and clear LOS should succeed
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Throw, &snap, &ctx, Some(IVec2 { x: 5, y: 5 }));
     assert!(result.is_ok());
 }
@@ -594,10 +614,19 @@ fn test_validate_cover_fire_insufficient_ammo() {
     // CoverFire with 0 ammo should fail
     let snap = make_snap_with_enemy(IVec2 { x: 2, y: 0 }, 0, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
-    let result = validate_tool_action(0, ToolVerb::CoverFire, &snap, &ctx, Some(IVec2 { x: 2, y: 0 }));
+
+    let result = validate_tool_action(
+        0,
+        ToolVerb::CoverFire,
+        &snap,
+        &ctx,
+        Some(IVec2 { x: 2, y: 0 }),
+    );
     assert!(result.is_err());
-    assert!(result.unwrap_err().to_string().contains("insufficient ammo"));
+    assert!(result
+        .unwrap_err()
+        .to_string()
+        .contains("insufficient ammo"));
 }
 
 #[test]
@@ -606,8 +635,14 @@ fn test_validate_cover_fire_no_line_of_sight() {
     let mut snap = make_snap_with_enemy(IVec2 { x: 3, y: 0 }, 10, BTreeMap::new());
     snap.obstacles = vec![IVec2 { x: 1, y: 0 }];
     let ctx = ValidationContext::new();
-    
-    let result = validate_tool_action(0, ToolVerb::CoverFire, &snap, &ctx, Some(IVec2 { x: 3, y: 0 }));
+
+    let result = validate_tool_action(
+        0,
+        ToolVerb::CoverFire,
+        &snap,
+        &ctx,
+        Some(IVec2 { x: 3, y: 0 }),
+    );
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("no line of sight"));
 }
@@ -618,7 +653,7 @@ fn test_validate_revive_low_morale() {
     let mut snap = make_snap_with_enemy(IVec2 { x: 1, y: 0 }, 10, BTreeMap::new());
     snap.me.morale = 0.3;
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Revive, &snap, &ctx, Some(IVec2 { x: 1, y: 0 }));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("low morale"));
@@ -629,7 +664,7 @@ fn test_validate_revive_target_too_far() {
     // Revive with target >2.0 distance should fail
     let snap = make_snap_with_enemy(IVec2 { x: 3, y: 3 }, 10, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Revive, &snap, &ctx, Some(IVec2 { x: 3, y: 3 }));
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("too far"));
@@ -640,7 +675,7 @@ fn test_validate_revive_success() {
     // Revive with morale >= 0.5 and close target should succeed
     let snap = make_snap_with_enemy(IVec2 { x: 1, y: 0 }, 10, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Revive, &snap, &ctx, Some(IVec2 { x: 1, y: 0 }));
     assert!(result.is_ok());
 }
@@ -650,7 +685,7 @@ fn test_validate_stay_no_checks() {
     // Stay should always succeed (no validation checks)
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 0, BTreeMap::new());
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Stay, &snap, &ctx, None);
     assert!(result.is_ok());
 }
@@ -660,7 +695,7 @@ fn test_validate_wander_no_checks() {
     // Wander should always succeed (no validation checks)
     let snap = make_snap_no_enemies();
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Wander, &snap, &ctx, None);
     assert!(result.is_ok());
 }
@@ -686,7 +721,10 @@ fn test_tool_error_no_line_of_sight_display() {
 
 #[test]
 fn test_tool_error_insufficient_resource_display() {
-    assert_eq!(ToolError::InsufficientResource.to_string(), "InsufficientResource");
+    assert_eq!(
+        ToolError::InsufficientResource.to_string(),
+        "InsufficientResource"
+    );
 }
 
 #[test]
@@ -719,7 +757,7 @@ fn test_rule_orchestrator_enemy_at_origin() {
     let snap = make_snap_with_enemy(IVec2 { x: 0, y: 0 }, 10, BTreeMap::new());
     let orch = RuleOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     // Should still generate plan (signum of 0 is 0)
     assert_eq!(plan.steps.len(), 3);
 }
@@ -730,7 +768,7 @@ fn test_utility_orchestrator_equal_scores() {
     let snap = make_snap_with_enemy(IVec2 { x: 1, y: 0 }, 10, BTreeMap::new());
     let orch = UtilityOrchestrator;
     let plan = orch.propose_plan(&snap);
-    
+
     // Should produce valid plan regardless of sorting order
     assert!(!plan.steps.is_empty());
 }
@@ -741,7 +779,7 @@ fn test_goap_orchestrator_manhattan_distance() {
     let snap = make_snap_with_enemy(IVec2 { x: 3, y: 4 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
     let action = orch.next_action(&snap);
-    
+
     match action {
         ActionStep::MoveTo { x, y, .. } => {
             assert_eq!(x, 1); // 0 + signum(3)
@@ -756,7 +794,7 @@ fn test_validate_tool_action_no_target_pos() {
     // Some actions don't require target_pos (None)
     let snap = make_snap_no_enemies();
     let ctx = ValidationContext::new();
-    
+
     let result = validate_tool_action(0, ToolVerb::Stay, &snap, &ctx, None);
     assert!(result.is_ok());
 }
@@ -771,9 +809,9 @@ use astraweave_ai::OrchestratorAsync;
 async fn test_rule_orchestrator_async_plan() {
     let snap = make_snap_with_enemy(IVec2 { x: 5, y: 5 }, 10, BTreeMap::new());
     let orch = RuleOrchestrator;
-    
+
     let plan = orch.plan(snap, 100).await.expect("plan should succeed");
-    
+
     assert!(!plan.steps.is_empty());
     assert!(plan.plan_id.starts_with("plan-"));
 }
@@ -782,7 +820,7 @@ async fn test_rule_orchestrator_async_plan() {
 async fn test_rule_orchestrator_async_name() {
     let orch = RuleOrchestrator;
     let name = orch.name();
-    
+
     assert!(name.contains("RuleOrchestrator"));
 }
 
@@ -790,9 +828,9 @@ async fn test_rule_orchestrator_async_name() {
 async fn test_utility_orchestrator_async_plan() {
     let snap = make_snap_with_enemy(IVec2 { x: 3, y: 3 }, 10, BTreeMap::new());
     let orch = UtilityOrchestrator;
-    
+
     let plan = orch.plan(snap, 100).await.expect("plan should succeed");
-    
+
     assert!(!plan.steps.is_empty());
     assert!(plan.plan_id.starts_with("util-"));
 }
@@ -801,7 +839,7 @@ async fn test_utility_orchestrator_async_plan() {
 async fn test_utility_orchestrator_async_name() {
     let orch = UtilityOrchestrator;
     let name = orch.name();
-    
+
     assert!(name.contains("UtilityOrchestrator"));
 }
 
@@ -809,9 +847,9 @@ async fn test_utility_orchestrator_async_name() {
 async fn test_goap_orchestrator_async_plan() {
     let snap = make_snap_with_enemy(IVec2 { x: 4, y: 4 }, 10, BTreeMap::new());
     let orch = GoapOrchestrator;
-    
+
     let plan = orch.plan(snap, 100).await.expect("plan should succeed");
-    
+
     assert_eq!(plan.steps.len(), 1);
     assert!(plan.plan_id.starts_with("goap-"));
 }
@@ -820,6 +858,6 @@ async fn test_goap_orchestrator_async_plan() {
 async fn test_goap_orchestrator_async_name() {
     let orch = GoapOrchestrator;
     let name = orch.name();
-    
+
     assert!(name.contains("GoapOrchestrator"));
 }

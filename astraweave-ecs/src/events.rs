@@ -473,11 +473,11 @@ mod tests {
     #[test]
     fn test_clear_one_type_preserves_others() {
         #[derive(Clone, Debug)]
-        struct EventA { value: i32 }
+        struct EventA { #[allow(dead_code)] value: i32 }
         impl Event for EventA {}
 
         #[derive(Clone, Debug)]
-        struct EventB { value: i32 }
+        struct EventB { #[allow(dead_code)] value: i32 }
         impl Event for EventB {}
 
         let mut events = Events::new();
@@ -567,11 +567,11 @@ mod tests {
     #[test]
     fn test_clear_all_removes_all_event_types() {
         #[derive(Clone, Debug)]
-        struct EventA { value: i32 }
+        struct EventA { #[allow(dead_code)] value: i32 }
         impl Event for EventA {}
 
         #[derive(Clone, Debug)]
-        struct EventB { value: i32 }
+        struct EventB { #[allow(dead_code)] value: i32 }
         impl Event for EventB {}
 
         let mut events = Events::new();

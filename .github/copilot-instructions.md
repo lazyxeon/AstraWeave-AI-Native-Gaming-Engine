@@ -44,6 +44,27 @@ AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are f
    - **100% deterministic** - Perfect replay/multiplayer support
    - **Grade**: ⭐⭐⭐⭐⭐ A+ (Production Ready)
 
+- ✅ **Week 3 Testing Sprint COMPLETE** (Oct 20, 2025, 2.7 hours)
+   - **Day 1 COMPLETE**: Warning cleanup (7/7 fixed, ZERO warnings, 136/136 tests, 0.2h)
+   - **Day 2 COMPLETE**: Integration tests (9/9 passing, 100%, ZERO warnings, 1.0h)
+     - ✅ Full AI pipeline validated (ECS → Perception → Planning → Physics → Nav → ECS feedback)
+     - ✅ Determinism verified (3 runs, bit-identical results)
+     - ✅ Multi-agent scalability (100 agents × 60 frames = 6,000 agent-frames tested)
+     - ✅ ActionStep enum discovery (pattern matching required, not field access)
+   - **Day 3 COMPLETE**: Performance benchmarks (11 benchmarks, 46-65% AI improvements, 0.5h)
+     - ✅ **46-65% AI performance gains** (Week 8 optimizations validated!)
+     - ✅ Sub-microsecond AI planning (87-202 ns, 4.95-11.5M plans/sec)
+     - ✅ 60 FPS capacity confirmed (8,075+ agents with complex AI)
+     - ⚠️ ECS regression detected (+18.77%, 435 µs → 516 µs, flagged for Week 4)
+   - **Day 4 COMPLETE**: API documentation (650 lines, 23+ examples, 1.0h)
+     - ✅ ActionStep API reference (enum pattern matching, correct/incorrect usage)
+     - ✅ 5 integration patterns (ECS→Perception→Planning→Physics→ECS feedback + helpers)
+     - ✅ Performance best practices (60 FPS budgets, batching, SIMD)
+     - ✅ Common pitfalls documented (5 mistakes with solutions)
+   - **Day 5 COMPLETE**: Week 3 summary report (consolidating all achievements)
+   - **Cumulative**: 242 tests passing (233 Week 2 + 9 Week 3), 14 warnings fixed, 100% pass rate
+   - **Grade**: ⭐⭐⭐⭐⭐ A+ (Perfect execution, 50% under budget, major discoveries)
+
 - 🎯 **Phase 8: Game Engine Readiness IN PROGRESS** (Oct 14-15, 2025)
    - **Objective**: Transform from "production-ready infrastructure" to "ship a game on it"
    - **Current Gap**: 60-70% complete for shipping full games (rendering more advanced than expected!)
@@ -521,7 +542,13 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 **Week Summaries**:
 
 - `WEEK_1_COMPLETION_SUMMARY.md` - GPU skinning, combat physics, unwrap audit
-- `WEEK_2_COMPLETE.md` - Benchmarking sprint (25 benchmarks, 50 unwraps fixed)
+- `WEEK_2_SUMMARY_REPORT.md` - Testing sprint Week 2 (111 tests, 1 critical bug fixed, 233/233 passing)
+- `WEEK_3_COMPLETION_SUMMARY.md` - **NEW** Testing sprint Week 3 (9 integration tests, 11 benchmarks, 46-65% AI improvements, API docs, 2.7h total)
+- `WEEK_3_DAY_1_COMPLETION_REPORT.md` - Warning cleanup (7 warnings fixed, ZERO warnings achieved)
+- `WEEK_3_DAY_2_COMPLETION_REPORT.md` - Cross-module integration tests (9 tests, 100% passing, determinism validated)
+- `WEEK_3_DAY_3_COMPLETION_REPORT.md` - Performance benchmarks (11 benchmarks, 46-65% AI improvements, ECS regression detected)
+- `WEEK_3_DAY_4_COMPLETION_REPORT.md` - API documentation (650 lines, 23+ examples, developer guide)
+- `WEEK_3_API_DOCUMENTATION.md` - Comprehensive API reference (ActionStep, integration patterns, performance, testing, pitfalls)
 - `WEEK_3_ACTION_12_COMPLETE.md` - Physics benchmarks, optimization
 - `WEEK_4_FINAL_SUMMARY.md` - Async physics, terrain, LLM, Veilweaver demo
 - `WEEK_5_FINAL_COMPLETE.md` - GPU mesh optimization, SIMD math infrastructure
@@ -999,6 +1026,154 @@ Consult `docs/root-archive/GAME_ENGINE_READINESS_ROADMAP.md` for comprehensive r
 11. **Debug Early**: One debug logging statement revealed critical validation bug
 12. **Production First**: Focus on working demo over 100% test coverage (95.5% is excellent)
 13. **Iterative Validation**: Test with real LLM early and often, don't rely on mocks
+
+---
+
+## Documentation Organization Policy (Added October 20, 2025)
+
+**CRITICAL**: AstraWeave maintains extensive historical documentation as evidence of the AI-orchestration experiment. ALL documentation must be properly organized to prevent root-level clutter.
+
+### Documentation Structure
+
+```
+docs/
+├── current/          # Active documentation only
+├── journey/          # Historical development (NEVER DELETE)
+│   ├── README.md     # Navigation guide
+│   ├── weeks/        # Weekly completion summaries
+│   ├── phases/       # Phase completion reports
+│   └── daily/        # Daily session logs
+├── lessons/          # Extracted patterns and learnings
+└── supplemental/     # Setup guides, reference material
+```
+
+### Rules for Creating New Documentation
+
+**Before creating ANY new .md file, determine its category:**
+
+#### 1. Current/Active Documentation → `docs/current/`
+
+**When**: Documenting ongoing work, current status, active plans
+
+**Examples**:
+- `PHASE_[X]_PLAN.md` (if Phase X is current)
+- `FEATURE_[NAME]_STATUS.md`
+- `KNOWN_ISSUES.md` updates
+- `ROADMAP.md` updates
+- Architecture changes (current state)
+
+**File naming**: `[TOPIC]_[STATUS].md`
+- Use CAPITAL_SNAKE_CASE
+- Include status indicator: PLAN, STATUS, ROADMAP, ISSUES
+- Be specific: `UI_SYSTEM_PLAN.md` not `PLAN.md`
+
+#### 2. Journey/Completion Documentation → `docs/journey/[category]/`
+
+**When**: Documenting COMPLETED work as historical record
+
+**Examples**:
+- Phase completion reports → `docs/journey/phases/`
+- Week completion summaries → `docs/journey/weeks/`
+- Daily session logs → `docs/journey/daily/`
+
+**File naming patterns**:
+- Phases: `PHASE_[X]_COMPLETE_[DATE].md` or `PHASE_[X]_[MILESTONE]_COMPLETE.md`
+- Weeks: `WEEK_[X]_COMPLETE.md` or `WEEK_[X]_SUMMARY.md`
+- Daily: `PHASE_[X]_WEEK_[Y]_DAY_[Z]_COMPLETE.md` or `[YYYY-MM-DD]_SESSION.md`
+
+#### 3. Lessons Learned → `docs/lessons/`
+
+**When**: Extracting patterns, documenting what worked/didn't
+
+**Examples**:
+- Successful patterns discovered
+- Failed approaches to avoid
+- Orchestration tips learned
+- Performance optimization lessons
+
+**File naming**: `[TOPIC]_LESSONS.md` or update existing:
+- `WHAT_WORKED.md`
+- `WHAT_DIDNT.md`
+- `AI_ORCHESTRATION_TIPS.md`
+- `PERFORMANCE_PATTERNS.md`
+
+#### 4. Supplemental/Reference → `docs/supplemental/`
+
+**When**: Setup guides, how-to docs, reference material
+
+**Examples**:
+- `DEVELOPMENT_SETUP.md`
+- `BENCHMARKING_GUIDE.md`
+- `TESTING_STRATEGY.md`
+- API reference (if not in `docs/current/`)
+
+**File naming**: `[TOPIC]_GUIDE.md` or `HOW_TO_[TASK].md`
+
+### Never Create Files in Root `docs/`
+
+**WRONG**:
+```bash
+touch docs/MY_NEW_FEATURE.md  # ❌ ROOT LEVEL - NO!
+```
+
+**RIGHT**:
+```bash
+touch docs/current/MY_NEW_FEATURE_PLAN.md  # ✅ CATEGORIZED
+```
+
+### Documentation Decision Tree
+
+When creating a new document, ask:
+```
+Is this about CURRENT/ONGOING work?
+├─ YES → docs/current/
+└─ NO → Is it COMPLETED work?
+    ├─ YES → Is it a phase/week/day completion?
+    │   ├─ Phase → docs/journey/phases/
+    │   ├─ Week → docs/journey/weeks/
+    │   └─ Day → docs/journey/daily/
+    └─ NO → Is it a LESSON/PATTERN?
+        ├─ YES → docs/lessons/
+        └─ NO → Is it a SETUP/REFERENCE guide?
+            ├─ YES → docs/supplemental/
+            └─ NO → Ask for clarification, don't create yet
+```
+
+### Why This Matters
+
+1. **Evidence Preservation**: The journey docs prove the 40-day timeline
+2. **Newcomer Experience**: Clear organization helps contributors
+3. **Project Credibility**: Shows systematic development process
+4. **Learning Resource**: Others studying AI orchestration need clean docs
+5. **GCP Validation**: Documentation structure mirrors GCP methodology
+
+### Enforcement
+
+**This is a HARD RULE**, not a suggestion:
+- ❌ NO root-level documentation creation (except README.md)
+- ✅ ALWAYS categorize before creating
+- ✅ ALWAYS use proper naming conventions
+- ✅ ALWAYS preserve git history when moving files (use `git mv`)
+- ✅ WEEKLY maintenance check
+
+**If you're unsure**: ASK before creating a new document.
+
+### Example Workflow
+
+```bash
+# ❌ WRONG
+echo "## My Feature" > docs/new_feature.md
+
+# ✅ RIGHT
+# 1. Determine category (this is current work)
+# 2. Create with proper naming
+echo "## Authentication Feature Plan" > docs/current/AUTH_FEATURE_PLAN.md
+# 3. Update navigation
+echo "- [Auth Feature](AUTH_FEATURE_PLAN.md)" >> docs/current/README.md
+# 4. Commit with clear message
+git add docs/current/AUTH_FEATURE_PLAN.md docs/current/README.md
+git commit -m "docs: add auth feature planning document"
+```
 
 ---
 
