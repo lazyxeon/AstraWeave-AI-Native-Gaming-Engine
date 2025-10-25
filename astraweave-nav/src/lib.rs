@@ -713,3 +713,13 @@ mod tests {
         assert_eq!(nav.max_slope_deg, 30.0);
     }
 }
+
+// Week 2 Day 2: Stress Tests
+#[cfg(test)]
+#[path = "stress_tests.rs"]
+mod stress_tests;
+
+// Week 2 Day 3: Edge Case Tests
+#[cfg(test)]
+#[path = "edge_case_tests.rs"]
+mod edge_case_tests;

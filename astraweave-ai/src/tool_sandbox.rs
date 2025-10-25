@@ -711,4 +711,490 @@ mod tests {
         let result_wander = validate_tool_action(0, ToolVerb::Wander, &world, &context, None);
         assert!(result_wander.is_ok());
     }
+
+    // ========================================
+    // Additional ToolVerb Variant Tests
+    // ========================================
+
+    #[test]
+    fn test_interact_always_valid() {
+        // Interact should succeed with minimal world state
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 0,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(0, ToolVerb::Interact, &world, &context, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_use_item_always_valid() {
+        // UseItem should succeed with minimal world state
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 0,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(0, ToolVerb::UseItem, &world, &context, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_hide_always_valid() {
+        // Hide should succeed with minimal world state
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 0,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(0, ToolVerb::Hide, &world, &context, None);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_rally_always_valid() {
+        // Rally should succeed with minimal world state
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 0,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 0.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(0, ToolVerb::Rally, &world, &context, None);
+        assert!(result.is_ok());
+    }
+
+    // ========================================
+    // ToolVerb Enum Tests
+    // ========================================
+
+    #[test]
+    fn test_tool_verb_debug() {
+        // Test Debug derive for all variants
+        let verbs = vec![
+            ToolVerb::MoveTo,
+            ToolVerb::Throw,
+            ToolVerb::CoverFire,
+            ToolVerb::Revive,
+            ToolVerb::Interact,
+            ToolVerb::UseItem,
+            ToolVerb::Stay,
+            ToolVerb::Wander,
+            ToolVerb::Hide,
+            ToolVerb::Rally,
+        ];
+
+        for verb in verbs {
+            let debug_str = format!("{:?}", verb);
+            assert!(!debug_str.is_empty(), "Debug output should not be empty");
+        }
+    }
+
+    #[test]
+    fn test_tool_verb_clone_and_copy() {
+        // Test Clone and Copy derives
+        let verb1 = ToolVerb::MoveTo;
+        let verb2 = verb1; // Copy
+        let verb3 = verb1.clone(); // Clone
+
+        assert_eq!(verb1, verb2);
+        assert_eq!(verb1, verb3);
+    }
+
+    #[test]
+    fn test_tool_verb_partial_eq() {
+        // Test PartialEq
+        assert_eq!(ToolVerb::MoveTo, ToolVerb::MoveTo);
+        assert_ne!(ToolVerb::MoveTo, ToolVerb::Throw);
+        assert_eq!(ToolVerb::CoverFire, ToolVerb::CoverFire);
+    }
+
+    #[test]
+    fn test_tool_verb_hash() {
+        // Test Hash derive (via HashMap insertion)
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert(ToolVerb::MoveTo, 1);
+        map.insert(ToolVerb::Throw, 2);
+        map.insert(ToolVerb::CoverFire, 3);
+
+        assert_eq!(map.get(&ToolVerb::MoveTo), Some(&1));
+        assert_eq!(map.get(&ToolVerb::Throw), Some(&2));
+        assert_eq!(map.get(&ToolVerb::CoverFire), Some(&3));
+    }
+
+    // ========================================
+    // ValidationCategory Enum Tests
+    // ========================================
+
+    #[test]
+    fn test_validation_category_all_variants() {
+        // Test all 5 ValidationCategory variants
+        let categories = vec![
+            ValidationCategory::Nav,
+            ValidationCategory::Physics,
+            ValidationCategory::Resources,
+            ValidationCategory::Visibility,
+            ValidationCategory::Cooldown,
+        ];
+
+        for category in categories {
+            let debug_str = format!("{:?}", category);
+            assert!(!debug_str.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_validation_category_partial_eq() {
+        assert_eq!(ValidationCategory::Nav, ValidationCategory::Nav);
+        assert_ne!(ValidationCategory::Nav, ValidationCategory::Physics);
+        assert_eq!(ValidationCategory::Cooldown, ValidationCategory::Cooldown);
+    }
+
+    #[test]
+    fn test_validation_category_hash() {
+        use std::collections::HashMap;
+        let mut map = HashMap::new();
+        map.insert(ValidationCategory::Nav, "navigation");
+        map.insert(ValidationCategory::Physics, "physics");
+        map.insert(ValidationCategory::Resources, "resources");
+
+        assert_eq!(map.get(&ValidationCategory::Nav), Some(&"navigation"));
+        assert_eq!(map.get(&ValidationCategory::Physics), Some(&"physics"));
+    }
+
+    // ========================================
+    // ToolError Enum Tests
+    // ========================================
+
+    #[test]
+    fn test_tool_error_clone() {
+        let err1 = ToolError::OutOfBounds;
+        let err2 = err1.clone();
+        assert_eq!(err1, err2);
+    }
+
+    #[test]
+    fn test_tool_error_partial_eq() {
+        assert_eq!(ToolError::NoPath, ToolError::NoPath);
+        assert_ne!(ToolError::NoPath, ToolError::Cooldown);
+    }
+
+    #[test]
+    fn test_tool_error_debug() {
+        let err = ToolError::InvalidTarget;
+        let debug_str = format!("{:?}", err);
+        assert!(debug_str.contains("InvalidTarget"));
+    }
+
+    // ========================================
+    // has_line_of_sight Edge Cases
+    // ========================================
+
+    #[test]
+    fn test_has_line_of_sight_same_position() {
+        // LoS from position to itself should succeed
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 5, y: 5 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let has_los = has_line_of_sight(IVec2 { x: 5, y: 5 }, IVec2 { x: 5, y: 5 }, &world);
+        assert!(has_los, "LoS to same position should succeed");
+    }
+
+    #[test]
+    fn test_has_line_of_sight_horizontal_line() {
+        // Horizontal line (y constant)
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![], // No obstacles
+        };
+
+        let has_los = has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 5, y: 0 }, &world);
+        assert!(has_los, "Clear horizontal LoS should succeed");
+    }
+
+    #[test]
+    fn test_has_line_of_sight_vertical_line() {
+        // Vertical line (x constant)
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let has_los = has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 0, y: 5 }, &world);
+        assert!(has_los, "Clear vertical LoS should succeed");
+    }
+
+    #[test]
+    fn test_has_line_of_sight_diagonal_line() {
+        // Diagonal line (both x and y change)
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let has_los = has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 5, y: 5 }, &world);
+        assert!(has_los, "Clear diagonal LoS should succeed");
+    }
+
+    #[test]
+    fn test_has_line_of_sight_blocked_midpoint() {
+        // Obstacle at midpoint of line
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![IVec2 { x: 2, y: 0 }], // Midpoint obstacle
+        };
+
+        let has_los = has_line_of_sight(IVec2 { x: 0, y: 0 }, IVec2 { x: 4, y: 0 }, &world);
+        assert!(!has_los, "Blocked LoS should fail");
+    }
+
+    // ========================================
+    // validate_line_of_sight with None
+    // ========================================
+
+    #[test]
+    fn test_validate_line_of_sight_none_target() {
+        // validate_line_of_sight with None should always pass
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![IVec2 { x: 1, y: 0 }], // Obstacles present
+        };
+
+        let result = validate_line_of_sight(&world, None);
+        assert!(result.is_ok(), "None target should always pass LoS check");
+    }
+
+    // ========================================
+    // MoveTo with None target
+    // ========================================
+
+    #[test]
+    fn test_move_to_none_target() {
+        // MoveTo with None target should succeed (no validation)
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(0, ToolVerb::MoveTo, &world, &context, None);
+        assert!(result.is_ok(), "MoveTo with None target should succeed");
+    }
+
+    // ========================================
+    // Revive with None target
+    // ========================================
+
+    #[test]
+    fn test_revive_none_target() {
+        // Revive with None target should skip distance check
+        let world = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "standing".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0, // High morale
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            objective: None,
+            obstacles: vec![],
+        };
+
+        let context = ValidationContext::new();
+        let result = validate_tool_action(0, ToolVerb::Revive, &world, &context, None);
+        assert!(result.is_ok(), "Revive with None target should succeed if morale OK");
+    }
+
+    // ========================================
+    // ValidationContext Default
+    // ========================================
+
+    #[test]
+    fn test_validation_context_default() {
+        let context = ValidationContext::default();
+        assert!(context.nav_mesh.is_none());
+        assert!(context.physics_pipeline.is_none());
+        assert!(context.rigid_body_set.is_none());
+        assert!(context.collider_set.is_none());
+    }
 }

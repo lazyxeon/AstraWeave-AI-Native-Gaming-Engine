@@ -443,7 +443,7 @@ dependencies = [
  "astraweave-nav",
  "astraweave-profiling",
  "async-trait",
- "criterion",
+ "criterion 0.7.0",
  "futures",
  "futures-executor",
  "glam",
@@ -526,6 +526,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-gameplay",
+ "criterion 0.5.1",
  "glam",
  "hound",
  "rand 0.9.2",
@@ -554,7 +555,7 @@ dependencies = [
  "anyhow",
  "astraweave-ecs",
  "astraweave-profiling",
- "criterion",
+ "criterion 0.7.0",
  "serde",
  "serde_json",
  "tracy-client",
@@ -577,7 +578,7 @@ dependencies = [
  "anyhow",
  "astraweave-llm",
  "async-trait",
- "criterion",
+ "criterion 0.7.0",
  "dashmap",
  "indexmap",
  "parking_lot 0.12.5",
@@ -596,7 +597,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-ecs",
- "criterion",
+ "criterion 0.7.0",
  "glam",
  "rand 0.9.2",
  "serde",
@@ -648,7 +649,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-profiling",
- "criterion",
+ "criterion 0.7.0",
  "loom",
  "proptest",
  "rand 0.9.2",
@@ -668,7 +669,7 @@ dependencies = [
  "candle-core",
  "candle-nn",
  "candle-transformers",
- "criterion",
+ "criterion 0.7.0",
  "dashmap",
  "hnsw_rs",
  "nalgebra",
@@ -707,7 +708,7 @@ name = "astraweave-input"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "criterion",
+ "criterion 0.7.0",
  "gilrs",
  "glam",
  "serde",
@@ -743,7 +744,7 @@ dependencies = [
  "candle-nn",
  "candle-transformers",
  "chrono",
- "criterion",
+ "criterion 0.7.0",
  "dashmap",
  "futures-util",
  "hf-hub",
@@ -778,7 +779,7 @@ name = "astraweave-materials"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "naga 27.0.0",
+ "naga 25.0.1",
  "serde",
  "serde_json",
 ]
@@ -789,7 +790,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "bytemuck",
- "criterion",
+ "criterion 0.7.0",
  "glam",
 ]
 
@@ -820,6 +821,7 @@ name = "astraweave-nav"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "criterion 0.5.1",
  "glam",
 ]
 
@@ -956,7 +958,7 @@ dependencies = [
  "anyhow",
  "astraweave-profiling",
  "bitflags 2.9.4",
- "criterion",
+ "criterion 0.7.0",
  "glam",
  "rand 0.9.2",
  "rapier3d",
@@ -1024,7 +1026,7 @@ dependencies = [
  "astraweave-prompts",
  "async-trait",
  "chrono",
- "criterion",
+ "criterion 0.7.0",
  "dashmap",
  "fuzzy-matcher",
  "nalgebra",
@@ -1053,7 +1055,7 @@ dependencies = [
  "basis-universal",
  "bytemuck",
  "bytes",
- "criterion",
+ "criterion 0.7.0",
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
@@ -1064,7 +1066,7 @@ dependencies = [
  "image",
  "ktx2",
  "log",
- "naga 27.0.0",
+ "naga 25.0.1",
  "png",
  "pollster",
  "rand 0.9.2",
@@ -1137,7 +1139,7 @@ dependencies = [
  "astraweave-net-ecs",
  "astraweave-persistence-ecs",
  "aw-save",
- "criterion",
+ "criterion 0.7.0",
  "futures-util",
  "rand 0.9.2",
  "serde",
@@ -1151,7 +1153,7 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "astraweave-gameplay",
- "criterion",
+ "criterion 0.7.0",
  "glam",
  "noise",
  "rand 0.9.2",
@@ -1633,7 +1635,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "criterion",
+ "criterion 0.7.0",
  "hex",
  "rayon",
  "serde",
@@ -1714,7 +1716,7 @@ dependencies = [
  "astraweave-materials",
  "bytemuck",
  "image",
- "naga 27.0.0",
+ "naga 27.0.3",
  "pollster",
  "serde",
  "serde_json",
@@ -2876,6 +2878,32 @@ dependencies = [
 
 [[package]]
 name = "criterion"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
+dependencies = [
+ "anes",
+ "cast",
+ "ciborium",
+ "clap",
+ "criterion-plot 0.5.0",
+ "is-terminal",
+ "itertools 0.10.5",
+ "num-traits",
+ "once_cell",
+ "oorandom",
+ "plotters",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tinytemplate",
+ "walkdir",
+]
+
+[[package]]
+name = "criterion"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1c047a62b0cc3e145fa84415a3191f628e980b194c2755aa12300a4e6cbd928"
@@ -2884,7 +2912,7 @@ dependencies = [
  "cast",
  "ciborium",
  "clap",
- "criterion-plot",
+ "criterion-plot 0.6.0",
  "itertools 0.13.0",
  "num-traits",
  "oorandom",
@@ -2896,6 +2924,16 @@ dependencies = [
  "tinytemplate",
  "tokio",
  "walkdir",
+]
+
+[[package]]
+name = "criterion-plot"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
+dependencies = [
+ "cast",
+ "itertools 0.10.5",
 ]
 
 [[package]]
@@ -5687,6 +5725,15 @@ checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
@@ -6372,9 +6419,9 @@ dependencies = [
 
 [[package]]
 name = "naga"
-version = "27.0.0"
+version = "27.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12b2e757b11b47345d44e7760e45458339bc490463d9548cd8651c53ae523153"
+checksum = "066cf25f0e8b11ee0df221219010f213ad429855f57c494f995590c861a9a7d8"
 dependencies = [
  "arrayvec",
  "bit-set 0.8.0",
@@ -6384,7 +6431,6 @@ dependencies = [
  "codespan-reporting",
  "half",
  "hashbrown 0.16.0",
- "hexf-parse",
  "indexmap",
  "libm",
  "log",
@@ -6392,7 +6438,6 @@ dependencies = [
  "once_cell",
  "rustc-hash 1.1.0",
  "thiserror 2.0.17",
- "unicode-ident",
 ]
 
 [[package]]

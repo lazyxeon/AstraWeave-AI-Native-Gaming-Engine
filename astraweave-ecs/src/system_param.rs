@@ -289,3 +289,428 @@ impl<'w, A: Component, B: Component> Iterator for Query2Mut<'w, A, B> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct Position {
+        x: f32,
+        y: f32,
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct Velocity {
+        x: f32,
+        y: f32,
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct Health {
+        current: i32,
+        max: i32,
+    }
+
+    #[derive(Debug, Clone, PartialEq)]
+    struct Name {
+        value: String,
+    }
+
+    // ====================
+    // Day 1: Query Tests (Single Component)
+    // ====================
+
+    #[test]
+    fn test_query_single_component_empty() {
+        let world = World::new();
+        let query = Query::<Position>::new(&world);
+        let results: Vec<_> = query.collect();
+        assert_eq!(results.len(), 0, "Empty world should return no results");
+    }
+
+    #[test]
+    fn test_query_single_component_one_entity() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+
+        let query = Query::<Position>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 1, "Should find one entity with Position");
+        assert_eq!(results[0].0, entity);
+        assert_eq!(results[0].1.x, 1.0);
+        assert_eq!(results[0].1.y, 2.0);
+    }
+
+    #[test]
+    fn test_query_single_component_multiple_entities() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        let e3 = world.spawn();
+        
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        world.insert(e3, Position { x: 3.0, y: 3.0 });
+
+        let query = Query::<Position>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 3, "Should find all three entities");
+        
+        // Verify all entities present (order may vary due to archetype iteration)
+        let entities: Vec<Entity> = results.iter().map(|(e, _)| *e).collect();
+        assert!(entities.contains(&e1));
+        assert!(entities.contains(&e2));
+        assert!(entities.contains(&e3));
+    }
+
+    #[test]
+    fn test_query_filters_entities_without_component() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        let e3 = world.spawn();
+        
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e2, Velocity { x: 5.0, y: 5.0 }); // No Position!
+        world.insert(e3, Position { x: 3.0, y: 3.0 });
+
+        let query = Query::<Position>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 2, "Should only find entities with Position");
+        
+        let entities: Vec<Entity> = results.iter().map(|(e, _)| *e).collect();
+        assert!(entities.contains(&e1));
+        assert!(!entities.contains(&e2), "e2 should not be in results");
+        assert!(entities.contains(&e3));
+    }
+
+    #[test]
+    fn test_query_multiple_archetypes() {
+        let mut world = World::new();
+        
+        // Archetype 1: Position only
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        
+        // Archetype 2: Position + Velocity
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        world.insert(e2, Velocity { x: 1.0, y: 1.0 });
+        
+        // Archetype 3: Position + Health
+        let e3 = world.spawn();
+        world.insert(e3, Position { x: 3.0, y: 3.0 });
+        world.insert(e3, Health { current: 100, max: 100 });
+
+        let query = Query::<Position>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 3, "Should find entities across all archetypes with Position");
+    }
+
+    // ====================
+    // Day 1: Query2 Tests (Two Components)
+    // ====================
+
+    #[test]
+    fn test_query2_empty_world() {
+        let world = World::new();
+        let query = Query2::<Position, Velocity>::new(&world);
+        let results: Vec<_> = query.collect();
+        assert_eq!(results.len(), 0, "Empty world should return no results");
+    }
+
+    #[test]
+    fn test_query2_one_matching_entity() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+        world.insert(entity, Velocity { x: 0.5, y: 0.5 });
+
+        let query = Query2::<Position, Velocity>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].0, entity);
+        assert_eq!(results[0].1.x, 1.0);
+        assert_eq!(results[0].2.x, 0.5);
+    }
+
+    #[test]
+    fn test_query2_filters_partial_matches() {
+        let mut world = World::new();
+        
+        // Entity with both components
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e1, Velocity { x: 0.5, y: 0.5 });
+        
+        // Entity with Position only
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        
+        // Entity with Velocity only
+        let e3 = world.spawn();
+        world.insert(e3, Velocity { x: 1.0, y: 1.0 });
+
+        let query = Query2::<Position, Velocity>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 1, "Should only find entity with both components");
+        assert_eq!(results[0].0, e1);
+    }
+
+    #[test]
+    fn test_query2_multiple_matching_entities() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e1, Velocity { x: 0.1, y: 0.1 });
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        world.insert(e2, Velocity { x: 0.2, y: 0.2 });
+        
+        let e3 = world.spawn();
+        world.insert(e3, Position { x: 3.0, y: 3.0 });
+        world.insert(e3, Velocity { x: 0.3, y: 0.3 });
+
+        let query = Query2::<Position, Velocity>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 3);
+    }
+
+    #[test]
+    fn test_query2_across_archetypes() {
+        let mut world = World::new();
+        
+        // Archetype 1: Position + Velocity
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e1, Velocity { x: 0.5, y: 0.5 });
+        
+        // Archetype 2: Position + Velocity + Health
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+        world.insert(e2, Velocity { x: 1.0, y: 1.0 });
+        world.insert(e2, Health { current: 100, max: 100 });
+
+        let query = Query2::<Position, Velocity>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 2, "Should find entities across archetypes");
+    }
+
+    // ====================
+    // Day 1: Query2Mut Tests (Mutable Queries)
+    // ====================
+
+    #[test]
+    fn test_query2mut_empty_world() {
+        let mut world = World::new();
+        let query = Query2Mut::<Position, Velocity>::new(&mut world);
+        let results: Vec<_> = query.collect();
+        assert_eq!(results.len(), 0);
+    }
+
+    #[test]
+    fn test_query2mut_mutation() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+        world.insert(entity, Velocity { x: 0.5, y: 0.5 });
+
+        {
+            let query = Query2Mut::<Position, Velocity>::new(&mut world);
+            for (_e, pos, vel) in query {
+                pos.x += vel.x;
+                pos.y += vel.y;
+            }
+        }
+
+        // Verify mutation
+        let pos = world.get::<Position>(entity).unwrap();
+        assert_eq!(pos.x, 1.5);
+        assert_eq!(pos.y, 2.5);
+    }
+
+    #[test]
+    fn test_query2mut_multiple_entities() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 0.0, y: 0.0 });
+        world.insert(e1, Velocity { x: 1.0, y: 1.0 });
+        
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 5.0, y: 5.0 });
+        world.insert(e2, Velocity { x: 2.0, y: 2.0 });
+
+        {
+            let query = Query2Mut::<Position, Velocity>::new(&mut world);
+            for (_e, pos, vel) in query {
+                pos.x += vel.x * 10.0;
+                pos.y += vel.y * 10.0;
+            }
+        }
+
+        let pos1 = world.get::<Position>(e1).unwrap();
+        assert_eq!(pos1.x, 10.0);
+        assert_eq!(pos1.y, 10.0);
+        
+        let pos2 = world.get::<Position>(e2).unwrap();
+        assert_eq!(pos2.x, 25.0);
+        assert_eq!(pos2.y, 25.0);
+    }
+
+    #[test]
+    fn test_query2mut_filters_correctly() {
+        let mut world = World::new();
+        
+        // Entity with both components
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e1, Velocity { x: 1.0, y: 1.0 });
+        
+        // Entity with Position only (should not be mutated)
+        let e2 = world.spawn();
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+
+        {
+            let query = Query2Mut::<Position, Velocity>::new(&mut world);
+            for (_e, pos, vel) in query {
+                pos.x += vel.x;
+            }
+        }
+
+        let pos1 = world.get::<Position>(e1).unwrap();
+        assert_eq!(pos1.x, 2.0, "e1 should be mutated");
+        
+        let pos2 = world.get::<Position>(e2).unwrap();
+        assert_eq!(pos2.x, 2.0, "e2 should NOT be mutated");
+    }
+
+    // ====================
+    // Day 1: Query Component Access Patterns
+    // ====================
+
+    #[test]
+    fn test_query_read_only_access() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+
+        let query = Query::<Position>::new(&world);
+        
+        // Verify we can read data
+        let results: Vec<_> = query.collect();
+        assert_eq!(results[0].1.x, 1.0);
+        
+        // Original data unchanged
+        let pos = world.get::<Position>(entity).unwrap();
+        assert_eq!(pos.x, 1.0);
+    }
+
+    #[test]
+    fn test_query2_read_only_both_components() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+        world.insert(entity, Velocity { x: 0.5, y: 0.5 });
+
+        let query = Query2::<Position, Velocity>::new(&world);
+        
+        for (_e, pos, vel) in query {
+            // Can read both
+            let _ = pos.x + vel.x;
+        }
+        
+        // Data unchanged
+        let pos = world.get::<Position>(entity).unwrap();
+        assert_eq!(pos.x, 1.0);
+    }
+
+    #[test]
+    fn test_query2mut_mutable_first_immutable_second() {
+        let mut world = World::new();
+        let entity = world.spawn();
+        world.insert(entity, Position { x: 1.0, y: 2.0 });
+        world.insert(entity, Velocity { x: 0.5, y: 0.5 });
+
+        {
+            let query = Query2Mut::<Position, Velocity>::new(&mut world);
+            for (_e, pos, vel) in query {
+                // Can mutate first, read second
+                pos.x += vel.x;
+                pos.y += vel.y;
+            }
+        }
+
+        let pos = world.get::<Position>(entity).unwrap();
+        assert_eq!(pos.x, 1.5);
+        
+        // Velocity unchanged (immutable)
+        let vel = world.get::<Velocity>(entity).unwrap();
+        assert_eq!(vel.x, 0.5);
+    }
+
+    // ====================
+    // Day 1: Query Iterator Behavior
+    // ====================
+
+    #[test]
+    fn test_query_iterator_exhaustion() {
+        let mut world = World::new();
+        let e1 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+
+        let mut query = Query::<Position>::new(&world);
+        
+        // First iteration
+        assert!(query.next().is_some());
+        
+        // Iterator exhausted
+        assert!(query.next().is_none());
+        assert!(query.next().is_none());
+    }
+
+    #[test]
+    fn test_query2_iterator_count() {
+        let mut world = World::new();
+        
+        for i in 0..10 {
+            let e = world.spawn();
+            world.insert(e, Position { x: i as f32, y: i as f32 });
+            world.insert(e, Velocity { x: 1.0, y: 1.0 });
+        }
+
+        let query = Query2::<Position, Velocity>::new(&world);
+        let count = query.count();
+        
+        assert_eq!(count, 10);
+    }
+
+    #[test]
+    fn test_query_collect_into_vec() {
+        let mut world = World::new();
+        
+        let e1 = world.spawn();
+        let e2 = world.spawn();
+        world.insert(e1, Position { x: 1.0, y: 1.0 });
+        world.insert(e2, Position { x: 2.0, y: 2.0 });
+
+        let query = Query::<Position>::new(&world);
+        let results: Vec<_> = query.collect();
+        
+        assert_eq!(results.len(), 2);
+        assert!(results.iter().any(|(e, _)| *e == e1));
+        assert!(results.iter().any(|(e, _)| *e == e2));
+    }
+}

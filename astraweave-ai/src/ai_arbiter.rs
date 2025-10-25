@@ -720,10 +720,11 @@ mod tests {
         let action1 = ActionStep::MoveTo {
             x: 10,
             y: 20,
+            speed: None,
         };
         let action2 = action1.clone();
 
-        assert!(matches!(action2, ActionStep::MoveTo { x: 10, y: 20 }));
+        assert!(matches!(action2, ActionStep::MoveTo { x: 10, y: 20, speed: None }));
     }
 
     #[test]
@@ -815,7 +816,7 @@ mod tests {
         let many_steps_plan = PlanIntent {
             plan_id: "many-steps".into(),
             steps: (0..100)
-                .map(|i| ActionStep::MoveTo { x: i, y: i })
+                .map(|i| ActionStep::MoveTo { x: i, y: i, speed: None })
                 .collect(),
         };
 
@@ -964,6 +965,451 @@ mod tests {
         assert_eq!(player.orders.len(), 50);
     }
 
-    // Full arbiter tests will be in Phase 5 (astraweave-ai/tests/arbiter_tests.rs)
-    // with proper tokio runtime setup and LlmExecutor mocking
+    // ============================================================================
+    // Comprehensive Integration Tests (Migrated from tests/ directory)
+    // These tests validate AIArbiter lifecycle and contribute to lib coverage
+    // Uses existing MockGoap/MockBT mocks defined above
+    // ============================================================================
+
+    // Additional imports for integration tests
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+    use crate::orchestrator::OrchestratorAsync;
+
+    // Mock LLM Orchestrator for async testing
+    struct MockLlmOrch {
+        plan_to_return: Arc<Mutex<Option<PlanIntent>>>,
+        delay_ms: u64,
+    }
+
+    impl MockLlmOrch {
+        fn new() -> Self {
+            Self {
+                plan_to_return: Arc::new(Mutex::new(None)),
+                delay_ms: 0,
+            }
+        }
+
+        fn with_plan(self, plan: PlanIntent) -> Self {
+            *self.plan_to_return.lock().unwrap() = Some(plan);
+            self
+        }
+
+        fn with_delay(mut self, delay_ms: u64) -> Self {
+            self.delay_ms = delay_ms;
+            self
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl OrchestratorAsync for MockLlmOrch {
+        async fn plan(&self, _snap: WorldSnapshot, _budget_ms: u32) -> Result<PlanIntent> {
+            if self.delay_ms > 0 {
+                tokio::time::sleep(tokio::time::Duration::from_millis(self.delay_ms)).await;
+            }
+
+            let plan_guard = self.plan_to_return.lock().unwrap();
+            match plan_guard.as_ref() {
+                Some(plan) => Ok(plan.clone()),
+                None => Err(anyhow::anyhow!("Mock LLM orchestrator configured to fail")),
+            }
+        }
+
+        fn name(&self) -> &'static str {
+            "MockLlmOrch"
+        }
+    }
+
+    // Helper to create arbiter with configured mocks
+    fn create_arbiter_with_mocks(
+        goap: Box<dyn Orchestrator>,
+        bt: Box<dyn Orchestrator>,
+        llm_delay: Duration,
+    ) -> AIArbiter {
+        let mock_llm = Arc::new(MockLlmOrch::new()
+            .with_delay(llm_delay.as_millis() as u64)
+            .with_plan(PlanIntent {
+                plan_id: "llm".into(),
+                steps: vec![
+                    ActionStep::MoveTo { x: 1, y: 1, speed: None },
+                    ActionStep::Scan { radius: 5.0 },
+                    ActionStep::Attack { target_id: 1 },
+                ],
+            }));
+
+        let runtime = tokio::runtime::Handle::current();
+        let llm_executor = LlmExecutor::new(mock_llm, runtime);
+
+        AIArbiter::new(llm_executor, goap, bt)
+    }
+
+    // ============================================================================
+    // Integration Tests: update() Method
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_update_goap_mode_returns_goap_action() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Scan { radius: 10.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let snap = create_test_snapshot(0.0);
+        let action = arbiter.update(&snap);
+
+        assert!(matches!(action, ActionStep::Scan { radius: 10.0 }));
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+
+        let (_, _, _, _, goap_actions, _) = arbiter.metrics();
+        assert_eq!(goap_actions, 1);
+    }
+
+    #[tokio::test]
+    async fn test_update_executing_llm_returns_plan_steps_sequentially() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let plan = PlanIntent {
+            plan_id: "test-plan".into(),
+            steps: vec![
+                ActionStep::MoveTo { x: 1, y: 1, speed: None },
+                ActionStep::Scan { radius: 5.0 },
+                ActionStep::Attack { target_id: 1 },
+            ],
+        };
+        arbiter.transition_to_llm(plan);
+
+        let snap = create_test_snapshot(0.0);
+
+        let action1 = arbiter.update(&snap);
+        assert!(matches!(action1, ActionStep::MoveTo { x: 1, y: 1, speed: None }));
+        assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 1 }));
+
+        let action2 = arbiter.update(&snap);
+        assert!(matches!(action2, ActionStep::Scan { radius: 5.0 }));
+        assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 2 }));
+
+        let action3 = arbiter.update(&snap);
+        assert!(matches!(action3, ActionStep::Attack { target_id: 1 }));
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+
+        let (_, _, _, _, _, llm_steps) = arbiter.metrics();
+        assert_eq!(llm_steps, 3);
+    }
+
+    #[tokio::test]
+    async fn test_update_goap_fallback_when_empty_plan() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: true, // Returns empty plan
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let snap = create_test_snapshot(0.0);
+        let action = arbiter.update(&snap);
+
+        assert!(matches!(action, ActionStep::Scan { radius: 10.0 })); // MockBT action
+        assert_eq!(arbiter.mode(), AIControlMode::BehaviorTree);
+    }
+
+    // ============================================================================
+    // Integration Tests: maybe_request_llm() Cooldown
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_maybe_request_llm_respects_cooldown() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
+            .with_llm_cooldown(5.0);
+
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+        assert!(arbiter.is_llm_active());
+
+        let (_, requests1, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests1, 1);
+
+        let snap2 = create_test_snapshot(2.0);
+        arbiter.update(&snap2);
+
+        let (_, requests2, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests2, 1);
+
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        let snap_transition = create_test_snapshot(3.0);
+        arbiter.update(&snap_transition);
+        arbiter.update(&snap_transition);
+        arbiter.update(&snap_transition);
+        arbiter.update(&snap_transition);
+
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+
+        let snap3 = create_test_snapshot(8.0);
+        arbiter.update(&snap3);
+
+        let (_, requests3, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests3, 2);
+    }
+
+    #[tokio::test]
+    async fn test_maybe_request_llm_skips_when_executing_llm() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10))
+            .with_llm_cooldown(0.0);
+
+        let plan = PlanIntent {
+            plan_id: "test".into(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+        arbiter.transition_to_llm(plan);
+
+        let snap = create_test_snapshot(10.0);
+        arbiter.update(&snap);
+
+        let (_, requests, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests, 0);
+    }
+
+    // ============================================================================
+    // Integration Tests: poll_llm_result() Completion
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_poll_llm_result_success_transitions_to_executing_llm() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100));
+
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+
+        tokio::time::sleep(Duration::from_millis(150)).await;
+
+        let snap2 = create_test_snapshot(1.0);
+        arbiter.update(&snap2);
+
+        assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 1 }));
+
+        let (transitions, _, successes, failures, _, _) = arbiter.metrics();
+        assert_eq!(successes, 1);
+        assert_eq!(failures, 0);
+        assert!(transitions >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_poll_llm_result_failure_stays_in_goap() {
+        let mock_llm = Arc::new(MockLlmOrch::new().with_delay(100));
+        let runtime = tokio::runtime::Handle::current();
+        let llm_executor = LlmExecutor::new(mock_llm, runtime);
+
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Scan { radius: 10.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = AIArbiter::new(llm_executor, goap, bt);
+
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+
+        tokio::time::sleep(Duration::from_millis(150)).await;
+
+        let snap2 = create_test_snapshot(1.0);
+        let action = arbiter.update(&snap2);
+
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+        assert!(matches!(action, ActionStep::Scan { radius: 10.0 }));
+
+        let (_, _, successes, failures, _, _) = arbiter.metrics();
+        assert_eq!(successes, 0);
+        assert_eq!(failures, 1);
+    }
+
+    // ============================================================================
+    // Integration Tests: Transition Logic
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_transition_to_goap_clears_plan() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let plan = PlanIntent {
+            plan_id: "test".into(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+        arbiter.transition_to_llm(plan);
+
+        assert!(arbiter.current_plan().is_some());
+
+        let snap = create_test_snapshot(0.0);
+        arbiter.update(&snap);
+
+        assert!(arbiter.current_plan().is_none());
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+    }
+
+    #[tokio::test]
+    async fn test_transition_to_bt_clears_task_and_plan() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: true, // Empty plan triggers BT
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100));
+
+        let snap1 = create_test_snapshot(0.0);
+        let action = arbiter.update(&snap1);
+
+        assert_eq!(arbiter.mode(), AIControlMode::BehaviorTree);
+        assert!(matches!(action, ActionStep::Scan { radius: 10.0 }));
+        assert!(!arbiter.is_llm_active());
+        assert!(arbiter.current_plan().is_none());
+    }
+
+    // ============================================================================
+    // Integration Tests: Error Handling
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_invalid_step_index_falls_back_to_goap() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Scan { radius: 10.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let plan = PlanIntent {
+            plan_id: "test".into(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+        arbiter.transition_to_llm(plan);
+
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+
+        let snap2 = create_test_snapshot(1.0);
+        let action = arbiter.update(&snap2);
+        assert!(matches!(action, ActionStep::Scan { radius: 10.0 }));
+    }
+
+    #[tokio::test]
+    async fn test_executing_llm_without_plan_falls_back_to_goap() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Scan { radius: 10.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10));
+
+        let plan = PlanIntent {
+            plan_id: "test".into(),
+            steps: vec![ActionStep::Wait { duration: 1.0 }],
+        };
+        arbiter.transition_to_llm(plan);
+        
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+    }
+
+    // ============================================================================
+    // Integration Tests: Metrics Tracking
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_metrics_track_all_counters() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
+            .with_llm_cooldown(0.5);
+
+        let snap1 = create_test_snapshot(0.0);
+        let snap2 = create_test_snapshot(1.0);
+        let snap3 = create_test_snapshot(2.0);
+
+        arbiter.update(&snap1);
+        arbiter.update(&snap2);
+
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        arbiter.update(&snap3);
+
+        let (transitions, requests, successes, failures, goap_actions, llm_steps) = arbiter.metrics();
+
+        assert!(transitions >= 1);
+        assert_eq!(requests, 1);
+        assert_eq!(successes, 1);
+        assert_eq!(failures, 0);
+        assert_eq!(goap_actions, 2);
+        assert_eq!(llm_steps, 1);
+    }
+
+    // ============================================================================
+    // Integration Tests: with_llm_cooldown() Configuration
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_with_llm_cooldown_configures_cooldown() {
+        let goap = Box::new(MockGoap {
+            action_to_return: ActionStep::Wait { duration: 1.0 },
+            should_fail: false,
+        });
+        let bt = Box::new(MockBT);
+        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
+            .with_llm_cooldown(10.0);
+
+        let snap1 = create_test_snapshot(0.0);
+        arbiter.update(&snap1);
+        let (_, requests1, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests1, 1);
+        assert!(arbiter.is_llm_active());
+
+        let snap2 = create_test_snapshot(5.0);
+        arbiter.update(&snap2);
+        let (_, requests2, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests2, 1);
+
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        let snap_transition = create_test_snapshot(6.0);
+        arbiter.update(&snap_transition);
+        arbiter.update(&snap_transition);
+        arbiter.update(&snap_transition);
+        arbiter.update(&snap_transition);
+
+        assert_eq!(arbiter.mode(), AIControlMode::GOAP);
+
+        let snap3 = create_test_snapshot(11.0);
+        arbiter.update(&snap3);
+        let (_, requests3, _, _, _, _) = arbiter.metrics();
+        assert_eq!(requests3, 2);
+    }
 }
