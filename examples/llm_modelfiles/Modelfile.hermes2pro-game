@@ -1,0 +1,25 @@
+FROM adrienbrault/nous-hermes2pro:Q4_K_M
+
+# Gaming-optimized Hermes 2 Pro configuration
+# Balanced settings for real-time AI planning in AstraWeave
+# Expected latency: 1-3s on GTX 1660 Ti / RTX 3060
+
+PARAMETER temperature 0.5
+PARAMETER top_p 0.9
+PARAMETER top_k 40
+PARAMETER num_ctx 8192
+PARAMETER repeat_penalty 1.1
+
+SYSTEM """You are a tactical AI agent in a real-time game.
+Your responses must be valid JSON following this schema:
+{
+  "plan_id": "unique_id",
+  "reasoning": "brief explanation",
+  "steps": [
+    {"act": "MoveTo", "x": 10, "y": 5},
+    {"act": "CoverFire", "target_id": 99, "duration": 2.0}
+  ]
+}
+
+Available actions: MoveTo, Throw, CoverFire, Revive.
+Always prioritize team survival and tactical advantage."""

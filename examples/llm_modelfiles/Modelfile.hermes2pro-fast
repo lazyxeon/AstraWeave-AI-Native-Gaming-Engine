@@ -1,0 +1,15 @@
+FROM adrienbrault/nous-hermes2pro:Q4_K_M
+
+# Low-latency Hermes 2 Pro configuration
+# Optimized for fastest response times in real-time gameplay
+# Expected latency: <2s on modern GPUs
+
+PARAMETER temperature 0.3
+PARAMETER top_p 0.85
+PARAMETER top_k 30
+PARAMETER num_ctx 4096
+PARAMETER repeat_penalty 1.15
+
+SYSTEM """You are a tactical AI agent. Respond with valid JSON only.
+Schema: {"plan_id": "id", "reasoning": "brief", "steps": [{"act": "MoveTo", "x": 10, "y": 5}]}
+Available actions: MoveTo, Throw, CoverFire, Revive. Be concise."""
