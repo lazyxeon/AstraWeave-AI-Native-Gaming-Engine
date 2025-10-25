@@ -179,6 +179,11 @@ impl PhysicsWorld {
             &events,
             &(),
         );
+        
+        // CRITICAL FIX (Week 2 Day 3): Update query pipeline after physics step
+        // Without this, raycasts in control_character() use stale geometry,
+        // causing character controller to fail ground detection
+        self.query_pipeline.update(&self.colliders);
     }
 
     pub fn create_ground_plane(&mut self, half: Vec3, friction: f32) -> BodyId {
@@ -300,7 +305,9 @@ impl PhysicsWorld {
             point![ray_origin.x, ray_origin.y, ray_origin.z],
             vector![dir.x, dir.y, dir.z],
         );
-        let filter = QueryFilter::default();
+        // BUG FIX (Week 2 Day 3): Exclude character's own colliders from raycasts
+        // Without this, the character detects its own capsule as an obstacle
+        let filter = QueryFilter::default().exclude_rigid_body(h);
         if let Some((_, hit)) = self.query_pipeline.cast_ray_and_get_normal(
             &self.bodies,
             &self.colliders,
@@ -358,7 +365,10 @@ impl PhysicsWorld {
         p.translation.y = new_pos.y;
         p.translation.z = new_pos.z;
         if let Some(rbmut) = self.bodies.get_mut(h) {
-            rbmut.set_position(p, true);
+            // BUG FIX (Week 2 Day 3): Use set_next_kinematic_position for kinematic bodies
+            // set_position() with wake=true doesn't properly update kinematic bodies
+            // across multiple frames - position gets reset by physics step
+            rbmut.set_next_kinematic_position(p);
         }
     }
 
@@ -417,6 +427,33 @@ impl PhysicsWorld {
 #[cfg(test)]
 mod tests {
     use super::*;
+    
+    #[test]
+    fn character_position_updates() {
+        let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
+        let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
+        
+        // Check initial position
+        let pos0 = pw.body_transform(char_id).unwrap().w_axis;
+        assert!((pos0.x - 0.0).abs() < 0.01, "initial x should be ~0, got {}", pos0.x);
+        
+        // Move once
+        pw.control_character(char_id, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
+        pw.step();
+        
+        let pos1 = pw.body_transform(char_id).unwrap().w_axis;
+        
+        // Move again
+        pw.control_character(char_id, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
+        pw.step();
+        
+        let pos2 = pw.body_transform(char_id).unwrap().w_axis;
+        
+        // Position should accumulate
+        assert!(pos2.x > pos1.x, "x should increase: frame1={}, frame2={}", pos1.x, pos2.x);
+    }
+    
     #[test]
     fn character_moves_forward() {
         let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));

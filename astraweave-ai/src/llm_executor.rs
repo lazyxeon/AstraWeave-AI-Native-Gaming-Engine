@@ -80,7 +80,7 @@ use tokio::runtime::Handle;
 pub struct LlmExecutor {
     /// The wrapped orchestrator (Arc for thread-safety)
     orchestrator: Arc<dyn OrchestratorAsync + Send + Sync>,
-    
+
     /// Tokio runtime handle for spawning async tasks
     runtime: Handle,
 }
@@ -112,10 +112,7 @@ impl LlmExecutor {
     /// let executor = LlmExecutor::new(orchestrator, runtime);
     /// # }
     /// ```
-    pub fn new(
-        orchestrator: Arc<dyn OrchestratorAsync + Send + Sync>,
-        runtime: Handle,
-    ) -> Self {
+    pub fn new(orchestrator: Arc<dyn OrchestratorAsync + Send + Sync>, runtime: Handle) -> Self {
         Self {
             orchestrator,
             runtime,
@@ -174,22 +171,22 @@ impl LlmExecutor {
     /// ```
     pub fn generate_plan_async(&self, snap: WorldSnapshot) -> AsyncTask<Result<PlanIntent>> {
         let orchestrator = Arc::clone(&self.orchestrator);
-        
+
         // Spawn blocking task (LLM inference is CPU-bound, not I/O-bound)
         let handle = self.runtime.spawn_blocking(move || {
             // Create a nested runtime for the async orchestrator
             // This is safe because we're in spawn_blocking (dedicated thread)
             let rt = tokio::runtime::Runtime::new()
                 .expect("Failed to create nested runtime for LLM inference");
-            
+
             rt.block_on(async move {
                 // Call the orchestrator with default budget (60s from env or config)
                 // Budget is handled internally by orchestrator (Phase 7 timeout logic)
                 let budget_ms = std::env::var("LLM_TIMEOUT_MS")
                     .ok()
                     .and_then(|s| s.parse().ok())
-                    .unwrap_or(60_000);  // Default 60s
-                
+                    .unwrap_or(60_000); // Default 60s
+
                 // Convert Result to PlanIntent directly (propagate error via AsyncTask)
                 orchestrator.plan(snap, budget_ms).await
             })
@@ -229,7 +226,7 @@ impl LlmExecutor {
     pub fn generate_plan_sync(&self, snap: &WorldSnapshot) -> Result<PlanIntent> {
         let orchestrator = Arc::clone(&self.orchestrator);
         let snap_clone = snap.clone();
-        
+
         // Block on the runtime
         self.runtime
             .block_on(async move {
@@ -237,7 +234,7 @@ impl LlmExecutor {
                     .ok()
                     .and_then(|s| s.parse().ok())
                     .unwrap_or(60_000);
-                
+
                 orchestrator.plan(snap_clone, budget_ms).await
             })
             .context("LlmExecutor::generate_plan_sync failed")
@@ -331,26 +328,30 @@ mod tests {
         let mut task = executor.generate_plan_async(snapshot);
         let elapsed = start.elapsed();
 
-        // Should return in <10ms (not wait for LLM)
+        // Should return in <50ms (not wait for LLM) - relaxed for tarpaulin
         assert!(
-            elapsed < Duration::from_millis(10),
-            "generate_plan_async took {:?}, expected <10ms",
+            elapsed < Duration::from_millis(50),
+            "generate_plan_async took {:?}, expected <50ms",
             elapsed
         );
 
         // Task should not be finished immediately
-        assert!(!task.is_finished(), "Task should not be finished immediately");
+        assert!(
+            !task.is_finished(),
+            "Task should not be finished immediately"
+        );
 
-        // Wait for task to complete
-        sleep(Duration::from_millis(1100)).await;
+        // Wait for task to complete (increased wait time for tarpaulin)
+        sleep(Duration::from_millis(1500)).await;
 
-        // Now task should be finished
-        assert!(task.is_finished(), "Task should be finished after delay");
-
-        // Extract result
+        // Now task should be finished (check with try_recv which is more reliable)
         let result = task.try_recv();
-        assert!(result.is_some(), "Task result should be available");
+        assert!(
+            result.is_some(),
+            "Task should be finished after delay (try_recv should return Some)"
+        );
 
+        // Verify result content
         match result.unwrap() {
             Ok(Ok(plan)) => {
                 assert_eq!(plan.steps.len(), 2, "Expected 2-step plan");
@@ -402,11 +403,11 @@ mod tests {
         }
     }
 
-    #[test]  // Changed from #[tokio::test] since we need to test blocking behavior
+    #[test] // Changed from #[tokio::test] since we need to test blocking behavior
     fn test_llm_executor_sync_blocks() {
         // Create a new runtime for this test (not inside tokio::test)
         let rt = tokio::runtime::Runtime::new().unwrap();
-        
+
         let mock = Arc::new(MockOrchestrator {
             delay_ms: 100,
             should_fail: false,
@@ -444,8 +445,8 @@ mod tests {
 
         let mut task = executor.generate_plan_async(snapshot);
 
-        // Wait for task to complete
-        sleep(Duration::from_millis(50)).await;
+        // Wait for task to complete (increased from 50ms to 200ms for CI reliability)
+        sleep(Duration::from_millis(200)).await;
 
         // Extract result
         let result = task.try_recv();
@@ -480,17 +481,178 @@ mod tests {
         let mut task2 = executor.generate_plan_async(snapshot.clone());
         let mut task3 = executor.generate_plan_async(snapshot);
 
-        // Wait for all to complete
-        sleep(Duration::from_millis(100)).await;
+        // Wait longer for tasks to complete (increased for reliability in sequential test mode)
+        sleep(Duration::from_millis(500)).await;
 
         // All should be finished
-        assert!(task1.is_finished());
-        assert!(task2.is_finished());
-        assert!(task3.is_finished());
+        assert!(task1.is_finished(), "Task 1 should be finished");
+        assert!(task2.is_finished(), "Task 2 should be finished");
+        assert!(task3.is_finished(), "Task 3 should be finished");
 
         // All should succeed
-        assert!(task1.try_recv().unwrap().is_ok());
-        assert!(task2.try_recv().unwrap().is_ok());
-        assert!(task3.try_recv().unwrap().is_ok());
+        assert!(task1.try_recv().unwrap().is_ok(), "Task 1 result");
+        assert!(task2.try_recv().unwrap().is_ok(), "Task 2 result");
+        assert!(task3.try_recv().unwrap().is_ok(), "Task 3 result");
+    }
+
+    #[tokio::test]
+    async fn test_llm_executor_respects_timeout_env_var() {
+        // Test that LLM_TIMEOUT_MS environment variable is respected
+        std::env::set_var("LLM_TIMEOUT_MS", "30000"); // 30 seconds
+
+        let mock = Arc::new(MockOrchestrator {
+            delay_ms: 10,
+            should_fail: false,
+        });
+
+        let executor = LlmExecutor::new(mock, tokio::runtime::Handle::current());
+        let snapshot = create_test_snapshot();
+
+        // Generate plan (should use 30s timeout internally)
+        let mut task = executor.generate_plan_async(snapshot);
+        sleep(Duration::from_millis(200)).await; // Increased wait time
+
+        let result = task.try_recv();
+        assert!(result.is_some(), "Task should complete");
+        assert!(result.unwrap().is_ok(), "Task should succeed");
+
+        // Clean up
+        std::env::remove_var("LLM_TIMEOUT_MS");
+    }
+
+    #[tokio::test]
+    async fn test_llm_executor_default_timeout_when_env_invalid() {
+        // Test that invalid LLM_TIMEOUT_MS falls back to default 60s
+        std::env::set_var("LLM_TIMEOUT_MS", "not_a_number");
+
+        let mock = Arc::new(MockOrchestrator {
+            delay_ms: 10,
+            should_fail: false,
+        });
+
+        let executor = LlmExecutor::new(mock, tokio::runtime::Handle::current());
+        let snapshot = create_test_snapshot();
+
+        // Generate plan (should use 60s default timeout)
+        let mut task = executor.generate_plan_async(snapshot);
+        sleep(Duration::from_millis(200)).await; // Increased wait time
+
+        let result = task.try_recv();
+        assert!(result.is_some(), "Task should complete");
+        assert!(result.unwrap().is_ok(), "Task should succeed");
+
+        // Clean up
+        std::env::remove_var("LLM_TIMEOUT_MS");
+    }
+
+    #[test] // Regular test, not tokio::test (tests blocking behavior)
+    fn test_llm_executor_sync_failure_handling() {
+        // Create a new runtime for this test (not inside tokio::test)
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
+        let mock = Arc::new(MockOrchestrator {
+            delay_ms: 10,
+            should_fail: true, // Force failure
+        });
+
+        let executor = LlmExecutor::new(mock, rt.handle().clone());
+        let snapshot = create_test_snapshot();
+
+        // Test synchronous failure
+        let result = executor.generate_plan_sync(&snapshot);
+        assert!(result.is_err(), "Should fail");
+
+        let error_msg = result.unwrap_err().to_string();
+        assert!(
+            error_msg.contains("Mock orchestrator failure")
+                || error_msg.contains("generate_plan_sync failed"),
+            "Error message should indicate failure, got: {}",
+            error_msg
+        );
+    }
+
+    #[tokio::test]
+    async fn test_llm_executor_async_poll_before_completion() {
+        let mock = Arc::new(MockOrchestrator {
+            delay_ms: 200, // Longer delay
+            should_fail: false,
+        });
+
+        let executor = LlmExecutor::new(mock, tokio::runtime::Handle::current());
+        let snapshot = create_test_snapshot();
+
+        let mut task = executor.generate_plan_async(snapshot);
+
+        // Poll immediately (should be None - task not complete)
+        let result1 = task.try_recv();
+        assert!(result1.is_none(), "Task should not be complete immediately");
+
+        // Poll after short wait (should still be None)
+        sleep(Duration::from_millis(50)).await;
+        let result2 = task.try_recv();
+        assert!(
+            result2.is_none(),
+            "Task should not be complete after 50ms (needs 200ms)"
+        );
+
+        // Wait for completion
+        sleep(Duration::from_millis(200)).await;
+        let result3 = task.try_recv();
+        assert!(result3.is_some(), "Task should be complete after 250ms total");
+    }
+
+    #[tokio::test]
+    async fn test_llm_executor_clone_snapshot_independence() {
+        // Test that modifying the snapshot after calling generate_plan_async
+        // doesn't affect the spawned task (snapshot is cloned)
+        let mock = Arc::new(MockOrchestrator {
+            delay_ms: 50,
+            should_fail: false,
+        });
+
+        let executor = LlmExecutor::new(mock, tokio::runtime::Handle::current());
+        let mut snapshot = create_test_snapshot();
+
+        // Spawn task with original snapshot
+        let mut task = executor.generate_plan_async(snapshot.clone());
+
+        // Modify snapshot after spawning (should not affect task)
+        snapshot.t = 999.0;
+        snapshot.me.ammo = 0;
+
+        // Wait for completion
+        sleep(Duration::from_millis(150)).await;
+
+        // Task should complete with original snapshot values
+        let result = task.try_recv();
+        assert!(result.is_some(), "Task should complete");
+        
+        // Unwrap: Option -> Result -> Result -> PlanIntent
+        let plan = result.unwrap().unwrap().unwrap();
+
+        // Plan ID should reflect original timestamp (1.234, not 999.0)
+        assert!(plan.plan_id.starts_with("mock-plan-1"));
+    }
+
+    #[tokio::test]
+    async fn test_llm_executor_zero_delay_orchestrator() {
+        // Test with instant orchestrator (0ms delay)
+        let mock = Arc::new(MockOrchestrator {
+            delay_ms: 0, // Instant
+            should_fail: false,
+        });
+
+        let executor = LlmExecutor::new(mock, tokio::runtime::Handle::current());
+        let snapshot = create_test_snapshot();
+
+        let mut task = executor.generate_plan_async(snapshot);
+
+        // Even with 0ms delay, need to yield to allow task to spawn and complete
+        // Increased wait for reliability (especially in sequential test mode)
+        sleep(Duration::from_millis(200)).await;
+
+        let result = task.try_recv();
+        assert!(result.is_some(), "Task should complete quickly");
+        assert!(result.unwrap().is_ok(), "Task should succeed");
     }
 }

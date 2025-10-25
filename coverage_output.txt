@@ -1,0 +1,348 @@
+[2m2025-10-21T23:07:29.446216Z[0m [32m INFO[0m [2mcargo_tarpaulin::config[0m[2m:[0m Creating config
+[2m2025-10-21T23:07:31.333135Z[0m [32m INFO[0m [2mcargo_tarpaulin[0m[2m:[0m Running Tarpaulin
+[2m2025-10-21T23:07:31.333153Z[0m [32m INFO[0m [2mcargo_tarpaulin[0m[2m:[0m Building project
+[2m2025-10-21T23:07:31.333167Z[0m [32m INFO[0m [2mcargo_tarpaulin::cargo[0m[2m:[0m Cleaning project
+   Compiling proc-macro2 v1.0.101
+   Compiling unicode-ident v1.0.19
+   Compiling quote v1.0.41
+   Compiling cfg-if v1.0.3
+   Compiling windows-link v0.2.1
+   Compiling autocfg v1.5.0
+   Compiling smallvec v1.15.1
+   Compiling libm v0.2.15
+   Compiling windows-sys v0.61.2
+   Compiling serde_core v1.0.228
+   Compiling stable_deref_trait v1.2.1
+   Compiling memchr v2.7.6
+   Compiling itoa v1.0.15
+   Compiling pin-project-lite v0.2.16
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling parking_lot_core v0.9.12
+   Compiling crossbeam-utils v0.8.21
+   Compiling serde v1.0.228
+   Compiling num-traits v0.2.19
+   Compiling windows-targets v0.52.6
+   Compiling syn v2.0.106
+   Compiling futures-core v0.3.31
+   Compiling scopeguard v1.2.0
+   Compiling bytes v1.10.1
+   Compiling lock_api v0.4.14
+   Compiling windows-sys v0.59.0
+   Compiling zerocopy v0.8.27
+   Compiling futures-sink v0.3.31
+   Compiling parking_lot v0.12.5
+   Compiling synstructure v0.13.2
+   Compiling mio v1.0.4
+   Compiling socket2 v0.6.0
+   Compiling once_cell v1.21.3
+   Compiling slab v0.4.11
+   Compiling futures-channel v0.3.31
+   Compiling pin-utils v0.1.0
+   Compiling getrandom v0.3.3
+   Compiling ryu v1.0.20
+   Compiling serde_json v1.0.145
+   Compiling tracing-core v0.1.34
+   Compiling futures-io v0.3.31
+   Compiling writeable v0.6.1
+   Compiling fnv v1.0.7
+   Compiling litemap v0.8.0
+   Compiling futures-task v0.3.31
+   Compiling http v1.3.1
+   Compiling log v0.4.28
+   Compiling icu_normalizer_data v2.0.0
+   Compiling byteorder v1.5.0
+   Compiling icu_properties_data v2.0.1
+   Compiling http-body v1.0.1
+   Compiling anyhow v1.0.100
+   Compiling thiserror v1.0.69
+   Compiling regex-syntax v0.8.7
+   Compiling httparse v1.10.1
+   Compiling percent-encoding v2.3.2
+   Compiling regex-automata v0.4.12
+   Compiling rand_core v0.9.3
+   Compiling crossbeam-epoch v0.9.18
+   Compiling crc32fast v1.5.0
+   Compiling paste v1.0.15
+   Compiling bytemuck v1.24.0
+   Compiling tower-service v0.3.3
+   Compiling libc v0.2.177
+   Compiling thiserror v2.0.17
+   Compiling either v1.15.0
+   Compiling try-lock v0.2.5
+   Compiling native-tls v0.2.14
+   Compiling want v0.3.1
+   Compiling safe_arch v0.7.4
+   Compiling crossbeam-deque v0.8.6
+   Compiling crossbeam-channel v0.5.15
+   Compiling schannel v0.1.28
+   Compiling matrixmultiply v0.3.10
+   Compiling simd-adler32 v0.3.7
+   Compiling adler2 v2.0.1
+   Compiling heapless v0.8.0
+   Compiling atomic-waker v1.1.2
+   Compiling typenum v1.19.0
+   Compiling bitflags v2.9.4
+   Compiling miniz_oxide v0.8.9
+   Compiling wide v0.7.33
+   Compiling form_urlencoded v1.2.2
+   Compiling hash32 v0.3.1
+   Compiling num-complex v0.4.6
+   Compiling num-integer v0.1.46
+   Compiling approx v0.5.1
+   Compiling sync_wrapper v1.0.2
+   Compiling base64 v0.22.1
+   Compiling equivalent v1.0.2
+   Compiling lazy_static v1.5.0
+   Compiling utf8_iter v1.0.4
+   Compiling ipnet v2.11.0
+   Compiling rayon-core v1.13.0
+   Compiling minimal-lexical v0.2.1
+   Compiling foldhash v0.1.5
+   Compiling tower-layer v0.3.3
+   Compiling rawpointer v0.2.1
+   Compiling allocator-api2 v0.2.21
+   Compiling nom v7.1.3
+   Compiling simba v0.9.1
+   Compiling hashbrown v0.15.5
+   Compiling sharded-slab v0.1.7
+   Compiling num-rational v0.4.2
+   Compiling flate2 v1.1.4
+   Compiling matchers v0.2.0
+   Compiling http-body-util v0.1.3
+   Compiling tracing-log v0.2.0
+   Compiling nu-ansi-term v0.50.3
+   Compiling winapi-util v0.1.11
+   Compiling glam v0.30.8
+   Compiling thread_local v1.1.9
+   Compiling robust v1.2.0
+   Compiling base64 v0.21.7
+   Compiling hashbrown v0.14.5
+   Compiling ciborium-io v0.2.2
+   Compiling anstyle v1.0.13
+   Compiling iri-string v0.7.8
+   Compiling plotters-backend v0.3.7
+   Compiling zerofrom-derive v0.1.6
+   Compiling yoke-derive v0.8.0
+   Compiling serde_derive v1.0.228
+   Compiling zerovec-derive v0.11.1
+   Compiling zerocopy-derive v0.8.27
+   Compiling displaydoc v0.2.5
+   Compiling tokio-macros v2.6.0
+   Compiling futures-macro v0.3.31
+   Compiling tracing-attributes v0.1.30
+   Compiling thiserror-impl v1.0.69
+   Compiling thiserror-impl v2.0.17
+   Compiling zerofrom v0.1.6
+   Compiling yoke v0.8.0
+   Compiling zerovec v0.11.4
+   Compiling tokio v1.48.0
+   Compiling tinystr v0.8.1
+   Compiling potential_utf v0.1.3
+   Compiling icu_locale_core v2.0.0
+   Compiling zerotrie v0.2.2
+   Compiling futures-util v0.3.31
+   Compiling icu_provider v2.0.0
+   Compiling icu_collections v2.0.0
+   Compiling ppv-lite86 v0.2.21
+   Compiling rand_chacha v0.9.0
+   Compiling icu_normalizer v2.0.0
+   Compiling tracing v0.1.41
+   Compiling icu_properties v2.0.1
+   Compiling rand v0.9.2
+   Compiling hyper v1.7.0
+   Compiling tower v0.5.2
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling tracing-serde v0.2.0
+   Compiling idna_adapter v1.2.1
+   Compiling idna v1.1.0
+   Compiling hyper-util v0.1.17
+   Compiling tokio-native-tls v0.3.1
+   Compiling half v2.7.1
+   Compiling nalgebra-macros v0.2.2
+   Compiling zeroize v1.8.2
+   Compiling clap_lex v0.7.5
+   Compiling rustls-pki-types v1.12.0
+   Compiling clap_builder v4.5.49
+   Compiling ciborium-ll v0.2.2
+   Compiling nalgebra v0.33.2
+   Compiling hyper-tls v0.6.0
+   Compiling url v2.5.7
+   Compiling tower-http v0.6.6
+   Compiling tracing-subscriber v0.3.20
+   Compiling histogram v0.11.3
+   Compiling serde_urlencoded v0.7.1
+   Compiling chrono v0.4.42
+   Compiling tokio-util v0.7.16
+   Compiling plotters-svg v0.3.7
+   Compiling async-trait v0.1.89
+   Compiling num-derive v0.4.2
+   Compiling hdrhistogram v7.5.4
+   Compiling dashmap v6.1.0
+   Compiling spade v2.15.0
+   Compiling same-file v1.0.6
+   Compiling rstar v0.12.2
+   Compiling itertools v0.13.0
+   Compiling ena v0.14.3
+   Compiling uuid v1.18.1
+   Compiling crossbeam-queue v0.3.12
+   Compiling ordered-float v4.6.0
+   Compiling downcast-rs v1.2.1
+   Compiling cast v0.3.0
+   Compiling rustc-hash v2.1.1
+   Compiling arrayvec v0.7.6
+   Compiling criterion-plot v0.6.0
+   Compiling parry3d v0.17.6
+   Compiling crossbeam v0.8.4
+   Compiling rayon v1.11.0
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+   Compiling walkdir v2.5.0
+   Compiling plotters v0.3.7
+   Compiling reqwest v0.12.24
+   Compiling clap v4.5.49
+   Compiling ciborium v0.2.2
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling futures-executor v0.3.31
+   Compiling tinytemplate v1.2.1
+   Compiling regex v1.12.2
+   Compiling oorandom v11.1.5
+   Compiling anes v0.1.6
+   Compiling bit-vec v0.7.0
+   Compiling rapier3d v0.22.0
+   Compiling criterion v0.7.0
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+   Compiling futures v0.3.31
+   Compiling astraweave-nav v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+   Compiling astraweave-ai v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+    Finished `test` profile [optimized + debuginfo] target(s) in 6m 38s
+[2m2025-10-21T23:14:16.725623Z[0m [32m INFO[0m [2mcargo_tarpaulin::process_handling[0m[2m:[0m running C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\target\debug\deps\astraweave_ai-e7032bf9ab3ca5a2.exe
+[2m2025-10-21T23:14:16.726265Z[0m [32m INFO[0m [2mcargo_tarpaulin::process_handling[0m[2m:[0m Setting LLVM_PROFILE_FILE
+
+running 49 tests
+test ai_arbiter::tests::test_mode_display ... ok
+test async_task::tests::test_async_task_pending ... ok
+test ai_arbiter::tests::test_arbiter_initial_mode_is_goap ... ok
+test async_task::tests::test_async_task_abort_on_drop ... ok
+test core_loop::tests::test_controller_clone ... ok
+test core_loop::tests::test_controller_default ... ok
+test async_task::tests::test_async_task_complete ... ok
+test async_task::tests::test_async_task_block_on ... ok
+test core_loop::tests::test_dispatch_goap_mode_without_feature ... ok
+test core_loop::tests::test_dispatch_rule_mode ... ok
+test async_task::tests::test_async_task_elapsed ... ok
+test core_loop::tests::test_controller_with_custom_policy ... ok
+test core_loop::tests::test_dispatch_bt_mode_without_feature ... ok
+test core_loop::tests::test_dispatch_rule_mode_no_enemies ... ok
+test ecs_ai_plugin::tests::ai_plugin_sets_desired_position_for_companion ... ok
+test async_task::tests::test_async_task_with_error ... ok
+test core_loop::tests::test_planner_mode_equality ... ok
+test ecs_ai_plugin::tests::test_ai_component_queries ... ok
+test ecs_ai_plugin::tests::test_ai_plugin_name ... ok
+test ecs_ai_plugin::tests::test_ai_planning_no_enemies ... ok
+test ecs_ai_plugin::tests::test_ai_planning_system_execution ... ok
+test ecs_ai_plugin::tests::test_ai_plugin_setup ... ok
+test async_task::tests::test_async_task_timeout ... ok
+test ecs_ai_plugin::tests::test_map_legacy_companion_to_ecs_fallback ... ok
+test ecs_ai_plugin::tests::test_build_app_with_legacy_world ... ok
+test ecs_ai_plugin::tests::test_build_app_with_ai_timestep ... ok
+test ecs_ai_plugin::tests::test_build_app_with_ai_systems ... ok
+test orchestrator::tests::goap_moves_then_covers ... ok
+test orchestrator::tests::async_trait_adapter_returns_same_plan ... ok
+test orchestrator::tests::llm_orchestrator_disallowed_tools_fallbacks_empty ... ok
+test orchestrator::tests::llm_orchestrator_with_mock_produces_plan ... FAILED
+test orchestrator::tests::utility_prefers_smoke_when_ready ... ok
+test llm_executor::tests::test_llm_executor_multiple_concurrent_tasks ... FAILED
+test tool_sandbox::tests::test_cover_fire_insufficient_ammo ... ok
+test tool_sandbox::tests::test_cover_fire_no_line_of_sight ... ok
+test llm_executor::tests::test_llm_executor_async_completion ... ok
+test tool_sandbox::tests::test_revive_target_too_far ... ok
+test tool_sandbox::tests::test_cooldown_blocking ... ok
+test tool_sandbox::tests::test_stay_and_wander_always_valid ... ok
+test tool_sandbox::tests::test_cover_fire_success_with_ammo_and_los ... ok
+test tool_sandbox::tests::test_revive_low_morale ... ok
+test llm_executor::tests::test_llm_executor_sync_blocks ... ok
+test tool_sandbox::tests::error_taxonomy_works ... ok
+test tool_sandbox::tests::validate_throw_insufficient_ammo ... ok
+test tool_sandbox::tests::validate_move_to_physics_blocked ... ok
+test tool_sandbox::tests::validate_move_to_no_path ... ok
+test llm_executor::tests::test_llm_executor_failure_handling ... ok
+test tool_sandbox::tests::test_validation_context_builders ... ok
+test llm_executor::tests::test_llm_executor_async_returns_immediately ... FAILED
+
+failures:
+
+---- orchestrator::tests::llm_orchestrator_with_mock_produces_plan stdout ----
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ              PARSING LLM RESPONSE (5 Stages)                 Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Input Length: 235 chars
+Input Preview: {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"Throw","item":"smoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2}...
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  [Stage 1/5] Attempting Direct JSON Parse...
+  Γ¥î Stage 1 failed
+  [Stage 2/5] Attempting Code Fence Extraction...
+  Γ¥î Stage 2 failed
+  [Stage 3/5] Attempting Envelope Extraction...
+  Γ¥î Stage 3 failed
+  [Stage 4/5] Attempting Object Extraction...
+  ≡ƒôª Extracted object (235 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"Throw","item":"smoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"CoverFire","target_id":99,"d
+  ≡ƒº╣ After cleaning (235 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"Throw","item":"smoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"CoverFire","target_id":99,"d
+  Γ¥î Stage 4 failed
+  [Stage 5/5] Attempting Tolerant Parse...
+  Γ¥î Stage 5 failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                 Γ¥î ALL 5 PARSING STAGES FAILED                Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Response text (first 500 chars):
+{
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"Throw","item":"smoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"CoverFire","target_id":99,"duration":2.0}
+          ]
+        }
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+
+thread 'orchestrator::tests::llm_orchestrator_with_mock_produces_plan' panicked at astraweave-ai\src\orchestrator.rs:523:9:
+assertion `left == right` failed
+  left: "llm-fallback"
+ right: "llm-mock"
+
+---- llm_executor::tests::test_llm_executor_multiple_concurrent_tasks stdout ----
+
+thread 'llm_executor::tests::test_llm_executor_multiple_concurrent_tasks' panicked at astraweave-ai\src\llm_executor.rs:489:9:
+assertion failed: task3.is_finished()
+
+---- llm_executor::tests::test_llm_executor_async_returns_immediately stdout ----
+
+thread 'llm_executor::tests::test_llm_executor_async_returns_immediately' panicked at astraweave-ai\src\llm_executor.rs:348:9:
+Task should be finished after delay
+
+
+failures:
+    llm_executor::tests::test_llm_executor_async_returns_immediately
+    llm_executor::tests::test_llm_executor_multiple_concurrent_tasks
+    orchestrator::tests::llm_orchestrator_with_mock_produces_plan
+
+test result: FAILED. 46 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.37s
+
+[2m2025-10-21T23:14:18.296772Z[0m [31mERROR[0m [2mcargo_tarpaulin[0m[2m:[0m Test failed during run
+Error: "Test failed during run"
