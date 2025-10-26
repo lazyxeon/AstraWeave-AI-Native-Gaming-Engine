@@ -646,4 +646,110 @@ mod tests {
         engine.set_master_volume(0.0);
         engine.tick(0.016);
     }
+
+    #[test]
+    fn test_play_voice_file_not_found() {
+        let mut engine = AudioEngine::new().unwrap();
+        let result = engine.play_voice_file("nonexistent_file.wav", None);
+        assert!(result.is_err(), "Should fail for missing file");
+    }
+
+    #[test]
+    fn test_play_sfx_file_not_found() {
+        let mut engine = AudioEngine::new().unwrap();
+        let result = engine.play_sfx_file("nonexistent_sfx.wav");
+        assert!(result.is_err(), "Should fail for missing file");
+    }
+
+    #[test]
+    fn test_play_sfx_3d_file_not_found() {
+        let mut engine = AudioEngine::new().unwrap();
+        let result = engine.play_sfx_3d_file(1, "nonexistent_3d.wav", vec3(1.0, 0.0, 0.0));
+        assert!(result.is_err(), "Should fail for missing file");
+    }
+
+    #[test]
+    fn test_pan_mode_multiple_switches() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Default is StereoAngle, switch to None
+        engine.set_pan_mode(PanMode::None);
+        engine.tick(0.016);
+        
+        // Switch back to StereoAngle
+        engine.set_pan_mode(PanMode::StereoAngle);
+        engine.tick(0.016);
+        
+        // Switch to None again
+        engine.set_pan_mode(PanMode::None);
+        engine.tick(0.016);
+    }
+
+    #[test]
+    fn test_voice_beep_text_length_clamping() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Very short text (should clamp to 0.6s)
+        engine.play_voice_beep(0);
+        engine.tick(0.016);
+        
+        // Very long text (should clamp to 3.0s)
+        engine.play_voice_beep(10000);
+        engine.tick(0.016);
+        
+        // Normal text
+        engine.play_voice_beep(50);
+        engine.tick(0.016);
+    }
+
+    #[test]
+    fn test_sfx_beep_edge_frequencies() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Very low frequency
+        engine.play_sfx_beep(20.0, 0.5, 0.5);
+        
+        // Very high frequency
+        engine.play_sfx_beep(20000.0, 0.5, 0.5);
+        
+        // Zero duration
+        engine.play_sfx_beep(440.0, 0.0, 0.5);
+        
+        // Zero gain
+        engine.play_sfx_beep(440.0, 0.5, 0.0);
+        
+        engine.tick(0.016);
+    }
+
+    #[test]
+    fn test_spatial_beep_edge_cases() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Emitter at listener position
+        engine.play_sfx_3d_beep(1, vec3(0.0, 0.0, 0.0), 440.0, 0.5, 0.5).unwrap();
+        
+        // Very far emitter
+        engine.play_sfx_3d_beep(2, vec3(1000.0, 0.0, 0.0), 440.0, 0.5, 0.5).unwrap();
+        
+        // Behind listener
+        engine.play_sfx_3d_beep(3, vec3(0.0, 0.0, 5.0), 440.0, 0.5, 0.5).unwrap();
+        
+        engine.tick(0.016);
+    }
+
+    #[test]
+    fn test_duck_timer_recovery() {
+        let mut engine = AudioEngine::new().unwrap();
+        
+        // Play voice to trigger ducking
+        engine.play_voice_beep(100);
+        assert!(engine.duck_timer > 0.0, "Duck timer should be set");
+        
+        // Tick multiple times to let duck timer recover
+        for _ in 0..200 {
+            engine.tick(0.016); // ~3.2 seconds total
+        }
+        
+        assert!(engine.duck_timer <= 0.0 || engine.duck_timer < 0.1, "Duck timer should recover");
+    }
 }

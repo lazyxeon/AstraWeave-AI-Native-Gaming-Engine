@@ -689,6 +689,723 @@ mod tests {
             _ => panic!("Expected InvalidAction error for non-existent actor"),
         }
     }
+
+    // ════════════════════════════════════════════════════════════════════
+    // COMPREHENSIVE ACTION STEP TESTS (95%+ Coverage Push)
+    // ════════════════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_approach_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "approach-001".into(),
+            steps: vec![ActionStep::Approach {
+                target_id: target,
+                distance: 2.0,
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_retreat_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 5, y: 5 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 3, y: 3 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "retreat-001".into(),
+            steps: vec![ActionStep::Retreat {
+                target_id: target,
+                distance: 10.0,
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_take_cover_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "cover-001".into(),
+            steps: vec![ActionStep::TakeCover {
+                position: Some(IVec2 { x: 5, y: 5 }),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_strafe_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "strafe-001".into(),
+            steps: vec![ActionStep::Strafe {
+                target_id: target,
+                direction: crate::StrafeDirection::Left,
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_patrol_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "patrol-001".into(),
+            steps: vec![ActionStep::Patrol {
+                waypoints: vec![
+                    IVec2 { x: 0, y: 0 },
+                    IVec2 { x: 5, y: 0 },
+                    IVec2 { x: 5, y: 5 },
+                ],
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_aimed_shot_damages_target() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let hp_before = w.health(target).unwrap().hp;
+        
+        let intent = PlanIntent {
+            plan_id: "aimed-001".into(),
+            steps: vec![ActionStep::AimedShot { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+        
+        let hp_after = w.health(target).unwrap().hp;
+        assert_eq!(hp_after, hp_before - 15);
+    }
+
+    #[test]
+    fn test_quick_attack_damages_target() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let hp_before = w.health(target).unwrap().hp;
+        
+        let intent = PlanIntent {
+            plan_id: "quick-001".into(),
+            steps: vec![ActionStep::QuickAttack { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+        
+        let hp_after = w.health(target).unwrap().hp;
+        assert_eq!(hp_after, hp_before - 5);
+    }
+
+    #[test]
+    fn test_heavy_attack_damages_target() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let hp_before = w.health(target).unwrap().hp;
+        
+        let intent = PlanIntent {
+            plan_id: "heavy-001".into(),
+            steps: vec![ActionStep::HeavyAttack { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+        
+        let hp_after = w.health(target).unwrap().hp;
+        assert_eq!(hp_after, hp_before - 25);
+    }
+
+    #[test]
+    fn test_aoe_attack_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "aoe-001".into(),
+            steps: vec![ActionStep::AoEAttack {
+                x: 5,
+                y: 5,
+                radius: 3.0,
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_throw_explosive_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "explosive-001".into(),
+            steps: vec![ActionStep::ThrowExplosive { x: 5, y: 5 }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_charge_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "charge-001".into(),
+            steps: vec![ActionStep::Charge { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_block_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "block-001".into(),
+            steps: vec![ActionStep::Block],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_dodge_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "dodge-001".into(),
+            steps: vec![ActionStep::Dodge {
+                direction: Some(crate::StrafeDirection::Left),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_parry_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "parry-001".into(),
+            steps: vec![ActionStep::Parry],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_use_defensive_ability_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "def-001".into(),
+            steps: vec![ActionStep::UseDefensiveAbility {
+                ability_name: "Shield Bash".to_string(),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_equip_weapon_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "equip-001".into(),
+            steps: vec![ActionStep::EquipWeapon {
+                weapon_name: "Plasma Rifle".to_string(),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_switch_weapon_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "switch-001".into(),
+            steps: vec![ActionStep::SwitchWeapon { slot: 2 }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_use_item_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "item-001".into(),
+            steps: vec![ActionStep::UseItem {
+                item_name: "Health Potion".to_string(),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_drop_item_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "drop-001".into(),
+            steps: vec![ActionStep::DropItem {
+                item_name: "Heavy Armor".to_string(),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_call_reinforcements_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "reinforce-001".into(),
+            steps: vec![ActionStep::CallReinforcements { count: 3 }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_mark_target_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "mark-001".into(),
+            steps: vec![ActionStep::MarkTarget { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_request_cover_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "req-cover-001".into(),
+            steps: vec![ActionStep::RequestCover { duration: 5.0 }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_coordinate_attack_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "coord-001".into(),
+            steps: vec![ActionStep::CoordinateAttack { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_set_ambush_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "ambush-001".into(),
+            steps: vec![ActionStep::SetAmbush {
+                position: IVec2 { x: 8, y: 8 },
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_distract_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "distract-001".into(),
+            steps: vec![ActionStep::Distract { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_regroup_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "regroup-001".into(),
+            steps: vec![ActionStep::Regroup {
+                rally_point: IVec2 { x: -5, y: -5 },
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_scan_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "scan-001".into(),
+            steps: vec![ActionStep::Scan { radius: 10.0 }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_wait_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "wait-001".into(),
+            steps: vec![ActionStep::Wait { duration: 2.5 }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_interact_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("object", IVec2 { x: 1, y: 1 }, Team { id: 0 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "interact-001".into(),
+            steps: vec![ActionStep::Interact { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_use_ability_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        
+        let intent = PlanIntent {
+            plan_id: "ability-001".into(),
+            steps: vec![ActionStep::UseAbility {
+                ability_name: "Teleport".to_string(),
+            }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_taunt_action() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let target = w.spawn("target", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 100, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "taunt-001".into(),
+            steps: vec![ActionStep::Taunt { target_id: target }],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 10, 10) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_multi_step_plan() {
+        let mut w = mk_world_clear();
+        let actor = w.spawn("actor", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 50, 10);
+        let enemy = w.spawn("enemy", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 80, 0);
+        
+        let intent = PlanIntent {
+            plan_id: "multi-001".into(),
+            steps: vec![
+                ActionStep::Scan { radius: 15.0 },
+                ActionStep::MoveTo { x: 8, y: 8, speed: Some(MovementSpeed::Run) },
+                ActionStep::AimedShot { target_id: enemy },
+                ActionStep::TakeCover { position: Some(IVec2 { x: 7, y: 7 }) },
+                ActionStep::Heal { target_id: None },
+            ],
+        };
+        
+        let cfg = ValidateCfg { world_bounds: (-10, -10, 15, 15) };
+        let mut log = |_s: String| {};
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        assert!(res.is_ok());
+        
+        // Verify actor moved
+        let final_pos = w.pos_of(actor).unwrap();
+        assert_eq!(final_pos, IVec2 { x: 8, y: 8 });
+        
+        // Verify enemy took damage
+        let enemy_hp = w.health(enemy).unwrap().hp;
+        assert_eq!(enemy_hp, 65); // 80 - 15 (aimed shot)
+        
+        // Verify actor healed
+        let actor_hp = w.health(actor).unwrap().hp;
+        assert_eq!(actor_hp, 70); // 50 + 20 (heal)
+    }
+
+    #[test]
+    fn test_director_fortify_operation() {
+        let mut w = mk_world_clear();
+        let mut budget = crate::DirectorBudget {
+            traps: 2,
+            spawns: 5,
+            terrain_edits: 3,
+        };
+        
+        let plan = crate::DirectorPlan {
+            ops: vec![crate::DirectorOp::Fortify {
+                rect: crate::Rect {
+                    x0: 0,
+                    y0: 0,
+                    x1: 2,
+                    y1: 2,
+                },
+            }],
+        };
+        
+        let mut log = |_s: String| {};
+        apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+        
+        // Verify budget was decremented
+        assert_eq!(budget.terrain_edits, 2);
+        
+        // Verify obstacles were added (at least one point in rect)
+        assert!(w.obstacles.contains(&(0, 0)) || w.obstacles.contains(&(1, 1)) || w.obstacles.contains(&(2, 2)));
+    }
+
+    #[test]
+    fn test_director_collapse_operation() {
+        let mut w = mk_world_clear();
+        let mut budget = crate::DirectorBudget {
+            traps: 2,
+            spawns: 5,
+            terrain_edits: 3,
+        };
+        
+        let plan = crate::DirectorPlan {
+            ops: vec![crate::DirectorOp::Collapse {
+                a: IVec2 { x: 0, y: 0 },
+                b: IVec2 { x: 5, y: 5 },
+            }],
+        };
+        
+        let mut log = |_s: String| {};
+        apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+        
+        // Verify budget was decremented
+        assert_eq!(budget.terrain_edits, 2);
+        
+        // Verify obstacles were added along the line
+        assert!(w.obstacles.contains(&(0, 0)));
+    }
+
+    #[test]
+    fn test_director_spawn_wave_operation() {
+        let mut w = mk_world_clear();
+        let mut budget = crate::DirectorBudget {
+            traps: 2,
+            spawns: 5,
+            terrain_edits: 3,
+        };
+        
+        let plan = crate::DirectorPlan {
+            ops: vec![crate::DirectorOp::SpawnWave {
+                archetype: "zombie".to_string(),
+                count: 3,
+                origin: IVec2 { x: 10, y: 10 },
+            }],
+        };
+        
+        let mut log = |_s: String| {};
+        apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+        
+        // Verify budget was decremented
+        assert_eq!(budget.spawns, 4);
+    }
+
+    #[test]
+    fn test_director_budget_enforcement() {
+        let mut w = mk_world_clear();
+        let mut budget = crate::DirectorBudget {
+            traps: 0,
+            spawns: 0, // Zero budget
+            terrain_edits: 0,
+        };
+        
+        let plan = crate::DirectorPlan {
+            ops: vec![
+                crate::DirectorOp::SpawnWave {
+                    archetype: "enemy".to_string(),
+                    count: 5,
+                    origin: IVec2 { x: 0, y: 0 },
+                },
+                crate::DirectorOp::Fortify {
+                    rect: crate::Rect {
+                        x0: 0,
+                        y0: 0,
+                        x1: 2,
+                        y1: 2,
+                    },
+                },
+            ],
+        };
+        
+        let initial_obstacle_count = w.obstacles.len();
+        
+        let mut log = |_s: String| {};
+        apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+        
+        // Verify nothing happened due to zero budget (obstacles should not change)
+        assert_eq!(w.obstacles.len(), initial_obstacle_count);
+        assert_eq!(budget.spawns, 0);
+        assert_eq!(budget.terrain_edits, 0);
+    }
 }
 fn draw_line_obs(obs: &mut std::collections::HashSet<(i32, i32)>, a: IVec2, b: IVec2) {
     let mut x = a.x;

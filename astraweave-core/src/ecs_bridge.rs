@@ -84,3 +84,321 @@ impl EntityBridge {
         self.rev.keys().copied().collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_entity_bridge_default() {
+        let bridge = EntityBridge::default();
+        assert_eq!(bridge.map.len(), 0);
+        assert_eq!(bridge.rev.len(), 0);
+    }
+
+    #[test]
+    fn test_insert_pair_basic() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 42;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(100) };
+        
+        bridge.insert_pair(legacy_id, ecs_entity);
+        
+        assert_eq!(bridge.get(&legacy_id), Some(ecs_entity));
+        assert_eq!(bridge.get_legacy(&ecs_entity), Some(legacy_id));
+    }
+
+    #[test]
+    fn test_insert_alias() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 10;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(20) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        
+        assert_eq!(bridge.get(&legacy_id), Some(ecs_entity));
+        assert_eq!(bridge.get_legacy(&ecs_entity), Some(legacy_id));
+    }
+
+    #[test]
+    fn test_insert_multiple_pairs() {
+        let mut bridge = EntityBridge::default();
+        let legacy1: crate::Entity = 1;
+        let legacy2: crate::Entity = 2;
+        let legacy3: crate::Entity = 3;
+        let ecs1 = unsafe { ecs::Entity::from_raw(10) };
+        let ecs2 = unsafe { ecs::Entity::from_raw(20) };
+        let ecs3 = unsafe { ecs::Entity::from_raw(30) };
+        
+        bridge.insert_pair(legacy1, ecs1);
+        bridge.insert_pair(legacy2, ecs2);
+        bridge.insert_pair(legacy3, ecs3);
+        
+        assert_eq!(bridge.get(&legacy1), Some(ecs1));
+        assert_eq!(bridge.get(&legacy2), Some(ecs2));
+        assert_eq!(bridge.get(&legacy3), Some(ecs3));
+        assert_eq!(bridge.map.len(), 3);
+        assert_eq!(bridge.rev.len(), 3);
+    }
+
+    #[test]
+    fn test_insert_pair_overwrites_existing_legacy() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 5;
+        let ecs_entity1 = unsafe { ecs::Entity::from_raw(100) };
+        let ecs_entity2 = unsafe { ecs::Entity::from_raw(200) };
+        
+        // Insert first mapping
+        bridge.insert_pair(legacy_id, ecs_entity1);
+        assert_eq!(bridge.get(&legacy_id), Some(ecs_entity1));
+        
+        // Overwrite with new ECS entity
+        bridge.insert_pair(legacy_id, ecs_entity2);
+        assert_eq!(bridge.get(&legacy_id), Some(ecs_entity2));
+        
+        // Old ECS entity should no longer have reverse mapping
+        assert_eq!(bridge.get_legacy(&ecs_entity1), None);
+        assert_eq!(bridge.get_legacy(&ecs_entity2), Some(legacy_id));
+    }
+
+    #[test]
+    fn test_insert_pair_overwrites_existing_ecs() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id1: crate::Entity = 1;
+        let legacy_id2: crate::Entity = 2;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(100) };
+        
+        // Insert first mapping
+        bridge.insert_pair(legacy_id1, ecs_entity);
+        assert_eq!(bridge.get_legacy(&ecs_entity), Some(legacy_id1));
+        
+        // Overwrite with new legacy id
+        bridge.insert_pair(legacy_id2, ecs_entity);
+        assert_eq!(bridge.get_legacy(&ecs_entity), Some(legacy_id2));
+        
+        // Old legacy id should no longer have forward mapping
+        assert_eq!(bridge.get(&legacy_id1), None);
+        assert_eq!(bridge.get(&legacy_id2), Some(ecs_entity));
+    }
+
+    #[test]
+    fn test_remove_legacy() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 42;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(100) };
+        
+        bridge.insert_pair(legacy_id, ecs_entity);
+        assert_eq!(bridge.get(&legacy_id), Some(ecs_entity));
+        
+        bridge.remove_legacy(&legacy_id);
+        
+        assert_eq!(bridge.get(&legacy_id), None);
+        assert_eq!(bridge.get_legacy(&ecs_entity), None);
+        assert_eq!(bridge.map.len(), 0);
+        assert_eq!(bridge.rev.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_ecs() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 42;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(100) };
+        
+        bridge.insert_pair(legacy_id, ecs_entity);
+        assert_eq!(bridge.get_legacy(&ecs_entity), Some(legacy_id));
+        
+        bridge.remove_ecs(&ecs_entity);
+        
+        assert_eq!(bridge.get(&legacy_id), None);
+        assert_eq!(bridge.get_legacy(&ecs_entity), None);
+        assert_eq!(bridge.map.len(), 0);
+        assert_eq!(bridge.rev.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_legacy_nonexistent() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 99;
+        
+        // Removing nonexistent entry should not panic
+        bridge.remove_legacy(&legacy_id);
+        assert_eq!(bridge.map.len(), 0);
+    }
+
+    #[test]
+    fn test_remove_ecs_nonexistent() {
+        let mut bridge = EntityBridge::default();
+        let ecs_entity = unsafe { ecs::Entity::from_raw(999) };
+        
+        // Removing nonexistent entry should not panic
+        bridge.remove_ecs(&ecs_entity);
+        assert_eq!(bridge.rev.len(), 0);
+    }
+
+    #[test]
+    fn test_get_nonexistent() {
+        let bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 123;
+        
+        assert_eq!(bridge.get(&legacy_id), None);
+    }
+
+    #[test]
+    fn test_get_legacy_nonexistent() {
+        let bridge = EntityBridge::default();
+        let ecs_entity = unsafe { ecs::Entity::from_raw(456) };
+        
+        assert_eq!(bridge.get_legacy(&ecs_entity), None);
+    }
+
+    #[test]
+    fn test_get_by_legacy() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 7;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(77) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        
+        assert_eq!(bridge.get_by_legacy(&legacy_id), Some(ecs_entity));
+    }
+
+    #[test]
+    fn test_get_by_ecs() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 8;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(88) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        
+        assert_eq!(bridge.get_by_ecs(&ecs_entity), Some(legacy_id));
+    }
+
+    #[test]
+    fn test_remove_by_legacy() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 50;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(500) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        bridge.remove_by_legacy(&legacy_id);
+        
+        assert_eq!(bridge.get(&legacy_id), None);
+        assert_eq!(bridge.get_legacy(&ecs_entity), None);
+    }
+
+    #[test]
+    fn test_remove_by_ecs() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 60;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(600) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        bridge.remove_by_ecs(&ecs_entity);
+        
+        assert_eq!(bridge.get(&legacy_id), None);
+        assert_eq!(bridge.get_legacy(&ecs_entity), None);
+    }
+
+    #[test]
+    fn test_ecs_entities_empty() {
+        let bridge = EntityBridge::default();
+        let entities = bridge.ecs_entities();
+        
+        assert_eq!(entities.len(), 0);
+    }
+
+    #[test]
+    fn test_ecs_entities_single() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 1;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(10) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        let entities = bridge.ecs_entities();
+        
+        assert_eq!(entities.len(), 1);
+        assert!(entities.contains(&ecs_entity));
+    }
+
+    #[test]
+    fn test_ecs_entities_multiple() {
+        let mut bridge = EntityBridge::default();
+        let ecs1 = unsafe { ecs::Entity::from_raw(10) };
+        let ecs2 = unsafe { ecs::Entity::from_raw(20) };
+        let ecs3 = unsafe { ecs::Entity::from_raw(30) };
+        
+        bridge.insert(1, ecs1);
+        bridge.insert(2, ecs2);
+        bridge.insert(3, ecs3);
+        
+        let entities = bridge.ecs_entities();
+        
+        assert_eq!(entities.len(), 3);
+        assert!(entities.contains(&ecs1));
+        assert!(entities.contains(&ecs2));
+        assert!(entities.contains(&ecs3));
+    }
+
+    #[test]
+    fn test_bidirectional_consistency() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 123;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(456) };
+        
+        bridge.insert(legacy_id, ecs_entity);
+        
+        // Forward lookup
+        let found_ecs = bridge.get(&legacy_id).unwrap();
+        // Reverse lookup should return original legacy id
+        let found_legacy = bridge.get_legacy(&found_ecs).unwrap();
+        
+        assert_eq!(found_legacy, legacy_id);
+    }
+
+    #[test]
+    fn test_complex_insert_remove_sequence() {
+        let mut bridge = EntityBridge::default();
+        
+        // Insert 5 pairs
+        for i in 0..5 {
+            bridge.insert(i, unsafe { ecs::Entity::from_raw((i * 10) as u64) });
+        }
+        assert_eq!(bridge.map.len(), 5);
+        assert_eq!(bridge.rev.len(), 5);
+        
+        // Remove 2 by legacy
+        bridge.remove_by_legacy(&1);
+        bridge.remove_by_legacy(&3);
+        assert_eq!(bridge.map.len(), 3);
+        assert_eq!(bridge.rev.len(), 3);
+        
+        // Remove 1 by ecs
+        bridge.remove_by_ecs(&unsafe { ecs::Entity::from_raw(20) });
+        assert_eq!(bridge.map.len(), 2);
+        assert_eq!(bridge.rev.len(), 2);
+        
+        // Verify remaining
+        assert!(bridge.get(&0).is_some());
+        assert!(bridge.get(&1).is_none());
+        assert!(bridge.get(&2).is_none());
+        assert!(bridge.get(&3).is_none());
+        assert!(bridge.get(&4).is_some());
+    }
+
+    #[test]
+    fn test_insert_same_pair_twice() {
+        let mut bridge = EntityBridge::default();
+        let legacy_id: crate::Entity = 77;
+        let ecs_entity = unsafe { ecs::Entity::from_raw(777) };
+        
+        // Insert same pair twice
+        bridge.insert(legacy_id, ecs_entity);
+        bridge.insert(legacy_id, ecs_entity);
+        
+        // Should still have only one mapping
+        assert_eq!(bridge.map.len(), 1);
+        assert_eq!(bridge.rev.len(), 1);
+        assert_eq!(bridge.get(&legacy_id), Some(ecs_entity));
+        assert_eq!(bridge.get_legacy(&ecs_entity), Some(legacy_id));
+    }
+}

@@ -206,4 +206,221 @@ mod tests {
         // Ensure the first move happened, but not the last
         assert_eq!(w.pos_of(a).unwrap(), IVec2 { x: 1, y: 0 });
     }
+
+    // ===== Comprehensive ActionStep Mapping Tests =====
+    
+    #[test]
+    fn test_map_movement_actions() {
+        let err = EngineError::NoPath;
+        
+        let steps = vec![
+            (ActionStep::MoveTo { x: 0, y: 0, speed: None }, "MoveTo"),
+            (ActionStep::Approach { target_id: 1, distance: 5.0 }, "Approach"),
+            (ActionStep::Retreat { target_id: 1, distance: 10.0 }, "Retreat"),
+            (ActionStep::TakeCover { position: None }, "TakeCover"),
+            (ActionStep::Strafe { target_id: 1, direction: crate::schema::StrafeDirection::Left }, "Strafe"),
+            (ActionStep::Patrol { waypoints: vec![] }, "Patrol"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::PathBlocked);
+        }
+    }
+
+    #[test]
+    fn test_map_offensive_actions() {
+        let err = EngineError::LosBlocked;
+        
+        let steps = vec![
+            (ActionStep::Attack { target_id: 1 }, "Attack"),
+            (ActionStep::AimedShot { target_id: 1 }, "AimedShot"),
+            (ActionStep::QuickAttack { target_id: 1 }, "QuickAttack"),
+            (ActionStep::HeavyAttack { target_id: 1 }, "HeavyAttack"),
+            (ActionStep::AoEAttack { x: 0, y: 0, radius: 3.0 }, "AoEAttack"),
+            (ActionStep::ThrowExplosive { x: 5, y: 5 }, "ThrowExplosive"),
+            (ActionStep::CoverFire { target_id: 1, duration: 2.0 }, "CoverFire"),
+            (ActionStep::Charge { target_id: 1 }, "Charge"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::LineOfSight);
+            assert_eq!(block.msg, "line of sight");
+        }
+    }
+
+    #[test]
+    fn test_map_defensive_actions() {
+        let err = EngineError::Cooldown("defensive".into());
+        
+        let steps = vec![
+            (ActionStep::Block, "Block"),
+            (ActionStep::Dodge { direction: None }, "Dodge"),
+            (ActionStep::Parry, "Parry"),
+            (ActionStep::ThrowSmoke { x: 0, y: 0 }, "ThrowSmoke"),
+            (ActionStep::Heal { target_id: None }, "Heal"),
+            (ActionStep::UseDefensiveAbility { ability_name: "shield".into() }, "UseDefensiveAbility"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::Cooldown);
+            assert!(block.msg.contains("defensive"));
+        }
+    }
+
+    #[test]
+    fn test_map_equipment_actions() {
+        let err = EngineError::InvalidAction("invalid".into());
+        
+        let steps = vec![
+            (ActionStep::EquipWeapon { weapon_name: "rifle".into() }, "EquipWeapon"),
+            (ActionStep::SwitchWeapon { slot: 2 }, "SwitchWeapon"),
+            (ActionStep::Reload, "Reload"),
+            (ActionStep::UseItem { item_name: "medkit".into() }, "UseItem"),
+            (ActionStep::DropItem { item_name: "ammo".into() }, "DropItem"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::Invalid);
+            assert_eq!(block.msg, "invalid");
+        }
+    }
+
+    #[test]
+    fn test_map_tactical_actions() {
+        let err = EngineError::Resource("tactical".into());
+        
+        let steps = vec![
+            (ActionStep::CallReinforcements { count: 3 }, "CallReinforcements"),
+            (ActionStep::MarkTarget { target_id: 1 }, "MarkTarget"),
+            (ActionStep::RequestCover { duration: 5.0 }, "RequestCover"),
+            (ActionStep::CoordinateAttack { target_id: 1 }, "CoordinateAttack"),
+            (ActionStep::SetAmbush { position: IVec2 { x: 5, y: 5 } }, "SetAmbush"),
+            (ActionStep::Distract { target_id: 1 }, "Distract"),
+            (ActionStep::Regroup { rally_point: IVec2 { x: 0, y: 0 } }, "Regroup"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::Other);
+            assert!(block.msg.contains("tactical"));
+        }
+    }
+
+    #[test]
+    fn test_map_utility_actions() {
+        let err = EngineError::NoPath;
+        
+        let steps = vec![
+            (ActionStep::Scan { radius: 10.0 }, "Scan"),
+            (ActionStep::Wait { duration: 2.0 }, "Wait"),
+            (ActionStep::Interact { target_id: 1 }, "Interact"),
+            (ActionStep::UseAbility { ability_name: "stealth".into() }, "UseAbility"),
+            (ActionStep::Taunt { target_id: 1 }, "Taunt"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::PathBlocked);
+        }
+    }
+
+    #[test]
+    fn test_map_legacy_actions() {
+        let err = EngineError::Cooldown("legacy".into());
+        
+        let steps = vec![
+            (ActionStep::Throw { item: "grenade".into(), x: 5, y: 5 }, "Throw"),
+            (ActionStep::Revive { ally_id: 1 }, "Revive"),
+        ];
+        
+        for (step, expected_name) in steps {
+            let block = map_engine_error(&step, &err);
+            assert_eq!(block.tool, expected_name);
+            assert_eq!(block.reason, ToolBlockReason::Cooldown);
+        }
+    }
+
+    #[test]
+    fn test_all_error_types() {
+        let step = ActionStep::Attack { target_id: 1 };
+        
+        // Test Cooldown
+        let block = map_engine_error(&step, &EngineError::Cooldown("attack".into()));
+        assert_eq!(block.reason, ToolBlockReason::Cooldown);
+        assert!(block.msg.contains("attack"));
+        
+        // Test LosBlocked
+        let block = map_engine_error(&step, &EngineError::LosBlocked);
+        assert_eq!(block.reason, ToolBlockReason::LineOfSight);
+        assert_eq!(block.msg, "line of sight");
+        
+        // Test NoPath
+        let block = map_engine_error(&step, &EngineError::NoPath);
+        assert_eq!(block.reason, ToolBlockReason::PathBlocked);
+        assert_eq!(block.msg, "no path");
+        
+        // Test InvalidAction
+        let block = map_engine_error(&step, &EngineError::InvalidAction("test message".into()));
+        assert_eq!(block.reason, ToolBlockReason::Invalid);
+        assert_eq!(block.msg, "test message");
+        
+        // Test Resource
+        let block = map_engine_error(&step, &EngineError::Resource("energy".into()));
+        assert_eq!(block.reason, ToolBlockReason::Other);
+        assert!(block.msg.contains("energy"));
+    }
+
+    #[test]
+    fn test_tool_block_equality() {
+        let block1 = ToolBlock {
+            reason: ToolBlockReason::Cooldown,
+            tool: "Attack",
+            msg: "test".into(),
+        };
+        
+        let block2 = ToolBlock {
+            reason: ToolBlockReason::Cooldown,
+            tool: "Attack",
+            msg: "test".into(),
+        };
+        
+        assert_eq!(block1, block2);
+    }
+
+    #[test]
+    fn test_tool_block_debug() {
+        let block = ToolBlock {
+            reason: ToolBlockReason::LineOfSight,
+            tool: "CoverFire",
+            msg: "blocked".into(),
+        };
+        
+        let debug_str = format!("{:?}", block);
+        assert!(debug_str.contains("LineOfSight"));
+        assert!(debug_str.contains("CoverFire"));
+        assert!(debug_str.contains("blocked"));
+    }
+
+    #[test]
+    fn test_tool_block_clone() {
+        let block = ToolBlock {
+            reason: ToolBlockReason::Invalid,
+            tool: "MoveTo",
+            msg: "out of bounds".into(),
+        };
+        
+        let cloned = block.clone();
+        assert_eq!(block, cloned);
+    }
 }
+

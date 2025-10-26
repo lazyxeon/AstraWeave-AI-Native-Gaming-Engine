@@ -630,4 +630,590 @@ mod tests {
 
         Ok(())
     }
+
+    // =============================================================================
+    // map_legacy_companion_to_ecs Edge Cases (5 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_map_legacy_no_companions() -> Result<()> {
+        // Verify map returns None when no team 1 entities exist
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn only non-companion entities
+        let enemy = app.world.spawn();
+        let mut positions = std::collections::BTreeMap::new();
+        let mut teams = std::collections::BTreeMap::new();
+        positions.insert(enemy, IVec2 { x: 5, y: 5 });
+        teams.insert(enemy, 2); // Team 2
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, 1, &app.world);
+        assert_eq!(mapped, None, "Should return None when no team 1 entities");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_legacy_with_entity_bridge() -> Result<()> {
+        // Verify EntityBridge mapping is preferred over proximity
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn two companions
+        let close_ally = app.world.spawn();
+        app.world.insert(close_ally, CPos { pos: IVec2 { x: 1, y: 1 } });
+        app.world.insert(close_ally, CTeam { id: 1 });
+
+        let far_ally = app.world.spawn();
+        app.world.insert(far_ally, CPos { pos: IVec2 { x: 10, y: 10 } });
+        app.world.insert(far_ally, CTeam { id: 1 });
+
+        // Create EntityBridge mapping legacy id 5 -> far_ally
+        let mut bridge = EntityBridge::default();
+        bridge.insert(5, far_ally);
+        app.world.insert_resource(bridge);
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(close_ally, IVec2 { x: 1, y: 1 });
+        positions.insert(far_ally, IVec2 { x: 10, y: 10 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(close_ally, 1);
+        teams.insert(far_ally, 1);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        // Map legacy id 5 (should use bridge, not proximity)
+        let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, 5, &app.world);
+        assert_eq!(mapped, Some(far_ally), "Should prefer EntityBridge mapping");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_legacy_empty_positions() -> Result<()> {
+        // Verify map returns None when positions map is empty
+        let w = World::new();
+        let app = build_app_with_ai(w, 0.016);
+
+        let positions = std::collections::BTreeMap::new();
+        let teams = std::collections::BTreeMap::new();
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, 1, &app.world);
+        assert_eq!(mapped, None, "Should return None for empty positions");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_legacy_manhattan_distance() -> Result<()> {
+        // Verify Manhattan distance calculation (closest by |dx| + |dy|)
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn companions at different positions
+        let ally1 = app.world.spawn();
+        app.world.insert(ally1, CPos { pos: IVec2 { x: 3, y: 0 } }); // Distance 3
+        app.world.insert(ally1, CTeam { id: 1 });
+
+        let ally2 = app.world.spawn();
+        app.world.insert(ally2, CPos { pos: IVec2 { x: 2, y: 1 } }); // Distance 3
+        app.world.insert(ally2, CTeam { id: 1 });
+
+        let ally3 = app.world.spawn();
+        app.world.insert(ally3, CPos { pos: IVec2 { x: 1, y: 1 } }); // Distance 2 (closest)
+        app.world.insert(ally3, CTeam { id: 1 });
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(ally1, IVec2 { x: 3, y: 0 });
+        positions.insert(ally2, IVec2 { x: 2, y: 1 });
+        positions.insert(ally3, IVec2 { x: 1, y: 1 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(ally1, 1);
+        teams.insert(ally2, 1);
+        teams.insert(ally3, 1);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, 1, &app.world);
+        assert_eq!(mapped, Some(ally3), "Should map to closest by Manhattan distance");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_map_legacy_team_filtering() -> Result<()> {
+        // Verify only team 1 entities are considered
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn closest entity as team 2 (should be ignored)
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 1, y: 0 } }); // Distance 1
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        // Spawn farther entity as team 1 (should be selected)
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 5, y: 5 } }); // Distance 10
+        app.world.insert(ally, CTeam { id: 1 });
+
+        let mut positions = std::collections::BTreeMap::new();
+        positions.insert(enemy, IVec2 { x: 1, y: 0 });
+        positions.insert(ally, IVec2 { x: 5, y: 5 });
+
+        let mut teams = std::collections::BTreeMap::new();
+        teams.insert(enemy, 2);
+        teams.insert(ally, 1);
+
+        let snap = WorldSnapshot {
+            t: 0.0,
+            player: PlayerState {
+                hp: 100,
+                pos: IVec2 { x: 0, y: 0 },
+                stance: "stand".into(),
+                orders: vec![],
+            },
+            me: CompanionState {
+                ammo: 10,
+                cooldowns: std::collections::BTreeMap::new(),
+                morale: 1.0,
+                pos: IVec2 { x: 0, y: 0 },
+            },
+            enemies: vec![],
+            pois: vec![],
+            obstacles: vec![],
+            objective: None,
+        };
+
+        let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, 1, &app.world);
+        assert_eq!(mapped, Some(ally), "Should only consider team 1 entities");
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // sys_ai_planning Legacy World Path Tests (4 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_sys_ai_planning_no_legacy_world() -> Result<()> {
+        // Verify ECS-only snapshot path when no legacy World resource
+        let mut app = ecs::App::new();
+        // Don't insert legacy World resource at all to force ECS-only path
+
+        // Manually add plugin
+        app = app.add_plugin(AiPlanningPlugin);
+
+        // Spawn ECS companion and enemy
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        // System should still run via ECS-only path
+        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should set desired pos via ECS-only path");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sys_ai_planning_no_player_in_legacy() -> Result<()> {
+        // Verify system handles missing player in legacy World
+        let mut w = World::new();
+        // Spawn only companion, no player (team 0)
+        use astraweave_core::Team;
+        let _comp = w.spawn("Companion", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 80, 30);
+
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn ECS companion
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        // Should fallback to ECS-only path (legacy path requires both player and companion)
+        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should use ECS-only fallback");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sys_ai_planning_no_companion_in_legacy() -> Result<()> {
+        // Verify system handles missing companion in legacy World
+        let mut w = World::new();
+        // Spawn only player, no companion (team 1)
+        use astraweave_core::Team;
+        let _player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
+
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn ECS companion
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        // Should fallback to ECS-only path
+        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should use ECS-only fallback");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sys_ai_planning_initializes_events() -> Result<()> {
+        // Verify system initializes Events<AiPlannedEvent> if missing
+        let w = World::new();
+        let mut app = ecs::App::new();
+        app.world.insert_resource(w);
+
+        // Don't add plugin (to test event initialization in sys_ai_planning)
+        // Manually add system
+        app.schedule.add_system("ai_planning", sys_ai_planning as ecs::SystemFn);
+
+        // Spawn companion
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        // Events resource should NOT exist yet
+        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_none(), "Events should not exist before system run");
+
+        app = app.run_fixed(1);
+
+        // System should have created Events resource
+        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_some(), "System should initialize Events resource");
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // ECS-Only Snapshot Path Tests (3 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_ecs_only_snapshot_multiple_allies() -> Result<()> {
+        // Verify ECS-only path handles multiple companions
+        let mut app = ecs::App::new();
+        // Don't insert legacy World resource to force ECS-only path
+        app = app.add_plugin(AiPlanningPlugin);
+
+        // Spawn three companions
+        let ally1 = app.world.spawn();
+        app.world.insert(ally1, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally1, CTeam { id: 1 });
+        app.world.insert(ally1, CAmmo { rounds: 10 });
+        app.world.insert(ally1, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let ally2 = app.world.spawn();
+        app.world.insert(ally2, CPos { pos: IVec2 { x: 2, y: 0 } });
+        app.world.insert(ally2, CTeam { id: 1 });
+        app.world.insert(ally2, CAmmo { rounds: 5 });
+        app.world.insert(ally2, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let ally3 = app.world.spawn();
+        app.world.insert(ally3, CPos { pos: IVec2 { x: 4, y: 0 } });
+        app.world.insert(ally3, CTeam { id: 1 });
+        app.world.insert(ally3, CAmmo { rounds: 15 });
+        app.world.insert(ally3, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        // Spawn enemy
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 10, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        // All three companions should have desired positions set
+        assert!(app.world.get::<CDesiredPos>(ally1).is_some(), "Ally 1 should have desired pos");
+        assert!(app.world.get::<CDesiredPos>(ally2).is_some(), "Ally 2 should have desired pos");
+        assert!(app.world.get::<CDesiredPos>(ally3).is_some(), "Ally 3 should have desired pos");
+
+        // Three planned events should be published
+        let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>()
+            .ok_or_else(|| anyhow!("Events missing"))?;
+        let mut rdr = evs.reader();
+        let v: Vec<_> = rdr.drain().collect();
+        assert_eq!(v.len(), 3, "Should have 3 planned events");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ecs_only_snapshot_cooldowns_conversion() -> Result<()> {
+        // Verify ECS-only path converts cooldowns to BTreeMap<String, f32>
+        let mut app = ecs::App::new();
+        // Don't insert legacy World resource to force ECS-only path
+        app = app.add_plugin(AiPlanningPlugin);
+
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+
+        // Insert cooldowns with CooldownKey
+        use astraweave_core::cooldowns::CooldownKey;
+        let mut cds_map = std::collections::BTreeMap::new();
+        cds_map.insert(CooldownKey::ThrowSmoke, 2.5);
+        cds_map.insert(CooldownKey::Custom("heal".to_string()), 5.0);
+        app.world.insert(ally, CCooldowns { map: cds_map });
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        // System should run without panic (cooldowns conversion successful)
+        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should handle cooldowns conversion");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ecs_only_snapshot_enemy_filtering() -> Result<()> {
+        // Verify ECS-only path correctly filters team 2 as enemies
+        let mut app = ecs::App::new();
+        // Don't insert legacy World resource to force ECS-only path
+        app = app.add_plugin(AiPlanningPlugin);
+
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        // Spawn multiple enemies (team 2)
+        let enemy1 = app.world.spawn();
+        app.world.insert(enemy1, CPos { pos: IVec2 { x: 3, y: 0 } });
+        app.world.insert(enemy1, CTeam { id: 2 });
+
+        let enemy2 = app.world.spawn();
+        app.world.insert(enemy2, CPos { pos: IVec2 { x: 6, y: 0 } });
+        app.world.insert(enemy2, CTeam { id: 2 });
+
+        // Spawn team 0 entity (should be ignored)
+        let neutral = app.world.spawn();
+        app.world.insert(neutral, CPos { pos: IVec2 { x: 10, y: 0 } });
+        app.world.insert(neutral, CTeam { id: 0 });
+
+        app = app.run_fixed(1);
+
+        // Ally should move towards one of the enemies (team 2 filtering worked)
+        let desired = app.world.get::<CDesiredPos>(ally)
+            .ok_or_else(|| anyhow!("Desired pos missing"))?;
+        assert!(desired.pos.x > 0, "Should move towards enemies (positive x)");
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // Event Generation Tests (2 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_ai_planned_event_contents() -> Result<()> {
+        // Verify AiPlannedEvent has correct entity and target
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>()
+            .ok_or_else(|| anyhow!("Events missing"))?;
+        let mut rdr = evs.reader();
+        let v: Vec<_> = rdr.drain().collect();
+
+        assert_eq!(v.len(), 1, "Should have one planned event");
+        assert_eq!(v[0].entity, ally, "Event should reference ally entity");
+        assert!(v[0].target.x >= 1, "Target should be towards enemy");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_ai_planning_failed_event_reason() -> Result<()> {
+        // Verify AiPlanningFailedEvent has descriptive reason
+        let w = World::new();
+        let mut app = build_app_with_ai(w, 0.016);
+
+        // Spawn companion without enemies
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        app.world.insert(ally, CAmmo { rounds: 10 });
+        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+
+        app = app.run_fixed(1);
+
+        let evs = app.world.get_resource_mut::<Events<AiPlanningFailedEvent>>()
+            .ok_or_else(|| anyhow!("Failed events missing"))?;
+        let mut rdr = evs.reader();
+        let v: Vec<_> = rdr.drain().collect();
+
+        assert_eq!(v.len(), 1, "Should have one failed event");
+        assert_eq!(v[0].entity, ally, "Failed event should reference ally");
+        assert!(!v[0].reason.is_empty(), "Failed event should have reason");
+        assert!(v[0].reason.contains("No valid"), "Reason should mention 'No valid'");
+
+        Ok(())
+    }
+
+    // =============================================================================
+    // Component Query Edge Cases (2 tests)
+    // =============================================================================
+
+    #[test]
+    fn test_sys_ai_planning_missing_components() -> Result<()> {
+        // Verify system handles entities missing CAmmo or CCooldowns
+        let mut app = ecs::App::new();
+        app = app.add_plugin(AiPlanningPlugin);
+
+        let ally = app.world.spawn();
+        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(ally, CTeam { id: 1 });
+        // Missing CAmmo and CCooldowns
+
+        let enemy = app.world.spawn();
+        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(enemy, CTeam { id: 2 });
+
+        app = app.run_fixed(1);
+
+        // System should use default values (0 ammo, empty cooldowns)
+        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should handle missing components gracefully");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_sys_ai_planning_empty_world() -> Result<()> {
+        // Verify system handles completely empty world
+        let mut app = ecs::App::new();
+        app = app.add_plugin(AiPlanningPlugin);
+
+        // No entities spawned at all
+        app = app.run_fixed(1);
+
+        // System should run without panic
+        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_some(), "Should initialize events even with empty world");
+
+        Ok(())
+    }
 }
+

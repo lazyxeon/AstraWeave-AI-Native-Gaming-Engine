@@ -63,3 +63,55 @@ pub fn default_tool_registry() -> ToolRegistry {
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_tool_registry_has_four_tools() {
+        let registry = default_tool_registry();
+        assert_eq!(registry.tools.len(), 4);
+    }
+
+    #[test]
+    fn test_default_tool_registry_move_to() {
+        let registry = default_tool_registry();
+        let move_to = registry.tools.iter().find(|t| t.name == "move_to");
+        assert!(move_to.is_some());
+        let tool = move_to.unwrap();
+        assert_eq!(tool.args.get("x"), Some(&"i32".to_string()));
+        assert_eq!(tool.args.get("y"), Some(&"i32".to_string()));
+    }
+
+    #[test]
+    fn test_default_tool_registry_throw() {
+        let registry = default_tool_registry();
+        let throw = registry.tools.iter().find(|t| t.name == "throw");
+        assert!(throw.is_some());
+        let tool = throw.unwrap();
+        assert_eq!(tool.args.get("item"), Some(&"enum[smoke,grenade]".to_string()));
+    }
+
+    #[test]
+    fn test_default_tool_registry_constraints() {
+        let registry = default_tool_registry();
+        assert!(registry.constraints.enforce_cooldowns);
+        assert!(registry.constraints.enforce_los);
+        assert!(registry.constraints.enforce_stamina);
+    }
+
+    #[test]
+    fn test_default_tool_registry_cover_fire() {
+        let registry = default_tool_registry();
+        let cover_fire = registry.tools.iter().find(|t| t.name == "cover_fire");
+        assert!(cover_fire.is_some());
+    }
+
+    #[test]
+    fn test_default_tool_registry_revive() {
+        let registry = default_tool_registry();
+        let revive = registry.tools.iter().find(|t| t.name == "revive");
+        assert!(revive.is_some());
+    }
+}
