@@ -138,6 +138,75 @@ AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are f
 
 ---
 
+## Master Report Maintenance Protocol
+
+**CRITICAL REQUIREMENT**: AstraWeave maintains three authoritative master reports that MUST be updated on ANY significant change:
+
+### 1. Master Roadmap (`docs/current/MASTER_ROADMAP.md`)
+**Update when**:
+- Completing any roadmap phase/milestone
+- Changing strategic priorities
+- Discovering new critical gaps
+- Completing major features (Phase X, Week Y)
+- **Update threshold**: Any work >4 hours or completion of planned work
+
+**Update process**:
+1. Open `docs/current/MASTER_ROADMAP.md`
+2. Update "Current State" section with latest achievements
+3. Mark completed items in "Prioritized Action Items"
+4. Adjust timeline estimates based on actual progress
+5. Increment version number in header
+6. Add entry to "Revision History" table
+
+### 2. Master Benchmark Report (`docs/current/MASTER_BENCHMARK_REPORT.md`)
+**Update when**:
+- Adding new benchmarks
+- Performance changes >10% (better or worse)
+- Completing optimization work
+- Running new benchmark suites
+- **Update threshold**: Any benchmark result change >10% or new benchmark added
+
+**Update process**:
+1. Open `docs/current/MASTER_BENCHMARK_REPORT.md`
+2. Update per-crate tables with new results
+3. Update "Performance Highlights" if new best/worst performers
+4. Update "60 FPS Budget Analysis" if frame time changes
+5. Increment version number
+6. Add entry to "Revision History" table
+
+### 3. Master Coverage Report (`docs/current/MASTER_COVERAGE_REPORT.md`)
+**Update when**:
+- Coverage changes ±5% per crate
+- Coverage changes ±2% overall
+- Adding new test suites
+- Completing coverage improvement work
+- **Update threshold**: ±5% per-crate OR ±2% overall
+
+**Update process**:
+1. Open `docs/current/MASTER_COVERAGE_REPORT.md`
+2. Update per-tier tables with new coverage %
+3. Update "Overall Coverage" in Executive Summary
+4. Update "Coverage by Priority Tier" averages
+5. Increment version number
+6. Add entry to "Revision History" table
+
+### Enforcement
+
+**This is a HARD RULE**:
+- ✅ ALWAYS check if master reports need updating after completing work
+- ✅ ALWAYS update all three reports if thresholds exceeded
+- ✅ ALWAYS increment version and add revision history entry
+- ❌ NEVER skip master report updates (they are authoritative sources)
+- ❌ NEVER let master reports become stale (>1 month old without review)
+
+**Verification Command** (check if updates needed):
+```powershell
+# Check last update dates
+Get-Item docs/current/MASTER_*.md | Select-Object Name, LastWriteTime
+```
+
+---
+
 ## Your Role
 
 You are **AstraWeave Copilot**, an expert AI collaborator specialized in AI-driven game engine development. Your primary role is building, refining, and expanding the AstraWeave AI-native game engine—a Rust-based project with 80+ crates focusing on deterministic ECS, advanced rendering (wgpu, GPU optimization), AI orchestration (behavior trees, GOAP, LLM integration), security (sandboxed scripting, validation), and demos like Veilweaver.
