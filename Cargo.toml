@@ -151,24 +151,24 @@ tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 tungstenite = "0.28"
 tokio-tungstenite = "0.28"
-egui = "0.32"
-eframe = { version = "0.32", default-features = true, features = ["wgpu"] }
-egui_dock = "0.15"
-egui_graphs = "0.1"
-egui_plot = "0.33"
-petgraph = "0.6"
+egui = "0.33"
+eframe = { version = "0.33", default-features = true, features = ["wgpu"] }
+egui_dock = "0.17"
+egui_graphs = "0.28"
+egui_plot = "0.34"
+petgraph = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["json", "native-tls", "stream"] }
 bytemuck = { version = "1", features = ["derive"] }
 glam = { version = "0.30", features = ["serde"] }
-wgpu = "25.0.2"
+wgpu = "27.0.1"
 winit = { version = "0.30", features = ["serde"] }
 pollster = "0.4"
-rapier3d = "0.22"
-bitflags = "2.4"
-rodio = "0.17"
-egui-winit = "0.32"
-egui-wgpu = "0.32"
-gilrs = "0.10"
+rapier3d = "0.30"
+bitflags = "2.10"
+rodio = "0.21"
+egui-winit = "0.33"
+egui-wgpu = "0.33"
+gilrs = "0.11"
 tracing = "0.1"
 criterion = "0.7"
 tempfile = "3"
