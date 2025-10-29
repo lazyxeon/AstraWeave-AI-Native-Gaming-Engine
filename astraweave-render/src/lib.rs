@@ -37,6 +37,9 @@ pub mod vertex_compression; // Week 5 Action 19: Vertex compression
 pub mod lod_generator; // Week 5 Action 19: LOD generation with quadric error metrics
 pub mod instancing; // Week 5 Action 19: GPU instancing for draw call reduction (octahedral normals, half-float UVs)
 
+#[cfg(test)]
+mod animation_extra_tests; // Phase 7: Additional animation tests
+
 // Nanite virtualized geometry system
 #[cfg(feature = "nanite")]
 pub mod nanite_gpu_culling;
@@ -91,3 +94,7 @@ pub use animation::{
 
 #[cfg(feature = "skinning-gpu")]
 pub use skinning_gpu::{JointPaletteHandle, JointPaletteManager, SKINNING_GPU_SHADER};
+
+// Comprehensive renderer tests (Phase 1: Foundation)
+#[cfg(test)]
+mod renderer_tests;

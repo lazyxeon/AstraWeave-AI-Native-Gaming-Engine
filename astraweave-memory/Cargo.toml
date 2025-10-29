@@ -25,3 +25,10 @@ bevy_ecs = { version = "0.17", optional = true }
 [features]
 default = []
 bevy = ["bevy_ecs"]
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "memory_benchmarks"
+harness = false

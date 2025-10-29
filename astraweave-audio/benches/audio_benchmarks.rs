@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use astraweave_audio::engine::{AudioEngine, ListenerPose, MusicTrack, PanMode};
-use glam::{vec3, Vec3};
+use astraweave_audio::engine::{AudioEngine, ListenerPose, PanMode};
+use glam::vec3;
 
 // ============================================================================
 // Benchmark 1: Engine Initialization
@@ -55,15 +55,15 @@ fn bench_spatial_audio_updates(c: &mut Criterion) {
     // Benchmark: Listener movement (single emitter)
     group.bench_function("listener_movement_single_emitter", |b| {
         let mut engine = AudioEngine::new().expect("Failed to create engine");
-        engine.play_sfx_3d_beep(440.0, 2.0, 0, vec3(10.0, 0.0, 0.0), 0.8);
+        engine.play_sfx_3d_beep(0, vec3(10.0, 0.0, 0.0), 440.0, 2.0, 0.8).expect("Failed to play 3D beep");
         
         let mut angle = 0.0f32;
         
         b.iter(|| {
             angle += 0.1;
             let listener = ListenerPose {
-                pos: black_box(vec3(angle.cos() * 5.0, 0.0, angle.sin() * 5.0)),
-                fwd: vec3(1.0, 0.0, 0.0),
+                position: black_box(vec3(angle.cos() * 5.0, 0.0, angle.sin() * 5.0)),
+                forward: vec3(1.0, 0.0, 0.0),
                 up: vec3(0.0, 1.0, 0.0),
             };
             engine.update_listener(listener);
@@ -79,7 +79,7 @@ fn bench_spatial_audio_updates(c: &mut Criterion) {
         for i in 0..10 {
             let angle = (i as f32 / 10.0) * std::f32::consts::TAU;
             let pos = vec3(angle.cos() * 10.0, 0.0, angle.sin() * 10.0);
-            engine.play_sfx_3d_beep(440.0 + (i as f32 * 50.0), 5.0, i as u64, pos, 0.8);
+            engine.play_sfx_3d_beep(i as u64, pos, 440.0 + (i as f32 * 50.0), 5.0, 0.8).expect("Failed to play 3D beep");
         }
         
         let mut angle = 0.0f32;
@@ -87,8 +87,8 @@ fn bench_spatial_audio_updates(c: &mut Criterion) {
         b.iter(|| {
             angle += 0.1;
             let listener = ListenerPose {
-                pos: black_box(vec3(0.0, 0.0, 0.0)), // Listener at origin
-                fwd: vec3(angle.cos(), 0.0, angle.sin()), // Rotating
+                position: black_box(vec3(0.0, 0.0, 0.0)), // Listener at origin
+                forward: vec3(angle.cos(), 0.0, angle.sin()), // Rotating
                 up: vec3(0.0, 1.0, 0.0),
             };
             engine.update_listener(listener);
@@ -99,13 +99,13 @@ fn bench_spatial_audio_updates(c: &mut Criterion) {
     // Benchmark: Pan mode switching
     group.bench_function("pan_mode_switching", |b| {
         let mut engine = AudioEngine::new().expect("Failed to create engine");
-        engine.play_sfx_3d_beep(440.0, 2.0, 0, vec3(5.0, 0.0, 0.0), 0.8);
+        engine.play_sfx_3d_beep(0, vec3(5.0, 0.0, 0.0), 440.0, 2.0, 0.8).expect("Failed to play 3D beep");
         
         let mut toggle = false;
         
         b.iter(|| {
             toggle = !toggle;
-            let mode = if toggle { PanMode::HRTF } else { PanMode::Simple };
+            let mode = if toggle { PanMode::StereoAngle } else { PanMode::None };
             engine.set_pan_mode(black_box(mode));
         })
     });
@@ -175,12 +175,12 @@ fn bench_beep_generation(c: &mut Criterion) {
         let mut engine = AudioEngine::new().expect("Failed to create engine");
         b.iter(|| {
             engine.play_sfx_3d_beep(
-                black_box(440.0),
-                black_box(0.5),
                 black_box(0),
                 black_box(vec3(5.0, 0.0, 0.0)),
+                black_box(440.0),
+                black_box(0.5),
                 black_box(0.8),
-            );
+            ).expect("Failed to play 3D beep");
         })
     });
     

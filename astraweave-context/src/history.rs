@@ -228,8 +228,14 @@ impl ConversationHistory {
     /// Prune messages if needed based on overflow strategy
     async fn prune_if_needed(&self) -> Result<()> {
         let total_tokens = self.get_total_tokens();
+        let message_count = self.messages.read().len();
 
-        if total_tokens <= self.config.max_tokens {
+        // Prune if either token limit OR message count limit exceeded
+        let needs_pruning = total_tokens > self.config.max_tokens 
+            || (self.config.overflow_strategy == OverflowStrategy::SlidingWindow 
+                && message_count > self.config.sliding_window_size);
+
+        if !needs_pruning {
             return Ok(());
         }
 

@@ -27,16 +27,16 @@ async fn test_llm_integration_workflow() {
     for step in &plan.steps {
         match step {
             astraweave_core::ActionStep::MoveTo { .. } => {
-                assert!(tool_registry.tools.iter().any(|t| t.name == "move_to"));
+                assert!(tool_registry.tools.iter().any(|t| t.name == "MoveTo"));
             }
-            astraweave_core::ActionStep::Throw { .. } => {
-                assert!(tool_registry.tools.iter().any(|t| t.name == "throw"));
+            astraweave_core::ActionStep::ThrowSmoke { .. } => {
+                assert!(tool_registry.tools.iter().any(|t| t.name == "ThrowSmoke"));
             }
-            astraweave_core::ActionStep::CoverFire { .. } => {
-                assert!(tool_registry.tools.iter().any(|t| t.name == "cover_fire"));
+            astraweave_core::ActionStep::Attack { .. } => {
+                assert!(tool_registry.tools.iter().any(|t| t.name == "Attack"));
             }
             astraweave_core::ActionStep::Revive { .. } => {
-                assert!(tool_registry.tools.iter().any(|t| t.name == "revive"));
+                assert!(tool_registry.tools.iter().any(|t| t.name == "Revive"));
             }
             _ => {} // Accept all other valid actions from Phase 7 expansion
         }
@@ -67,11 +67,11 @@ fn test_prompt_generation_comprehensive() {
     assert!(prompt.contains("enemies")); // Enemy references - should be plural
     assert!(prompt.contains("extract")); // Objective
 
-    // Verify prompt contains tool specifications
-    assert!(prompt.contains("move_to"));
-    assert!(prompt.contains("throw"));
-    assert!(prompt.contains("cover_fire"));
-    assert!(prompt.contains("revive"));
+    // Verify prompt contains tool specifications (Phase 7: PascalCase tools)
+    assert!(prompt.contains("MoveTo"));
+    assert!(prompt.contains("ThrowSmoke"));
+    assert!(prompt.contains("Attack"));
+    assert!(prompt.contains("Revive"));
 
     // Verify prompt contains constraints info
     assert!(prompt.contains("engine will validate"));
@@ -151,10 +151,10 @@ async fn test_error_handling_scenarios() {
 /// Test validation with different tool registry configurations
 #[test]
 fn test_tool_registry_validation() {
-    // Test with minimal registry
+    // Test with minimal registry (PascalCase to match action_step_to_tool_name)
     let minimal_registry = ToolRegistry {
         tools: vec![ToolSpec {
-            name: "move_to".into(),
+            name: "MoveTo".into(),
             args: [("x", "i32"), ("y", "i32")]
                 .into_iter()
                 .map(|(k, v)| (k.into(), v.into()))
@@ -171,6 +171,7 @@ fn test_tool_registry_validation() {
     let result = parse_llm_plan(valid_json, &minimal_registry);
     assert!(result.is_ok());
 
+    // Test that unregistered tools are rejected
     let invalid_json =
         r#"{"plan_id": "invalid", "steps": [{"act": "Throw", "item": "grenade", "x": 5, "y": 5}]}"#;
     let result = parse_llm_plan(invalid_json, &minimal_registry);
@@ -237,33 +238,30 @@ fn create_complex_scenario() -> WorldSnapshot {
 fn create_comprehensive_registry() -> ToolRegistry {
     ToolRegistry {
         tools: vec![
+            // Phase 7: Matches MockLlm output and action_step_to_tool_name mapping (PascalCase)
             ToolSpec {
-                name: "move_to".into(),
+                name: "MoveTo".into(),
                 args: [("x", "i32"), ("y", "i32")]
                     .into_iter()
                     .map(|(k, v)| (k.into(), v.into()))
                     .collect(),
             },
             ToolSpec {
-                name: "throw".into(),
-                args: [
-                    ("item", "enum[smoke,grenade,flashbang]"),
-                    ("x", "i32"),
-                    ("y", "i32"),
-                ]
-                .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
-                .collect(),
-            },
-            ToolSpec {
-                name: "cover_fire".into(),
-                args: [("target_id", "u32"), ("duration", "f32")]
+                name: "ThrowSmoke".into(),
+                args: [("x", "i32"), ("y", "i32")]
                     .into_iter()
                     .map(|(k, v)| (k.into(), v.into()))
                     .collect(),
             },
             ToolSpec {
-                name: "revive".into(),
+                name: "Attack".into(),
+                args: [("target_id", "u32")]
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
+            },
+            ToolSpec {
+                name: "Revive".into(),
                 args: [("ally_id", "u32")]
                     .into_iter()
                     .map(|(k, v)| (k.into(), v.into()))

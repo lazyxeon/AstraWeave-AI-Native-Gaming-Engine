@@ -174,6 +174,7 @@ fn test_max_joints_limit() {
 
 #[test]
 fn test_animation_sampling_interpolation() {
+    let skeleton = create_test_skeleton();
     let clip = create_test_animation();
 
     // Sample at different times
@@ -281,16 +282,22 @@ fn test_large_skeleton() {
         joints,
     };
 
-    let poses = vec![Transform::default(); 100];
+    // Use poses that match the skeleton's local transforms (0.1 Y translation per joint)
+    let mut poses = vec![Transform::default(); 100];
+    for pose in poses.iter_mut() {
+        pose.translation = Vec3::new(0.0, 0.1, 0.0);
+    }
+    
     let matrices = compute_joint_matrices(&skeleton, &poses);
 
     assert_eq!(matrices.len(), 100);
 
     // Last joint should be far from origin due to accumulated translations
+    // 100 joints × 0.1 Y translation = 10.0 Y total
     let last_pos = matrices[99].w_axis.truncate();
     assert!(
         last_pos.y > 5.0,
-        "Last joint should be accumulated: {:?}",
+        "Last joint should be accumulated (expected ~10.0): {:?}",
         last_pos
     );
 }

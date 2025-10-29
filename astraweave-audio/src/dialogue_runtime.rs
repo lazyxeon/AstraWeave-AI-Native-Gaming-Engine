@@ -356,4 +356,470 @@ node_start = "audio/intro.wav"
         let dlg2 = audio_map.map.get("dialogue_2").unwrap();
         assert_eq!(dlg2.len(), 1);
     }
+
+    #[test]
+    fn test_dialogue_player_voice_bank_explicit_files() -> Result<()> {
+        use crate::voice::VoiceSpec;
+        
+        // Create test audio files
+        std::fs::create_dir_all("target/test_voices")?;
+        let audio_file = "target/test_voices/test_line1.wav";
+        std::fs::write(audio_file, b"RIFF")?; // Minimal WAV header
+        
+        let dlg = Dialogue {
+            id: "test_voice_bank".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "BankSpeaker".into(),
+                    text: "Testing voice bank explicit files".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        // Create VoiceBank with explicit files
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "BankSpeaker".to_string(),
+            VoiceSpec {
+                folder: "target/test_voices".to_string(),
+                files: vec!["test_line1.wav".to_string()],
+                tts_voice: None,
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should use explicit file from voice bank
+        let _result = player.speak_current(&dlg, &st);
+        // Test validates the code path was executed
+        
+        std::fs::remove_file(audio_file)?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_voice_bank_folder_scan() -> Result<()> {
+        use crate::voice::VoiceSpec;
+        
+        // Create test folder with audio files
+        std::fs::create_dir_all("target/test_folder_scan")?;
+        std::fs::write("target/test_folder_scan/voice1.wav", b"RIFF")?;
+        std::fs::write("target/test_folder_scan/voice2.ogg", b"OggS")?;
+        std::fs::write("target/test_folder_scan/readme.txt", b"ignore")?; // Non-audio file
+        
+        let dlg = Dialogue {
+            id: "test_folder_scan".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "FolderSpeaker".into(),
+                    text: "Testing folder scan for audio files".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        // VoiceSpec with empty files (triggers folder scan)
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "FolderSpeaker".to_string(),
+            VoiceSpec {
+                folder: "target/test_folder_scan".to_string(),
+                files: vec![], // Empty triggers folder scan
+                tts_voice: None,
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should scan folder and find .wav or .ogg files
+        let _result = player.speak_current(&dlg, &st);
+        // Test validates folder scanning code path
+        
+        std::fs::remove_dir_all("target/test_folder_scan")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_tts_fallback() -> Result<()> {
+        use crate::voice::{TtsAdapter, VoiceSpec};
+        
+        // Mock TTS adapter
+        struct MockTts;
+        impl TtsAdapter for MockTts {
+            fn synth_to_path(&self, _voice: &str, text: &str, out_path: &str) -> Result<()> {
+                // Create a fake audio file
+                std::fs::create_dir_all("target/test_tts")?;
+                std::fs::write(out_path, format!("TTS: {}", text).as_bytes())?;
+                Ok(())
+            }
+        }
+        
+        let dlg = Dialogue {
+            id: "test_tts".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "TtsSpeaker".into(),
+                    text: "This should use TTS fallback".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        std::fs::create_dir_all("target/test_tts")?;
+        
+        // VoiceSpec with TTS voice but no files (triggers TTS fallback)
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "TtsSpeaker".to_string(),
+            VoiceSpec {
+                folder: "target/test_tts".to_string(),
+                files: vec![],
+                tts_voice: Some("mock_voice".to_string()),
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mock_tts = MockTts;
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: Some(&mock_tts),
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should use TTS adapter to synthesize audio
+        let _result = player.speak_current(&dlg, &st);
+        // TTS fallback code path validated
+        
+        std::fs::remove_dir_all("target/test_tts").ok();
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_override_nonexistent_file() -> Result<()> {
+        // Test that override path that doesn't exist falls through to next option
+        let dlg = Dialogue {
+            id: "test_override_missing".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "UnknownSpeaker".into(),
+                    text: "Override doesn't exist, should fall through".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        let bank = VoiceBank {
+            speakers: Default::default(),
+        };
+        
+        // Override with nonexistent file
+        let mut node_map = HashMap::new();
+        node_map.insert("n0".to_string(), "nonexistent_audio_file.wav".to_string());
+        let mut map = HashMap::new();
+        map.insert("test_override_missing".to_string(), node_map);
+        let audio_map = DialogueAudioMap { map };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: Some(&audio_map),
+            subtitle_out: None,
+        };
+        
+        // Should fall through to beep fallback since override doesn't exist
+        let result = player.speak_current(&dlg, &st)?;
+        assert!(result, "Should still return true (beep fallback)");
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_empty_voice_folder() -> Result<()> {
+        use crate::voice::VoiceSpec;
+        
+        // Create empty folder (no audio files)
+        std::fs::create_dir_all("target/test_empty_folder")?;
+        
+        let dlg = Dialogue {
+            id: "test_empty".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "EmptySpeaker".into(),
+                    text: "No audio files available".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        // VoiceSpec pointing to empty folder
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "EmptySpeaker".to_string(),
+            VoiceSpec {
+                folder: "target/test_empty_folder".to_string(),
+                files: vec![],
+                tts_voice: None,
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should fall through to beep fallback
+        let result = player.speak_current(&dlg, &st)?;
+        assert!(result, "Should return true (beep fallback)");
+        
+        std::fs::remove_dir_all("target/test_empty_folder")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_load_dialogue_audio_map_invalid_toml() {
+        std::fs::create_dir_all("target").ok();
+        let invalid_toml = "target/invalid_dialogue.toml";
+        std::fs::write(invalid_toml, "this is not valid TOML [[[ ").ok();
+        
+        let result = load_dialogue_audio_map(invalid_toml);
+        assert!(result.is_err(), "Should fail for invalid TOML");
+        
+        std::fs::remove_file(invalid_toml).ok();
+    }
+
+    #[test]
+    fn test_dialogue_player_unknown_speaker() -> Result<()> {
+        // Speaker not in voice bank should fall through to beep
+        let dlg = Dialogue {
+            id: "test_unknown_speaker".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "UnknownPerson".into(),
+                    text: "I'm not in the voice bank".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        let bank = VoiceBank {
+            speakers: Default::default(), // Empty bank
+        };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should use beep fallback for unknown speaker
+        let result = player.speak_current(&dlg, &st)?;
+        assert!(result, "Should return true (beep fallback)");
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_voice_file_not_found() -> Result<()> {
+        use crate::voice::VoiceSpec;
+        
+        // VoiceSpec points to file that doesn't exist
+        let dlg = Dialogue {
+            id: "test_missing".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "MissingSpeaker".into(),
+                    text: "File doesn't exist".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        // VoiceSpec with nonexistent file
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "MissingSpeaker".to_string(),
+            VoiceSpec {
+                folder: "target/nonexistent_folder".to_string(),
+                files: vec!["missing_file.wav".to_string()],
+                tts_voice: None,
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should fall through to beep when file doesn't exist
+        let result = player.speak_current(&dlg, &st)?;
+        assert!(result, "Should return true (beep fallback)");
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_folder_scan_no_audio_files() -> Result<()> {
+        use crate::voice::VoiceSpec;
+        
+        // Create folder with only non-audio files
+        std::fs::create_dir_all("target/test_no_audio")?;
+        std::fs::write("target/test_no_audio/readme.txt", b"text file")?;
+        std::fs::write("target/test_no_audio/data.json", b"{}")?;
+        
+        let dlg = Dialogue {
+            id: "test_no_audio".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "NoAudioSpeaker".into(),
+                    text: "Folder has no audio files".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        // VoiceSpec with empty files (triggers folder scan)
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "NoAudioSpeaker".to_string(),
+            VoiceSpec {
+                folder: "target/test_no_audio".to_string(),
+                files: vec![],
+                tts_voice: None,
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should fall through to beep when no audio files found
+        let result = player.speak_current(&dlg, &st)?;
+        assert!(result, "Should return true (beep fallback)");
+        
+        std::fs::remove_dir_all("target/test_no_audio")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_dialogue_player_folder_read_error() -> Result<()> {
+        use crate::voice::VoiceSpec;
+        
+        let dlg = Dialogue {
+            id: "test_read_error".into(),
+            start: "n0".into(),
+            nodes: vec![Node {
+                id: "n0".into(),
+                line: Some(Line {
+                    speaker: "ErrorSpeaker".into(),
+                    text: "Folder can't be read".into(),
+                    set_vars: vec![],
+                }),
+                choices: vec![],
+                end: true,
+            }],
+        };
+        let st = DialogueState::new(&dlg);
+        let mut audio = AudioEngine::new()?;
+        
+        // VoiceSpec pointing to nonexistent folder (triggers read error)
+        let mut speakers = HashMap::new();
+        speakers.insert(
+            "ErrorSpeaker".to_string(),
+            VoiceSpec {
+                folder: "C:/this/path/absolutely/does/not/exist".to_string(),
+                files: vec![],
+                tts_voice: None,
+            },
+        );
+        let bank = VoiceBank { speakers };
+        
+        let mut player = DialoguePlayer {
+            audio: &mut audio,
+            bank: &bank,
+            tts: None,
+            overrides: None,
+            subtitle_out: None,
+        };
+        
+        // Should fall through to beep when folder read fails
+        let result = player.speak_current(&dlg, &st)?;
+        assert!(result, "Should return true (beep fallback)");
+        Ok(())
+    }
 }

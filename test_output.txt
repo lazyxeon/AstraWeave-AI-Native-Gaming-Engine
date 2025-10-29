@@ -1,0 +1,676 @@
+warning: unused import: `Context`
+  --> astraweave-render\src\ibl.rs:12:14
+   |
+12 | use anyhow::{Context, Result};
+   |              ^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `path::Path`
+  --> astraweave-render\src\ibl.rs:17:24
+   |
+17 | use std::{borrow::Cow, path::Path};
+   |                        ^^^^^^^^^^
+
+warning: unused import: `std::path::Path`
+ --> astraweave-render\src\texture.rs:4:5
+  |
+4 | use std::path::Path;
+  |     ^^^^^^^^^^^^^^^
+
+warning: variable does not need to be mutable
+   --> astraweave-render\src\terrain.rs:250:9
+    |
+250 |     let mut generator = WorldGenerator::new(world_config.clone());
+    |         ----^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: fields `eqr_bgl`, `eqr_face_bgl`, and `eqr_pipeline` are never read
+   --> astraweave-render\src\ibl.rs:101:5
+    |
+80  | pub struct IblManager {
+    |            ---------- fields in this struct
+...
+101 |     eqr_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^
+102 |     eqr_face_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^^^^
+103 |     eqr_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: multiple fields are never read
+   --> astraweave-render\src\renderer.rs:301:5
+    |
+289 | pub struct Renderer {
+    |            -------- fields in this struct
+...
+301 |     post_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^^
+...
+310 |     hdr_aux_tex: wgpu::Texture,
+    |     ^^^^^^^^^^^
+...
+314 |     fx_gi_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+315 |     #[cfg(feature = "postfx")]
+316 |     fx_gi_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+317 |     #[cfg(feature = "postfx")]
+318 |     fx_ao_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+319 |     #[cfg(feature = "postfx")]
+320 |     fx_ao_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+321 |     #[cfg(feature = "postfx")]
+322 |     post_fx_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^^^
+...
+337 |     bloom_mip_textures: Vec<wgpu::Texture>,
+    |     ^^^^^^^^^^^^^^^^^^
+...
+341 |     bloom_threshold_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+342 |     #[cfg(feature = "postfx")]
+343 |     bloom_intensity_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+344 |     #[cfg(feature = "postfx")]
+345 |     bloom_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^
+
+warning: trait `NormalizePath` is never used
+   --> astraweave-render\src\material.rs:597:7
+    |
+597 | trait NormalizePath {
+    |       ^^^^^^^^^^^^^
+
+warning: `astraweave-render` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-render` to apply 4 suggestions)
+warning: unused variable: `n_dot_h`
+   --> astraweave-render\tests\test_pbr_brdf.rs:330:9
+    |
+330 |     let n_dot_h = 0.8;
+    |         ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_n_dot_h`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: `astraweave-render` (test "test_pbr_brdf") generated 1 warning
+warning: function `assert_vertices_close` is never used
+   --> astraweave-render\tests\skinning_parity_cpu_vs_gpu.rs:111:4
+    |
+111 | fn assert_vertices_close(
+    |    ^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: unused import: `InstanceRaw`
+    --> astraweave-render\src\renderer_tests.rs:1937:38
+     |
+1937 |         use crate::types::{Instance, InstanceRaw};
+     |                                      ^^^^^^^^^^^
+
+warning: fields `mra`, `metallic`, `roughness`, `ao`, `triplanar_scale`, and `atlas` are never read
+   --> astraweave-render\src\material.rs:656:13
+    |
+652 |         struct MaterialLayerToml {
+    |                ----------------- fields in this struct
+...
+656 |             mra: Option<String>,
+    |             ^^^
+657 |             metallic: Option<String>,
+    |             ^^^^^^^^
+658 |             roughness: Option<String>,
+    |             ^^^^^^^^^
+659 |             ao: Option<String>,
+    |             ^^
+660 |             tiling: Option<[f32; 2]>,
+661 |             triplanar_scale: Option<f32>,
+    |             ^^^^^^^^^^^^^^^
+662 |             atlas: Option<String>,
+    |             ^^^^^
+
+warning: field `queue` is never read
+    --> astraweave-render\src\renderer_tests.rs:1763:9
+     |
+1761 |     struct TestRendererContext {
+     |            ------------------- field in this struct
+1762 |         device: wgpu::Device,
+1763 |         queue: wgpu::Queue,
+     |         ^^^^^
+
+warning: unused import: `Quat`
+ --> astraweave-render\tests\skinning_rest_pose_golden.rs:9:18
+  |
+9 | use glam::{Mat4, Quat, Vec3};
+  |                  ^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: function `create_headless_device` is never used
+ --> astraweave-render\tests\test_utils.rs:9:14
+  |
+9 | pub async fn create_headless_device() -> (Device, Queue) {
+  |              ^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` on by default
+
+warning: function `assert_matrices_close` is never used
+   --> astraweave-render\tests\test_utils.rs:108:8
+    |
+108 | pub fn assert_matrices_close(a: &[glam::Mat4], b: &[glam::Mat4], tolerance: f32) {
+    |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `test_utils::*`
+  --> astraweave-render\tests\skinning_pose_frame_golden.rs:14:5
+   |
+14 | use test_utils::*;
+   |     ^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-render` (test "skinning_parity_cpu_vs_gpu") generated 1 warning
+warning: `astraweave-render` (lib test) generated 10 warnings (7 duplicates) (run `cargo fix --lib -p astraweave-render --tests` to apply 1 suggestion)
+warning: `astraweave-render` (test "skinning_rest_pose_golden") generated 3 warnings (run `cargo fix --test "skinning_rest_pose_golden"` to apply 1 suggestion)
+warning: `astraweave-render` (test "skinning_pose_frame_golden") generated 3 warnings (2 duplicates) (run `cargo fix --test "skinning_pose_frame_golden"` to apply 1 suggestion)
+warning: unused import: `Pod`
+ --> astraweave-render\tests\culling_layout.rs:4:28
+  |
+4 | use bytemuck::{cast_slice, Pod};
+  |                            ^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `subsurface_color`
+   --> astraweave-render\tests\test_pbr_advanced.rs:242:9
+    |
+242 |     let subsurface_color = Vec3::new(0.9, 0.3, 0.3);
+    |         ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_subsurface_color`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `attenuation_distance`
+   --> astraweave-render\tests\test_pbr_advanced.rs:424:9
+    |
+424 |     let attenuation_distance = 10.0;
+    |         ^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_attenuation_distance`
+
+warning: unused variable: `attenuation_1x`
+   --> astraweave-render\tests\test_pbr_advanced.rs:427:9
+    |
+427 |     let attenuation_1x = attenuation_color;
+    |         ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_attenuation_1x`
+
+warning: function `fresnel_schlick` is never used
+  --> astraweave-render\tests\test_pbr_advanced.rs:23:4
+   |
+23 | fn fresnel_schlick(cos_theta: f32, f0: Vec3) -> Vec3 {
+   |    ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: unused import: `AnimationState`
+ --> astraweave-render\tests\skinning_integration.rs:6:79
+  |
+6 |     compute_joint_matrices, skin_vertex_cpu, AnimationChannel, AnimationClip, AnimationState,
+  |                                                                               ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: `astraweave-render` (test "culling_layout") generated 1 warning (run `cargo fix --test "culling_layout"` to apply 1 suggestion)
+warning: `astraweave-render` (test "test_pbr_advanced") generated 4 warnings
+warning: `astraweave-render` (test "skinning_integration") generated 1 warning (run `cargo fix --test "skinning_integration"` to apply 1 suggestion)
+warning: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.
+   --> astraweave-render\tests\golden_postfx.rs:174:24
+    |
+174 |     let layout = wgpu::ImageDataLayout {
+    |                        ^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated type alias `wgpu::ImageCopyBuffer`: This has been renamed to `TexelCopyBufferInfo`, and will be removed in 25.0.0.
+   --> astraweave-render\tests\golden_postfx.rs:338:15
+    |
+338 |         wgpu::ImageCopyBuffer {
+    |               ^^^^^^^^^^^^^^^
+
+warning: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.
+   --> astraweave-render\tests\golden_postfx.rs:340:27
+    |
+340 |             layout: wgpu::ImageDataLayout {
+    |                           ^^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\golden_postfx.rs:79:40
+    |
+79  |     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    |                    ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |                    |
+    |                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+79  |     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    |                                        +
+
+error[E0308]: mismatched types
+  --> astraweave-render\tests\golden_postfx.rs:92:20
+   |
+92 |             trace: None,
+   |                    ^^^^ expected `Trace`, found `Option<_>`
+   |
+   = note: expected enum `Trace`
+              found enum `Option<_>`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+  --> astraweave-render\tests\golden_postfx.rs:86:54
+   |
+86 |     let (device, queue) = pollster::block_on(adapter.request_device(
+   |                                                      ^^^^^^^^^^^^^^
+...
+94 |         None,
+   |         ---- unexpected argument #2 of type `Option<_>`
+   |
+note: method defined here
+  --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+   |
+60 |     pub fn request_device(
+   |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+   |
+93 -         },
+94 -         None,
+93 +         },
+   |
+
+Some errors have detailed explanations: E0061, E0308.
+For more information about an error, try `rustc --explain E0061`.
+warning: `astraweave-render` (test "golden_postfx") generated 3 warnings
+error: could not compile `astraweave-render` (test "golden_postfx") due to 3 previous errors; 3 warnings emitted
+warning: build failed, waiting for other jobs to finish...
+error[E0308]: mismatched types
+   --> astraweave-render\tests\culling_integration.rs:9:40
+    |
+9   |     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    |                    ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |                    |
+    |                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+9   |     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    |                                        +
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\headless_integration.rs:8:40
+    |
+8   |     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    |                    ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |                    |
+    |                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+8   |     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    |                                        +
+
+error[E0308]: mismatched types
+  --> astraweave-render\tests\culling_integration.rs:23:20
+   |
+23 |             trace: None,
+   |                    ^^^^ expected `Trace`, found `Option<_>`
+   |
+   = note: expected enum `Trace`
+              found enum `Option<_>`
+
+error[E0063]: missing fields `memory_hints` and `trace` in initializer of `DeviceDescriptor<Option<&str>>`
+  --> astraweave-render\tests\headless_integration.rs:19:10
+   |
+19 |         &wgpu::DeviceDescriptor {
+   |          ^^^^^^^^^^^^^^^^^^^^^^ missing `memory_hints` and `trace`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+  --> astraweave-render\tests\materials_spec.rs:19:15
+   |
+19 |     let img = image::RgbaImage::from_pixel(1, 1, image::Rgba([255, 0, 0, 255]));
+   |               ^^^^^ use of unresolved module or unlinked crate `image`
+   |
+   = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+  --> astraweave-render\tests\culling_integration.rs:17:32
+   |
+17 |     pollster::block_on(adapter.request_device(
+   |                                ^^^^^^^^^^^^^^
+...
+25 |         None,
+   |         ---- unexpected argument #2 of type `Option<_>`
+   |
+note: method defined here
+  --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+   |
+60 |     pub fn request_device(
+   |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+   |
+24 -         },
+25 -         None,
+24 +         },
+   |
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+  --> astraweave-render\tests\headless_integration.rs:18:54
+   |
+18 |     let (device, queue) = pollster::block_on(adapter.request_device(
+   |                                                      ^^^^^^^^^^^^^^
+...
+24 |         None,
+   |         ---- unexpected argument #2 of type `Option<_>`
+   |
+note: method defined here
+  --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+   |
+60 |     pub fn request_device(
+   |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+   |
+23 -         },
+24 -         None,
+23 +         },
+   |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:103:17
+    |
+103 |     let mut m = image::GrayImage::new(2, 1);
+    |                 ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+Some errors have detailed explanations: E0061, E0063, E0308.
+error: could not compile `astraweave-render` (test "headless_integration") due to 3 previous errors
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:106:17
+    |
+106 |     let mut r = image::GrayImage::new(2, 1);
+    |                 ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error: could not compile `astraweave-render` (test "culling_integration") due to 3 previous errors
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:109:17
+    |
+109 |     let mut a = image::GrayImage::new(2, 1);
+    |                 ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:116:15
+    |
+116 |     let alb = image::RgbaImage::from_pixel(2, 1, image::Rgba([255, 255, 255, 255]));
+    |               ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:117:15
+    |
+117 |     let nrm = image::RgbaImage::from_pixel(2, 1, image::Rgba([128, 128, 255, 255]));
+    |               ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:183:15
+    |
+183 |     let alb = image::RgbaImage::from_pixel(1, 1, image::Rgba([1, 2, 3, 4]));
+    |               ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+  --> astraweave-render\tests\materials_spec.rs:19:50
+   |
+19 |     let img = image::RgbaImage::from_pixel(1, 1, image::Rgba([255, 0, 0, 255]));
+   |                                                  ^^^^^ use of unresolved module or unlinked crate `image`
+   |
+   = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\materials_spec.rs:54:40
+    |
+54  |     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    |                    ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |                    |
+    |                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+54  |     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    |                                        +
+
+error[E0308]: mismatched types
+  --> astraweave-render\tests\materials_spec.rs:67:20
+   |
+67 |             trace: None,
+   |                    ^^^^ expected `Trace`, found `Option<_>`
+   |
+   = note: expected enum `Trace`
+              found enum `Option<_>`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+  --> astraweave-render\tests\materials_spec.rs:61:54
+   |
+61 |     let (device, queue) = pollster::block_on(adapter.request_device(
+   |                                                      ^^^^^^^^^^^^^^
+...
+69 |         None,
+   |         ---- unexpected argument #2 of type `Option<_>`
+   |
+note: method defined here
+  --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+   |
+60 |     pub fn request_device(
+   |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+   |
+68 -         },
+69 -         None,
+68 +         },
+   |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:104:23
+    |
+104 |     m.put_pixel(0, 0, image::Luma([10]));
+    |                       ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:105:23
+    |
+105 |     m.put_pixel(1, 0, image::Luma([20]));
+    |                       ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:107:23
+    |
+107 |     r.put_pixel(0, 0, image::Luma([30]));
+    |                       ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:108:23
+    |
+108 |     r.put_pixel(1, 0, image::Luma([40]));
+    |                       ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:110:23
+    |
+110 |     a.put_pixel(0, 0, image::Luma([50]));
+    |                       ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:111:23
+    |
+111 |     a.put_pixel(1, 0, image::Luma([60]));
+    |                       ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:116:50
+    |
+116 |     let alb = image::RgbaImage::from_pixel(2, 1, image::Rgba([255, 255, 255, 255]));
+    |                                                  ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:117:50
+    |
+117 |     let nrm = image::RgbaImage::from_pixel(2, 1, image::Rgba([128, 128, 255, 255]));
+    |                                                  ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\materials_spec.rs:145:40
+    |
+145 |     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    |                    ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |                    |
+    |                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+145 |     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    |                                        +
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\materials_spec.rs:155:20
+    |
+155 |             trace: None,
+    |                    ^^^^ expected `Trace`, found `Option<_>`
+    |
+    = note: expected enum `Trace`
+               found enum `Option<_>`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+   --> astraweave-render\tests\materials_spec.rs:149:54
+    |
+149 |     let (device, queue) = pollster::block_on(adapter.request_device(
+    |                                                      ^^^^^^^^^^^^^^
+...
+157 |         None,
+    |         ---- unexpected argument #2 of type `Option<_>`
+    |
+note: method defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+    |
+60  |     pub fn request_device(
+    |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+156 -         },
+157 -         None,
+156 +         },
+    |
+
+error[E0433]: failed to resolve: use of unresolved module or unlinked crate `image`
+   --> astraweave-render\tests\materials_spec.rs:183:50
+    |
+183 |     let alb = image::RgbaImage::from_pixel(1, 1, image::Rgba([1, 2, 3, 4]));
+    |                                                  ^^^^^ use of unresolved module or unlinked crate `image`
+    |
+    = help: if you wanted to use a crate named `image`, use `cargo add image` to add it to your `Cargo.toml`
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\materials_spec.rs:207:40
+    |
+207 |     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    |                    ------------------- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ expected `&InstanceDescriptor`, found `InstanceDescriptor`
+    |                    |
+    |                    arguments to this function are incorrect
+    |
+note: associated function defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\instance.rs:115:12
+    |
+115 |     pub fn new(_instance_desc: &InstanceDescriptor) -> Self {
+    |            ^^^
+help: consider borrowing here
+    |
+207 |     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+    |                                        +
+
+error[E0308]: mismatched types
+   --> astraweave-render\tests\materials_spec.rs:217:20
+    |
+217 |             trace: None,
+    |                    ^^^^ expected `Trace`, found `Option<_>`
+    |
+    = note: expected enum `Trace`
+               found enum `Option<_>`
+
+error[E0061]: this method takes 1 argument but 2 arguments were supplied
+   --> astraweave-render\tests\materials_spec.rs:211:54
+    |
+211 |     let (device, queue) = pollster::block_on(adapter.request_device(
+    |                                                      ^^^^^^^^^^^^^^
+...
+219 |         None,
+    |         ---- unexpected argument #2 of type `Option<_>`
+    |
+note: method defined here
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\api\adapter.rs:60:12
+    |
+60  |     pub fn request_device(
+    |            ^^^^^^^^^^^^^^
+help: remove the extra argument
+    |
+218 -         },
+219 -         None,
+218 +         },
+    |
+
+Some errors have detailed explanations: E0061, E0308, E0433.
+error: could not compile `astraweave-render` (test "materials_spec") due to 26 previous errors
