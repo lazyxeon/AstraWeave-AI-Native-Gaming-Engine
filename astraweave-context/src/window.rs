@@ -217,7 +217,7 @@ impl ContextWindow {
     /// Check if window is full
     pub fn is_full(&self) -> bool {
         self.current_tokens >= self.config.max_tokens
-            || self.messages.len() >= self.config.max_messages
+            || self.messages.len() > self.config.max_messages
     }
 
     /// Get window utilization (0.0 to 1.0)

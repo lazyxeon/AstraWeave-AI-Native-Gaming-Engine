@@ -456,4 +456,102 @@ mod tests {
         // Should have triangles (indices divisible by 3)
         assert_eq!(simplified.indices.len() % 3, 0);
     }
+
+    #[test]
+    fn test_empty_mesh_simplification() {
+        // EDGE CASE: Zero vertices
+        let config = LODConfig::default();
+        let generator = LODGenerator::new(config);
+        
+        let empty_mesh = SimplificationMesh::new(vec![], vec![], vec![], vec![]);
+        let simplified = generator.simplify(&empty_mesh, 0);
+        
+        assert_eq!(simplified.vertex_count(), 0);
+        assert_eq!(simplified.triangle_count(), 0);
+    }
+
+    #[test]
+    fn test_lod_level_exceeds_triangle_count() {
+        // EDGE CASE: Requesting more LOD levels than triangles
+        let config = LODConfig {
+            reduction_targets: vec![0.25, 0.50, 0.75, 0.90, 0.95], // 5 LOD levels
+            max_error: 1.0,
+            preserve_boundaries: true,
+        };
+        let generator = LODGenerator::new(config);
+        
+        // Simple triangle mesh (1 triangle = 3 vertices)
+        let positions = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.5, 1.0, 0.0),
+        ];
+        let normals = vec![Vec3::new(0.0, 0.0, 1.0); 3];
+        let uvs = vec![[0.0, 0.0]; 3];
+        let indices = vec![0, 1, 2];
+        
+        let mesh = SimplificationMesh::new(positions, normals, uvs, indices);
+        let lods = generator.generate_lods(&mesh);
+        
+        // Should generate LODs (algorithm may be conservative)
+        assert!(lods.len() > 0);
+        for lod in &lods {
+            // Each LOD should maintain mesh integrity
+            assert_eq!(lod.indices.len() % 3, 0);
+        }
+    }
+
+    #[test]
+    fn test_quadric_error_at_infinity() {
+        // EDGE CASE: Quadric error calculation with extreme positions
+        let quadric = Quadric::from_plane(0.0, 1.0, 0.0, 0.0); // XZ plane (y=0)
+        
+        let extreme_pos = Vec3::new(1e10, 1e10, 1e10);
+        let error = quadric.evaluate(extreme_pos);
+        
+        // Error should be finite (not NaN/Inf)
+        assert!(error.is_finite());
+        assert!(error >= 0.0); // Quadric error is always non-negative
+    }
+
+    #[test]
+    fn test_target_vertex_count_less_than_three() {
+        // EDGE CASE: Target vertex count insufficient for a triangle
+        let config = LODConfig::default();
+        let generator = LODGenerator::new(config);
+        let cube = create_test_cube();
+        
+        let simplified = generator.simplify(&cube, 2); // Can't form a triangle
+        
+        // Algorithm should either preserve minimum geometry or return valid mesh
+        assert_eq!(simplified.indices.len() % 3, 0); // Still valid triangle mesh
+        if simplified.triangle_count() > 0 {
+            // If triangles exist, vertices must be >= 3
+            assert!(simplified.vertex_count() >= 3);
+        }
+    }
+
+    #[test]
+    fn test_degenerate_mesh_all_coplanar() {
+        // EDGE CASE: All vertices on same plane (flat mesh)
+        let positions = vec![
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.0, 0.0, 1.0),
+            Vec3::new(1.0, 0.0, 1.0),
+        ];
+        let normals = vec![Vec3::new(0.0, 1.0, 0.0); 4];
+        let uvs = vec![[0.0, 0.0]; 4];
+        let indices = vec![0, 1, 2, 1, 3, 2]; // Two triangles
+        
+        let config = LODConfig::default();
+        let generator = LODGenerator::new(config);
+        let mesh = SimplificationMesh::new(positions, normals, uvs, indices);
+        
+        let simplified = generator.simplify(&mesh, 3);
+        
+        // Should handle coplanar geometry without errors
+        assert!(simplified.vertex_count() > 0);
+        assert_eq!(simplified.indices.len() % 3, 0);
+    }
 }

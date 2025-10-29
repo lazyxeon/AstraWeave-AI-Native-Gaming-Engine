@@ -117,3 +117,193 @@ pub fn compute_tangents(mesh: &mut CpuMesh) {
         v[i].tangent = [tangent.x, tangent.y, tangent.z, w];
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mesh_vertex_new() {
+        let pos = Vec3::new(1.0, 2.0, 3.0);
+        let norm = Vec3::new(0.0, 1.0, 0.0);
+        let tan = Vec4::new(1.0, 0.0, 0.0, 1.0);
+        let uv = Vec2::new(0.5, 0.75);
+        
+        let vert = MeshVertex::new(pos, norm, tan, uv);
+        
+        assert_eq!(vert.position, [1.0, 2.0, 3.0]);
+        assert_eq!(vert.normal, [0.0, 1.0, 0.0]);
+        assert_eq!(vert.tangent, [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(vert.uv, [0.5, 0.75]);
+    }
+
+    #[test]
+    fn test_mesh_vertex_from_arrays() {
+        let vert = MeshVertex::from_arrays(
+            [1.0, 2.0, 3.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.5, 0.75],
+        );
+        
+        assert_eq!(vert.position, [1.0, 2.0, 3.0]);
+        assert_eq!(vert.normal, [0.0, 1.0, 0.0]);
+        assert_eq!(vert.tangent, [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(vert.uv, [0.5, 0.75]);
+    }
+
+    #[test]
+    fn test_mesh_vertex_layout() {
+        let layout = MeshVertexLayout::buffer_layout();
+        
+        // Verify stride: 3f32 + 3f32 + 4f32 + 2f32 = 12 floats = 48 bytes
+        assert_eq!(layout.array_stride, 48);
+        assert_eq!(layout.step_mode, wgpu::VertexStepMode::Vertex);
+        
+        // Verify attributes
+        assert_eq!(layout.attributes.len(), 4);
+    }
+
+    #[test]
+    fn test_mesh_vertex_attribs_locations() {
+        // Verify shader locations are correct
+        assert_eq!(MeshVertex::ATTRIBS[0].shader_location, 0); // position
+        assert_eq!(MeshVertex::ATTRIBS[1].shader_location, 1); // normal
+        assert_eq!(MeshVertex::ATTRIBS[2].shader_location, 2); // tangent
+        assert_eq!(MeshVertex::ATTRIBS[3].shader_location, 3); // uv
+    }
+
+    #[test]
+    fn test_cpu_mesh_default() {
+        let mesh = CpuMesh::default();
+        assert!(mesh.vertices.is_empty());
+        assert!(mesh.indices.is_empty());
+    }
+
+    #[test]
+    fn test_cpu_mesh_aabb_empty() {
+        let mesh = CpuMesh::default();
+        assert_eq!(mesh.aabb(), None, "Empty mesh should have no AABB");
+    }
+
+    #[test]
+    fn test_cpu_mesh_aabb_single_vertex() {
+        let mut mesh = CpuMesh::default();
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [1.0, 2.0, 3.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
+        
+        let (min, max) = mesh.aabb().expect("Should have AABB");
+        assert_eq!(min, Vec3::new(1.0, 2.0, 3.0));
+        assert_eq!(max, Vec3::new(1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn test_cpu_mesh_aabb_multiple_vertices() {
+        let mut mesh = CpuMesh::default();
+        mesh.vertices.push(MeshVertex::from_arrays([1.0, 2.0, 3.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
+        mesh.vertices.push(MeshVertex::from_arrays([5.0, 1.0, 7.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
+        mesh.vertices.push(MeshVertex::from_arrays([-2.0, 4.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
+        
+        let (min, max) = mesh.aabb().expect("Should have AABB");
+        assert_eq!(min, Vec3::new(-2.0, 1.0, 0.0));
+        assert_eq!(max, Vec3::new(5.0, 4.0, 7.0));
+    }
+
+    #[test]
+    fn test_compute_tangents_empty() {
+        let mut mesh = CpuMesh::default();
+        compute_tangents(&mut mesh); // Should not crash
+        assert!(mesh.vertices.is_empty());
+    }
+
+    #[test]
+    fn test_compute_tangents_incomplete_triangle() {
+        let mut mesh = CpuMesh::default();
+        mesh.vertices.push(MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
+        mesh.vertices.push(MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [1.0, 0.0]));
+        mesh.indices = vec![0, 1]; // Not divisible by 3
+        
+        compute_tangents(&mut mesh); // Should not crash, just return early
+        assert_eq!(mesh.indices.len(), 2);
+    }
+
+    #[test]
+    fn test_compute_tangents_single_triangle() {
+        let mut mesh = CpuMesh::default();
+        // Triangle on XZ plane with normals pointing up
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0], // Will be recomputed
+            [0.0, 0.0],
+        ));
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0],
+        ));
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0],
+        ));
+        mesh.indices = vec![0, 1, 2];
+        
+        compute_tangents(&mut mesh);
+        
+        // Verify tangents were computed (not zero)
+        for v in &mesh.vertices {
+            let tan = Vec3::from_array([v.tangent[0], v.tangent[1], v.tangent[2]]);
+            let len = tan.length();
+            assert!(len > 0.99 && len < 1.01, "Tangent should be unit length");
+        }
+    }
+
+    #[test]
+    fn test_mesh_vertex_pod_traits() {
+        // Verify Pod/Zeroable traits compile
+        let _v: MeshVertex = bytemuck::Zeroable::zeroed();
+        let _bytes = bytemuck::bytes_of(&_v);
+    }
+
+    #[test]
+    fn test_cpu_mesh_clone() {
+        let mut mesh1 = CpuMesh::default();
+        mesh1.vertices.push(MeshVertex::from_arrays([1.0, 2.0, 3.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
+        mesh1.indices.push(0);
+        
+        let mesh2 = mesh1.clone();
+        assert_eq!(mesh1.vertices.len(), mesh2.vertices.len());
+        assert_eq!(mesh1.indices.len(), mesh2.indices.len());
+    }
+
+    #[test]
+    fn test_compute_tangents_single_vertex_degenerate() {
+        // EDGE CASE: Single vertex referenced by triangle (degenerate)
+        let mut mesh = CpuMesh::default();
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+            [0.5, 0.5],
+        ));
+        mesh.indices = vec![0, 0, 0]; // All same vertex (degenerate triangle)
+        
+        compute_tangents(&mut mesh);
+        
+        // Should not crash, tangent should remain valid (normalized or identity)
+        let tan = Vec3::from_array([
+            mesh.vertices[0].tangent[0],
+            mesh.vertices[0].tangent[1],
+            mesh.vertices[0].tangent[2],
+        ]);
+        let len = tan.length();
+        assert!(len.is_finite(), "Tangent length should be finite");
+    }
+}

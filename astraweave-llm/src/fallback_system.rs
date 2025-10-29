@@ -596,11 +596,13 @@ mod tests {
     fn create_test_registry() -> ToolRegistry {
         ToolRegistry {
             tools: vec![
-                ToolSpec { name: "MoveTo".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "Attack".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "Scan".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "Heal".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "Reload".to_string(), args: BTreeMap::new() },
+                ToolSpec { name: "move_to".to_string(), args: BTreeMap::new() },
+                ToolSpec { name: "attack".to_string(), args: BTreeMap::new() },
+                ToolSpec { name: "scan".to_string(), args: BTreeMap::new() },
+                ToolSpec { name: "Scan".to_string(), args: BTreeMap::new() },  // PascalCase for validation
+                ToolSpec { name: "heal".to_string(), args: BTreeMap::new() },
+                ToolSpec { name: "reload".to_string(), args: BTreeMap::new() },
+                ToolSpec { name: "take_cover".to_string(), args: BTreeMap::new() },
             ],
             constraints: Constraints {
                 enforce_cooldowns: false,
@@ -623,7 +625,8 @@ mod tests {
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
         
-        assert_eq!(result.tier, FallbackTier::FullLlm);
+        // LATENCY OPTIMIZATION: Now starts with SimplifiedLlm instead of FullLlm
+        assert_eq!(result.tier, FallbackTier::SimplifiedLlm);
         assert_eq!(result.attempts.len(), 1);
         assert!(result.attempts[0].success);
         assert_eq!(result.plan.plan_id, "test-1");
@@ -647,8 +650,9 @@ mod tests {
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
         
         // Should fall through to heuristic
+        // LATENCY OPTIMIZATION: Now tries SimplifiedLlm → Heuristic (2 attempts) instead of Full → Simplified → Heuristic (3 attempts)
         assert_eq!(result.tier, FallbackTier::Heuristic);
-        assert!(result.attempts.len() >= 3); // Full + Simplified + Heuristic
+        assert!(result.attempts.len() >= 2); // SimplifiedLlm + Heuristic
         assert!(!result.plan.steps.is_empty());
     }
 
@@ -705,6 +709,7 @@ mod tests {
         
         let metrics = orchestrator.get_metrics().await;
         assert_eq!(metrics.total_requests, 1);
-        assert!(metrics.tier_successes.contains_key("full_llm"));
+        // LATENCY OPTIMIZATION: Now starts with simplified_llm instead of full_llm
+        assert!(metrics.tier_successes.contains_key("simplified_llm"));
     }
 }

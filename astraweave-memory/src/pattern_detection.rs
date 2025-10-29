@@ -443,7 +443,13 @@ mod tests {
     #[test]
     fn test_cautious_pattern_detection() {
         let detector = PatternDetector::new();
-        let episode = create_combat_episode("cautious_001", 200.0, 20.0, 15000);
+        // Parameters: id, damage_dealt, damage_taken, duration_ms
+        // Cautious requires: damage_taken < 30.0 AND resources_used < 100.0
+        let mut episode = create_combat_episode("cautious_001", 200.0, 20.0, 15000);
+        // Override resources_used to be below 100.0 threshold
+        if let Some(ref mut outcome) = episode.outcome {
+            outcome.resources_used = 80.0; // Was 100.0 (default from create_combat_episode)
+        }
 
         let patterns = detector.detect_episode_patterns(&episode);
         assert!(patterns.contains(&PlaystylePattern::Cautious));

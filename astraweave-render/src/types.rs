@@ -263,3 +263,168 @@ mod tests_cluster {
         assert_ne!(i0, i1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_vertex_layout_attributes() {
+        let layout = Vertex::layout();
+        // 4 attributes: position, normal, tangent, uv
+        assert_eq!(layout.attributes.len(), 4);
+        // Verify shader locations
+        assert_eq!(layout.attributes[0].shader_location, 0); // position
+        assert_eq!(layout.attributes[1].shader_location, 1); // normal
+        assert_eq!(layout.attributes[2].shader_location, 12); // tangent
+        assert_eq!(layout.attributes[3].shader_location, 13); // uv
+    }
+
+    #[test]
+    fn test_vertex_layout_stride() {
+        let layout = Vertex::layout();
+        // 3 floats (pos) + 3 floats (normal) + 4 floats (tangent) + 2 floats (uv) = 12 floats = 48 bytes
+        assert_eq!(layout.array_stride, 48);
+        assert_eq!(layout.step_mode, wgpu::VertexStepMode::Vertex);
+    }
+
+    #[test]
+    fn test_skinned_vertex_layout_attributes() {
+        let layout = SkinnedVertex::layout();
+        // 5 attributes: position, normal, tangent, joints, weights
+        assert_eq!(layout.attributes.len(), 5);
+        // Verify shader locations
+        assert_eq!(layout.attributes[0].shader_location, 0); // position
+        assert_eq!(layout.attributes[1].shader_location, 1); // normal
+        assert_eq!(layout.attributes[2].shader_location, 12); // tangent
+        assert_eq!(layout.attributes[3].shader_location, 10); // joints
+        assert_eq!(layout.attributes[4].shader_location, 11); // weights
+    }
+
+    #[test]
+    fn test_skinned_vertex_layout_stride() {
+        let layout = SkinnedVertex::layout();
+        // 3f32 (pos) + 3f32 (norm) + 4f32 (tan) + 4u16 (joints) + 4f32 (weights) 
+        // = 12+12+16+8+16 = 64 bytes
+        assert_eq!(layout.array_stride, 64);
+        assert_eq!(layout.step_mode, wgpu::VertexStepMode::Vertex);
+    }
+
+    #[test]
+    fn test_instance_raw_layout_attributes() {
+        let layout = InstanceRaw::layout();
+        // 9 attributes: 4x mat4, 3x mat3, color, material_id
+        assert_eq!(layout.attributes.len(), 9);
+        assert_eq!(layout.step_mode, wgpu::VertexStepMode::Instance);
+    }
+
+    #[test]
+    fn test_instance_raw_layout_stride() {
+        let layout = InstanceRaw::layout();
+        // 16 floats (model) + 9 floats (normal) + 4 floats (color) + 1 uint + 3 uint (padding)
+        // = 16*4 + 9*4 + 4*4 + 4*4 = 64+36+16+16 = 132 bytes
+        assert_eq!(layout.array_stride, 132);
+    }
+
+    #[test]
+    fn test_instance_from_pos_scale_color() {
+        let pos = Vec3::new(1.0, 2.0, 3.0);
+        let scale = Vec3::new(2.0, 2.0, 2.0);
+        let color = [1.0, 0.0, 0.0, 1.0];
+        
+        let inst = Instance::from_pos_scale_color(pos, scale, color);
+        
+        assert_eq!(inst.color, color);
+        assert_eq!(inst.material_id, 0);
+        
+        // Verify position is correct
+        let pos_from_mat = Vec3::new(
+            inst.transform.w_axis.x,
+            inst.transform.w_axis.y,
+            inst.transform.w_axis.z,
+        );
+        assert!((pos_from_mat - pos).length() < 1e-5);
+    }
+
+    #[test]
+    fn test_instance_raw_conversion() {
+        let transform = Mat4::from_translation(Vec3::new(5.0, 10.0, 15.0));
+        let color = [0.5, 0.5, 0.5, 1.0];
+        let material_id = 42;
+        
+        let inst = Instance {
+            transform,
+            color,
+            material_id,
+        };
+        
+        let raw = inst.raw();
+        
+        assert_eq!(raw.color, color);
+        assert_eq!(raw.material_id, material_id);
+        assert_eq!(raw._padding, [0; 3]);
+        
+        // Verify model matrix is correct
+        assert_eq!(raw.model[3][0], 5.0); // translation x
+        assert_eq!(raw.model[3][1], 10.0); // translation y
+        assert_eq!(raw.model[3][2], 15.0); // translation z
+    }
+
+    #[test]
+    fn test_vertex_pod_traits() {
+        // Verify Pod/Zeroable traits work (compile-time check)
+        let _v: Vertex = bytemuck::Zeroable::zeroed();
+        let _bytes = bytemuck::bytes_of(&_v);
+    }
+
+    #[test]
+    fn test_skinned_vertex_pod_traits() {
+        let _v: SkinnedVertex = bytemuck::Zeroable::zeroed();
+        let _bytes = bytemuck::bytes_of(&_v);
+    }
+
+    #[test]
+    fn test_instance_raw_pod_traits() {
+        let _inst: InstanceRaw = bytemuck::Zeroable::zeroed();
+        let _bytes = bytemuck::bytes_of(&_inst);
+    }
+
+    #[test]
+    fn test_material_clone() {
+        let mat1 = Material {
+            color: [1.0, 0.5, 0.2, 1.0],
+        };
+        let mat2 = mat1.clone();
+        assert_eq!(mat1.color, mat2.color);
+    }
+
+    #[test]
+    fn test_cluster_dims_debug() {
+        let dims = ClusterDims { x: 16, y: 9, z: 24 };
+        let debug_str = format!("{:?}", dims);
+        assert!(debug_str.contains("16"));
+        assert!(debug_str.contains("9"));
+        assert!(debug_str.contains("24"));
+    }
+
+    #[test]
+    fn test_cluster_index_depth_progression() {
+        let dims = ClusterDims { x: 8, y: 8, z: 8 };
+        // Same pixel, increasing depth should increase Z slice
+        let idx_near = cluster_index(400, 400, 800, 800, 1.0, 0.1, 100.0, dims);
+        let idx_mid = cluster_index(400, 400, 800, 800, 50.0, 0.1, 100.0, dims);
+        let idx_far = cluster_index(400, 400, 800, 800, 95.0, 0.1, 100.0, dims);
+        
+        // Indices should be different (depth slicing working)
+        assert!(idx_near < idx_mid);
+        assert!(idx_mid < idx_far);
+    }
+
+    #[test]
+    fn test_cluster_index_clamping() {
+        let dims = ClusterDims { x: 4, y: 4, z: 4 };
+        // Out-of-bounds coordinates should clamp
+        let idx = cluster_index(10000, 10000, 800, 800, 150.0, 0.1, 100.0, dims);
+        assert!(idx < dims.x * dims.y * dims.z, "Index should be within bounds");
+    }
+}

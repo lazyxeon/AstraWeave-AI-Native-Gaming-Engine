@@ -120,3 +120,134 @@ impl OverlayFx {
         rpass.draw(0..3, 0..1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                force_fallback_adapter: true,
+                compatible_surface: None,
+            })
+            .await
+            .expect("Failed to find adapter");
+
+        adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("test_device"),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_defaults(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: Default::default(),
+                },
+            )
+            .await
+            .expect("Failed to create device")
+    }
+
+    #[test]
+    fn test_overlay_params_pod() {
+        // Verify Pod/Zeroable traits work
+        let params = OverlayParams {
+            fade: 0.5,
+            letterbox: 0.1,
+            _pad: [0.0, 0.0],
+        };
+        let _bytes = bytemuck::bytes_of(&params);
+        assert_eq!(_bytes.len(), std::mem::size_of::<OverlayParams>());
+    }
+
+    #[test]
+    fn test_overlay_params_values() {
+        let params = OverlayParams {
+            fade: 0.75,
+            letterbox: 0.2,
+            _pad: [0.0, 0.0],
+        };
+        assert_eq!(params.fade, 0.75);
+        assert_eq!(params.letterbox, 0.2);
+    }
+
+    #[test]
+    fn test_overlay_fx_new() {
+        pollster::block_on(async {
+            let (device, _queue) = create_test_device().await;
+            let format = wgpu::TextureFormat::Bgra8UnormSrgb;
+            
+            // Should create without panicking
+            let _overlay = OverlayFx::new(&device, format);
+        });
+    }
+
+    #[test]
+    fn test_overlay_fx_update() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let format = wgpu::TextureFormat::Bgra8UnormSrgb;
+            
+            let overlay = OverlayFx::new(&device, format);
+            let params = OverlayParams {
+                fade: 0.5,
+                letterbox: 0.1,
+                _pad: [0.0, 0.0],
+            };
+            
+            // Should update without panicking
+            overlay.update(&queue, &params);
+        });
+    }
+
+    #[test]
+    fn test_overlay_fx_multiple_updates() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let format = wgpu::TextureFormat::Bgra8UnormSrgb;
+            
+            let overlay = OverlayFx::new(&device, format);
+            
+            // Update multiple times with different values
+            for i in 0..5 {
+                let params = OverlayParams {
+                    fade: i as f32 * 0.2,
+                    letterbox: i as f32 * 0.05,
+                    _pad: [0.0, 0.0],
+                };
+                overlay.update(&queue, &params);
+            }
+        });
+    }
+
+    #[test]
+    fn test_overlay_fx_different_formats() {
+        pollster::block_on(async {
+            let (device, _queue) = create_test_device().await;
+            
+            let formats = vec![
+                wgpu::TextureFormat::Bgra8UnormSrgb,
+                wgpu::TextureFormat::Rgba8UnormSrgb,
+                wgpu::TextureFormat::Rgba16Float,
+            ];
+
+            for format in formats {
+                let _overlay = OverlayFx::new(&device, format);
+                // Should create successfully for all formats
+            }
+        });
+    }
+
+    #[test]
+    fn test_overlay_params_zeroed() {
+        let params: OverlayParams = bytemuck::Zeroable::zeroed();
+        assert_eq!(params.fade, 0.0);
+        assert_eq!(params.letterbox, 0.0);
+    }
+}

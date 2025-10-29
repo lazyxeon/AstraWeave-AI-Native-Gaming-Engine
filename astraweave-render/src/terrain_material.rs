@@ -622,4 +622,110 @@ mod tests {
         let material: TerrainMaterialGpu = bytemuck::cast(bytes);
         assert_eq!(material.splat_uv_scale, 0.0);
     }
+
+    #[test]
+    fn test_blend_mode_edge_cases() {
+        // EDGE CASE: Mixed case, empty string, special characters
+        let mut desc = TerrainMaterialDesc::default();
+
+        desc.normal_blend_method = "LINEAR".to_string();
+        assert_eq!(desc.normal_blend_to_gpu(), 0);
+
+        desc.normal_blend_method = "RnM".to_string();
+        assert_eq!(desc.normal_blend_to_gpu(), 1);
+
+        desc.normal_blend_method = "  udn  ".to_string(); // With whitespace
+        assert_eq!(desc.normal_blend_to_gpu(), 1); // Falls back to RNM (no trim)
+
+        desc.normal_blend_method = "".to_string();
+        assert_eq!(desc.normal_blend_to_gpu(), 1); // Empty falls back to RNM
+    }
+
+    #[test]
+    fn test_empty_layer_list() {
+        // EDGE CASE: TerrainMaterialDesc with zero layers
+        let desc = TerrainMaterialDesc {
+            name: "empty_terrain".to_string(),
+            biome: "void".to_string(),
+            splat_map: None,
+            splat_uv_scale: 1.0,
+            triplanar_enabled: false,
+            triplanar_slope_threshold: 45.0,
+            normal_blend_method: "linear".to_string(),
+            height_blend_enabled: false,
+            layers: vec![], // Empty layer list
+        };
+
+        // Mock texture resolver
+        let resolver = |_: &PathBuf| -> u32 { 0 };
+
+        let gpu = desc.to_gpu(&resolver);
+
+        // Should not crash, GPU material should have default layers
+        assert_eq!(gpu.splat_uv_scale, 1.0);
+        assert_eq!(gpu.triplanar_enabled, 0);
+
+        // All layers should be default (zero indices)
+        for layer in &gpu.layers {
+            assert_eq!(layer.texture_indices, [0, 0, 0, 0]);
+        }
+    }
+
+    #[test]
+    fn test_more_than_four_layers() {
+        // EDGE CASE: More than 4 layers (should truncate to 4)
+        let desc = TerrainMaterialDesc {
+            name: "many_layers".to_string(),
+            biome: "complex".to_string(),
+            splat_map: None,
+            splat_uv_scale: 1.0,
+            triplanar_enabled: true,
+            triplanar_slope_threshold: 45.0,
+            normal_blend_method: "rnm".to_string(),
+            height_blend_enabled: true,
+            layers: vec![
+                TerrainLayerDesc::default(),
+                TerrainLayerDesc::default(),
+                TerrainLayerDesc::default(),
+                TerrainLayerDesc::default(),
+                TerrainLayerDesc::default(), // 5th layer (should be ignored)
+                TerrainLayerDesc::default(), // 6th layer (should be ignored)
+            ],
+        };
+
+        let resolver = |_: &PathBuf| -> u32 { 0 };
+        let gpu = desc.to_gpu(&resolver);
+
+        // Only 4 layers should be in GPU struct
+        // (This is tested by not crashing and having exactly 4 layers in array)
+        assert_eq!(gpu.layers.len(), 4);
+    }
+
+    #[test]
+    fn test_extreme_uv_scales() {
+        // EDGE CASE: Very large/small UV scales
+        let mut layer = TerrainLayerDesc::default();
+        layer.uv_scale = [1000.0, 0.001]; // Extreme values
+
+        assert_eq!(layer.uv_scale, [1000.0, 0.001]);
+
+        // Negative UV scales (flips texture)
+        layer.uv_scale = [-1.0, -1.0];
+        assert_eq!(layer.uv_scale, [-1.0, -1.0]);
+    }
+
+    #[test]
+    fn test_blend_sharpness_extremes() {
+        // EDGE CASE: Blend sharpness at extremes
+        let mut layer = TerrainLayerDesc::default();
+
+        layer.blend_sharpness = 0.0; // Completely smooth blend
+        assert_eq!(layer.blend_sharpness, 0.0);
+
+        layer.blend_sharpness = 10.0; // Very sharp blend
+        assert_eq!(layer.blend_sharpness, 10.0);
+
+        layer.blend_sharpness = -0.5; // Negative (invalid but should not crash)
+        assert_eq!(layer.blend_sharpness, -0.5);
+    }
 }

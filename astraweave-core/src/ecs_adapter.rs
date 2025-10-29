@@ -381,4 +381,25 @@ mod tests {
         let ecs_hp = ecs_app.world.get::<CHealth>(ecs_entity).unwrap().hp;
         assert_eq!(legacy_hp, ecs_hp, "Health should match");
     }
+
+    #[test]
+    fn sys_bridge_sync_adds_legacy_id() {
+        // COVERAGE TARGET: Lines 95-116 (sys_bridge_sync function)
+        let w = World::new();
+        let mut app = build_app(w, 0.016);
+        
+        let e = app.world.spawn();
+        // Add entity to bridge (simulating legacy↔ECS binding)
+        if let Some(bridge) = app.world.get_resource_mut::<EntityBridge>() {
+            bridge.insert_pair(42, e); // Legacy ID 42 → ECS entity
+        }
+        
+        // Call sys_bridge_sync directly (normally called by tick)
+        sys_bridge_sync(&mut app.world);
+        
+        // Verify CLegacyId component was added (lines 110-116)
+        let legacy_id = app.world.get::<crate::CLegacyId>(e);
+        assert!(legacy_id.is_some(), "CLegacyId should be added by sys_bridge_sync");
+        assert_eq!(legacy_id.unwrap().id, 42, "Legacy ID should match bridge mapping");
+    }
 }

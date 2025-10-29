@@ -133,3 +133,261 @@ fn triangle_area2(a: Vec3, b: Vec3, c: Vec3) -> f32 {
     let ac = c - a;
     ab.x * ac.z - ab.z * ac.x // 2D area on XZ plane
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use astraweave_nav::NavTri;
+
+    fn create_simple_navmesh() -> NavMesh {
+        // Create 2 adjacent triangles for testing
+        NavMesh {
+            tris: vec![
+                NavTri {
+                    idx: 0,
+                    verts: [
+                        Vec3::new(0.0, 0.0, 0.0),
+                        Vec3::new(1.0, 0.0, 0.0),
+                        Vec3::new(0.5, 0.0, 1.0),
+                    ],
+                    normal: Vec3::Y,
+                    center: Vec3::new(0.5, 0.0, 0.333),
+                    neighbors: vec![1],
+                },
+                NavTri {
+                    idx: 1,
+                    verts: [
+                        Vec3::new(1.0, 0.0, 0.0),
+                        Vec3::new(1.5, 0.0, 1.0),
+                        Vec3::new(0.5, 0.0, 1.0),
+                    ],
+                    normal: Vec3::Y,
+                    center: Vec3::new(1.0, 0.0, 0.666),
+                    neighbors: vec![0],
+                },
+            ],
+            max_step: 0.5,
+            max_slope_deg: 45.0,
+        }
+    }
+
+    #[test]
+    fn test_shared_edge_finds_common_vertices() {
+        let a = [
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.0, 1.0),
+        ];
+        let b = [
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(1.5, 0.0, 1.0),
+            Vec3::new(0.5, 0.0, 1.0),
+        ];
+
+        let edge = shared_edge(&a, &b, 1e-3);
+        assert!(edge.is_some());
+        let (p0, p1) = edge.unwrap();
+        
+        // Should find the two shared vertices
+        let shared_verts = vec![Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)];
+        assert!(shared_verts.contains(&p0) || shared_verts.contains(&p1));
+    }
+
+    #[test]
+    fn test_shared_edge_none_for_disjoint_triangles() {
+        let a = [
+            Vec3::new(0.0, 0.0, 0.0),
+            Vec3::new(1.0, 0.0, 0.0),
+            Vec3::new(0.5, 0.0, 1.0),
+        ];
+        let b = [
+            Vec3::new(5.0, 0.0, 5.0),
+            Vec3::new(6.0, 0.0, 5.0),
+            Vec3::new(5.5, 0.0, 6.0),
+        ];
+
+        let edge = shared_edge(&a, &b, 1e-3);
+        assert!(edge.is_none());
+    }
+
+    #[test]
+    fn test_build_portals_creates_portal_between_neighbors() {
+        let nav = create_simple_navmesh();
+        let pg = build_portals(&nav);
+
+        // Should create 1 portal between triangles 0 and 1
+        assert_eq!(pg.portals.len(), 1);
+        assert_eq!(pg.portals[0].left_tri, 0);
+        assert_eq!(pg.portals[0].right_tri, 1);
+    }
+
+    #[test]
+    fn test_build_portals_tri_to_portals_mapping() {
+        let nav = create_simple_navmesh();
+        let pg = build_portals(&nav);
+
+        // Both triangles should reference portal 0
+        assert_eq!(pg.tri_to_portals.len(), 2);
+        assert_eq!(pg.tri_to_portals[0], vec![0]);
+        assert_eq!(pg.tri_to_portals[1], vec![0]);
+    }
+
+    #[test]
+    fn test_build_portals_empty_navmesh() {
+        let nav = NavMesh {
+            tris: vec![],
+            max_step: 0.5,
+            max_slope_deg: 45.0,
+        };
+        let pg = build_portals(&nav);
+
+        assert_eq!(pg.portals.len(), 0);
+        assert_eq!(pg.tri_to_portals.len(), 0);
+    }
+
+    #[test]
+    fn test_build_portals_single_triangle_no_portals() {
+        let nav = NavMesh {
+            tris: vec![NavTri {
+                idx: 0,
+                verts: [Vec3::ZERO, Vec3::X, Vec3::Z],
+                normal: Vec3::Y,
+                center: Vec3::new(0.333, 0.0, 0.333),
+                neighbors: vec![],
+            }],
+            max_step: 0.5,
+            max_slope_deg: 45.0,
+        };
+        let pg = build_portals(&nav);
+
+        assert_eq!(pg.portals.len(), 0);
+        assert_eq!(pg.tri_to_portals.len(), 1);
+        assert_eq!(pg.tri_to_portals[0].len(), 0);
+    }
+
+    #[test]
+    fn test_triangle_area2_positive() {
+        let a = Vec3::new(0.0, 0.0, 0.0);
+        let b = Vec3::new(1.0, 0.0, 0.0);
+        let c = Vec3::new(0.0, 0.0, 1.0);
+
+        let area = triangle_area2(a, b, c);
+        assert!(area > 0.0); // Counter-clockwise on XZ plane
+    }
+
+    #[test]
+    fn test_triangle_area2_negative() {
+        let a = Vec3::new(0.0, 0.0, 0.0);
+        let b = Vec3::new(0.0, 0.0, 1.0);
+        let c = Vec3::new(1.0, 0.0, 0.0);
+
+        let area = triangle_area2(a, b, c);
+        assert!(area < 0.0); // Clockwise on XZ plane
+    }
+
+    #[test]
+    fn test_triangle_area2_collinear() {
+        let a = Vec3::new(0.0, 0.0, 0.0);
+        let b = Vec3::new(1.0, 0.0, 0.0);
+        let c = Vec3::new(2.0, 0.0, 0.0);
+
+        let area = triangle_area2(a, b, c);
+        assert_eq!(area, 0.0); // Collinear points
+    }
+
+    #[test]
+    fn test_string_pull_short_path() {
+        let nav = create_simple_navmesh();
+        let pg = build_portals(&nav);
+
+        let start = Vec3::new(0.2, 0.0, 0.2);
+        let goal = Vec3::new(1.2, 0.0, 0.8);
+        let tri_path = vec![0, 1];
+
+        let waypoints = string_pull(&nav, &pg, &tri_path, start, goal);
+
+        // Should return at least start and goal
+        assert!(waypoints.len() >= 2);
+        assert_eq!(waypoints[0], start);
+        assert_eq!(*waypoints.last().unwrap(), goal);
+    }
+
+    #[test]
+    fn test_string_pull_single_triangle() {
+        let nav = create_simple_navmesh();
+        let pg = build_portals(&nav);
+
+        let start = Vec3::new(0.2, 0.0, 0.2);
+        let goal = Vec3::new(0.4, 0.0, 0.4);
+        let tri_path = vec![0];
+
+        let waypoints = string_pull(&nav, &pg, &tri_path, start, goal);
+
+        // Single triangle path should just return start/goal
+        assert_eq!(waypoints.len(), 2);
+        assert_eq!(waypoints[0], start);
+        assert_eq!(waypoints[1], goal);
+    }
+
+    #[test]
+    fn test_string_pull_empty_path() {
+        let nav = create_simple_navmesh();
+        let pg = build_portals(&nav);
+
+        let start = Vec3::ZERO;
+        let goal = Vec3::X;
+        let tri_path: Vec<usize> = vec![];
+
+        let waypoints = string_pull(&nav, &pg, &tri_path, start, goal);
+
+        // Empty path should return start/goal
+        assert_eq!(waypoints.len(), 2);
+        assert_eq!(waypoints[0], start);
+        assert_eq!(waypoints[1], goal);
+    }
+
+    #[test]
+    fn test_portal_graph_multiple_triangles() {
+        // Create 3 triangles in a row
+        let nav = NavMesh {
+            tris: vec![
+                NavTri {
+                    idx: 0,
+                    verts: [Vec3::ZERO, Vec3::X, Vec3::new(0.5, 0.0, 1.0)],
+                    normal: Vec3::Y,
+                    center: Vec3::new(0.5, 0.0, 0.333),
+                    neighbors: vec![1],
+                },
+                NavTri {
+                    idx: 1,
+                    verts: [Vec3::X, Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)],
+                    normal: Vec3::Y,
+                    center: Vec3::new(1.167, 0.0, 0.333),
+                    neighbors: vec![0, 2],
+                },
+                NavTri {
+                    idx: 2,
+                    verts: [Vec3::new(2.0, 0.0, 0.0), Vec3::new(3.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)],
+                    normal: Vec3::Y,
+                    center: Vec3::new(1.833, 0.0, 0.333),
+                    neighbors: vec![1],
+                },
+            ],
+            max_step: 0.5,
+            max_slope_deg: 45.0,
+        };
+        let pg = build_portals(&nav);
+
+        // Should create 2 portals (0-1 and 1-2)
+        assert_eq!(pg.portals.len(), 2);
+        
+        // Middle triangle should have 2 portals
+        assert_eq!(pg.tri_to_portals[1].len(), 2);
+        
+        // Edge triangles should have 1 portal each
+        assert_eq!(pg.tri_to_portals[0].len(), 1);
+        assert_eq!(pg.tri_to_portals[2].len(), 1);
+    }
+}
+
+

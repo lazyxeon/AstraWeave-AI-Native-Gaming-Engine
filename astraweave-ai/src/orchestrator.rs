@@ -1099,9 +1099,16 @@ mod tests {
 
     #[test]
     fn system_orchestrator_config_handles_empty_env_vars() {
-        // NOTE: unwrap_or_else only triggers if var is NOT SET, not if it's empty string
-        // Empty strings are valid values, so they get used as-is
-        // This test verifies that empty strings are treated as empty (not defaulted)
+        // unwrap_or_else only triggers if var is NOT SET (Err), not if it's empty string
+        // Empty strings ARE valid values and get used as-is
+        // This test verifies that behavior
+        
+        // CRITICAL: Remove vars first to ensure clean state (other tests may set them)
+        std::env::remove_var("ASTRAWEAVE_USE_LLM");
+        std::env::remove_var("OLLAMA_URL");
+        std::env::remove_var("OLLAMA_MODEL");
+        
+        // Now set to empty strings
         std::env::set_var("ASTRAWEAVE_USE_LLM", "");
         std::env::set_var("OLLAMA_URL", "");
         std::env::set_var("OLLAMA_MODEL", "");
@@ -1109,11 +1116,12 @@ mod tests {
         let cfg = SystemOrchestratorConfig::default();
 
         // Empty string != "1" or "true", should be false
-        assert_eq!(cfg.use_llm, false);
+        assert_eq!(cfg.use_llm, false, "Empty string should parse as false");
         // Empty strings ARE used as-is (unwrap_or_else doesn't treat "" as missing)
-        assert_eq!(cfg.ollama_url, "", "Empty URL should be used as-is");
-        assert_eq!(cfg.ollama_model, "", "Empty model should be used as-is");
+        assert_eq!(cfg.ollama_url, "", "Empty URL should be used as-is (not defaulted)");
+        assert_eq!(cfg.ollama_model, "", "Empty model should be used as-is (not defaulted)");
 
+        // Cleanup
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
         std::env::remove_var("OLLAMA_URL");
         std::env::remove_var("OLLAMA_MODEL");

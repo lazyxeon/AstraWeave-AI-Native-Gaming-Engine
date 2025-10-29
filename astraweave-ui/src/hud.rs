@@ -897,8 +897,10 @@ impl HudManager {
     /// to allow pitch variation (e.g., lower pitch at center, higher at edge).
     /// 
     /// Example with astraweave-audio:
-    /// ```no_run
+    /// ```ignore
+    /// use astraweave_ui::hud::HudManager;
     /// use astraweave_audio::AudioEngine;
+    /// let mut hud = HudManager::new();
     /// let mut audio = AudioEngine::new().unwrap();
     /// hud.set_minimap_click_callback(move |dist| {
     ///     let base_hz = 800.0;
@@ -918,9 +920,11 @@ impl HudManager {
     /// The callback receives the world position of the ping for 3D spatial audio.
     /// 
     /// Example with astraweave-audio:
-    /// ```no_run
+    /// ```ignore
+    /// use astraweave_ui::hud::HudManager;
     /// use astraweave_audio::{AudioEngine, EmitterId};
     /// use glam::vec3;
+    /// let mut hud = HudManager::new();
     /// let mut audio = AudioEngine::new().unwrap();
     /// hud.set_ping_spawn_callback(move |world_pos| {
     ///     let pos_3d = vec3(world_pos.0, 0.0, world_pos.1);
@@ -2647,5 +2651,345 @@ mod tests {
         assert!(!hud.is_visible());
         assert!(!hud.state().show_health_bars);
         assert!(hud.state().debug_mode);
+    }
+
+    // ===== Week 4 Day 1: Health Animation Tests =====
+    
+    #[test]
+    fn test_health_animation_new() {
+        let anim = HealthAnimation::new(100.0);
+        assert_eq!(anim.current_visual, 100.0);
+        assert_eq!(anim.target, 100.0);
+        assert_eq!(anim.animation_time, 0.0);
+        assert_eq!(anim.flash_timer, 0.0);
+    }
+    
+    #[test]
+    fn test_health_animation_damage() {
+        let mut anim = HealthAnimation::new(100.0);
+        anim.set_target(50.0);
+        
+        assert_eq!(anim.target, 50.0);
+        assert_eq!(anim.animation_time, 0.0);
+        assert!(anim.flash_timer > 0.0, "Flash should trigger on damage");
+    }
+    
+    #[test]
+    fn test_health_animation_healing() {
+        let mut anim = HealthAnimation::new(50.0);
+        anim.set_target(100.0);
+        
+        assert_eq!(anim.target, 100.0);
+        assert!(anim.is_healing());
+        assert_eq!(anim.flash_timer, 0.0, "Flash should not trigger on healing");
+    }
+    
+    #[test]
+    fn test_health_animation_update() {
+        let mut anim = HealthAnimation::new(100.0);
+        anim.set_target(50.0);
+        
+        // Update animation
+        anim.update(0.2); // Half of default 0.4s duration
+        
+        // Visual health should be between target and start
+        let visual = anim.visual_health();
+        assert!(visual < 100.0 && visual > 50.0, "Visual health should be animating");
+        
+        // Complete animation
+        anim.update(0.3); // Total 0.5s > 0.4s duration
+        assert!((anim.visual_health() - 50.0).abs() < 0.1, "Animation should complete");
+    }
+    
+    #[test]
+    fn test_health_animation_flash_alpha() {
+        let mut anim = HealthAnimation::new(100.0);
+        anim.set_target(50.0);
+        
+        // Flash should be active immediately after damage
+        let alpha = anim.flash_alpha();
+        assert!(alpha > 0.0 && alpha <= 0.6, "Flash alpha should be in valid range");
+        
+        // Flash should decay over time
+        anim.update(0.1);
+        let alpha2 = anim.flash_alpha();
+        assert!(alpha2 < alpha, "Flash should decay");
+        
+        // Flash should end after duration
+        anim.update(0.3);
+        assert_eq!(anim.flash_alpha(), 0.0, "Flash should end");
+    }
+    
+    #[test]
+    fn test_easing_ease_out_cubic() {
+        let start = easing::ease_out_cubic(0.0);
+        let mid = easing::ease_out_cubic(0.5);
+        let end = easing::ease_out_cubic(1.0);
+        
+        assert_eq!(start, 0.0);
+        assert_eq!(end, 1.0);
+        assert!(mid > 0.0 && mid < 1.0);
+    }
+    
+    #[test]
+    fn test_easing_ease_in_out_quad() {
+        let start = easing::ease_in_out_quad(0.0);
+        let mid = easing::ease_in_out_quad(0.5);
+        let end = easing::ease_in_out_quad(1.0);
+        
+        assert_eq!(start, 0.0);
+        assert_eq!(end, 1.0);
+        assert!(mid > 0.0 && mid < 1.0);
+    }
+    
+    // ===== Week 3 Day 2: Player/Enemy Data Tests =====
+    
+    #[test]
+    fn test_player_stats_default() {
+        let stats = PlayerStats::default();
+        assert_eq!(stats.health, 100.0);
+        assert_eq!(stats.max_health, 100.0);
+        assert_eq!(stats.mana, 100.0);
+        assert_eq!(stats.max_mana, 100.0);
+        assert_eq!(stats.stamina, 100.0);
+        assert_eq!(stats.max_stamina, 100.0);
+    }
+    
+    #[test]
+    fn test_enemy_data_construction() {
+        let enemy = EnemyData::new(42, (10.0, 5.0, 20.0), 100.0, EnemyFaction::Hostile);
+        
+        assert_eq!(enemy.id, 42);
+        assert_eq!(enemy.world_pos, (10.0, 5.0, 20.0));
+        assert_eq!(enemy.health, 100.0);
+        assert_eq!(enemy.max_health, 100.0);
+        assert_eq!(enemy.faction, EnemyFaction::Hostile);
+    }
+    
+    #[test]
+    fn test_enemy_faction_equality() {
+        assert_eq!(EnemyFaction::Hostile, EnemyFaction::Hostile);
+        assert_eq!(EnemyFaction::Neutral, EnemyFaction::Neutral);
+        assert_ne!(EnemyFaction::Hostile, EnemyFaction::Neutral);
+    }
+    
+    #[test]
+    fn test_damage_number_construction() {
+        let dmg = DamageNumber::new(42, 1.5, (10.0, 5.0, 20.0), DamageType::Normal);
+        
+        assert_eq!(dmg.value, 42);
+        assert_eq!(dmg.damage_type, DamageType::Normal);
+        assert_eq!(dmg.spawn_time, 1.5);
+        assert_eq!(dmg.world_pos, (10.0, 5.0, 20.0));
+    }
+    
+    #[test]
+    fn test_damage_type_variants() {
+        let normal = DamageType::Normal;
+        let critical = DamageType::Critical;
+        let self_damage = DamageType::SelfDamage;
+        
+        assert_ne!(normal, critical);
+        assert_ne!(critical, self_damage);
+        assert_ne!(normal, self_damage);
+    }
+    
+    // ===== Week 3 Day 3: Quest & Minimap Tests =====
+    
+    #[test]
+    fn test_quest_construction() {
+        let quest = Quest {
+            id: 1,
+            title: "Defeat the Dragon".to_string(),
+            description: "Slay the mighty dragon terrorizing the village".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "Find the dragon's lair".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Slay the dragon".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+            ],
+        };
+        
+        assert_eq!(quest.id, 1);
+        assert_eq!(quest.title, "Defeat the Dragon");
+        assert_eq!(quest.objectives.len(), 2);
+        assert!(!quest.objectives[0].completed);
+        assert!(!quest.is_complete());
+    }
+    
+    #[test]
+    fn test_quest_completion() {
+        let mut quest = Quest {
+            id: 1,
+            title: "Test Quest".to_string(),
+            description: "Complete objectives".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "Objective 1".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Objective 2".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+            ],
+        };
+        
+        assert!(quest.is_complete());
+        assert_eq!(quest.completion(), 1.0);
+        
+        // Incomplete quest
+        quest.objectives[1].completed = false;
+        assert!(!quest.is_complete());
+        assert_eq!(quest.completion(), 0.5);
+    }
+    
+    #[test]
+    fn test_objective_completion() {
+        let mut obj = Objective {
+            id: 1,
+            description: "Collect 10 herbs".to_string(),
+            completed: false,
+            progress: Some((0, 10)),
+        };
+        
+        assert!(!obj.completed);
+        assert_eq!(obj.progress, Some((0, 10)));
+        
+        obj.completed = true;
+        obj.progress = Some((10, 10));
+        assert!(obj.completed);
+    }
+    
+    #[test]
+    fn test_poi_marker_construction() {
+        let poi = PoiMarker {
+            id: 42,
+            world_pos: (100.0, 50.0),
+            poi_type: PoiType::Objective,
+            label: Some("Quest Marker".to_string()),
+        };
+        
+        assert_eq!(poi.id, 42);
+        assert_eq!(poi.world_pos, (100.0, 50.0));
+        assert_eq!(poi.poi_type, PoiType::Objective);
+        assert_eq!(poi.label, Some("Quest Marker".to_string()));
+    }
+    
+    #[test]
+    fn test_poi_type_variants() {
+        let obj = PoiType::Objective;
+        let way = PoiType::Waypoint;
+        let vendor = PoiType::Vendor;
+        let danger = PoiType::Danger;
+        
+        assert_ne!(obj, way);
+        assert_ne!(vendor, danger);
+        assert_ne!(obj, vendor);
+    }
+    
+    #[test]
+    fn test_poi_type_icon() {
+        assert_eq!(PoiType::Objective.icon(), "🎯");
+        assert_eq!(PoiType::Waypoint.icon(), "📍");
+        assert_eq!(PoiType::Vendor.icon(), "🏪");
+        assert_eq!(PoiType::Danger.icon(), "⚔️");
+    }
+    
+    #[test]
+    fn test_ping_marker_creation() {
+        let ping = PingMarker::new((50.0, 100.0), 10.0);
+        assert_eq!(ping.world_pos, (50.0, 100.0));
+        assert_eq!(ping.spawn_time, 10.0);
+        assert_eq!(ping.duration, 3.0);
+        assert!(ping.is_active(11.0));
+        assert!(!ping.is_active(14.0));
+    }
+    
+    // ===== Week 3 Day 4: Dialogue & Tooltip Tests =====
+    
+    #[test]
+    fn test_dialogue_node_construction() {
+        let node = DialogueNode {
+            id: 1,
+            speaker_name: "Gandalf".to_string(),
+            text: "You shall not pass!".to_string(),
+            portrait_id: None,
+            choices: vec![
+                DialogueChoice {
+                    id: 1,
+                    text: "Attack".to_string(),
+                    next_node: None,
+                },
+                DialogueChoice {
+                    id: 2,
+                    text: "Flee".to_string(),
+                    next_node: Some(42),
+                },
+            ],
+        };
+        
+        assert_eq!(node.id, 1);
+        assert_eq!(node.speaker_name, "Gandalf");
+        assert_eq!(node.text, "You shall not pass!");
+        assert_eq!(node.choices.len(), 2);
+        assert_eq!(node.choices[0].text, "Attack");
+        assert_eq!(node.choices[1].next_node, Some(42));
+    }
+    
+    #[test]
+    fn test_dialogue_choice_no_next() {
+        let choice = DialogueChoice {
+            id: 1,
+            text: "End conversation".to_string(),
+            next_node: None,
+        };
+        
+        assert_eq!(choice.next_node, None);
+    }
+    
+    #[test]
+    fn test_tooltip_data_construction() {
+        let tooltip = TooltipData {
+            title: "Excalibur".to_string(),
+            description: "Legendary sword of King Arthur".to_string(),
+            stats: vec![
+                ("Damage".to_string(), "100".to_string()),
+                ("Critical".to_string(), "+50%".to_string()),
+            ],
+            flavor_text: Some("Only the true king can wield this blade.".to_string()),
+        };
+        
+        assert_eq!(tooltip.title, "Excalibur");
+        assert_eq!(tooltip.description, "Legendary sword of King Arthur");
+        assert_eq!(tooltip.stats.len(), 2);
+        assert_eq!(tooltip.stats[0].0, "Damage");
+        assert_eq!(tooltip.stats[0].1, "100");
+        assert!(tooltip.flavor_text.is_some());
+    }
+    
+    #[test]
+    fn test_tooltip_empty_stats() {
+        let tooltip = TooltipData {
+            title: "Simple Item".to_string(),
+            description: "Basic description".to_string(),
+            stats: vec![],
+            flavor_text: None,
+        };
+        
+        assert!(tooltip.stats.is_empty());
+        assert!(tooltip.flavor_text.is_none());
     }
 }

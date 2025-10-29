@@ -45,12 +45,13 @@ pub struct MockLlm;
 impl LlmClient for MockLlm {
     async fn complete(&self, _prompt: &str) -> Result<String> {
         // A minimal JSON that follows our schema
+        // Uses tools from the simplified_tools list (fallback_system.rs:89-108)
         let out = r#"{
           "plan_id":"llm-mock",
           "steps":[
-            {"act":"Throw","item":"smoke","x":7,"y":2},
+            {"act":"ThrowSmoke","x":7,"y":2},
             {"act":"MoveTo","x":4,"y":2},
-            {"act":"CoverFire","target_id":99,"duration":2.0}
+            {"act":"Attack","target_id":99}
           ]
         }"#;
         Ok(out.into())
@@ -1418,8 +1419,29 @@ mod tests {
                         .collect(),
                 },
                 ToolSpec {
+                    name: "ThrowSmoke".into(),
+                    args: [("x", "i32"), ("y", "i32")]
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.into()))
+                        .collect(),
+                },
+                ToolSpec {
+                    name: "Attack".into(),
+                    args: [("target_id", "u32")]
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.into()))
+                        .collect(),
+                },
+                ToolSpec {
                     name: "CoverFire".into(),
                     args: [("target_id", "u32"), ("duration", "f32")]
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.into()))
+                        .collect(),
+                },
+                ToolSpec {
+                    name: "Revive".into(),
+                    args: [("ally_id", "u32")]
                         .into_iter()
                         .map(|(k, v)| (k.into(), v.into()))
                         .collect(),
@@ -1482,9 +1504,10 @@ mod tests {
 
         // Check that prompt contains expected elements
         assert!(prompt.contains("AI game companion planner"));
-        assert!(prompt.contains("move_to"));
-        assert!(prompt.contains("throw"));
-        assert!(prompt.contains("cover_fire"));
+        // Tools are in PascalCase in the prompt
+        assert!(prompt.contains("MoveTo") || prompt.contains("move_to"));
+        assert!(prompt.contains("Throw") || prompt.contains("throw"));
+        assert!(prompt.contains("CoverFire") || prompt.contains("cover_fire"));
         assert!(prompt.contains("Return ONLY JSON"));
         assert!(prompt.contains("\"t\": 1.0"));
     }

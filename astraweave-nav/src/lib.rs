@@ -30,7 +30,26 @@ impl NavMesh {
             .enumerate()
             .filter_map(|(i, t)| {
                 let n = (t.b - t.a).cross(t.c - t.a).normalize_or_zero();
-                let slope_ok = n.dot(Vec3::Y).acos().to_degrees() <= max_slope_deg;
+                
+                // Handle degenerate triangles (zero normal)
+                if n.length_squared() < 1e-6 {
+                    return None;
+                }
+                
+                // Calculate angle from vertical (Y-axis)
+                // Accept only upward-facing triangles (dot product >= 0)
+                let dot = n.dot(Vec3::Y).clamp(-1.0, 1.0);
+                if dot < 0.0 {
+                    // Downward-facing triangle, filter it
+                    return None;
+                }
+                
+                let angle_from_vertical = dot.acos().to_degrees();
+                
+                // Accept triangles where angle from vertical <= max_slope
+                // (0° = flat horizontal, 90° = vertical wall)
+                let slope_ok = angle_from_vertical <= max_slope_deg;
+                
                 if !slope_ok {
                     return None;
                 }

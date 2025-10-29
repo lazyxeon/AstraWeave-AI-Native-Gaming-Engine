@@ -39,6 +39,11 @@ astraweave-llm = { path = "../astraweave-llm" }
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3.8"
+criterion = { version = "0.7", features = ["html_reports"] }
+
+[[bench]]
+name = "prompts_benchmarks"
+harness = false
 
 [features]
 default = ["file_watcher"]

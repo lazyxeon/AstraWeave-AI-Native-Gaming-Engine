@@ -319,12 +319,14 @@ impl TokenBudget {
 
     /// Use tokens from the budget
     pub fn use_tokens(&mut self, tokens: usize) -> Result<()> {
-        if self.used_tokens + tokens > self.total_budget {
+        if tokens > self.available_tokens() {
             return Err(anyhow!(
-                "Would exceed budget: {} + {} > {}",
-                self.used_tokens,
+                "Would exceed available budget: {} > {} (total: {}, used: {}, reserved: {})",
                 tokens,
-                self.total_budget
+                self.available_tokens(),
+                self.total_budget,
+                self.used_tokens,
+                self.reservations.values().sum::<usize>()
             ));
         }
 

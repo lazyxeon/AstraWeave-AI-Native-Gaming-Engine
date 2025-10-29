@@ -458,4 +458,104 @@ mod tests {
         assert_eq!(gpu.metallic_factor, 0.9);
         assert_eq!(gpu.clearcoat_strength, 1.0);
     }
+
+    #[test]
+    fn test_invalid_toml_missing_required_fields() {
+        // EDGE CASE: TOML deserialization with missing name field
+        let toml_str = r#"
+            base_color_factor = [1.0, 1.0, 1.0, 1.0]
+            metallic_factor = 0.5
+        "#;
+        
+        let result: Result<MaterialDefinitionExtended, _> = toml::from_str(toml_str);
+        assert!(result.is_err(), "Should fail without 'name' field");
+    }
+
+    #[test]
+    fn test_out_of_range_values() {
+        // EDGE CASE: Negative roughness, metallic > 1.0, etc.
+        let def = MaterialDefinitionExtended {
+            name: "test_invalid_ranges".to_string(),
+            albedo: None,
+            normal: None,
+            orm: None,
+            base_color_factor: [1.0, 1.0, 1.0, 1.0],
+            metallic_factor: 2.5, // Out of range (should be 0-1)
+            roughness_factor: -0.3, // Negative (should be 0-1)
+            occlusion_strength: 1.0,
+            emissive_factor: [0.0, 0.0, 0.0],
+            clearcoat_strength: 1.0,
+            clearcoat_roughness: 0.05,
+            clearcoat_normal: None,
+            anisotropy_strength: 3.0, // Out of range (should be -1 to 1)
+            anisotropy_rotation: 0.0,
+            subsurface_color: [1.0, 1.0, 1.0],
+            subsurface_scale: -5.0, // Negative (should be >= 0)
+            subsurface_radius: 1.0,
+            thickness_map: None,
+            sheen_color: [0.0, 0.0, 0.0],
+            sheen_roughness: 0.5,
+            transmission_factor: 1.5, // Out of range (should be 0-1)
+            ior: -2.0, // Negative (should be >= 1.0)
+            attenuation_color: [1.0, 1.0, 1.0],
+            attenuation_distance: 1.0,
+        };
+
+        // Should convert without crashing (values will be invalid but finite)
+        let gpu = def.to_gpu(0, 1, 2, 0, 0);
+        
+        // Verify values are finite (not NaN/Inf)
+        assert!(gpu.metallic_factor.is_finite());
+        assert!(gpu.roughness_factor.is_finite());
+        assert!(gpu.anisotropy_strength.is_finite());
+        assert!(gpu.subsurface_scale.is_finite());
+        assert!(gpu.transmission_factor.is_finite());
+        assert!(gpu.ior.is_finite());
+        
+        // GPU should have preserved the out-of-range values (no clamping in to_gpu)
+        assert_eq!(gpu.metallic_factor, 2.5);
+        assert_eq!(gpu.roughness_factor, -0.3);
+    }
+
+    #[test]
+    fn test_extreme_color_values() {
+        // EDGE CASE: Color values > 1.0 (HDR), negative colors
+        let def = MaterialDefinitionExtended {
+            name: "test_extreme_colors".to_string(),
+            albedo: None,
+            normal: None,
+            orm: None,
+            base_color_factor: [10.0, -2.0, 0.0, 1.0], // HDR + negative
+            metallic_factor: 0.5,
+            roughness_factor: 0.5,
+            occlusion_strength: 1.0,
+            emissive_factor: [100.0, 50.0, 75.0], // HDR emissive (valid for glow)
+            clearcoat_strength: 0.0,
+            clearcoat_roughness: 0.03,
+            clearcoat_normal: None,
+            anisotropy_strength: 0.0,
+            anisotropy_rotation: 0.0,
+            subsurface_color: [1.5, 1.5, 1.5], // > 1.0
+            subsurface_scale: 0.0,
+            subsurface_radius: 1.0,
+            thickness_map: None,
+            sheen_color: [-0.1, -0.1, -0.1], // Negative
+            sheen_roughness: 0.5,
+            transmission_factor: 0.0,
+            ior: 1.5,
+            attenuation_color: [0.0, 0.0, 0.0], // Black attenuation
+            attenuation_distance: 1.0,
+        };
+
+        let gpu = def.to_gpu(0, 1, 2, 0, 0);
+        
+        // Should handle extreme values without crashing
+        assert!(gpu.base_color_factor[0].is_finite());
+        assert!(gpu.emissive_factor[0].is_finite());
+        assert!(gpu.subsurface_color[0].is_finite());
+        assert!(gpu.sheen_color[0].is_finite());
+        
+        // Verify values are preserved
+        assert_eq!(gpu.emissive_factor[0], 100.0); // HDR emissive is valid
+    }
 }

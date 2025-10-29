@@ -97,7 +97,7 @@ impl Default for ContextConfig {
 }
 
 /// Strategies for handling context overflow
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum OverflowStrategy {
     /// Remove oldest messages (FIFO)
     SlidingWindow,

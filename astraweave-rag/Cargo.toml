@@ -41,3 +41,7 @@ fuzzy-matcher = "0.3"
 criterion = { version = "0.7", features = ["html_reports"] }
 tokio-test = "0.4"
 
+[[bench]]
+name = "rag_benchmarks"
+harness = false
+

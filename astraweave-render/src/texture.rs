@@ -235,3 +235,133 @@ pub fn validate_texture_assets(asset_paths: &[&str]) -> Result<()> {
         Err(anyhow::anyhow!("No valid textures found"))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                force_fallback_adapter: true,
+                compatible_surface: None,
+            })
+            .await
+            .expect("Failed to find adapter");
+
+        adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("test_device"),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_defaults(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: Default::default(),
+                },
+            )
+            .await
+            .expect("Failed to create device")
+    }
+
+    #[test]
+    fn test_create_default_white() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let result = Texture::create_default_white(&device, &queue, "test_white");
+            
+            assert!(result.is_ok(), "Should create white texture successfully");
+            let texture = result.unwrap();
+            
+            // Verify texture properties
+            assert_eq!(texture.texture.size().width, 1);
+            assert_eq!(texture.texture.size().height, 1);
+            assert_eq!(texture.texture.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
+        });
+    }
+
+    #[test]
+    fn test_create_default_normal() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let result = Texture::create_default_normal(&device, &queue, "test_normal");
+            
+            assert!(result.is_ok(), "Should create normal texture successfully");
+            let texture = result.unwrap();
+            
+            // Verify texture properties
+            assert_eq!(texture.texture.size().width, 1);
+            assert_eq!(texture.texture.size().height, 1);
+            assert_eq!(texture.texture.format(), wgpu::TextureFormat::Rgba8UnormSrgb);
+        });
+    }
+
+    #[test]
+    fn test_white_and_normal_different_labels() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            
+            let white = Texture::create_default_white(&device, &queue, "white").unwrap();
+            let normal = Texture::create_default_normal(&device, &queue, "normal").unwrap();
+            
+            // Both should be 1x1 textures
+            assert_eq!(white.texture.size().width, 1);
+            assert_eq!(normal.texture.size().width, 1);
+        });
+    }
+
+    #[cfg(feature = "textures")]
+    #[test]
+    fn test_from_bytes_valid_png() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            
+            // Create a simple 2x2 PNG in memory (red pixel)
+            let png_data = vec![
+                0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+                0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+                0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, // 2x2 dimensions
+                0x08, 0x02, 0x00, 0x00, 0x00, 0xFD, 0xD4, 0x9A, // RGB, no interlace
+                0x73, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, // IDAT chunk
+                0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, // Compressed data
+                0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D,
+                0xB4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, // IEND
+                0x44, 0xAE, 0x42, 0x60, 0x82,
+            ];
+            
+            let result = Texture::from_bytes(&device, &queue, &png_data, "test_png");
+            assert!(result.is_ok(), "Should load PNG from bytes");
+        });
+    }
+
+    #[cfg(feature = "textures")]
+    #[test]
+    fn test_from_bytes_invalid_data() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let invalid_data = vec![0, 1, 2, 3, 4, 5]; // Not a valid image
+            
+            let result = Texture::from_bytes(&device, &queue, &invalid_data, "invalid");
+            assert!(result.is_err(), "Should fail on invalid image data");
+        });
+    }
+
+    #[cfg(feature = "textures")]
+    #[test]
+    fn test_validate_texture_assets_empty() {
+        let result = validate_texture_assets(&[]);
+        assert!(result.is_err(), "Empty asset list should fail validation");
+    }
+
+    #[cfg(feature = "textures")]
+    #[test]
+    fn test_validate_texture_assets_nonexistent() {
+        let result = validate_texture_assets(&["nonexistent_file.png"]);
+        assert!(result.is_err(), "Nonexistent file should fail validation");
+    }
+}

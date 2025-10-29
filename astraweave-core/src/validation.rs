@@ -1406,6 +1406,64 @@ mod tests {
         assert_eq!(budget.spawns, 0);
         assert_eq!(budget.terrain_edits, 0);
     }
+
+    #[test]
+    fn test_throw_smoke_success() {
+        // COVERAGE TARGET: Lines 143-144 (log statement in ThrowSmoke success path)
+        let mut w = mk_world_clear();
+        let actor = w.spawn("ally", IVec2 { x: 0, y: 0 }, Team { id: 1 }, 100, 10);
+        let intent = PlanIntent {
+            plan_id: "t".into(),
+            steps: vec![ActionStep::ThrowSmoke { x: 3, y: 0 }], // LOS clear, should succeed
+        };
+        let cfg = ValidateCfg {
+            world_bounds: (-10, -10, 10, 10),
+        };
+        let mut captured_log = String::new();
+        let mut log = |s: String| {
+            captured_log.push_str(&s);
+        };
+        let res = validate_and_execute(&mut w, actor, &intent, &cfg, &mut log);
+        
+        // Should succeed (no obstacles between (0,0) and (3,0))
+        assert!(res.is_ok(), "ThrowSmoke should succeed with clear LOS");
+        // Verify log statement was executed (lines 143-144)
+        assert!(captured_log.contains("THROW_SMOKE"), "Log should contain THROW_SMOKE");
+    }
+
+    #[test]
+    fn test_director_collapse_budget_skip() {
+        // COVERAGE TARGET: Lines 1450-1451 (Collapse SKIPPED budget logic)
+        let mut w = mk_world_clear();
+        let mut budget = crate::DirectorBudget {
+            traps: 10,
+            spawns: 10,
+            terrain_edits: 0, // Zero terrain budget
+        };
+        
+        let plan = crate::DirectorPlan {
+            ops: vec![
+                crate::DirectorOp::Collapse {
+                    a: IVec2 { x: 0, y: 0 },
+                    b: IVec2 { x: 5, y: 5 },
+                },
+            ],
+        };
+        
+        let initial_obstacle_count = w.obstacles.len();
+        
+        let mut captured_log = String::new();
+        let mut log = |s: String| {
+            captured_log.push_str(&s);
+            captured_log.push_str("\n");
+        };
+        apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+        
+        // Verify Collapse was skipped (lines 1450-1451)
+        assert_eq!(w.obstacles.len(), initial_obstacle_count, "Obstacles should not change");
+        assert!(captured_log.contains("Collapse SKIPPED (budget)"), "Log should show budget skip");
+        assert_eq!(budget.terrain_edits, 0, "Budget should remain zero");
+    }
 }
 fn draw_line_obs(obs: &mut std::collections::HashSet<(i32, i32)>, a: IVec2, b: IVec2) {
     let mut x = a.x;

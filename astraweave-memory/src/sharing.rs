@@ -434,7 +434,14 @@ mod tests {
 
     #[test]
     fn test_memory_sharing() {
-        let mut engine = SharingEngine::new(SharingConfig::default());
+        // Create config that allows sharing (default is Restricted)
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Full,
+            default_privacy_level: PrivacyLevel::Personal,
+            auto_sharing_enabled: false,
+            max_authorized_entities: 10,
+        };
+        let mut engine = SharingEngine::new(config);
         let memory = Memory::episodic(
             "Met with the team today".to_string(),
             vec!["Alice".to_string(), "Bob".to_string()],
@@ -450,7 +457,10 @@ mod tests {
         };
 
         let result = engine.share_memory(&request, &memory, "owner").unwrap();
-        assert!(result.success);
+        if !result.success {
+            eprintln!("Sharing failed: {:?}", result.error_message);
+        }
+        assert!(result.success, "Sharing failed: {:?}", result.error_message);
         assert!(result.shared_content.is_some());
     }
 
@@ -479,7 +489,14 @@ mod tests {
 
     #[test]
     fn test_audit_logging() {
-        let mut engine = SharingEngine::new(SharingConfig::default());
+        // Create config that allows sharing (default is Restricted)
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Full,
+            default_privacy_level: PrivacyLevel::Personal,
+            auto_sharing_enabled: false,
+            max_authorized_entities: 10,
+        };
+        let mut engine = SharingEngine::new(config);
         let memory = Memory::semantic("Test knowledge".to_string(), "test".to_string());
 
         let request = ShareRequest {

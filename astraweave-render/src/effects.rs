@@ -128,3 +128,183 @@ impl WeatherFx {
         self.particles.len() as u32
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
+
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                force_fallback_adapter: true,
+                compatible_surface: None,
+            })
+            .await
+            .expect("Failed to find adapter");
+
+        adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("test_device"),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_defaults(),
+                    memory_hints: wgpu::MemoryHints::default(),
+                    trace: Default::default(),
+                },
+            )
+            .await
+            .expect("Failed to create device")
+    }
+
+    #[test]
+    fn test_weather_fx_new() {
+        pollster::block_on(async {
+            let (device, _queue) = create_test_device().await;
+            let fx = WeatherFx::new(&device, 1000);
+            
+            assert_eq!(fx.max, 1000);
+            assert_eq!(fx.count(), 0, "Should start with no particles");
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_set_kind() {
+        pollster::block_on(async {
+            let (device, _queue) = create_test_device().await;
+            let mut fx = WeatherFx::new(&device, 100);
+            
+            fx.set_kind(WeatherKind::Rain);
+            fx.set_kind(WeatherKind::WindTrails);
+            fx.set_kind(WeatherKind::None);
+            
+            // Should not crash
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_update_none() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let mut fx = WeatherFx::new(&device, 100);
+            
+            fx.set_kind(WeatherKind::None);
+            fx.update(&queue, 0.016); // One frame
+            
+            assert_eq!(fx.count(), 0, "None weather should have no particles");
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_update_rain() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let mut fx = WeatherFx::new(&device, 100);
+            
+            fx.set_kind(WeatherKind::Rain);
+            fx.update(&queue, 0.016);
+            
+            assert!(fx.count() > 0, "Rain should spawn particles");
+            assert!(fx.count() <= 100, "Should not exceed max particles");
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_update_wind() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let mut fx = WeatherFx::new(&device, 100);
+            
+            fx.set_kind(WeatherKind::WindTrails);
+            fx.update(&queue, 0.016);
+            
+            assert!(fx.count() > 0, "Wind should spawn particles");
+            assert!(fx.count() <= 100, "Should not exceed max particles");
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_rain_spawns_up_to_max() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let max = 50;
+            let mut fx = WeatherFx::new(&device, max);
+            
+            fx.set_kind(WeatherKind::Rain);
+            
+            // Update multiple times to fill particles
+            for _ in 0..10 {
+                fx.update(&queue, 0.016);
+            }
+            
+            assert_eq!(fx.count(), max as u32, "Should fill to max capacity");
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_particles_despawn() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let mut fx = WeatherFx::new(&device, 100);
+            
+            fx.set_kind(WeatherKind::Rain);
+            fx.update(&queue, 0.016);
+            
+            // Update with large dt to age out particles
+            for _ in 0..100 {
+                fx.update(&queue, 1.0); // 1 second per frame
+            }
+            
+            // Rain continuously spawns, so should maintain particles
+            // (verifies spawning and despawning cycle works without crashing)
+            // Count may fluctuate but system should be stable
+            assert!(fx.count() <= 100, "Should not exceed max");
+        });
+    }
+
+    #[test]
+    fn test_weather_fx_switch_kind_clears() {
+        pollster::block_on(async {
+            let (device, queue) = create_test_device().await;
+            let mut fx = WeatherFx::new(&device, 100);
+            
+            fx.set_kind(WeatherKind::Rain);
+            fx.update(&queue, 0.016);
+            assert!(fx.count() > 0, "Rain should spawn particles");
+            
+            fx.set_kind(WeatherKind::None);
+            fx.update(&queue, 0.016);
+            assert_eq!(fx.count(), 0, "None should clear all particles");
+        });
+    }
+
+    #[test]
+    fn test_weather_kind_debug() {
+        let kinds = vec![
+            WeatherKind::None,
+            WeatherKind::Rain,
+            WeatherKind::WindTrails,
+        ];
+        
+        for kind in kinds {
+            let debug_str = format!("{:?}", kind);
+            assert!(!debug_str.is_empty(), "Debug should work");
+        }
+    }
+
+    #[test]
+    fn test_weather_fx_buffer_exists() {
+        pollster::block_on(async {
+            let (device, _queue) = create_test_device().await;
+            let fx = WeatherFx::new(&device, 100);
+            
+            let _buf = fx.buffer();
+            // Should return buffer reference without panic
+        });
+    }
+}
