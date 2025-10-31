@@ -381,9 +381,9 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
             if is_bc7 {
                 // BC7: Full RGBA with perceptual endpoint coding
                 let mut pixels_u32 = vec![0u32; (width * height) as usize];
-                // level0 is now &[u8] sliced from original data
+                // Access byte data from Level struct
                 texture2ddecoder::decode_bc7(
-                    level0,
+                    level0.data,
                     width as usize,
                     height as usize,
                     &mut pixels_u32,
@@ -409,7 +409,7 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
                 // BC5: 2-channel for normal maps, reconstruct Z component
                 let mut pixels_u32 = vec![0u32; (width * height) as usize];
                 texture2ddecoder::decode_bc5(
-                    level0,
+                    level0.data,
                     width as usize,
                     height as usize,
                     &mut pixels_u32,
@@ -437,14 +437,13 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
                 let img = image::RgbaImage::from_raw(width, height, rgba)
                     .ok_or_else(|| anyhow!("failed to create RGBA image from BC5 data"))?;
-
                 println!("[ktx2] ✓ Decoded BC5 normal map with Z reconstruction");
                 Ok(img)
             } else if is_bc3 {
                 // BC3 (DXT5): RGBA with interpolated alpha
                 let mut pixels_u32 = vec![0u32; (width * height) as usize];
                 texture2ddecoder::decode_bc3(
-                    level0,
+                    level0.data,
                     width as usize,
                     height as usize,
                     &mut pixels_u32,
@@ -463,20 +462,18 @@ struct VsOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
 
                 let img = image::RgbaImage::from_raw(width, height, rgba)
                     .ok_or_else(|| anyhow!("failed to create RGBA image from BC3 data"))?;
-
                 println!("[ktx2] ✓ Decoded BC3 texture");
                 Ok(img)
             } else if is_bc1 {
                 // BC1 (DXT1): RGB 565 with 1-bit alpha
                 let mut pixels_u32 = vec![0u32; (width * height) as usize];
                 texture2ddecoder::decode_bc1(
-                    level0,
+                    level0.data,
                     width as usize,
                     height as usize,
                     &mut pixels_u32,
                 )
                 .map_err(|e| anyhow!("BC1 decode failed: {}", e))?;
-
                 // Convert u32 to u8 RGBA
                 let mut rgba = vec![0u8; (width * height * 4) as usize];
                 for (i, &pixel) in pixels_u32.iter().enumerate() {

@@ -1,22 +1,23 @@
 //! ECS component types mirroring legacy World data (Phase 1 incremental migration)
 use crate::IVec2;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CPos {
     pub pos: IVec2,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CHealth {
     pub hp: i32,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CTeam {
     pub id: u8,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CAmmo {
     pub rounds: i32,
 }
@@ -62,20 +63,20 @@ pub mod cooldowns {
 
 use cooldowns::Map as CooldownMap;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CCooldowns {
     pub map: CooldownMap,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
 pub struct CDesiredPos {
     pub pos: IVec2,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CAiAgent;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 /// Component storing the legacy World entity id for round-trip mapping.
 pub struct CLegacyId {
     pub id: crate::Entity,
@@ -84,14 +85,14 @@ pub struct CLegacyId {
 // Temporary placeholder types to avoid circular dependency
 // These will be replaced when the memory system is integrated properly
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CompanionProfile {
     pub name: String,
     pub personality_traits: Vec<String>,
     pub background: String,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Fact {
     pub id: String,
     pub content: String,
@@ -99,7 +100,7 @@ pub struct Fact {
     pub timestamp: f64,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Episode {
     pub id: String,
     pub description: String,
@@ -107,12 +108,12 @@ pub struct Episode {
     pub importance: f32,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CPersona {
     pub profile: CompanionProfile,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct CMemory {
     pub facts: Vec<Fact>,
     pub episodes: Vec<Episode>,

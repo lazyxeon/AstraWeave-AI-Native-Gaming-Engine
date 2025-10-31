@@ -24,3 +24,8 @@ serde = { workspace = true }
 
 [dev-dependencies]
 approx = { workspace = true }
+criterion = { workspace = true }
+
+[[bench]]
+name = "pcg_benchmarks"
+harness = false

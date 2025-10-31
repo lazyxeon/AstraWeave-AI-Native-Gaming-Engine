@@ -86,7 +86,7 @@ impl Plugin for NetworkServerPlugin {
 }
 
 /// Client input system - sends player inputs to server
-fn client_input_system(world: &mut World) {
+pub fn client_input_system(world: &mut World) {
     // Query for network clients and predictions
     let mut clients_to_update = Vec::new();
 
@@ -117,7 +117,7 @@ fn client_input_system(world: &mut World) {
 }
 
 /// Client reconciliation system - applies server corrections
-fn client_reconciliation_system(world: &mut World) {
+pub fn client_reconciliation_system(world: &mut World) {
     // Query for clients that need reconciliation
     let mut clients_to_reconcile = Vec::new();
 
@@ -153,7 +153,7 @@ fn client_reconciliation_system(world: &mut World) {
 }
 
 /// Server snapshot system - generates world state snapshots
-fn server_snapshot_system(world: &mut World) {
+pub fn server_snapshot_system(world: &mut World) {
     // Query for network authorities
     let mut authorities_to_update = Vec::new();
 

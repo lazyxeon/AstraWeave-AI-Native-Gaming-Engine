@@ -93,6 +93,7 @@ members = [
   "net/aw-net-client",
   "astraweave-net-ecs",
   "astraweave-persistence-ecs",
+  "crates/astraweave-persistence-player",
   "astraweave-stress-test",
   "astraweave-security",
   "astraweave-observability",
