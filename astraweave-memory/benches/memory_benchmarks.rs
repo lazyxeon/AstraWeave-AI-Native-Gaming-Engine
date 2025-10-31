@@ -55,7 +55,8 @@ fn bench_memory_creation(c: &mut Criterion) {
 fn bench_memory_storage(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_storage");
     
-    for count in [10, 50, 100, 500].iter() {
+    // Limit to 10, 25, 50 to stay within Working memory capacity (default: 50)
+    for count in [10, 25, 50].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
             b.iter_with_setup(
                 || {
@@ -83,16 +84,16 @@ fn bench_memory_retrieval(c: &mut Criterion) {
         b.iter_with_setup(
             || {
                 let mut manager = MemoryManager::new();
-                // Pre-populate with 100 memories
-                for i in 0..100 {
+                // Pre-populate with 50 memories (Working memory capacity limit)
+                for i in 0..50 {
                     let memory = create_test_memory(&format!("memory_{}", i));
                     manager.store_memory(memory).unwrap();
                 }
                 manager
             },
             |mut manager| {
-                let memory = manager.get_memory(black_box("memory_50"));
-                black_box(memory)
+                let exists = manager.get_memory(black_box("memory_25")).is_some();
+                black_box(exists)
             },
         )
     });
@@ -102,7 +103,8 @@ fn bench_memory_retrieval(c: &mut Criterion) {
 fn bench_memory_access_tracking(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_access_tracking");
     
-    for count in [10, 50, 100].iter() {
+    // Limit to 10, 25, 50 to stay within Working memory capacity (default: 50)
+    for count in [10, 25, 50].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
             b.iter_with_setup(
                 || {
@@ -131,8 +133,8 @@ fn bench_memory_updates(c: &mut Criterion) {
         b.iter_with_setup(
             || {
                 let mut manager = MemoryManager::new();
-                // Pre-populate with 100 memories
-                for i in 0..100 {
+                // Pre-populate with 50 memories (Working memory capacity limit)
+                for i in 0..50 {
                     let mut memory = create_test_memory(&format!("memory_{}", i));
                     memory.metadata.importance = 0.5;
                     manager.store_memory(memory).unwrap();
@@ -140,7 +142,7 @@ fn bench_memory_updates(c: &mut Criterion) {
                 manager
             },
             |mut manager| {
-                if let Some(memory) = manager.get_memory(black_box("memory_50")) {
+                if let Some(memory) = manager.get_memory(black_box("memory_25")) {
                     memory.metadata.importance = black_box(0.8);
                     memory.metadata.access_count += 1;
                     black_box(&memory);

@@ -1,0 +1,313 @@
+    Finished `bench` profile [optimized + debuginfo] target(s) in 0.70s
+     Running benches\pcg_benchmarks.rs (target\release\deps\pcg_benchmarks-ca36e870a2703721.exe)
+Gnuplot not found, using plotters backend
+Benchmarking rng_operations/create_rng
+Benchmarking rng_operations/create_rng: Warming up for 3.0000 s
+Benchmarking rng_operations/create_rng: Collecting 100 samples in estimated 5.0005 s (41M iterations)
+Benchmarking rng_operations/create_rng: Analyzing
+rng_operations/create_rng
+                        time:   [120.36 ns 130.14 ns 142.03 ns]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking rng_operations/fork_rng
+Benchmarking rng_operations/fork_rng: Warming up for 3.0000 s
+Benchmarking rng_operations/fork_rng: Collecting 100 samples in estimated 5.0011 s (16M iterations)
+Benchmarking rng_operations/fork_rng: Analyzing
+rng_operations/fork_rng time:   [246.89 ns 275.93 ns 311.84 ns]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) high mild
+  6 (6.00%) high severe
+Benchmarking rng_operations/gen_range_i32
+Benchmarking rng_operations/gen_range_i32: Warming up for 3.0000 s
+Benchmarking rng_operations/gen_range_i32: Collecting 100 samples in estimated 5.0000 s (1.5B iterations)
+Benchmarking rng_operations/gen_range_i32: Analyzing
+rng_operations/gen_range_i32
+                        time:   [3.1629 ns 3.2585 ns 3.3755 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking rng_operations/gen_range_f32
+Benchmarking rng_operations/gen_range_f32: Warming up for 3.0000 s
+Benchmarking rng_operations/gen_range_f32: Collecting 100 samples in estimated 5.0000 s (1.0B iterations)
+Benchmarking rng_operations/gen_range_f32: Analyzing
+rng_operations/gen_range_f32
+                        time:   [4.0496 ns 4.1137 ns 4.1867 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking rng_operations/gen_bool
+Benchmarking rng_operations/gen_bool: Warming up for 3.0000 s
+Benchmarking rng_operations/gen_bool: Collecting 100 samples in estimated 5.0000 s (1.7B iterations)
+Benchmarking rng_operations/gen_bool: Analyzing
+rng_operations/gen_bool time:   [2.9868 ns 3.0860 ns 3.2056 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  1 (1.00%) high mild
+  3 (3.00%) high severe
+Benchmarking rng_operations/choose_from_10
+Benchmarking rng_operations/choose_from_10: Warming up for 3.0000 s
+Benchmarking rng_operations/choose_from_10: Collecting 100 samples in estimated 5.0000 s (1.5B iterations)
+Benchmarking rng_operations/choose_from_10: Analyzing
+rng_operations/choose_from_10
+                        time:   [3.5162 ns 3.7969 ns 4.1240 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking rng_operations/shuffle_100
+Benchmarking rng_operations/shuffle_100: Warming up for 3.0000 s
+Benchmarking rng_operations/shuffle_100: Collecting 100 samples in estimated 5.0010 s (6.0M iterations)
+Benchmarking rng_operations/shuffle_100: Analyzing
+rng_operations/shuffle_100
+                        time:   [799.17 ns 865.13 ns 942.85 ns]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+Benchmarking room_generation/generate_5_rooms
+Benchmarking room_generation/generate_5_rooms: Warming up for 3.0000 s
+Benchmarking room_generation/generate_5_rooms: Collecting 100 samples in estimated 5.0034 s (6.6M iterations)
+Benchmarking room_generation/generate_5_rooms: Analyzing
+room_generation/generate_5_rooms
+                        time:   [832.49 ns 879.52 ns 937.34 ns]
+Benchmarking room_generation/generate_10_rooms
+Benchmarking room_generation/generate_10_rooms: Warming up for 3.0000 s
+Benchmarking room_generation/generate_10_rooms: Collecting 100 samples in estimated 5.0028 s (2.7M iterations)
+Benchmarking room_generation/generate_10_rooms: Analyzing
+room_generation/generate_10_rooms
+                        time:   [1.2742 ┬╡s 1.3016 ┬╡s 1.3341 ┬╡s]
+Benchmarking room_generation/generate_20_rooms
+Benchmarking room_generation/generate_20_rooms: Warming up for 3.0000 s
+Benchmarking room_generation/generate_20_rooms: Collecting 100 samples in estimated 5.0063 s (1.5M iterations)
+Benchmarking room_generation/generate_20_rooms: Analyzing
+room_generation/generate_20_rooms
+                        time:   [3.1637 ┬╡s 3.2883 ┬╡s 3.4447 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking room_generation/generate_50_rooms
+Benchmarking room_generation/generate_50_rooms: Warming up for 3.0000 s
+Benchmarking room_generation/generate_50_rooms: Collecting 100 samples in estimated 5.0406 s (571k iterations)
+Benchmarking room_generation/generate_50_rooms: Analyzing
+room_generation/generate_50_rooms
+                        time:   [6.8940 ┬╡s 7.0536 ┬╡s 7.2410 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+Benchmarking room_generation/generate_100_rooms
+Benchmarking room_generation/generate_100_rooms: Warming up for 3.0000 s
+Benchmarking room_generation/generate_100_rooms: Collecting 100 samples in estimated 5.0083 s (177k iterations)
+Benchmarking room_generation/generate_100_rooms: Analyzing
+room_generation/generate_100_rooms
+                        time:   [25.835 ┬╡s 26.896 ┬╡s 28.223 ┬╡s]
+Benchmarking room_generation/room_overlap_check
+Benchmarking room_generation/room_overlap_check: Warming up for 3.0000 s
+Benchmarking room_generation/room_overlap_check: Collecting 100 samples in estimated 5.0000 s (6.7B iterations)
+Benchmarking room_generation/room_overlap_check: Analyzing
+room_generation/room_overlap_check
+                        time:   [807.50 ps 884.38 ps 972.79 ps]
+Found 7 outliers among 100 measurements (7.00%)
+  6 (6.00%) high mild
+  1 (1.00%) high severe
+Benchmarking room_generation/room_center
+Benchmarking room_generation/room_center: Warming up for 3.0000 s
+Benchmarking room_generation/room_center: Collecting 100 samples in estimated 5.0000 s (6.4B iterations)
+Benchmarking room_generation/room_center: Analyzing
+room_generation/room_center
+                        time:   [839.38 ps 867.02 ps 900.13 ps]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+Benchmarking encounter_generation/generate_10_encounters
+Benchmarking encounter_generation/generate_10_encounters: Warming up for 3.0000 s
+Benchmarking encounter_generation/generate_10_encounters: Collecting 100 samples in estimated 5.0033 s (2.2M iterations)
+Benchmarking encounter_generation/generate_10_encounters: Analyzing
+encounter_generation/generate_10_encounters
+                        time:   [2.1476 ┬╡s 2.2337 ┬╡s 2.3420 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking encounter_generation/generate_50_encounters
+Benchmarking encounter_generation/generate_50_encounters: Warming up for 3.0000 s
+Benchmarking encounter_generation/generate_50_encounters: Collecting 100 samples in estimated 5.0306 s (449k iterations)
+Benchmarking encounter_generation/generate_50_encounters: Analyzing
+encounter_generation/generate_50_encounters
+                        time:   [8.7125 ┬╡s 8.8984 ┬╡s 9.1160 ┬╡s]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking encounter_generation/generate_100_encounters
+Benchmarking encounter_generation/generate_100_encounters: Warming up for 3.0000 s
+Benchmarking encounter_generation/generate_100_encounters: Collecting 100 samples in estimated 5.0454 s (182k iterations)
+Benchmarking encounter_generation/generate_100_encounters: Analyzing
+encounter_generation/generate_100_encounters
+                        time:   [25.647 ┬╡s 26.938 ┬╡s 28.575 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+Benchmarking encounter_generation/generate_200_encounters
+Benchmarking encounter_generation/generate_200_encounters: Warming up for 3.0000 s
+Benchmarking encounter_generation/generate_200_encounters: Collecting 100 samples in estimated 5.2687 s (76k iterations)
+Benchmarking encounter_generation/generate_200_encounters: Analyzing
+encounter_generation/generate_200_encounters
+                        time:   [64.383 ┬╡s 71.223 ┬╡s 79.448 ┬╡s]
+Found 11 outliers among 100 measurements (11.00%)
+  3 (3.00%) high mild
+  8 (8.00%) high severe
+Benchmarking encounter_generation/spacing_check_100
+Benchmarking encounter_generation/spacing_check_100: Warming up for 3.0000 s
+Benchmarking encounter_generation/spacing_check_100: Collecting 100 samples in estimated 5.0001 s (124M iterations)
+Benchmarking encounter_generation/spacing_check_100: Analyzing
+encounter_generation/spacing_check_100
+                        time:   [38.139 ns 41.362 ns 45.155 ns]
+Found 11 outliers among 100 measurements (11.00%)
+  8 (8.00%) high mild
+  3 (3.00%) high severe
+
+Benchmarking full_dungeon_pipeline/small_dungeon_5r_10e
+Benchmarking full_dungeon_pipeline/small_dungeon_5r_10e: Warming up for 3.0000 s
+Benchmarking full_dungeon_pipeline/small_dungeon_5r_10e: Collecting 100 samples in estimated 5.0058 s (1.2M iterations)
+Benchmarking full_dungeon_pipeline/small_dungeon_5r_10e: Analyzing
+full_dungeon_pipeline/small_dungeon_5r_10e
+                        time:   [4.2180 ┬╡s 4.4449 ┬╡s 4.6788 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  7 (7.00%) high mild
+Benchmarking full_dungeon_pipeline/medium_dungeon_20r_50e
+Benchmarking full_dungeon_pipeline/medium_dungeon_20r_50e: Warming up for 3.0000 s
+Benchmarking full_dungeon_pipeline/medium_dungeon_20r_50e: Collecting 100 samples in estimated 5.0165 s (263k iterations)
+Benchmarking full_dungeon_pipeline/medium_dungeon_20r_50e: Analyzing
+full_dungeon_pipeline/medium_dungeon_20r_50e
+                        time:   [18.447 ┬╡s 19.225 ┬╡s 20.048 ┬╡s]
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+Benchmarking full_dungeon_pipeline/large_dungeon_50r_150e
+Benchmarking full_dungeon_pipeline/large_dungeon_50r_150e: Warming up for 3.0000 s
+Benchmarking full_dungeon_pipeline/large_dungeon_50r_150e: Collecting 100 samples in estimated 5.1257 s (76k iterations)
+Benchmarking full_dungeon_pipeline/large_dungeon_50r_150e: Analyzing
+full_dungeon_pipeline/large_dungeon_50r_150e
+                        time:   [65.554 ┬╡s 68.461 ┬╡s 71.784 ┬╡s]
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+Benchmarking full_dungeon_pipeline/huge_dungeon_100r_300e
+Benchmarking full_dungeon_pipeline/huge_dungeon_100r_300e: Warming up for 3.0000 s
+Benchmarking full_dungeon_pipeline/huge_dungeon_100r_300e: Collecting 100 samples in estimated 5.8377 s (30k iterations)
+Benchmarking full_dungeon_pipeline/huge_dungeon_100r_300e: Analyzing
+full_dungeon_pipeline/huge_dungeon_100r_300e
+                        time:   [191.21 ┬╡s 199.10 ┬╡s 207.90 ┬╡s]
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking scaling/room_generation/1_rooms
+Benchmarking scaling/room_generation/1_rooms: Warming up for 3.0000 s
+Benchmarking scaling/room_generation/1_rooms: Collecting 100 samples in estimated 5.0013 s (14M iterations)
+Benchmarking scaling/room_generation/1_rooms: Analyzing
+scaling/room_generation/1_rooms
+                        time:   [346.06 ns 364.45 ns 386.18 ns]
+                        thrpt:  [2.5895 Melem/s 2.7438 Melem/s 2.8897 Melem/s]
+Found 12 outliers among 100 measurements (12.00%)
+  5 (5.00%) high mild
+  7 (7.00%) high severe
+Benchmarking scaling/room_generation/5_rooms
+Benchmarking scaling/room_generation/5_rooms: Warming up for 3.0000 s
+Benchmarking scaling/room_generation/5_rooms: Collecting 100 samples in estimated 5.0043 s (5.4M iterations)
+Benchmarking scaling/room_generation/5_rooms: Analyzing
+scaling/room_generation/5_rooms
+                        time:   [973.00 ns 1.0371 ┬╡s 1.1090 ┬╡s]
+                        thrpt:  [4.5085 Melem/s 4.8212 Melem/s 5.1388 Melem/s]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+Benchmarking scaling/room_generation/10_rooms
+Benchmarking scaling/room_generation/10_rooms: Warming up for 3.0000 s
+Benchmarking scaling/room_generation/10_rooms: Collecting 100 samples in estimated 5.0006 s (2.5M iterations)
+Benchmarking scaling/room_generation/10_rooms: Analyzing
+scaling/room_generation/10_rooms
+                        time:   [1.9971 ┬╡s 2.0752 ┬╡s 2.1699 ┬╡s]
+                        thrpt:  [4.6085 Melem/s 4.8187 Melem/s 5.0073 Melem/s]
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+Benchmarking scaling/room_generation/20_rooms
+Benchmarking scaling/room_generation/20_rooms: Warming up for 3.0000 s
+Benchmarking scaling/room_generation/20_rooms: Collecting 100 samples in estimated 5.0049 s (1.4M iterations)
+Benchmarking scaling/room_generation/20_rooms: Analyzing
+scaling/room_generation/20_rooms
+                        time:   [3.5727 ┬╡s 3.6610 ┬╡s 3.7578 ┬╡s]
+                        thrpt:  [5.3223 Melem/s 5.4631 Melem/s 5.5980 Melem/s]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high mild
+Benchmarking scaling/room_generation/50_rooms
+Benchmarking scaling/room_generation/50_rooms: Warming up for 3.0000 s
+Benchmarking scaling/room_generation/50_rooms: Collecting 100 samples in estimated 5.0368 s (556k iterations)
+Benchmarking scaling/room_generation/50_rooms: Analyzing
+scaling/room_generation/50_rooms
+                        time:   [8.5743 ┬╡s 8.7437 ┬╡s 8.9285 ┬╡s]
+                        thrpt:  [5.6000 Melem/s 5.7184 Melem/s 5.8314 Melem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking scaling/room_generation/100_rooms
+Benchmarking scaling/room_generation/100_rooms: Warming up for 3.0000 s
+Benchmarking scaling/room_generation/100_rooms: Collecting 100 samples in estimated 5.1139 s (202k iterations)
+Benchmarking scaling/room_generation/100_rooms: Analyzing
+scaling/room_generation/100_rooms
+                        time:   [20.857 ┬╡s 21.396 ┬╡s 21.986 ┬╡s]
+                        thrpt:  [4.5484 Melem/s 4.6738 Melem/s 4.7945 Melem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+Benchmarking scaling/encounter_generation/10_encounters
+Benchmarking scaling/encounter_generation/10_encounters: Warming up for 3.0000 s
+Benchmarking scaling/encounter_generation/10_encounters: Collecting 100 samples in estimated 5.0050 s (1.8M iterations)
+Benchmarking scaling/encounter_generation/10_encounters: Analyzing
+scaling/encounter_generation/10_encounters
+                        time:   [2.5406 ┬╡s 2.6726 ┬╡s 2.8259 ┬╡s]
+                        thrpt:  [3.5386 Melem/s 3.7417 Melem/s 3.9361 Melem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking scaling/encounter_generation/25_encounters
+Benchmarking scaling/encounter_generation/25_encounters: Warming up for 3.0000 s
+Benchmarking scaling/encounter_generation/25_encounters: Collecting 100 samples in estimated 5.0037 s (823k iterations)
+Benchmarking scaling/encounter_generation/25_encounters: Analyzing
+scaling/encounter_generation/25_encounters
+                        time:   [6.2469 ┬╡s 6.8915 ┬╡s 7.6571 ┬╡s]
+                        thrpt:  [3.2649 Melem/s 3.6276 Melem/s 4.0020 Melem/s]
+Found 9 outliers among 100 measurements (9.00%)
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+Benchmarking scaling/encounter_generation/50_encounters
+Benchmarking scaling/encounter_generation/50_encounters: Warming up for 3.0000 s
+Benchmarking scaling/encounter_generation/50_encounters: Collecting 100 samples in estimated 5.0256 s (394k iterations)
+Benchmarking scaling/encounter_generation/50_encounters: Analyzing
+scaling/encounter_generation/50_encounters
+                        time:   [12.203 ┬╡s 12.418 ┬╡s 12.656 ┬╡s]
+                        thrpt:  [3.9508 Melem/s 4.0265 Melem/s 4.0974 Melem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking scaling/encounter_generation/100_encounters
+Benchmarking scaling/encounter_generation/100_encounters: Warming up for 3.0000 s
+Benchmarking scaling/encounter_generation/100_encounters: Collecting 100 samples in estimated 5.1070 s (177k iterations)
+Benchmarking scaling/encounter_generation/100_encounters: Analyzing
+scaling/encounter_generation/100_encounters
+                        time:   [27.119 ┬╡s 27.864 ┬╡s 28.648 ┬╡s]
+                        thrpt:  [3.4907 Melem/s 3.5888 Melem/s 3.6875 Melem/s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking scaling/encounter_generation/200_encounters
+Benchmarking scaling/encounter_generation/200_encounters: Warming up for 3.0000 s
+Benchmarking scaling/encounter_generation/200_encounters: Collecting 100 samples in estimated 5.3362 s (76k iterations)
+Benchmarking scaling/encounter_generation/200_encounters: Analyzing
+scaling/encounter_generation/200_encounters
+                        time:   [73.250 ┬╡s 74.661 ┬╡s 76.262 ┬╡s]
+                        thrpt:  [2.6225 Melem/s 2.6788 Melem/s 2.7304 Melem/s]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) high mild
+  5 (5.00%) high severe
+Benchmarking scaling/encounter_generation/500_encounters
+Benchmarking scaling/encounter_generation/500_encounters: Warming up for 3.0000 s
+Benchmarking scaling/encounter_generation/500_encounters: Collecting 100 samples in estimated 6.6546 s (20k iterations)
+Benchmarking scaling/encounter_generation/500_encounters: Analyzing
+scaling/encounter_generation/500_encounters
+                        time:   [333.76 ┬╡s 366.98 ┬╡s 403.80 ┬╡s]
+                        thrpt:  [1.2382 Melem/s 1.3625 Melem/s 1.4981 Melem/s]
+Found 9 outliers among 100 measurements (9.00%)
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+
