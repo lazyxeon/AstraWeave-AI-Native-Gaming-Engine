@@ -22,7 +22,7 @@ astraweave-prompts = { path = "../astraweave-prompts" }
 astraweave-llm = { path = "../astraweave-llm" }
 
 # Vector operations
-nalgebra = "0.33"
+nalgebra = "0.34"
 
 # Concurrent data structures
 dashmap = "6.1"
