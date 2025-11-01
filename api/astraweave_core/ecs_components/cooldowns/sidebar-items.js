@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CooldownKey"],"type":["Map"]};

@@ -1,322 +1,284 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AstraWeave Benchmark Dashboard</title>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            color: #e0e0e0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        h1 {
-            font-size: 3em;
-            background: linear-gradient(45deg, #00f2fe, #4facfe);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            font-size: 1.2em;
-            color: #a0a0a0;
-        }
-        
-        .filters {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            padding: 25px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            flex-wrap: wrap;
-        }
-        
-        .filter-group {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        .filter-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #4facfe;
-        }
-        
-        select, input {
-            width: 100%;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            color: #e0e0e0;
-            font-size: 1em;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        select:hover, input:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: #4facfe;
-        }
-        
-        select:focus, input:focus {
-            outline: none;
-            border-color: #00f2fe;
-            background: rgba(255, 255, 255, 0.15);
-        }
-        
-        option {
-            background: #1a1a2e;
-            color: #e0e0e0;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-            border-left: 4px solid;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
-        
-        .stat-card.ecs { border-left-color: #4facfe; }
-        .stat-card.ai { border-left-color: #00f2fe; }
-        .stat-card.physics { border-left-color: #43e97b; }
-        .stat-card.terrain { border-left-color: #fa709a; }
-        
-        .stat-label {
-            font-size: 0.9em;
-            color: #a0a0a0;
-            margin-bottom: 8px;
-        }
-        
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #4facfe;
-        }
-        
-        .stat-unit {
-            font-size: 0.8em;
-            color: #a0a0a0;
-            margin-left: 5px;
-        }
-        
-        .chart-container {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 30px;
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            margin-bottom: 30px;
-        }
-        
-        .chart-title {
-            font-size: 1.5em;
-            margin-bottom: 20px;
-            color: #4facfe;
-        }
-        
-        #chart svg {
-            width: 100%;
-            height: auto;
-        }
-        
-        .line {
-            fill: none;
-            stroke-width: 2.5;
-            transition: stroke-width 0.3s;
-        }
-        
-        .line:hover {
-            stroke-width: 4;
-        }
-        
-        .axis {
-            font-size: 12px;
-        }
-        
-        .axis path,
-        .axis line {
-            stroke: rgba(255, 255, 255, 0.2);
-        }
-        
-        .axis text {
-            fill: #a0a0a0;
-        }
-        
-        .grid line {
-            stroke: rgba(255, 255, 255, 0.1);
-            stroke-dasharray: 2,2;
-        }
-        
-        .tooltip {
-            position: absolute;
-            padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #4facfe;
-            border-radius: 8px;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 0.9em;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-        }
-        
-        .tooltip.visible {
-            opacity: 1;
-        }
-        
-        .legend {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 6px;
-            transition: background 0.3s;
-        }
-        
-        .legend-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .legend-color {
-            width: 20px;
-            height: 4px;
-            border-radius: 2px;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 60px;
-            font-size: 1.5em;
-            color: #4facfe;
-        }
-        
-        .error {
-            text-align: center;
-            padding: 40px;
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            border-radius: 12px;
-            color: #ff6b6b;
-        }
-        
-        footer {
-            text-align: center;
-            margin-top: 60px;
-            padding: 20px;
-            color: #666;
-            font-size: 0.9em;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>⚡ AstraWeave Benchmark Dashboard</h1>
-            <div class="subtitle">Performance Telemetry & Regression Tracking</div>
-        </header>
-        
-        <div class="filters">
-            <div class="filter-group">
-                <label for="system-filter">System</label>
-                <select id="system-filter">
-                    <option value="all">All Systems</option>
-                    <option value="ecs">ECS Core</option>
-                    <option value="ai">AI Planning</option>
-                    <option value="physics">Physics</option>
-                    <option value="terrain">Terrain</option>
-                    <option value="input">Input</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="time-range">Time Range</label>
-                <select id="time-range">
-                    <option value="7">Last 7 Days</option>
-                    <option value="14">Last 14 Days</option>
-                    <option value="30" selected>Last 30 Days</option>
-                    <option value="60">Last 60 Days</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label for="benchmark-select">Benchmark</label>
-                <select id="benchmark-select">
-                    <option value="">Loading...</option>
-                </select>
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Introduction - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
             </div>
         </div>
-        
-        <div class="stats-grid" id="stats-grid">
-            <div class="loading">Loading benchmark data...</div>
-        </div>
-        
-        <div class="chart-container">
-            <div class="chart-title" id="chart-title">Benchmark Trend</div>
-            <div id="chart"></div>
-            <div class="legend" id="legend"></div>
-        </div>
-        
-        <footer>
-            AstraWeave AI-Native Game Engine | Generated: <span id="generated-time"></span>
-        </footer>
     </div>
-    
-    <div class="tooltip"></div>
-    
-    <script src="dashboard.js"></script>
-</body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/README.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="astraweave-ai-native-game-engine-documentation"><a class="header" href="#astraweave-ai-native-game-engine-documentation">AstraWeave: AI-Native Game Engine Documentation</a></h1>
+<p>Welcome to the comprehensive documentation for <strong>AstraWeave</strong>, the first game engine built from the ground up for AI-native gameplay.</p>
+<h2 id="what-is-astraweave"><a class="header" href="#what-is-astraweave">What is AstraWeave?</a></h2>
+<p>AstraWeave is a deterministic, ECS-based game engine where <strong>AI agents are first-class citizens</strong>. Unlike traditional engines where AI is bolted on as an afterthought, AstraWeave implements the core AI loop (<strong>Perception → Reasoning → Planning → Action</strong>) directly into the simulation architecture.</p>
+<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
+<p>🧠 <strong>AI-Native Architecture</strong> - Agents plan through sandboxed tools with full engine validation<br />
+🎯 <strong>Deterministic Simulation</strong> - 60Hz fixed-tick simulation with authoritative validation<br />
+🛡️ <strong>Tool Sandbox Security</strong> - AI can only act through validated verbs (no cheating)<br />
+🤝 <strong>Persistent Companions</strong> - AI profiles that learn and adapt across sessions<br />
+🎭 <strong>Adaptive Boss Systems</strong> - Directors that evolve tactics and reshape battlefields<br />
+🌐 <strong>Local-First AI</strong> - 7B-12B quantized LLMs for low-latency decisions</p>
+<h2 id="who-is-this-for"><a class="header" href="#who-is-this-for">Who is This For?</a></h2>
+<p>This documentation serves different types of users:</p>
+<h3 id="-game-developers"><a class="header" href="#-game-developers">🎮 Game Developers</a></h3>
+<ul>
+<li>Want to build games with intelligent AI companions</li>
+<li>Need dynamic bosses that adapt to player strategies</li>
+<li>Seek emergent gameplay from AI agent interactions</li>
+<li><strong>Start with:</strong> <a href="./getting-started/quick-start.html">Quick Start Guide</a></li>
+</ul>
+<h3 id="-engine-contributors"><a class="header" href="#-engine-contributors">🔧 Engine Contributors</a></h3>
+<ul>
+<li>Want to contribute to the engine's core systems</li>
+<li>Interested in AI-native architecture design</li>
+<li>Need to understand the codebase structure</li>
+<li><strong>Start with:</strong> <a href="./dev/contributing.html">Contributing Guide</a></li>
+</ul>
+<h3 id="-ai-researchers"><a class="header" href="#-ai-researchers">🧠 AI Researchers</a></h3>
+<ul>
+<li>Studying AI-native game architectures</li>
+<li>Interested in perception, planning, and validation systems</li>
+<li>Want to understand tool-based AI validation</li>
+<li><strong>Start with:</strong> <a href="./architecture/ai-native.html">AI-Native Design</a></li>
+</ul>
+<h3 id="-students--learners"><a class="header" href="#-students--learners">📚 Students &amp; Learners</a></h3>
+<ul>
+<li>Learning about game engine architecture</li>
+<li>Understanding ECS and deterministic simulation</li>
+<li>Exploring AI in games</li>
+<li><strong>Start with:</strong> <a href="./architecture/overview.html">Architecture Overview</a></li>
+</ul>
+<h2 id="quick-navigation"><a class="header" href="#quick-navigation">Quick Navigation</a></h2>
+<ul>
+<li><strong>New to AstraWeave?</strong> → <a href="./getting-started/quick-start.html">Quick Start Guide</a></li>
+<li><strong>Want to build a game?</strong> → <a href="./game-dev/first-game.html">Building Your First Game</a></li>
+<li><strong>Need API reference?</strong> → <a href="./api/index.html">API Documentation</a></li>
+<li><strong>Looking for examples?</strong> → <a href="./examples/index.html">Working Examples</a></li>
+<li><strong>Want to contribute?</strong> → <a href="./dev/contributing.html">Contributing Guide</a></li>
+<li><strong>Having issues?</strong> → <a href="./resources/troubleshooting.html">Troubleshooting</a></li>
+</ul>
+<h2 id="reference-implementation-veilweaver"><a class="header" href="#reference-implementation-veilweaver">Reference Implementation: Veilweaver</a></h2>
+<p><strong>Veilweaver: Threads of Eternity</strong> serves as AstraWeave's reference implementation—a complete AI-native Action RPG that demonstrates the engine's capabilities. Learn more in the <a href="./veilweaver/overview.html">Veilweaver section</a>.</p>
+<hr />
+<p><em>Ready to build the future of AI-native gaming? Let's get started!</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+                            <a rel="next prefetch" href="getting-started/quick-start.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+                    <a rel="next prefetch" href="getting-started/quick-start.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
 </html>
