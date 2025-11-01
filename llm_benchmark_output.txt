@@ -1,0 +1,221 @@
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+warning: `astraweave-llm` (lib) generated 2 warnings
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-llm\benches\llm_benchmarks.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:33:27
+   |
+33 |             let _cached = black_box("cached response".to_string());
+   |                           ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:57:53
+   |
+57 |                     let _response = client.complete(black_box("test prompt")).await.unwrap();
+   |                                                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:80:34
+   |
+80 |                 let normalized = black_box(prompt)
+   |                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:86:17
+   |
+86 |                 black_box(normalized);
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\llm_benchmarks.rs:122:30
+    |
+122 |                 let jitter = black_box(42u64 % (jitter_range * 2));
+    |                              ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\llm_benchmarks.rs:125:17
+    |
+125 |                 black_box(final_backoff);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\llm_benchmarks.rs:149:13
+    |
+149 |             black_box(can_proceed);
+    |             ^^^^^^^^^
+
+warning: variants `Open` and `HalfOpen` are never constructed
+   --> astraweave-llm\benches\llm_benchmarks.rs:138:9
+    |
+136 |     enum CircuitState {
+    |          ------------ variants in this enum
+137 |         Closed,
+138 |         Open,
+    |         ^^^^
+139 |         HalfOpen,
+    |         ^^^^^^^^
+    |
+    = note: `CircuitState` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-llm` (bench "llm_benchmarks") generated 9 warnings
+    Finished `bench` profile [optimized + debuginfo] target(s) in 0.94s
+     Running benches\llm_benchmarks.rs (target\release\deps\llm_benchmarks-edc9f831465ea3cf.exe)
+Gnuplot not found, using plotters backend
+Benchmarking cache_hit_latency
+Benchmarking cache_hit_latency: Warming up for 3.0000 s
+Benchmarking cache_hit_latency: Collecting 100 samples in estimated 5.0004 s (30M iterations)
+Benchmarking cache_hit_latency: Analyzing
+cache_hit_latency       time:   [180.53 ns 201.50 ns 231.00 ns]
+Found 5 outliers among 100 measurements (5.00%)
+  4 (4.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking cache_miss_latency/10ms_llm
+Benchmarking cache_miss_latency/10ms_llm: Warming up for 3.0000 s
+Benchmarking cache_miss_latency/10ms_llm: Collecting 100 samples in estimated 5.0209 s (300 iterations)
+Benchmarking cache_miss_latency/10ms_llm: Analyzing
+cache_miss_latency/10ms_llm
+                        time:   [15.578 ms 15.698 ms 15.846 ms]
+Found 6 outliers among 100 measurements (6.00%)
+  3 (3.00%) low mild
+  3 (3.00%) high severe
+Benchmarking cache_miss_latency/50ms_llm
+Benchmarking cache_miss_latency/50ms_llm: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 6.2s, or reduce sample count to 80.
+Benchmarking cache_miss_latency/50ms_llm: Collecting 100 samples in estimated 6.2433 s (100 iterations)
+Benchmarking cache_miss_latency/50ms_llm: Analyzing
+cache_miss_latency/50ms_llm
+                        time:   [62.469 ms 63.175 ms 64.099 ms]
+Found 8 outliers among 100 measurements (8.00%)
+  2 (2.00%) low severe
+  1 (1.00%) high mild
+  5 (5.00%) high severe
+Benchmarking cache_miss_latency/100ms_llm
+Benchmarking cache_miss_latency/100ms_llm: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 11.0s, or reduce sample count to 40.
+Benchmarking cache_miss_latency/100ms_llm: Collecting 100 samples in estimated 10.963 s (100 iterations)
+Benchmarking cache_miss_latency/100ms_llm: Analyzing
+cache_miss_latency/100ms_llm
+                        time:   [109.12 ms 109.84 ms 110.77 ms]
+Found 8 outliers among 100 measurements (8.00%)
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+Benchmarking cache_miss_latency/200ms_llm
+Benchmarking cache_miss_latency/200ms_llm: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 20.8s, or reduce sample count to 20.
+Benchmarking cache_miss_latency/200ms_llm: Collecting 100 samples in estimated 20.763 s (100 iterations)
+Benchmarking cache_miss_latency/200ms_llm: Analyzing
+cache_miss_latency/200ms_llm
+                        time:   [205.06 ms 206.14 ms 207.33 ms]
+Found 18 outliers among 100 measurements (18.00%)
+  1 (1.00%) high mild
+  17 (17.00%) high severe
+
+Benchmarking prompt_normalization
+Benchmarking prompt_normalization: Warming up for 3.0000 s
+Benchmarking prompt_normalization: Collecting 100 samples in estimated 5.0070 s (2.1M iterations)
+Benchmarking prompt_normalization: Analyzing
+prompt_normalization    time:   [2.2415 ┬╡s 2.5524 ┬╡s 2.8336 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  10 (10.00%) high mild
+
+Benchmarking telemetry_record_request
+Benchmarking telemetry_record_request: Warming up for 3.0000 s
+Benchmarking telemetry_record_request: Collecting 100 samples in estimated 5.0001 s (204M iterations)
+Benchmarking telemetry_record_request: Analyzing
+telemetry_record_request
+                        time:   [18.967 ns 20.440 ns 22.158 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking retry_backoff_calculation
+Benchmarking retry_backoff_calculation: Warming up for 3.0000 s
+Benchmarking retry_backoff_calculation: Collecting 100 samples in estimated 5.0000 s (1.1B iterations)
+Benchmarking retry_backoff_calculation: Analyzing
+retry_backoff_calculation
+                        time:   [3.6103 ns 3.8498 ns 4.1376 ns]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+
+Benchmarking circuit_breaker_state_check
+Benchmarking circuit_breaker_state_check: Warming up for 3.0000 s
+Benchmarking circuit_breaker_state_check: Collecting 100 samples in estimated 5.0001 s (319M iterations)
+Benchmarking circuit_breaker_state_check: Analyzing
+circuit_breaker_state_check
+                        time:   [14.532 ns 15.222 ns 16.052 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking end_to_end_plan_generation/cache_hit
+Benchmarking end_to_end_plan_generation/cache_hit: Warming up for 3.0000 s
+Benchmarking end_to_end_plan_generation/cache_hit: Collecting 50 samples in estimated 5.0535 s (150 iterations)
+Benchmarking end_to_end_plan_generation/cache_hit: Analyzing
+end_to_end_plan_generation/cache_hit
+                        time:   [28.850 ms 31.310 ms 33.936 ms]
+Found 11 outliers among 50 measurements (22.00%)
+  3 (6.00%) low mild
+  6 (12.00%) high mild
+  2 (4.00%) high severe
+Benchmarking end_to_end_plan_generation/cache_miss_fast
+Benchmarking end_to_end_plan_generation/cache_miss_fast: Warming up for 3.0000 s
+Benchmarking end_to_end_plan_generation/cache_miss_fast: Collecting 50 samples in estimated 7.7777 s (100 iterations)
+Benchmarking end_to_end_plan_generation/cache_miss_fast: Analyzing
+end_to_end_plan_generation/cache_miss_fast
+                        time:   [77.493 ms 79.163 ms 81.117 ms]
+Found 14 outliers among 50 measurements (28.00%)
+  5 (10.00%) low severe
+  2 (4.00%) high mild
+  7 (14.00%) high severe
+Benchmarking end_to_end_plan_generation/cache_miss_slow
+Benchmarking end_to_end_plan_generation/cache_miss_slow: Warming up for 3.0000 s
+
+Warning: Unable to complete 50 samples in 5.0s. You may wish to increase target time to 11.6s, or reduce sample count to 20.
+Benchmarking end_to_end_plan_generation/cache_miss_slow: Collecting 50 samples in estimated 11.626 s (50 iterations)
+Benchmarking end_to_end_plan_generation/cache_miss_slow: Analyzing
+end_to_end_plan_generation/cache_miss_slow
+                        time:   [222.65 ms 226.31 ms 230.39 ms]
+Found 5 outliers among 50 measurements (10.00%)
+  4 (8.00%) high mild
+  1 (2.00%) high severe
+

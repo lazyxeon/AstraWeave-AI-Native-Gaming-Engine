@@ -747,6 +747,7 @@ dependencies = [
  "chrono",
  "criterion 0.7.0",
  "dashmap",
+ "env_logger",
  "futures-util",
  "hf-hub",
  "lazy_static",
@@ -6091,6 +6092,16 @@ dependencies = [
  "astraweave-llm",
  "reqwest",
  "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "llm_streaming_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-llm",
+ "futures-util",
  "tokio",
 ]
 
