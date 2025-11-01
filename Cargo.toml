@@ -24,6 +24,7 @@ members = [
   "examples/llm_toolcall",    
   "examples/llm_integration",    
   "examples/llm_comprehensive_demo",
+  "examples/llm_streaming_demo",
   "examples/ollama_probe",
   "examples/phase_director",  
   "examples/persona_loader",  

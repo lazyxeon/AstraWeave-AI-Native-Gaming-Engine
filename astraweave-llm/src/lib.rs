@@ -35,7 +35,40 @@ pub enum PlanSource {
 /// Trait for LLM clients (mock, Ollama, etc).
 #[async_trait::async_trait]
 pub trait LlmClient: Send + Sync {
+    /// Complete a prompt and return the full response (blocking until complete)
     async fn complete(&self, prompt: &str) -> Result<String>;
+    
+    /// Complete a prompt with streaming support (progressive response delivery)
+    ///
+    /// Returns a stream of text chunks as they arrive from the LLM. Enables:
+    /// - Lower time-to-first-token (start parsing before full response arrives)
+    /// - Progressive UI updates (show partial results)
+    /// - Integration with StreamingParser for batch inference
+    ///
+    /// Default implementation calls `complete()` and wraps result in single-chunk stream.
+    /// Clients should override for true streaming support.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use astraweave_llm::LlmClient;
+    /// # use futures_util::StreamExt;
+    /// # async fn example(client: &dyn LlmClient) -> anyhow::Result<()> {
+    /// let mut stream = client.complete_streaming("Generate plan").await?;
+    /// while let Some(chunk) = stream.next().await {
+    ///     let text = chunk?;
+    ///     println!("Received: {}", text);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    async fn complete_streaming(
+        &self,
+        prompt: &str,
+    ) -> Result<std::pin::Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>> {
+        // Default: call blocking complete() and wrap in single-chunk stream
+        let result = self.complete(prompt).await?;
+        Ok(Box::pin(futures_util::stream::once(async move { Ok(result) })))
+    }
 }
 
 /// Mock client (no model). Emits a basic plan using simple heuristics.
@@ -1248,7 +1281,9 @@ pub mod prompt_template;
 pub mod plan_parser;
 
 // Phase 7: Multi-tier fallback system
+pub mod batch_executor;
 pub mod fallback_system;
+pub mod streaming_parser;
 
 // Prompt compression utilities (Week 5 Action 22)
 pub mod compression;

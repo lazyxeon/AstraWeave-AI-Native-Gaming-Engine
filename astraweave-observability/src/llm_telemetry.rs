@@ -581,8 +581,8 @@ impl LlmTelemetry {
     /// Determine if we should sample this request
     fn should_sample(&self) -> bool {
         use rand::Rng;
-        let mut rng = rand::thread_rng();
-        rng.gen::<f32>() < self.config.sampling_rate
+        let mut rng = rand::rng();
+        rng.random::<f32>() < self.config.sampling_rate
     }
 
     /// Update real-time metrics
