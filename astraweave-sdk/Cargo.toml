@@ -16,6 +16,11 @@ crate-type = ["rlib", "cdylib", "staticlib"]
 
 [dev-dependencies]
 cbindgen = "0.29"
+criterion = { workspace = true }
+
+[[bench]]
+name = "sdk_benchmarks"
+harness = false
 
 [package.metadata.cbindgen]
 language = "C"

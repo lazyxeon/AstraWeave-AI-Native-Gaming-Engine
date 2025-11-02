@@ -14,7 +14,7 @@ pub mod llm_executor;
 pub mod ai_arbiter;
 
 pub use core_loop::*;
-pub use ecs_ai_plugin::AiPlanningPlugin;
+pub use ecs_ai_plugin::{build_app_with_ai, AiPlanningPlugin};
 pub use orchestrator::*;
 pub use tool_sandbox::*;
 

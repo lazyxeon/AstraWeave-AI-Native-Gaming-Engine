@@ -9,6 +9,9 @@ pub use manager::*;
 pub use save::*;
 
 #[cfg(test)]
+mod manager_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use winit::event::MouseButton;

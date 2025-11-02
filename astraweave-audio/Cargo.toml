@@ -21,3 +21,11 @@ mock_tts = ["dep:hound"]
 [dependencies.hound]
 version = "3"
 optional = true
+
+[dev-dependencies]
+hound = "3"
+criterion = "0.5"
+
+[[bench]]
+name = "audio_benchmarks"
+harness = false

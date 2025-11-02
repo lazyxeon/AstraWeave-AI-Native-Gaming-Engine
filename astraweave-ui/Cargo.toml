@@ -21,3 +21,10 @@ log = "0.4"
 astraweave-input = { path = "../astraweave-input" }
 astraweave-gameplay = { path = "../astraweave-gameplay" }
 astraweave-cinematics = { path = "../astraweave-cinematics" }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "ui_benchmarks"
+harness = false

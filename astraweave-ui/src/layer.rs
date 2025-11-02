@@ -156,3 +156,32 @@ impl UiLayer {
         &mut self.egui_ctx
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_screen_descriptor_construction() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [1920, 1080],
+            pixels_per_point: 1.0,
+        };
+        assert_eq!(desc.size_in_pixels, [1920, 1080]);
+        assert_eq!(desc.pixels_per_point, 1.0);
+    }
+
+    #[test]
+    fn test_screen_descriptor_high_dpi() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [2560, 1440],
+            pixels_per_point: 2.0,
+        };
+        assert_eq!(desc.size_in_pixels, [2560, 1440]);
+        assert_eq!(desc.pixels_per_point, 2.0);
+    }
+
+    // Note: Full UiLayer tests require wgpu/winit context,
+    // which is integration-test level. Unit tests above cover
+    // the data structures used in the API.
+}

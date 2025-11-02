@@ -131,3 +131,283 @@ pub fn apply_weave_op(
 
     Ok(consequence)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use glam::vec3;
+
+    fn create_test_world() -> World {
+        World::new()
+    }
+
+    fn create_test_physics() -> PhysicsWorld {
+        PhysicsWorld::new(vec3(0.0, -9.81, 0.0))
+    }
+
+    fn create_test_budget() -> WeaveBudget {
+        WeaveBudget {
+            terrain_edits: 5,
+            weather_ops: 3,
+        }
+    }
+
+    #[test]
+    fn test_apply_weave_op_reinforce_path_success() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::ReinforcePath,
+            a: vec3(5.0, 0.0, 5.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_ok(), "ReinforcePath should succeed");
+        assert_eq!(budget.terrain_edits, 4, "Should consume 1 terrain edit");
+        
+        let consequence = result.unwrap();
+        assert_eq!(consequence.drop_multiplier, 1.1);
+        assert_eq!(consequence.faction_disposition, 5);
+        assert_eq!(consequence.weather_shift, None);
+    }
+
+    #[test]
+    fn test_apply_weave_op_reinforce_path_no_budget() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = WeaveBudget {
+            terrain_edits: 0, // No budget!
+            weather_ops: 3,
+        };
+        let op = WeaveOp {
+            kind: WeaveOpKind::ReinforcePath,
+            a: vec3(5.0, 0.0, 5.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_err(), "Should fail with no budget");
+        assert!(result.unwrap_err().to_string().contains("No terrain budget"));
+    }
+
+    #[test]
+    fn test_apply_weave_op_collapse_bridge_success() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::CollapseBridge,
+            a: vec3(0.0, 0.0, 0.0),
+            b: Some(vec3(10.0, 0.0, 10.0)),
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_ok(), "CollapseBridge should succeed");
+        assert_eq!(budget.terrain_edits, 4, "Should consume 1 terrain edit");
+        
+        let consequence = result.unwrap();
+        assert_eq!(consequence.drop_multiplier, 0.9);
+        assert_eq!(consequence.faction_disposition, -10);
+    }
+
+    #[test]
+    fn test_apply_weave_op_collapse_bridge_no_point_b() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::CollapseBridge,
+            a: vec3(0.0, 0.0, 0.0),
+            b: None, // Missing required point B!
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_err(), "Should fail without point B");
+        assert!(result.unwrap_err().to_string().contains("Collapse needs A->B"));
+    }
+
+    #[test]
+    fn test_apply_weave_op_redirect_wind_success() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::RedirectWind,
+            a: vec3(0.0, 0.0, 0.0),
+            b: Some(vec3(1.0, 0.0, 0.0)),
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_ok(), "RedirectWind should succeed");
+        assert_eq!(budget.weather_ops, 2, "Should consume 1 weather op");
+        assert!(log_output.iter().any(|msg| msg.contains("Wind redirected")), "Should log wind redirect");
+        
+        let consequence = result.unwrap();
+        assert_eq!(consequence.weather_shift, Some("windy".to_string()));
+    }
+
+    #[test]
+    fn test_apply_weave_op_redirect_wind_no_budget() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = WeaveBudget {
+            terrain_edits: 5,
+            weather_ops: 0, // No weather budget!
+        };
+        let op = WeaveOp {
+            kind: WeaveOpKind::RedirectWind,
+            a: vec3(0.0, 0.0, 0.0),
+            b: Some(vec3(1.0, 0.0, 0.0)),
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_err(), "Should fail with no weather budget");
+        assert!(result.unwrap_err().to_string().contains("No weather budget"));
+    }
+
+    #[test]
+    fn test_apply_weave_op_lower_water_success() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::LowerWater,
+            a: vec3(0.0, 0.0, 0.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_ok(), "LowerWater should succeed");
+        assert_eq!(budget.weather_ops, 2, "Should consume 1 weather op");
+        assert!(log_output.iter().any(|msg| msg.contains("Waters receded")), "Should log water lowering");
+        
+        let consequence = result.unwrap();
+        assert_eq!(consequence.weather_shift, Some("dry".to_string()));
+    }
+
+    #[test]
+    fn test_apply_weave_op_raise_platform_success() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let op = WeaveOp {
+            kind: WeaveOpKind::RaisePlatform,
+            a: vec3(5.0, 0.0, 5.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+
+        assert!(result.is_ok(), "RaisePlatform should succeed");
+        assert_eq!(budget.terrain_edits, 4, "Should consume 1 terrain edit");
+        
+        let consequence = result.unwrap();
+        assert_eq!(consequence.drop_multiplier, 1.05);
+        assert_eq!(consequence.faction_disposition, 0);
+    }
+
+    #[test]
+    fn test_apply_weave_op_multiple_operations() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = create_test_budget();
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        // Apply ReinforcePath
+        let op1 = WeaveOp {
+            kind: WeaveOpKind::ReinforcePath,
+            a: vec3(0.0, 0.0, 0.0),
+            b: None,
+            budget_cost: 1,
+        };
+        apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op1, &mut logger).unwrap();
+
+        // Apply RedirectWind
+        let op2 = WeaveOp {
+            kind: WeaveOpKind::RedirectWind,
+            a: vec3(0.0, 0.0, 0.0),
+            b: Some(vec3(1.0, 0.0, 0.0)),
+            budget_cost: 1,
+        };
+        apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op2, &mut logger).unwrap();
+
+        assert_eq!(budget.terrain_edits, 4, "Should have used 1 terrain edit");
+        assert_eq!(budget.weather_ops, 2, "Should have used 1 weather op");
+    }
+
+    #[test]
+    fn test_apply_weave_op_budget_depletion() {
+        let mut world = create_test_world();
+        let mut physics = create_test_physics();
+        let nav_src = vec![];
+        let mut budget = WeaveBudget {
+            terrain_edits: 1,
+            weather_ops: 1,
+        };
+        let mut log_output = Vec::new();
+        let mut logger = |msg: String| log_output.push(msg);
+
+        // First terrain op succeeds
+        let op1 = WeaveOp {
+            kind: WeaveOpKind::ReinforcePath,
+            a: vec3(0.0, 0.0, 0.0),
+            b: None,
+            budget_cost: 1,
+        };
+        let result1 = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op1, &mut logger);
+        assert!(result1.is_ok(), "First terrain op should succeed");
+
+        // Second terrain op fails (budget depleted)
+        let op2 = WeaveOp {
+            kind: WeaveOpKind::CollapseBridge,
+            a: vec3(0.0, 0.0, 0.0),
+            b: Some(vec3(1.0, 0.0, 1.0)),
+            budget_cost: 1,
+        };
+        let result2 = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op2, &mut logger);
+        assert!(result2.is_err(), "Second terrain op should fail");
+    }
+}

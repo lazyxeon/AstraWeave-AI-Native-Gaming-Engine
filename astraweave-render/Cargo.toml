@@ -51,7 +51,6 @@ rand = { workspace = true }
 tokio = { version = "1", features = ["sync"] }
 
 [dev-dependencies]
-naga = "27.0"
 criterion = { workspace = true }
 tempfile = "3"
 pollster = { workspace = true }
@@ -60,6 +59,7 @@ serde = { version = "1", features = ["derive"] }
 png = "0.18"
 bytes = "1"
 approx = "0.5"
+naga = { version = "25.0.1", features = ["wgsl-in"] }
 
 [[bench]]
 name = "mesh_optimization"

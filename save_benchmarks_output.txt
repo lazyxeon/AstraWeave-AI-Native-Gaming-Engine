@@ -1,0 +1,321 @@
+    Finished `bench` profile [optimized + debuginfo] target(s) in 11.47s
+     Running benches\save_benchmarks.rs (target\release\deps\save_benchmarks-b853a3cb17a80ad6.exe)
+Gnuplot not found, using plotters backend
+Benchmarking serialization/serialize_small_10kb
+Benchmarking serialization/serialize_small_10kb: Warming up for 3.0000 s
+Benchmarking serialization/serialize_small_10kb: Collecting 100 samples in estimated 5.0074 s (434k iterations)
+Benchmarking serialization/serialize_small_10kb: Analyzing
+serialization/serialize_small_10kb
+                        time:   [10.834 ┬╡s 11.146 ┬╡s 11.508 ┬╡s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking serialization/serialize_medium_100kb
+Benchmarking serialization/serialize_medium_100kb: Warming up for 3.0000 s
+Benchmarking serialization/serialize_medium_100kb: Collecting 100 samples in estimated 5.0807 s (50k iterations)
+Benchmarking serialization/serialize_medium_100kb: Analyzing
+serialization/serialize_medium_100kb
+                        time:   [100.16 ┬╡s 104.10 ┬╡s 108.93 ┬╡s]
+Benchmarking serialization/serialize_large_1mb
+Benchmarking serialization/serialize_large_1mb: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 6.6s, enable flat sampling, or reduce sample count to 60.
+Benchmarking serialization/serialize_large_1mb: Collecting 100 samples in estimated 6.5956 s (5050 iterations)
+Benchmarking serialization/serialize_large_1mb: Analyzing
+serialization/serialize_large_1mb
+                        time:   [1.1134 ms 1.1274 ms 1.1437 ms]
+Found 13 outliers among 100 measurements (13.00%)
+  1 (1.00%) low mild
+  8 (8.00%) high mild
+  4 (4.00%) high severe
+Benchmarking serialization/deserialize_small_10kb
+Benchmarking serialization/deserialize_small_10kb: Warming up for 3.0000 s
+Benchmarking serialization/deserialize_small_10kb: Collecting 100 samples in estimated 5.0932 s (222k iterations)
+Benchmarking serialization/deserialize_small_10kb: Analyzing
+serialization/deserialize_small_10kb
+                        time:   [20.151 ┬╡s 20.771 ┬╡s 21.509 ┬╡s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking serialization/deserialize_large_1mb
+Benchmarking serialization/deserialize_large_1mb: Warming up for 3.0000 s
+Benchmarking serialization/deserialize_large_1mb: Collecting 100 samples in estimated 5.1995 s (2300 iterations)
+Benchmarking serialization/deserialize_large_1mb: Analyzing
+serialization/deserialize_large_1mb
+                        time:   [2.5065 ms 2.8205 ms 3.2511 ms]
+Found 8 outliers among 100 measurements (8.00%)
+  6 (6.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking compression/lz4_compress_10kb
+Benchmarking compression/lz4_compress_10kb: Warming up for 3.0000 s
+Benchmarking compression/lz4_compress_10kb: Collecting 100 samples in estimated 5.0036 s (2.9M iterations)
+Benchmarking compression/lz4_compress_10kb: Analyzing
+compression/lz4_compress_10kb
+                        time:   [1.8042 ┬╡s 1.8763 ┬╡s 1.9654 ┬╡s]
+                        thrpt:  [4.8523 GiB/s 5.0829 GiB/s 5.2860 GiB/s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking compression/lz4_compress_100kb
+Benchmarking compression/lz4_compress_100kb: Warming up for 3.0000 s
+Benchmarking compression/lz4_compress_100kb: Collecting 100 samples in estimated 5.0140 s (475k iterations)
+Benchmarking compression/lz4_compress_100kb: Analyzing
+compression/lz4_compress_100kb
+                        time:   [8.6167 ┬╡s 8.7820 ┬╡s 8.9540 ┬╡s]
+                        thrpt:  [10.651 GiB/s 10.859 GiB/s 11.068 GiB/s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking compression/lz4_compress_1mb
+Benchmarking compression/lz4_compress_1mb: Warming up for 3.0000 s
+Benchmarking compression/lz4_compress_1mb: Collecting 100 samples in estimated 5.0053 s (45k iterations)
+Benchmarking compression/lz4_compress_1mb: Analyzing
+compression/lz4_compress_1mb
+                        time:   [87.321 ┬╡s 88.472 ┬╡s 89.689 ┬╡s]
+                        thrpt:  [10.888 GiB/s 11.038 GiB/s 11.184 GiB/s]
+Found 5 outliers among 100 measurements (5.00%)
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+Benchmarking compression/lz4_decompress_10kb
+Benchmarking compression/lz4_decompress_10kb: Warming up for 3.0000 s
+Benchmarking compression/lz4_decompress_10kb: Collecting 100 samples in estimated 5.0338 s (662k iterations)
+Benchmarking compression/lz4_decompress_10kb: Analyzing
+compression/lz4_decompress_10kb
+                        time:   [5.9839 ┬╡s 6.0837 ┬╡s 6.1943 ┬╡s]
+                        thrpt:  [1.5396 GiB/s 1.5676 GiB/s 1.5937 GiB/s]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+Benchmarking compression/lz4_decompress_1mb
+Benchmarking compression/lz4_decompress_1mb: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 5.3s, enable flat sampling, or reduce sample count to 60.
+Benchmarking compression/lz4_decompress_1mb: Collecting 100 samples in estimated 5.3112 s (5050 iterations)
+Benchmarking compression/lz4_decompress_1mb: Analyzing
+compression/lz4_decompress_1mb
+                        time:   [917.49 ┬╡s 937.23 ┬╡s 960.79 ┬╡s]
+                        thrpt:  [1.0164 GiB/s 1.0420 GiB/s 1.0644 GiB/s]
+Found 10 outliers among 100 measurements (10.00%)
+  1 (1.00%) low mild
+  2 (2.00%) high mild
+  7 (7.00%) high severe
+
+Benchmarking checksum/crc32_10kb
+Benchmarking checksum/crc32_10kb: Warming up for 3.0000 s
+Benchmarking checksum/crc32_10kb: Collecting 100 samples in estimated 5.0020 s (9.2M iterations)
+Benchmarking checksum/crc32_10kb: Analyzing
+checksum/crc32_10kb     time:   [517.64 ns 543.17 ns 576.20 ns]
+                        thrpt:  [16.551 GiB/s 17.557 GiB/s 18.424 GiB/s]
+Found 11 outliers among 100 measurements (11.00%)
+  6 (6.00%) high mild
+  5 (5.00%) high severe
+Benchmarking checksum/crc32_100kb
+Benchmarking checksum/crc32_100kb: Warming up for 3.0000 s
+Benchmarking checksum/crc32_100kb: Collecting 100 samples in estimated 5.0069 s (1.1M iterations)
+Benchmarking checksum/crc32_100kb: Analyzing
+checksum/crc32_100kb    time:   [4.0431 ┬╡s 4.0904 ┬╡s 4.1484 ┬╡s]
+                        thrpt:  [22.989 GiB/s 23.315 GiB/s 23.588 GiB/s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high mild
+Benchmarking checksum/crc32_1mb
+Benchmarking checksum/crc32_1mb: Warming up for 3.0000 s
+Benchmarking checksum/crc32_1mb: Collecting 100 samples in estimated 5.1367 s (86k iterations)
+Benchmarking checksum/crc32_1mb: Analyzing
+checksum/crc32_1mb      time:   [45.048 ┬╡s 45.950 ┬╡s 47.013 ┬╡s]
+                        thrpt:  [20.772 GiB/s 21.253 GiB/s 21.678 GiB/s]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+
+Benchmarking save_load_cycle/full_save_small_10kb
+Benchmarking save_load_cycle/full_save_small_10kb: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_save_small_10kb: Collecting 100 samples in estimated 5.1680 s (1400 iterations)
+Benchmarking save_load_cycle/full_save_small_10kb: Analyzing
+save_load_cycle/full_save_small_10kb
+                        time:   [3.8905 ms 4.0841 ms 4.3032 ms]
+Found 9 outliers among 100 measurements (9.00%)
+  4 (4.00%) high mild
+  5 (5.00%) high severe
+Benchmarking save_load_cycle/full_save_medium_100kb
+Benchmarking save_load_cycle/full_save_medium_100kb: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_save_medium_100kb: Collecting 100 samples in estimated 5.3316 s (1600 iterations)
+Benchmarking save_load_cycle/full_save_medium_100kb: Analyzing
+save_load_cycle/full_save_medium_100kb
+                        time:   [3.4658 ms 3.6011 ms 3.7473 ms]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+Benchmarking save_load_cycle/full_save_large_1mb
+Benchmarking save_load_cycle/full_save_large_1mb: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_save_large_1mb: Collecting 100 samples in estimated 5.1276 s (1000 iterations)
+Benchmarking save_load_cycle/full_save_large_1mb: Analyzing
+save_load_cycle/full_save_large_1mb
+                        time:   [5.1053 ms 5.4709 ms 5.9691 ms]
+Found 4 outliers among 100 measurements (4.00%)
+  4 (4.00%) high severe
+Benchmarking save_load_cycle/full_load_small_10kb
+Benchmarking save_load_cycle/full_load_small_10kb: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_load_small_10kb: Collecting 100 samples in estimated 5.6443 s (20k iterations)
+Benchmarking save_load_cycle/full_load_small_10kb: Analyzing
+save_load_cycle/full_load_small_10kb
+                        time:   [224.90 ┬╡s 237.54 ┬╡s 252.38 ┬╡s]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) high mild
+  5 (5.00%) high severe
+Benchmarking save_load_cycle/full_load_large_1mb
+Benchmarking save_load_cycle/full_load_large_1mb: Warming up for 3.0000 s
+Benchmarking save_load_cycle/full_load_large_1mb: Collecting 100 samples in estimated 5.0948 s (1400 iterations)
+Benchmarking save_load_cycle/full_load_large_1mb: Analyzing
+save_load_cycle/full_load_large_1mb
+                        time:   [3.7657 ms 3.8140 ms 3.8660 ms]
+Found 3 outliers among 100 measurements (3.00%)
+  1 (1.00%) high mild
+  2 (2.00%) high severe
+Benchmarking save_load_cycle/round_trip_100kb
+Benchmarking save_load_cycle/round_trip_100kb: Warming up for 3.0000 s
+Benchmarking save_load_cycle/round_trip_100kb: Collecting 100 samples in estimated 5.3406 s (1300 iterations)
+Benchmarking save_load_cycle/round_trip_100kb: Analyzing
+save_load_cycle/round_trip_100kb
+                        time:   [3.8885 ms 3.9530 ms 4.0187 ms]
+
+Benchmarking index_operations/list_saves_empty
+Benchmarking index_operations/list_saves_empty: Warming up for 3.0000 s
+Benchmarking index_operations/list_saves_empty: Collecting 100 samples in estimated 5.2551 s (101k iterations)
+Benchmarking index_operations/list_saves_empty: Analyzing
+index_operations/list_saves_empty
+                        time:   [55.460 ┬╡s 60.696 ┬╡s 66.567 ┬╡s]
+Found 17 outliers among 100 measurements (17.00%)
+  11 (11.00%) high mild
+  6 (6.00%) high severe
+Benchmarking index_operations/list_saves_10_saves
+Benchmarking index_operations/list_saves_10_saves: Warming up for 3.0000 s
+Benchmarking index_operations/list_saves_10_saves: Collecting 100 samples in estimated 5.1144 s (50k iterations)
+Benchmarking index_operations/list_saves_10_saves: Analyzing
+index_operations/list_saves_10_saves
+                        time:   [106.92 ┬╡s 112.22 ┬╡s 118.66 ┬╡s]
+Found 9 outliers among 100 measurements (9.00%)
+  3 (3.00%) high mild
+  6 (6.00%) high severe
+Benchmarking index_operations/list_saves_100_saves
+Benchmarking index_operations/list_saves_100_saves: Warming up for 3.0000 s
+Benchmarking index_operations/list_saves_100_saves: Collecting 100 samples in estimated 5.0206 s (25k iterations)
+Benchmarking index_operations/list_saves_100_saves: Analyzing
+index_operations/list_saves_100_saves
+                        time:   [206.97 ┬╡s 215.02 ┬╡s 226.97 ┬╡s]
+Found 10 outliers among 100 measurements (10.00%)
+  2 (2.00%) high mild
+  8 (8.00%) high severe
+
+Benchmarking scaling/full_save_cycle/1kb
+Benchmarking scaling/full_save_cycle/1kb: Warming up for 3.0000 s
+Benchmarking scaling/full_save_cycle/1kb: Collecting 100 samples in estimated 5.1849 s (1400 iterations)
+Benchmarking scaling/full_save_cycle/1kb: Analyzing
+scaling/full_save_cycle/1kb
+                        time:   [4.0193 ms 4.1934 ms 4.3718 ms]
+                        thrpt:  [228.74 KiB/s 238.47 KiB/s 248.80 KiB/s]
+Benchmarking scaling/full_load_cycle/1kb
+Benchmarking scaling/full_load_cycle/1kb: Warming up for 3.0000 s
+Benchmarking scaling/full_load_cycle/1kb: Collecting 100 samples in estimated 5.8434 s (30k iterations)
+Benchmarking scaling/full_load_cycle/1kb: Analyzing
+scaling/full_load_cycle/1kb
+                        time:   [163.66 ┬╡s 165.97 ┬╡s 168.75 ┬╡s]
+                        thrpt:  [5.7870 MiB/s 5.8840 MiB/s 5.9671 MiB/s]
+Found 14 outliers among 100 measurements (14.00%)
+  5 (5.00%) high mild
+  9 (9.00%) high severe
+Benchmarking scaling/full_save_cycle/10kb
+Benchmarking scaling/full_save_cycle/10kb: Warming up for 3.0000 s
+Benchmarking scaling/full_save_cycle/10kb: Collecting 100 samples in estimated 5.1702 s (1200 iterations)
+Benchmarking scaling/full_save_cycle/10kb: Analyzing
+scaling/full_save_cycle/10kb
+                        time:   [4.6106 ms 5.3946 ms 6.4210 ms]
+                        thrpt:  [1.5209 MiB/s 1.8102 MiB/s 2.1181 MiB/s]
+Found 8 outliers among 100 measurements (8.00%)
+  2 (2.00%) high mild
+  6 (6.00%) high severe
+Benchmarking scaling/full_load_cycle/10kb
+Benchmarking scaling/full_load_cycle/10kb: Warming up for 3.0000 s
+Benchmarking scaling/full_load_cycle/10kb: Collecting 100 samples in estimated 5.0271 s (25k iterations)
+Benchmarking scaling/full_load_cycle/10kb: Analyzing
+scaling/full_load_cycle/10kb
+                        time:   [214.98 ┬╡s 223.68 ┬╡s 234.15 ┬╡s]
+                        thrpt:  [41.707 MiB/s 43.660 MiB/s 45.427 MiB/s]
+Found 6 outliers among 100 measurements (6.00%)
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+Benchmarking scaling/full_save_cycle/100kb
+Benchmarking scaling/full_save_cycle/100kb: Warming up for 3.0000 s
+Benchmarking scaling/full_save_cycle/100kb: Collecting 100 samples in estimated 5.0437 s (1600 iterations)
+Benchmarking scaling/full_save_cycle/100kb: Analyzing
+scaling/full_save_cycle/100kb
+                        time:   [3.5500 ms 3.6921 ms 3.8480 ms]
+                        thrpt:  [25.379 MiB/s 26.450 MiB/s 27.509 MiB/s]
+Found 7 outliers among 100 measurements (7.00%)
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+Benchmarking scaling/full_load_cycle/100kb
+Benchmarking scaling/full_load_cycle/100kb: Warming up for 3.0000 s
+Benchmarking scaling/full_load_cycle/100kb: Collecting 100 samples in estimated 7.3884 s (15k iterations)
+Benchmarking scaling/full_load_cycle/100kb: Analyzing
+scaling/full_load_cycle/100kb
+                        time:   [427.43 ┬╡s 433.21 ┬╡s 439.56 ┬╡s]
+                        thrpt:  [222.17 MiB/s 225.42 MiB/s 228.48 MiB/s]
+Found 13 outliers among 100 measurements (13.00%)
+  5 (5.00%) high mild
+  8 (8.00%) high severe
+Benchmarking scaling/full_save_cycle/500kb
+Benchmarking scaling/full_save_cycle/500kb: Warming up for 3.0000 s
+Benchmarking scaling/full_save_cycle/500kb: Collecting 100 samples in estimated 5.1036 s (1300 iterations)
+Benchmarking scaling/full_save_cycle/500kb: Analyzing
+scaling/full_save_cycle/500kb
+                        time:   [3.8187 ms 3.8735 ms 3.9338 ms]
+                        thrpt:  [124.12 MiB/s 126.06 MiB/s 127.87 MiB/s]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+Benchmarking scaling/full_load_cycle/500kb
+Benchmarking scaling/full_load_cycle/500kb: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 8.5s, enable flat sampling, or reduce sample count to 50.
+Benchmarking scaling/full_load_cycle/500kb: Collecting 100 samples in estimated 8.5013 s (5050 iterations)
+Benchmarking scaling/full_load_cycle/500kb: Analyzing
+scaling/full_load_cycle/500kb
+                        time:   [1.6527 ms 1.7646 ms 1.9051 ms]
+                        thrpt:  [256.30 MiB/s 276.71 MiB/s 295.45 MiB/s]
+Found 10 outliers among 100 measurements (10.00%)
+  5 (5.00%) high mild
+  5 (5.00%) high severe
+Benchmarking scaling/full_save_cycle/1000kb
+Benchmarking scaling/full_save_cycle/1000kb: Warming up for 3.0000 s
+Benchmarking scaling/full_save_cycle/1000kb: Collecting 100 samples in estimated 5.2831 s (1100 iterations)
+Benchmarking scaling/full_save_cycle/1000kb: Analyzing
+scaling/full_save_cycle/1000kb
+                        time:   [4.7437 ms 4.7991 ms 4.8577 ms]
+                        thrpt:  [201.03 MiB/s 203.49 MiB/s 205.86 MiB/s]
+Found 1 outliers among 100 measurements (1.00%)
+  1 (1.00%) high severe
+Benchmarking scaling/full_load_cycle/1000kb
+Benchmarking scaling/full_load_cycle/1000kb: Warming up for 3.0000 s
+Benchmarking scaling/full_load_cycle/1000kb: Collecting 100 samples in estimated 5.1608 s (1400 iterations)
+Benchmarking scaling/full_load_cycle/1000kb: Analyzing
+scaling/full_load_cycle/1000kb
+                        time:   [3.7523 ms 3.7961 ms 3.8417 ms]
+                        thrpt:  [254.20 MiB/s 257.26 MiB/s 260.26 MiB/s]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) high mild
+  1 (1.00%) high severe
+Benchmarking scaling/full_save_cycle/5000kb
+Benchmarking scaling/full_save_cycle/5000kb: Warming up for 3.0000 s
+Benchmarking scaling/full_save_cycle/5000kb: Collecting 100 samples in estimated 6.5111 s (400 iterations)
+Benchmarking scaling/full_save_cycle/5000kb: Analyzing
+scaling/full_save_cycle/5000kb
+                        time:   [15.466 ms 16.061 ms 16.698 ms]
+                        thrpt:  [292.42 MiB/s 304.02 MiB/s 315.71 MiB/s]
+Found 6 outliers among 100 measurements (6.00%)
+  6 (6.00%) high mild
+Benchmarking scaling/full_load_cycle/5000kb
+Benchmarking scaling/full_load_cycle/5000kb: Warming up for 3.0000 s
+Benchmarking scaling/full_load_cycle/5000kb: Collecting 100 samples in estimated 5.3834 s (300 iterations)
+Benchmarking scaling/full_load_cycle/5000kb: Analyzing
+scaling/full_load_cycle/5000kb
+                        time:   [18.382 ms 18.578 ms 18.790 ms]
+                        thrpt:  [259.87 MiB/s 262.83 MiB/s 265.63 MiB/s]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+

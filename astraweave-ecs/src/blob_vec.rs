@@ -393,4 +393,169 @@ mod tests {
         blob.reserve(5); // Should not reallocate
         assert_eq!(blob.capacity(), old_capacity);
     }
+    
+    // ====================
+    // Day 3: Surgical Coverage Improvements - blob_vec.rs
+    // ====================
+    
+    #[test]
+    fn test_with_capacity() {
+        // Tests constructor pre-allocation
+        let blob = BlobVec::with_capacity::<Position>(50);
+        assert!(blob.capacity() >= 50);
+        assert_eq!(blob.len(), 0);
+        assert!(blob.is_empty());
+    }
+    
+    #[test]
+    fn test_with_capacity_zero() {
+        // Tests edge case: capacity = 0
+        let blob = BlobVec::with_capacity::<Position>(0);
+        assert_eq!(blob.capacity(), 0);
+        assert_eq!(blob.len(), 0);
+    }
+    
+    #[test]
+    fn test_capacity_method() {
+        // Tests capacity() accessor method
+        let mut blob = BlobVec::new::<i32>();
+        assert_eq!(blob.capacity(), 0);
+        
+        unsafe { blob.push(42); }
+        assert!(blob.capacity() >= 1);
+        
+        let cap = blob.capacity();
+        unsafe { blob.push(99); }
+        assert_eq!(blob.capacity(), cap); // Should not reallocate
+    }
+    
+    #[test]
+    fn test_as_slice_empty() {
+        // Tests as_slice() when len == 0 (early return path)
+        let blob = BlobVec::new::<Position>();
+        unsafe {
+            let slice = blob.as_slice::<Position>();
+            assert_eq!(slice.len(), 0);
+        }
+    }
+    
+    #[test]
+    fn test_as_slice_mut_empty() {
+        // Tests as_slice_mut() when len == 0 (early return path)
+        let mut blob = BlobVec::new::<Position>();
+        unsafe {
+            let slice = blob.as_slice_mut::<Position>();
+            assert_eq!(slice.len(), 0);
+        }
+    }
+    
+    #[test]
+    fn test_get_out_of_bounds() {
+        // Tests get() error handling for invalid index
+        let mut blob = BlobVec::new::<i32>();
+        unsafe {
+            blob.push(10);
+            blob.push(20);
+        }
+        
+        unsafe {
+            assert!(blob.get::<i32>(0).is_some());
+            assert!(blob.get::<i32>(1).is_some());
+            assert!(blob.get::<i32>(2).is_none()); // Out of bounds
+            assert!(blob.get::<i32>(999).is_none()); // Way out of bounds
+        }
+    }
+    
+    #[test]
+    fn test_get_mut_out_of_bounds() {
+        // Tests get_mut() error handling for invalid index
+        let mut blob = BlobVec::new::<i32>();
+        unsafe {
+            blob.push(10);
+            blob.push(20);
+        }
+        
+        unsafe {
+            assert!(blob.get_mut::<i32>(0).is_some());
+            assert!(blob.get_mut::<i32>(1).is_some());
+            assert!(blob.get_mut::<i32>(2).is_none()); // Out of bounds
+            assert!(blob.get_mut::<i32>(999).is_none()); // Way out of bounds
+        }
+    }
+    
+    #[test]
+    fn test_swap_remove_last_element() {
+        // Tests no-swap path when removing last element (index == last_index)
+        let mut blob = BlobVec::new::<i32>();
+        unsafe {
+            blob.push(10);
+            blob.push(20);
+            blob.push(30);
+        }
+        
+        unsafe {
+            // Remove last element - should not swap
+            let removed = blob.swap_remove::<i32>(2);
+            assert_eq!(removed, 30);
+            assert_eq!(blob.len(), 2);
+            
+            // Remaining elements unchanged
+            assert_eq!(*blob.get::<i32>(0).unwrap(), 10);
+            assert_eq!(*blob.get::<i32>(1).unwrap(), 20);
+        }
+    }
+    
+    #[test]
+    fn test_no_drop_type() {
+        // Tests BlobVec with types that don't need drop (drop_fn = None path)
+        let mut blob = BlobVec::new::<i32>();
+        
+        unsafe {
+            blob.push(1);
+            blob.push(2);
+            blob.push(3);
+        }
+        
+        assert_eq!(blob.len(), 3);
+        blob.clear();
+        assert_eq!(blob.len(), 0);
+        
+        // Should not panic even though drop_fn is None for i32
+    }
+    
+    #[test]
+    fn test_large_capacity_growth() {
+        // Tests capacity growth algorithm with large reserves
+        let mut blob = BlobVec::new::<u8>();
+        
+        // Force multiple reallocations
+        blob.reserve(1000);
+        let cap1 = blob.capacity();
+        assert!(cap1 >= 1000);
+        
+        unsafe {
+            for i in 0..500 {
+                blob.push(i as u8);
+            }
+        }
+        
+        blob.reserve(2000);
+        let cap2 = blob.capacity();
+        assert!(cap2 >= 2500); // 500 existing + 2000 additional
+        
+        assert_eq!(blob.len(), 500);
+    }
+    
+    #[test]
+    fn test_is_empty() {
+        // Tests is_empty() method (simple but uncovered)
+        let mut blob = BlobVec::new::<i32>();
+        assert!(blob.is_empty());
+        
+        unsafe { blob.push(42); }
+        assert!(!blob.is_empty());
+        
+        blob.clear();
+        assert!(blob.is_empty());
+    }
 }

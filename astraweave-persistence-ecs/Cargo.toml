@@ -9,6 +9,7 @@ anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 bincode = "2.0"
+postcard = "1.0"
 crc32fast = "1.4"
 lz4_flex = "0.11"
 time = { version = "0.3", features = ["serde"] }
@@ -20,3 +21,12 @@ astraweave-memory = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "persistence_ecs_benchmarks"
+harness = false
+
+[[bench]]
+name = "world_serialization_benchmarks"
+harness = false

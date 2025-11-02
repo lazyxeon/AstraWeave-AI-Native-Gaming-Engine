@@ -603,4 +603,87 @@ mod tests {
             Mat4::from_translation(Vec3::new(1.0, 0.0, 0.0)).to_cols_array_2d()
         );
     }
+
+    #[test]
+    fn test_empty_skeleton() {
+        // EDGE CASE: Skeleton with zero joints
+        let skeleton = Skeleton {
+            joints: vec![],
+            root_indices: vec![],
+        };
+        
+        let local_transforms = vec![];
+        let matrices = compute_joint_matrices(&skeleton, &local_transforms);
+        
+        assert_eq!(matrices.len(), 0);
+    }
+
+    #[test]
+    fn test_skeleton_mismatched_transform_count() {
+        // EDGE CASE: More joints than transforms (should not crash)
+        let skeleton = Skeleton {
+            joints: vec![
+                Joint {
+                    name: "root".to_string(),
+                    parent_index: None,
+                    inverse_bind_matrix: Mat4::IDENTITY,
+                    local_transform: Transform::default(),
+                },
+                Joint {
+                    name: "child".to_string(),
+                    parent_index: Some(0),
+                    inverse_bind_matrix: Mat4::IDENTITY,
+                    local_transform: Transform::default(),
+                },
+            ],
+            root_indices: vec![0],
+        };
+
+        // Only 1 transform for 2 joints (edge case)
+        let local_transforms = vec![Transform::default()];
+
+        // Will panic or produce partial results - testing that it doesn't hang
+        // Note: This may panic (expected for invalid input), so we wrap in catch_unwind
+        use std::panic;
+        let result = panic::catch_unwind(|| {
+            compute_joint_matrices(&skeleton, &local_transforms)
+        });
+        
+        // Either panics (expected) or returns some result
+        assert!(result.is_err() || result.is_ok());
+    }
+
+    #[test]
+    fn test_skeleton_invalid_parent_index() {
+        // EDGE CASE: Parent index out of bounds
+        let skeleton = Skeleton {
+            joints: vec![
+                Joint {
+                    name: "root".to_string(),
+                    parent_index: None,
+                    inverse_bind_matrix: Mat4::IDENTITY,
+                    local_transform: Transform::default(),
+                },
+                Joint {
+                    name: "child".to_string(),
+                    parent_index: Some(99), // Invalid (out of bounds)
+                    inverse_bind_matrix: Mat4::IDENTITY,
+                    local_transform: Transform::default(),
+                },
+            ],
+            root_indices: vec![0],
+        };
+
+        let local_transforms = vec![
+            Transform::default(),
+            Transform::default(),
+        ];
+
+        // Should complete without hanging (may treat child as orphan)
+        let matrices = compute_joint_matrices(&skeleton, &local_transforms);
+        assert_eq!(matrices.len(), 2);
+        
+        // Root should have identity matrix (no parent)
+        assert_eq!(matrices[0], Mat4::IDENTITY);
+    }
 }

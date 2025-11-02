@@ -50,6 +50,12 @@ pub use voxel_data::{ChunkCoord, Density, MaterialId, Voxel, VoxelChunk, VoxelGr
 use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
+// Phase 5: Comprehensive test modules
+#[cfg(test)]
+mod voxel_data_tests;
+#[cfg(test)]
+mod chunk_tests;
+
 /// Configuration for the world generator
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorldConfig {
