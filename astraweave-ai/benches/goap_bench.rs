@@ -22,7 +22,10 @@ fn create_test_snapshot(enemy_dist: i32) -> WorldSnapshot {
         },
         enemies: vec![EnemyState {
             id: 2,
-            pos: IVec2 { x: enemy_dist, y: 0 },
+            pos: IVec2 {
+                x: enemy_dist,
+                y: 0,
+            },
             hp: 50,
             cover: "low".into(),
             last_seen: 0.0,

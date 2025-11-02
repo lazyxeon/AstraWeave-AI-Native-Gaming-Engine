@@ -35,7 +35,40 @@ pub enum PlanSource {
 /// Trait for LLM clients (mock, Ollama, etc).
 #[async_trait::async_trait]
 pub trait LlmClient: Send + Sync {
+    /// Complete a prompt and return the full response (blocking until complete)
     async fn complete(&self, prompt: &str) -> Result<String>;
+    
+    /// Complete a prompt with streaming support (progressive response delivery)
+    ///
+    /// Returns a stream of text chunks as they arrive from the LLM. Enables:
+    /// - Lower time-to-first-token (start parsing before full response arrives)
+    /// - Progressive UI updates (show partial results)
+    /// - Integration with StreamingParser for batch inference
+    ///
+    /// Default implementation calls `complete()` and wraps result in single-chunk stream.
+    /// Clients should override for true streaming support.
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use astraweave_llm::LlmClient;
+    /// # use futures_util::StreamExt;
+    /// # async fn example(client: &dyn LlmClient) -> anyhow::Result<()> {
+    /// let mut stream = client.complete_streaming("Generate plan").await?;
+    /// while let Some(chunk) = stream.next().await {
+    ///     let text = chunk?;
+    ///     println!("Received: {}", text);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    async fn complete_streaming(
+        &self,
+        prompt: &str,
+    ) -> Result<std::pin::Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>> {
+        // Default: call blocking complete() and wrap in single-chunk stream
+        let result = self.complete(prompt).await?;
+        Ok(Box::pin(futures_util::stream::once(async move { Ok(result) })))
+    }
 }
 
 /// Mock client (no model). Emits a basic plan using simple heuristics.
@@ -45,12 +78,13 @@ pub struct MockLlm;
 impl LlmClient for MockLlm {
     async fn complete(&self, _prompt: &str) -> Result<String> {
         // A minimal JSON that follows our schema
+        // Uses tools from the simplified_tools list (fallback_system.rs:89-108)
         let out = r#"{
           "plan_id":"llm-mock",
           "steps":[
-            {"act":"Throw","item":"smoke","x":7,"y":2},
+            {"act":"ThrowSmoke","x":7,"y":2},
             {"act":"MoveTo","x":4,"y":2},
-            {"act":"CoverFire","target_id":99,"duration":2.0}
+            {"act":"Attack","target_id":99}
           ]
         }"#;
         Ok(out.into())
@@ -1247,7 +1281,9 @@ pub mod prompt_template;
 pub mod plan_parser;
 
 // Phase 7: Multi-tier fallback system
+pub mod batch_executor;
 pub mod fallback_system;
+pub mod streaming_parser;
 
 // Prompt compression utilities (Week 5 Action 22)
 pub mod compression;
@@ -1418,8 +1454,29 @@ mod tests {
                         .collect(),
                 },
                 ToolSpec {
+                    name: "ThrowSmoke".into(),
+                    args: [("x", "i32"), ("y", "i32")]
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.into()))
+                        .collect(),
+                },
+                ToolSpec {
+                    name: "Attack".into(),
+                    args: [("target_id", "u32")]
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.into()))
+                        .collect(),
+                },
+                ToolSpec {
                     name: "CoverFire".into(),
                     args: [("target_id", "u32"), ("duration", "f32")]
+                        .into_iter()
+                        .map(|(k, v)| (k.into(), v.into()))
+                        .collect(),
+                },
+                ToolSpec {
+                    name: "Revive".into(),
+                    args: [("ally_id", "u32")]
                         .into_iter()
                         .map(|(k, v)| (k.into(), v.into()))
                         .collect(),
@@ -1482,9 +1539,10 @@ mod tests {
 
         // Check that prompt contains expected elements
         assert!(prompt.contains("AI game companion planner"));
-        assert!(prompt.contains("move_to"));
-        assert!(prompt.contains("throw"));
-        assert!(prompt.contains("cover_fire"));
+        // Tools are in PascalCase in the prompt
+        assert!(prompt.contains("MoveTo") || prompt.contains("move_to"));
+        assert!(prompt.contains("Throw") || prompt.contains("throw"));
+        assert!(prompt.contains("CoverFire") || prompt.contains("cover_fire"));
         assert!(prompt.contains("Return ONLY JSON"));
         assert!(prompt.contains("\"t\": 1.0"));
     }

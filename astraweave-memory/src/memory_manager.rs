@@ -362,7 +362,7 @@ mod tests {
         let mut manager = MemoryManager::new();
         let mut memory = Memory::sensory("Weak memory".to_string(), None);
         memory.metadata.importance = 0.1; // Below default threshold
-        memory.metadata.strength = 0.1; // Weak
+        memory.metadata.strength = 0.05; // Very weak (0.05 + 0.2 access_boost = 0.25 < 0.3 threshold)
 
         manager.store_memory(memory).unwrap();
         assert_eq!(manager.get_stats().total_memories, 1);

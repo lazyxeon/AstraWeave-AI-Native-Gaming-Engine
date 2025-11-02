@@ -1,0 +1,911 @@
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: unused import: `InstanceRaw`
+    --> astraweave-render\src\renderer_tests.rs:1937:38
+     |
+1937 |         use crate::types::{Instance, InstanceRaw};
+     |                                      ^^^^^^^^^^^
+     |
+     = note: `#[warn(unused_imports)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-render\src\terrain.rs:250:9
+    |
+250 |     let mut generator = WorldGenerator::new(world_config.clone());
+    |         ----^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: multiple fields are never read
+   --> astraweave-render\src\renderer.rs:301:5
+    |
+289 | pub struct Renderer {
+    |            -------- fields in this struct
+...
+301 |     post_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^^
+...
+310 |     hdr_aux_tex: wgpu::Texture,
+    |     ^^^^^^^^^^^
+...
+314 |     fx_gi_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+315 |     #[cfg(feature = "postfx")]
+316 |     fx_gi_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+317 |     #[cfg(feature = "postfx")]
+318 |     fx_ao_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+319 |     #[cfg(feature = "postfx")]
+320 |     fx_ao_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+321 |     #[cfg(feature = "postfx")]
+322 |     post_fx_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^^^
+...
+337 |     bloom_mip_textures: Vec<wgpu::Texture>,
+    |     ^^^^^^^^^^^^^^^^^^
+...
+341 |     bloom_threshold_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+342 |     #[cfg(feature = "postfx")]
+343 |     bloom_intensity_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+344 |     #[cfg(feature = "postfx")]
+345 |     bloom_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: fields `mra`, `metallic`, `roughness`, `ao`, `triplanar_scale`, and `atlas` are never read
+   --> astraweave-render\src\material.rs:656:13
+    |
+652 |         struct MaterialLayerToml {
+    |                ----------------- fields in this struct
+...
+656 |             mra: Option<String>,
+    |             ^^^
+657 |             metallic: Option<String>,
+    |             ^^^^^^^^
+658 |             roughness: Option<String>,
+    |             ^^^^^^^^^
+659 |             ao: Option<String>,
+    |             ^^
+660 |             tiling: Option<[f32; 2]>,
+661 |             triplanar_scale: Option<f32>,
+    |             ^^^^^^^^^^^^^^^
+662 |             atlas: Option<String>,
+    |             ^^^^^
+
+warning: field `queue` is never read
+    --> astraweave-render\src\renderer_tests.rs:1763:9
+     |
+1761 |     struct TestRendererContext {
+     |            ------------------- field in this struct
+1762 |         device: wgpu::Device,
+1763 |         queue: wgpu::Queue,
+     |         ^^^^^
+
+warning: `astraweave-render` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-render` to apply 1 suggestion)
+warning: unused import: `CompressedVertex`
+ --> astraweave-render\benches\mesh_optimization.rs:6:5
+  |
+6 |     CompressedVertex, OctahedralEncoder, HalfFloatEncoder, VertexCompressor,
+  |     ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:1:17
+  |
+1 | use criterion::{black_box, criterion_group, criterion_main, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:26:32
+   |
+26 |                 bin_lights_cpu(black_box(&lights), dims, screen, near, far, fov);
+   |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\cluster_gpu_vs_cpu.rs:27:13
+   |
+27 |             black_box(offsets);
+   |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-render\benches\mesh_optimization.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:28:17
+   |
+28 |                 black_box(OctahedralEncoder::encode(black_box(*normal)));
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:28:53
+   |
+28 |                 black_box(OctahedralEncoder::encode(black_box(*normal)));
+   |                                                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:38:17
+   |
+38 |                 black_box(OctahedralEncoder::decode(black_box(*enc)));
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:38:53
+   |
+38 |                 black_box(OctahedralEncoder::decode(black_box(*enc)));
+   |                                                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:59:17
+   |
+59 |                 black_box(HalfFloatEncoder::encode_vec2(black_box(*uv)));
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:59:57
+   |
+59 |                 black_box(HalfFloatEncoder::encode_vec2(black_box(*uv)));
+   |                                                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:69:17
+   |
+69 |                 black_box(HalfFloatEncoder::decode_vec2(black_box(*enc)));
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-render\benches\mesh_optimization.rs:69:57
+   |
+69 |                 black_box(HalfFloatEncoder::decode_vec2(black_box(*enc)));
+   |                                                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:100:21
+    |
+100 |                     black_box(VertexCompressor::compress_batch(
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:101:25
+    |
+101 |                         black_box(&positions),
+    |                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:102:25
+    |
+102 |                         black_box(&normals),
+    |                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:103:25
+    |
+103 |                         black_box(&uvs),
+    |                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:122:21
+    |
+122 |                     black_box(VertexCompressor::calculate_savings(black_box(count)))
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:122:67
+    |
+122 |                     black_box(VertexCompressor::calculate_savings(black_box(count)))
+    |                                                                   ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:198:21
+    |
+198 |                     black_box(generator.simplify(black_box(mesh), vertex_count / 2))
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:198:50
+    |
+198 |                     black_box(generator.simplify(black_box(mesh), vertex_count / 2))
+    |                                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:222:13
+    |
+222 |             black_box(generator.generate_lods(black_box(&mesh)))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:222:47
+    |
+222 |             black_box(generator.generate_lods(black_box(&mesh)))
+    |                                               ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:256:21
+    |
+256 |                     black_box(manager)
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:276:13
+    |
+276 |             black_box(instance.to_raw())
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:288:13
+    |
+288 |             black_box(InstancePatternBuilder::new()
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:296:13
+    |
+296 |             black_box(InstancePatternBuilder::new()
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:304:13
+    |
+304 |             black_box(InstancePatternBuilder::new()
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:334:21
+    |
+334 |                     black_box(manager.draw_calls_saved())
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:383:13
+    |
+383 |             black_box((compressed, lods, manager))
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-render\benches\mesh_optimization.rs:400:21
+    |
+400 |                     black_box(savings)
+    |                     ^^^^^^^^^
+
+warning: unused variable: `vertex_count`
+   --> astraweave-render\benches\mesh_optimization.rs:352:9
+    |
+352 |     let vertex_count = mesh.vertex_count();
+    |         ^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_vertex_count`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-render` (bench "cluster_gpu_vs_cpu") generated 3 warnings
+warning: `astraweave-render` (bench "mesh_optimization") generated 29 warnings (run `cargo fix --bench "mesh_optimization"` to apply 1 suggestion)
+warning: `astraweave-render` (lib test) generated 5 warnings (2 duplicates) (run `cargo fix --lib -p astraweave-render --tests` to apply 1 suggestion)
+    Finished `bench` profile [optimized + debuginfo] target(s) in 2m 10s
+     Running unittests src\lib.rs (target\release\deps\astraweave_render-0c7c7d1d78b17fed.exe)
+
+running 327 tests
+test animation::tests::test_animation_state_update_clamping ... ignored
+test animation::tests::test_animation_state_update_looping ... ignored
+test animation::tests::test_cpu_skinning_blend ... ignored
+test animation::tests::test_cpu_skinning_single_joint ... ignored
+test animation::tests::test_empty_skeleton ... ignored
+test animation::tests::test_find_keyframes ... ignored
+test animation::tests::test_joint_matrices_hierarchy ... ignored
+test animation::tests::test_joint_matrices_single_joint ... ignored
+test animation::tests::test_joint_palette_creation ... ignored
+test animation::tests::test_skeleton_invalid_parent_index ... ignored
+test animation::tests::test_skeleton_mismatched_transform_count ... ignored
+test animation::tests::test_transform_default ... ignored
+test animation::tests::test_transform_to_matrix ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_sample_empty_channels ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_sample_invalid_joint_index ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_sample_rotation_channel ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_sample_scale_channel ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_sample_step_interpolation ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_state_play_pause_stop ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_state_restart ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_multiple_wraps ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_negative_time_looping ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_not_playing ... ignored
+test animation_extra_tests::animation_extra_tests::test_animation_state_update_speed_zero ... ignored
+test animation_extra_tests::animation_extra_tests::test_compute_joint_matrices_deep_hierarchy ... ignored
+test animation_extra_tests::animation_extra_tests::test_compute_joint_matrices_multiple_roots ... ignored
+test animation_extra_tests::animation_extra_tests::test_compute_joint_matrices_with_inverse_bind ... ignored
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_invalid_joint_index ... ignored
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_normal_transformation ... ignored
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_partial_weights ... ignored
+test animation_extra_tests::animation_extra_tests::test_cpu_skinning_zero_weights ... ignored
+test animation_extra_tests::animation_extra_tests::test_joint_matrix_gpu_size ... ignored
+test animation_extra_tests::animation_extra_tests::test_joint_palette_default ... ignored
+test animation_extra_tests::animation_extra_tests::test_joint_palette_from_matrices_empty ... ignored
+test animation_extra_tests::animation_extra_tests::test_joint_palette_from_matrices_max_overflow ... ignored
+test animation_extra_tests::animation_extra_tests::test_joint_palette_matrix_conversion ... ignored
+test animation_extra_tests::animation_extra_tests::test_joint_palette_size ... ignored
+test animation_extra_tests::animation_extra_tests::test_transform_lerp_midpoint ... ignored
+test animation_extra_tests::animation_extra_tests::test_transform_lerp_one ... ignored
+test animation_extra_tests::animation_extra_tests::test_transform_lerp_zero ... ignored
+test animation_extra_tests::animation_extra_tests::test_transform_to_matrix_with_rotation ... ignored
+test animation_extra_tests::animation_extra_tests::test_transform_to_matrix_with_scale ... ignored
+test camera::tests::test_camera_basic_functionality ... ignored
+test camera::tests::test_camera_controller_movement ... ignored
+test camera::tests::test_camera_mode_toggle ... ignored
+test camera::tests::test_camera_zoom_functionality ... ignored
+test camera::tests::test_mouse_delta_processing ... ignored
+test camera::tests::test_orbit_mode_behavior ... ignored
+test clustered::tests::cpu_binning_indices_valid ... ignored
+test clustered::tests::cpu_binning_produces_consistent_counts ... ignored
+test clustered::tests::parse_cluster_cs ... ignored
+test clustered::tests::test_cluster_index_bounds ... ignored
+test clustered_forward::tests::test_cluster_config_default ... ignored
+test clustered_forward::tests::test_gpu_light_creation ... ignored
+test culling::tests::test_aabb_from_transform ... ignored
+test culling::tests::test_aabb_inside_frustum ... ignored
+test culling::tests::test_aabb_outside_frustum ... ignored
+test culling::tests::test_cpu_culling ... ignored
+test culling::tests::test_frustum_extraction ... ignored
+test depth::tests::test_depth_create ... ignored
+test depth::tests::test_depth_create_different_sizes ... ignored
+test depth::tests::test_depth_format_consistent ... ignored
+test effects::tests::test_weather_fx_buffer_exists ... ignored
+test effects::tests::test_weather_fx_new ... ignored
+test effects::tests::test_weather_fx_particles_despawn ... ignored
+test effects::tests::test_weather_fx_rain_spawns_up_to_max ... ignored
+test effects::tests::test_weather_fx_set_kind ... ignored
+test effects::tests::test_weather_fx_switch_kind_clears ... ignored
+test effects::tests::test_weather_fx_update_none ... ignored
+test effects::tests::test_weather_fx_update_rain ... ignored
+test effects::tests::test_weather_fx_update_wind ... ignored
+test effects::tests::test_weather_kind_debug ... ignored
+test environment::tests::test_day_night_detection ... ignored
+test environment::tests::test_sky_config_default ... ignored
+test environment::tests::test_sun_position_calculation ... ignored
+test environment::tests::test_time_of_day_creation ... ignored
+test environment::tests::test_weather_system ... ignored
+test gi::voxelization_pipeline::tests::test_voxel_material_size ... ignored
+test gi::voxelization_pipeline::tests::test_voxel_vertex_size ... ignored
+test gi::voxelization_pipeline::tests::test_voxelization_config_default ... ignored
+test gi::voxelization_pipeline::tests::test_voxelization_mesh ... ignored
+test gi::vxgi::tests::test_voxel_radiance_size ... ignored
+test gi::vxgi::tests::test_vxgi_config_default ... ignored
+test graph::tests::render_graph_runs_in_order ... ignored
+test graph::tests::resource_table_transient_texture ... ignored
+test ibl::tests::test_face_indexing ... ignored
+test ibl::tests::test_ibl_quality_presets ... ignored
+test ibl::tests::test_ibl_resources_struct ... ignored
+test ibl::tests::test_prefilter_params_roughness_calculation ... ignored
+test ibl::tests::test_sample_count_by_quality ... ignored
+test ibl::tests::test_shader_constant_consistency ... ignored
+test ibl::tests::test_sky_mode_creation ... ignored
+test ibl::tests::test_uniform_buffer_alignment ... ignored
+test instancing::tests::test_batch_clearing ... ignored
+test instancing::tests::test_batch_management ... ignored
+test instancing::tests::test_circle_pattern ... ignored
+test instancing::tests::test_draw_call_reduction ... ignored
+test instancing::tests::test_grid_pattern ... ignored
+test instancing::tests::test_instance_creation ... ignored
+test instancing::tests::test_instance_manager ... ignored
+test instancing::tests::test_instance_raw_size ... ignored
+test instancing::tests::test_instance_to_raw ... ignored
+test instancing::tests::test_pattern_with_variations ... ignored
+test lod_generator::tests::test_degenerate_mesh_all_coplanar ... ignored
+test lod_generator::tests::test_empty_mesh_simplification ... ignored
+test lod_generator::tests::test_lod_generation ... ignored
+test lod_generator::tests::test_lod_level_exceeds_triangle_count ... ignored
+test lod_generator::tests::test_mesh_integrity_after_simplification ... ignored
+test lod_generator::tests::test_quadric_error_at_infinity ... ignored
+test lod_generator::tests::test_quadric_evaluation ... ignored
+test lod_generator::tests::test_reduction_calculation ... ignored
+test lod_generator::tests::test_simplification_reduces_vertices ... ignored
+test lod_generator::tests::test_target_vertex_count_less_than_three ... ignored
+test material::tests::test_arrays_toml_parsing ... ignored
+test material::tests::test_fallback_coverage ... ignored
+test material::tests::test_material_layer_desc_default ... ignored
+test material::tests::test_material_load_stats_concise_summary ... ignored
+test material::tests::test_stable_layer_index_mapping ... ignored
+test material::tests::test_toml_parsing_basic ... ignored
+test material::tests::test_validate_array_layout_duplicate_indices ... ignored
+test material::tests::test_validate_array_layout_valid ... ignored
+test material::tests::test_validate_material_pack_duplicate_keys ... ignored
+test material::tests::test_validate_material_pack_empty_biome ... ignored
+test material::tests::test_validate_material_pack_invalid_tiling ... ignored
+test material::tests::test_validate_material_pack_invalid_triplanar ... ignored
+test material::tests::test_validate_material_pack_valid ... ignored
+test material_extended::tests::test_brushed_metal_material ... ignored
+test material_extended::tests::test_car_paint_material ... ignored
+test material_extended::tests::test_extreme_color_values ... ignored
+test material_extended::tests::test_feature_flags ... ignored
+test material_extended::tests::test_glass_material ... ignored
+test material_extended::tests::test_invalid_toml_missing_required_fields ... ignored
+test material_extended::tests::test_material_size ... ignored
+test material_extended::tests::test_out_of_range_values ... ignored
+test material_extended::tests::test_skin_material ... ignored
+test material_extended::tests::test_toml_conversion ... ignored
+test material_extended::tests::test_velvet_material ... ignored
+test mesh::tests::test_compute_tangents_empty ... ignored
+test mesh::tests::test_compute_tangents_incomplete_triangle ... ignored
+test mesh::tests::test_compute_tangents_single_triangle ... ignored
+test mesh::tests::test_compute_tangents_single_vertex_degenerate ... ignored
+test mesh::tests::test_cpu_mesh_aabb_empty ... ignored
+test mesh::tests::test_cpu_mesh_aabb_multiple_vertices ... ignored
+test mesh::tests::test_cpu_mesh_aabb_single_vertex ... ignored
+test mesh::tests::test_cpu_mesh_clone ... ignored
+test mesh::tests::test_cpu_mesh_default ... ignored
+test mesh::tests::test_mesh_vertex_attribs_locations ... ignored
+test mesh::tests::test_mesh_vertex_from_arrays ... ignored
+test mesh::tests::test_mesh_vertex_layout ... ignored
+test mesh::tests::test_mesh_vertex_new ... ignored
+test mesh::tests::test_mesh_vertex_pod_traits ... ignored
+test mesh_registry::tests::cpu_mesh_aabb ... ignored
+test mesh_registry::tests::test_gpu_mesh_aabb_some ... ignored
+test mesh_registry::tests::test_mesh_handle_debug ... ignored
+test mesh_registry::tests::test_mesh_handle_equality ... ignored
+test mesh_registry::tests::test_mesh_handle_hash_consistency ... ignored
+test mesh_registry::tests::test_mesh_key_clone ... ignored
+test mesh_registry::tests::test_mesh_key_debug ... ignored
+test mesh_registry::tests::test_mesh_key_equality ... ignored
+test mesh_registry::tests::test_mesh_key_hash_consistency ... ignored
+test mesh_registry::tests::test_mesh_registry_get_empty ... ignored
+test mesh_registry::tests::test_mesh_registry_new ... ignored
+test mesh_registry::tests::test_mesh_registry_next_id_increments ... ignored
+test overlay::tests::test_overlay_fx_different_formats ... ignored
+test overlay::tests::test_overlay_fx_multiple_updates ... ignored
+test overlay::tests::test_overlay_fx_new ... ignored
+test overlay::tests::test_overlay_fx_update ... ignored
+test overlay::tests::test_overlay_params_pod ... ignored
+test overlay::tests::test_overlay_params_values ... ignored
+test overlay::tests::test_overlay_params_zeroed ... ignored
+test post::tests::bloom_config_default ... ignored
+test post::tests::bloom_config_validate_intensity ... ignored
+test post::tests::bloom_config_validate_mip_count ... ignored
+test post::tests::bloom_config_validate_threshold ... ignored
+test post::tests::parse_bloom_composite ... ignored
+test post::tests::parse_bloom_downsample ... ignored
+test post::tests::parse_bloom_threshold ... ignored
+test post::tests::parse_bloom_upsample ... ignored
+test post::tests::parse_ssao ... ignored
+test post::tests::parse_ssgi ... ignored
+test post::tests::parse_ssr ... ignored
+test post::tests::ssgi_bindings_declared ... ignored
+test post::tests::ssr_bindings_declared ... ignored
+test primitives::tests::test_cube_geometry ... ignored
+test primitives::tests::test_cube_normals ... ignored
+test primitives::tests::test_cube_uvs ... ignored
+test primitives::tests::test_plane_geometry ... ignored
+test primitives::tests::test_plane_normals ... ignored
+test primitives::tests::test_plane_positions ... ignored
+test primitives::tests::test_sphere_below_minimum ... ignored
+test primitives::tests::test_sphere_indices_validity ... ignored
+test primitives::tests::test_sphere_minimum_resolution ... ignored
+test primitives::tests::test_sphere_normals ... ignored
+test primitives::tests::test_sphere_radius ... ignored
+test primitives::tests::test_sphere_uvs ... ignored
+test renderer::mat_integration_tests::material_package_composes_valid_shader ... ignored
+test renderer_tests::tests::test_animation_clip_creation ... ignored
+test renderer_tests::tests::test_bind_group_with_texture_and_sampler ... ignored
+test renderer_tests::tests::test_bind_group_with_uniform_buffer ... ignored
+test renderer_tests::tests::test_camera_bind_group_layout ... ignored
+test renderer_tests::tests::test_camera_buffer_creation ... ignored
+test renderer_tests::tests::test_camera_creation ... ignored
+test renderer_tests::tests::test_camera_projection_matrix ... ignored
+test renderer_tests::tests::test_camera_ubo_packing ... ignored
+test renderer_tests::tests::test_camera_update ... ignored
+test renderer_tests::tests::test_camera_view_matrix_calculation ... ignored
+test renderer_tests::tests::test_camera_view_proj_combined ... ignored
+test renderer_tests::tests::test_cascade_split_calculation ... ignored
+test renderer_tests::tests::test_cluster_config_default ... ignored
+test renderer_tests::tests::test_cluster_dims_calculation ... ignored
+test renderer_tests::tests::test_cluster_dims_different_resolutions ... ignored
+test renderer_tests::tests::test_command_encoder_creation ... ignored
+test renderer_tests::tests::test_cpu_light_structure ... ignored
+test renderer_tests::tests::test_depth_texture_creation ... ignored
+test renderer_tests::tests::test_depth_texture_format ... ignored
+test renderer_tests::tests::test_depth_texture_view ... ignored
+test renderer_tests::tests::test_frustum_planes_extraction ... ignored
+test renderer_tests::tests::test_gpu_light_bytemuck ... ignored
+test renderer_tests::tests::test_gpu_light_creation ... ignored
+test renderer_tests::tests::test_hdr_texture_creation ... ignored
+test renderer_tests::tests::test_instance_aabb_creation ... ignored
+test renderer_tests::tests::test_instance_batch_conversion ... ignored
+test renderer_tests::tests::test_instance_buffer_creation ... ignored
+test renderer_tests::tests::test_instance_buffer_upload ... ignored
+test renderer_tests::tests::test_instance_raw_conversion ... ignored
+test renderer_tests::tests::test_instance_raw_size ... ignored
+test renderer_tests::tests::test_instance_transform_to_raw ... ignored
+test renderer_tests::tests::test_large_mesh_buffer_capacity ... ignored
+test renderer_tests::tests::test_light_color_day ... ignored
+test renderer_tests::tests::test_light_direction_day ... ignored
+test renderer_tests::tests::test_light_direction_night ... ignored
+test renderer_tests::tests::test_linear_sampler_creation ... ignored
+test renderer_tests::tests::test_material_bind_group_layout ... ignored
+test renderer_tests::tests::test_material_buffer_creation ... ignored
+test renderer_tests::tests::test_material_byte_conversion ... ignored
+test renderer_tests::tests::test_material_data_packing ... ignored
+test renderer_tests::tests::test_material_package_shader_compilation ... ignored
+test renderer_tests::tests::test_mesh_buffer_creation ... ignored
+test renderer_tests::tests::test_mesh_index_buffer_creation ... ignored
+test renderer_tests::tests::test_moon_position_opposite_sun ... ignored
+test renderer_tests::tests::test_multiple_bind_groups ... ignored
+test renderer_tests::tests::test_multiple_instances_packing ... ignored
+test renderer_tests::tests::test_pipeline_with_blending ... ignored
+test renderer_tests::tests::test_pipeline_with_depth_stencil ... ignored
+test renderer_tests::tests::test_queue_submit ... ignored
+test renderer_tests::tests::test_queue_write_buffer ... ignored
+test renderer_tests::tests::test_queue_write_texture ... ignored
+test renderer_tests::tests::test_render_pass_descriptor ... ignored
+test renderer_tests::tests::test_render_pass_with_depth ... ignored
+test renderer_tests::tests::test_render_pipeline_creation ... ignored
+test renderer_tests::tests::test_repeat_sampler_creation ... ignored
+test renderer_tests::tests::test_shader_module_creation ... ignored
+test renderer_tests::tests::test_shadow_bind_group_layout ... ignored
+test renderer_tests::tests::test_shadow_comparison_sampler ... ignored
+test renderer_tests::tests::test_shadow_frustum_corners ... ignored
+test renderer_tests::tests::test_shadow_light_buffer ... ignored
+test renderer_tests::tests::test_shadow_ortho_matrix ... ignored
+test renderer_tests::tests::test_shadow_texture_array_views ... ignored
+test renderer_tests::tests::test_shadow_texture_creation ... ignored
+test renderer_tests::tests::test_shadow_view_matrix ... ignored
+test renderer_tests::tests::test_sky_config_default ... ignored
+test renderer_tests::tests::test_sun_position_midnight ... ignored
+test renderer_tests::tests::test_sun_position_noon ... ignored
+test renderer_tests::tests::test_sun_position_sunrise ... ignored
+test renderer_tests::tests::test_sun_position_sunset ... ignored
+test renderer_tests::tests::test_texture_bind_group_layout ... ignored
+test renderer_tests::tests::test_time_of_day_default ... ignored
+test renderer_tests::tests::test_time_of_day_new ... ignored
+test renderer_tests::tests::test_viewport_transform ... ignored
+test renderer_tests::tests::test_weather_particle_creation ... ignored
+test renderer_tests::tests::test_weather_system_creation ... ignored
+test residency::tests::test_residency_load_and_evict ... ignored
+test terrain::tests::test_biome_id_conversion ... ignored
+test terrain::tests::test_chunk_radius_loading ... ignored
+test terrain::tests::test_mesh_generation ... ignored
+test terrain::tests::test_terrain_preview ... ignored
+test terrain::tests::test_terrain_renderer_creation ... ignored
+test terrain::tests::test_vegetation_type_conversion ... ignored
+test terrain_material::tests::test_blend_mode_edge_cases ... ignored
+test terrain_material::tests::test_blend_sharpness_extremes ... ignored
+test terrain_material::tests::test_default_terrain_layer ... ignored
+test terrain_material::tests::test_default_terrain_material ... ignored
+test terrain_material::tests::test_desert_factory ... ignored
+test terrain_material::tests::test_empty_layer_list ... ignored
+test terrain_material::tests::test_extreme_uv_scales ... ignored
+test terrain_material::tests::test_forest_factory ... ignored
+test terrain_material::tests::test_grassland_factory ... ignored
+test terrain_material::tests::test_more_than_four_layers ... ignored
+test terrain_material::tests::test_normal_blend_parsing ... ignored
+test terrain_material::tests::test_pod_zeroable_terrain_layer ... ignored
+test terrain_material::tests::test_pod_zeroable_terrain_material ... ignored
+test terrain_material::tests::test_terrain_layer_size ... ignored
+test terrain_material::tests::test_terrain_material_size ... ignored
+test terrain_material::tests::test_to_gpu_conversion ... ignored
+test texture::tests::test_create_default_normal ... ignored
+test texture::tests::test_create_default_white ... ignored
+test texture::tests::test_from_bytes_invalid_data ... ignored
+test texture::tests::test_from_bytes_valid_png ... ignored
+test texture::tests::test_validate_texture_assets_empty ... ignored
+test texture::tests::test_validate_texture_assets_nonexistent ... ignored
+test texture::tests::test_white_and_normal_different_labels ... ignored
+test types::tests::test_cluster_dims_debug ... ignored
+test types::tests::test_cluster_index_clamping ... ignored
+test types::tests::test_cluster_index_depth_progression ... ignored
+test types::tests::test_instance_from_pos_scale_color ... ignored
+test types::tests::test_instance_raw_conversion ... ignored
+test types::tests::test_instance_raw_layout_attributes ... ignored
+test types::tests::test_instance_raw_layout_stride ... ignored
+test types::tests::test_instance_raw_pod_traits ... ignored
+test types::tests::test_material_clone ... ignored
+test types::tests::test_skinned_vertex_layout_attributes ... ignored
+test types::tests::test_skinned_vertex_layout_stride ... ignored
+test types::tests::test_skinned_vertex_pod_traits ... ignored
+test types::tests::test_vertex_layout_attributes ... ignored
+test types::tests::test_vertex_layout_stride ... ignored
+test types::tests::test_vertex_pod_traits ... ignored
+test types::tests_cluster::bins_within_bounds ... ignored
+test types::tests_cluster::corners_map_to_edges ... ignored
+test vertex_compression::tests::test_batch_compression ... ignored
+test vertex_compression::tests::test_compressed_vertex_size ... ignored
+test vertex_compression::tests::test_half_float_encoding ... ignored
+test vertex_compression::tests::test_half_float_uv_encoding ... ignored
+test vertex_compression::tests::test_memory_savings_calculation ... ignored
+test vertex_compression::tests::test_octahedral_encoding_diagonal ... ignored
+test vertex_compression::tests::test_octahedral_encoding_negative ... ignored
+test vertex_compression::tests::test_octahedral_encoding_up_vector ... ignored
+test vertex_compression::tests::test_vertex_compression_roundtrip ... ignored
+
+test result: ok. 0 passed; 0 failed; 327 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches\cluster_gpu_vs_cpu.rs (target\release\deps\cluster_gpu_vs_cpu-5ee6806c8796d4fd.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running benches\mesh_optimization.rs (target\release\deps\mesh_optimization-000199682d7cfc02.exe)
+Gnuplot not found, using plotters backend
+Benchmarking vertex_compression/octahedral/encode
+Benchmarking vertex_compression/octahedral/encode: Warming up for 3.0000 s
+Benchmarking vertex_compression/octahedral/encode: Collecting 100 samples in estimated 5.0001 s (137M iterations)
+Benchmarking vertex_compression/octahedral/encode: Analyzing
+vertex_compression/octahedral/encode
+                        time:   [27.541 ns 28.799 ns 30.084 ns]
+Found 3 outliers among 100 measurements (3.00%)
+  2 (2.00%) low mild
+  1 (1.00%) high mild
+Benchmarking vertex_compression/octahedral/decode
+Benchmarking vertex_compression/octahedral/decode: Warming up for 3.0000 s
+Benchmarking vertex_compression/octahedral/decode: Collecting 100 samples in estimated 5.0000 s (230M iterations)
+Benchmarking vertex_compression/octahedral/decode: Analyzing
+vertex_compression/octahedral/decode
+                        time:   [21.043 ns 22.275 ns 23.537 ns]
+
+Benchmarking vertex_compression/half_float/encode_vec2
+Benchmarking vertex_compression/half_float/encode_vec2: Warming up for 3.0000 s
+Benchmarking vertex_compression/half_float/encode_vec2: Collecting 100 samples in estimated 5.0000 s (175M iterations)
+Benchmarking vertex_compression/half_float/encode_vec2: Analyzing
+vertex_compression/half_float/encode_vec2
+                        time:   [24.302 ns 25.952 ns 27.743 ns]
+Benchmarking vertex_compression/half_float/decode_vec2
+Benchmarking vertex_compression/half_float/decode_vec2: Warming up for 3.0000 s
+Benchmarking vertex_compression/half_float/decode_vec2: Collecting 100 samples in estimated 5.0001 s (284M iterations)
+Benchmarking vertex_compression/half_float/decode_vec2: Analyzing
+vertex_compression/half_float/decode_vec2
+                        time:   [15.760 ns 16.916 ns 18.273 ns]
+
+Benchmarking vertex_compression/throughput/compress_batch/100
+Benchmarking vertex_compression/throughput/compress_batch/100: Warming up for 3.0000 s
+Benchmarking vertex_compression/throughput/compress_batch/100: Collecting 100 samples in estimated 5.0047 s (4.0M iterations)
+Benchmarking vertex_compression/throughput/compress_batch/100: Analyzing
+vertex_compression/throughput/compress_batch/100
+                        time:   [1.0202 ┬╡s 1.1058 ┬╡s 1.2104 ┬╡s]
+                        thrpt:  [82.616 Melem/s 90.431 Melem/s 98.019 Melem/s]
+Benchmarking vertex_compression/throughput/compress_batch/1000
+Benchmarking vertex_compression/throughput/compress_batch/1000: Warming up for 3.0000 s
+Benchmarking vertex_compression/throughput/compress_batch/1000: Collecting 100 samples in estimated 5.0270 s (414k iterations)
+Benchmarking vertex_compression/throughput/compress_batch/1000: Analyzing
+vertex_compression/throughput/compress_batch/1000
+                        time:   [15.658 ┬╡s 16.463 ┬╡s 17.310 ┬╡s]
+                        thrpt:  [57.770 Melem/s 60.740 Melem/s 63.866 Melem/s]
+Found 3 outliers among 100 measurements (3.00%)
+  3 (3.00%) high mild
+Benchmarking vertex_compression/throughput/compress_batch/10000
+Benchmarking vertex_compression/throughput/compress_batch/10000: Warming up for 3.0000 s
+Benchmarking vertex_compression/throughput/compress_batch/10000: Collecting 100 samples in estimated 5.7104 s (40k iterations)
+Benchmarking vertex_compression/throughput/compress_batch/10000: Analyzing
+vertex_compression/throughput/compress_batch/10000
+                        time:   [101.35 ┬╡s 111.35 ┬╡s 120.18 ┬╡s]
+                        thrpt:  [83.211 Melem/s 89.809 Melem/s 98.665 Melem/s]
+Found 18 outliers among 100 measurements (18.00%)
+  17 (17.00%) high mild
+  1 (1.00%) high severe
+Benchmarking vertex_compression/throughput/compress_batch/100000
+Benchmarking vertex_compression/throughput/compress_batch/100000: Warming up for 3.0000 s
+Benchmarking vertex_compression/throughput/compress_batch/100000: Collecting 100 samples in estimated 5.0952 s (2400 iterations)
+Benchmarking vertex_compression/throughput/compress_batch/100000: Analyzing
+vertex_compression/throughput/compress_batch/100000
+                        time:   [1.1796 ms 1.2037 ms 1.2302 ms]
+                        thrpt:  [81.290 Melem/s 83.080 Melem/s 84.775 Melem/s]
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000: Warming up for 3.0000 s
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000: Collecting 100 samples in estimated 5.0000 s (651M iterations)
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000: Analyzing
+vertex_compression/memory_savings/calculate_savings/1000
+                        time:   [7.3892 ns 7.6870 ns 8.0187 ns]
+Found 12 outliers among 100 measurements (12.00%)
+  5 (5.00%) low mild
+  3 (3.00%) high mild
+  4 (4.00%) high severe
+Benchmarking vertex_compression/memory_savings/calculate_savings/10000
+Benchmarking vertex_compression/memory_savings/calculate_savings/10000: Warming up for 3.0000 s
+Benchmarking vertex_compression/memory_savings/calculate_savings/10000: Collecting 100 samples in estimated 5.0000 s (668M iterations)
+Benchmarking vertex_compression/memory_savings/calculate_savings/10000: Analyzing
+vertex_compression/memory_savings/calculate_savings/10000
+                        time:   [7.9349 ns 8.2655 ns 8.6401 ns]
+Found 6 outliers among 100 measurements (6.00%)
+  5 (5.00%) high mild
+  1 (1.00%) high severe
+Benchmarking vertex_compression/memory_savings/calculate_savings/100000
+Benchmarking vertex_compression/memory_savings/calculate_savings/100000: Warming up for 3.0000 s
+Benchmarking vertex_compression/memory_savings/calculate_savings/100000: Collecting 100 samples in estimated 5.0000 s (674M iterations)
+Benchmarking vertex_compression/memory_savings/calculate_savings/100000: Analyzing
+vertex_compression/memory_savings/calculate_savings/100000
+                        time:   [7.4243 ns 7.7713 ns 8.1510 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  4 (4.00%) low mild
+  3 (3.00%) high mild
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000000
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000000: Warming up for 3.0000 s
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000000: Collecting 100 samples in estimated 5.0000 s (525M iterations)
+Benchmarking vertex_compression/memory_savings/calculate_savings/1000000: Analyzing
+vertex_compression/memory_savings/calculate_savings/1000000
+                        time:   [8.3508 ns 8.5236 ns 8.7011 ns]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+
+Benchmarking lod_generation/simplification/sphere_50_percent/81
+Benchmarking lod_generation/simplification/sphere_50_percent/81: Warming up for 3.0000 s
+Benchmarking lod_generation/simplification/sphere_50_percent/81: Collecting 10 samples in estimated 5.0002 s (65k iterations)
+Benchmarking lod_generation/simplification/sphere_50_percent/81: Analyzing
+lod_generation/simplification/sphere_50_percent/81
+                        time:   [57.703 ┬╡s 68.049 ┬╡s 80.167 ┬╡s]
+                        thrpt:  [1.0104 Melem/s 1.1903 Melem/s 1.4037 Melem/s]
+Benchmarking lod_generation/simplification/sphere_50_percent/289
+Benchmarking lod_generation/simplification/sphere_50_percent/289: Warming up for 3.0000 s
+Benchmarking lod_generation/simplification/sphere_50_percent/289: Collecting 10 samples in estimated 5.0085 s (18k iterations)
+Benchmarking lod_generation/simplification/sphere_50_percent/289: Analyzing
+lod_generation/simplification/sphere_50_percent/289
+                        time:   [216.50 ┬╡s 262.10 ┬╡s 351.12 ┬╡s]
+                        thrpt:  [823.09 Kelem/s 1.1026 Melem/s 1.3349 Melem/s]
+Benchmarking lod_generation/simplification/sphere_50_percent/1089
+Benchmarking lod_generation/simplification/sphere_50_percent/1089: Warming up for 3.0000 s
+Benchmarking lod_generation/simplification/sphere_50_percent/1089: Collecting 10 samples in estimated 5.0145 s (2530 iterations)
+Benchmarking lod_generation/simplification/sphere_50_percent/1089: Analyzing
+lod_generation/simplification/sphere_50_percent/1089
+                        time:   [1.7035 ms 2.1139 ms 2.6517 ms]
+                        thrpt:  [410.69 Kelem/s 515.17 Kelem/s 639.28 Kelem/s]
+Found 2 outliers among 10 measurements (20.00%)
+  1 (10.00%) low mild
+  1 (10.00%) high mild
+
+Benchmarking lod_generation/multi_level/generate_3_lods
+Benchmarking lod_generation/multi_level/generate_3_lods: Warming up for 3.0000 s
+Benchmarking lod_generation/multi_level/generate_3_lods: Collecting 10 samples in estimated 5.0052 s (7975 iterations)
+Benchmarking lod_generation/multi_level/generate_3_lods: Analyzing
+lod_generation/multi_level/generate_3_lods
+                        time:   [481.42 ┬╡s 577.54 ┬╡s 770.89 ┬╡s]
+
+Benchmarking instancing/instance_manager/add_instances/100
+Benchmarking instancing/instance_manager/add_instances/100: Warming up for 3.0000 s
+Benchmarking instancing/instance_manager/add_instances/100: Collecting 100 samples in estimated 5.0007 s (1.2M iterations)
+Benchmarking instancing/instance_manager/add_instances/100: Analyzing
+instancing/instance_manager/add_instances/100
+                        time:   [5.8156 ┬╡s 6.1629 ┬╡s 6.5195 ┬╡s]
+                        thrpt:  [15.339 Melem/s 16.226 Melem/s 17.195 Melem/s]
+Found 6 outliers among 100 measurements (6.00%)
+  4 (4.00%) high mild
+  2 (2.00%) high severe
+Benchmarking instancing/instance_manager/add_instances/1000
+Benchmarking instancing/instance_manager/add_instances/1000: Warming up for 3.0000 s
+Benchmarking instancing/instance_manager/add_instances/1000: Collecting 100 samples in estimated 5.1306 s (111k iterations)
+Benchmarking instancing/instance_manager/add_instances/1000: Analyzing
+instancing/instance_manager/add_instances/1000
+                        time:   [47.489 ┬╡s 49.273 ┬╡s 50.920 ┬╡s]
+                        thrpt:  [19.639 Melem/s 20.295 Melem/s 21.058 Melem/s]
+Found 17 outliers among 100 measurements (17.00%)
+  2 (2.00%) low severe
+  7 (7.00%) low mild
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+Benchmarking instancing/instance_manager/add_instances/10000
+Benchmarking instancing/instance_manager/add_instances/10000: Warming up for 3.0000 s
+Benchmarking instancing/instance_manager/add_instances/10000: Collecting 100 samples in estimated 6.0108 s (10k iterations)
+Benchmarking instancing/instance_manager/add_instances/10000: Analyzing
+instancing/instance_manager/add_instances/10000
+                        time:   [540.05 ┬╡s 577.30 ┬╡s 616.13 ┬╡s]
+                        thrpt:  [16.230 Melem/s 17.322 Melem/s 18.517 Melem/s]
+Found 5 outliers among 100 measurements (5.00%)
+  3 (3.00%) low mild
+  2 (2.00%) high severe
+
+Benchmarking instancing/transformation/instance_to_raw
+Benchmarking instancing/transformation/instance_to_raw: Warming up for 3.0000 s
+Benchmarking instancing/transformation/instance_to_raw: Collecting 100 samples in estimated 5.0000 s (1.8B iterations)
+Benchmarking instancing/transformation/instance_to_raw: Analyzing
+instancing/transformation/instance_to_raw
+                        time:   [2.1807 ns 2.2644 ns 2.3473 ns]
+Found 12 outliers among 100 measurements (12.00%)
+  6 (6.00%) high mild
+  6 (6.00%) high severe
+
+Benchmarking instancing/pattern_generation/grid_10x10
+Benchmarking instancing/pattern_generation/grid_10x10: Warming up for 3.0000 s
+Benchmarking instancing/pattern_generation/grid_10x10: Collecting 100 samples in estimated 5.0045 s (4.5M iterations)
+Benchmarking instancing/pattern_generation/grid_10x10: Analyzing
+instancing/pattern_generation/grid_10x10
+                        time:   [997.80 ns 1.0790 ┬╡s 1.1774 ┬╡s]
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+Benchmarking instancing/pattern_generation/circle_100
+Benchmarking instancing/pattern_generation/circle_100: Warming up for 3.0000 s
+Benchmarking instancing/pattern_generation/circle_100: Collecting 100 samples in estimated 5.0008 s (1000k iterations)
+Benchmarking instancing/pattern_generation/circle_100: Analyzing
+instancing/pattern_generation/circle_100
+                        time:   [4.2609 ┬╡s 4.6986 ┬╡s 5.1998 ┬╡s]
+Found 12 outliers among 100 measurements (12.00%)
+  5 (5.00%) high mild
+  7 (7.00%) high severe
+Benchmarking instancing/pattern_generation/grid_with_variations
+Benchmarking instancing/pattern_generation/grid_with_variations: Warming up for 3.0000 s
+Benchmarking instancing/pattern_generation/grid_with_variations: Collecting 100 samples in estimated 5.0119 s (869k iterations)
+Benchmarking instancing/pattern_generation/grid_with_variations: Analyzing
+instancing/pattern_generation/grid_with_variations
+                        time:   [6.1863 ┬╡s 6.5992 ┬╡s 7.0538 ┬╡s]
+Found 15 outliers among 100 measurements (15.00%)
+  11 (11.00%) low mild
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking instancing/draw_call_reduction/calculate_savings/1x1000
+Benchmarking instancing/draw_call_reduction/calculate_savings/1x1000: Warming up for 3.0000 s
+Benchmarking instancing/draw_call_reduction/calculate_savings/1x1000: Collecting 100 samples in estimated 5.1332 s (157k iterations)
+Benchmarking instancing/draw_call_reduction/calculate_savings/1x1000: Analyzing
+instancing/draw_call_reduction/calculate_savings/1x1000
+                        time:   [30.568 ┬╡s 33.470 ┬╡s 36.950 ┬╡s]
+                        thrpt:  [27.064 Melem/s 29.877 Melem/s 32.714 Melem/s]
+Benchmarking instancing/draw_call_reduction/calculate_savings/10x100
+Benchmarking instancing/draw_call_reduction/calculate_savings/10x100: Warming up for 3.0000 s
+Benchmarking instancing/draw_call_reduction/calculate_savings/10x100: Collecting 100 samples in estimated 5.1292 s (126k iterations)
+Benchmarking instancing/draw_call_reduction/calculate_savings/10x100: Analyzing
+instancing/draw_call_reduction/calculate_savings/10x100
+                        time:   [24.858 ┬╡s 25.503 ┬╡s 26.308 ┬╡s]
+                        thrpt:  [38.011 Melem/s 39.211 Melem/s 40.228 Melem/s]
+Found 4 outliers among 100 measurements (4.00%)
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking instancing/draw_call_reduction/calculate_savings/100x10
+Benchmarking instancing/draw_call_reduction/calculate_savings/100x10: Warming up for 3.0000 s
+Benchmarking instancing/draw_call_reduction/calculate_savings/100x10: Collecting 100 samples in estimated 5.2170 s (71k iterations)
+Benchmarking instancing/draw_call_reduction/calculate_savings/100x10: Analyzing
+instancing/draw_call_reduction/calculate_savings/100x10
+                        time:   [59.594 ┬╡s 64.653 ┬╡s 70.900 ┬╡s]
+                        thrpt:  [14.104 Melem/s 15.467 Melem/s 16.780 Melem/s]
+
+Benchmarking integrated/full_pipeline/compress_generate_lods_instance
+Benchmarking integrated/full_pipeline/compress_generate_lods_instance: Warming up for 3.0000 s
+Benchmarking integrated/full_pipeline/compress_generate_lods_instance: Collecting 10 samples in estimated 5.0060 s (17k iterations)
+Benchmarking integrated/full_pipeline/compress_generate_lods_instance: Analyzing
+integrated/full_pipeline/compress_generate_lods_instance
+                        time:   [226.03 ┬╡s 279.42 ┬╡s 385.25 ┬╡s]
+Found 1 outliers among 10 measurements (10.00%)
+  1 (10.00%) high mild
+
+Benchmarking integrated/memory_savings/vertex_compression/1000
+Benchmarking integrated/memory_savings/vertex_compression/1000: Warming up for 3.0000 s
+Benchmarking integrated/memory_savings/vertex_compression/1000: Collecting 100 samples in estimated 5.0000 s (5.8B iterations)
+Benchmarking integrated/memory_savings/vertex_compression/1000: Analyzing
+integrated/memory_savings/vertex_compression/1000
+                        time:   [1.0149 ns 1.0656 ns 1.1207 ns]
+Found 7 outliers among 100 measurements (7.00%)
+  2 (2.00%) high mild
+  5 (5.00%) high severe
+Benchmarking integrated/memory_savings/vertex_compression/10000
+Benchmarking integrated/memory_savings/vertex_compression/10000: Warming up for 3.0000 s
+Benchmarking integrated/memory_savings/vertex_compression/10000: Collecting 100 samples in estimated 5.0000 s (7.0B iterations)
+Benchmarking integrated/memory_savings/vertex_compression/10000: Analyzing
+integrated/memory_savings/vertex_compression/10000
+                        time:   [805.25 ps 845.30 ps 887.91 ps]
+Found 19 outliers among 100 measurements (19.00%)
+  6 (6.00%) low severe
+  9 (9.00%) low mild
+  3 (3.00%) high mild
+  1 (1.00%) high severe
+Benchmarking integrated/memory_savings/vertex_compression/100000
+Benchmarking integrated/memory_savings/vertex_compression/100000: Warming up for 3.0000 s
+Benchmarking integrated/memory_savings/vertex_compression/100000: Collecting 100 samples in estimated 5.0000 s (7.1B iterations)
+Benchmarking integrated/memory_savings/vertex_compression/100000: Analyzing
+integrated/memory_savings/vertex_compression/100000
+                        time:   [512.26 ps 518.04 ps 525.29 ps]
+Found 2 outliers among 100 measurements (2.00%)
+  2 (2.00%) high mild
+
+     Running benches\phase2_benches.rs (target\release\deps\phase2_benches-42eaaa5491f14f82.exe)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

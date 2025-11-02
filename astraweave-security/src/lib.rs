@@ -42,7 +42,7 @@ pub struct TelemetryEvent {
 }
 
 /// Telemetry severity levels
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum TelemetrySeverity {
     Info,
     Warning,
@@ -416,6 +416,17 @@ pub fn hash_data(data: &[u8]) -> String {
     hasher.update(data);
     hex::encode(hasher.finalize())
 }
+
+#[cfg(test)]
+mod signature_tests;
+#[cfg(test)]
+mod anticheat_tests;
+#[cfg(test)]
+mod llm_validation_tests;
+#[cfg(test)]
+mod script_sandbox_tests;
+#[cfg(test)]
+mod ecs_systems_tests;
 
 #[cfg(test)]
 mod tests {

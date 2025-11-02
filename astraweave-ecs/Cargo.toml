@@ -26,3 +26,7 @@ loom = "0.7"  # Concurrency model checker for Phase 4.4
 [[bench]]
 name = "storage_benchmarks"
 harness = false
+
+[[bench]]
+name = "ecs_benchmarks"
+harness = false

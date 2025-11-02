@@ -7,7 +7,7 @@ use wgpu::{Device, Queue};
 /// Initialize headless wgpu device for testing
 /// Uses software adapter for CI compatibility
 pub async fn create_headless_device() -> (Device, Queue) {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::all(),
         ..Default::default()
     });
@@ -23,16 +23,13 @@ pub async fn create_headless_device() -> (Device, Queue) {
         .expect("Failed to find adapter");
 
     let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("test_device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_defaults(),
-                memory_hints: wgpu::MemoryHints::default(),
-                trace: None,
-            },
-            None,
-        )
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("test_device"),
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::downlevel_defaults(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: Default::default(),
+        })
         .await
         .expect("Failed to create device");
 

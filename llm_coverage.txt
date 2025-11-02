@@ -1,0 +1,1010 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+warning: `astraweave-observability` (lib) generated 2 warnings
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+warning: unused imports: `sleep` and `timeout`
+   --> astraweave-llm\src\backpressure.rs:597:23
+    |
+597 |     use tokio::time::{sleep, timeout};
+    |                       ^^^^^  ^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `layer`
+   --> astraweave-llm\src\production_hardening.rs:667:13
+    |
+667 |         let layer = ProductionHardeningLayer::new(config);
+    |             ^^^^^ help: if this is intentional, prefix it with an underscore: `_layer`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astraweave-llm` (lib) generated 2 warnings
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-llm\benches\llm_benchmarks.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:33:27
+   |
+33 |             let _cached = black_box("cached response".to_string());
+   |                           ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:57:53
+   |
+57 |                     let _response = client.complete(black_box("test prompt")).await.unwrap();
+   |                                                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:80:34
+   |
+80 |                 let normalized = black_box(prompt)
+   |                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> astraweave-llm\benches\llm_benchmarks.rs:86:17
+   |
+86 |                 black_box(normalized);
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\llm_benchmarks.rs:122:30
+    |
+122 |                 let jitter = black_box(42u64 % (jitter_range * 2));
+    |                              ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\llm_benchmarks.rs:125:17
+    |
+125 |                 black_box(final_backoff);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\llm_benchmarks.rs:149:13
+    |
+149 |             black_box(can_proceed);
+    |             ^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `metrics`
+   --> astraweave-llm\tests\phase7_integration_tests.rs:316:7
+    |
+316 | #[cfg(feature = "metrics")]
+    |       ^^^^^^^^^^^^^^^^^^^
+    |
+    = note: expected values for `feature` are: `candle-core`, `candle-nn`, `candle-transformers`, `debug_io`, `default`, `hf-hub`, `llm_cache`, `ollama`, `phi3`, and `tokenizers`
+    = help: consider adding `metrics` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: variants `Open` and `HalfOpen` are never constructed
+   --> astraweave-llm\benches\llm_benchmarks.rs:138:9
+    |
+136 |     enum CircuitState {
+    |          ------------ variants in this enum
+137 |         Closed,
+138 |         Open,
+    |         ^^^^
+139 |         HalfOpen,
+    |         ^^^^^^^^
+    |
+    = note: `CircuitState` has a derived impl for the trait `Clone`, but this is intentionally ignored during dead code analysis
+    = note: `#[warn(dead_code)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-llm\benches\resilience_benchmarks.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:124:13
+    |
+124 |             black_box(can_proceed);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:143:13
+    |
+143 |             black_box(breaker.get_state());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:174:13
+    |
+174 |             black_box(breaker.get_state());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:201:13
+    |
+201 |             black_box(backoffs);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:234:13
+    |
+234 |             black_box(attempt);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:273:21
+    |
+273 |                     black_box((requests, rejected));
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:319:13
+    |
+319 |             black_box(success);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\resilience_benchmarks.rs:347:13
+    |
+347 |             black_box(&breakers);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> astraweave-llm\benches\cache_stress_test.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\cache_stress_test.rs:135:13
+    |
+135 |             black_box(hit_rate);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\cache_stress_test.rs:167:13
+    |
+167 |             black_box(hit_rate);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\cache_stress_test.rs:197:21
+    |
+197 |                     black_box(hit_rate);
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\cache_stress_test.rs:224:13
+    |
+224 |             black_box(cache.hit_rate());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\cache_stress_test.rs:266:13
+    |
+266 |             black_box(cache.hit_rate());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> astraweave-llm\benches\cache_stress_test.rs:292:17
+    |
+292 |                 black_box(hash);
+    |                 ^^^^^^^^^
+
+warning: `astraweave-llm` (test "phase7_integration_tests") generated 1 warning
+warning: `astraweave-llm` (bench "llm_benchmarks") generated 9 warnings
+warning: `astraweave-llm` (bench "cache_stress_test") generated 7 warnings
+warning: `astraweave-llm` (bench "resilience_benchmarks") generated 9 warnings
+warning: `astraweave-llm` (lib test) generated 4 warnings (2 duplicates) (run `cargo fix --lib -p astraweave-llm --tests` to apply 1 suggestion)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1m 12s
+     Running unittests src\lib.rs (target\llvm-cov-target\debug\deps\astraweave_llm-7b54740e748ee61a.exe)
+
+running 135 tests
+test ab_testing::tests::test_hash_consistency ... ok
+test ab_testing::tests::test_record_outcome ... ok
+test backpressure::tests::test_backpressure_manager_creation ... ok
+test backpressure::tests::test_priority_ordering ... ok
+test ab_testing::tests::test_create_experiment ... ok
+test ab_testing::tests::test_start_stop_experiment ... ok
+test ab_testing::tests::test_variant_assignment ... ok
+test backpressure::tests::test_request_acceptance ... ok
+test cache::key::tests::test_key_equality_same_normalized ... ok
+test cache::key::tests::test_key_inequality_different_model ... ok
+test cache::key::tests::test_key_temperature_quantization ... ok
+test cache::key::tests::test_prompt_normalization_timestamps ... ok
+test backpressure::tests::test_request_queuing ... ok
+test cache::key::tests::test_key_inequality_different_temperature ... ok
+test cache::key::tests::test_prompt_normalization_volatile_sections ... ok
+test cache::key::tests::test_key_inequality_different_prompt ... ok
+test cache::key::tests::test_tools_hash_order_independence ... ok
+test cache::key::tests::test_prompt_normalization_whitespace ... ok
+test cache::key::tests::test_tools_hash_sensitivity ... ok
+test cache::lru::tests::test_lru_clear ... ok
+test cache::lru::tests::test_lru_clone_shares_data ... ok
+test cache::similarity::tests::test_extract_key_tokens_filters_stopwords ... ok
+test cache::similarity::tests::test_jaccard_disjoint ... ok
+test cache::lru::tests::test_lru_access_updates_order ... ok
+test cache::lru::tests::test_lru_basic_operations ... ok
+test cache::lru::tests::test_lru_eviction_order ... ok
+test cache::lru::tests::test_lru_update_existing ... ok
+test cache::similarity::tests::test_jaccard_partial_overlap ... ok
+test cache::similarity::tests::test_prompt_similarity_different_actions ... ok
+test cache::similarity::tests::test_tokenize_basic ... ok
+test cache::similarity::tests::test_prompt_similarity_threshold ... ok
+test cache::similarity::tests::test_jaccard_high_overlap ... ok
+test cache::similarity::tests::test_jaccard_identical ... ok
+test cache::similarity::tests::test_prompt_similarity_similar_tactics ... ok
+test cache::similarity::tests::test_prompt_similarity_identical ... ok
+test cache::tests::test_cache_stats ... ok
+test cache::tests::test_lru_eviction ... ok
+test circuit_breaker::tests::test_circuit_breaker_opens_on_failures ... ok
+test cache::similarity::tests::test_tokenize_empty ... ok
+test cache::tests::test_cache_hit_miss ... ok
+test circuit_breaker::tests::test_circuit_breaker_closed_state ... ok
+test circuit_breaker::tests::test_circuit_breaker_metrics ... ok
+test compression::tests::test_action_docs_compact ... ok
+test compression::tests::test_build_optimized_prompt ... ok
+test compression::tests::test_compact_json_snapshot ... ok
+test compression::tests::test_compress_stealth_prompt ... ok
+test compression::tests::test_compress_tactical_prompt ... ok
+test fallback_system::tests::test_emergency_always_succeeds ... ok
+test fallback_system::tests::test_fallback_to_heuristic ... ok
+test fallback_system::tests::test_heuristic_no_ammo ... ok
+test fallback_system::tests::test_full_llm_success ... ok
+test fallback_system::tests::test_heuristic_low_morale ... ok
+test compression::tests::test_compression_ratio ... ok
+test fallback_system::tests::test_metrics_tracking ... ok
+test few_shot::tests::test_stealth_examples ... ok
+test few_shot::tests::test_support_examples ... ok
+test few_shot::tests::test_add_few_shot_to_prompt ... ok
+test plan_parser::tests::test_code_fence_extraction ... ok
+test few_shot::tests::test_max_examples_limit ... ok
+test few_shot::tests::test_unknown_role_returns_base ... ok
+test plan_parser::tests::test_direct_parse_valid_json ... ok
+test plan_parser::tests::test_empty_steps_warning ... ok
+test few_shot::tests::test_tactical_examples ... ok
+test plan_parser::tests::test_hallucination_detection ... ok
+test plan_parser::tests::test_malformed_json_fails ... ok
+test plan_parser::tests::test_tolerant_plan_id_variations ... ok
+test production_hardening::tests::test_production_hardening_layer_creation ... ok
+test plan_parser::tests::test_envelope_extraction ... ok
+test plan_parser::tests::test_non_json_text_fails ... ok
+test plan_parser::tests::test_object_extraction ... ok
+test production_hardening::tests::test_successful_request_processing ... ignored
+test prompt_template::tests::test_config_options ... ok
+test prompt_template::tests::test_few_shot_examples_count ... ok
+test prompts::tests::test_action_history ... ok
+test production_hardening::tests::test_system_status ... ok
+test prompt_template::tests::test_build_enhanced_prompt ... ok
+test prompt_template::tests::test_json_schema_has_all_tools ... ok
+test prompt_template::tests::test_tool_vocabulary_includes_all_categories ... ok
+test prompts::tests::test_constraints ... ok
+test prompts::tests::test_quick_prompts ... ok
+test prompts::tests::test_snapshot_json_format ... ok
+test prompts::tests::test_prompt_builder_basic ... ok
+test prompts::tests::test_prompt_builder_roles ... ok
+test rate_limiter::tests::test_adaptive_rate_limiting ... ok
+test rate_limiter::tests::test_rate_limit_enforcement ... ok
+test rate_limiter::tests::test_rate_limiter_creation ... ok
+test retry::tests::test_backoff_cap ... ok
+test retry::tests::test_retry_config_disabled ... ok
+test retry::tests::test_retry_config_production ... ok
+test retry::tests::test_exponential_backoff ... ok
+test retry::tests::test_jitter_adds_randomness ... ok
+test retry::tests::test_retry_executor_exhausts_retries ... ok
+test retry::tests::test_retry_executor_success_first_try ... ok
+test retry::tests::test_retry_executor_permanent_error_no_retry ... ok
+test retry::tests::test_retry_executor_success_after_retries ... ok
+test retry::tests::test_should_not_retry_permanent_errors ... ok
+test retry::tests::test_should_retry_transient_errors ... ok
+test telemetry::tests::test_cache_metrics ... ok
+test telemetry::tests::test_format_output ... ok
+test telemetry::tests::test_record_requests ... ok
+test telemetry::tests::test_latency_tracking ... ok
+test telemetry::tests::test_operation_timer ... ok
+test telemetry::tests::test_reset ... ok
+test telemetry::tests::test_success_rate_calculation ... ok
+test scheduler::tests::test_scheduler_basic ... ok
+test scheduler::tests::test_scheduler_stats ... ok
+test tests::test_build_prompt ... ok
+test tests::test_mock_llm_client ... ok
+test telemetry::tests::test_telemetry_creation ... ok
+test tests::test_parse_llm_plan_all_action_types ... ok
+test tests::test_parse_llm_plan_from_envelope_message_content ... ok
+test tests::test_parse_llm_plan_empty_steps ... ok
+test tests::test_parse_llm_plan_from_fenced_json ... ok
+test tests::test_parse_llm_plan_disallowed_tool ... ok
+test tests::test_parse_llm_plan_malformed_step ... ok
+test scheduler::tests::test_submit_and_wait ... ok
+test tests::test_parse_llm_plan_missing_plan_id ... ok
+test tests::test_parse_llm_plan_invalid_json ... ok
+test tests::test_parse_llm_plan_pick_last_json_object ... ok
+test tests::test_parse_llm_plan_valid ... ok
+test tests::test_parse_llm_plan_with_nonstandard_planid_key ... ok
+test tests::test_plan_from_llm_disallowed_tool ... ok
+test tests::test_prompt_includes_constraints ... ok
+test scheduler::tests::test_scheduler_priority ... ok
+test tool_guard::tests::test_audit_log ... ok
+test tests::test_plan_from_llm_invalid_response ... ok
+test tests::test_plan_from_llm_success ... ok
+test tool_guard::tests::test_denied_action ... ok
+test tool_guard::tests::test_restricted_action_invalid ... ok
+test tool_guard::tests::test_validation_stats ... ok
+test tool_guard::tests::test_batch_validation ... ok
+test tool_guard::tests::test_custom_policy ... ok
+test tool_guard::tests::test_restricted_action_valid ... ok
+test tool_guard::tests::test_tool_guard_basic ... ok
+test circuit_breaker::tests::test_circuit_breaker_recovery ... ok
+
+test result: ok. 134 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 2.34s
+
+     Running tests\integration_test.rs (target\llvm-cov-target\debug\deps\integration_test-35a1656bc8d18490.exe)
+
+running 10 tests
+test test_prompt_generation_comprehensive ... ok
+test test_prompt_includes_obstacles ... ok
+test test_obstacle_scenario_json_parsing ... FAILED
+test test_tool_registry_validation ... FAILED
+test test_llm_integration_workflow ... FAILED
+test test_obstacle_multiple_complex_layout ... FAILED
+test test_obstacle_edge_positions ... FAILED
+test test_obstacle_single_blocking_path ... FAILED
+test test_obstacle_surrounded_companion ... FAILED
+test test_error_handling_scenarios ... ok
+
+failures:
+
+---- test_obstacle_scenario_json_parsing stdout ----
+
+thread 'test_obstacle_scenario_json_parsing' panicked at astraweave-llm\tests\integration_test.rs:377:5:
+assertion failed: result.is_ok()
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: core::panicking::panic
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:145
+   3: integration_test::test_obstacle_scenario_json_parsing
+             at .\tests\integration_test.rs:377
+   4: integration_test::test_obstacle_scenario_json_parsing::closure$0
+             at .\tests\integration_test.rs:369
+   5: core::ops::function::FnOnce::call_once<integration_test::test_obstacle_scenario_json_parsing::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- test_tool_registry_validation stdout ----
+
+thread 'test_tool_registry_validation' panicked at astraweave-llm\tests\integration_test.rs:172:5:
+assertion failed: result.is_ok()
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: core::panicking::panic
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:145
+   3: integration_test::test_tool_registry_validation
+             at .\tests\integration_test.rs:172
+   4: integration_test::test_tool_registry_validation::closure$0
+             at .\tests\integration_test.rs:153
+   5: core::ops::function::FnOnce::call_once<integration_test::test_tool_registry_validation::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+   6: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- test_llm_integration_workflow stdout ----
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ              PARSING LLM RESPONSE (5 Stages)                 Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Input Length: 207 chars
+Input Preview: {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+        ...
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  [Stage 1/5] Attempting Direct JSON Parse...
+  Γ¥î Stage 1 failed
+  [Stage 2/5] Attempting Code Fence Extraction...
+  Γ¥î Stage 2 failed
+  [Stage 3/5] Attempting Envelope Extraction...
+  Γ¥î Stage 3 failed
+  [Stage 4/5] Attempting Object Extraction...
+  ≡ƒôª Extracted object (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  ≡ƒº╣ After cleaning (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  Γ¥î Stage 4 failed
+  [Stage 5/5] Attempting Tolerant Parse...
+  Γ¥î Stage 5 failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                 Γ¥î ALL 5 PARSING STAGES FAILED                Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Response text (first 500 chars):
+{
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+        }
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+
+thread 'test_llm_integration_workflow' panicked at astraweave-llm\tests\integration_test.rs:19:40:
+Expected LLM plan
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: integration_test::test_llm_integration_workflow::async_block$0
+             at .\tests\integration_test.rs:19
+   3: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   4: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   5: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   6: tokio::task::coop::with_budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:167
+   7: tokio::task::coop::budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:133
+   8: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   9: tokio::runtime::scheduler::current_thread::Context::enter<enum2$<core::task::poll::Poll<tuple$<> > >,tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure_env$0<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::fu
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:432
+  10: tokio::runtime::scheduler::current_thread::impl$8::enter::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  11: tokio::runtime::context::scoped::Scoped<enum2$<tokio::runtime::scheduler::Context> >::set<enum2$<tokio::runtime::scheduler::Context>,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::runtime::scheduler::current_thread::impl$8::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\scoped.rs:40
+  12: tokio::runtime::context::set_scheduler::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  13: std::thread::local::LocalKey<tokio::runtime::context::Context>::try_with
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:315
+  14: std::thread::local::LocalKey<tokio::runtime::context::Context>::with<tokio::runtime::context::Context,tokio::runtime::context::set_scheduler::closure_env$0<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:279
+  15: tokio::runtime::context::set_scheduler<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2$<core::option::Option<tuple$<> > > >,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  16: tokio::runtime::scheduler::current_thread::CoreGuard::enter
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  17: tokio::runtime::scheduler::current_thread::CoreGuard::block_on<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:729
+  18: tokio::runtime::context::runtime::enter_runtime<tokio::runtime::scheduler::current_thread::impl$0::block_on::closure_env$0<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >,tuple$<> >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\runtime.rs:65
+  19: tokio::runtime::scheduler::current_thread::CurrentThread::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:188
+  20: tokio::runtime::runtime::Runtime::block_on_inner
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:368
+  21: tokio::runtime::runtime::Runtime::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:342
+  22: integration_test::test_llm_integration_workflow
+             at .\tests\integration_test.rs:53
+  23: integration_test::test_llm_integration_workflow::closure$0
+             at .\tests\integration_test.rs:10
+  24: core::ops::function::FnOnce::call_once<integration_test::test_llm_integration_workflow::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+  25: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- test_obstacle_multiple_complex_layout stdout ----
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ              PARSING LLM RESPONSE (5 Stages)                 Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Input Length: 207 chars
+Input Preview: {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+        ...
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  [Stage 1/5] Attempting Direct JSON Parse...
+  Γ¥î Stage 1 failed
+  [Stage 2/5] Attempting Code Fence Extraction...
+  Γ¥î Stage 2 failed
+  [Stage 3/5] Attempting Envelope Extraction...
+  Γ¥î Stage 3 failed
+  [Stage 4/5] Attempting Object Extraction...
+  ≡ƒôª Extracted object (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  ≡ƒº╣ After cleaning (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  Γ¥î Stage 4 failed
+  [Stage 5/5] Attempting Tolerant Parse...
+  Γ¥î Stage 5 failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                 Γ¥î ALL 5 PARSING STAGES FAILED                Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Response text (first 500 chars):
+{
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+        }
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+
+thread 'test_obstacle_multiple_complex_layout' panicked at astraweave-llm\tests\integration_test.rs:312:40:
+Expected LLM plan
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: integration_test::test_obstacle_multiple_complex_layout::async_block$0
+             at .\tests\integration_test.rs:312
+   3: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   4: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   5: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   6: tokio::task::coop::with_budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:167
+   7: tokio::task::coop::budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:133
+   8: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   9: tokio::runtime::scheduler::current_thread::Context::enter<enum2$<core::task::poll::Poll<tuple$<> > >,tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure_env$0<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::fu
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:432
+  10: tokio::runtime::scheduler::current_thread::impl$8::enter::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  11: tokio::runtime::context::scoped::Scoped<enum2$<tokio::runtime::scheduler::Context> >::set<enum2$<tokio::runtime::scheduler::Context>,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::runtime::scheduler::current_thread::impl$8::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\scoped.rs:40
+  12: tokio::runtime::context::set_scheduler::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  13: std::thread::local::LocalKey<tokio::runtime::context::Context>::try_with
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:315
+  14: std::thread::local::LocalKey<tokio::runtime::context::Context>::with<tokio::runtime::context::Context,tokio::runtime::context::set_scheduler::closure_env$0<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:279
+  15: tokio::runtime::context::set_scheduler<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2$<core::option::Option<tuple$<> > > >,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  16: tokio::runtime::scheduler::current_thread::CoreGuard::enter
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  17: tokio::runtime::scheduler::current_thread::CoreGuard::block_on<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:729
+  18: tokio::runtime::context::runtime::enter_runtime<tokio::runtime::scheduler::current_thread::impl$0::block_on::closure_env$0<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >,tuple$<> >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\runtime.rs:65
+  19: tokio::runtime::scheduler::current_thread::CurrentThread::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:188
+  20: tokio::runtime::runtime::Runtime::block_on_inner
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:368
+  21: tokio::runtime::runtime::Runtime::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:342
+  22: integration_test::test_obstacle_multiple_complex_layout
+             at .\tests\integration_test.rs:316
+  23: integration_test::test_obstacle_multiple_complex_layout::closure$0
+             at .\tests\integration_test.rs:304
+  24: core::ops::function::FnOnce::call_once<integration_test::test_obstacle_multiple_complex_layout::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+  25: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- test_obstacle_edge_positions stdout ----
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ              PARSING LLM RESPONSE (5 Stages)                 Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Input Length: 207 chars
+Input Preview: {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+        ...
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  [Stage 1/5] Attempting Direct JSON Parse...
+  Γ¥î Stage 1 failed
+  [Stage 2/5] Attempting Code Fence Extraction...
+  Γ¥î Stage 2 failed
+  [Stage 3/5] Attempting Envelope Extraction...
+  Γ¥î Stage 3 failed
+  [Stage 4/5] Attempting Object Extraction...
+  ≡ƒôª Extracted object (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  ≡ƒº╣ After cleaning (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  Γ¥î Stage 4 failed
+  [Stage 5/5] Attempting Tolerant Parse...
+  Γ¥î Stage 5 failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                 Γ¥î ALL 5 PARSING STAGES FAILED                Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Response text (first 500 chars):
+{
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+        }
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+
+thread 'test_obstacle_edge_positions' panicked at astraweave-llm\tests\integration_test.rs:346:40:
+Expected LLM plan
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: integration_test::test_obstacle_edge_positions::async_block$0
+             at .\tests\integration_test.rs:346
+   3: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   4: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   5: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   6: tokio::task::coop::with_budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:167
+   7: tokio::task::coop::budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:133
+   8: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   9: tokio::runtime::scheduler::current_thread::Context::enter<enum2$<core::task::poll::Poll<tuple$<> > >,tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure_env$0<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::fu
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:432
+  10: tokio::runtime::scheduler::current_thread::impl$8::enter::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  11: tokio::runtime::context::scoped::Scoped<enum2$<tokio::runtime::scheduler::Context> >::set<enum2$<tokio::runtime::scheduler::Context>,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::runtime::scheduler::current_thread::impl$8::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\scoped.rs:40
+  12: tokio::runtime::context::set_scheduler::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  13: std::thread::local::LocalKey<tokio::runtime::context::Context>::try_with
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:315
+  14: std::thread::local::LocalKey<tokio::runtime::context::Context>::with<tokio::runtime::context::Context,tokio::runtime::context::set_scheduler::closure_env$0<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:279
+  15: tokio::runtime::context::set_scheduler<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2$<core::option::Option<tuple$<> > > >,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  16: tokio::runtime::scheduler::current_thread::CoreGuard::enter
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  17: tokio::runtime::scheduler::current_thread::CoreGuard::block_on<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:729
+  18: tokio::runtime::context::runtime::enter_runtime<tokio::runtime::scheduler::current_thread::impl$0::block_on::closure_env$0<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >,tuple$<> >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\runtime.rs:65
+  19: tokio::runtime::scheduler::current_thread::CurrentThread::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:188
+  20: tokio::runtime::runtime::Runtime::block_on_inner
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:368
+  21: tokio::runtime::runtime::Runtime::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:342
+  22: integration_test::test_obstacle_edge_positions
+             at .\tests\integration_test.rs:350
+  23: integration_test::test_obstacle_edge_positions::closure$0
+             at .\tests\integration_test.rs:338
+  24: core::ops::function::FnOnce::call_once<integration_test::test_obstacle_edge_positions::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+  25: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- test_obstacle_single_blocking_path stdout ----
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ              PARSING LLM RESPONSE (5 Stages)                 Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Input Length: 207 chars
+Input Preview: {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+        ...
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  [Stage 1/5] Attempting Direct JSON Parse...
+  Γ¥î Stage 1 failed
+  [Stage 2/5] Attempting Code Fence Extraction...
+  Γ¥î Stage 2 failed
+  [Stage 3/5] Attempting Envelope Extraction...
+  Γ¥î Stage 3 failed
+  [Stage 4/5] Attempting Object Extraction...
+  ≡ƒôª Extracted object (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  ≡ƒº╣ After cleaning (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  Γ¥î Stage 4 failed
+  [Stage 5/5] Attempting Tolerant Parse...
+  Γ¥î Stage 5 failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                 Γ¥î ALL 5 PARSING STAGES FAILED                Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Response text (first 500 chars):
+{
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+        }
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+
+thread 'test_obstacle_single_blocking_path' panicked at astraweave-llm\tests\integration_test.rs:291:40:
+Expected LLM plan
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: integration_test::test_obstacle_single_blocking_path::async_block$0
+             at .\tests\integration_test.rs:291
+   3: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   4: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   5: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   6: tokio::task::coop::with_budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:167
+   7: tokio::task::coop::budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:133
+   8: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   9: tokio::runtime::scheduler::current_thread::Context::enter<enum2$<core::task::poll::Poll<tuple$<> > >,tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure_env$0<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::fu
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:432
+  10: tokio::runtime::scheduler::current_thread::impl$8::enter::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  11: tokio::runtime::context::scoped::Scoped<enum2$<tokio::runtime::scheduler::Context> >::set<enum2$<tokio::runtime::scheduler::Context>,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::runtime::scheduler::current_thread::impl$8::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\scoped.rs:40
+  12: tokio::runtime::context::set_scheduler::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  13: std::thread::local::LocalKey<tokio::runtime::context::Context>::try_with
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:315
+  14: std::thread::local::LocalKey<tokio::runtime::context::Context>::with<tokio::runtime::context::Context,tokio::runtime::context::set_scheduler::closure_env$0<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:279
+  15: tokio::runtime::context::set_scheduler<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2$<core::option::Option<tuple$<> > > >,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  16: tokio::runtime::scheduler::current_thread::CoreGuard::enter
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  17: tokio::runtime::scheduler::current_thread::CoreGuard::block_on<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:729
+  18: tokio::runtime::context::runtime::enter_runtime<tokio::runtime::scheduler::current_thread::impl$0::block_on::closure_env$0<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >,tuple$<> >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\runtime.rs:65
+  19: tokio::runtime::scheduler::current_thread::CurrentThread::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:188
+  20: tokio::runtime::runtime::Runtime::block_on_inner
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:368
+  21: tokio::runtime::runtime::Runtime::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:342
+  22: integration_test::test_obstacle_single_blocking_path
+             at .\tests\integration_test.rs:299
+  23: integration_test::test_obstacle_single_blocking_path::closure$0
+             at .\tests\integration_test.rs:283
+  24: core::ops::function::FnOnce::call_once<integration_test::test_obstacle_single_blocking_path::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+  25: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+---- test_obstacle_surrounded_companion stdout ----
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ              PARSING LLM RESPONSE (5 Stages)                 Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Input Length: 207 chars
+Input Preview: {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+        ...
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+  [Stage 1/5] Attempting Direct JSON Parse...
+  Γ¥î Stage 1 failed
+  [Stage 2/5] Attempting Code Fence Extraction...
+  Γ¥î Stage 2 failed
+  [Stage 3/5] Attempting Envelope Extraction...
+  Γ¥î Stage 3 failed
+  [Stage 4/5] Attempting Object Extraction...
+  ≡ƒôª Extracted object (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  ≡ƒº╣ After cleaning (207 chars): {
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+  
+  Γ¥î Stage 4 failed
+  [Stage 5/5] Attempting Tolerant Parse...
+  Γ¥î Stage 5 failed
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ                 Γ¥î ALL 5 PARSING STAGES FAILED                Γòæ
+ΓòáΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòú
+Response text (first 500 chars):
+{
+          "plan_id":"llm-mock",
+          "steps":[
+            {"act":"ThrowSmoke","x":7,"y":2},
+            {"act":"MoveTo","x":4,"y":2},
+            {"act":"Attack","target_id":99}
+          ]
+        }
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+
+thread 'test_obstacle_surrounded_companion' panicked at astraweave-llm\tests\integration_test.rs:329:40:
+Expected LLM plan
+stack backtrace:
+   0: std::panicking::begin_panic_handler
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\std\src\panicking.rs:697
+   1: core::panicking::panic_fmt
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\panicking.rs:75
+   2: integration_test::test_obstacle_surrounded_companion::async_block$0
+             at .\tests\integration_test.rs:329
+   3: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   4: core::future::future::impl$1::poll
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\future\future.rs:124
+   5: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   6: tokio::task::coop::with_budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:167
+   7: tokio::task::coop::budget
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\task\coop\mod.rs:133
+   8: tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:742
+   9: tokio::runtime::scheduler::current_thread::Context::enter<enum2$<core::task::poll::Poll<tuple$<> > >,tokio::runtime::scheduler::current_thread::impl$8::block_on::closure$0::closure_env$0<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::fu
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:432
+  10: tokio::runtime::scheduler::current_thread::impl$8::enter::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  11: tokio::runtime::context::scoped::Scoped<enum2$<tokio::runtime::scheduler::Context> >::set<enum2$<tokio::runtime::scheduler::Context>,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::runtime::scheduler::current_thread::impl$8::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\scoped.rs:40
+  12: tokio::runtime::context::set_scheduler::closure$0
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  13: std::thread::local::LocalKey<tokio::runtime::context::Context>::try_with
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:315
+  14: std::thread::local::LocalKey<tokio::runtime::context::Context>::with<tokio::runtime::context::Context,tokio::runtime::context::set_scheduler::closure_env$0<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\std\src\thread\local.rs:279
+  15: tokio::runtime::context::set_scheduler<tuple$<alloc::boxed::Box<tokio::runtime::scheduler::current_thread::Core,alloc::alloc::Global>,enum2$<core::option::Option<tuple$<> > > >,tokio::runtime::scheduler::current_thread::impl$8::enter::closure_env$0<tokio::
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context.rs:176
+  16: tokio::runtime::scheduler::current_thread::CoreGuard::enter
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:829
+  17: tokio::runtime::scheduler::current_thread::CoreGuard::block_on<core::pin::Pin<ref_mut$<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:729
+  18: tokio::runtime::context::runtime::enter_runtime<tokio::runtime::scheduler::current_thread::impl$0::block_on::closure_env$0<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >,tuple$<> >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\context\runtime.rs:65
+  19: tokio::runtime::scheduler::current_thread::CurrentThread::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\scheduler\current_thread\mod.rs:188
+  20: tokio::runtime::runtime::Runtime::block_on_inner
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:368
+  21: tokio::runtime::runtime::Runtime::block_on<core::pin::Pin<ref_mut$<dyn$<core::future::future::Future<assoc$<Output,tuple$<> > > > > > >
+             at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tokio-1.48.0\src\runtime\runtime.rs:342
+  22: integration_test::test_obstacle_surrounded_companion
+             at .\tests\integration_test.rs:333
+  23: integration_test::test_obstacle_surrounded_companion::closure$0
+             at .\tests\integration_test.rs:321
+  24: core::ops::function::FnOnce::call_once<integration_test::test_obstacle_surrounded_companion::closure_env$0,tuple$<> >
+             at C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib\rustlib\src\rust\library\core\src\ops\function.rs:250
+  25: core::ops::function::FnOnce::call_once
+             at /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library\core\src\ops\function.rs:250
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+
+
+failures:
+    test_llm_integration_workflow
+    test_obstacle_edge_positions
+    test_obstacle_multiple_complex_layout
+    test_obstacle_scenario_json_parsing
+    test_obstacle_single_blocking_path
+    test_obstacle_surrounded_companion
+    test_tool_registry_validation
+
+test result: FAILED. 3 passed; 7 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+error: test failed, to rerun pass `-p astraweave-llm --test integration_test`
+error: process didn't exit successfully: `C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\bin\cargo.exe test --manifest-path C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\Cargo.toml --target-dir C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target --package astraweave-llm --all-targets` (exit code: 101)

@@ -1,0 +1,14 @@
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.81s
+     Running tests\full_system_determinism.rs (target\debug\deps\full_system_determinism-51c64815164d97bc.exe)
+
+running 7 tests
+test test_entity_ordering_determinism ... ok
+test test_multiple_runs_same_seed_determinism ... ok
+test test_cooldown_tick_determinism ... ok
+test test_component_update_determinism ... ok
+test test_obstacle_determinism ... ok
+test test_different_seeds_produce_different_results ... ok
+test test_100_frame_replay_determinism ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

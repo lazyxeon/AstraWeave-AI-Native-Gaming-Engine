@@ -1,0 +1,10 @@
+[package]
+name = "llm_streaming_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-llm = { path = "../../astraweave-llm", features = ["ollama"] }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+futures-util = { workspace = true }

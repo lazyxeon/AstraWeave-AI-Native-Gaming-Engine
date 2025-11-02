@@ -1,0 +1,132 @@
+    Finished `bench` profile [optimized + debuginfo] target(s) in 0.89s
+     Running benches\audio_benchmarks.rs (target\release\deps\audio_benchmarks-5395e71f1b3dbb29.exe)
+Gnuplot not found, using plotters backend
+Benchmarking audio_engine_new
+Benchmarking audio_engine_new: Warming up for 3.0000 s
+
+Warning: Unable to complete 100 samples in 5.0s. You may wish to increase target time to 43.7s, or reduce sample count to 10.
+Benchmarking audio_engine_new: Collecting 100 samples in estimated 43.716 s (100 iterations)
+Benchmarking audio_engine_new: Analyzing
+audio_engine_new        time:   [328.39 ms 341.64 ms 355.46 ms]
+Found 5 outliers among 100 measurements (5.00%)
+  5 (5.00%) high mild
+
+Benchmarking audio_tick/0_sources
+Benchmarking audio_tick/0_sources: Warming up for 3.0000 s
+Benchmarking audio_tick/0_sources: Collecting 100 samples in estimated 5.0000 s (115M iterations)
+Benchmarking audio_tick/0_sources: Analyzing
+audio_tick/0_sources    time:   [39.839 ns 41.298 ns 42.810 ns]
+                        thrpt:  [0.0000  elem/s 0.0000  elem/s 0.0000  elem/s]
+Found 13 outliers among 100 measurements (13.00%)
+  3 (3.00%) low mild
+  7 (7.00%) high mild
+  3 (3.00%) high severe
+Benchmarking audio_tick/10_sources
+Benchmarking audio_tick/10_sources: Warming up for 3.0000 s
+Benchmarking audio_tick/10_sources: Collecting 100 samples in estimated 5.0000 s (118M iterations)
+Benchmarking audio_tick/10_sources: Analyzing
+audio_tick/10_sources   time:   [38.650 ns 40.348 ns 42.240 ns]
+                        thrpt:  [236.74 Melem/s 247.84 Melem/s 258.73 Melem/s]
+Found 8 outliers among 100 measurements (8.00%)
+  4 (4.00%) high mild
+  4 (4.00%) high severe
+Benchmarking audio_tick/50_sources
+Benchmarking audio_tick/50_sources: Warming up for 3.0000 s
+Benchmarking audio_tick/50_sources: Collecting 100 samples in estimated 5.0001 s (108M iterations)
+Benchmarking audio_tick/50_sources: Analyzing
+audio_tick/50_sources   time:   [36.897 ns 39.197 ns 42.256 ns]
+                        thrpt:  [1.1833 Gelem/s 1.2756 Gelem/s 1.3551 Gelem/s]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) high mild
+  6 (6.00%) high severe
+Benchmarking audio_tick/100_sources
+Benchmarking audio_tick/100_sources: Warming up for 3.0000 s
+Benchmarking audio_tick/100_sources: Collecting 100 samples in estimated 5.0001 s (117M iterations)
+Benchmarking audio_tick/100_sources: Analyzing
+audio_tick/100_sources  time:   [37.036 ns 38.905 ns 41.478 ns]
+                        thrpt:  [2.4109 Gelem/s 2.5704 Gelem/s 2.7001 Gelem/s]
+Found 10 outliers among 100 measurements (10.00%)
+  4 (4.00%) low mild
+  2 (2.00%) high mild
+  4 (4.00%) high severe
+
+Benchmarking spatial_audio/listener_movement_single_emitter
+Benchmarking spatial_audio/listener_movement_single_emitter: Warming up for 3.0000 s
+Benchmarking spatial_audio/listener_movement_single_emitter: Collecting 100 samples in estimated 5.0003 s (31M iterations)
+Benchmarking spatial_audio/listener_movement_single_emitter: Analyzing
+spatial_audio/listener_movement_single_emitter
+                        time:   [127.22 ns 132.34 ns 138.36 ns]
+Found 19 outliers among 100 measurements (19.00%)
+  12 (12.00%) low mild
+  5 (5.00%) high mild
+  2 (2.00%) high severe
+Benchmarking spatial_audio/listener_movement_10_emitters
+Benchmarking spatial_audio/listener_movement_10_emitters: Warming up for 3.0000 s
+Benchmarking spatial_audio/listener_movement_10_emitters: Collecting 100 samples in estimated 5.0015 s (10M iterations)
+Benchmarking spatial_audio/listener_movement_10_emitters: Analyzing
+spatial_audio/listener_movement_10_emitters
+                        time:   [499.70 ns 505.88 ns 513.53 ns]
+Found 5 outliers among 100 measurements (5.00%)
+  1 (1.00%) high mild
+  4 (4.00%) high severe
+Benchmarking spatial_audio/pan_mode_switching
+Benchmarking spatial_audio/pan_mode_switching: Warming up for 3.0000 s
+Benchmarking spatial_audio/pan_mode_switching: Collecting 100 samples in estimated 5.0000 s (12B iterations)
+Benchmarking spatial_audio/pan_mode_switching: Analyzing
+spatial_audio/pan_mode_switching
+                        time:   [373.19 ps 391.16 ps 410.27 ps]
+Found 10 outliers among 100 measurements (10.00%)
+  8 (8.00%) low mild
+  2 (2.00%) high mild
+
+Benchmarking volume_control/master_volume_set
+Benchmarking volume_control/master_volume_set: Warming up for 3.0000 s
+Benchmarking volume_control/master_volume_set: Collecting 100 samples in estimated 5.0001 s (108M iterations)
+Benchmarking volume_control/master_volume_set: Analyzing
+volume_control/master_volume_set
+                        time:   [44.546 ns 45.594 ns 46.677 ns]
+Found 9 outliers among 100 measurements (9.00%)
+  1 (1.00%) low severe
+  3 (3.00%) low mild
+  3 (3.00%) high mild
+  2 (2.00%) high severe
+Benchmarking volume_control/master_volume_with_active_sounds
+Benchmarking volume_control/master_volume_with_active_sounds: Warming up for 3.0000 s
+Benchmarking volume_control/master_volume_with_active_sounds: Collecting 100 samples in estimated 5.0001 s (63M iterations)
+Benchmarking volume_control/master_volume_with_active_sounds: Analyzing
+volume_control/master_volume_with_active_sounds
+                        time:   [83.908 ns 85.111 ns 86.463 ns]
+Found 4 outliers among 100 measurements (4.00%)
+  2 (2.00%) high mild
+  2 (2.00%) high severe
+
+Benchmarking beep_generation/sfx_beep
+Benchmarking beep_generation/sfx_beep: Warming up for 3.0000 s
+Benchmarking beep_generation/sfx_beep: Collecting 100 samples in estimated 5.0007 s (6.8M iterations)
+Benchmarking beep_generation/sfx_beep: Analyzing
+beep_generation/sfx_beep
+                        time:   [624.57 ns 653.92 ns 682.22 ns]
+Found 11 outliers among 100 measurements (11.00%)
+  4 (4.00%) low severe
+  6 (6.00%) low mild
+  1 (1.00%) high severe
+Benchmarking beep_generation/voice_beep
+Benchmarking beep_generation/voice_beep: Warming up for 3.0000 s
+Benchmarking beep_generation/voice_beep: Collecting 100 samples in estimated 5.0026 s (7.0M iterations)
+Benchmarking beep_generation/voice_beep: Analyzing
+beep_generation/voice_beep
+                        time:   [484.86 ns 494.83 ns 505.97 ns]
+Found 11 outliers among 100 measurements (11.00%)
+  4 (4.00%) low mild
+  7 (7.00%) high severe
+Benchmarking beep_generation/3d_beep
+Benchmarking beep_generation/3d_beep: Warming up for 3.0000 s
+Benchmarking beep_generation/3d_beep: Collecting 100 samples in estimated 5.0026 s (5.7M iterations)
+Benchmarking beep_generation/3d_beep: Analyzing
+beep_generation/3d_beep time:   [646.21 ns 656.77 ns 666.99 ns]
+Found 8 outliers among 100 measurements (8.00%)
+  1 (1.00%) low severe
+  2 (2.00%) low mild
+  2 (2.00%) high mild
+  3 (3.00%) high severe
+

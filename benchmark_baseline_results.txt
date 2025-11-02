@@ -1,0 +1,1077 @@
+   Compiling serde_core v1.0.228
+   Compiling memchr v2.7.6
+   Compiling portable-atomic v1.11.1
+   Compiling value-bag v1.11.1
+   Compiling windows-sys v0.61.2
+   Compiling zerocopy v0.8.27
+   Compiling smallvec v1.15.1
+   Compiling thiserror v2.0.17
+   Compiling crossbeam-epoch v0.9.18
+   Compiling log v0.4.28
+   Compiling parking_lot_core v0.9.12
+   Compiling crossbeam-deque v0.8.6
+   Compiling parking_lot v0.12.5
+   Compiling aho-corasick v1.1.3
+   Compiling windows-sys v0.59.0
+   Compiling bytemuck_derive v1.10.2
+   Compiling ppv-lite86 v0.2.21
+   Compiling regex-automata v0.4.12
+   Compiling rand_chacha v0.9.0
+   Compiling once_cell v1.21.3
+   Compiling serde v1.0.228
+   Compiling serde_json v1.0.145
+   Compiling rand v0.9.2
+   Compiling bitflags v2.9.4
+   Compiling glam v0.30.8
+   Compiling tracing-core v0.1.34
+   Compiling socket2 v0.6.0
+   Compiling mio v1.0.4
+   Compiling tracing v0.1.41
+   Compiling winapi-util v0.1.11
+   Compiling tokio v1.48.0
+   Compiling rayon-core v1.13.0
+   Compiling astraweave-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+   Compiling rayon v1.11.0
+   Compiling num-rational v0.4.2
+   Compiling uuid v1.18.1
+   Compiling crc32fast v1.5.0
+   Compiling same-file v1.0.6
+   Compiling half v2.7.1
+   Compiling walkdir v2.5.0
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+   Compiling regex v1.12.2
+   Compiling flate2 v1.1.4
+   Compiling nom v7.1.3
+   Compiling ring v0.17.14
+   Compiling futures-io v0.3.31
+   Compiling futures-sink v0.3.31
+   Compiling http v1.3.1
+   Compiling icu_normalizer v2.0.0
+   Compiling futures-channel v0.3.31
+   Compiling clap_derive v4.5.49
+   Compiling clap_builder v4.5.49
+   Compiling idna_adapter v1.2.1
+   Compiling futures-util v0.3.31
+   Compiling idna v1.1.0
+   Compiling url v2.5.7
+   Compiling getrandom v0.2.16
+   Compiling encoding_rs v0.8.35
+   Compiling http-body v1.0.1
+   Compiling native-tls v0.2.14
+   Compiling rustls v0.23.32
+   Compiling tokio-util v0.7.16
+   Compiling h2 v0.4.12
+   Compiling httpdate v1.0.3
+   Compiling bytemuck v1.24.0
+   Compiling windows-registry v0.5.3
+   Compiling safe_arch v0.7.4
+   Compiling http-body-util v0.1.3
+   Compiling rustls-pki-types v1.12.0
+   Compiling wide v0.7.33
+   Compiling ciborium-ll v0.2.2
+   Compiling tower v0.5.2
+   Compiling serde_urlencoded v0.7.1
+   Compiling schannel v0.1.28
+   Compiling thread_local v1.1.9
+   Compiling mime v0.3.17
+   Compiling rustls-webpki v0.103.7
+   Compiling ciborium v0.2.2
+   Compiling nu-ansi-term v0.50.3
+   Compiling simba v0.9.1
+   Compiling tracing-log v0.2.0
+   Compiling hyper v1.7.0
+   Compiling tracing-serde v0.2.0
+   Compiling tinytemplate v1.2.1
+   Compiling matchers v0.2.0
+   Compiling tracing-subscriber v0.3.20
+   Compiling hyper-util v0.1.17
+   Compiling tokio-native-tls v0.3.1
+   Compiling webpki-roots v1.0.3
+   Compiling toml_parser v1.0.4
+   Compiling serde_spanned v1.0.3
+   Compiling toml_datetime v0.7.3
+   Compiling tower-http v0.6.6
+   Compiling chrono v0.4.42
+   Compiling tokio-rustls v0.26.4
+   Compiling hyper-tls v0.6.0
+   Compiling hyper-rustls v0.27.7
+   Compiling toml v0.9.8
+   Compiling dashmap v6.1.0
+   Compiling nalgebra v0.33.2
+   Compiling reqwest v0.12.24
+   Compiling spade v2.15.0
+   Compiling rstar v0.12.2
+   Compiling ena v0.14.3
+   Compiling hdrhistogram v7.5.4
+   Compiling crossbeam v0.8.4
+   Compiling astraweave-observability v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+   Compiling crunchy v0.2.4
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-observability\src\llm_telemetry.rs:584:29
+    |
+584 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+   Compiling tiny-keccak v2.0.2
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-observability\src\llm_telemetry.rs:585:13
+    |
+585 |         rng.gen::<f32>() < self.config.sampling_rate
+    |             ^^^
+
+   Compiling astraweave-nav v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+   Compiling astraweave-llm v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+   Compiling clap v4.5.49
+   Compiling criterion v0.7.0
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-llm\src\ab_testing.rs:549:29
+    |
+549 |         let mut rng = rand::thread_rng();
+    |                             ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+   Compiling ahash v0.8.12
+warning: use of deprecated method `rand::Rng::gen`: Renamed to `random` to avoid conflict with the new `gen` keyword in Rust 2024.
+   --> astraweave-llm\src\ab_testing.rs:550:37
+    |
+550 |         let random_value: f32 = rng.gen();
+    |                                     ^^^
+
+   Compiling const-random-macro v0.1.16
+   Compiling futures-executor v0.3.31
+   Compiling windows-interface v0.58.0
+warning: `astraweave-observability` (lib) generated 2 warnings
+   Compiling futures v0.3.31
+   Compiling windows-implement v0.58.0
+   Compiling winapi v0.3.9
+   Compiling parry3d v0.17.6
+   Compiling const-random v0.1.18
+   Compiling cfg-if v1.0.3
+   Compiling profiling-procmacros v1.0.17
+   Compiling rapier3d v0.22.0
+   Compiling profiling v1.0.17
+   Compiling env_filter v0.1.3
+   Compiling bstr v1.12.0
+   Compiling env_logger v0.11.8
+   Compiling windows-core v0.58.0
+   Compiling dpi v0.1.2
+   Compiling windows v0.58.0
+   Compiling smol_str v0.2.2
+   Compiling cursor-icon v1.2.0
+   Compiling winit v0.30.12
+   Compiling equator-macro v0.4.2
+   Compiling astraweave-physics v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+   Compiling sha2 v0.10.9
+warning: `astraweave-llm` (lib) generated 2 warnings
+   Compiling fluent-uri v0.3.2
+   Compiling num v0.4.3
+   Compiling uuid-simd v0.8.0
+   Compiling referencing v0.33.0
+   Compiling deranged v0.5.4
+   Compiling pest v2.8.3
+   Compiling fraction v0.15.3
+   Compiling fancy-regex v0.13.0
+   Compiling cpu-time v1.0.0
+   Compiling fancy-regex v0.16.2
+   Compiling maybe-rayon v0.1.1
+   Compiling combine v4.6.7
+   Compiling email_address v0.2.9
+   Compiling arg_enum_proc_macro v0.3.4
+   Compiling fax_derive v0.2.0
+   Compiling jsonschema v0.33.0
+   Compiling time v0.3.44
+   Compiling handlebars v6.3.2
+   Compiling equator v0.4.2
+   Compiling tiktoken-rs v0.7.0
+   Compiling aligned-vec v0.6.4
+   Compiling v_frame v0.3.9
+   Compiling av1-grain v0.2.4
+   Compiling mmap-rs v0.6.1
+   Compiling anndists v0.1.3
+   Compiling bincode v1.3.3
+   Compiling windows-link v0.2.1
+   Compiling exr v1.73.0
+   Compiling png v0.18.0
+   Compiling hnsw_rs v0.3.2
+   Compiling fax v0.2.6
+   Compiling gilrs-core v0.5.15
+   Compiling rav1e v0.7.1
+   Compiling gilrs v0.10.10
+   Compiling astraweave-input v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+   Compiling tiff v0.10.3
+   Compiling qoi v0.4.1
+   Compiling termcolor v1.4.1
+   Compiling codespan-reporting v0.12.0
+   Compiling astraweave-context v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+   Compiling ravif v0.11.20
+warning: unused imports: `ContextOperation` and `current_timestamp`
+ --> astraweave-context\src\history.rs:8:5
+  |
+8 |     current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+  |     ^^^^^^^^^^^^^^^^^                                 ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `indexmap::IndexMap`
+  --> astraweave-context\src\history.rs:13:5
+   |
+13 | use indexmap::IndexMap;
+   |     ^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ContextConfig`
+ --> astraweave-context\src\window.rs:8:32
+  |
+8 | use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+  |                                ^^^^^^^^^^^^^
+
+warning: unused import: `parking_lot::RwLock`
+  --> astraweave-context\src\window.rs:10:5
+   |
+10 | use parking_lot::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> astraweave-context\src\window.rs:13:5
+   |
+13 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-context\src\lib.rs:52:5
+   |
+52 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+   Compiling astraweave-prompts v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+warning: unused variable: `messages`
+   --> astraweave-context\src\summarizer.rs:323:56
+    |
+323 |     fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    |                                                        ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_messages`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:623:15
+    |
+618 |             | "said"
+    |               ------ matches all the relevant values
+...
+623 |             | "said"
+    |               ^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` on by default
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:634:15
+    |
+622 |             | "over"
+    |               ------ matches all the relevant values
+...
+634 |             | "over"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:653:15
+    |
+624 |             | "some"
+    |               ------ matches all the relevant values
+...
+653 |             | "some"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:654:15
+    |
+625 |             | "time"
+    |               ------ matches all the relevant values
+...
+654 |             | "time"
+    |               ^^^^^^ no value can reach this
+
+warning: unreachable pattern
+   --> astraweave-context\src\summarizer.rs:663:15
+    |
+639 |             | "well"
+    |               ------ matches all the relevant values
+...
+663 |             | "well"
+    |               ^^^^^^ no value can reach this
+
+warning: unused import: `anyhow::Result`
+ --> astraweave-prompts\src\context.rs:5:5
+  |
+5 | use anyhow::Result;
+  |     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-prompts\src\lib.rs:62:5
+   |
+62 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: value assigned to `token_count` is never read
+   --> astraweave-context\src\window.rs:518:17
+    |
+518 |                 token_count += agent_tokens;
+    |                 ^^^^^^^^^^^
+    |
+    = help: maybe it is overwritten before being read?
+    = note: `#[warn(unused_assignments)]` on by default
+
+warning: unused variable: `path`
+   --> astraweave-prompts\src\library.rs:111:32
+    |
+111 |     pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+    |                                ^^^^ help: if this is intentional, prefix it with an underscore: `_path`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: fields `name` and `metadata` are never read
+  --> astraweave-prompts\src\library.rs:14:5
+   |
+12 | pub struct TemplateLibrary {
+   |            --------------- fields in this struct
+13 |     /// Library name
+14 |     name: String,
+   |     ^^^^
+...
+18 |     metadata: LibraryMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateLibrary` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: field `metadata` is never read
+  --> astraweave-prompts\src\library.rs:58:5
+   |
+52 | pub struct TemplateCollection {
+   |            ------------------ field in this struct
+...
+58 |     metadata: CollectionMetadata,
+   |     ^^^^^^^^
+   |
+   = note: `TemplateCollection` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: field `config` is never read
+  --> astraweave-prompts\src\template.rs:78:5
+   |
+76 | pub struct TemplateProcessor {
+   |            ----------------- field in this struct
+77 |     /// Processing configuration
+78 |     config: ProcessorConfig,
+   |     ^^^^^^
+   |
+   = note: `TemplateProcessor` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+warning: unused `Result` that must be used
+  --> astraweave-prompts\src\engine.rs:88:9
+   |
+88 | /         self.inner
+89 | |             .register_template(name.to_string(), template.template);
+   | |___________________________________________________________________^
+   |
+   = note: this `Result` may be an `Err` variant, which should be handled
+   = note: `#[warn(unused_must_use)]` on by default
+help: use `let _ = ...` to ignore the resulting value
+   |
+88 |         let _ = self.inner
+   |         +++++++
+
+   Compiling image v0.25.8
+   Compiling strum_macros v0.26.4
+warning: `astraweave-prompts` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-prompts` to apply 2 suggestions)
+   Compiling sha1 v0.10.6
+   Compiling astraweave-gameplay v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+warning: `astraweave-context` (lib) generated 13 warnings (run `cargo fix --lib -p astraweave-context` to apply 6 suggestions)
+   Compiling astraweave-embeddings v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-embeddings)
+   Compiling fuzzy-matcher v0.3.7
+warning: unexpected `cfg` condition value: `small_rng`
+  --> astraweave-embeddings\src\client.rs:98:7
+   |
+98 | #[cfg(feature = "small_rng")]
+   |       ^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `candle`, `candle-core`, `candle-nn`, `candle-transformers`, `default`, `hnsw`, `hnsw_rs`, `http`, `onnx`, `ort`, and `reqwest`
+   = help: consider adding `small_rng` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+
+warning: unused import: `anyhow`
+ --> astraweave-embeddings\src\client.rs:8:14
+  |
+8 | use anyhow::{anyhow, Result};
+  |              ^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `StoredVector`
+ --> astraweave-embeddings\src\utils.rs:7:37
+  |
+7 | use crate::{Memory, MemoryCategory, StoredVector};
+  |                                     ^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-embeddings\src\lib.rs:48:5
+   |
+48 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+  --> astraweave-embeddings\src\client.rs:77:29
+   |
+77 |         let mut rng = rand::thread_rng();
+   |                             ^^^^^^^^^^
+   |
+   = note: `#[warn(deprecated)]` on by default
+
+   Compiling spirv v0.3.0+sdk-1.3.268.0
+warning: use of deprecated method `rand::Rng::gen_range`: Renamed to `random_range`
+  --> astraweave-embeddings\src\client.rs:81:32
+   |
+81 |             embedding.push(rng.gen_range(-1.0..1.0));
+   |                                ^^^^^^^^^
+
+   Compiling gpu-descriptor-types v0.2.0
+   Compiling gpu-alloc-types v0.3.0
+   Compiling gpu-allocator v0.27.0
+   Compiling gpu-alloc v0.6.0
+   Compiling gpu-descriptor v0.3.2
+warning: `astraweave-embeddings` (lib) generated 6 warnings (run `cargo fix --lib -p astraweave-embeddings` to apply 3 suggestions)
+   Compiling astraweave-rag v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-rag)
+warning: unused import: `MemoryCategory`
+ --> astraweave-rag\src\consolidation.rs:6:37
+  |
+6 | use astraweave_embeddings::{Memory, MemoryCategory};
+  |                                     ^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-rag\src\consolidation.rs:8:5
+  |
+8 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `ConversationHistory`
+  --> astraweave-rag\src\pipeline.rs:12:26
+   |
+12 | use astraweave_context::{ConversationHistory, TokenCounter};
+   |                          ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `anyhow::Result`
+  --> astraweave-rag\src\lib.rs:66:5
+   |
+66 | use anyhow::Result;
+   |     ^^^^^^^^^^^^^^
+
+   Compiling astraweave-ai v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+warning: use of deprecated function `rand::thread_rng`: Renamed to `rng`
+   --> astraweave-rag\src\pipeline.rs:623:37
+    |
+623 |                 let mut rng = rand::thread_rng();
+    |                                     ^^^^^^^^^^
+    |
+    = note: `#[warn(deprecated)]` on by default
+
+warning: unused variable: `duration`
+   --> astraweave-rag\src\pipeline.rs:198:17
+    |
+198 |             let duration = start_time.elapsed().as_millis() as f32;
+    |                 ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_duration`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: method `should_forget` is never used
+   --> astraweave-rag\src\forgetting.rs:152:8
+    |
+86  | impl ForgettingEngine {
+    | --------------------- method in this implementation
+...
+152 |     fn should_forget(&self, memory: &Memory, strength: &MemoryStrength, current_time: i64) -> bool {
+    |        ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: field `query_hash` is never read
+   --> astraweave-rag\src\pipeline.rs:122:5
+    |
+119 | struct CachedResult {
+    |        ------------ field in this struct
+...
+122 |     query_hash: u64,
+    |     ^^^^^^^^^^
+    |
+    = note: `CachedResult` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+   Compiling wgpu-types v25.0.0
+   Compiling tempfile v3.23.0
+warning: `astraweave-rag` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-rag` to apply 4 suggestions)
+   Compiling itoa v1.0.15
+   Compiling heapless v0.7.17
+   Compiling cobs v0.3.0
+   Compiling postcard v1.1.3
+   Compiling emath v0.32.3
+   Compiling windows_x86_64_msvc v0.52.6
+   Compiling pin-project-lite v0.2.16
+   Compiling rusqlite v0.37.0
+   Compiling windows-targets v0.52.6
+   Compiling ecolor v0.32.3
+   Compiling scopeguard v1.2.0
+   Compiling bytes v1.10.1
+   Compiling epaint v0.32.3
+   Compiling lock_api v0.4.14
+   Compiling tungstenite v0.28.0
+   Compiling astraweave-memory v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-memory)
+warning: unused imports: `MemoryContent`, `MemoryMetadata`, and `MemorySource`
+  --> astraweave-memory\src\memory_manager.rs:12:28
+   |
+12 |     Memory, MemoryCluster, MemoryContent, MemoryMetadata, MemorySource, MemoryType,
+   |                            ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^  ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\consolidation.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+  --> astraweave-memory\src\consolidation.rs:10:5
+   |
+10 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `DateTime`
+ --> astraweave-memory\src\forgetting.rs:8:14
+  |
+8 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\compression.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\retrieval.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::collections::HashMap`
+ --> astraweave-memory\src\sharing.rs:9:5
+  |
+9 | use std::collections::HashMap;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling zerofrom v0.1.6
+   Compiling stable_deref_trait v1.2.1
+   Compiling notify v8.2.0
+   Compiling yoke v0.8.0
+   Compiling tokio-tungstenite v0.28.0
+   Compiling egui v0.32.3
+warning: field `detector` is never read
+   --> astraweave-memory\src\dynamic_weighting.rs:110:5
+    |
+106 | pub struct AdaptiveWeightManager {
+    |            --------------------- field in this struct
+...
+110 |     detector: PatternDetector,
+    |     ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+   Compiling bincode v2.0.1
+   Compiling arboard v3.6.1
+   Compiling ron v0.11.0
+   Compiling webbrowser v1.0.5
+   Compiling astraweave-cinematics v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-cinematics)
+   Compiling subtle v2.6.1
+   Compiling futures-core v0.3.31
+   Compiling egui-winit v0.32.3
+   Compiling gltf-derive v1.4.1
+   Compiling astraweave-asset v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+   Compiling strum v0.26.3
+   Compiling naga v25.0.1
+   Compiling zerovec v0.11.4
+   Compiling astraweave-materials v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+   Compiling basis-universal-sys v0.3.1
+   Compiling typenum v1.19.0
+   Compiling foldhash v0.2.0
+warning: `astraweave-memory` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-memory` to apply 7 suggestions)
+   Compiling equivalent v1.0.2
+   Compiling allocator-api2 v0.2.21
+   Compiling generic-array v0.14.7
+   Compiling hashbrown v0.16.0
+   Compiling gltf-json v1.4.1
+   Compiling getrandom v0.3.3
+   Compiling zeroize v1.8.2
+   Compiling is-terminal v0.4.16
+   Compiling crossbeam-utils v0.8.21
+   Compiling fnv v1.0.7
+   Compiling indexmap v2.11.4
+   Compiling gltf v1.4.1
+   Compiling astraweave-terrain v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+   Compiling symphonia-core v0.5.5
+   Compiling ktx2 v0.4.0
+   Compiling slab v0.4.11
+   Compiling ryu v1.0.20
+   Compiling aw_asset_cli v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+   Compiling symphonia-metadata v0.5.5
+   Compiling wgpu-hal v25.0.2
+   Compiling tinystr v0.8.1
+   Compiling aw-save v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\persistence\aw-save)
+   Compiling concurrent-queue v2.5.0
+   Compiling wgpu-core-deps-windows-linux-android v25.0.0
+   Compiling wgpu-core v25.0.2
+   Compiling writeable v0.6.1
+   Compiling pin-utils v0.1.0
+   Compiling litemap v0.8.0
+   Compiling simd-adler32 v0.3.7
+   Compiling icu_locale_core v2.0.0
+   Compiling symphonia-bundle-mp3 v0.5.5
+   Compiling wgpu v25.0.2
+   Compiling crypto-common v0.1.6
+   Compiling potential_utf v0.1.3
+   Compiling zerotrie v0.2.2
+   Compiling egui-wgpu v0.32.3
+   Compiling futures-task v0.3.31
+   Compiling zlib-rs v0.5.2
+   Compiling windows-link v0.1.3
+   Compiling parking v2.2.1
+   Compiling adler2 v2.0.1
+   Compiling percent-encoding v2.3.2
+   Compiling miniz_oxide v0.8.9
+   Compiling zopfli v0.8.2
+   Compiling libz-rs-sys v0.5.2
+   Compiling icu_provider v2.0.0
+   Compiling icu_collections v2.0.0
+   Compiling symphonia v0.5.5
+   Compiling aes v0.8.4
+   Compiling lzma-rust2 v0.13.0
+   Compiling aw-net-proto v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\net\aw-net-proto)
+   Compiling windows-implement v0.60.2
+   Compiling windows-interface v0.59.3
+   Compiling untrusted v0.9.0
+   Compiling atomic-waker v1.1.2
+   Compiling try-lock v0.2.5
+   Compiling tower-service v0.3.3
+   Compiling want v0.3.1
+   Compiling rodio v0.17.3
+   Compiling zip v6.0.0
+   Compiling criterion v0.5.1
+   Compiling windows-strings v0.4.2
+   Compiling windows-result v0.3.4
+   Compiling rand_core v0.9.3
+   Compiling block-buffer v0.10.4
+   Compiling tokio-stream v0.1.17
+   Compiling httparse v1.10.1
+   Compiling icu_properties_data v2.0.1
+   Compiling icu_normalizer_data v2.0.0
+   Compiling astraweave-behavior v0.4.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+   Compiling toml_datetime v0.6.11
+   Compiling serde_spanned v0.6.9
+   Compiling windows_x86_64_msvc v0.53.1
+   Compiling anyhow v1.0.100
+   Compiling toml_edit v0.22.27
+   Compiling windows-targets v0.53.5
+   Compiling tokio-test v0.4.4
+   Compiling windows-core v0.61.2
+   Compiling digest v0.10.7
+   Compiling libc v0.2.177
+   Compiling libm v0.2.15
+   Compiling regex-syntax v0.8.7
+   Compiling icu_properties v2.0.1
+   Compiling base64 v0.22.1
+   Compiling ipnet v2.11.0
+   Compiling num-traits v0.2.19
+   Compiling toml v0.8.23
+   Compiling windows-sys v0.60.2
+   Compiling form_urlencoded v1.2.2
+   Compiling event-listener v5.4.1
+   Compiling astraweave-persistence-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-persistence-ecs)
+   Compiling sync_wrapper v1.0.2
+   Compiling cpufeatures v0.2.17
+   Compiling tower-layer v0.3.3
+   Compiling lazy_static v1.5.0
+   Compiling utf8_iter v1.0.4
+   Compiling minimal-lexical v0.2.1
+   Compiling rusty-fork v0.3.1
+   Compiling sharded-slab v0.1.7
+   Compiling windows-future v0.2.1
+   Compiling basis-universal v0.3.1
+   Compiling event-listener-strategy v0.5.4
+   Compiling windows-collections v0.2.0
+   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+   Compiling windows-numerics v0.2.0
+   Compiling astraweave-audio v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio)
+   Compiling astraweave-net-ecs v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-net-ecs)
+   Compiling futures-lite v2.6.1
+warning: unused imports: `MeshVertex` and `compute_tangents`
+ --> astraweave-render\src\mesh_gltf.rs:1:19
+  |
+1 | use crate::mesh::{compute_tangents, CpuMesh, MeshVertex};
+  |                   ^^^^^^^^^^^^^^^^           ^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused imports: `Vec2`, `Vec3`, and `Vec4`
+ --> astraweave-render\src\mesh_obj.rs:3:12
+  |
+3 | use glam::{Vec2, Vec3, Vec4};
+  |            ^^^^  ^^^^  ^^^^
+
+warning: unused import: `MeshVertex`
+ --> astraweave-render\src\mesh_obj.rs:5:28
+  |
+5 | use crate::mesh::{CpuMesh, MeshVertex};
+  |                            ^^^^^^^^^^
+
+   Compiling crossbeam-channel v0.5.15
+warning: variable does not need to be mutable
+   --> astraweave-render\src\terrain.rs:250:9
+    |
+250 |     let mut generator = WorldGenerator::new(world_config.clone());
+    |         ----^^^^^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+   Compiling dirs-sys-next v0.1.2
+warning: multiple fields are never read
+   --> astraweave-render\src\renderer.rs:301:5
+    |
+289 | pub struct Renderer {
+    |            -------- fields in this struct
+...
+301 |     post_pipeline: wgpu::RenderPipeline,
+    |     ^^^^^^^^^^^^^
+...
+310 |     hdr_aux_tex: wgpu::Texture,
+    |     ^^^^^^^^^^^
+...
+314 |     fx_gi_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+315 |     #[cfg(feature = "postfx")]
+316 |     fx_gi_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+317 |     #[cfg(feature = "postfx")]
+318 |     fx_ao_tex: wgpu::Texture,
+    |     ^^^^^^^^^
+319 |     #[cfg(feature = "postfx")]
+320 |     fx_ao_view: wgpu::TextureView,
+    |     ^^^^^^^^^^
+321 |     #[cfg(feature = "postfx")]
+322 |     post_fx_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^^^
+...
+337 |     bloom_mip_textures: Vec<wgpu::Texture>,
+    |     ^^^^^^^^^^^^^^^^^^
+...
+341 |     bloom_threshold_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+342 |     #[cfg(feature = "postfx")]
+343 |     bloom_intensity_buf: wgpu::Buffer,
+    |     ^^^^^^^^^^^^^^^^^^^
+344 |     #[cfg(feature = "postfx")]
+345 |     bloom_bgl: wgpu::BindGroupLayout,
+    |     ^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+   Compiling generator v0.8.7
+   Compiling thiserror v1.0.69
+   Compiling rand_xorshift v0.4.0
+   Compiling float-cmp v0.10.0
+   Compiling structmeta-derive v0.3.0
+   Compiling once_cell_polyfill v1.70.1
+   Compiling byteorder v1.5.0
+   Compiling rustix v1.1.2
+   Compiling anstyle v1.0.13
+   Compiling base64 v0.21.7
+   Compiling utf8parse v0.2.2
+   Compiling hashbrown v0.14.5
+   Compiling encode_unicode v1.0.0
+   Compiling iri-string v0.7.8
+   Compiling anstyle-parse v0.2.7
+   Compiling anstyle-wincon v3.0.10
+   Compiling dirs-sys v0.5.0
+   Compiling proptest v1.8.0
+   Compiling histogram v0.11.3
+   Compiling dirs-next v2.0.0
+   Compiling windows v0.61.3
+   Compiling anstyle-query v1.1.4
+   Compiling astraweave-persona v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-persona)
+warning: unused import: `Persona`
+ --> astraweave-persona\src\lib.rs:3:58
+  |
+3 | use astraweave_memory::persona::{CompanionProfile, Fact, Persona, Skill};
+  |                                                          ^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `async_trait::async_trait`
+ --> astraweave-persona\src\llm_persona.rs:9:5
+  |
+9 | use async_trait::async_trait;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `Memory`
+  --> astraweave-persona\src\llm_persona.rs:17:46
+   |
+17 | use astraweave_embeddings::{EmbeddingClient, Memory, MemoryCategory};
+   |                                              ^^^^^^
+
+warning: unused import: `CompanionProfile`
+  --> astraweave-persona\src\llm_persona.rs:26:25
+   |
+26 | use astraweave_memory::{CompanionProfile, Persona as BasePersona};
+   |                         ^^^^^^^^^^^^^^^^
+
+warning: unused variable: `embedding_client`
+   --> astraweave-persona\src\llm_persona.rs:462:9
+    |
+462 |         embedding_client: Arc<dyn EmbeddingClient>,
+    |         ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_embedding_client`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-persona\src\llm_persona.rs:509:17
+    |
+509 |             let mut history = self.conversation_history.write().await;
+    |                 ----^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-persona\src\llm_persona.rs:529:17
+    |
+529 |             let mut history = self.conversation_history.write().await;
+    |                 ----^^^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: unused variable: `response`
+   --> astraweave-persona\src\llm_persona.rs:686:59
+    |
+686 |     async fn update_personality_state(&self, input: &str, response: &str) -> Result<()> {
+    |                                                           ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_response`
+
+   Compiling inout v0.1.4
+   Compiling zstd-sys v2.0.16+zstd.1.5.7
+   Compiling curve25519-dalek v4.1.3
+   Compiling globset v0.4.17
+   Compiling astraweave-math v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-math)
+warning: constant `BATCH_SIZE` is never used
+  --> astraweave-math\src\simd_movement.rs:36:7
+   |
+36 | const BATCH_SIZE: usize = 4;
+   |       ^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-math` (lib) generated 1 warning
+   Compiling errno v0.3.14
+   Compiling colored v3.0.0
+   Compiling csv-core v0.1.13
+   Compiling async-io v2.6.0
+   Compiling parking_lot_core v0.8.6
+   Compiling async-task v4.7.1
+   Compiling is_terminal_polyfill v1.70.1
+   Compiling syn v1.0.109
+   Compiling predicates-core v1.0.9
+   Compiling crc-catalog v2.4.0
+   Compiling powerfmt v0.2.0
+   Compiling structmeta v0.3.0
+   Compiling doc-comment v0.3.3
+   Compiling colorchoice v1.0.4
+   Compiling anstream v0.6.21
+warning: `astraweave-persona` (lib) generated 8 warnings (run `cargo fix --lib -p astraweave-persona` to apply 6 suggestions)
+   Compiling crc v3.3.0
+   Compiling csv v1.4.0
+   Compiling derive-ex v0.1.8
+   Compiling ignore v0.4.24
+   Compiling zstd-safe v7.2.4
+   Compiling cipher v0.4.4
+   Compiling term v0.7.0
+   Compiling dirs v6.0.0
+   Compiling console v0.15.11
+warning: `astraweave-render` (lib) generated 5 warnings (run `cargo fix --lib -p astraweave-render` to apply 4 suggestions)
+   Compiling async-channel v2.5.0
+   Compiling hmac v0.12.1
+   Compiling polling v3.11.0
+   Compiling piper v0.2.4
+   Compiling naga v27.0.3
+   Compiling astraweave-pcg v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-pcg)
+   Compiling smartstring v1.0.1
+   Compiling assert-json-diff v2.0.2
+   Compiling curve25519-dalek-derive v0.1.1
+   Compiling instant v0.1.13
+   Compiling number_prefix v0.4.0
+   Compiling strsim v0.11.1
+   Compiling normalize-line-endings v0.3.0
+   Compiling difflib v0.4.0
+   Compiling signature v2.2.0
+   Compiling clap_lex v0.7.5
+   Compiling time-core v0.1.6
+warning: `astraweave-observability` (lib) generated 2 warnings (2 duplicates)
+   Compiling bumpalo v3.19.0
+   Compiling termtree v0.5.1
+   Compiling num-conv v0.1.0
+   Compiling deadpool-runtime v0.1.4
+   Compiling unicode-width v0.1.14
+   Compiling libbz2-rs-sys v0.2.2
+   Compiling deadpool v0.12.3
+   Compiling prettytable-rs v0.10.0
+   Compiling loom v0.7.2
+   Compiling bzip2 v0.6.0
+   Compiling predicates-tree v1.0.12
+   Compiling predicates v3.1.3
+   Compiling ed25519 v2.2.3
+   Compiling indicatif v0.17.11
+   Compiling blocking v1.6.2
+   Compiling pbkdf2 v0.12.2
+   Compiling zstd v0.13.3
+   Compiling globwalk v0.9.1
+   Compiling async-executor v1.13.3
+   Compiling astraweave-stress-test v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-stress-test)
+   Compiling async-lock v3.4.1
+   Compiling meshopt v0.6.2
+   Compiling ppmd-rust v1.2.1
+   Compiling constant_time_eq v0.3.1
+   Compiling event-listener v2.5.3
+   Compiling either v1.15.0
+   Compiling deflate64 v0.1.10
+   Compiling similar v2.7.0
+   Compiling mockito v1.7.0
+   Compiling async-channel v1.9.0
+   Compiling cbindgen v0.29.0
+   Compiling async-global-executor v2.4.1
+   Compiling test-strategy v0.4.3
+   Compiling astraweave-llm-eval v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm-eval)
+warning: method `build_prompt` is never used
+   --> astraweave-llm-eval\src\lib.rs:324:8
+    |
+130 | impl EvaluationSuite {
+    | -------------------- method in this implementation
+...
+324 |     fn build_prompt(&self, scenario: &Scenario) -> String {
+    |        ^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astraweave-llm-eval` (lib) generated 1 warning
+   Compiling ed25519-dalek v2.2.0
+   Compiling assert_fs v1.1.3
+   Compiling parking_lot v0.11.2
+   Compiling wiremock v0.6.5
+error[E0277]: the trait bound `alloc::string::String: WriteColor` is not satisfied
+  --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\naga-27.0.3\src\error.rs:50:17
+   |
+50 |                 writer.inner_mut(),
+   |                 ^^^^^^^^^^^^^^^^^^ the trait `WriteColor` is not implemented for `alloc::string::String`
+   |
+   = help: the following other types implement trait `WriteColor`:
+             &'a mut T
+             Ansi<W>
+             Box<T>
+             Buffer
+             BufferedStandardStream
+             NoColor<W>
+             StandardStream
+             StandardStreamLock<'a>
+           and 2 others
+   = note: required for the cast from `&mut alloc::string::String` to `&mut dyn WriteColor`
+
+error[E0277]: the trait bound `alloc::string::String: WriteColor` is not satisfied
+   --> C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\naga-27.0.3\src\span.rs:326:20
+    |
+326 |         term::emit(writer.inner_mut(), &config, &files, &self.diagnostic())
+    |                    ^^^^^^^^^^^^^^^^^^ the trait `WriteColor` is not implemented for `alloc::string::String`
+    |
+    = help: the following other types implement trait `WriteColor`:
+              &'a mut T
+              Ansi<W>
+              Box<T>
+              Buffer
+              BufferedStandardStream
+              NoColor<W>
+              StandardStream
+              StandardStreamLock<'a>
+            and 2 others
+    = note: required for the cast from `&mut alloc::string::String` to `&mut dyn WriteColor`
+
+   Compiling astraweave-ui v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui)
+warning: `astraweave-llm` (lib) generated 2 warnings (2 duplicates)
+   Compiling astraweave-net v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-net)
+   Compiling astraweave-director v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\astraweave-director)
+warning: unused imports: `DirectorPlan` and `IVec2`
+ --> astraweave-director\src\llm_director.rs:9:51
+  |
+9 | use astraweave_core::{DirectorBudget, DirectorOp, DirectorPlan, IVec2, WorldSnapshot};
+  |                                                   ^^^^^^^^^^^^  ^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `naga` (lib) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...
+warning: variable does not need to be mutable
+   --> astraweave-director\src\llm_director.rs:332:13
+    |
+332 |         let mut history = self.conversation_history.write().await;
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-director\src\llm_director.rs:352:13
+    |
+352 |         let mut history = self.conversation_history.write().await;
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `memory_text`
+   --> astraweave-director\src\llm_director.rs:450:13
+    |
+450 |         let memory_text = format!(
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_memory_text`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: variable does not need to be mutable
+   --> astraweave-director\src\llm_director.rs:481:13
+    |
+481 |         let mut history = self.conversation_history.write().await;
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: unused variable: `response_time_ms`
+   --> astraweave-director\src\components.rs:185:62
+    |
+185 |     pub fn record_tactic(&mut self, outcome: &TacticOutcome, response_time_ms: u64) {
+    |                                                              ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_response_time_ms`
+
+warning: unused variable: `current_time_ms`
+   --> astraweave-director\src\systems.rs:359:9
+    |
+359 |         current_time_ms: u64,
+    |         ^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_current_time_ms`
+
+warning: `astraweave-director` (lib) generated 7 warnings (run `cargo fix --lib -p astraweave-director` to apply 4 suggestions)

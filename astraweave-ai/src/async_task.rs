@@ -52,10 +52,10 @@ use tokio::task::JoinHandle;
 pub struct AsyncTask<T> {
     /// The underlying tokio join handle (Option to allow taking ownership in await_result)
     handle: Option<JoinHandle<T>>,
-    
+
     /// Timestamp when the task was created (for timeout detection)
     started_at: Instant,
-    
+
     /// Optional timeout duration (None = no timeout)
     timeout: Option<Duration>,
 }
@@ -150,13 +150,13 @@ impl<T> AsyncTask<T> {
     pub fn try_recv(&mut self) -> Option<Result<T>> {
         // Get mutable reference to handle
         let handle = self.handle.as_mut()?;
-        
+
         // Check timeout first (if set)
         if let Some(timeout) = self.timeout {
             if self.started_at.elapsed() > timeout {
                 // Timeout exceeded - abort task and return error
                 handle.abort();
-                self.handle = None;  // Take ownership to prevent further use
+                self.handle = None; // Take ownership to prevent further use
                 return Some(Err(anyhow::anyhow!(
                     "AsyncTask timed out after {:?}",
                     timeout
@@ -172,35 +172,30 @@ impl<T> AsyncTask<T> {
         // Task is finished - poll it to extract the result
         // Create a no-op waker since we know the task is ready
         use std::task::{RawWaker, RawWakerVTable, Waker};
-        
+
         unsafe fn clone_raw(_: *const ()) -> RawWaker {
             noop_raw_waker()
         }
         unsafe fn wake_raw(_: *const ()) {}
         unsafe fn wake_by_ref_raw(_: *const ()) {}
         unsafe fn drop_raw(_: *const ()) {}
-        
+
         fn noop_raw_waker() -> RawWaker {
-            let vtable = &RawWakerVTable::new(
-                clone_raw,
-                wake_raw,
-                wake_by_ref_raw,
-                drop_raw,
-            );
+            let vtable = &RawWakerVTable::new(clone_raw, wake_raw, wake_by_ref_raw, drop_raw);
             RawWaker::new(std::ptr::null(), vtable)
         }
-        
+
         let waker = unsafe { Waker::from_raw(noop_raw_waker()) };
         let mut cx = TaskContext::from_waker(&waker);
-        
+
         // Poll the JoinHandle
         match Pin::new(handle).poll(&mut cx) {
             Poll::Ready(Ok(value)) => {
-                self.handle = None;  // Consume the handle
+                self.handle = None; // Consume the handle
                 Some(Ok(value))
             }
             Poll::Ready(Err(e)) => {
-                self.handle = None;  // Consume the handle
+                self.handle = None; // Consume the handle
                 Some(Err(anyhow::anyhow!("AsyncTask join error: {}", e)))
             }
             Poll::Pending => {
@@ -281,10 +276,11 @@ impl<T> AsyncTask<T> {
     /// assert_eq!(result, 42);
     /// ```
     pub async fn await_result(mut self) -> Result<T> {
-        let handle = self.handle.take().ok_or_else(|| {
-            anyhow::anyhow!("AsyncTask already consumed")
-        })?;
-        
+        let handle = self
+            .handle
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("AsyncTask already consumed"))?;
+
         handle
             .await
             .context("AsyncTask join failed during await_result")
@@ -323,7 +319,7 @@ mod tests {
 
         // Task should not be finished immediately
         assert!(!task.is_finished());
-        
+
         // try_recv should return None (still running)
         assert!(task.try_recv().is_none());
     }
@@ -340,7 +336,7 @@ mod tests {
 
         // Task should be finished
         assert!(task.is_finished());
-        
+
         // try_recv should return Some(Ok(42))
         match task.try_recv() {
             Some(Ok(value)) => assert_eq!(value, 42),

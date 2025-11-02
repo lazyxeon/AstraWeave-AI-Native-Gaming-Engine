@@ -334,4 +334,185 @@ mod tests {
 
         assert_eq!(id1, id2); // Same signature returns same archetype
     }
+    
+    // ====================
+    // Day 3: Surgical Coverage Improvements - archetype.rs
+    // ====================
+    
+    #[test]
+    fn test_signature_methods() {
+        // Tests contains(), len(), is_empty()
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>(), TypeId::of::<Position>()]);
+        
+        assert!(sig.contains(TypeId::of::<Health>()));
+        assert!(sig.contains(TypeId::of::<Position>()));
+        assert!(!sig.contains(TypeId::of::<i32>()));
+        
+        assert_eq!(sig.len(), 2);
+        assert!(!sig.is_empty());
+        
+        let empty_sig = ArchetypeSignature::new(vec![]);
+        assert_eq!(empty_sig.len(), 0);
+        assert!(empty_sig.is_empty());
+    }
+    
+    #[test]
+    fn test_archetype_entity_operations() {
+        // Tests add_entity, get, get_mut, len, is_empty, entities_vec
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>(), TypeId::of::<Position>()]);
+        let mut archetype = Archetype::new(ArchetypeId(0), sig);
+        
+        assert_eq!(archetype.len(), 0);
+        assert!(archetype.is_empty());
+        assert_eq!(archetype.entities_vec().len(), 0);
+        
+        // Add entity with components
+        let entity = unsafe { Entity::from_raw(1) };
+        let mut components = HashMap::new();
+        components.insert(TypeId::of::<Health>(), Box::new(Health(100)) as Box<dyn std::any::Any + Send + Sync>);
+        components.insert(TypeId::of::<Position>(), Box::new(Position(1.0, 2.0)) as Box<dyn std::any::Any + Send + Sync>);
+        
+        archetype.add_entity(entity, components);
+        
+        assert_eq!(archetype.len(), 1);
+        assert!(!archetype.is_empty());
+        assert_eq!(archetype.entities_vec().len(), 1);
+        assert_eq!(archetype.entities_vec()[0], entity);
+        
+        // Test get
+        let health = archetype.get::<Health>(entity).unwrap();
+        assert_eq!(health.0, 100);
+        
+        let pos = archetype.get::<Position>(entity).unwrap();
+        assert_eq!(pos.0, 1.0);
+        assert_eq!(pos.1, 2.0);
+        
+        // Test get_mut
+        {
+            let health_mut = archetype.get_mut::<Health>(entity).unwrap();
+            health_mut.0 = 50;
+        }
+        
+        let health = archetype.get::<Health>(entity).unwrap();
+        assert_eq!(health.0, 50);
+    }
+    
+    #[test]
+    fn test_archetype_remove_entity() {
+        // Tests remove_entity and remove_entity_components
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let mut archetype = Archetype::new(ArchetypeId(0), sig);
+        
+        let entity1 = unsafe { Entity::from_raw(1) };
+        let entity2 = unsafe { Entity::from_raw(2) };
+        
+        let mut components1 = HashMap::new();
+        components1.insert(TypeId::of::<Health>(), Box::new(Health(100)) as Box<dyn std::any::Any + Send + Sync>);
+        archetype.add_entity(entity1, components1);
+        
+        let mut components2 = HashMap::new();
+        components2.insert(TypeId::of::<Health>(), Box::new(Health(200)) as Box<dyn std::any::Any + Send + Sync>);
+        archetype.add_entity(entity2, components2);
+        
+        assert_eq!(archetype.len(), 2);
+        
+        // Remove entity1
+        let removed_components = archetype.remove_entity_components(entity1);
+        assert_eq!(archetype.len(), 1);
+        assert!(removed_components.contains_key(&TypeId::of::<Health>()));
+        
+        // entity2 should still be accessible
+        let health = archetype.get::<Health>(entity2).unwrap();
+        assert_eq!(health.0, 200);
+        
+        // entity1 should be gone
+        assert!(archetype.get::<Health>(entity1).is_none());
+    }
+    
+    #[test]
+    fn test_archetype_iter_components() {
+        // Tests iter_components batch iterator
+        let sig = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let mut archetype = Archetype::new(ArchetypeId(0), sig);
+        
+        let entity1 = unsafe { Entity::from_raw(1) };
+        let entity2 = unsafe { Entity::from_raw(2) };
+        let entity3 = unsafe { Entity::from_raw(3) };
+        
+        let mut components1 = HashMap::new();
+        components1.insert(TypeId::of::<Health>(), Box::new(Health(100)) as Box<dyn std::any::Any + Send + Sync>);
+        archetype.add_entity(entity1, components1);
+        
+        let mut components2 = HashMap::new();
+        components2.insert(TypeId::of::<Health>(), Box::new(Health(200)) as Box<dyn std::any::Any + Send + Sync>);
+        archetype.add_entity(entity2, components2);
+        
+        let mut components3 = HashMap::new();
+        components3.insert(TypeId::of::<Health>(), Box::new(Health(300)) as Box<dyn std::any::Any + Send + Sync>);
+        archetype.add_entity(entity3, components3);
+        
+        // Collect all health values via iterator
+        let healths: Vec<i32> = archetype.iter_components::<Health>()
+            .map(|(_, health)| health.0)
+            .collect();
+        
+        assert_eq!(healths.len(), 3);
+        assert!(healths.contains(&100));
+        assert!(healths.contains(&200));
+        assert!(healths.contains(&300));
+    }
+    
+    #[test]
+    fn test_archetype_storage_comprehensive() {
+        // Tests get_archetype, get_entity_archetype, set_entity_archetype, remove_entity, 
+        // archetypes(), iter(), archetypes_mut(), archetypes_with_component()
+        let mut storage = ArchetypeStorage::new();
+        
+        let sig1 = ArchetypeSignature::new(vec![TypeId::of::<Health>()]);
+        let sig2 = ArchetypeSignature::new(vec![TypeId::of::<Position>()]);
+        let sig3 = ArchetypeSignature::new(vec![TypeId::of::<Health>(), TypeId::of::<Position>()]);
+        
+        let id1 = storage.get_or_create_archetype(sig1);
+        let id2 = storage.get_or_create_archetype(sig2);
+        let id3 = storage.get_or_create_archetype(sig3);
+        
+        // Test get_archetype
+        assert!(storage.get_archetype(id1).is_some());
+        assert!(storage.get_archetype(id2).is_some());
+        assert!(storage.get_archetype(id3).is_some());
+        
+        // Test entity->archetype mapping
+        let entity = unsafe { Entity::from_raw(42) };
+        assert!(storage.get_entity_archetype(entity).is_none());
+        
+        storage.set_entity_archetype(entity, id1);
+        assert_eq!(storage.get_entity_archetype(entity), Some(id1));
+        
+        // Test remove_entity
+        let removed = storage.remove_entity(entity);
+        assert_eq!(removed, Some(id1));
+        assert!(storage.get_entity_archetype(entity).is_none());
+        
+        // Test archetypes() iterator
+        let count = storage.archetypes().count();
+        assert_eq!(count, 3);
+        
+        // Test iter() (alias)
+        let count2 = storage.iter().count();
+        assert_eq!(count2, 3);
+        
+        // Test archetypes_mut()
+        let mut_count = storage.archetypes_mut().count();
+        assert_eq!(mut_count, 3);
+        
+        // Test archetypes_with_component
+        let with_health = storage.archetypes_with_component(TypeId::of::<Health>()).count();
+        assert_eq!(with_health, 2); // sig1 and sig3 have Health
+        
+        let with_position = storage.archetypes_with_component(TypeId::of::<Position>()).count();
+        assert_eq!(with_position, 2); // sig2 and sig3 have Position
+        
+        let with_nothing = storage.archetypes_with_component(TypeId::of::<i32>()).count();
+        assert_eq!(with_nothing, 0);
+    }
 }

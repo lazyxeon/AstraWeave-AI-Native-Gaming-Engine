@@ -344,3 +344,203 @@ impl Default for MenuManager {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_quality_preset_all() {
+        let presets = QualityPreset::all();
+        assert_eq!(presets.len(), 4);
+        assert_eq!(presets[0], QualityPreset::Low);
+        assert_eq!(presets[3], QualityPreset::Ultra);
+    }
+
+    #[test]
+    fn test_quality_preset_as_str() {
+        assert_eq!(QualityPreset::Low.as_str(), "Low");
+        assert_eq!(QualityPreset::Medium.as_str(), "Medium");
+        assert_eq!(QualityPreset::High.as_str(), "High");
+        assert_eq!(QualityPreset::Ultra.as_str(), "Ultra");
+    }
+
+    #[test]
+    fn test_graphics_settings_default() {
+        let settings = GraphicsSettings::default();
+        assert_eq!(settings.resolution, (1920, 1080));
+        assert_eq!(settings.quality, QualityPreset::High);
+        assert_eq!(settings.fullscreen, false);
+        assert_eq!(settings.vsync, true);
+    }
+
+    #[test]
+    fn test_audio_settings_default() {
+        let settings = AudioSettings::default();
+        assert_eq!(settings.master_volume, 100.0);
+        assert_eq!(settings.music_volume, 80.0);
+        assert_eq!(settings.sfx_volume, 90.0);
+        assert_eq!(settings.voice_volume, 100.0);
+        assert!(!settings.master_mute);
+        assert!(!settings.music_mute);
+        assert!(!settings.sfx_mute);
+        assert!(!settings.voice_mute);
+    }
+
+    #[test]
+    fn test_controls_settings_default() {
+        let settings = ControlsSettings::default();
+        assert_eq!(settings.move_forward, "W");
+        assert_eq!(settings.move_backward, "S");
+        assert_eq!(settings.move_left, "A");
+        assert_eq!(settings.move_right, "D");
+        assert_eq!(settings.jump, "Space");
+        assert_eq!(settings.crouch, "LControl");
+        assert_eq!(settings.sprint, "LShift");
+        assert_eq!(settings.attack, "Mouse0");
+        assert_eq!(settings.interact, "E");
+        assert_eq!(settings.inventory, "Tab");
+        assert_eq!(settings.mouse_sensitivity, 1.0);
+        assert!(!settings.invert_y);
+    }
+
+    #[test]
+    fn test_menu_manager_new_starts_at_main_menu() {
+        let manager = MenuManager::new();
+        assert_eq!(manager.state, MenuState::MainMenu);
+        assert_eq!(manager.previous_state, None);
+        assert!(manager.is_main_menu());
+        assert!(manager.is_menu_visible());
+    }
+
+    #[test]
+    fn test_menu_manager_handle_new_game() {
+        let mut manager = MenuManager::new();
+        manager.handle_action(MenuAction::NewGame);
+        assert_eq!(manager.state, MenuState::None);
+        assert_eq!(manager.previous_state, Some(MenuState::MainMenu));
+        assert!(!manager.is_menu_visible());
+    }
+
+    #[test]
+    fn test_menu_manager_toggle_pause() {
+        let mut manager = MenuManager::new();
+        manager.state = MenuState::None; // In-game
+
+        // Toggle pause on
+        manager.toggle_pause();
+        assert_eq!(manager.state, MenuState::PauseMenu);
+        assert!(manager.is_menu_visible());
+
+        // Toggle pause off
+        manager.toggle_pause();
+        assert_eq!(manager.state, MenuState::None);
+        assert!(!manager.is_menu_visible());
+    }
+
+    #[test]
+    fn test_menu_manager_settings_navigation() {
+        let mut manager = MenuManager::new();
+        assert_eq!(manager.state, MenuState::MainMenu);
+
+        // Go to settings
+        manager.handle_action(MenuAction::Settings);
+        assert_eq!(manager.state, MenuState::SettingsMenu);
+        assert_eq!(manager.previous_state, Some(MenuState::MainMenu));
+
+        // Quit from settings (back to previous)
+        manager.handle_action(MenuAction::Quit);
+        assert_eq!(manager.state, MenuState::MainMenu);
+    }
+
+    #[test]
+    fn test_menu_manager_quit_from_pause() {
+        let mut manager = MenuManager::new();
+        manager.state = MenuState::PauseMenu;
+
+        // Quit from pause = go to main menu
+        manager.handle_action(MenuAction::Quit);
+        assert_eq!(manager.state, MenuState::MainMenu);
+    }
+
+    #[test]
+    fn test_menu_manager_settings_modified() {
+        let mut manager = MenuManager::new();
+        assert!(!manager.settings_modified());
+
+        // Modify graphics settings
+        manager.settings.graphics.fullscreen = !manager.settings.graphics.fullscreen;
+        assert!(manager.settings_modified());
+
+        // Revert changes
+        manager.revert_settings();
+        assert!(!manager.settings_modified());
+    }
+
+    #[test]
+    fn test_menu_manager_apply_settings() {
+        let mut manager = MenuManager::new();
+        
+        // Modify settings
+        manager.settings.audio.master_volume = 50.0;
+        assert!(manager.settings_modified());
+
+        // Apply (saves and updates original)
+        manager.apply_settings();
+        assert!(!manager.settings_modified());
+        assert_eq!(manager.settings_original.audio.master_volume, 50.0);
+    }
+
+    #[test]
+    fn test_menu_manager_reset_controls() {
+        let mut manager = MenuManager::new();
+        
+        // Modify controls
+        manager.settings.controls.move_forward = "Y".to_string();
+        assert_ne!(manager.settings.controls.move_forward, "W");
+
+        // Reset to default
+        manager.reset_controls_to_default();
+        assert_eq!(manager.settings.controls.move_forward, "W");
+    }
+
+    #[test]
+    fn test_menu_manager_rebinding_state() {
+        let mut manager = MenuManager::new();
+        assert_eq!(manager.rebinding_key, None);
+
+        manager.rebinding_key = Some("move_forward".to_string());
+        assert_eq!(manager.rebinding_key, Some("move_forward".to_string()));
+    }
+
+    #[test]
+    fn test_menu_action_equality() {
+        assert_eq!(MenuAction::NewGame, MenuAction::NewGame);
+        assert_ne!(MenuAction::NewGame, MenuAction::LoadGame);
+        assert_eq!(MenuAction::None, MenuAction::None);
+    }
+
+    #[test]
+    fn test_menu_state_serialization() {
+        // Test that MenuState can be serialized (required for save/load)
+        let state = MenuState::SettingsMenu;
+        let json = serde_json::to_string(&state).unwrap();
+        let deserialized: MenuState = serde_json::from_str(&json).unwrap();
+        assert_eq!(state, deserialized);
+    }
+
+    #[test]
+    fn test_settings_state_serialization() {
+        let mut settings = SettingsState::default();
+        settings.graphics.fullscreen = true;
+        settings.audio.master_volume = 75.0;
+        settings.controls.mouse_sensitivity = 1.5;
+
+        let json = serde_json::to_string(&settings).unwrap();
+        let deserialized: SettingsState = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(deserialized.graphics.fullscreen, true);
+        assert_eq!(deserialized.audio.master_volume, 75.0);
+        assert_eq!(deserialized.controls.mouse_sensitivity, 1.5);
+    }
+}

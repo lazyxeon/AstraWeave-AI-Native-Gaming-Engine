@@ -1,0 +1,199 @@
+warning: comparison is useless due to type limits
+  --> astraweave-nav\src\edge_case_tests.rs:24:13
+   |
+24 |     assert!(path.len() >= 0, "Should not crash on degenerate triangle");
+   |             ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_comparisons)]` on by default
+
+warning: comparison is useless due to type limits
+  --> astraweave-nav\src\edge_case_tests.rs:40:13
+   |
+40 |     assert!(path.len() >= 0, "Should not crash on colinear vertices");
+   |             ^^^^^^^^^^^^^^^
+
+warning: `astraweave-nav` (lib test) generated 2 warnings
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.56s
+     Running unittests src\lib.rs (target\debug\deps\astraweave_nav-1065be0f93002ce7.exe)
+
+running 66 tests
+test edge_case_tests::test_degenerate_triangle_colinear_vertices ... ok
+test edge_case_tests::test_degenerate_triangle_zero_area ... ok
+test edge_case_tests::test_inverted_triangle_winding ... ok
+test edge_case_tests::test_concave_navmesh_l_shape ... FAILED
+test edge_case_tests::test_exactly_one_shared_vertex ... FAILED
+test edge_case_tests::test_empty_navmesh_pathfinding ... ok
+test edge_case_tests::test_goal_outside_all_triangles ... FAILED
+test edge_case_tests::test_max_slope_90_degrees ... FAILED
+test edge_case_tests::test_mixed_positive_negative_coordinates ... FAILED
+test edge_case_tests::test_narrow_passage_bottleneck ... FAILED
+test edge_case_tests::test_navmesh_with_hole_donut ... FAILED
+test edge_case_tests::test_negative_max_slope ... ok
+test edge_case_tests::test_shared_edge_epsilon_precision ... FAILED
+test edge_case_tests::test_single_triangle_multiple_queries ... FAILED
+test edge_case_tests::test_slope_exactly_at_max_threshold ... FAILED
+test edge_case_tests::test_slope_just_above_max_threshold ... ok
+test edge_case_tests::test_start_on_triangle_edge ... FAILED
+test edge_case_tests::test_start_outside_all_triangles ... FAILED
+test edge_case_tests::test_triangles_with_shared_vertices_but_not_edges ... FAILED
+test edge_case_tests::test_vertical_triangle ... ok
+test edge_case_tests::test_very_large_coordinates ... FAILED
+test edge_case_tests::test_very_small_triangle ... ok
+test edge_case_tests::test_zero_max_step ... FAILED
+test stress_tests::test_large_navmesh_10000_triangles_stress ... ignored
+test stress_tests::test_dense_connectivity_graph ... ok
+test stress_tests::test_hierarchical_disconnected_islands ... ok
+test stress_tests::test_interleaved_baking_and_pathfinding ... ok
+test stress_tests::test_large_navmesh_100_triangles_baking ... ok
+test stress_tests::test_large_navmesh_100_triangles_pathfinding ... ok
+test stress_tests::test_long_path_10_hops ... ok
+test stress_tests::test_long_path_50_hops ... ok
+test stress_tests::test_long_path_100_hops ... ok
+test stress_tests::test_pathfinding_with_max_step_validation ... ok
+test stress_tests::test_sparse_connectivity_linear_strip ... ok
+test tests::path_exists_simple_strip ... ok
+test tests::test_astar_tri_branching_path ... ok
+test stress_tests::test_zero_length_path_same_position ... ok
+test stress_tests::test_very_close_start_and_goal ... ok
+test tests::test_astar_tri_same_start_goal ... ok
+test tests::test_astar_tri_no_path ... ok
+test tests::test_astar_tri_simple_path ... ok
+test tests::test_closest_tri_single ... ok
+test tests::test_closest_tri_multiple ... ok
+test tests::test_closest_tri_empty ... ok
+test tests::test_find_path_no_connection ... ok
+test tests::test_find_path_across_triangles ... ok
+test tests::test_find_path_same_triangle ... ok
+test tests::test_find_path_empty_navmesh ... ok
+test tests::test_full_pipeline_bake_and_path ... ok
+test tests::test_navmesh_bake_adjacency_two_triangles ... ok
+test tests::test_navmesh_bake_filters_steep_slopes ... ok
+test tests::test_navmesh_bake_single_triangle ... ok
+test stress_tests::test_multiple_sequential_queries ... ok
+test tests::test_navmesh_bake_center_calculation ... ok
+test tests::test_navmesh_bake_empty ... ok
+test tests::test_navmesh_with_max_slope_parameter ... ok
+test tests::test_navmesh_with_max_step_parameter ... ok
+test tests::test_share_edge_epsilon_boundary ... ok
+test tests::test_share_edge_false ... ok
+test tests::test_share_edge_true ... ok
+test tests::test_smooth_empty ... ok
+test tests::test_smooth_three_points ... ok
+test tests::test_smooth_two_points ... ok
+test stress_tests::test_large_navmesh_1000_triangles_pathfinding ... ok
+test stress_tests::test_large_navmesh_1000_triangles_baking ... ok
+test stress_tests::test_memory_consistency_1000_queries ... ok
+
+failures:
+
+---- edge_case_tests::test_concave_navmesh_l_shape stdout ----
+
+thread 'edge_case_tests::test_concave_navmesh_l_shape' panicked at astraweave-nav\src\edge_case_tests.rs:308:5:
+Path through L-shape should exist
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- edge_case_tests::test_exactly_one_shared_vertex stdout ----
+
+thread 'edge_case_tests::test_exactly_one_shared_vertex' panicked at astraweave-nav\src\edge_case_tests.rs:152:5:
+assertion `left == right` failed: Both triangles should be included
+  left: 0
+ right: 2
+
+---- edge_case_tests::test_goal_outside_all_triangles stdout ----
+
+thread 'edge_case_tests::test_goal_outside_all_triangles' panicked at astraweave-nav\src\edge_case_tests.rs:197:5:
+Should find path to closest triangle near goal
+
+---- edge_case_tests::test_max_slope_90_degrees stdout ----
+
+thread 'edge_case_tests::test_max_slope_90_degrees' panicked at astraweave-nav\src\edge_case_tests.rs:522:5:
+assertion `left == right` failed: max_slope=90┬░ should include all triangles
+  left: 1
+ right: 2
+
+---- edge_case_tests::test_mixed_positive_negative_coordinates stdout ----
+
+thread 'edge_case_tests::test_mixed_positive_negative_coordinates' panicked at astraweave-nav\src\edge_case_tests.rs:110:5:
+assertion `left == right` failed: Mixed sign coordinates should work
+  left: 0
+ right: 1
+
+---- edge_case_tests::test_narrow_passage_bottleneck stdout ----
+
+thread 'edge_case_tests::test_narrow_passage_bottleneck' panicked at astraweave-nav\src\edge_case_tests.rs:423:5:
+Path through bottleneck should exist
+
+---- edge_case_tests::test_navmesh_with_hole_donut stdout ----
+
+thread 'edge_case_tests::test_navmesh_with_hole_donut' panicked at astraweave-nav\src\edge_case_tests.rs:371:5:
+Path around hole should exist
+
+---- edge_case_tests::test_shared_edge_epsilon_precision stdout ----
+
+thread 'edge_case_tests::test_shared_edge_epsilon_precision' panicked at astraweave-nav\src\edge_case_tests.rs:449:5:
+Triangles at epsilon boundary should be neighbors
+
+---- edge_case_tests::test_single_triangle_multiple_queries stdout ----
+
+thread 'edge_case_tests::test_single_triangle_multiple_queries' panicked at astraweave-nav\src\edge_case_tests.rs:497:9:
+Query 1 should find path in single triangle
+
+---- edge_case_tests::test_slope_exactly_at_max_threshold stdout ----
+
+thread 'edge_case_tests::test_slope_exactly_at_max_threshold' panicked at astraweave-nav\src\edge_case_tests.rs:238:5:
+assertion `left == right` failed: Triangle at exactly max slope should be included
+  left: 0
+ right: 1
+
+---- edge_case_tests::test_start_on_triangle_edge stdout ----
+
+thread 'edge_case_tests::test_start_on_triangle_edge' panicked at astraweave-nav\src\edge_case_tests.rs:177:5:
+Path from edge should work
+
+---- edge_case_tests::test_start_outside_all_triangles stdout ----
+
+thread 'edge_case_tests::test_start_outside_all_triangles' panicked at astraweave-nav\src\edge_case_tests.rs:218:5:
+Should find path from closest triangle near start
+
+---- edge_case_tests::test_triangles_with_shared_vertices_but_not_edges stdout ----
+
+thread 'edge_case_tests::test_triangles_with_shared_vertices_but_not_edges' panicked at astraweave-nav\src\edge_case_tests.rs:553:5:
+assertion `left == right` failed: All three triangles should be included
+  left: 2
+ right: 3
+
+---- edge_case_tests::test_very_large_coordinates stdout ----
+
+thread 'edge_case_tests::test_very_large_coordinates' panicked at astraweave-nav\src\edge_case_tests.rs:89:5:
+assertion `left == right` failed: Large coordinates should be handled correctly
+  left: 0
+ right: 1
+
+---- edge_case_tests::test_zero_max_step stdout ----
+
+thread 'edge_case_tests::test_zero_max_step' panicked at astraweave-nav\src\edge_case_tests.rs:129:5:
+assertion `left == right` failed
+  left: 0
+ right: 1
+
+
+failures:
+    edge_case_tests::test_concave_navmesh_l_shape
+    edge_case_tests::test_exactly_one_shared_vertex
+    edge_case_tests::test_goal_outside_all_triangles
+    edge_case_tests::test_max_slope_90_degrees
+    edge_case_tests::test_mixed_positive_negative_coordinates
+    edge_case_tests::test_narrow_passage_bottleneck
+    edge_case_tests::test_navmesh_with_hole_donut
+    edge_case_tests::test_shared_edge_epsilon_precision
+    edge_case_tests::test_single_triangle_multiple_queries
+    edge_case_tests::test_slope_exactly_at_max_threshold
+    edge_case_tests::test_start_on_triangle_edge
+    edge_case_tests::test_start_outside_all_triangles
+    edge_case_tests::test_triangles_with_shared_vertices_but_not_edges
+    edge_case_tests::test_very_large_coordinates
+    edge_case_tests::test_zero_max_step
+
+test result: FAILED. 50 passed; 15 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p astraweave-nav --lib`

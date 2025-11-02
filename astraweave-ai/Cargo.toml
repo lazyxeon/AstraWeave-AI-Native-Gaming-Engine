@@ -49,3 +49,11 @@ harness = false
 [[bench]]
 name = "arbiter_bench"
 harness = false
+
+[[bench]]
+name = "ai_benchmarks"
+harness = false
+
+[[bench]]
+name = "integration_pipeline"
+harness = false

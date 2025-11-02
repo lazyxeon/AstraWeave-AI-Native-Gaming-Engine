@@ -546,8 +546,8 @@ impl ABTestFramework {
     /// Weighted random variant assignment
     fn assign_variant_weighted_random(&self, experiment: &Experiment) -> Result<Variant> {
         use rand::Rng;
-        let mut rng = rand::thread_rng();
-        let random_value: f32 = rng.gen();
+        let mut rng = rand::rng();
+        let random_value: f32 = rng.random();
 
         let mut cumulative = 0.0;
 
