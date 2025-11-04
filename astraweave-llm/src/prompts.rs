@@ -24,7 +24,7 @@
 //! # }
 //! ```
 
-use astraweave_core::{WorldSnapshot, ActionStep};
+use astraweave_core::{ActionStep, WorldSnapshot};
 use serde_json::json;
 
 /// System prompt templates for different AI roles
@@ -133,7 +133,7 @@ impl PromptBuilder {
             constraints: Vec::new(),
         }
     }
-    
+
     /// Set the AI role/system prompt
     pub fn system_role(mut self, role: &str) -> Self {
         self.system_prompt = match role {
@@ -142,16 +142,17 @@ impl PromptBuilder {
             "support" | "support_ai" | "medic" => templates::SUPPORT_AI,
             "exploration" | "scout" => templates::EXPLORATION_AI,
             custom => custom, // Allow custom prompts
-        }.to_string();
+        }
+        .to_string();
         self
     }
-    
+
     /// Add world snapshot as JSON
     pub fn add_snapshot(mut self, snapshot: &WorldSnapshot) -> Self {
         self.world_state = Some(Self::snapshot_to_json(snapshot));
         self
     }
-    
+
     /// Add action history (previous steps)
     pub fn add_history(mut self, steps: &[ActionStep]) -> Self {
         for step in steps {
@@ -159,51 +160,51 @@ impl PromptBuilder {
         }
         self
     }
-    
+
     /// Set the current goal/objective
     pub fn add_goal(mut self, goal: &str) -> Self {
         self.goal = Some(goal.to_string());
         self
     }
-    
+
     /// Add a constraint/rule
     pub fn add_constraint(mut self, constraint: &str) -> Self {
         self.constraints.push(constraint.to_string());
         self
     }
-    
+
     /// Build final prompt string
     pub fn build(self) -> String {
         let mut parts = vec![self.system_prompt];
-        
+
         if let Some(goal) = self.goal {
             parts.push(format!("\nCurrent Objective: {}", goal));
         }
-        
+
         if !self.constraints.is_empty() {
             parts.push("\nAdditional Constraints:".to_string());
             for (i, constraint) in self.constraints.iter().enumerate() {
                 parts.push(format!("{}. {}", i + 1, constraint));
             }
         }
-        
+
         if let Some(world) = self.world_state {
             parts.push(format!("\n--- WORLD STATE ---\n{}", world));
         }
-        
+
         if !self.history.is_empty() {
             parts.push("\n--- ACTION HISTORY ---".to_string());
             for (i, action) in self.history.iter().enumerate() {
                 parts.push(format!("Step {}: {}", i + 1, action));
             }
         }
-        
+
         parts.push("\n--- YOUR PLAN ---".to_string());
         parts.push("Generate a JSON plan following the format above:".to_string());
-        
+
         parts.join("\n")
     }
-    
+
     /// Convert WorldSnapshot to concise JSON representation
     fn snapshot_to_json(snapshot: &WorldSnapshot) -> String {
         json!({
@@ -232,9 +233,10 @@ impl PromptBuilder {
             "obstacles": snapshot.obstacles.iter().map(|obs| json!({
                 "position": {"x": obs.x, "y": obs.y},
             })).collect::<Vec<_>>(),
-        }).to_string()
+        })
+        .to_string()
     }
-    
+
     /// Convert ActionStep to JSON string
     fn action_to_json(step: &ActionStep) -> String {
         match step {
@@ -244,15 +246,18 @@ impl PromptBuilder {
             ActionStep::Throw { item, x, y } => {
                 json!({"act": "Throw", "item": item, "x": x, "y": y}).to_string()
             }
-            ActionStep::CoverFire { target_id, duration } => {
-                json!({"act": "CoverFire", "target_id": target_id, "duration": duration}).to_string()
-            }
+            ActionStep::CoverFire {
+                target_id,
+                duration,
+            } => json!({"act": "CoverFire", "target_id": target_id, "duration": duration})
+                .to_string(),
             ActionStep::Revive { ally_id } => {
                 json!({"act": "Revive", "ally_id": ally_id}).to_string()
             }
             // Phase 7: Handle all new tools with generic JSON serialization
             _ => {
-                json!({"act": "Unknown", "note": "Phase 7 tool - implement specific serialization"}).to_string()
+                json!({"act": "Unknown", "note": "Phase 7 tool - implement specific serialization"})
+                    .to_string()
             }
         }
     }
@@ -267,7 +272,7 @@ impl Default for PromptBuilder {
 /// Quick prompt generation functions
 pub mod quick {
     use super::*;
-    
+
     /// Generate tactical combat prompt from snapshot
     pub fn tactical_prompt(snapshot: &WorldSnapshot, goal: &str) -> String {
         PromptBuilder::new()
@@ -276,7 +281,7 @@ pub mod quick {
             .add_goal(goal)
             .build()
     }
-    
+
     /// Generate stealth infiltration prompt
     pub fn stealth_prompt(snapshot: &WorldSnapshot, target: &str) -> String {
         PromptBuilder::new()
@@ -285,7 +290,7 @@ pub mod quick {
             .add_goal(&format!("Reach {} without detection", target))
             .build()
     }
-    
+
     /// Generate support/medic prompt
     pub fn support_prompt(snapshot: &WorldSnapshot, ally_id: u64) -> String {
         PromptBuilder::new()
@@ -294,7 +299,7 @@ pub mod quick {
             .add_goal(&format!("Revive ally {} and provide cover", ally_id))
             .build()
     }
-    
+
     /// Generate exploration prompt
     pub fn exploration_prompt(snapshot: &WorldSnapshot) -> String {
         PromptBuilder::new()
@@ -308,9 +313,9 @@ pub mod quick {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{PlayerState, CompanionState, EnemyState, IVec2};
+    use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState};
     use std::collections::BTreeMap;
-    
+
     fn create_test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
             t: 0.0,
@@ -326,21 +331,19 @@ mod tests {
                 ammo: 50,
                 cooldowns: BTreeMap::new(),
             },
-            enemies: vec![
-                EnemyState {
-                    id: 99,
-                    pos: IVec2 { x: 10, y: 8 },
-                    hp: 100,
-                    cover: "wall".to_string(),
-                    last_seen: 0.0,
-                },
-            ],
+            enemies: vec![EnemyState {
+                id: 99,
+                pos: IVec2 { x: 10, y: 8 },
+                hp: 100,
+                cover: "wall".to_string(),
+                last_seen: 0.0,
+            }],
             pois: vec![],
             obstacles: vec![],
             objective: Some("Eliminate enemy 99".to_string()),
         }
     }
-    
+
     #[test]
     fn test_prompt_builder_basic() {
         let snapshot = create_test_snapshot();
@@ -348,50 +351,50 @@ mod tests {
             .add_snapshot(&snapshot)
             .add_goal("Eliminate enemy 99")
             .build();
-        
+
         assert!(prompt.contains("WORLD STATE"));
         assert!(prompt.contains("YOUR PLAN"));
         assert!(prompt.contains("Eliminate enemy 99"));
     }
-    
+
     #[test]
     fn test_prompt_builder_roles() {
         let snapshot = create_test_snapshot();
-        
+
         let tactical = PromptBuilder::new()
             .system_role("tactical")
             .add_snapshot(&snapshot)
             .build();
         assert!(tactical.contains("tactical AI"));
-        
+
         let stealth = PromptBuilder::new()
             .system_role("stealth")
             .add_snapshot(&snapshot)
             .build();
         assert!(stealth.contains("stealth infiltration"));
     }
-    
+
     #[test]
     fn test_quick_prompts() {
         let snapshot = create_test_snapshot();
-        
+
         let tactical = quick::tactical_prompt(&snapshot, "Test goal");
         assert!(tactical.contains("tactical AI"));
         assert!(tactical.contains("Test goal"));
-        
+
         let stealth = quick::stealth_prompt(&snapshot, "waypoint_5");
         assert!(stealth.contains("Reach waypoint_5"));
     }
-    
+
     #[test]
     fn test_snapshot_json_format() {
         let snapshot = create_test_snapshot();
         let json_str = PromptBuilder::snapshot_to_json(&snapshot);
-        
+
         // Verify JSON is valid
-        let parsed: serde_json::Value = serde_json::from_str(&json_str)
-            .expect("Generated invalid JSON");
-        
+        let parsed: serde_json::Value =
+            serde_json::from_str(&json_str).expect("Generated invalid JSON");
+
         // Check structure (position is IVec2 object with x,y)
         assert!(parsed["player"]["position"].is_object());
         assert_eq!(parsed["player"]["position"]["x"], 5);
@@ -400,25 +403,32 @@ mod tests {
         assert!(parsed["enemies"].is_array());
         assert_eq!(parsed["enemies"][0]["id"], 99);
     }
-    
+
     #[test]
     fn test_action_history() {
         let snapshot = create_test_snapshot();
         let history = vec![
-            ActionStep::MoveTo { x: 4, y: 4, speed: None },
-            ActionStep::CoverFire { target_id: 99, duration: 2.0 },
+            ActionStep::MoveTo {
+                x: 4,
+                y: 4,
+                speed: None,
+            },
+            ActionStep::CoverFire {
+                target_id: 99,
+                duration: 2.0,
+            },
         ];
-        
+
         let prompt = PromptBuilder::new()
             .add_snapshot(&snapshot)
             .add_history(&history)
             .build();
-        
+
         assert!(prompt.contains("ACTION HISTORY"));
         assert!(prompt.contains("MoveTo"));
         assert!(prompt.contains("CoverFire"));
     }
-    
+
     #[test]
     fn test_constraints() {
         let snapshot = create_test_snapshot();
@@ -427,10 +437,9 @@ mod tests {
             .add_constraint("Do not use grenades")
             .add_constraint("Stay within 10 units of player")
             .build();
-        
+
         assert!(prompt.contains("Additional Constraints"));
         assert!(prompt.contains("Do not use grenades"));
         assert!(prompt.contains("Stay within 10 units"));
     }
 }
-

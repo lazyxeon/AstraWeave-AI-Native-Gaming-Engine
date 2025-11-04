@@ -3,7 +3,7 @@ use rapier3d::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(feature = "profiling")]
-use astraweave_profiling::{span, plot};
+use astraweave_profiling::{plot, span};
 
 // Async physics scheduler (feature-gated)
 #[cfg(feature = "async-physics")]
@@ -64,7 +64,7 @@ pub struct PhysicsWorld {
     body_kinds: HashMap<RigidBodyHandle, ActorKind>,
     next_body_id: BodyId,
     pub char_map: HashMap<BodyId, CharacterController>,
-    
+
     /// Async physics scheduler (feature-gated)
     #[cfg(feature = "async-physics")]
     pub async_scheduler: Option<AsyncPhysicsScheduler>,
@@ -93,7 +93,7 @@ impl PhysicsWorld {
             async_scheduler: None,
         }
     }
-    
+
     /// Enable async physics with optional thread count (0 = auto-detect)
     /// This configures Rayon's global thread pool, which Rapier3D uses for parallel solving
     #[cfg(feature = "async-physics")]
@@ -105,14 +105,14 @@ impl PhysicsWorld {
                 .num_threads(thread_count)
                 .build_global();
         }
-        
+
         self.async_scheduler = Some(if thread_count > 0 {
             AsyncPhysicsScheduler::with_threads(thread_count)
         } else {
             AsyncPhysicsScheduler::new()
         });
     }
-    
+
     /// Get last physics step profile (for telemetry)
     #[cfg(feature = "async-physics")]
     pub fn get_last_profile(&self) -> Option<PhysicsStepProfile> {
@@ -128,7 +128,7 @@ impl PhysicsWorld {
     pub fn step(&mut self) {
         #[cfg(feature = "profiling")]
         span!("Physics::World::step");
-        
+
         #[cfg(feature = "async-physics")]
         {
             // When async scheduler is enabled, Rapier3D automatically uses
@@ -137,11 +137,11 @@ impl PhysicsWorld {
             if self.async_scheduler.is_some() {
                 use std::time::Instant;
                 let start = Instant::now();
-                
+
                 self.step_internal();
-                
+
                 let duration = start.elapsed();
-                
+
                 // Update telemetry
                 if let Some(scheduler) = &mut self.async_scheduler {
                     scheduler.record_step_telemetry(duration);
@@ -162,7 +162,7 @@ impl PhysicsWorld {
             span!("Physics::Rapier::pipeline");
             plot!("Physics::collider_count", self.colliders.len() as u64);
         }
-        
+
         let events = ();
         self.pipeline.step(
             &self.gravity,
@@ -179,7 +179,7 @@ impl PhysicsWorld {
             &events,
             &(),
         );
-        
+
         // CRITICAL FIX (Week 2 Day 3): Update query pipeline after physics step
         // Without this, raycasts in control_character() use stale geometry,
         // causing character controller to fail ground detection
@@ -228,7 +228,7 @@ impl PhysicsWorld {
             span!("Physics::RigidBody::create");
             plot!("Physics::rigid_body_count", self.bodies.len() as u64);
         }
-        
+
         let rb = RigidBodyBuilder::dynamic()
             .translation(vector![pos.x, pos.y, pos.z])
             .build();
@@ -251,7 +251,7 @@ impl PhysicsWorld {
             span!("Physics::Character::create");
             plot!("Physics::character_count", self.char_map.len() as u64);
         }
-        
+
         let rb = RigidBodyBuilder::kinematic_position_based()
             .translation(vector![pos.x, pos.y, pos.z])
             .build();
@@ -281,7 +281,7 @@ impl PhysicsWorld {
     pub fn control_character(&mut self, id: BodyId, desired_move: Vec3, dt: f32, _climb: bool) {
         #[cfg(feature = "profiling")]
         span!("Physics::CharacterController::move");
-        
+
         let Some(ctrl) = self.char_map.get(&id).copied() else {
             return;
         };
@@ -427,33 +427,42 @@ impl PhysicsWorld {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn character_position_updates() {
         let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
         let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
         let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
-        
+
         // Check initial position
         let pos0 = pw.body_transform(char_id).unwrap().w_axis;
-        assert!((pos0.x - 0.0).abs() < 0.01, "initial x should be ~0, got {}", pos0.x);
-        
+        assert!(
+            (pos0.x - 0.0).abs() < 0.01,
+            "initial x should be ~0, got {}",
+            pos0.x
+        );
+
         // Move once
         pw.control_character(char_id, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
         pw.step();
-        
+
         let pos1 = pw.body_transform(char_id).unwrap().w_axis;
-        
+
         // Move again
         pw.control_character(char_id, Vec3::new(1.0, 0.0, 0.0), 1.0 / 60.0, false);
         pw.step();
-        
+
         let pos2 = pw.body_transform(char_id).unwrap().w_axis;
-        
+
         // Position should accumulate
-        assert!(pos2.x > pos1.x, "x should increase: frame1={}, frame2={}", pos1.x, pos2.x);
+        assert!(
+            pos2.x > pos1.x,
+            "x should increase: frame1={}, frame2={}",
+            pos1.x,
+            pos2.x
+        );
     }
-    
+
     #[test]
     fn character_moves_forward() {
         let mut pw = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));

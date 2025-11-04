@@ -18,13 +18,13 @@ use std::collections::{HashMap, VecDeque};
 pub enum ChunkLoadState {
     /// Chunk is fully loaded and rendered
     Loaded,
-    
+
     /// Chunk is being generated in background
     Loading,
-    
+
     /// Chunk is in load queue (not started)
     Pending,
-    
+
     /// Chunk is unloaded (too far from camera)
     Unloaded,
 }
@@ -34,13 +34,13 @@ pub enum ChunkLoadState {
 pub struct HitchDetector {
     /// Recent frame times (milliseconds)
     frame_times: VecDeque<f32>,
-    
+
     /// Maximum history size
     max_history: usize,
-    
+
     /// Hitch threshold (ms)
     hitch_threshold: f32,
-    
+
     /// Hitch count in window
     hitch_count: usize,
 }
@@ -55,17 +55,17 @@ impl HitchDetector {
             hitch_count: 0,
         }
     }
-    
+
     /// Record a frame time and check for hitch
     pub fn record_frame(&mut self, frame_time_ms: f32) -> bool {
         let is_hitch = frame_time_ms > self.hitch_threshold;
-        
+
         if is_hitch {
             self.hitch_count += 1;
         }
-        
+
         self.frame_times.push_back(frame_time_ms);
-        
+
         // Remove oldest frame if over limit
         if self.frame_times.len() > self.max_history {
             let oldest = self.frame_times.pop_front().unwrap_or(0.0);
@@ -73,45 +73,45 @@ impl HitchDetector {
                 self.hitch_count = self.hitch_count.saturating_sub(1);
             }
         }
-        
+
         is_hitch
     }
-    
+
     /// Get average frame time in window
     pub fn average_frame_time(&self) -> f32 {
         if self.frame_times.is_empty() {
             return 0.0;
         }
-        
+
         let sum: f32 = self.frame_times.iter().sum();
         sum / self.frame_times.len() as f32
     }
-    
+
     /// Get p99 frame time (99th percentile)
     pub fn p99_frame_time(&self) -> f32 {
         if self.frame_times.is_empty() {
             return 0.0;
         }
-        
+
         let mut sorted: Vec<f32> = self.frame_times.iter().copied().collect();
         // Use unwrap_or for partial_cmp to handle potential NaN values gracefully
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        
+
         let index = ((sorted.len() as f32 * 0.99).ceil() as usize).min(sorted.len() - 1);
         sorted[index]
     }
-    
+
     /// Get hitch count in window
     pub fn hitch_count(&self) -> usize {
         self.hitch_count
     }
-    
+
     /// Get hitch rate (percent of frames)
     pub fn hitch_rate(&self) -> f32 {
         if self.frame_times.is_empty() {
             return 0.0;
         }
-        
+
         (self.hitch_count as f32 / self.frame_times.len() as f32) * 100.0
     }
 }
@@ -121,13 +121,13 @@ impl HitchDetector {
 pub struct MemoryStats {
     /// Total bytes allocated for chunks
     pub total_bytes: usize,
-    
+
     /// Bytes per chunk (average)
     pub bytes_per_chunk: usize,
-    
+
     /// Number of chunks in memory
     pub chunk_count: usize,
-    
+
     /// Peak memory usage
     pub peak_bytes: usize,
 }
@@ -138,21 +138,21 @@ impl MemoryStats {
         self.chunk_count = chunk_count;
         self.bytes_per_chunk = bytes_per_chunk;
         self.total_bytes = chunk_count * bytes_per_chunk;
-        
+
         if self.total_bytes > self.peak_bytes {
             self.peak_bytes = self.total_bytes;
         }
     }
-    
+
     /// Get memory delta from peak (percent)
     pub fn delta_from_peak_percent(&self) -> f32 {
         if self.peak_bytes == 0 {
             return 0.0;
         }
-        
+
         ((self.total_bytes as f32 / self.peak_bytes as f32) - 1.0) * 100.0
     }
-    
+
     /// Get memory in MB
     pub fn total_mb(&self) -> f32 {
         self.total_bytes as f32 / (1024.0 * 1024.0)
@@ -163,19 +163,19 @@ impl MemoryStats {
 pub struct StreamingDiagnostics {
     /// Chunk load states
     chunk_states: HashMap<ChunkId, ChunkLoadState>,
-    
+
     /// Hitch detector
     hitch_detector: HitchDetector,
-    
+
     /// Memory stats
     memory_stats: MemoryStats,
-    
+
     /// Streaming stats snapshot
     streaming_stats: StreamingStats,
-    
+
     /// LOD stats snapshot
     lod_stats: LodStats,
-    
+
     /// Camera position
     camera_pos: Vec3,
 }
@@ -192,7 +192,7 @@ impl StreamingDiagnostics {
             camera_pos: Vec3::ZERO,
         }
     }
-    
+
     /// Update chunk states
     pub fn update_chunk_states(
         &mut self,
@@ -202,48 +202,48 @@ impl StreamingDiagnostics {
     ) {
         // Clear old states
         self.chunk_states.clear();
-        
+
         // Mark loaded
         for &chunk_id in loaded {
             self.chunk_states.insert(chunk_id, ChunkLoadState::Loaded);
         }
-        
+
         // Mark loading
         for &chunk_id in loading {
             self.chunk_states.insert(chunk_id, ChunkLoadState::Loading);
         }
-        
+
         // Mark pending
         for &chunk_id in pending {
             self.chunk_states.insert(chunk_id, ChunkLoadState::Pending);
         }
     }
-    
+
     /// Record frame time
     pub fn record_frame(&mut self, frame_time_ms: f32) -> bool {
         self.hitch_detector.record_frame(frame_time_ms)
     }
-    
+
     /// Update memory stats
     pub fn update_memory(&mut self, chunk_count: usize, bytes_per_chunk: usize) {
         self.memory_stats.update(chunk_count, bytes_per_chunk);
     }
-    
+
     /// Update streaming stats
     pub fn update_streaming_stats(&mut self, stats: StreamingStats) {
         self.streaming_stats = stats;
     }
-    
+
     /// Update LOD stats
     pub fn update_lod_stats(&mut self, stats: LodStats) {
         self.lod_stats = stats;
     }
-    
+
     /// Update camera position
     pub fn update_camera(&mut self, camera_pos: Vec3) {
         self.camera_pos = camera_pos;
     }
-    
+
     /// Get chunk state
     pub fn get_chunk_state(&self, chunk_id: ChunkId) -> ChunkLoadState {
         self.chunk_states
@@ -251,37 +251,37 @@ impl StreamingDiagnostics {
             .copied()
             .unwrap_or(ChunkLoadState::Unloaded)
     }
-    
+
     /// Get all chunk states
     pub fn get_all_chunk_states(&self) -> &HashMap<ChunkId, ChunkLoadState> {
         &self.chunk_states
     }
-    
+
     /// Get hitch detector
     pub fn hitch_detector(&self) -> &HitchDetector {
         &self.hitch_detector
     }
-    
+
     /// Get memory stats
     pub fn memory_stats(&self) -> &MemoryStats {
         &self.memory_stats
     }
-    
+
     /// Get streaming stats
     pub fn streaming_stats(&self) -> &StreamingStats {
         &self.streaming_stats
     }
-    
+
     /// Get LOD stats
     pub fn lod_stats(&self) -> &LodStats {
         &self.lod_stats
     }
-    
+
     /// Get camera position
     pub fn camera_pos(&self) -> Vec3 {
         self.camera_pos
     }
-    
+
     /// Generate diagnostic report
     pub fn generate_report(&self) -> DiagnosticReport {
         DiagnosticReport {
@@ -360,56 +360,56 @@ pub struct ChunkCounts {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn hitch_detector_basic() {
         let mut detector = HitchDetector::new(100, 2.0);
-        
+
         // Normal frames
         for _ in 0..50 {
             assert!(!detector.record_frame(1.0));
         }
-        
+
         assert_eq!(detector.hitch_count(), 0);
         assert!(detector.average_frame_time() < 1.5);
     }
-    
+
     #[test]
     fn hitch_detector_hitches() {
         let mut detector = HitchDetector::new(100, 2.0);
-        
+
         // Record 10 normal, 1 hitch
         for _ in 0..10 {
             detector.record_frame(1.0);
         }
-        
+
         assert!(detector.record_frame(5.0)); // Hitch
         assert_eq!(detector.hitch_count(), 1);
         assert!(detector.hitch_rate() > 0.0);
     }
-    
+
     #[test]
     fn memory_stats() {
         let mut stats = MemoryStats::default();
-        
+
         stats.update(100, 1024 * 1024); // 100 chunks, 1MB each
         assert_eq!(stats.chunk_count, 100);
         assert_eq!(stats.total_mb(), 100.0);
-        
+
         stats.update(50, 1024 * 1024); // Drop to 50 chunks
         assert!(stats.delta_from_peak_percent() < 0.0); // Below peak
     }
-    
+
     #[test]
     fn diagnostics_report() {
         let mut diag = StreamingDiagnostics::new(2.0, 100);
-        
+
         let loaded = vec![ChunkId::new(0, 0), ChunkId::new(1, 0)];
         let loading = vec![ChunkId::new(2, 0)];
         let pending = vec![ChunkId::new(3, 0), ChunkId::new(4, 0)];
-        
+
         diag.update_chunk_states(&loaded, &loading, &pending);
-        
+
         let report = diag.generate_report();
         assert_eq!(report.chunk_counts.loaded, 2);
         assert_eq!(report.chunk_counts.loading, 1);

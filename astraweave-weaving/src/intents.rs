@@ -93,7 +93,8 @@ impl IntentProposer for SupplyDropProposer {
 
         for (pattern_id, strength) in patterns {
             if pattern_id.starts_with("resource_scarce_") && *strength >= self.strength_threshold {
-                let resource = pattern_id.strip_prefix("resource_scarce_")
+                let resource = pattern_id
+                    .strip_prefix("resource_scarce_")
                     .expect("BUG: strip_prefix should succeed after starts_with check");
                 intents.push(
                     WeaveIntent::new("spawn_supply_drop")
@@ -124,7 +125,8 @@ impl IntentProposer for MediatorProposer {
 
         for (pattern_id, strength) in patterns {
             if pattern_id.starts_with("faction_conflict_") && *strength >= self.strength_threshold {
-                let faction = pattern_id.strip_prefix("faction_conflict_")
+                let faction = pattern_id
+                    .strip_prefix("faction_conflict_")
                     .expect("BUG: strip_prefix should succeed after starts_with check");
                 intents.push(
                     WeaveIntent::new("spawn_mediator")

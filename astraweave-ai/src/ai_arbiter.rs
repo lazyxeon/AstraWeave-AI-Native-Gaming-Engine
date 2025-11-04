@@ -724,7 +724,14 @@ mod tests {
         };
         let action2 = action1.clone();
 
-        assert!(matches!(action2, ActionStep::MoveTo { x: 10, y: 20, speed: None }));
+        assert!(matches!(
+            action2,
+            ActionStep::MoveTo {
+                x: 10,
+                y: 20,
+                speed: None
+            }
+        ));
     }
 
     #[test]
@@ -816,7 +823,11 @@ mod tests {
         let many_steps_plan = PlanIntent {
             plan_id: "many-steps".into(),
             steps: (0..100)
-                .map(|i| ActionStep::MoveTo { x: i, y: i, speed: None })
+                .map(|i| ActionStep::MoveTo {
+                    x: i,
+                    y: i,
+                    speed: None,
+                })
                 .collect(),
         };
 
@@ -972,9 +983,9 @@ mod tests {
     // ============================================================================
 
     // Additional imports for integration tests
+    use crate::orchestrator::OrchestratorAsync;
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
-    use crate::orchestrator::OrchestratorAsync;
 
     // Mock LLM Orchestrator for async testing
     struct MockLlmOrch {
@@ -1026,16 +1037,22 @@ mod tests {
         bt: Box<dyn Orchestrator>,
         llm_delay: Duration,
     ) -> AIArbiter {
-        let mock_llm = Arc::new(MockLlmOrch::new()
-            .with_delay(llm_delay.as_millis() as u64)
-            .with_plan(PlanIntent {
-                plan_id: "llm".into(),
-                steps: vec![
-                    ActionStep::MoveTo { x: 1, y: 1, speed: None },
-                    ActionStep::Scan { radius: 5.0 },
-                    ActionStep::Attack { target_id: 1 },
-                ],
-            }));
+        let mock_llm = Arc::new(
+            MockLlmOrch::new()
+                .with_delay(llm_delay.as_millis() as u64)
+                .with_plan(PlanIntent {
+                    plan_id: "llm".into(),
+                    steps: vec![
+                        ActionStep::MoveTo {
+                            x: 1,
+                            y: 1,
+                            speed: None,
+                        },
+                        ActionStep::Scan { radius: 5.0 },
+                        ActionStep::Attack { target_id: 1 },
+                    ],
+                }),
+        );
 
         let runtime = tokio::runtime::Handle::current();
         let llm_executor = LlmExecutor::new(mock_llm, runtime);
@@ -1078,7 +1095,11 @@ mod tests {
         let plan = PlanIntent {
             plan_id: "test-plan".into(),
             steps: vec![
-                ActionStep::MoveTo { x: 1, y: 1, speed: None },
+                ActionStep::MoveTo {
+                    x: 1,
+                    y: 1,
+                    speed: None,
+                },
                 ActionStep::Scan { radius: 5.0 },
                 ActionStep::Attack { target_id: 1 },
             ],
@@ -1088,12 +1109,25 @@ mod tests {
         let snap = create_test_snapshot(0.0);
 
         let action1 = arbiter.update(&snap);
-        assert!(matches!(action1, ActionStep::MoveTo { x: 1, y: 1, speed: None }));
-        assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 1 }));
+        assert!(matches!(
+            action1,
+            ActionStep::MoveTo {
+                x: 1,
+                y: 1,
+                speed: None
+            }
+        ));
+        assert!(matches!(
+            arbiter.mode(),
+            AIControlMode::ExecutingLLM { step_index: 1 }
+        ));
 
         let action2 = arbiter.update(&snap);
         assert!(matches!(action2, ActionStep::Scan { radius: 5.0 }));
-        assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 2 }));
+        assert!(matches!(
+            arbiter.mode(),
+            AIControlMode::ExecutingLLM { step_index: 2 }
+        ));
 
         let action3 = arbiter.update(&snap);
         assert!(matches!(action3, ActionStep::Attack { target_id: 1 }));
@@ -1130,8 +1164,8 @@ mod tests {
             should_fail: false,
         });
         let bt = Box::new(MockBT);
-        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
-            .with_llm_cooldown(5.0);
+        let mut arbiter =
+            create_arbiter_with_mocks(goap, bt, Duration::from_millis(100)).with_llm_cooldown(5.0);
 
         let snap1 = create_test_snapshot(0.0);
         arbiter.update(&snap1);
@@ -1169,8 +1203,8 @@ mod tests {
             should_fail: false,
         });
         let bt = Box::new(MockBT);
-        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10))
-            .with_llm_cooldown(0.0);
+        let mut arbiter =
+            create_arbiter_with_mocks(goap, bt, Duration::from_secs(10)).with_llm_cooldown(0.0);
 
         let plan = PlanIntent {
             plan_id: "test".into(),
@@ -1206,7 +1240,10 @@ mod tests {
         let snap2 = create_test_snapshot(1.0);
         arbiter.update(&snap2);
 
-        assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 1 }));
+        assert!(matches!(
+            arbiter.mode(),
+            AIControlMode::ExecutingLLM { step_index: 1 }
+        ));
 
         let (transitions, _, successes, failures, _, _) = arbiter.metrics();
         assert_eq!(successes, 1);
@@ -1332,7 +1369,7 @@ mod tests {
             steps: vec![ActionStep::Wait { duration: 1.0 }],
         };
         arbiter.transition_to_llm(plan);
-        
+
         let snap1 = create_test_snapshot(0.0);
         arbiter.update(&snap1);
 
@@ -1350,8 +1387,8 @@ mod tests {
             should_fail: false,
         });
         let bt = Box::new(MockBT);
-        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
-            .with_llm_cooldown(0.5);
+        let mut arbiter =
+            create_arbiter_with_mocks(goap, bt, Duration::from_millis(100)).with_llm_cooldown(0.5);
 
         let snap1 = create_test_snapshot(0.0);
         let snap2 = create_test_snapshot(1.0);
@@ -1363,7 +1400,8 @@ mod tests {
         tokio::time::sleep(Duration::from_millis(150)).await;
         arbiter.update(&snap3);
 
-        let (transitions, requests, successes, failures, goap_actions, llm_steps) = arbiter.metrics();
+        let (transitions, requests, successes, failures, goap_actions, llm_steps) =
+            arbiter.metrics();
 
         assert!(transitions >= 1);
         assert_eq!(requests, 1);
@@ -1384,8 +1422,8 @@ mod tests {
             should_fail: false,
         });
         let bt = Box::new(MockBT);
-        let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
-            .with_llm_cooldown(10.0);
+        let mut arbiter =
+            create_arbiter_with_mocks(goap, bt, Duration::from_millis(100)).with_llm_cooldown(10.0);
 
         let snap1 = create_test_snapshot(0.0);
         arbiter.update(&snap1);

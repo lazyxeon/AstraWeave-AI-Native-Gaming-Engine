@@ -14,9 +14,9 @@ cargo bench -p astraweave-math --bench simd_benchmarks -- --quick
 ```
 */
 
+use astraweave_math::simd_vec::{cross_simd, dot_simd, length_simd, normalize_simd};
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use glam::Vec3;
-use astraweave_math::simd_vec::{dot_simd, cross_simd, normalize_simd, length_simd};
 
 // ============================================================================
 // Vec3 Dot Product Benchmarks
@@ -170,10 +170,22 @@ fn bench_physics_tick_scalar(c: &mut Criterion) {
         .map(|i| Vec3::new(i as f32, (i + 1) as f32, (i + 2) as f32))
         .collect();
     let velocities: Vec<Vec3> = (0..100)
-        .map(|i| Vec3::new((i + 3) as f32 * 0.1, (i + 4) as f32 * 0.1, (i + 5) as f32 * 0.1))
+        .map(|i| {
+            Vec3::new(
+                (i + 3) as f32 * 0.1,
+                (i + 4) as f32 * 0.1,
+                (i + 5) as f32 * 0.1,
+            )
+        })
         .collect();
     let forces: Vec<Vec3> = (0..100)
-        .map(|i| Vec3::new((i + 6) as f32 * 0.01, (i + 7) as f32 * 0.01, (i + 8) as f32 * 0.01))
+        .map(|i| {
+            Vec3::new(
+                (i + 6) as f32 * 0.01,
+                (i + 7) as f32 * 0.01,
+                (i + 8) as f32 * 0.01,
+            )
+        })
         .collect();
 
     c.bench_function("physics_tick/scalar", |bencher| {
@@ -186,7 +198,7 @@ fn bench_physics_tick_scalar(c: &mut Criterion) {
 
                 // Normalize direction
                 let dir = pos.normalize();
-                
+
                 // Kinetic energy: 0.5 * m * v² (using dot product)
                 let kinetic = 0.5 * vel.dot(vel);
 
@@ -207,10 +219,22 @@ fn bench_physics_tick_simd(c: &mut Criterion) {
         .map(|i| Vec3::new(i as f32, (i + 1) as f32, (i + 2) as f32))
         .collect();
     let velocities: Vec<Vec3> = (0..100)
-        .map(|i| Vec3::new((i + 3) as f32 * 0.1, (i + 4) as f32 * 0.1, (i + 5) as f32 * 0.1))
+        .map(|i| {
+            Vec3::new(
+                (i + 3) as f32 * 0.1,
+                (i + 4) as f32 * 0.1,
+                (i + 5) as f32 * 0.1,
+            )
+        })
         .collect();
     let forces: Vec<Vec3> = (0..100)
-        .map(|i| Vec3::new((i + 6) as f32 * 0.01, (i + 7) as f32 * 0.01, (i + 8) as f32 * 0.01))
+        .map(|i| {
+            Vec3::new(
+                (i + 6) as f32 * 0.01,
+                (i + 7) as f32 * 0.01,
+                (i + 8) as f32 * 0.01,
+            )
+        })
         .collect();
 
     c.bench_function("physics_tick/simd", |bencher| {
@@ -223,7 +247,7 @@ fn bench_physics_tick_simd(c: &mut Criterion) {
 
                 // Normalize direction (SIMD)
                 let dir = normalize_simd(pos);
-                
+
                 // Kinetic energy: 0.5 * m * v² (SIMD dot)
                 let kinetic = 0.5 * dot_simd(vel, vel);
 
@@ -249,23 +273,11 @@ criterion_group!(
     bench_dot_throughput
 );
 
-criterion_group!(
-    vec3_cross,
-    bench_cross_scalar,
-    bench_cross_simd
-);
+criterion_group!(vec3_cross, bench_cross_scalar, bench_cross_simd);
 
-criterion_group!(
-    vec3_normalize,
-    bench_normalize_scalar,
-    bench_normalize_simd
-);
+criterion_group!(vec3_normalize, bench_normalize_scalar, bench_normalize_simd);
 
-criterion_group!(
-    vec3_length,
-    bench_length_scalar,
-    bench_length_simd
-);
+criterion_group!(vec3_length, bench_length_scalar, bench_length_simd);
 
 criterion_group!(
     integrated,

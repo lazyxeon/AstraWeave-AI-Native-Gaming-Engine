@@ -287,7 +287,7 @@ fn test_large_skeleton() {
     for pose in poses.iter_mut() {
         pose.translation = Vec3::new(0.0, 0.1, 0.0);
     }
-    
+
     let matrices = compute_joint_matrices(&skeleton, &poses);
 
     assert_eq!(matrices.len(), 100);

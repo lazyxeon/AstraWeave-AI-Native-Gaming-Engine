@@ -260,10 +260,7 @@ mod tests {
     fn test_state_timer_resets_between_cues() {
         let mut state = CutsceneState::new();
         let timeline = Timeline {
-            cues: vec![
-                Cue::Wait { time: 1.0 },
-                Cue::Wait { time: 1.0 },
-            ],
+            cues: vec![Cue::Wait { time: 1.0 }, Cue::Wait { time: 1.0 }],
         };
 
         // Complete first cue
@@ -276,4 +273,3 @@ mod tests {
         assert_eq!(state.t, 0.5);
     }
 }
-

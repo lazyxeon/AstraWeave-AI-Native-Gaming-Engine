@@ -141,15 +141,13 @@ mod tests {
             .expect("Failed to find adapter");
 
         adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("test_device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_defaults(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: Default::default(),
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("test_device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_defaults(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: Default::default(),
+            })
             .await
             .expect("Failed to create device")
     }
@@ -182,7 +180,7 @@ mod tests {
         pollster::block_on(async {
             let (device, _queue) = create_test_device().await;
             let format = wgpu::TextureFormat::Bgra8UnormSrgb;
-            
+
             // Should create without panicking
             let _overlay = OverlayFx::new(&device, format);
         });
@@ -193,14 +191,14 @@ mod tests {
         pollster::block_on(async {
             let (device, queue) = create_test_device().await;
             let format = wgpu::TextureFormat::Bgra8UnormSrgb;
-            
+
             let overlay = OverlayFx::new(&device, format);
             let params = OverlayParams {
                 fade: 0.5,
                 letterbox: 0.1,
                 _pad: [0.0, 0.0],
             };
-            
+
             // Should update without panicking
             overlay.update(&queue, &params);
         });
@@ -211,9 +209,9 @@ mod tests {
         pollster::block_on(async {
             let (device, queue) = create_test_device().await;
             let format = wgpu::TextureFormat::Bgra8UnormSrgb;
-            
+
             let overlay = OverlayFx::new(&device, format);
-            
+
             // Update multiple times with different values
             for i in 0..5 {
                 let params = OverlayParams {
@@ -230,7 +228,7 @@ mod tests {
     fn test_overlay_fx_different_formats() {
         pollster::block_on(async {
             let (device, _queue) = create_test_device().await;
-            
+
             let formats = vec![
                 wgpu::TextureFormat::Bgra8UnormSrgb,
                 wgpu::TextureFormat::Rgba8UnormSrgb,

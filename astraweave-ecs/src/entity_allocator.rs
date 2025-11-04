@@ -243,7 +243,7 @@ impl EntityAllocator {
             let id = self.next_id;
             self.next_id = self.next_id.checked_add(1).expect(
                 "Entity ID overflow: spawned 2^32 entities. \
-                 Consider increasing entity slot size or implementing entity pooling."
+                 Consider increasing entity slot size or implementing entity pooling.",
             );
             self.generations.push(0);
             id

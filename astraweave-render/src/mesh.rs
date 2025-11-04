@@ -128,9 +128,9 @@ mod tests {
         let norm = Vec3::new(0.0, 1.0, 0.0);
         let tan = Vec4::new(1.0, 0.0, 0.0, 1.0);
         let uv = Vec2::new(0.5, 0.75);
-        
+
         let vert = MeshVertex::new(pos, norm, tan, uv);
-        
+
         assert_eq!(vert.position, [1.0, 2.0, 3.0]);
         assert_eq!(vert.normal, [0.0, 1.0, 0.0]);
         assert_eq!(vert.tangent, [1.0, 0.0, 0.0, 1.0]);
@@ -145,7 +145,7 @@ mod tests {
             [1.0, 0.0, 0.0, 1.0],
             [0.5, 0.75],
         );
-        
+
         assert_eq!(vert.position, [1.0, 2.0, 3.0]);
         assert_eq!(vert.normal, [0.0, 1.0, 0.0]);
         assert_eq!(vert.tangent, [1.0, 0.0, 0.0, 1.0]);
@@ -155,11 +155,11 @@ mod tests {
     #[test]
     fn test_mesh_vertex_layout() {
         let layout = MeshVertexLayout::buffer_layout();
-        
+
         // Verify stride: 3f32 + 3f32 + 4f32 + 2f32 = 12 floats = 48 bytes
         assert_eq!(layout.array_stride, 48);
         assert_eq!(layout.step_mode, wgpu::VertexStepMode::Vertex);
-        
+
         // Verify attributes
         assert_eq!(layout.attributes.len(), 4);
     }
@@ -195,7 +195,7 @@ mod tests {
             [1.0, 0.0, 0.0, 1.0],
             [0.0, 0.0],
         ));
-        
+
         let (min, max) = mesh.aabb().expect("Should have AABB");
         assert_eq!(min, Vec3::new(1.0, 2.0, 3.0));
         assert_eq!(max, Vec3::new(1.0, 2.0, 3.0));
@@ -204,10 +204,25 @@ mod tests {
     #[test]
     fn test_cpu_mesh_aabb_multiple_vertices() {
         let mut mesh = CpuMesh::default();
-        mesh.vertices.push(MeshVertex::from_arrays([1.0, 2.0, 3.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
-        mesh.vertices.push(MeshVertex::from_arrays([5.0, 1.0, 7.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
-        mesh.vertices.push(MeshVertex::from_arrays([-2.0, 4.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
-        
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [1.0, 2.0, 3.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [5.0, 1.0, 7.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [-2.0, 4.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
+
         let (min, max) = mesh.aabb().expect("Should have AABB");
         assert_eq!(min, Vec3::new(-2.0, 1.0, 0.0));
         assert_eq!(max, Vec3::new(5.0, 4.0, 7.0));
@@ -223,10 +238,20 @@ mod tests {
     #[test]
     fn test_compute_tangents_incomplete_triangle() {
         let mut mesh = CpuMesh::default();
-        mesh.vertices.push(MeshVertex::from_arrays([0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
-        mesh.vertices.push(MeshVertex::from_arrays([1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [1.0, 0.0]));
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
+        mesh.vertices.push(MeshVertex::from_arrays(
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [1.0, 0.0],
+        ));
         mesh.indices = vec![0, 1]; // Not divisible by 3
-        
+
         compute_tangents(&mut mesh); // Should not crash, just return early
         assert_eq!(mesh.indices.len(), 2);
     }
@@ -254,9 +279,9 @@ mod tests {
             [0.0, 1.0],
         ));
         mesh.indices = vec![0, 1, 2];
-        
+
         compute_tangents(&mut mesh);
-        
+
         // Verify tangents were computed (not zero)
         for v in &mesh.vertices {
             let tan = Vec3::from_array([v.tangent[0], v.tangent[1], v.tangent[2]]);
@@ -275,9 +300,14 @@ mod tests {
     #[test]
     fn test_cpu_mesh_clone() {
         let mut mesh1 = CpuMesh::default();
-        mesh1.vertices.push(MeshVertex::from_arrays([1.0, 2.0, 3.0], [0.0, 1.0, 0.0], [1.0, 0.0, 0.0, 1.0], [0.0, 0.0]));
+        mesh1.vertices.push(MeshVertex::from_arrays(
+            [1.0, 2.0, 3.0],
+            [0.0, 1.0, 0.0],
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0],
+        ));
         mesh1.indices.push(0);
-        
+
         let mesh2 = mesh1.clone();
         assert_eq!(mesh1.vertices.len(), mesh2.vertices.len());
         assert_eq!(mesh1.indices.len(), mesh2.indices.len());
@@ -294,9 +324,9 @@ mod tests {
             [0.5, 0.5],
         ));
         mesh.indices = vec![0, 0, 0]; // All same vertex (degenerate triangle)
-        
+
         compute_tangents(&mut mesh);
-        
+
         // Should not crash, tangent should remain valid (normalized or identity)
         let tan = Vec3::from_array([
             mesh.vertices[0].tangent[0],

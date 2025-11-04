@@ -1,0 +1,17 @@
+{
+  "title": "Untitled",
+  "biome": "temperate_forest",
+  "seed": 42,
+  "sky": {
+    "time_of_day": "dawn",
+    "weather": "clear"
+  },
+  "biome_paints": [],
+  "obstacles": [],
+  "npcs": [],
+  "fate_threads": [],
+  "boss": {
+    "director_budget_script": "",
+    "phase_script": ""
+  }
+}

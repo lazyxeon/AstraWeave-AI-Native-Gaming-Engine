@@ -2,7 +2,7 @@
 //!
 //! Episodes represent temporal chunks of player-companion interaction
 //! that are stored as Episodic memories in the existing memory system.
-//! 
+//!
 //! This module provides structures for recording complete interaction
 //! episodes (combat encounters, dialogue sessions, exploration periods)
 //! that can be analyzed to detect patterns and drive behavioral learning.
@@ -503,7 +503,11 @@ mod tests {
         };
 
         let quality = outcome.quality_score();
-        assert!(quality > 0.8, "Expected high quality score, got {}", quality);
+        assert!(
+            quality > 0.8,
+            "Expected high quality score, got {}",
+            quality
+        );
     }
 
     #[test]
@@ -555,7 +559,9 @@ mod tests {
             ));
         }
 
-        let avg = episode.average_player_health().expect("Should have average");
+        let avg = episode
+            .average_player_health()
+            .expect("Should have average");
         assert!((avg - 0.7).abs() < 0.01, "Expected 0.7, got {}", avg);
     }
 }

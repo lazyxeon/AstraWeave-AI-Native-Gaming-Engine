@@ -77,7 +77,7 @@ pub fn update_positions_simd(positions: &mut [Vec3], velocities: &[Vec3], dt: f3
         velocities.len(),
         "Position and velocity slices must have the same length"
     );
-    
+
     const BATCH_SIZE: usize = 4;
 
     let count = positions.len();
@@ -167,17 +167,23 @@ mod tests {
             assert!(
                 (pos.x - expected.x).abs() < 1e-6,
                 "SIMD result mismatch at index {} (x): got {}, expected {}",
-                i, pos.x, expected.x
+                i,
+                pos.x,
+                expected.x
             );
             assert!(
                 (pos.y - expected.y).abs() < 1e-6,
                 "SIMD result mismatch at index {} (y): got {}, expected {}",
-                i, pos.y, expected.y
+                i,
+                pos.y,
+                expected.y
             );
             assert!(
                 (pos.z - expected.z).abs() < 1e-6,
                 "SIMD result mismatch at index {} (z): got {}, expected {}",
-                i, pos.z, expected.z
+                i,
+                pos.z,
+                expected.z
             );
         }
     }
@@ -212,7 +218,12 @@ mod tests {
             update_positions_simd(&mut positions, &velocities, dt);
 
             for pos in &positions {
-                assert_eq!(*pos, Vec3::ONE, "Remainder handling failed for count {}", count);
+                assert_eq!(
+                    *pos,
+                    Vec3::ONE,
+                    "Remainder handling failed for count {}",
+                    count
+                );
             }
         }
     }
@@ -226,7 +237,11 @@ mod tests {
         update_positions_simd(&mut positions, &velocities, dt);
 
         for pos in &positions {
-            assert_eq!(*pos, Vec3::new(1.0, 2.0, 3.0), "Zero dt should not change position");
+            assert_eq!(
+                *pos,
+                Vec3::new(1.0, 2.0, 3.0),
+                "Zero dt should not change position"
+            );
         }
     }
 

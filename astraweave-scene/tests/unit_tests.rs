@@ -8,7 +8,7 @@
 use astraweave_scene::gpu_resource_manager::{CellGpuResources, GpuResourceBudget};
 use astraweave_scene::partitioned_scene::{CellEntities, PartitionedScene, SceneEvent};
 use astraweave_scene::streaming::create_streaming_manager;
-use astraweave_scene::world_partition::{GridCoord, GridConfig, LRUCache, WorldPartition};
+use astraweave_scene::world_partition::{GridConfig, GridCoord, LRUCache, WorldPartition};
 use astraweave_scene::{Scene, Transform};
 use glam::{Quat, Vec3};
 use std::sync::Arc;
@@ -138,7 +138,7 @@ fn test_entity_cell_mapping() {
 }
 
 // SKIPPED: test_on_cell_loaded - drain_events() not available in public API
-// SKIPPED: test_on_cell_unloaded - drain_events() not available in public API  
+// SKIPPED: test_on_cell_unloaded - drain_events() not available in public API
 // SKIPPED: test_query_entities_in_multiple_cells - uses private Scene.add_entity()
 
 // ========== Streaming Tests (4 async tests) ==========
@@ -165,10 +165,10 @@ async fn test_force_load_unload() {
 
     // Force load (without cell files, won't actually activate)
     manager.force_load_cell(coord).await.unwrap();
-    
+
     // Add delay for async operations
     tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
-    
+
     // Without actual cell files, cell won't be active - just verify API works
     // This test validates the async API, not the cell loading logic
 
@@ -328,7 +328,7 @@ fn test_aabb_overlapping_cells() {
     };
 
     let cells = aabb.overlapping_cells(100.0);
-    
+
     // Should cover 3x2x3 = 18 cells (0-2 on X, 0-1 on Y, 0-2 on Z)
     assert!(cells.len() >= 18);
     assert!(cells.contains(&GridCoord::new(0, 0, 0)));

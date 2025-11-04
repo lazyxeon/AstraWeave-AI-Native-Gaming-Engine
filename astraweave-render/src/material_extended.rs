@@ -466,7 +466,7 @@ mod tests {
             base_color_factor = [1.0, 1.0, 1.0, 1.0]
             metallic_factor = 0.5
         "#;
-        
+
         let result: Result<MaterialDefinitionExtended, _> = toml::from_str(toml_str);
         assert!(result.is_err(), "Should fail without 'name' field");
     }
@@ -480,7 +480,7 @@ mod tests {
             normal: None,
             orm: None,
             base_color_factor: [1.0, 1.0, 1.0, 1.0],
-            metallic_factor: 2.5, // Out of range (should be 0-1)
+            metallic_factor: 2.5,   // Out of range (should be 0-1)
             roughness_factor: -0.3, // Negative (should be 0-1)
             occlusion_strength: 1.0,
             emissive_factor: [0.0, 0.0, 0.0],
@@ -496,14 +496,14 @@ mod tests {
             sheen_color: [0.0, 0.0, 0.0],
             sheen_roughness: 0.5,
             transmission_factor: 1.5, // Out of range (should be 0-1)
-            ior: -2.0, // Negative (should be >= 1.0)
+            ior: -2.0,                // Negative (should be >= 1.0)
             attenuation_color: [1.0, 1.0, 1.0],
             attenuation_distance: 1.0,
         };
 
         // Should convert without crashing (values will be invalid but finite)
         let gpu = def.to_gpu(0, 1, 2, 0, 0);
-        
+
         // Verify values are finite (not NaN/Inf)
         assert!(gpu.metallic_factor.is_finite());
         assert!(gpu.roughness_factor.is_finite());
@@ -511,7 +511,7 @@ mod tests {
         assert!(gpu.subsurface_scale.is_finite());
         assert!(gpu.transmission_factor.is_finite());
         assert!(gpu.ior.is_finite());
-        
+
         // GPU should have preserved the out-of-range values (no clamping in to_gpu)
         assert_eq!(gpu.metallic_factor, 2.5);
         assert_eq!(gpu.roughness_factor, -0.3);
@@ -548,13 +548,13 @@ mod tests {
         };
 
         let gpu = def.to_gpu(0, 1, 2, 0, 0);
-        
+
         // Should handle extreme values without crashing
         assert!(gpu.base_color_factor[0].is_finite());
         assert!(gpu.emissive_factor[0].is_finite());
         assert!(gpu.subsurface_color[0].is_finite());
         assert!(gpu.sheen_color[0].is_finite());
-        
+
         // Verify values are preserved
         assert_eq!(gpu.emissive_factor[0], 100.0); // HDR emissive is valid
     }

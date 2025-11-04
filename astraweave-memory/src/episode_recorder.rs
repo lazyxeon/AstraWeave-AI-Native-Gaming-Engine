@@ -73,11 +73,7 @@ impl EpisodeRecorder {
     ///
     /// Returns the completed episode for storage, or None if no
     /// active episode exists for this companion.
-    pub fn end_episode(
-        &mut self,
-        companion_id: &str,
-        outcome: EpisodeOutcome,
-    ) -> Option<Episode> {
+    pub fn end_episode(&mut self, companion_id: &str, outcome: EpisodeOutcome) -> Option<Episode> {
         if let Some(mut episode) = self.active_episodes.remove(companion_id) {
             episode.complete(outcome);
             Some(episode)
@@ -123,8 +119,7 @@ impl EpisodeRecorder {
 
     /// Update flush timer (call after flushing)
     pub fn update_flush_timer(&mut self) {
-        self.next_flush =
-            SystemTime::now() + Duration::from_secs(self.flush_interval_secs);
+        self.next_flush = SystemTime::now() + Duration::from_secs(self.flush_interval_secs);
     }
 
     /// Abort active episode for companion without outcome
@@ -225,7 +220,9 @@ mod tests {
 
         recorder.record_observation("companion_1", obs);
 
-        let episode = recorder.get_active_episode("companion_1").expect("Should have episode");
+        let episode = recorder
+            .get_active_episode("companion_1")
+            .expect("Should have episode");
         assert_eq!(episode.observations.len(), 1);
     }
 
@@ -245,7 +242,9 @@ mod tests {
             failure_count: 0,
         };
 
-        let episode = recorder.end_episode("companion_1", outcome).expect("Should return episode");
+        let episode = recorder
+            .end_episode("companion_1", outcome)
+            .expect("Should return episode");
 
         assert!(episode.is_complete());
         assert_eq!(recorder.active_count(), 0);
@@ -260,7 +259,9 @@ mod tests {
         recorder.tag_active_episode("companion_1", "boss_fight".to_string());
         recorder.tag_active_episode("companion_1", "underwater".to_string());
 
-        let episode = recorder.get_active_episode("companion_1").expect("Should have episode");
+        let episode = recorder
+            .get_active_episode("companion_1")
+            .expect("Should have episode");
         assert_eq!(episode.tags.len(), 2);
         assert!(episode.tags.contains(&"boss_fight".to_string()));
     }
@@ -270,7 +271,9 @@ mod tests {
         let mut recorder = EpisodeRecorder::new();
         recorder.start_episode("companion_1".to_string(), EpisodeCategory::Combat);
 
-        let aborted = recorder.abort_episode("companion_1").expect("Should return episode");
+        let aborted = recorder
+            .abort_episode("companion_1")
+            .expect("Should return episode");
 
         assert!(!aborted.is_complete());
         assert_eq!(recorder.active_count(), 0);
@@ -340,7 +343,9 @@ mod tests {
         assert_ne!(id1, id2);
         assert_eq!(recorder.active_count(), 1);
 
-        let episode = recorder.get_active_episode("companion_1").expect("Should have episode");
+        let episode = recorder
+            .get_active_episode("companion_1")
+            .expect("Should have episode");
         assert_eq!(episode.category, EpisodeCategory::Dialogue);
     }
 
@@ -353,7 +358,9 @@ mod tests {
             episode.add_tag("test".to_string());
         }
 
-        let episode = recorder.get_active_episode("companion_1").expect("Should have episode");
+        let episode = recorder
+            .get_active_episode("companion_1")
+            .expect("Should have episode");
         assert!(episode.tags.contains(&"test".to_string()));
     }
 

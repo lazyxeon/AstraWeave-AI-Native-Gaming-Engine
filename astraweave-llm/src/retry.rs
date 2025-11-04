@@ -8,16 +8,16 @@ use std::time::Duration;
 pub struct RetryConfig {
     /// Maximum number of retry attempts (0 = no retries)
     pub max_attempts: u32,
-    
+
     /// Initial backoff duration
     pub initial_backoff_ms: u64,
-    
+
     /// Backoff multiplier for each retry (exponential)
     pub backoff_multiplier: f64,
-    
+
     /// Maximum backoff duration (cap)
     pub max_backoff_ms: u64,
-    
+
     /// Whether to add jitter to backoff (reduces thundering herd)
     pub jitter: bool,
 }
@@ -63,9 +63,9 @@ impl RetryConfig {
         }
 
         // Exponential backoff: initial * multiplier^attempt
-        let base_backoff = self.initial_backoff_ms as f64 
-            * self.backoff_multiplier.powi(attempt as i32);
-        
+        let base_backoff =
+            self.initial_backoff_ms as f64 * self.backoff_multiplier.powi(attempt as i32);
+
         // Apply cap
         let capped_backoff = base_backoff.min(self.max_backoff_ms as f64) as u64;
 
@@ -104,16 +104,16 @@ impl Default for RetryConfig {
 pub enum RetryableError {
     /// Request timed out (transient)
     Timeout,
-    
+
     /// Network connectivity issue (transient)
     NetworkError,
-    
+
     /// Rate limit exceeded (transient, wait then retry)
     RateLimited,
-    
+
     /// Server error 5xx (transient)
     ServerError(u16),
-    
+
     /// Permanent error (4xx, invalid input, etc.)
     Permanent(String),
 }
@@ -143,7 +143,7 @@ impl RetryExecutor {
     }
 
     /// Execute an async operation with retry logic
-    /// 
+    ///
     /// Returns Ok(T) on success, Err(RetryableError) on final failure
     pub async fn execute<F, Fut, T>(&self, mut operation: F) -> Result<T, RetryableError>
     where
@@ -205,7 +205,7 @@ mod tests {
     fn test_retry_config_disabled() {
         let config = RetryConfig::disabled();
         assert_eq!(config.max_attempts, 0);
-        
+
         let backoff = config.backoff_for_attempt(0);
         assert_eq!(backoff.as_millis(), 0);
     }
@@ -222,16 +222,16 @@ mod tests {
 
         // Attempt 0: 100ms
         assert_eq!(config.backoff_for_attempt(0).as_millis(), 100);
-        
+
         // Attempt 1: 200ms
         assert_eq!(config.backoff_for_attempt(1).as_millis(), 200);
-        
+
         // Attempt 2: 400ms
         assert_eq!(config.backoff_for_attempt(2).as_millis(), 400);
-        
+
         // Attempt 3: 800ms
         assert_eq!(config.backoff_for_attempt(3).as_millis(), 800);
-        
+
         // Attempt 4: 1600ms capped to 1000ms
         assert_eq!(config.backoff_for_attempt(4).as_millis(), 1000);
     }
@@ -263,7 +263,7 @@ mod tests {
         // With jitter, backoff should vary (run multiple times)
         let backoff1 = config.backoff_for_attempt(0).as_millis();
         let backoff2 = config.backoff_for_attempt(0).as_millis();
-        
+
         // Should be within ±25% of 100ms = 75-125ms range
         assert!(backoff1 >= 75 && backoff1 <= 125);
         assert!(backoff2 >= 75 && backoff2 <= 125);
@@ -272,7 +272,7 @@ mod tests {
     #[test]
     fn test_should_retry_transient_errors() {
         let config = RetryConfig::production();
-        
+
         assert!(config.should_retry(&RetryableError::Timeout));
         assert!(config.should_retry(&RetryableError::NetworkError));
         assert!(config.should_retry(&RetryableError::RateLimited));
@@ -282,7 +282,7 @@ mod tests {
     #[test]
     fn test_should_not_retry_permanent_errors() {
         let config = RetryConfig::production();
-        
+
         assert!(!config.should_retry(&RetryableError::Permanent("bad input".into())));
     }
 
@@ -290,13 +290,15 @@ mod tests {
     async fn test_retry_executor_success_first_try() {
         let config = RetryConfig::production();
         let executor = RetryExecutor::new(config);
-        
+
         let mut call_count = 0;
-        let result = executor.execute(|| {
-            call_count += 1;
-            async { Ok::<_, RetryableError>(42) }
-        }).await;
-        
+        let result = executor
+            .execute(|| {
+                call_count += 1;
+                async { Ok::<_, RetryableError>(42) }
+            })
+            .await;
+
         assert_eq!(result.unwrap(), 42);
         assert_eq!(call_count, 1); // No retries needed
     }
@@ -311,19 +313,21 @@ mod tests {
             jitter: false,
         };
         let executor = RetryExecutor::new(config);
-        
+
         let mut call_count = 0;
-        let result = executor.execute(|| {
-            call_count += 1;
-            async move {
-                if call_count < 3 {
-                    Err(RetryableError::Timeout)
-                } else {
-                    Ok::<_, RetryableError>(42)
+        let result = executor
+            .execute(|| {
+                call_count += 1;
+                async move {
+                    if call_count < 3 {
+                        Err(RetryableError::Timeout)
+                    } else {
+                        Ok::<_, RetryableError>(42)
+                    }
                 }
-            }
-        }).await;
-        
+            })
+            .await;
+
         assert_eq!(result.unwrap(), 42);
         assert_eq!(call_count, 3); // Succeeded on 3rd attempt
     }
@@ -338,13 +342,15 @@ mod tests {
             jitter: false,
         };
         let executor = RetryExecutor::new(config);
-        
+
         let mut call_count = 0;
-        let result = executor.execute(|| {
-            call_count += 1;
-            async { Err::<i32, _>(RetryableError::Timeout) }
-        }).await;
-        
+        let result = executor
+            .execute(|| {
+                call_count += 1;
+                async { Err::<i32, _>(RetryableError::Timeout) }
+            })
+            .await;
+
         assert!(result.is_err());
         assert_eq!(call_count, 3); // Initial + 2 retries
     }
@@ -353,13 +359,15 @@ mod tests {
     async fn test_retry_executor_permanent_error_no_retry() {
         let config = RetryConfig::production();
         let executor = RetryExecutor::new(config);
-        
+
         let mut call_count = 0;
-        let result = executor.execute(|| {
-            call_count += 1;
-            async { Err::<i32, _>(RetryableError::Permanent("bad input".into())) }
-        }).await;
-        
+        let result = executor
+            .execute(|| {
+                call_count += 1;
+                async { Err::<i32, _>(RetryableError::Permanent("bad input".into())) }
+            })
+            .await;
+
         assert!(result.is_err());
         assert_eq!(call_count, 1); // No retries for permanent errors
     }

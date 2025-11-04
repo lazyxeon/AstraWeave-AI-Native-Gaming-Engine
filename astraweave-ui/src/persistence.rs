@@ -22,35 +22,32 @@ struct SettingsFile {
 
 /// Get the platform-specific config file path
 pub fn get_config_path() -> Result<PathBuf> {
-    let config_dir = dirs::config_dir()
-        .context("Failed to determine config directory")?;
-    
+    let config_dir = dirs::config_dir().context("Failed to determine config directory")?;
+
     let app_dir = config_dir.join("AstraWeave");
-    
+
     // Create directory if it doesn't exist
     if !app_dir.exists() {
-        fs::create_dir_all(&app_dir)
-            .context("Failed to create config directory")?;
+        fs::create_dir_all(&app_dir).context("Failed to create config directory")?;
     }
-    
+
     Ok(app_dir.join("settings.toml"))
 }
 
 /// Save settings to disk
 pub fn save_settings(settings: &SettingsState) -> Result<()> {
     let path = get_config_path()?;
-    
+
     let settings_file = SettingsFile {
         version: SETTINGS_VERSION,
         settings: settings.clone(),
     };
-    
-    let toml_string = toml::to_string_pretty(&settings_file)
-        .context("Failed to serialize settings to TOML")?;
-    
-    fs::write(&path, toml_string)
-        .context("Failed to write settings file")?;
-    
+
+    let toml_string =
+        toml::to_string_pretty(&settings_file).context("Failed to serialize settings to TOML")?;
+
+    fs::write(&path, toml_string).context("Failed to write settings file")?;
+
     log::info!("Settings saved to: {}", path.display());
     Ok(())
 }
@@ -72,25 +69,27 @@ pub fn load_settings() -> SettingsState {
 /// Internal function that returns errors instead of defaulting
 fn try_load_settings() -> Result<SettingsState> {
     let path = get_config_path()?;
-    
+
     if !path.exists() {
         anyhow::bail!("Settings file does not exist");
     }
-    
-    let toml_string = fs::read_to_string(&path)
-        .context("Failed to read settings file")?;
-    
-    let settings_file: SettingsFile = toml::from_str(&toml_string)
-        .context("Failed to parse settings TOML")?;
-    
+
+    let toml_string = fs::read_to_string(&path).context("Failed to read settings file")?;
+
+    let settings_file: SettingsFile =
+        toml::from_str(&toml_string).context("Failed to parse settings TOML")?;
+
     // Version migration support (for future versions)
     if settings_file.version != SETTINGS_VERSION {
-        log::warn!("Settings file version mismatch (found {}, expected {}), attempting migration", 
-                   settings_file.version, SETTINGS_VERSION);
+        log::warn!(
+            "Settings file version mismatch (found {}, expected {}), attempting migration",
+            settings_file.version,
+            SETTINGS_VERSION
+        );
         // For now, just use the settings as-is
         // In future: add migration logic here
     }
-    
+
     log::info!("Settings loaded from: {}", path.display());
     Ok(settings_file.settings)
 }
@@ -114,11 +113,11 @@ mod tests {
         settings.graphics.fullscreen = true;
         settings.audio.master_volume = 75.0;
         settings.controls.mouse_sensitivity = 2.5;
-        
+
         // Save settings
         let result = save_settings(&settings);
         assert!(result.is_ok());
-        
+
         // Load settings
         let loaded = load_settings();
         assert_eq!(loaded.graphics.fullscreen, true);

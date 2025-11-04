@@ -334,7 +334,7 @@ mod tests {
         let mut world = World::new();
         world.register_component::<Position>();
         world.register_component::<Velocity>();
-        
+
         let mut buffer = CommandBuffer::new();
         let entity = world.spawn();
 
@@ -374,10 +374,11 @@ mod tests {
         let mut world = World::new();
         world.register_component::<Position>();
         world.register_component::<Velocity>();
-        
+
         let mut buffer = CommandBuffer::new();
 
-        buffer.spawn()
+        buffer
+            .spawn()
             .with(Position { x: 5.0, y: 10.0 })
             .with(Velocity { x: 1.0, y: 2.0 });
 
@@ -405,7 +406,7 @@ mod tests {
     fn test_insert_during_iteration() {
         let mut world = World::new();
         world.register_component::<Position>();
-        
+
         let e1 = world.spawn();
         let e2 = world.spawn();
         let e3 = world.spawn();
@@ -427,7 +428,7 @@ mod tests {
         // the (unimplemented) type dispatch, so no panic occurs.
         let mut world = World::new();
         world.register_component::<Position>();
-        
+
         let mut buffer = CommandBuffer::new();
 
         let entity = world.spawn();
@@ -444,7 +445,7 @@ mod tests {
     fn test_command_ordering_preservation() {
         let mut world = World::new();
         world.register_component::<Position>();
-        
+
         let mut buffer = CommandBuffer::new();
 
         let e1 = world.spawn();

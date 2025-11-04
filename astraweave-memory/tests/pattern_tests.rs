@@ -1,8 +1,8 @@
 //! Integration tests for behavioral pattern detection and preference profiles
 
 use astraweave_memory::episode::{
-    CompanionResponse, Episode as GameEpisode, EpisodeCategory, EpisodeOutcome,
-    Observation, PlayerAction, ActionResult,
+    ActionResult, CompanionResponse, Episode as GameEpisode, EpisodeCategory, EpisodeOutcome,
+    Observation, PlayerAction,
 };
 use astraweave_memory::{
     MemoryStorage, PatternDetector, PlaystylePattern, PreferenceProfile, ProfileBuilder,
@@ -126,14 +126,8 @@ fn test_pattern_confidence_threshold() {
 
     // Store only 3 episodes (below minimum of 5)
     for i in 0..3 {
-        let episode = create_combat_episode(
-            &format!("ep_{}", i),
-            400.0,
-            50.0,
-            10000,
-            "support",
-            0.8,
-        );
+        let episode =
+            create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -150,11 +144,8 @@ fn test_social_pattern_detection() {
 
     // Store dialogue episodes
     for i in 0..6 {
-        let episode = create_dialogue_episode(
-            &format!("dialogue_{}", i),
-            "conversational_support",
-            0.9,
-        );
+        let episode =
+            create_dialogue_episode(&format!("dialogue_{}", i), "conversational_support", 0.9);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -176,10 +167,8 @@ fn test_action_sequence_detection() {
 
     // Create episode with repeating action sequence
     for ep_idx in 0..5 {
-        let mut episode = GameEpisode::new(
-            format!("seq_episode_{}", ep_idx),
-            EpisodeCategory::Combat,
-        );
+        let mut episode =
+            GameEpisode::new(format!("seq_episode_{}", ep_idx), EpisodeCategory::Combat);
         episode.outcome = Some(EpisodeOutcome {
             success_rating: 0.8,
             player_satisfaction: 0.75,
@@ -198,7 +187,11 @@ fn test_action_sequence_detection() {
                 (i * 1000) as u64,
                 Some(PlayerAction {
                     action_type: action_type.to_string(),
-                    target: if i != 1 { Some("enemy".to_string()) } else { None },
+                    target: if i != 1 {
+                        Some("enemy".to_string())
+                    } else {
+                        None
+                    },
                     parameters: serde_json::json!({}),
                 }),
                 None,
@@ -263,14 +256,8 @@ fn test_category_distribution() {
 
     // Store varied categories
     for i in 0..10 {
-        let episode = create_combat_episode(
-            &format!("combat_{}", i),
-            400.0,
-            50.0,
-            10000,
-            "support",
-            0.8,
-        );
+        let episode =
+            create_combat_episode(&format!("combat_{}", i), 400.0, 50.0, 10000, "support", 0.8);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -320,15 +307,19 @@ fn test_preference_profile_building() {
 
     assert_eq!(profile.episode_count, 15);
     assert!(profile.learning_confidence > 0.0);
-    
+
     // Debug output
     println!("Episode count: {}", profile.episode_count);
     println!("Learning confidence: {}", profile.learning_confidence);
     println!("Converged: {}", profile.converged);
     println!("Patterns: {}", profile.dominant_patterns.len());
     println!("Categories: {}", profile.preferred_categories.len());
-    
-    assert!(profile.converged, "Profile should converge with 15 episodes (confidence: {})", profile.learning_confidence);
+
+    assert!(
+        profile.converged,
+        "Profile should converge with 15 episodes (confidence: {})",
+        profile.learning_confidence
+    );
     assert!(!profile.dominant_patterns.is_empty());
     assert!(!profile.preferred_categories.is_empty());
 }
@@ -339,7 +330,8 @@ fn test_profile_convergence() {
 
     // Store only 10 episodes
     for i in 0..10 {
-        let episode = create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
+        let episode =
+            create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -351,7 +343,8 @@ fn test_profile_convergence() {
 
     // Add more episodes
     for i in 10..20 {
-        let episode = create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
+        let episode =
+            create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -372,7 +365,7 @@ fn test_action_recommendation() {
             50.0,
             10000,
             "healing_spell", // Consistent action
-            0.9,              // High effectiveness
+            0.9,             // High effectiveness
         );
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
@@ -393,7 +386,14 @@ fn test_category_preference_detection() {
 
     // Combat episodes with high quality
     for i in 0..8 {
-        let mut episode = create_combat_episode(&format!("combat_{}", i), 400.0, 50.0, 10000, "support", 0.85);
+        let mut episode = create_combat_episode(
+            &format!("combat_{}", i),
+            400.0,
+            50.0,
+            10000,
+            "support",
+            0.85,
+        );
         if let Some(ref mut outcome) = episode.outcome {
             outcome.success_rating = 0.9;
             outcome.player_satisfaction = 0.9;
@@ -451,7 +451,8 @@ fn test_learning_confidence_growth() {
 
     // Start with 5 episodes
     for i in 0..5 {
-        let episode = create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
+        let episode =
+            create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -460,7 +461,8 @@ fn test_learning_confidence_growth() {
 
     // Add more episodes
     for i in 5..15 {
-        let episode = create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
+        let episode =
+            create_combat_episode(&format!("ep_{}", i), 400.0, 50.0, 10000, "support", 0.8);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 

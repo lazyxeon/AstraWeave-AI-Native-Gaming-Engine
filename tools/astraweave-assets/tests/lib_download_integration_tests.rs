@@ -1,8 +1,7 @@
 /// Integration tests for lib.rs download workflows with HTTP mocking
 /// Target: 100% coverage of download success paths (lines 59-107 in lib.rs)
-/// 
+///
 /// These tests use mockito to simulate PolyHaven API responses and file downloads
-
 use astraweave_assets::config::AssetManifest;
 use astraweave_assets::ensure_asset::ensure_asset;
 use mockito::{Server, ServerGuard};
@@ -80,7 +79,12 @@ fn create_model_manifest(temp_dir: &TempDir, cache_dir: &Path, output_dir: &Path
     create_model_manifest_with_id(temp_dir, cache_dir, output_dir, "rock_formation_001")
 }
 
-fn create_model_manifest_with_id(temp_dir: &TempDir, cache_dir: &Path, output_dir: &Path, asset_id: &str) -> PathBuf {
+fn create_model_manifest_with_id(
+    temp_dir: &TempDir,
+    cache_dir: &Path,
+    output_dir: &Path,
+    asset_id: &str,
+) -> PathBuf {
     let manifest_path = temp_dir.path().join("model-manifest.toml");
 
     let mut models = HashMap::new();
@@ -169,7 +173,9 @@ async fn test_texture_download_success_mock_api() {
         .mock("GET", "/info/brick_wall_001")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"name":"Brick Wall 001","categories":["textures"],"tags":[],"download_count":100}"#)
+        .with_body(
+            r#"{"name":"Brick Wall 001","categories":["textures"],"tags":[],"download_count":100}"#,
+        )
         .create_async()
         .await;
 
@@ -197,7 +203,11 @@ async fn test_texture_download_success_mock_api() {
     std::env::remove_var("POLYHAVEN_BASE_URL");
 
     // Assert success
-    assert!(result.is_ok(), "Texture download should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Texture download should succeed: {:?}",
+        result.err()
+    );
     let paths = result.unwrap();
     assert!(!paths.is_empty(), "Should return downloaded file paths");
 
@@ -252,7 +262,9 @@ async fn test_hdri_download_success_mock_api() {
         .mock("GET", "/info/sunset_sky_001")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"name":"Sunset Sky 001","categories":["hdris"],"tags":[],"download_count":50}"#)
+        .with_body(
+            r#"{"name":"Sunset Sky 001","categories":["hdris"],"tags":[],"download_count":50}"#,
+        )
         .create_async()
         .await;
 
@@ -271,7 +283,11 @@ async fn test_hdri_download_success_mock_api() {
     std::env::remove_var("POLYHAVEN_BASE_URL");
 
     // Assert success
-    assert!(result.is_ok(), "HDRI download should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "HDRI download should succeed: {:?}",
+        result.err()
+    );
     let paths = result.unwrap();
     assert!(!paths.is_empty(), "Should return downloaded file paths");
 
@@ -343,7 +359,11 @@ async fn test_model_download_success_mock_api() {
     std::env::remove_var("POLYHAVEN_BASE_URL");
 
     // Assert success
-    assert!(result.is_ok(), "Model download should succeed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Model download should succeed: {:?}",
+        result.err()
+    );
     let paths = result.unwrap();
     assert!(!paths.is_empty(), "Should return downloaded file paths");
 
@@ -412,7 +432,8 @@ async fn test_model_download_api_rate_limit() {
     std::fs::create_dir_all(&cache_dir).unwrap();
     std::fs::create_dir_all(&output_dir).unwrap();
 
-    let manifest_path = create_model_manifest_with_id(&temp_dir, &cache_dir, &output_dir, "rock_rate_limit_001");
+    let manifest_path =
+        create_model_manifest_with_id(&temp_dir, &cache_dir, &output_dir, "rock_rate_limit_001");
 
     let mut server = setup_mock_server().await;
     let server_url = server.url();

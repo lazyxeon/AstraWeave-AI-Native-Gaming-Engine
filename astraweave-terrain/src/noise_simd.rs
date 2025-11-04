@@ -25,11 +25,11 @@ impl SimdHeightmapGenerator {
     ) -> anyhow::Result<Heightmap> {
         let mut heightmap_config = HeightmapConfig::default();
         heightmap_config.resolution = resolution;
-        
+
         // Pre-allocate heightmap data with exact capacity (no reallocs!)
         let total_points = (resolution * resolution) as usize;
         let mut heights = Vec::with_capacity(total_points);
-        
+
         let world_origin = chunk_id.to_world_pos(chunk_size);
         let step = chunk_size / (resolution - 1) as f32;
 
@@ -37,7 +37,7 @@ impl SimdHeightmapGenerator {
         for z in 0..resolution {
             let world_z = world_origin.z + z as f32 * step;
             let mut x = 0u32;
-            
+
             // Process 4 x-coordinates at once (unrolled inner loop)
             // LLVM will auto-vectorize this to SIMD instructions
             while x + 4 <= resolution {
@@ -73,11 +73,7 @@ impl SimdHeightmapGenerator {
     }
 
     /// Generate preview heightmap with optimization (for visualization/debugging)
-    pub fn generate_preview_simd(
-        noise: &TerrainNoise,
-        size: u32,
-        scale: f32,
-    ) -> Vec<f32> {
+    pub fn generate_preview_simd(noise: &TerrainNoise, size: u32, scale: f32) -> Vec<f32> {
         let mut heights = Vec::with_capacity((size * size) as usize);
         let step = scale / size as f32;
 
@@ -127,12 +123,8 @@ mod tests {
         let noise = TerrainNoise::new(&config, 12345);
         let chunk_id = ChunkId::new(0, 0);
 
-        let heightmap = SimdHeightmapGenerator::generate_heightmap_simd(
-            &noise,
-            chunk_id,
-            256.0,
-            64,
-        ).unwrap();
+        let heightmap =
+            SimdHeightmapGenerator::generate_heightmap_simd(&noise, chunk_id, 256.0, 64).unwrap();
 
         assert_eq!(heightmap.resolution(), 64);
         assert!(heightmap.max_height() >= heightmap.min_height());
@@ -144,29 +136,28 @@ mod tests {
         let noise = TerrainNoise::new(&config, 12345);
         let chunk_id = ChunkId::new(0, 0);
 
-        let heightmap1 = SimdHeightmapGenerator::generate_heightmap_simd(
-            &noise,
-            chunk_id,
-            256.0,
-            128,
-        ).unwrap();
+        let heightmap1 =
+            SimdHeightmapGenerator::generate_heightmap_simd(&noise, chunk_id, 256.0, 128).unwrap();
 
-        let heightmap2 = SimdHeightmapGenerator::generate_heightmap_simd(
-            &noise,
-            chunk_id,
-            256.0,
-            128,
-        ).unwrap();
+        let heightmap2 =
+            SimdHeightmapGenerator::generate_heightmap_simd(&noise, chunk_id, 256.0, 128).unwrap();
 
         // Results should be identical (deterministic)
         assert_eq!(heightmap1.resolution(), heightmap2.resolution());
-        
+
         // Sample a few points to verify consistency
         for i in 0..heightmap1.resolution() {
             for j in 0..heightmap1.resolution() {
                 let h1 = heightmap1.get_height(i, j);
                 let h2 = heightmap2.get_height(i, j);
-                assert!((h1 - h2).abs() < 0.001, "Heights differ at ({}, {}): {} vs {}", i, j, h1, h2);
+                assert!(
+                    (h1 - h2).abs() < 0.001,
+                    "Heights differ at ({}, {}): {} vs {}",
+                    i,
+                    j,
+                    h1,
+                    h2
+                );
             }
         }
     }
@@ -187,19 +178,15 @@ mod tests {
         let chunk_id = ChunkId::new(0, 0);
 
         // Generate with optimized path
-        let simd_heightmap = SimdHeightmapGenerator::generate_heightmap_simd(
-            &noise,
-            chunk_id,
-            256.0,
-            64,
-        ).unwrap();
+        let simd_heightmap =
+            SimdHeightmapGenerator::generate_heightmap_simd(&noise, chunk_id, 256.0, 64).unwrap();
 
         // Generate with scalar (original method)
         let scalar_heightmap = noise.generate_heightmap(chunk_id, 256.0, 64).unwrap();
 
         // Results should match (within floating point tolerance)
         assert_eq!(simd_heightmap.resolution(), scalar_heightmap.resolution());
-        
+
         let mut max_diff = 0.0f32;
         for i in 0..64 {
             for j in 0..64 {
@@ -209,8 +196,12 @@ mod tests {
                 max_diff = max_diff.max(diff);
             }
         }
-        
+
         // Allow small numerical differences due to different computation order
-        assert!(max_diff < 0.01, "Max difference between optimized and scalar: {}", max_diff);
+        assert!(
+            max_diff < 0.01,
+            "Max difference between optimized and scalar: {}",
+            max_diff
+        );
     }
 }

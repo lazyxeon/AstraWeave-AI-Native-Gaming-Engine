@@ -149,7 +149,11 @@ fn test_episode_to_memory_conversion() {
     // Verify spatial-temporal context
     assert!(memory.content.context.duration.is_some());
     // Note: Duration comes from outcome.duration_ms since episode completes instantly in tests
-    let duration = memory.content.context.duration.expect("Should have duration");
+    let duration = memory
+        .content
+        .context
+        .duration
+        .expect("Should have duration");
     assert!(duration <= 180_000); // May be actual elapsed time (small) or outcome duration
     assert_eq!(memory.content.context.participants.len(), 2); // player + companion
 
@@ -307,7 +311,9 @@ fn test_episode_analysis_helpers() {
     assert_eq!(episode.action_diversity(), 4); // melee, dodge, ranged, potion
 
     // Test average health
-    let avg_health = episode.average_player_health().expect("Should have average");
+    let avg_health = episode
+        .average_player_health()
+        .expect("Should have average");
     // Expected: (1.0 + 0.9 + 0.8 + 0.7 + 0.6 + 0.5 + 0.4) / 7 = 0.7
     assert!((avg_health - 0.7).abs() < 0.01);
 }
@@ -327,7 +333,11 @@ fn test_outcome_quality_scoring() {
     };
 
     let quality = high_quality.quality_score();
-    assert!(quality > 0.95, "Expected very high quality, got {}", quality);
+    assert!(
+        quality > 0.95,
+        "Expected very high quality, got {}",
+        quality
+    );
 
     // Test low quality outcome
     let low_quality = EpisodeOutcome {

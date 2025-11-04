@@ -121,8 +121,8 @@ pub struct CMemory {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::cooldowns::CooldownKey;
+    use super::*;
 
     #[test]
     fn test_cpos_default() {
@@ -165,7 +165,7 @@ mod tests {
     fn test_cooldown_key_from_string() {
         let key = CooldownKey::from("throw:smoke".to_string());
         assert_eq!(key, CooldownKey::ThrowSmoke);
-        
+
         let key2 = CooldownKey::from("other".to_string());
         assert_eq!(key2, CooldownKey::Custom("other".into()));
     }
@@ -174,7 +174,7 @@ mod tests {
     fn test_cooldown_key_display() {
         let key1 = CooldownKey::ThrowSmoke;
         assert_eq!(format!("{}", key1), "throw:smoke");
-        
+
         let key2 = CooldownKey::Custom("fireball".into());
         assert_eq!(format!("{}", key2), "fireball");
     }

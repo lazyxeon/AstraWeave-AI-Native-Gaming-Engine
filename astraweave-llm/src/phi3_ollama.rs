@@ -52,16 +52,16 @@ use crate::LlmClient;
 pub struct Phi3Ollama {
     /// Ollama API endpoint (default: http://localhost:11434)
     pub url: String,
-    
+
     /// Model name (e.g., "phi3:medium")
     pub model: String,
-    
+
     /// Temperature for sampling (0.0 = deterministic, 1.0 = creative)
     pub temperature: f32,
-    
+
     /// Maximum tokens to generate
     pub max_tokens: usize,
-    
+
     /// System prompt for game AI context
     pub system_prompt: Option<String>,
 }
@@ -87,7 +87,7 @@ impl Phi3Ollama {
             system_prompt: Some(DEFAULT_SYSTEM_PROMPT.to_string()),
         }
     }
-    
+
     /// Create Phi-3 client for localhost (convenience method)
     ///
     /// # Example
@@ -98,7 +98,7 @@ impl Phi3Ollama {
     pub fn localhost() -> Self {
         Self::new("http://localhost:11434", "phi3:medium")
     }
-    
+
     /// Create optimized Phi-3 client for low-latency game AI
     ///
     /// Uses phi3:game model (mini variant optimized for 6GB VRAM).
@@ -114,7 +114,7 @@ impl Phi3Ollama {
             .with_temperature(0.5)
             .with_max_tokens(128)
     }
-    
+
     /// Create ultra-fast Phi-3 client using the mini model
     ///
     /// Uses phi3:3.8b (mini) for fastest inference. Trade-off: slightly lower quality.
@@ -130,57 +130,61 @@ impl Phi3Ollama {
             .with_temperature(0.5)
             .with_max_tokens(128)
     }
-    
+
     /// Set temperature (0.0 = deterministic, 1.0 = creative)
     pub fn with_temperature(mut self, temp: f32) -> Self {
         self.temperature = temp;
         self
     }
-    
+
     /// Set max tokens to generate
     pub fn with_max_tokens(mut self, max: usize) -> Self {
         self.max_tokens = max;
         self
     }
-    
+
     /// Set custom system prompt
     pub fn with_system_prompt(mut self, prompt: impl Into<String>) -> Self {
         self.system_prompt = Some(prompt.into());
         self
     }
-    
+
     /// Clear system prompt (use only user messages)
     pub fn without_system_prompt(mut self) -> Self {
         self.system_prompt = None;
         self
     }
-    
+
     /// Check if Ollama server is running and model is available
     pub async fn health_check(&self) -> Result<HealthStatus> {
         let client = reqwest::Client::new();
-        
+
         // Check server is running
         let server_url = format!("{}/api/tags", self.url);
-        let response = client.get(&server_url)
+        let response = client
+            .get(&server_url)
             .send()
             .await
             .context("Failed to connect to Ollama server")?;
-        
+
         if !response.status().is_success() {
             anyhow::bail!("Ollama server returned error: {}", response.status());
         }
-        
+
         // Parse available models
-        let body: serde_json::Value = response.json().await
+        let body: serde_json::Value = response
+            .json()
+            .await
             .context("Failed to parse Ollama response")?;
-        
-        let models = body["models"].as_array()
+
+        let models = body["models"]
+            .as_array()
             .context("Invalid response from Ollama")?;
-        
-        let model_available = models.iter().any(|m| {
-            m["name"].as_str().unwrap_or("") == self.model
-        });
-        
+
+        let model_available = models
+            .iter()
+            .any(|m| m["name"].as_str().unwrap_or("") == self.model);
+
         Ok(HealthStatus {
             server_running: true,
             model_available,
@@ -203,7 +207,7 @@ impl HealthStatus {
     pub fn is_ready(&self) -> bool {
         self.server_running && self.model_available
     }
-    
+
     pub fn error_message(&self) -> Option<String> {
         if !self.server_running {
             Some("Ollama server not running. Start with: ollama serve".to_string())
@@ -241,22 +245,22 @@ impl LlmClient for Phi3Ollama {
         static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
         let client = CLIENT.get_or_init(|| {
             reqwest::Client::builder()
-                .pool_max_idle_per_host(10)  // Keep connections alive
+                .pool_max_idle_per_host(10) // Keep connections alive
                 .pool_idle_timeout(std::time::Duration::from_secs(90))
-                .timeout(std::time::Duration::from_secs(120))  // 2 min timeout
+                .timeout(std::time::Duration::from_secs(120)) // 2 min timeout
                 .build()
                 .expect("Failed to create HTTP client")
         });
-        
+
         let url = format!("{}/api/generate", self.url);
-        
+
         // Build request with system prompt if configured
         let full_prompt = if let Some(ref system) = self.system_prompt {
             format!("{}\n\n{}", system, prompt)
         } else {
             prompt.to_string()
         };
-        
+
         let body = json!({
             "model": self.model,
             "prompt": full_prompt,
@@ -267,7 +271,7 @@ impl LlmClient for Phi3Ollama {
                 "num_ctx": 4096,  // Reduced context window for speed
             }
         });
-        
+
         // ═══ PHASE 7 DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
         eprintln!("║           PROMPT SENT TO PHI-3 (via Ollama)                  ║");
@@ -279,30 +283,33 @@ impl LlmClient for Phi3Ollama {
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
         eprintln!("{}", full_prompt);
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
-        
+
         tracing::debug!("Sending request to Ollama: {}", self.model);
         let start = std::time::Instant::now();
-        
-        let response = client.post(&url)
+
+        let response = client
+            .post(&url)
             .json(&body)
             .send()
             .await
             .context("Failed to send request to Ollama")?;
-        
+
         if !response.status().is_success() {
             anyhow::bail!("Ollama returned error: {}", response.status());
         }
-        
-        let response_json: serde_json::Value = response.json().await
+
+        let response_json: serde_json::Value = response
+            .json()
+            .await
             .context("Failed to parse Ollama response")?;
-        
+
         let text = response_json["response"]
             .as_str()
             .context("Missing 'response' field in Ollama output")?
             .to_string();
-        
+
         let duration = start.elapsed();
-        
+
         // ═══ PHASE 7 DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
         eprintln!("║           PHI-3 RAW RESPONSE (via Ollama)                    ║");
@@ -312,9 +319,13 @@ impl LlmClient for Phi3Ollama {
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
         eprintln!("{}", text);
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
-        
-        tracing::debug!("Received {} chars from Ollama in {:.2}s", text.len(), duration.as_secs_f32());
-        
+
+        tracing::debug!(
+            "Received {} chars from Ollama in {:.2}s",
+            text.len(),
+            duration.as_secs_f32()
+        );
+
         Ok(text)
     }
 }
@@ -322,7 +333,7 @@ impl LlmClient for Phi3Ollama {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_phi3_ollama_creation() {
         let client = Phi3Ollama::new("http://localhost:11434", "phi3:medium");
@@ -332,32 +343,32 @@ mod tests {
         assert_eq!(client.max_tokens, 512);
         assert!(client.system_prompt.is_some());
     }
-    
+
     #[test]
     fn test_localhost_convenience() {
         let client = Phi3Ollama::localhost();
         assert_eq!(client.url, "http://localhost:11434");
         assert_eq!(client.model, "phi3:medium");
     }
-    
+
     #[test]
     fn test_builder_pattern() {
         let client = Phi3Ollama::localhost()
             .with_temperature(0.5)
             .with_max_tokens(256)
             .without_system_prompt();
-        
+
         assert_eq!(client.temperature, 0.5);
         assert_eq!(client.max_tokens, 256);
         assert!(client.system_prompt.is_none());
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires Ollama running
     async fn test_health_check() {
         let client = Phi3Ollama::localhost();
         let health = client.health_check().await;
-        
+
         // If Ollama is running, this should succeed
         if let Ok(status) = health {
             assert!(status.server_running);
@@ -365,29 +376,31 @@ mod tests {
             println!("Model available: {}", status.model_available);
         }
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires Ollama + phi3:medium
     async fn test_complete() {
         let client = Phi3Ollama::localhost();
-        
+
         // Check health first
         let health = client.health_check().await.expect("Health check failed");
         if !health.is_ready() {
             panic!("{}", health.error_message().unwrap());
         }
-        
+
         let prompt = "You are at position (5,5). Enemy at (10,8). Generate a tactical plan.";
-        let response = client.complete(prompt).await
-            .expect("Completion failed");
-        
+        let response = client.complete(prompt).await.expect("Completion failed");
+
         assert!(!response.is_empty());
         println!("Phi-3 response:\n{}", response);
-        
+
         // Try to parse as JSON
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&response);
         if let Ok(json) = parsed {
-            println!("Parsed JSON: {}", serde_json::to_string_pretty(&json).unwrap());
+            println!(
+                "Parsed JSON: {}",
+                serde_json::to_string_pretty(&json).unwrap()
+            );
         }
     }
 }

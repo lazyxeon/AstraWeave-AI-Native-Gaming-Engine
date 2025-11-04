@@ -32,13 +32,9 @@ fn bench_goap_planning_simple(c: &mut Criterion) {
         ];
 
         let planner = GoapPlanner::new();
-        
+
         b.iter(|| {
-            let plan = planner.plan(
-                black_box(&initial),
-                black_box(&goal),
-                black_box(&actions),
-            );
+            let plan = planner.plan(black_box(&initial), black_box(&goal), black_box(&actions));
             black_box(plan)
         });
     });
@@ -108,13 +104,9 @@ fn bench_goap_planning_moderate(c: &mut Criterion) {
         ];
 
         let planner = GoapPlanner::new();
-        
+
         b.iter(|| {
-            let plan = planner.plan(
-                black_box(&initial),
-                black_box(&goal),
-                black_box(&actions),
-            );
+            let plan = planner.plan(black_box(&initial), black_box(&goal), black_box(&actions));
             black_box(plan)
         });
     });
@@ -146,26 +138,71 @@ fn bench_goap_planning_complex(c: &mut Criterion) {
 
         // 20 tactical actions
         let actions = vec![
-            GoapAction::new("pick_up_weapon").with_cost(1.0).with_effect("has_weapon", true),
-            GoapAction::new("pick_up_ammo").with_cost(1.0).with_effect("has_ammo", true),
-            GoapAction::new("move_to_cover").with_cost(2.0).with_effect("at_cover", true),
-            GoapAction::new("use_medkit").with_cost(3.0).with_precondition("low_health", true).with_effect("low_health", false),
-            GoapAction::new("reload_weapon").with_cost(1.5).with_precondition("has_weapon", true).with_effect("weapon_loaded", true),
-            GoapAction::new("aim_at_enemy").with_cost(0.5).with_precondition("has_weapon", true).with_effect("aiming", true),
-            GoapAction::new("sprint").with_cost(1.0).with_effect("moving_fast", true),
-            GoapAction::new("crouch").with_cost(0.5).with_effect("crouched", true),
-            GoapAction::new("scan_area").with_cost(1.0).with_effect("area_scanned", true),
-            GoapAction::new("call_for_backup").with_cost(2.0).with_effect("backup_called", true),
-            GoapAction::new("throw_grenade").with_cost(2.5).with_precondition("has_weapon", true).with_effect("grenade_thrown", true),
-            GoapAction::new("take_tactical_position").with_cost(1.5).with_effect("tactical_position", true),
-            GoapAction::new("suppress_fire").with_cost(2.0).with_precondition("has_ammo", true).with_effect("suppressing", true),
-            GoapAction::new("flank_enemy").with_cost(3.0).with_effect("flanking", true),
-            GoapAction::new("check_corners").with_cost(1.0).with_effect("corners_clear", true),
-            GoapAction::new("mark_target").with_cost(0.5).with_effect("target_marked", true),
-            GoapAction::new("switch_weapon").with_cost(1.0).with_precondition("has_weapon", true).with_effect("weapon_switched", true),
-            GoapAction::new("deploy_shield").with_cost(2.0).with_effect("shield_deployed", true),
-            GoapAction::new("prepare_ambush").with_cost(2.5).with_effect("ambush_ready", true),
-            GoapAction::new("confirm_ready").with_cost(0.5)
+            GoapAction::new("pick_up_weapon")
+                .with_cost(1.0)
+                .with_effect("has_weapon", true),
+            GoapAction::new("pick_up_ammo")
+                .with_cost(1.0)
+                .with_effect("has_ammo", true),
+            GoapAction::new("move_to_cover")
+                .with_cost(2.0)
+                .with_effect("at_cover", true),
+            GoapAction::new("use_medkit")
+                .with_cost(3.0)
+                .with_precondition("low_health", true)
+                .with_effect("low_health", false),
+            GoapAction::new("reload_weapon")
+                .with_cost(1.5)
+                .with_precondition("has_weapon", true)
+                .with_effect("weapon_loaded", true),
+            GoapAction::new("aim_at_enemy")
+                .with_cost(0.5)
+                .with_precondition("has_weapon", true)
+                .with_effect("aiming", true),
+            GoapAction::new("sprint")
+                .with_cost(1.0)
+                .with_effect("moving_fast", true),
+            GoapAction::new("crouch")
+                .with_cost(0.5)
+                .with_effect("crouched", true),
+            GoapAction::new("scan_area")
+                .with_cost(1.0)
+                .with_effect("area_scanned", true),
+            GoapAction::new("call_for_backup")
+                .with_cost(2.0)
+                .with_effect("backup_called", true),
+            GoapAction::new("throw_grenade")
+                .with_cost(2.5)
+                .with_precondition("has_weapon", true)
+                .with_effect("grenade_thrown", true),
+            GoapAction::new("take_tactical_position")
+                .with_cost(1.5)
+                .with_effect("tactical_position", true),
+            GoapAction::new("suppress_fire")
+                .with_cost(2.0)
+                .with_precondition("has_ammo", true)
+                .with_effect("suppressing", true),
+            GoapAction::new("flank_enemy")
+                .with_cost(3.0)
+                .with_effect("flanking", true),
+            GoapAction::new("check_corners")
+                .with_cost(1.0)
+                .with_effect("corners_clear", true),
+            GoapAction::new("mark_target")
+                .with_cost(0.5)
+                .with_effect("target_marked", true),
+            GoapAction::new("switch_weapon")
+                .with_cost(1.0)
+                .with_precondition("has_weapon", true)
+                .with_effect("weapon_switched", true),
+            GoapAction::new("deploy_shield")
+                .with_cost(2.0)
+                .with_effect("shield_deployed", true),
+            GoapAction::new("prepare_ambush")
+                .with_cost(2.5)
+                .with_effect("ambush_ready", true),
+            GoapAction::new("confirm_ready")
+                .with_cost(0.5)
                 .with_precondition("has_weapon", true)
                 .with_precondition("has_ammo", true)
                 .with_precondition("at_cover", true)
@@ -173,13 +210,9 @@ fn bench_goap_planning_complex(c: &mut Criterion) {
         ];
 
         let planner = GoapPlanner::new();
-        
+
         b.iter(|| {
-            let plan = planner.plan(
-                black_box(&initial),
-                black_box(&goal),
-                black_box(&actions),
-            );
+            let plan = planner.plan(black_box(&initial), black_box(&goal), black_box(&actions));
             black_box(plan)
         });
     });
@@ -196,11 +229,7 @@ fn bench_goal_evaluation(c: &mut Criterion) {
 
         let goal = GoapGoal::new(
             "combat_ready",
-            WorldState::from_facts(&[
-                ("has_weapon", true),
-                ("has_ammo", true),
-                ("at_cover", true),
-            ]),
+            WorldState::from_facts(&[("has_weapon", true), ("has_ammo", true), ("at_cover", true)]),
         )
         .with_priority(10.0);
 
@@ -262,11 +291,7 @@ fn bench_goap_caching_cold(c: &mut Criterion) {
         b.iter(|| {
             // Create new planner each iteration (cold cache)
             let mut planner = CachedGoapPlanner::new(100);
-            let plan = planner.plan(
-                black_box(&initial),
-                black_box(&goal),
-                black_box(&actions),
-            );
+            let plan = planner.plan(black_box(&initial), black_box(&goal), black_box(&actions));
             black_box(plan)
         });
     });
@@ -278,7 +303,7 @@ fn bench_goap_caching_warm(c: &mut Criterion) {
         // Pre-warm cache with 10 common scenarios
         let mut planner = CachedGoapPlanner::new(100);
         let scenarios = create_warm_cache_scenarios();
-        
+
         // Prime cache
         for (state, goal, actions) in &scenarios {
             planner.plan(state, goal, actions);
@@ -290,18 +315,14 @@ fn bench_goap_caching_warm(c: &mut Criterion) {
             iteration += 1;
             let scenario_idx = if iteration % 10 == 0 {
                 // 10% miss - new scenario
-                scenarios.len() % 20  // Use modulo to avoid out of bounds
+                scenarios.len() % 20 // Use modulo to avoid out of bounds
             } else {
                 // 90% hit - cached scenario
                 iteration % scenarios.len()
             };
-            
+
             let (state, goal, actions) = &scenarios[scenario_idx % scenarios.len()];
-            let plan = planner.plan(
-                black_box(state),
-                black_box(goal),
-                black_box(actions),
-            );
+            let plan = planner.plan(black_box(state), black_box(goal), black_box(actions));
             black_box(plan)
         });
     });
@@ -310,7 +331,7 @@ fn bench_goap_caching_warm(c: &mut Criterion) {
 /// Benchmark cache hit vs miss comparison
 fn bench_goap_cache_hit_vs_miss(c: &mut Criterion) {
     let mut group = c.benchmark_group("goap_cache_comparison");
-    
+
     let initial = WorldState::from_facts(&[
         ("has_weapon", false),
         ("has_ammo", false),
@@ -328,16 +349,12 @@ fn bench_goap_cache_hit_vs_miss(c: &mut Criterion) {
     group.bench_function("cache_miss", |b| {
         let mut planner = CachedGoapPlanner::new(100);
         planner.plan(&initial, &goal, &actions); // Prime cache
-        
+
         // Clear cache to force miss
         planner.clear_cache();
-        
+
         b.iter(|| {
-            let plan = planner.plan(
-                black_box(&initial),
-                black_box(&goal),
-                black_box(&actions),
-            );
+            let plan = planner.plan(black_box(&initial), black_box(&goal), black_box(&actions));
             planner.clear_cache(); // Force miss every iteration
             black_box(plan)
         });
@@ -347,13 +364,9 @@ fn bench_goap_cache_hit_vs_miss(c: &mut Criterion) {
     group.bench_function("cache_hit", |b| {
         let mut planner = CachedGoapPlanner::new(100);
         planner.plan(&initial, &goal, &actions); // Prime cache
-        
+
         b.iter(|| {
-            let plan = planner.plan(
-                black_box(&initial),
-                black_box(&goal),
-                black_box(&actions),
-            );
+            let plan = planner.plan(black_box(&initial), black_box(&goal), black_box(&actions));
             black_box(plan)
         });
     });
@@ -368,12 +381,18 @@ fn create_complex_action_set() -> Vec<GoapAction> {
         GoapAction::new("pick_up_ammo").with_effect("has_ammo", true),
         GoapAction::new("move_to_cover").with_effect("at_cover", true),
         GoapAction::new("use_medkit").with_effect("low_health", false),
-        GoapAction::new("reload").with_precondition("has_ammo", true).with_effect("weapon_loaded", true),
-        GoapAction::new("aim").with_precondition("has_weapon", true).with_effect("aiming", true),
+        GoapAction::new("reload")
+            .with_precondition("has_ammo", true)
+            .with_effect("weapon_loaded", true),
+        GoapAction::new("aim")
+            .with_precondition("has_weapon", true)
+            .with_effect("aiming", true),
         GoapAction::new("sprint").with_effect("moving_fast", true),
         GoapAction::new("crouch").with_effect("crouched", true),
         GoapAction::new("scan_area").with_effect("area_scanned", true),
-        GoapAction::new("throw_grenade").with_precondition("has_grenade", true).with_effect("grenade_thrown", true),
+        GoapAction::new("throw_grenade")
+            .with_precondition("has_grenade", true)
+            .with_effect("grenade_thrown", true),
         GoapAction::new("find_grenade").with_effect("has_grenade", true),
         GoapAction::new("call_backup").with_effect("backup_called", true),
         GoapAction::new("flank_enemy").with_effect("flanking", true),
@@ -385,12 +404,15 @@ fn create_complex_action_set() -> Vec<GoapAction> {
 // Helper function to create warm cache scenarios
 fn create_warm_cache_scenarios() -> Vec<(WorldState, GoapGoal, Vec<GoapAction>)> {
     let actions = create_complex_action_set();
-    
+
     vec![
         // Scenario 1: Need weapon and cover
         (
             WorldState::from_facts(&[("has_weapon", false), ("at_cover", false)]),
-            GoapGoal::new("ready", WorldState::from_facts(&[("has_weapon", true), ("at_cover", true)])),
+            GoapGoal::new(
+                "ready",
+                WorldState::from_facts(&[("has_weapon", true), ("at_cover", true)]),
+            ),
             actions.clone(),
         ),
         // Scenario 2: Need ammo
@@ -408,13 +430,19 @@ fn create_warm_cache_scenarios() -> Vec<(WorldState, GoapGoal, Vec<GoapAction>)>
         // Scenario 4: Need grenade
         (
             WorldState::from_facts(&[("has_grenade", false)]),
-            GoapGoal::new("grenade_ready", WorldState::from_facts(&[("has_grenade", true)])),
+            GoapGoal::new(
+                "grenade_ready",
+                WorldState::from_facts(&[("has_grenade", true)]),
+            ),
             actions.clone(),
         ),
         // Scenario 5: Already at goal (cache empty plan)
         (
             WorldState::from_facts(&[("has_weapon", true), ("at_cover", true)]),
-            GoapGoal::new("ready", WorldState::from_facts(&[("has_weapon", true), ("at_cover", true)])),
+            GoapGoal::new(
+                "ready",
+                WorldState::from_facts(&[("has_weapon", true), ("at_cover", true)]),
+            ),
             actions.clone(),
         ),
     ]

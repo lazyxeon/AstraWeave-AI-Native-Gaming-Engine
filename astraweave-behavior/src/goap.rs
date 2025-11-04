@@ -219,7 +219,7 @@ impl GoapPlanner {
     ) -> Option<Vec<GoapAction>> {
         #[cfg(feature = "profiling")]
         span!("AI::GOAP::plan");
-        
+
         // Early exit if goal already satisfied
         if goal.is_satisfied(current_state) {
             return Some(Vec::new());

@@ -4,16 +4,15 @@
 /// Uses token-based Jaccard similarity for fast approximate matching.
 ///
 /// Target: 70%+ cache hit rate with similarity matching enabled
-
 use std::collections::HashSet;
 
 /// Similarity threshold for cache hits (0.0-1.0)
 pub const DEFAULT_SIMILARITY_THRESHOLD: f32 = 0.85;
 
 /// Compute Jaccard similarity between two sets of tokens
-/// 
+///
 /// Jaccard similarity = |A ∩ B| / |A ∪ B|
-/// 
+///
 /// This is much faster than embedding-based similarity (no GPU required)
 /// and provides good results for prompt caching use cases.
 pub fn jaccard_similarity(tokens_a: &[&str], tokens_b: &[&str]) -> f32 {
@@ -38,7 +37,7 @@ pub fn jaccard_similarity(tokens_a: &[&str], tokens_b: &[&str]) -> f32 {
 }
 
 /// Tokenize prompt text into words
-/// 
+///
 /// Simple whitespace + punctuation tokenization.
 /// Good enough for cache similarity without heavyweight NLP.
 pub fn tokenize(text: &str) -> Vec<String> {
@@ -49,16 +48,15 @@ pub fn tokenize(text: &str) -> Vec<String> {
 }
 
 /// Extract key tokens from prompt (filter common words)
-/// 
+///
 /// Focuses on domain-specific terms for better similarity matching.
 pub fn extract_key_tokens(text: &str) -> Vec<String> {
     let stopwords: HashSet<&str> = [
-        "a", "an", "the", "is", "are", "was", "were", "be", "been", "being",
-        "have", "has", "had", "do", "does", "did", "will", "would", "should",
-        "could", "may", "might", "can", "this", "that", "these", "those",
-        "i", "you", "he", "she", "it", "we", "they", "what", "which", "who",
-        "when", "where", "why", "how", "and", "or", "but", "if", "for", "to",
-        "of", "in", "on", "at", "by", "with", "from", "as",
+        "a", "an", "the", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had",
+        "do", "does", "did", "will", "would", "should", "could", "may", "might", "can", "this",
+        "that", "these", "those", "i", "you", "he", "she", "it", "we", "they", "what", "which",
+        "who", "when", "where", "why", "how", "and", "or", "but", "if", "for", "to", "of", "in",
+        "on", "at", "by", "with", "from", "as",
     ]
     .iter()
     .copied()
@@ -72,7 +70,7 @@ pub fn extract_key_tokens(text: &str) -> Vec<String> {
 }
 
 /// Compute similarity between two prompts
-/// 
+///
 /// Uses key token extraction + Jaccard similarity.
 /// Returns score in range 0.0-1.0.
 pub fn prompt_similarity(prompt_a: &str, prompt_b: &str) -> f32 {
@@ -132,7 +130,10 @@ mod tests {
     fn test_tokenize_basic() {
         let text = "Move to position (5, 10) and attack!";
         let tokens = tokenize(text);
-        assert_eq!(tokens, vec!["move", "to", "position", "5", "10", "and", "attack"]);
+        assert_eq!(
+            tokens,
+            vec!["move", "to", "position", "5", "10", "and", "attack"]
+        );
     }
 
     #[test]
@@ -186,14 +187,10 @@ mod tests {
         let prompt_a = "Move to position 10, scan area, then attack if enemy spotted";
         let prompt_b = "Move to position 10, scan surroundings, then engage if threat detected";
         let similarity = prompt_similarity(prompt_a, prompt_b);
-        
+
         // Similar intent: move→scan→conditional attack
         // Realistic expectation: moderate similarity (0.3-0.5)
         // For production, would likely need threshold around 0.75-0.85 for safety
-        assert!(
-            similarity >= 0.3,
-            "Expected ≥0.3, got {:.2}",
-            similarity
-        );
+        assert!(similarity >= 0.3, "Expected ≥0.3, got {:.2}", similarity);
     }
 }

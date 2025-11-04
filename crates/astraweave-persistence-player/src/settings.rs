@@ -1,6 +1,6 @@
 //! Settings application and integration
 
-use crate::{GameSettings, GraphicsSettings, AudioSettings, ControlSettings};
+use crate::{AudioSettings, ControlSettings, GameSettings, GraphicsSettings};
 
 impl GameSettings {
     /// Apply all settings to game systems
@@ -13,7 +13,7 @@ impl GameSettings {
 
 impl GraphicsSettings {
     /// Apply graphics settings to renderer
-    /// 
+    ///
     /// TODO: Integrate with Phase 8.2 renderer when available
     pub fn apply(&self) {
         println!("📊 Graphics Settings Applied:");
@@ -26,7 +26,7 @@ impl GraphicsSettings {
 
 impl AudioSettings {
     /// Apply audio settings to audio system
-    /// 
+    ///
     /// TODO: Integrate with Phase 8.4 audio mixer when available
     pub fn apply(&self) {
         println!("🔊 Audio Settings Applied:");
@@ -40,7 +40,7 @@ impl AudioSettings {
 
 impl ControlSettings {
     /// Apply control settings to input system
-    /// 
+    ///
     /// TODO: Integrate with input system when available
     pub fn apply(&self) {
         println!("🎮 Control Settings Applied:");

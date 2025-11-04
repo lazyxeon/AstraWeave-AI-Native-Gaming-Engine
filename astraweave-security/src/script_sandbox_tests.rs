@@ -82,11 +82,7 @@ mod script_sandbox_tests {
         let context = HashMap::new();
 
         // Test different return types
-        let scripts = vec![
-            ("42", 42i64),
-            ("10 + 32", 42i64),
-            ("21 * 2", 42i64),
-        ];
+        let scripts = vec![("42", 42i64), ("10 + 32", 42i64), ("21 * 2", 42i64)];
 
         for (script, expected) in scripts {
             let result = execute_script_sandboxed(script, &sandbox, context.clone()).await;
@@ -124,10 +120,10 @@ mod script_sandbox_tests {
         assert!(result.is_err(), "Syntax error should be caught");
         let error_msg = result.unwrap_err().to_string();
         assert!(
-            error_msg.contains("Parse") 
-            || error_msg.contains("syntax")
-            || error_msg.contains("Unexpected")
-            || error_msg.contains("expected"),
+            error_msg.contains("Parse")
+                || error_msg.contains("syntax")
+                || error_msg.contains("Unexpected")
+                || error_msg.contains("expected"),
             "Error should mention syntax/parse issue, got: {}",
             error_msg
         );
@@ -157,7 +153,9 @@ mod script_sandbox_tests {
         assert!(result.is_err(), "Long-running script should timeout");
         let error_msg = result.unwrap_err().to_string();
         assert!(
-            error_msg.contains("elapsed") || error_msg.contains("timeout") || error_msg.contains("operations"),
+            error_msg.contains("elapsed")
+                || error_msg.contains("timeout")
+                || error_msg.contains("operations"),
             "Error should mention timeout or operation limit, got: {}",
             error_msg
         );
@@ -377,9 +375,9 @@ mod script_sandbox_tests {
         assert!(result.is_err(), "File system access should be blocked");
         let error_msg = result.unwrap_err().to_string();
         assert!(
-            error_msg.contains("open") 
-            || error_msg.contains("not found")
-            || error_msg.contains("Unknown"),
+            error_msg.contains("open")
+                || error_msg.contains("not found")
+                || error_msg.contains("Unknown"),
             "Error should mention undefined function, got: {}",
             error_msg
         );
@@ -526,6 +524,10 @@ mod script_sandbox_tests {
         assert!(result.is_ok(), "Complex expressions should work");
         // (5 + 3) * 2 - 5 / 3 = 8 * 2 - 1 = 16 - 1 = 15
         let value = result.unwrap().as_int().unwrap();
-        assert!(value == 15 || value == 14, "Result should be 15 or 14 (int division): got {}", value);
+        assert!(
+            value == 15 || value == 14,
+            "Result should be 15 or 14 (int division): got {}",
+            value
+        );
     }
 }

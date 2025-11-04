@@ -636,7 +636,7 @@ mod tests {
     #[tokio::test]
     async fn test_request_queuing() {
         let config = BackpressureConfig {
-            max_concurrent_requests: 1, // Force queuing
+            max_concurrent_requests: 1,         // Force queuing
             enable_graceful_degradation: false, // Disable rejection logic for this test
             ..Default::default()
         };
@@ -656,10 +656,13 @@ mod tests {
             .submit_request(Priority::Normal, None, metadata.clone())
             .await
             .unwrap();
-        
+
         // Verify first request was accepted
-        assert!(matches!(result1, BackpressureResult::Accepted), 
-                "First request should be accepted, got: {:?}", result1);
+        assert!(
+            matches!(result1, BackpressureResult::Accepted),
+            "First request should be accepted, got: {:?}",
+            result1
+        );
 
         // Second request should be queued immediately (semaphore exhausted)
         // No delay needed - the permit is held for 100ms, so it's definitely still held

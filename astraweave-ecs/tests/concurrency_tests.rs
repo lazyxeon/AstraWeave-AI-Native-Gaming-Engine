@@ -13,7 +13,7 @@ use loom::{sync::Arc, thread};
 #[cfg(not(loom))]
 use std::{sync::Arc, thread};
 
-use astraweave_ecs::{World, Component};
+use astraweave_ecs::{Component, World};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Position {
@@ -67,7 +67,7 @@ fn concurrent_entity_spawn() {
 fn concurrent_spawn_despawn() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
-        
+
         // Pre-spawn entity
         let entity = {
             let mut w = world.lock().unwrap();
@@ -276,7 +276,7 @@ fn concurrent_query_and_modify() {
 
         let w = world.lock().unwrap();
         let pos = w.get::<Position>(entity).unwrap();
-        
+
         // Both modifications should have been applied
         assert_eq!(pos.x, 1);
         assert_eq!(pos.y, 1);

@@ -135,7 +135,7 @@ impl PolyHavenClient {
 
         // Resolution fallback priority: requested → 2k → 1k → whatever's available
         let fallback_order = self.resolution_fallback_order(requested_res);
-        
+
         // Extract URLs for requested maps
         let mut urls = HashMap::new();
         let mut selected_res = requested_res.to_string();
@@ -157,9 +157,9 @@ impl PolyHavenClient {
                                     // Prefer PNG > EXR > JPG
                                     for format in &["png", "exr", "jpg"] {
                                         if let Some(file_info_value) = formats_map.get(*format) {
-                                            if let Ok(file_info) =
-                                                serde_json::from_value::<FileInfo>(file_info_value.clone())
-                                            {
+                                            if let Ok(file_info) = serde_json::from_value::<FileInfo>(
+                                                file_info_value.clone(),
+                                            ) {
                                                 urls.insert(map_name.clone(), file_info.url);
                                                 selected_res = res.to_string();
                                                 found = true;
@@ -191,10 +191,7 @@ impl PolyHavenClient {
         }
 
         if urls.is_empty() {
-            return Err(anyhow!(
-                "No maps found for texture {}",
-                asset_id
-            ));
+            return Err(anyhow!("No maps found for texture {}", asset_id));
         }
 
         Ok(ResolvedAsset {
@@ -288,9 +285,9 @@ impl PolyHavenClient {
                                 // Prefer GLB > GLTF > BLEND
                                 for model_format in &["glb", "gltf", "blend"] {
                                     if let Some(file_info_value) = formats_map.get(*model_format) {
-                                        if let Ok(file_info) =
-                                            serde_json::from_value::<FileInfo>(file_info_value.clone())
-                                        {
+                                        if let Ok(file_info) = serde_json::from_value::<FileInfo>(
+                                            file_info_value.clone(),
+                                        ) {
                                             model_urls.insert("model".to_string(), file_info.url);
                                             selected_res = res.to_string();
                                             break;

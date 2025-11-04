@@ -48,7 +48,7 @@ mod voxel_data_tests {
     fn test_chunk_coord_to_world_pos() {
         let coord = ChunkCoord::new(3, -2, 5);
         let pos = coord.to_world_pos();
-        
+
         assert_eq!(pos.x, 3.0 * CHUNK_SIZE as f32);
         assert_eq!(pos.y, -2.0 * CHUNK_SIZE as f32);
         assert_eq!(pos.z, 5.0 * CHUNK_SIZE as f32);
@@ -79,7 +79,7 @@ mod voxel_data_tests {
 
         assert_eq!(neighbors.len(), 6);
         assert_eq!(neighbors[0], ChunkCoord::new(11, 20, 30)); // +X
-        assert_eq!(neighbors[1], ChunkCoord::new(9, 20, 30));  // -X
+        assert_eq!(neighbors[1], ChunkCoord::new(9, 20, 30)); // -X
         assert_eq!(neighbors[2], ChunkCoord::new(10, 21, 30)); // +Y
         assert_eq!(neighbors[3], ChunkCoord::new(10, 19, 30)); // -Y
         assert_eq!(neighbors[4], ChunkCoord::new(10, 20, 31)); // +Z
@@ -181,7 +181,7 @@ mod voxel_data_tests {
     #[test]
     fn test_voxel_chunk_get_empty() {
         let chunk = VoxelChunk::new(ChunkCoord::new(0, 0, 0));
-        
+
         // Empty chunk should return None for any position
         let voxel = chunk.get_voxel(IVec3::new(0, 0, 0));
         assert!(voxel.is_none());
@@ -193,7 +193,7 @@ mod voxel_data_tests {
     #[test]
     fn test_voxel_chunk_set_and_get() {
         let mut chunk = VoxelChunk::new(ChunkCoord::new(0, 0, 0));
-        
+
         let pos = IVec3::new(10, 15, 20);
         let voxel = Voxel::new(0.8, 5);
 
@@ -249,7 +249,7 @@ mod voxel_data_tests {
         let initial_dirty = chunk.is_dirty();
         chunk.set_voxel(IVec3::new(-1, 0, 0), Voxel::new(1.0, 1));
         chunk.set_voxel(IVec3::new(CHUNK_SIZE, 0, 0), Voxel::new(1.0, 1));
-        
+
         // Should not mark as dirty if position is invalid
         // (implementation may vary - this tests contract)
     }
@@ -302,7 +302,7 @@ mod voxel_data_tests {
     #[test]
     fn test_voxel_chunk_dirty_flag() {
         let mut chunk = VoxelChunk::new(ChunkCoord::new(0, 0, 0));
-        
+
         assert!(!chunk.is_dirty());
 
         // Setting voxel should mark as dirty
@@ -345,9 +345,12 @@ mod voxel_data_tests {
 
         // We set 2 voxels, but octree may initialize default leaves
         // At minimum, we should have far more None than Some
-        assert!(none_count > some_count * 10, 
-            "Sparse octree should have mostly empty space. none: {}, some: {}", 
-            none_count, some_count);
+        assert!(
+            none_count > some_count * 10,
+            "Sparse octree should have mostly empty space. none: {}, some: {}",
+            none_count,
+            some_count
+        );
     }
 
     // ============================================================================
@@ -396,7 +399,10 @@ mod voxel_data_tests {
 
             // Exactly one axis should differ by 1
             let diff_count = (dx + dy + dz) as usize;
-            assert_eq!(diff_count, 1, "Neighbor should be 1 chunk away on exactly 1 axis");
+            assert_eq!(
+                diff_count, 1,
+                "Neighbor should be 1 chunk away on exactly 1 axis"
+            );
         }
 
         // Verify no duplicates
@@ -411,12 +417,12 @@ mod voxel_data_tests {
     fn test_material_id_range() {
         // Test that material IDs support full u16 range
         let voxels = vec![
-            Voxel::new(1.0, 0),           // Min
-            Voxel::new(1.0, 1),           // Low
-            Voxel::new(1.0, 255),         // u8 max
-            Voxel::new(1.0, 256),         // Beyond u8
+            Voxel::new(1.0, 0),            // Min
+            Voxel::new(1.0, 1),            // Low
+            Voxel::new(1.0, 255),          // u8 max
+            Voxel::new(1.0, 256),          // Beyond u8
             Voxel::new(1.0, u16::MAX / 2), // Mid
-            Voxel::new(1.0, u16::MAX),    // Max
+            Voxel::new(1.0, u16::MAX),     // Max
         ];
 
         let mut chunk = VoxelChunk::new(ChunkCoord::new(0, 0, 0));
@@ -426,8 +432,11 @@ mod voxel_data_tests {
             chunk.set_voxel(pos, *voxel);
 
             let retrieved = chunk.get_voxel(pos).unwrap();
-            assert_eq!(retrieved.material, voxel.material, 
-                "Material ID should be preserved for ID {}", voxel.material);
+            assert_eq!(
+                retrieved.material, voxel.material,
+                "Material ID should be preserved for ID {}",
+                voxel.material
+            );
         }
     }
 
@@ -443,9 +452,12 @@ mod voxel_data_tests {
             chunk.set_voxel(pos, Voxel::new(*density, 1));
 
             let retrieved = chunk.get_voxel(pos).unwrap();
-            assert!((retrieved.density - density).abs() < 0.0001,
-                "Density should preserve precision: expected {}, got {}", 
-                density, retrieved.density);
+            assert!(
+                (retrieved.density - density).abs() < 0.0001,
+                "Density should preserve precision: expected {}, got {}",
+                density,
+                retrieved.density
+            );
         }
     }
 
@@ -483,8 +495,11 @@ mod voxel_data_tests {
                 for z in (0..CHUNK_SIZE).step_by(8) {
                     let pos = IVec3::new(x, y, z);
                     if x % 4 == 0 && y % 4 == 0 && z % 4 == 0 {
-                        assert!(chunk.get_voxel(pos).is_some(), 
-                            "Filled position should exist: {:?}", pos);
+                        assert!(
+                            chunk.get_voxel(pos).is_some(),
+                            "Filled position should exist: {:?}",
+                            pos
+                        );
                     }
                 }
             }
@@ -507,7 +522,7 @@ mod voxel_data_tests {
         for coord in large_coords {
             let world_pos = coord.to_world_pos();
             let reconstructed = ChunkCoord::from_world_pos(world_pos);
-            
+
             // Should round-trip correctly even with large values
             assert_eq!(coord.x, reconstructed.x, "X should round-trip");
             assert_eq!(coord.y, reconstructed.y, "Y should round-trip");

@@ -6,7 +6,7 @@
 //! - Tool vocabulary descriptions
 //! - Hallucination prevention strategies
 
-use astraweave_core::{ToolRegistry, WorldSnapshot, get_tools_by_category};
+use astraweave_core::{get_tools_by_category, ToolRegistry, WorldSnapshot};
 
 /// Prompt configuration options
 #[derive(Clone, Debug)]
@@ -84,35 +84,50 @@ CRITICAL RULES:
 - Do NOT invent new tools or parameters
 - All tool names and parameters must EXACTLY match the schema
 - Return ONLY JSON - no commentary, explanations, or markdown
-- If uncertain, use simpler actions (MoveTo, Wait, Scan)"#.to_string()
+- If uncertain, use simpler actions (MoveTo, Wait, Scan)"#
+        .to_string()
 }
 
 /// Build comprehensive tool vocabulary with descriptions
 fn build_tool_vocabulary() -> String {
     let mut output = String::from("═══════════════════════════════════════\nAVAILABLE TOOLS (37 total)\n═══════════════════════════════════════\n\n");
 
-    let categories = vec!["Movement", "Offensive", "Defensive", "Equipment", "Tactical", "Utility"];
-    
+    let categories = vec![
+        "Movement",
+        "Offensive",
+        "Defensive",
+        "Equipment",
+        "Tactical",
+        "Utility",
+    ];
+
     for category in categories {
         output.push_str(&format!("## {} Tools:\n\n", category));
-        
+
         let tools = get_tools_by_category(category);
         for tool in tools {
             output.push_str(&format!("• **{}**\n", tool.name));
             output.push_str(&format!("  Description: {}\n", tool.description));
-            
+
             if !tool.parameters.is_empty() {
                 output.push_str("  Parameters:\n");
                 for param in &tool.parameters {
-                    let req = if param.required { "REQUIRED" } else { "optional" };
-                    output.push_str(&format!("    - {}: {} ({})\n", param.name, param.param_type, req));
+                    let req = if param.required {
+                        "REQUIRED"
+                    } else {
+                        "optional"
+                    };
+                    output.push_str(&format!(
+                        "    - {}: {} ({})\n",
+                        param.name, param.param_type, req
+                    ));
                 }
             }
-            
+
             if let Some(cooldown) = tool.cooldown {
                 output.push_str(&format!("  Cooldown: {:.1}s\n", cooldown));
             }
-            
+
             output.push('\n');
         }
     }
@@ -128,7 +143,7 @@ fn build_tool_list(reg: &ToolRegistry) -> String {
         .map(|t| format!(" - {} {:?}", t.name, t.args))
         .collect::<Vec<_>>()
         .join("\n");
-    
+
     format!("Allowed tools:\n{}", tool_list)
 }
 
@@ -200,7 +215,8 @@ CRITICAL:
 - "act" field MUST be one of the exact tool names above
 - All parameters must match the types shown (INT, FLOAT, string)
 - Optional parameters are marked with "?"
-- Do NOT add extra fields or invent new tool names"#.to_string()
+- Do NOT add extra fields or invent new tool names"#
+        .to_string()
 }
 
 /// Build few-shot learning examples
@@ -239,7 +255,7 @@ fn build_few_shot_examples(max_examples: usize) -> String {
     ];
 
     let mut output = String::from("═══════════════════════════════════════\nFEW-SHOT EXAMPLES\n═══════════════════════════════════════\n\n");
-    
+
     for (i, example) in examples.iter().take(max_examples).enumerate() {
         output.push_str(&format!("Example {}:\n", i + 1));
         output.push_str(&format!("Scenario: {}\n", example.scenario));
@@ -261,7 +277,7 @@ struct FewShotExample {
 /// Build world snapshot section
 fn build_snapshot_section(snap: &WorldSnapshot) -> String {
     let snap_json = serde_json::to_string_pretty(snap).unwrap_or_else(|_| "{}".to_string());
-    
+
     format!(
         r#"═══════════════════════════════════════
 CURRENT WORLD STATE
@@ -293,7 +309,8 @@ INCORRECT:
 INCORRECT:
 Here's my plan: {"plan_id": "p1", ...}
 
-Generate your plan now:"#.to_string()
+Generate your plan now:"#
+            .to_string()
     } else {
         "Generate your tactical plan based on the world state above.".to_string()
     }
@@ -314,9 +331,9 @@ mod tests {
         let snap = WorldSnapshot::default();
         let reg = default_tool_registry();
         let config = PromptConfig::default();
-        
+
         let prompt = build_enhanced_prompt(&snap, &reg, &config);
-        
+
         // Verify key sections are present
         assert!(prompt.contains("tactical AI companion"));
         assert!(prompt.contains("AVAILABLE TOOLS"));
@@ -330,7 +347,7 @@ mod tests {
     fn test_config_options() {
         let snap = WorldSnapshot::default();
         let reg = default_tool_registry();
-        
+
         // Minimal config
         let config = PromptConfig {
             include_examples: false,
@@ -339,7 +356,7 @@ mod tests {
             max_examples: 0,
             strict_json_only: false,
         };
-        
+
         let prompt = build_enhanced_prompt(&snap, &reg, &config);
         assert!(!prompt.contains("FEW-SHOT EXAMPLES"));
         assert!(!prompt.contains("JSON SCHEMA"));
@@ -349,15 +366,15 @@ mod tests {
     fn test_few_shot_examples_count() {
         let snap = WorldSnapshot::default();
         let reg = default_tool_registry();
-        
+
         // Request 3 examples
         let config = PromptConfig {
             max_examples: 3,
             ..Default::default()
         };
-        
+
         let prompt = build_enhanced_prompt(&snap, &reg, &config);
-        
+
         // Should have Example 1, 2, 3 but not 4, 5
         assert!(prompt.contains("Example 1:"));
         assert!(prompt.contains("Example 2:"));
@@ -368,7 +385,7 @@ mod tests {
     #[test]
     fn test_tool_vocabulary_includes_all_categories() {
         let vocab = build_tool_vocabulary();
-        
+
         assert!(vocab.contains("Movement Tools"));
         assert!(vocab.contains("Offensive Tools"));
         assert!(vocab.contains("Defensive Tools"));
@@ -380,7 +397,7 @@ mod tests {
     #[test]
     fn test_json_schema_has_all_tools() {
         let schema = build_json_schema();
-        
+
         // Spot check a few from each category
         assert!(schema.contains(r#""act": "MoveTo""#));
         assert!(schema.contains(r#""act": "Attack""#));

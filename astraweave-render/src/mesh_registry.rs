@@ -53,7 +53,10 @@ mod tests {
         let registry = MeshRegistry::new();
         assert_eq!(registry.next_id, 1, "Should start with ID 1");
         assert!(registry.map.is_empty(), "Should have no meshes initially");
-        assert!(registry.uploads.is_empty(), "Should have no GPU meshes initially");
+        assert!(
+            registry.uploads.is_empty(),
+            "Should have no GPU meshes initially"
+        );
     }
 
     #[test]
@@ -61,7 +64,7 @@ mod tests {
         let key1 = MeshKey("cube".to_string());
         let key2 = MeshKey("cube".to_string());
         let key3 = MeshKey("sphere".to_string());
-        
+
         assert_eq!(key1, key2);
         assert_ne!(key1, key3);
     }
@@ -71,7 +74,7 @@ mod tests {
         let handle1 = MeshHandle(1);
         let handle2 = MeshHandle(1);
         let handle3 = MeshHandle(2);
-        
+
         assert_eq!(handle1, handle2);
         assert_ne!(handle1, handle3);
     }
@@ -80,8 +83,12 @@ mod tests {
     fn test_mesh_registry_get_empty() {
         let registry = MeshRegistry::new();
         let key = MeshKey("nonexistent".to_string());
-        
-        assert_eq!(registry.get(&key), None, "Should return None for nonexistent key");
+
+        assert_eq!(
+            registry.get(&key),
+            None,
+            "Should return None for nonexistent key"
+        );
     }
 
     #[test]
@@ -109,11 +116,11 @@ mod tests {
     fn test_mesh_registry_next_id_increments() {
         let mut registry = MeshRegistry::new();
         assert_eq!(registry.next_id, 1);
-        
+
         // Manually increment to simulate uploads
         registry.next_id += 1;
         assert_eq!(registry.next_id, 2);
-        
+
         registry.next_id += 1;
         assert_eq!(registry.next_id, 3);
     }
@@ -129,22 +136,22 @@ mod tests {
     #[test]
     fn test_mesh_key_hash_consistency() {
         use std::collections::HashSet;
-        
+
         let mut set = HashSet::new();
         set.insert(MeshKey("cube".to_string()));
         set.insert(MeshKey("cube".to_string())); // Duplicate
-        
+
         assert_eq!(set.len(), 1, "Duplicate keys should hash to same value");
     }
 
     #[test]
     fn test_mesh_handle_hash_consistency() {
         use std::collections::HashSet;
-        
+
         let mut set = HashSet::new();
         set.insert(MeshHandle(1));
         set.insert(MeshHandle(1)); // Duplicate
-        
+
         assert_eq!(set.len(), 1, "Duplicate handles should hash to same value");
     }
 }

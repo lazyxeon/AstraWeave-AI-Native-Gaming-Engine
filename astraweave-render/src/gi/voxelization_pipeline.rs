@@ -408,14 +408,12 @@ impl VoxelizationPipeline {
         voxel_texture_view: &wgpu::TextureView,
     ) -> wgpu::BindGroup {
         // Week 3 Action 10: Safe buffer access (buffers guaranteed to exist after upload_mesh)
-        let vertex_buffer = self
-            .vertex_buffer
-            .as_ref()
-            .expect("vertex_buffer must be initialized before create_bind_group (call upload_mesh first)");
-        let index_buffer = self
-            .index_buffer
-            .as_ref()
-            .expect("index_buffer must be initialized before create_bind_group (call upload_mesh first)");
+        let vertex_buffer = self.vertex_buffer.as_ref().expect(
+            "vertex_buffer must be initialized before create_bind_group (call upload_mesh first)",
+        );
+        let index_buffer = self.index_buffer.as_ref().expect(
+            "index_buffer must be initialized before create_bind_group (call upload_mesh first)",
+        );
 
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Voxelization Bind Group"),

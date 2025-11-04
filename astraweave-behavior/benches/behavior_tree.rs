@@ -196,7 +196,7 @@ fn bench_blackboard_access(c: &mut Criterion) {
             BehaviorNode::Condition("fact_3".to_string()),
             BehaviorNode::Condition("fact_4".to_string()),
         ]);
-        
+
         let mut context = BehaviorContext::new();
         for i in 0..20 {
             let value = i % 2 == 0;

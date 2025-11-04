@@ -59,7 +59,7 @@ fn test_malformed_toml_dialogue_audio_map() -> Result<()> {
 [map]
 test_dialogue = { n0 = "test.wav"  # Missing closing brace
 "#;
-    
+
     let toml_path = "tests/assets/error_tests/malformed/bad_dialogue_map.toml";
     let mut file = File::create(toml_path)?;
     file.write_all(malformed_toml.as_bytes())?;
@@ -67,7 +67,7 @@ test_dialogue = { n0 = "test.wav"  # Missing closing brace
 
     // Attempt to load malformed TOML
     let result = astraweave_audio::load_dialogue_audio_map(toml_path);
-    
+
     // Should return error (either parsing or validation)
     assert!(
         result.is_err(),
@@ -87,8 +87,8 @@ fn test_malformed_toml_voice_bank() -> Result<()> {
     let malformed_toml = r#"
 [speakers
 alice = { folder = "speakers/alice", files = ["voice.wav"] }
-"#;  // Missing closing bracket for [speakers]
-    
+"#; // Missing closing bracket for [speakers]
+
     let toml_path = "tests/assets/error_tests/malformed/bad_voice_bank.toml";
     let mut file = File::create(toml_path)?;
     file.write_all(malformed_toml.as_bytes())?;
@@ -96,7 +96,7 @@ alice = { folder = "speakers/alice", files = ["voice.wav"] }
 
     // Attempt to load malformed TOML
     let result = astraweave_audio::load_voice_bank(toml_path);
-    
+
     // Should return error
     assert!(
         result.is_err(),
@@ -115,10 +115,10 @@ alice = { folder = "speakers/alice", files = ["voice.wav"] }
 #[test]
 fn test_missing_audio_file_play_sfx() -> Result<()> {
     let mut engine = AudioEngine::new()?;
-    
+
     // Attempt to play non-existent file
     let result = engine.play_sfx_file("tests/assets/NONEXISTENT_FILE.wav");
-    
+
     // Should return error (file not found)
     assert!(
         result.is_err(),
@@ -140,10 +140,10 @@ fn test_corrupted_audio_file() -> Result<()> {
     drop(file);
 
     let mut engine = AudioEngine::new()?;
-    
+
     // Attempt to play corrupted file
     let result = engine.play_sfx_file(corrupted_path);
-    
+
     // Rodio should reject invalid WAV format
     assert!(
         result.is_err(),
@@ -165,7 +165,7 @@ fn test_empty_folder_voice_bank_scan() -> Result<()> {
 folder = "tests/assets/error_tests/empty_folder"
 files = []  # Triggers folder scan
 "#;
-    
+
     let toml_path = "tests/assets/error_tests/empty_voice_bank.toml";
     let mut file = File::create(toml_path)?;
     file.write_all(voice_bank_toml.as_bytes())?;
@@ -174,28 +174,26 @@ files = []  # Triggers folder scan
     let bank = astraweave_audio::load_voice_bank(toml_path)?;
 
     // Create simple dialogue using correct structure
-    use astraweave_gameplay::dialogue::{Node, Line};
-    
+    use astraweave_gameplay::dialogue::{Line, Node};
+
     let dialogue = Dialogue {
         id: "empty_test".into(),
         start: "n0".into(),
-        nodes: vec![
-            Node {
-                id: "n0".into(),
-                line: Some(Line {
-                    speaker: "empty_speaker".into(),
-                    text: "Hello".into(),
-                    set_vars: vec![],
-                }),
-                choices: vec![],
-                end: true,
-            }
-        ],
+        nodes: vec![Node {
+            id: "n0".into(),
+            line: Some(Line {
+                speaker: "empty_speaker".into(),
+                text: "Hello".into(),
+                set_vars: vec![],
+            }),
+            choices: vec![],
+            end: true,
+        }],
     };
     let state = DialogueState::new(&dialogue);
 
     let mut audio_engine = AudioEngine::new()?;
-    
+
     {
         let mut player = DialoguePlayer {
             audio: &mut audio_engine,
@@ -241,9 +239,9 @@ folder = "tests/assets/error_tests/tts_fail"
 files = []
 tts_voice = "en-US-Neural"
 "#;
-    
+
     fs::create_dir_all("tests/assets/error_tests/tts_fail")?;
-    
+
     let toml_path = "tests/assets/error_tests/tts_fail_voice_bank.toml";
     let mut file = File::create(toml_path)?;
     file.write_all(voice_bank_toml.as_bytes())?;
@@ -252,29 +250,27 @@ tts_voice = "en-US-Neural"
     let bank = astraweave_audio::load_voice_bank(toml_path)?;
 
     // Create dialogue using correct structure
-    use astraweave_gameplay::dialogue::{Node, Line};
-    
+    use astraweave_gameplay::dialogue::{Line, Node};
+
     let dialogue = Dialogue {
         id: "tts_fail_test".into(),
         start: "n0".into(),
-        nodes: vec![
-            Node {
-                id: "n0".into(),
-                line: Some(Line {
-                    speaker: "tts_fail_speaker".into(),
-                    text: "This should fail TTS".into(),
-                    set_vars: vec![],
-                }),
-                choices: vec![],
-                end: true,
-            }
-        ],
+        nodes: vec![Node {
+            id: "n0".into(),
+            line: Some(Line {
+                speaker: "tts_fail_speaker".into(),
+                text: "This should fail TTS".into(),
+                set_vars: vec![],
+            }),
+            choices: vec![],
+            end: true,
+        }],
     };
     let state = DialogueState::new(&dialogue);
 
     let mut audio_engine = AudioEngine::new()?;
     let failing_tts = FailingTtsAdapter;
-    
+
     {
         let mut player = DialoguePlayer {
             audio: &mut audio_engine,
@@ -286,7 +282,7 @@ tts_voice = "en-US-Neural"
 
         // Attempt to speak - TTS will fail, should fall back to beep
         let result = player.speak_current(&dialogue, &state);
-        
+
         // DialoguePlayer might propagate error OR fall back to beep
         // Check if it returned Ok (beep fallback) or Err (propagated TTS error)
         match result {
@@ -324,13 +320,9 @@ fn test_spatial_audio_nan_coordinates() -> Result<()> {
 
     // Create emitter at NaN position (undefined behavior in 3D math)
     let nan_pos = Vec3::new(f32::NAN, f32::NAN, f32::NAN);
-    let emitter_id = 999;  // Unique emitter ID
-    
-    let result = engine.play_sfx_3d_file(
-        emitter_id,
-        "tests/assets/test_beep_nan.wav",
-        nan_pos,
-    );
+    let emitter_id = 999; // Unique emitter ID
+
+    let result = engine.play_sfx_3d_file(emitter_id, "tests/assets/test_beep_nan.wav", nan_pos);
 
     // Engine should either:
     // 1. Reject NaN coordinates (return error)
@@ -366,12 +358,8 @@ fn test_spatial_audio_infinite_coordinates() -> Result<()> {
     // Create emitter at infinite distance
     let inf_pos = Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
     let emitter_id = 1000;
-    
-    let result = engine.play_sfx_3d_file(
-        emitter_id,
-        "tests/assets/test_beep_inf.wav",
-        inf_pos,
-    );
+
+    let result = engine.play_sfx_3d_file(emitter_id, "tests/assets/test_beep_inf.wav", inf_pos);
 
     // Similar to NaN - engine should handle gracefully
     match result {
@@ -402,7 +390,7 @@ fn test_spatial_audio_extreme_distance() -> Result<()> {
     // Emitter at extreme distance (1 million units away)
     let extreme_pos = Vec3::new(1_000_000.0, 1_000_000.0, 1_000_000.0);
     let emitter_id = 1001;
-    
+
     let result = engine.play_sfx_3d_file(
         emitter_id,
         "tests/assets/test_beep_extreme.wav",
@@ -453,7 +441,7 @@ fn test_music_instant_crossfade_zero_duration() -> Result<()> {
         path: "tests/assets/test_music_instant_2.wav".to_string(),
         looped: true,
     };
-    let result = engine.play_music(track2, 0.0);  // Zero crossfade duration
+    let result = engine.play_music(track2, 0.0); // Zero crossfade duration
 
     assert!(result.is_ok(), "Should handle zero-duration crossfade");
 
@@ -488,7 +476,7 @@ fn test_music_very_long_crossfade() -> Result<()> {
         path: "tests/assets/test_music_long_2.wav".to_string(),
         looped: true,
     };
-    let result = engine.play_music(track2, 10.0);  // 10-second crossfade
+    let result = engine.play_music(track2, 10.0); // 10-second crossfade
 
     assert!(result.is_ok(), "Should handle very long crossfade duration");
 

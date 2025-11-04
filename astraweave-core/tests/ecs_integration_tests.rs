@@ -1,12 +1,7 @@
 //! Comprehensive tests for astraweave-core ECS integration
 //! Tests cover: EntityBridge (ecs_bridge.rs), component types (ecs_components.rs), events (ecs_events.rs)
 
-use astraweave_core::{
-    ecs_bridge::EntityBridge,
-    ecs_components::*,
-    ecs_events::*,
-    IVec2,
-};
+use astraweave_core::{ecs_bridge::EntityBridge, ecs_components::*, ecs_events::*, IVec2};
 use astraweave_ecs as ecs;
 
 // ============================================================================
@@ -183,7 +178,10 @@ fn test_cooldown_key_from_str() {
     assert_eq!(key, cooldowns::CooldownKey::ThrowSmoke);
 
     let custom_key: cooldowns::CooldownKey = "custom_ability".into();
-    assert_eq!(custom_key, cooldowns::CooldownKey::Custom("custom_ability".to_string()));
+    assert_eq!(
+        custom_key,
+        cooldowns::CooldownKey::Custom("custom_ability".to_string())
+    );
 }
 
 #[test]

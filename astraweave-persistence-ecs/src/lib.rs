@@ -183,7 +183,7 @@ impl CPersistenceManager {
 /// Serialized component data for a single entity
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SerializedEntity {
-    pub entity_raw: u64,  // Entity converted to u64 via to_raw()
+    pub entity_raw: u64, // Entity converted to u64 via to_raw()
     pub pos: Option<CPos>,
     pub health: Option<CHealth>,
     pub team: Option<CTeam>,
@@ -276,11 +276,11 @@ pub struct SerializedWorld {
 /// consistent via HashSet insertion order (same entities → same order → same blob).
 pub fn serialize_ecs_world(world: &World) -> Result<Vec<u8>> {
     let mut entities = Vec::new();
-    
+
     // Collect all entities - we'll iterate through all possible component combinations
     // Using a hash set to track unique entities
     let mut entity_set = std::collections::HashSet::new();
-    
+
     // Query for each component type to discover all entities
     {
         let mut q = Query::<CPos>::new(world);
@@ -336,11 +336,11 @@ pub fn serialize_ecs_world(world: &World) -> Result<Vec<u8>> {
             entity_set.insert(entity);
         }
     }
-    
+
     // Now collect all components for each entity
     for entity in entity_set {
         let serialized = SerializedEntity {
-            entity_raw: entity.to_raw(),  // Convert Entity to u64
+            entity_raw: entity.to_raw(), // Convert Entity to u64
             pos: world.get::<CPos>(entity).copied(),
             health: world.get::<CHealth>(entity).copied(),
             team: world.get::<CTeam>(entity).copied(),
@@ -354,12 +354,12 @@ pub fn serialize_ecs_world(world: &World) -> Result<Vec<u8>> {
         };
         entities.push(serialized);
     }
-    
+
     let serialized_world = SerializedWorld {
         entities,
         world_tick: 0, // TODO: Get from world state when available
     };
-    
+
     // Use postcard for compact binary serialization
     postcard::to_allocvec(&serialized_world).map_err(Into::into)
 }
@@ -450,20 +450,20 @@ pub fn deserialize_ecs_world(ecs_blob: &[u8], world: &mut World) -> Result<()> {
 
     // Deserialize the world state
     let serialized: SerializedWorld = postcard::from_bytes(ecs_blob)?;
-    
+
     // Entity ID remapping: old Entity (raw u64) -> new Entity
     let mut id_map: HashMap<u64, Entity> = HashMap::new();
-    
+
     // First pass: spawn all entities and create ID mapping
     for serialized_entity in &serialized.entities {
         let new_entity = world.spawn();
         id_map.insert(serialized_entity.entity_raw, new_entity);
     }
-    
+
     // Second pass: insert all components with remapped entity references
     for serialized_entity in &serialized.entities {
         let entity = id_map[&serialized_entity.entity_raw];
-        
+
         // Insert each component if it exists
         if let Some(pos) = &serialized_entity.pos {
             world.insert(entity, *pos);
@@ -498,7 +498,7 @@ pub fn deserialize_ecs_world(ecs_blob: &[u8], world: &mut World) -> Result<()> {
             world.insert(entity, memory.clone());
         }
     }
-    
+
     Ok(())
 }
 
@@ -612,9 +612,9 @@ pub fn deserialize_ecs_world(ecs_blob: &[u8], world: &mut World) -> Result<()> {
 pub fn calculate_world_hash(world: &World) -> u64 {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
-    
+
     let mut hasher = DefaultHasher::new();
-    
+
     // Collect all entities in sorted order for deterministic hashing
     let mut entity_list = Vec::new();
     {
@@ -632,33 +632,33 @@ pub fn calculate_world_hash(world: &World) -> u64 {
         }
     }
     entity_list.sort_unstable();
-    
+
     // Hash each entity and its components
     for entity in entity_list {
         entity.hash(&mut hasher);
-        
+
         // Hash position
         if let Some(pos) = world.get::<CPos>(entity) {
             pos.pos.x.hash(&mut hasher);
             pos.pos.y.hash(&mut hasher);
         }
-        
+
         // Hash health
         if let Some(health) = world.get::<CHealth>(entity) {
             health.hp.hash(&mut hasher);
         }
-        
+
         // Hash team
         if let Some(team) = world.get::<CTeam>(entity) {
             team.id.hash(&mut hasher);
         }
-        
+
         // Hash ammo
         if let Some(ammo) = world.get::<CAmmo>(entity) {
             ammo.rounds.hash(&mut hasher);
         }
     }
-    
+
     hasher.finish()
 }
 
@@ -707,36 +707,46 @@ mod tests {
         // Test deserialization of empty world
         let world = World::new();
         let blob = serialize_ecs_world(&world).unwrap();
-        
+
         let mut new_world = World::new();
         deserialize_ecs_world(&blob, &mut new_world).unwrap();
     }
-    
+
     #[test]
     fn roundtrip_world_with_entities() {
         // Create world with entities
         let mut world = World::new();
         let e1 = world.spawn();
-        world.insert(e1, CPos { pos: astraweave_core::IVec2 { x: 10, y: 20 } });
+        world.insert(
+            e1,
+            CPos {
+                pos: astraweave_core::IVec2 { x: 10, y: 20 },
+            },
+        );
         world.insert(e1, CHealth { hp: 100 });
-        
+
         let e2 = world.spawn();
-        world.insert(e2, CPos { pos: astraweave_core::IVec2 { x: 30, y: 40 } });
+        world.insert(
+            e2,
+            CPos {
+                pos: astraweave_core::IVec2 { x: 30, y: 40 },
+            },
+        );
         world.insert(e2, CTeam { id: 1 });
-        
+
         // Serialize
         let blob = serialize_ecs_world(&world).unwrap();
         assert!(!blob.is_empty());
-        
+
         // Deserialize into new world
         let mut new_world = World::new();
         deserialize_ecs_world(&blob, &mut new_world).unwrap();
-        
+
         // Verify entities exist (though IDs may differ)
         let mut pos_count = 0;
         let mut health_count = 0;
         let mut team_count = 0;
-        
+
         {
             let mut q = Query::<CPos>::new(&new_world);
             while let Some((_, pos)) = q.next() {
@@ -758,23 +768,28 @@ mod tests {
                 assert_eq!(team.id, 1);
             }
         }
-        
+
         assert_eq!(pos_count, 2);
         assert_eq!(health_count, 1);
         assert_eq!(team_count, 1);
     }
-    
+
     #[test]
     fn world_hash_consistency() {
         // Test that hash is consistent for same world state
         let mut world = World::new();
         let e1 = world.spawn();
-        world.insert(e1, CPos { pos: astraweave_core::IVec2 { x: 10, y: 20 } });
+        world.insert(
+            e1,
+            CPos {
+                pos: astraweave_core::IVec2 { x: 10, y: 20 },
+            },
+        );
         world.insert(e1, CHealth { hp: 100 });
-        
+
         let hash1 = calculate_world_hash(&world);
         let hash2 = calculate_world_hash(&world);
-        
+
         assert_eq!(hash1, hash2);
         assert_ne!(hash1, 0); // Should not be placeholder value
     }

@@ -213,7 +213,9 @@ impl MenuManager {
         match self.state {
             MenuState::MainMenu => crate::menus::show_main_menu(ctx),
             MenuState::PauseMenu => crate::menus::show_pause_menu(ctx),
-            MenuState::SettingsMenu => crate::menus::show_settings_menu(ctx, &mut self.settings, &mut self.rebinding_key),
+            MenuState::SettingsMenu => {
+                crate::menus::show_settings_menu(ctx, &mut self.settings, &mut self.rebinding_key)
+            }
             MenuState::None => MenuAction::None,
         }
     }
@@ -317,7 +319,7 @@ impl MenuManager {
         if let Err(e) = crate::persistence::save_settings(&self.settings) {
             log::error!("Failed to save settings: {}", e);
         }
-        
+
         // Update original state
         self.settings_original = self.settings.clone();
         // In future: Apply settings to window/renderer here
@@ -480,7 +482,7 @@ mod tests {
     #[test]
     fn test_menu_manager_apply_settings() {
         let mut manager = MenuManager::new();
-        
+
         // Modify settings
         manager.settings.audio.master_volume = 50.0;
         assert!(manager.settings_modified());
@@ -494,7 +496,7 @@ mod tests {
     #[test]
     fn test_menu_manager_reset_controls() {
         let mut manager = MenuManager::new();
-        
+
         // Modify controls
         manager.settings.controls.move_forward = "Y".to_string();
         assert_ne!(manager.settings.controls.move_forward, "W");
@@ -538,7 +540,7 @@ mod tests {
 
         let json = serde_json::to_string(&settings).unwrap();
         let deserialized: SettingsState = serde_json::from_str(&json).unwrap();
-        
+
         assert_eq!(deserialized.graphics.fullscreen, true);
         assert_eq!(deserialized.audio.master_volume, 75.0);
         assert_eq!(deserialized.controls.mouse_sensitivity, 1.5);

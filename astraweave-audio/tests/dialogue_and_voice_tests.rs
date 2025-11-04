@@ -1,5 +1,5 @@
 //! Comprehensive tests for dialogue_runtime and voice modules
-//! 
+//!
 //! Coverage targets:
 //! - DialoguePlayer (speak_current, all 4 fallback paths)
 //! - DialogueAudioMap loading
@@ -8,9 +8,9 @@
 //! - Subtitle output
 //! - Edge cases (missing files, empty banks, etc.)
 
-use astraweave_audio::{AudioEngine, dialogue_runtime::*, voice::*};
-use astraweave_gameplay::dialogue::{Dialogue, DialogueState, Node, Line, Choice};
 use anyhow::Result;
+use astraweave_audio::{dialogue_runtime::*, voice::*, AudioEngine};
+use astraweave_gameplay::dialogue::{Choice, Dialogue, DialogueState, Line, Node};
 use std::collections::HashMap;
 
 /// Test 1: VoiceBank loading from TOML string
@@ -25,23 +25,23 @@ files = ["hello.ogg", "yes.wav"]
 folder = "assets/voices/companion"
 tts_voice = "voice_en_us_001"
 "#;
-    
+
     let bank: VoiceBank = toml::from_str(toml_data)?;
-    
+
     assert_eq!(bank.speakers.len(), 2);
     assert!(bank.speakers.contains_key("Hero"));
     assert!(bank.speakers.contains_key("Companion"));
-    
+
     let hero = &bank.speakers["Hero"];
     assert_eq!(hero.folder, "assets/voices/hero");
     assert_eq!(hero.files.len(), 2);
     assert!(hero.tts_voice.is_none());
-    
+
     let companion = &bank.speakers["Companion"];
     assert_eq!(companion.folder, "assets/voices/companion");
     assert_eq!(companion.files.len(), 0);
     assert_eq!(companion.tts_voice, Some("voice_en_us_001".to_string()));
-    
+
     Ok(())
 }
 
@@ -56,22 +56,22 @@ n1 = "intro_explain.ogg"
 [map.boss_fight]
 boss_taunt = "boss_laugh.wav"
 "#;
-    
+
     let map: DialogueAudioMap = toml::from_str(toml_data)?;
-    
+
     assert_eq!(map.map.len(), 2);
     assert!(map.map.contains_key("quest_intro"));
     assert!(map.map.contains_key("boss_fight"));
-    
+
     let quest = &map.map["quest_intro"];
     assert_eq!(quest.len(), 2);
     assert_eq!(quest["n0"], "intro_welcome.ogg");
     assert_eq!(quest["n1"], "intro_explain.ogg");
-    
+
     let boss = &map.map["boss_fight"];
     assert_eq!(boss.len(), 1);
     assert_eq!(boss["boss_taunt"], "boss_laugh.wav");
-    
+
     Ok(())
 }
 
@@ -81,32 +81,30 @@ fn test_dialogue_player_beep_fallback() -> Result<()> {
     let dlg = Dialogue {
         id: "test_dialogue".into(),
         start: "node1".into(),
-        nodes: vec![
-            Node {
-                id: "node1".into(),
-                line: Some(Line {
-                    speaker: "Unknown Speaker".into(),
-                    text: "This is a test line".into(),
-                    set_vars: vec![],
-                }),
-                choices: vec![],
-                end: true,
-            }
-        ],
+        nodes: vec![Node {
+            id: "node1".into(),
+            line: Some(Line {
+                speaker: "Unknown Speaker".into(),
+                text: "This is a test line".into(),
+                set_vars: vec![],
+            }),
+            choices: vec![],
+            end: true,
+        }],
     };
-    
+
     let st = DialogueState::new(&dlg);
     let mut audio = AudioEngine::new()?;
     let bank = VoiceBank {
         speakers: HashMap::new(), // Empty bank
     };
-    
+
     let mut subtitles = vec![];
     {
         let mut push_sub = |speaker: String, text: String| {
             subtitles.push((speaker, text));
         };
-        
+
         let mut player = DialoguePlayer {
             audio: &mut audio,
             bank: &bank,
@@ -114,15 +112,15 @@ fn test_dialogue_player_beep_fallback() -> Result<()> {
             overrides: None,
             subtitle_out: Some(&mut push_sub),
         };
-        
+
         let played = player.speak_current(&dlg, &st)?;
         assert!(played, "Should play beep fallback");
     }
-    
+
     assert_eq!(subtitles.len(), 1);
     assert_eq!(subtitles[0].0, "Unknown Speaker");
     assert_eq!(subtitles[0].1, "This is a test line");
-    
+
     Ok(())
 }
 
@@ -132,22 +130,20 @@ fn test_dialogue_player_silent_node() -> Result<()> {
     let dlg = Dialogue {
         id: "silent_dlg".into(),
         start: "silent_node".into(),
-        nodes: vec![
-            Node {
-                id: "silent_node".into(),
-                line: None, // No dialogue line
-                choices: vec![],
-                end: true,
-            }
-        ],
+        nodes: vec![Node {
+            id: "silent_node".into(),
+            line: None, // No dialogue line
+            choices: vec![],
+            end: true,
+        }],
     };
-    
+
     let st = DialogueState::new(&dlg);
     let mut audio = AudioEngine::new()?;
     let bank = VoiceBank {
         speakers: HashMap::new(),
     };
-    
+
     let mut player = DialoguePlayer {
         audio: &mut audio,
         bank: &bank,
@@ -155,10 +151,10 @@ fn test_dialogue_player_silent_node() -> Result<()> {
         overrides: None,
         subtitle_out: None,
     };
-    
+
     let played = player.speak_current(&dlg, &st)?;
     assert!(!played, "Should not play audio for silent node");
-    
+
     Ok(())
 }
 
@@ -176,13 +172,11 @@ fn test_subtitle_output() -> Result<()> {
                     text: "Hello there!".into(),
                     set_vars: vec![],
                 }),
-                choices: vec![
-                    Choice {
-                        text: "Continue".into(),
-                        go_to: "n1".into(),
-                        require: vec![],
-                    }
-                ],
+                choices: vec![Choice {
+                    text: "Continue".into(),
+                    go_to: "n1".into(),
+                    require: vec![],
+                }],
                 end: false,
             },
             Node {
@@ -194,18 +188,18 @@ fn test_subtitle_output() -> Result<()> {
                 }),
                 choices: vec![],
                 end: true,
-            }
+            },
         ],
     };
-    
+
     let mut st = DialogueState::new(&dlg);
     let mut audio = AudioEngine::new()?;
     let bank = VoiceBank {
         speakers: HashMap::new(),
     };
-    
+
     let mut subtitles = vec![];
-    
+
     // First node
     {
         let mut push_sub = |s: String, t: String| subtitles.push((s, t));
@@ -216,16 +210,16 @@ fn test_subtitle_output() -> Result<()> {
             overrides: None,
             subtitle_out: Some(&mut push_sub),
         };
-        
+
         player.speak_current(&dlg, &st)?;
     }
-    
+
     assert_eq!(subtitles.len(), 1);
     assert_eq!(subtitles[0].0, "Hero");
-    
+
     // Choose option and advance
     st.choose(&dlg, 0);
-    
+
     // Second node
     {
         let mut push_sub = |s: String, t: String| subtitles.push((s, t));
@@ -236,14 +230,14 @@ fn test_subtitle_output() -> Result<()> {
             overrides: None,
             subtitle_out: Some(&mut push_sub),
         };
-        
+
         player.speak_current(&dlg, &st)?;
     }
-    
+
     assert_eq!(subtitles.len(), 2);
     assert_eq!(subtitles[1].0, "Companion");
     assert_eq!(subtitles[1].1, "General Kenobi!");
-    
+
     Ok(())
 }
 
@@ -255,7 +249,7 @@ fn test_voice_spec_with_files() {
         files: vec!["file1.wav".into(), "file2.ogg".into()],
         tts_voice: None,
     };
-    
+
     assert_eq!(spec.folder, "test_folder");
     assert_eq!(spec.files.len(), 2);
     assert!(spec.tts_voice.is_none());
@@ -269,7 +263,7 @@ fn test_voice_spec_with_tts() {
         files: vec![],
         tts_voice: Some("voice_id_123".into()),
     };
-    
+
     assert_eq!(spec.folder, "tts_folder");
     assert!(spec.files.is_empty());
     assert_eq!(spec.tts_voice, Some("voice_id_123".into()));
@@ -281,7 +275,7 @@ fn test_empty_voice_bank() {
     let bank = VoiceBank {
         speakers: HashMap::new(),
     };
-    
+
     assert_eq!(bank.speakers.len(), 0);
 }
 
@@ -289,19 +283,25 @@ fn test_empty_voice_bank() {
 #[test]
 fn test_multiple_speakers() {
     let mut speakers = HashMap::new();
-    speakers.insert("Speaker1".into(), VoiceSpec {
-        folder: "folder1".into(),
-        files: vec!["a.wav".into()],
-        tts_voice: None,
-    });
-    speakers.insert("Speaker2".into(), VoiceSpec {
-        folder: "folder2".into(),
-        files: vec![],
-        tts_voice: Some("tts2".into()),
-    });
-    
+    speakers.insert(
+        "Speaker1".into(),
+        VoiceSpec {
+            folder: "folder1".into(),
+            files: vec!["a.wav".into()],
+            tts_voice: None,
+        },
+    );
+    speakers.insert(
+        "Speaker2".into(),
+        VoiceSpec {
+            folder: "folder2".into(),
+            files: vec![],
+            tts_voice: Some("tts2".into()),
+        },
+    );
+
     let bank = VoiceBank { speakers };
-    
+
     assert_eq!(bank.speakers.len(), 2);
     assert!(bank.speakers.contains_key("Speaker1"));
     assert!(bank.speakers.contains_key("Speaker2"));
@@ -316,16 +316,16 @@ node1 = "audio1.ogg"
 node2 = "audio2.ogg"
 node3 = "audio3.ogg"
 "#;
-    
+
     let map: DialogueAudioMap = toml::from_str(toml_data)?;
-    
+
     assert!(map.map.contains_key("dialogue1"));
     let dialogue1 = &map.map["dialogue1"];
     assert_eq!(dialogue1.len(), 3);
     assert!(dialogue1.contains_key("node1"));
     assert!(dialogue1.contains_key("node2"));
     assert!(dialogue1.contains_key("node3"));
-    
+
     Ok(())
 }
 
@@ -354,21 +354,21 @@ fn test_long_dialogue_chain() -> Result<()> {
             end: i == 9,
         });
     }
-    
+
     let dlg = Dialogue {
         id: "long_chain".into(),
         start: "node0".into(),
         nodes,
     };
-    
+
     let mut st = DialogueState::new(&dlg);
     let mut audio = AudioEngine::new()?;
     let bank = VoiceBank {
         speakers: HashMap::new(),
     };
-    
+
     let mut total_subs = 0;
-    
+
     // Traverse entire chain
     for i in 0..10 {
         let mut subs = vec![];
@@ -381,20 +381,20 @@ fn test_long_dialogue_chain() -> Result<()> {
                 overrides: None,
                 subtitle_out: Some(&mut push_sub),
             };
-            
+
             player.speak_current(&dlg, &st)?;
         }
-        
+
         assert_eq!(subs.len(), 1, "Node {} should have 1 subtitle", i);
         total_subs += subs.len();
-        
+
         if i < 9 {
             st.choose(&dlg, 0); // Choose "Next"
         }
     }
-    
+
     assert_eq!(total_subs, 10);
-    
+
     Ok(())
 }
 
@@ -448,12 +448,12 @@ fn test_branching_dialogue() -> Result<()> {
             },
         ],
     };
-    
+
     let mut audio = AudioEngine::new()?;
     let bank = VoiceBank {
         speakers: HashMap::new(),
     };
-    
+
     // Test Path A
     let mut st_a = DialogueState::new(&dlg);
     {
@@ -464,7 +464,7 @@ fn test_branching_dialogue() -> Result<()> {
             overrides: None,
             subtitle_out: None,
         };
-        
+
         player.speak_current(&dlg, &st_a)?; // Start node
     }
     st_a.choose(&dlg, 0); // Choose Path A
@@ -476,10 +476,10 @@ fn test_branching_dialogue() -> Result<()> {
             overrides: None,
             subtitle_out: None,
         };
-        
+
         player.speak_current(&dlg, &st_a)?; // Path A node
     }
-    
+
     // Test Path B
     let mut st_b = DialogueState::new(&dlg);
     {
@@ -490,7 +490,7 @@ fn test_branching_dialogue() -> Result<()> {
             overrides: None,
             subtitle_out: None,
         };
-        
+
         player.speak_current(&dlg, &st_b)?; // Start node
     }
     st_b.choose(&dlg, 1); // Choose Path B
@@ -502,10 +502,10 @@ fn test_branching_dialogue() -> Result<()> {
             overrides: None,
             subtitle_out: None,
         };
-        
+
         player.speak_current(&dlg, &st_b)?; // Path B node
     }
-    
+
     Ok(())
 }
 
@@ -515,10 +515,10 @@ fn test_empty_dialogue_audio_map() -> Result<()> {
     let toml_data = r#"
 [map]
 "#;
-    
+
     let map: DialogueAudioMap = toml::from_str(toml_data)?;
     assert_eq!(map.map.len(), 0);
-    
+
     Ok(())
 }
 
@@ -539,23 +539,23 @@ folder = "assets/voices/sidekick"
 files = ["joke1.ogg", "joke2.ogg"]
 tts_voice = "sidekick_high_voice"
 "#;
-    
+
     let bank: VoiceBank = toml::from_str(toml_data)?;
-    
+
     assert_eq!(bank.speakers.len(), 3);
-    
+
     let hero = &bank.speakers["Hero"];
     assert_eq!(hero.files.len(), 3);
     assert!(hero.tts_voice.is_none());
-    
+
     let villain = &bank.speakers["Villain"];
     assert_eq!(villain.files.len(), 0);
     assert!(villain.tts_voice.is_some());
-    
+
     let sidekick = &bank.speakers["Sidekick"];
     assert_eq!(sidekick.files.len(), 2);
     assert!(sidekick.tts_voice.is_some());
-    
+
     Ok(())
 }
 
@@ -609,15 +609,15 @@ fn test_multiple_speakers_dialogue() -> Result<()> {
             },
         ],
     };
-    
+
     let mut st = DialogueState::new(&dlg);
     let mut audio = AudioEngine::new()?;
     let bank = VoiceBank {
         speakers: HashMap::new(),
     };
-    
+
     let mut speakers = vec![];
-    
+
     // Collect all speakers through dialogue
     for _ in 0..3 {
         let mut subs = vec![];
@@ -630,23 +630,23 @@ fn test_multiple_speakers_dialogue() -> Result<()> {
                 overrides: None,
                 subtitle_out: Some(&mut push_sub),
             };
-            
+
             player.speak_current(&dlg, &st)?;
         }
-        
+
         if !subs.is_empty() {
             speakers.push(subs[0].0.clone());
         }
-        
+
         if !st.current(&dlg).end {
             st.choose(&dlg, 0);
         }
     }
-    
+
     assert_eq!(speakers.len(), 3);
     assert_eq!(speakers[0], "Alice");
     assert_eq!(speakers[1], "Bob");
     assert_eq!(speakers[2], "Charlie");
-    
+
     Ok(())
 }

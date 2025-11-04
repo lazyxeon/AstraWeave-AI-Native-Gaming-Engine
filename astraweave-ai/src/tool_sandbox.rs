@@ -1182,7 +1182,10 @@ mod tests {
 
         let context = ValidationContext::new();
         let result = validate_tool_action(0, ToolVerb::Revive, &world, &context, None);
-        assert!(result.is_ok(), "Revive with None target should succeed if morale OK");
+        assert!(
+            result.is_ok(),
+            "Revive with None target should succeed if morale OK"
+        );
     }
 
     // ========================================

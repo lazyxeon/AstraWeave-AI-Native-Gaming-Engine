@@ -1,15 +1,15 @@
 // Week 3 Day 6: AI Performance Benchmarks
 // Validates AI planning performance against Phase 7 targets
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use astraweave_ai::{
-    orchestrator::{RuleOrchestrator, GOAPOrchestrator, UtilityOrchestrator, Orchestrator},
+    orchestrator::{GOAPOrchestrator, Orchestrator, RuleOrchestrator, UtilityOrchestrator},
     tool_sandbox::{validate_action_plan, PerceptionConfig},
 };
 use astraweave_core::{
-    schema::{WorldSnapshot, CompanionState, PlayerState, EnemyState, Poi},
     glam::IVec2,
+    schema::{CompanionState, EnemyState, PlayerState, Poi, WorldSnapshot},
 };
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::BTreeMap;
 
 // =============================================================================
@@ -67,19 +67,28 @@ fn create_complex_snapshot() -> WorldSnapshot {
             cooldowns,
         },
         enemies: vec![
-            EnemyState { pos: IVec2::new(20, 20), hp: 60 },
-            EnemyState { pos: IVec2::new(25, 18), hp: 40 },
-            EnemyState { pos: IVec2::new(30, 22), hp: 80 },
+            EnemyState {
+                pos: IVec2::new(20, 20),
+                hp: 60,
+            },
+            EnemyState {
+                pos: IVec2::new(25, 18),
+                hp: 40,
+            },
+            EnemyState {
+                pos: IVec2::new(30, 22),
+                hp: 80,
+            },
         ],
         pois: vec![
-            Poi { pos: IVec2::new(15, 15) },
-            Poi { pos: IVec2::new(18, 20) },
+            Poi {
+                pos: IVec2::new(15, 15),
+            },
+            Poi {
+                pos: IVec2::new(18, 20),
+            },
         ],
-        obstacles: vec![
-            IVec2::new(16, 16),
-            IVec2::new(17, 16),
-            IVec2::new(18, 16),
-        ],
+        obstacles: vec![IVec2::new(16, 16), IVec2::new(17, 16), IVec2::new(18, 16)],
         objective: Some("Defend the checkpoint".to_string()),
     }
 }
@@ -90,7 +99,7 @@ fn create_complex_snapshot() -> WorldSnapshot {
 
 fn bench_goap_planning_latency(c: &mut Criterion) {
     let mut group = c.benchmark_group("GOAP Planning");
-    
+
     // Simple scenario (1 enemy)
     let simple_snap = create_minimal_snapshot(1, 0);
     group.bench_function("1 enemy (simple)", |b| {
@@ -193,15 +202,13 @@ fn bench_tool_validation(c: &mut Criterion) {
     // Create a simple MoveTo plan
     let mut plan_args = BTreeMap::new();
     plan_args.insert("pos".to_string(), "20,20".to_string());
-    
+
     let plan = astraweave_core::schema::PlanIntent {
         plan_id: "test_plan".to_string(),
-        steps: vec![
-            astraweave_core::schema::ActionStep {
-                verb: "MoveTo".to_string(),
-                args: plan_args,
-            }
-        ],
+        steps: vec![astraweave_core::schema::ActionStep {
+            verb: "MoveTo".to_string(),
+            args: plan_args,
+        }],
     };
 
     group.bench_function("validate MoveTo", |b| {
@@ -215,15 +222,13 @@ fn bench_tool_validation(c: &mut Criterion) {
     // Create a CoverFire plan
     let mut cover_args = BTreeMap::new();
     cover_args.insert("target".to_string(), "20,20".to_string());
-    
+
     let cover_plan = astraweave_core::schema::PlanIntent {
         plan_id: "cover_plan".to_string(),
-        steps: vec![
-            astraweave_core::schema::ActionStep {
-                verb: "CoverFire".to_string(),
-                args: cover_args,
-            }
-        ],
+        steps: vec![astraweave_core::schema::ActionStep {
+            verb: "CoverFire".to_string(),
+            args: cover_args,
+        }],
     };
 
     group.bench_function("validate CoverFire", |b| {
@@ -251,14 +256,14 @@ fn bench_multi_agent_throughput(c: &mut Criterion) {
             |b, &count| {
                 let orchestrator = GOAPOrchestrator;
                 let snap = create_minimal_snapshot(1, 0);
-                
+
                 b.iter(|| {
                     for _ in 0..count {
                         let s = black_box(&snap);
                         orchestrator.next_action(s);
                     }
                 })
-            }
+            },
         );
     }
 

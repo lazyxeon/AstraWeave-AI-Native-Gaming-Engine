@@ -447,8 +447,12 @@ pub fn generate_attribution_file(
     lines.push(format!("Generated: {}", chrono::Utc::now().to_rfc3339()));
 
     let content = lines.join("\n");
-    fs::write(output_path, content)
-        .with_context(|| format!("Failed to write attribution file: {}", output_path.display()))?;
+    fs::write(output_path, content).with_context(|| {
+        format!(
+            "Failed to write attribution file: {}",
+            output_path.display()
+        )
+    })?;
 
     Ok(())
 }

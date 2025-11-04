@@ -10,16 +10,16 @@ pub struct LlmTelemetry {
     pub requests_total: AtomicU64,
     pub requests_success: AtomicU64,
     pub requests_error: AtomicU64,
-    
+
     // Cache metrics (populated from cache stats)
     pub cache_hits: AtomicU64,
     pub cache_misses: AtomicU64,
-    
+
     // Retry/fallback metrics
     pub retries_attempted: AtomicU64,
     pub circuit_breaker_open: AtomicU64,
     pub fallbacks_triggered: AtomicU64,
-    
+
     // Latency tracking (simplified - just total ms for averaging)
     pub latency_llm_call_ms: AtomicU64,
     pub latency_llm_call_count: AtomicU64,
@@ -87,14 +87,17 @@ impl LlmTelemetry {
 
     /// Record LLM call latency
     pub fn record_llm_latency(&self, duration: Duration) {
-        self.latency_llm_call_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+        self.latency_llm_call_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
         self.latency_llm_call_count.fetch_add(1, Ordering::Relaxed);
     }
 
     /// Record total plan generation latency
     pub fn record_plan_latency(&self, duration: Duration) {
-        self.latency_plan_total_ms.fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
-        self.latency_plan_total_count.fetch_add(1, Ordering::Relaxed);
+        self.latency_plan_total_ms
+            .fetch_add(duration.as_millis() as u64, Ordering::Relaxed);
+        self.latency_plan_total_count
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     /// Get a snapshot of current metrics
@@ -102,7 +105,7 @@ impl LlmTelemetry {
         let requests_total = self.requests_total.load(Ordering::Relaxed);
         let requests_success = self.requests_success.load(Ordering::Relaxed);
         let requests_error = self.requests_error.load(Ordering::Relaxed);
-        
+
         let success_rate = if requests_total > 0 {
             (requests_success as f64 / requests_total as f64 * 100.0) as u32
         } else {
@@ -239,7 +242,7 @@ mod tests {
     fn test_telemetry_creation() {
         let telemetry = LlmTelemetry::new();
         let snapshot = telemetry.snapshot();
-        
+
         assert_eq!(snapshot.requests_total, 0);
         assert_eq!(snapshot.requests_success, 0);
         assert_eq!(snapshot.requests_error, 0);
@@ -249,10 +252,10 @@ mod tests {
     #[test]
     fn test_record_requests() {
         let telemetry = LlmTelemetry::new();
-        
+
         telemetry.record_request();
         telemetry.record_success();
-        
+
         let snapshot = telemetry.snapshot();
         assert_eq!(snapshot.requests_total, 1);
         assert_eq!(snapshot.requests_success, 1);
@@ -262,17 +265,17 @@ mod tests {
     #[test]
     fn test_success_rate_calculation() {
         let telemetry = LlmTelemetry::new();
-        
+
         // 3 requests: 2 success, 1 error
         telemetry.record_request();
         telemetry.record_success();
-        
+
         telemetry.record_request();
         telemetry.record_success();
-        
+
         telemetry.record_request();
         telemetry.record_error();
-        
+
         let snapshot = telemetry.snapshot();
         assert_eq!(snapshot.requests_total, 3);
         assert_eq!(snapshot.requests_success, 2);
@@ -283,11 +286,11 @@ mod tests {
     #[test]
     fn test_cache_metrics() {
         let telemetry = LlmTelemetry::new();
-        
+
         telemetry.record_cache_hit();
         telemetry.record_cache_hit();
         telemetry.record_cache_miss();
-        
+
         let snapshot = telemetry.snapshot();
         assert_eq!(snapshot.cache_hits, 2);
         assert_eq!(snapshot.cache_misses, 1);
@@ -297,10 +300,10 @@ mod tests {
     #[test]
     fn test_latency_tracking() {
         let telemetry = LlmTelemetry::new();
-        
+
         telemetry.record_llm_latency(Duration::from_millis(100));
         telemetry.record_llm_latency(Duration::from_millis(200));
-        
+
         let snapshot = telemetry.snapshot();
         assert_eq!(snapshot.avg_llm_latency_ms, 150); // (100+200)/2
     }
@@ -308,15 +311,15 @@ mod tests {
     #[test]
     fn test_reset() {
         let telemetry = LlmTelemetry::new();
-        
+
         telemetry.record_request();
         telemetry.record_success();
         telemetry.record_cache_hit();
-        
+
         assert_eq!(telemetry.snapshot().requests_total, 1);
-        
+
         telemetry.reset();
-        
+
         let snapshot = telemetry.snapshot();
         assert_eq!(snapshot.requests_total, 0);
         assert_eq!(snapshot.cache_hits, 0);
@@ -325,14 +328,14 @@ mod tests {
     #[test]
     fn test_format_output() {
         let telemetry = LlmTelemetry::new();
-        
+
         telemetry.record_request();
         telemetry.record_success();
         telemetry.record_cache_hit();
-        
+
         let snapshot = telemetry.snapshot();
         let formatted = snapshot.format();
-        
+
         assert!(formatted.contains("Requests: 1 total"));
         assert!(formatted.contains("100% success rate"));
         assert!(formatted.contains("Cache: 1 hits"));
@@ -343,7 +346,7 @@ mod tests {
         let timer = OperationTimer::start();
         std::thread::sleep(Duration::from_millis(10));
         let elapsed = timer.elapsed();
-        
+
         assert!(elapsed.as_millis() >= 10);
     }
 }

@@ -384,7 +384,7 @@ fn bench_index_operations(c: &mut Criterion) {
     group.bench_function("list_saves_10_saves", |b| {
         let temp_dir = TempDir::new().unwrap();
         let mgr = SaveManager::new(temp_dir.path());
-        
+
         // Create 10 saves
         for i in 0..10 {
             let bundle = create_test_bundle(10 * 1024);
@@ -401,7 +401,7 @@ fn bench_index_operations(c: &mut Criterion) {
     group.bench_function("list_saves_100_saves", |b| {
         let temp_dir = TempDir::new().unwrap();
         let mgr = SaveManager::new(temp_dir.path());
-        
+
         // Create 100 saves across 10 slots
         for i in 0..100 {
             let bundle = create_test_bundle(1024); // Small to speed up setup
@@ -426,7 +426,7 @@ fn bench_scaling(c: &mut Criterion) {
 
     for size_kb in [1, 10, 100, 500, 1000, 5000].iter() {
         let size_bytes = size_kb * 1024;
-        
+
         group.throughput(Throughput::Bytes(size_bytes as u64));
         group.bench_with_input(
             BenchmarkId::new("full_save_cycle", format!("{}kb", size_kb)),

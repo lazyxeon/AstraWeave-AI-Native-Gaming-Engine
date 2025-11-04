@@ -150,235 +150,159 @@ pub enum ActionStep {
     // ═══════════════════════════════════════
     // MOVEMENT (6 tools)
     // ═══════════════════════════════════════
-    
     /// Move to a specific position
-    MoveTo { 
-        x: i32, 
+    MoveTo {
+        x: i32,
         y: i32,
         #[serde(default)]
         speed: Option<MovementSpeed>,
     },
-    
+
     /// Move toward target entity while maintaining distance
-    Approach { 
+    Approach {
         target_id: Entity,
         /// Desired distance (e.g., melee=2, ranged=15)
         distance: f32,
     },
-    
+
     /// Move away from target entity
-    Retreat { 
+    Retreat {
         target_id: Entity,
         /// Safe distance to reach
         distance: f32,
     },
-    
+
     /// Take cover behind nearest obstacle
     TakeCover {
         /// Optional: specific cover position
         position: Option<IVec2>,
     },
-    
+
     /// Strafe around target (circle)
     Strafe {
         target_id: Entity,
         direction: StrafeDirection,
     },
-    
+
     /// Patrol between waypoints
-    Patrol {
-        waypoints: Vec<IVec2>,
-    },
-    
+    Patrol { waypoints: Vec<IVec2> },
+
     // ═══════════════════════════════════════
     // OFFENSIVE (8 tools)
     // ═══════════════════════════════════════
-    
     /// Basic attack targeting entity
-    Attack { 
-        target_id: Entity,
-    },
-    
+    Attack { target_id: Entity },
+
     /// Aimed shot with higher accuracy
-    AimedShot {
-        target_id: Entity,
-    },
-    
+    AimedShot { target_id: Entity },
+
     /// Quick attack with lower damage
-    QuickAttack {
-        target_id: Entity,
-    },
-    
+    QuickAttack { target_id: Entity },
+
     /// Heavy attack with higher damage
-    HeavyAttack {
-        target_id: Entity,
-    },
-    
+    HeavyAttack { target_id: Entity },
+
     /// Area-of-effect attack
-    AoEAttack {
-        x: i32,
-        y: i32,
-        radius: f32,
-    },
-    
+    AoEAttack { x: i32, y: i32, radius: f32 },
+
     /// Throw explosive (grenade, etc.)
-    ThrowExplosive {
-        x: i32,
-        y: i32,
-    },
-    
+    ThrowExplosive { x: i32, y: i32 },
+
     /// Suppressive covering fire
-    CoverFire { 
-        target_id: Entity, 
-        duration: f32,
-    },
-    
+    CoverFire { target_id: Entity, duration: f32 },
+
     /// Charge at target
-    Charge {
-        target_id: Entity,
-    },
-    
+    Charge { target_id: Entity },
+
     // ═══════════════════════════════════════
     // DEFENSIVE (6 tools)
     // ═══════════════════════════════════════
-    
     /// Block incoming attack
     Block,
-    
+
     /// Dodge attack
-    Dodge {
-        direction: Option<StrafeDirection>,
-    },
-    
+    Dodge { direction: Option<StrafeDirection> },
+
     /// Parry incoming attack
     Parry,
-    
+
     /// Throw smoke grenade
-    ThrowSmoke {
-        x: i32,
-        y: i32,
-    },
-    
+    ThrowSmoke { x: i32, y: i32 },
+
     /// Heal self or ally
-    Heal {
-        target_id: Option<Entity>,
-    },
-    
+    Heal { target_id: Option<Entity> },
+
     /// Use defensive ability
-    UseDefensiveAbility {
-        ability_name: String,
-    },
-    
+    UseDefensiveAbility { ability_name: String },
+
     // ═══════════════════════════════════════
     // EQUIPMENT (5 tools)
     // ═══════════════════════════════════════
-    
     /// Equip weapon
-    EquipWeapon {
-        weapon_name: String,
-    },
-    
+    EquipWeapon { weapon_name: String },
+
     /// Switch to different weapon
-    SwitchWeapon {
-        slot: u32,
-    },
-    
+    SwitchWeapon { slot: u32 },
+
     /// Reload current weapon
     Reload,
-    
+
     /// Use item from inventory
-    UseItem {
-        item_name: String,
-    },
-    
+    UseItem { item_name: String },
+
     /// Drop item
-    DropItem {
-        item_name: String,
-    },
-    
+    DropItem { item_name: String },
+
     // ═══════════════════════════════════════
     // TACTICAL (7 tools)
     // ═══════════════════════════════════════
-    
     /// Call for reinforcements
-    CallReinforcements {
-        count: u32,
-    },
-    
+    CallReinforcements { count: u32 },
+
     /// Mark target for allies
-    MarkTarget {
-        target_id: Entity,
-    },
-    
+    MarkTarget { target_id: Entity },
+
     /// Request covering fire
-    RequestCover {
-        duration: f32,
-    },
-    
+    RequestCover { duration: f32 },
+
     /// Coordinate attack with allies
-    CoordinateAttack {
-        target_id: Entity,
-    },
-    
+    CoordinateAttack { target_id: Entity },
+
     /// Set up ambush
-    SetAmbush {
-        position: IVec2,
-    },
-    
+    SetAmbush { position: IVec2 },
+
     /// Distract enemy
-    Distract {
-        target_id: Entity,
-    },
-    
+    Distract { target_id: Entity },
+
     /// Regroup with allies
-    Regroup {
-        rally_point: IVec2,
-    },
-    
+    Regroup { rally_point: IVec2 },
+
     // ═══════════════════════════════════════
     // UTILITY (5 tools)
     // ═══════════════════════════════════════
-    
     /// Scan area for threats
-    Scan {
-        radius: f32,
-    },
-    
+    Scan { radius: f32 },
+
     /// Wait for duration
-    Wait {
-        duration: f32,
-    },
-    
+    Wait { duration: f32 },
+
     /// Interact with object
-    Interact {
-        target_id: Entity,
-    },
-    
+    Interact { target_id: Entity },
+
     /// Use special ability
-    UseAbility {
-        ability_name: String,
-    },
-    
+    UseAbility { ability_name: String },
+
     /// Taunt enemy
-    Taunt {
-        target_id: Entity,
-    },
-    
+    Taunt { target_id: Entity },
+
     // ═══════════════════════════════════════
     // LEGACY (kept for backward compatibility)
     // ═══════════════════════════════════════
-    
     /// Generic throw (now use ThrowSmoke or ThrowExplosive)
-    Throw { 
-        item: String, 
-        x: i32, 
-        y: i32,
-    },
-    
+    Throw { item: String, x: i32, y: i32 },
+
     /// Revive ally
-    Revive { 
-        ally_id: Entity,
-    },
+    Revive { ally_id: Entity },
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -527,7 +451,7 @@ mod tests {
         let walk = MovementSpeed::Walk;
         let json = serde_json::to_string(&walk).unwrap();
         assert_eq!(json, "\"walk\"");
-        
+
         let deserialized: MovementSpeed = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized, MovementSpeed::Walk);
     }
@@ -537,7 +461,7 @@ mod tests {
         let left = StrafeDirection::Left;
         let json = serde_json::to_string(&left).unwrap();
         assert_eq!(json, "\"left\"");
-        
+
         let deserialized: StrafeDirection = serde_json::from_str(&json).unwrap();
         assert_eq!(deserialized, StrafeDirection::Left);
     }
@@ -551,10 +475,10 @@ mod tests {
 
     #[test]
     fn test_action_step_move_to() {
-        let action = ActionStep::MoveTo { 
-            x: 10, 
-            y: 20, 
-            speed: Some(MovementSpeed::Run) 
+        let action = ActionStep::MoveTo {
+            x: 10,
+            y: 20,
+            speed: Some(MovementSpeed::Run),
         };
         let json = serde_json::to_string(&action).unwrap();
         assert!(json.contains("\"act\":\"MoveTo\""));
@@ -586,7 +510,12 @@ mod tests {
 
     #[test]
     fn test_rect_structure() {
-        let rect = Rect { x0: 0, y0: 0, x1: 10, y1: 10 };
+        let rect = Rect {
+            x0: 0,
+            y0: 0,
+            x1: 10,
+            y1: 10,
+        };
         assert_eq!(rect.x0, 0);
         assert_eq!(rect.x1, 10);
     }
@@ -632,7 +561,7 @@ mod tests {
     fn test_engine_error_display() {
         let err = EngineError::InvalidAction("test".to_string());
         assert_eq!(err.to_string(), "invalid action: test");
-        
+
         let err2 = EngineError::LosBlocked;
         assert_eq!(err2.to_string(), "line of sight blocked");
     }
@@ -659,7 +588,7 @@ mod tests {
     fn test_action_step_deserialization() {
         let json = r#"{"act":"MoveTo","x":5,"y":10,"speed":"run"}"#;
         let action: ActionStep = serde_json::from_str(json).unwrap();
-        
+
         match action {
             ActionStep::MoveTo { x, y, speed } => {
                 assert_eq!(x, 5);
@@ -675,7 +604,7 @@ mod tests {
         let mut companion = CompanionState::default();
         companion.cooldowns.insert("attack".to_string(), 2.5);
         companion.cooldowns.insert("reload".to_string(), 1.0);
-        
+
         assert_eq!(companion.cooldowns.get("attack"), Some(&2.5));
         assert_eq!(companion.cooldowns.len(), 2);
     }
@@ -685,7 +614,11 @@ mod tests {
         let intent = PlanIntent {
             plan_id: "plan_123".to_string(),
             steps: vec![
-                ActionStep::MoveTo { x: 10, y: 20, speed: None },
+                ActionStep::MoveTo {
+                    x: 10,
+                    y: 20,
+                    speed: None,
+                },
                 ActionStep::Attack { target_id: 5 },
                 ActionStep::Reload,
             ],
@@ -697,44 +630,82 @@ mod tests {
     #[test]
     fn test_all_action_steps_compile() {
         // Ensure all ActionStep variants compile
-        let _ = ActionStep::MoveTo { x: 0, y: 0, speed: None };
-        let _ = ActionStep::Approach { target_id: 1, distance: 5.0 };
-        let _ = ActionStep::Retreat { target_id: 1, distance: 10.0 };
+        let _ = ActionStep::MoveTo {
+            x: 0,
+            y: 0,
+            speed: None,
+        };
+        let _ = ActionStep::Approach {
+            target_id: 1,
+            distance: 5.0,
+        };
+        let _ = ActionStep::Retreat {
+            target_id: 1,
+            distance: 10.0,
+        };
         let _ = ActionStep::TakeCover { position: None };
-        let _ = ActionStep::Strafe { target_id: 1, direction: StrafeDirection::Left };
+        let _ = ActionStep::Strafe {
+            target_id: 1,
+            direction: StrafeDirection::Left,
+        };
         let _ = ActionStep::Patrol { waypoints: vec![] };
         let _ = ActionStep::Attack { target_id: 1 };
         let _ = ActionStep::AimedShot { target_id: 1 };
         let _ = ActionStep::QuickAttack { target_id: 1 };
         let _ = ActionStep::HeavyAttack { target_id: 1 };
-        let _ = ActionStep::AoEAttack { x: 0, y: 0, radius: 5.0 };
+        let _ = ActionStep::AoEAttack {
+            x: 0,
+            y: 0,
+            radius: 5.0,
+        };
         let _ = ActionStep::ThrowExplosive { x: 0, y: 0 };
-        let _ = ActionStep::CoverFire { target_id: 1, duration: 3.0 };
+        let _ = ActionStep::CoverFire {
+            target_id: 1,
+            duration: 3.0,
+        };
         let _ = ActionStep::Charge { target_id: 1 };
         let _ = ActionStep::Block;
         let _ = ActionStep::Dodge { direction: None };
         let _ = ActionStep::Parry;
         let _ = ActionStep::ThrowSmoke { x: 0, y: 0 };
         let _ = ActionStep::Heal { target_id: None };
-        let _ = ActionStep::UseDefensiveAbility { ability_name: "shield".to_string() };
-        let _ = ActionStep::EquipWeapon { weapon_name: "sword".to_string() };
+        let _ = ActionStep::UseDefensiveAbility {
+            ability_name: "shield".to_string(),
+        };
+        let _ = ActionStep::EquipWeapon {
+            weapon_name: "sword".to_string(),
+        };
         let _ = ActionStep::SwitchWeapon { slot: 1 };
         let _ = ActionStep::Reload;
-        let _ = ActionStep::UseItem { item_name: "potion".to_string() };
-        let _ = ActionStep::DropItem { item_name: "trash".to_string() };
+        let _ = ActionStep::UseItem {
+            item_name: "potion".to_string(),
+        };
+        let _ = ActionStep::DropItem {
+            item_name: "trash".to_string(),
+        };
         let _ = ActionStep::CallReinforcements { count: 3 };
         let _ = ActionStep::MarkTarget { target_id: 1 };
         let _ = ActionStep::RequestCover { duration: 5.0 };
         let _ = ActionStep::CoordinateAttack { target_id: 1 };
-        let _ = ActionStep::SetAmbush { position: IVec2 { x: 0, y: 0 } };
+        let _ = ActionStep::SetAmbush {
+            position: IVec2 { x: 0, y: 0 },
+        };
         let _ = ActionStep::Distract { target_id: 1 };
-        let _ = ActionStep::Regroup { rally_point: IVec2 { x: 0, y: 0 } };
+        let _ = ActionStep::Regroup {
+            rally_point: IVec2 { x: 0, y: 0 },
+        };
         let _ = ActionStep::Scan { radius: 10.0 };
         let _ = ActionStep::Wait { duration: 2.0 };
         let _ = ActionStep::Interact { target_id: 1 };
-        let _ = ActionStep::UseAbility { ability_name: "fireball".to_string() };
+        let _ = ActionStep::UseAbility {
+            ability_name: "fireball".to_string(),
+        };
         let _ = ActionStep::Taunt { target_id: 1 };
-        let _ = ActionStep::Throw { item: "grenade".to_string(), x: 0, y: 0 };
+        let _ = ActionStep::Throw {
+            item: "grenade".to_string(),
+            x: 0,
+            y: 0,
+        };
         let _ = ActionStep::Revive { ally_id: 1 };
     }
 }

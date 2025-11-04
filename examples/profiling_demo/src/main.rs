@@ -43,13 +43,13 @@ The demo tracks:
 Press ESC to exit.
 */
 
+use anyhow::Result;
 use astraweave_ecs::{App, Entity, Query2, Query2Mut, SystemStage, World};
 use astraweave_physics::{SpatialHash, AABB};
 use astraweave_profiling::{frame_mark, message, plot, span};
-use anyhow::Result;
 use glam::Vec3;
-use std::time::Instant;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 // Global timing storage (thread-safe for system access)
 lazy_static::lazy_static! {
@@ -60,8 +60,8 @@ lazy_static::lazy_static! {
 fn parse_args() -> (usize, usize) {
     let args: Vec<String> = std::env::args().collect();
     let mut entity_count = 1000; // Default: stress test
-    let mut max_frames = 1000;   // Default: 1000 frames (~16s @ 60 FPS)
-    
+    let mut max_frames = 1000; // Default: 1000 frames (~16s @ 60 FPS)
+
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -104,7 +104,7 @@ fn parse_args() -> (usize, usize) {
         }
         i += 1;
     }
-    
+
     (entity_count, max_frames)
 }
 
@@ -200,9 +200,12 @@ impl GameState {
 
                 if i % 2 == 0 {
                     // AI agent
-                    app.world.insert(entity, AIAgent {
-                        state: AgentState::Idle,
-                    });
+                    app.world.insert(
+                        entity,
+                        AIAgent {
+                            state: AgentState::Idle,
+                        },
+                    );
                     app.world.insert(entity, Renderable { mesh_id: 1 });
                 } else {
                     // Physics object
@@ -250,29 +253,47 @@ impl GameState {
         if self.frame_count % 100 == 0 {
             let timings = SYSTEM_TIMINGS.lock().unwrap();
             println!("\n=== Frame {} System Timings ===", self.frame_count);
-            println!("AI Perception:       {:>6} µs ({:>5.2}%)", 
-                timings.ai_perception_us, 
-                (timings.ai_perception_us as f64 / total_us as f64) * 100.0);
-            println!("AI Planning:         {:>6} µs ({:>5.2}%)", 
+            println!(
+                "AI Perception:       {:>6} µs ({:>5.2}%)",
+                timings.ai_perception_us,
+                (timings.ai_perception_us as f64 / total_us as f64) * 100.0
+            );
+            println!(
+                "AI Planning:         {:>6} µs ({:>5.2}%)",
                 timings.ai_planning_us,
-                (timings.ai_planning_us as f64 / total_us as f64) * 100.0);
-            println!("Movement:            {:>6} µs ({:>5.2}%)", 
+                (timings.ai_planning_us as f64 / total_us as f64) * 100.0
+            );
+            println!(
+                "Movement:            {:>6} µs ({:>5.2}%)",
                 timings.movement_us,
-                (timings.movement_us as f64 / total_us as f64) * 100.0);
-            println!("Physics (total):     {:>6} µs ({:>5.2}%)", 
+                (timings.movement_us as f64 / total_us as f64) * 100.0
+            );
+            println!(
+                "Physics (total):     {:>6} µs ({:>5.2}%)",
                 timings.physics_us,
-                (timings.physics_us as f64 / total_us as f64) * 100.0);
-            println!("  - Collision Det:   {:>6} µs ({:>5.2}%)", 
+                (timings.physics_us as f64 / total_us as f64) * 100.0
+            );
+            println!(
+                "  - Collision Det:   {:>6} µs ({:>5.2}%)",
                 timings.collision_detection_us,
-                (timings.collision_detection_us as f64 / total_us as f64) * 100.0);
-            println!("Cleanup:             {:>6} µs ({:>5.2}%)", 
+                (timings.collision_detection_us as f64 / total_us as f64) * 100.0
+            );
+            println!(
+                "Cleanup:             {:>6} µs ({:>5.2}%)",
                 timings.cleanup_us,
-                (timings.cleanup_us as f64 / total_us as f64) * 100.0);
-            println!("Rendering:           {:>6} µs ({:>5.2}%)", 
+                (timings.cleanup_us as f64 / total_us as f64) * 100.0
+            );
+            println!(
+                "Rendering:           {:>6} µs ({:>5.2}%)",
                 timings.rendering_us,
-                (timings.rendering_us as f64 / total_us as f64) * 100.0);
+                (timings.rendering_us as f64 / total_us as f64) * 100.0
+            );
             println!("---");
-            println!("Total Frame Time:    {:>6} µs ({:.3} ms)", total_us, total_us as f64 / 1000.0);
+            println!(
+                "Total Frame Time:    {:>6} µs ({:.3} ms)",
+                total_us,
+                total_us as f64 / 1000.0
+            );
             println!("Target (Week 8):     {:>6} µs (2.700 ms)", 2700);
             println!("FPS:                 {:.2}", fps);
         }
@@ -299,7 +320,7 @@ fn ai_perception_system(world: &mut World) {
     }
 
     plot!("AI.Agents", count as f64);
-    
+
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
         timings.ai_perception_us = timer_start.elapsed().as_micros() as u64;
@@ -353,7 +374,7 @@ fn ai_planning_system(world: &mut World) {
 
     plot!("AI.PlanningOperations", planning_count as f64);
     plot!("AI.CacheHitRate", cache_hit_rate);
-    
+
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
         timings.ai_planning_us = timer_start.elapsed().as_micros() as u64;
@@ -367,16 +388,16 @@ fn movement_system(world: &mut World) {
     // OPTIMIZED: Use Query2Mut to update positions directly without writeback
     // This eliminates the 770µs O(log n) writeback bottleneck
     let query = Query2Mut::<Position, Velocity>::new(world);
-    
+
     let mut moved_count = 0;
-    
+
     // Direct mutation - no collect, no writeback, O(1) per entity
     for (_entity, pos, vel) in query {
         // Update position with velocity
         pos.0.x += vel.0.x * 1.0;
         pos.0.y += vel.0.y * 1.0;
         pos.0.z += vel.0.z * 1.0;
-        
+
         // Apply bounds wrapping inline
         if pos.0.x.abs() > 64.0 {
             pos.0.x = -pos.0.x.signum() * 64.0;
@@ -384,12 +405,12 @@ fn movement_system(world: &mut World) {
         if pos.0.y.abs() > 64.0 {
             pos.0.y = -pos.0.y.signum() * 64.0;
         }
-        
+
         moved_count += 1;
     }
 
     plot!("Movement.Updates", moved_count as f64);
-    
+
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
         timings.movement_us = timer_start.elapsed().as_micros() as u64;
@@ -416,14 +437,15 @@ fn physics_system(world: &mut World) {
 
         if !entities_data.is_empty() {
             // Build entity index map for O(1) lookups (fix for O(n²) regression)
-            let entity_map: std::collections::HashMap<u64, (usize, Vec3)> = entities_data.iter()
+            let entity_map: std::collections::HashMap<u64, (usize, Vec3)> = entities_data
+                .iter()
                 .enumerate()
                 .map(|(i, (e, pos))| (e.id(), (i, *pos)))
                 .collect();
 
             // Build spatial hash grid (use entity ID as u32)
             let mut grid = SpatialHash::new(2.0); // Cell size = 2× collision radius
-            
+
             for (entity, pos) in &entities_data {
                 let aabb = AABB::from_sphere(*pos, 0.5); // Collision radius = 0.5
                 grid.insert(entity.id(), aabb);
@@ -432,7 +454,7 @@ fn physics_system(world: &mut World) {
             // Query for collisions using spatial hash
             for (i, (_entity, pos)) in entities_data.iter().enumerate() {
                 // Query radius must match collision distance (1.0), not object radius (0.5)!
-                let query_aabb = AABB::from_sphere(*pos, 1.0);  // collision_distance = 1.0
+                let query_aabb = AABB::from_sphere(*pos, 1.0); // collision_distance = 1.0
                 let candidates = grid.query(query_aabb);
 
                 for &candidate_id in &candidates {
@@ -452,12 +474,12 @@ fn physics_system(world: &mut World) {
             }
         }
     }
-    
+
     let collision_elapsed = collision_start.elapsed().as_micros() as u64;
 
     plot!("Physics.CollisionChecks", collision_checks as f64);
     plot!("Physics.Collisions", collisions as f64);
-    
+
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
         timings.physics_us = timer_start.elapsed().as_micros() as u64;
@@ -469,7 +491,7 @@ fn cleanup_system(_world: &mut World) {
     let timer_start = Instant::now();
     span!("cleanup");
     // Simulate cleanup work
-    
+
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
         timings.cleanup_us = timer_start.elapsed().as_micros() as u64;
@@ -497,7 +519,7 @@ fn rendering_system(world: &mut World) {
 
     plot!("Render.DrawCalls", draw_calls as f64);
     plot!("Render.VertexCount", vertex_count as f64);
-    
+
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
         timings.rendering_us = timer_start.elapsed().as_micros() as u64;
@@ -507,18 +529,29 @@ fn rendering_system(world: &mut World) {
 fn main() -> Result<()> {
     // Parse command-line arguments
     let (entity_count, max_frames) = parse_args();
-    
+
     println!("=== AstraWeave Profiling Demo ===");
-    println!("Tracy profiling enabled: {}", astraweave_profiling::Profiler::is_enabled());
+    println!(
+        "Tracy profiling enabled: {}",
+        astraweave_profiling::Profiler::is_enabled()
+    );
     println!("Configuration:");
     println!("  Entities: {}", entity_count);
-    println!("  Frames: {} (~{:.1}s @ 60 FPS)", max_frames, max_frames as f64 / 60.0);
+    println!(
+        "  Frames: {} (~{:.1}s @ 60 FPS)",
+        max_frames,
+        max_frames as f64 / 60.0
+    );
     println!("\nControls:");
     println!("  Run for {} frames then exit", max_frames);
     println!("\nStart Tracy server before running for best results.");
     println!("Tracy will auto-connect and capture profiling data.\n");
 
-    message!("=== Profiling Demo Start === Entities: {}, Frames: {}", entity_count, max_frames);
+    message!(
+        "=== Profiling Demo Start === Entities: {}, Frames: {}",
+        entity_count,
+        max_frames
+    );
 
     // Create game state
     let mut game = GameState::new(entity_count)?;
@@ -542,14 +575,25 @@ fn main() -> Result<()> {
     let avg_frame_ms = elapsed.as_millis() as f64 / max_frames as f64;
 
     println!("\n=== Profiling Complete ===");
-    println!("Configuration: {} entities, {} frames", entity_count, max_frames);
+    println!(
+        "Configuration: {} entities, {} frames",
+        entity_count, max_frames
+    );
     println!("Total time: {:.2}s", elapsed.as_secs_f64());
     println!("Average FPS: {:.2}", avg_fps);
     println!("Average frame time: {:.3}ms", avg_frame_ms);
     println!("\nCheck Tracy for detailed profiling data!");
-    println!("Save trace: File > Save Trace > baseline_{}.tracy", entity_count);
+    println!(
+        "Save trace: File > Save Trace > baseline_{}.tracy",
+        entity_count
+    );
 
-    message!("=== Profiling Demo Complete === Entities: {}, FPS: {:.2}, Frame: {:.3}ms", entity_count, avg_fps, avg_frame_ms);
+    message!(
+        "=== Profiling Demo Complete === Entities: {}, FPS: {:.2}, Frame: {:.3}ms",
+        entity_count,
+        avg_fps,
+        avg_frame_ms
+    );
 
     Ok(())
 }

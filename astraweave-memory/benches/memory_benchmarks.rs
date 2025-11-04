@@ -1,9 +1,9 @@
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId};
 use astraweave_memory::{
-    Memory, MemoryContent, MemoryManager, MemoryMetadata, MemoryType,
-    MemorySource, SpatialTemporalContext,
+    Memory, MemoryContent, MemoryManager, MemoryMetadata, MemorySource, MemoryType,
+    SpatialTemporalContext,
 };
 use chrono::Utc;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::hint::black_box;
 
 /// Helper to create a basic memory
@@ -54,7 +54,7 @@ fn bench_memory_creation(c: &mut Criterion) {
 /// Benchmark memory storage (HashMap insertion)
 fn bench_memory_storage(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_storage");
-    
+
     // Limit to 10, 25, 50 to stay within Working memory capacity (default: 50)
     for count in [10, 25, 50].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
@@ -102,7 +102,7 @@ fn bench_memory_retrieval(c: &mut Criterion) {
 /// Benchmark memory access tracking (updates metadata)
 fn bench_memory_access_tracking(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_access_tracking");
-    
+
     // Limit to 10, 25, 50 to stay within Working memory capacity (default: 50)
     for count in [10, 25, 50].iter() {
         group.bench_with_input(BenchmarkId::from_parameter(count), count, |b, &count| {
@@ -162,5 +162,3 @@ criterion_group!(
     bench_memory_updates,
 );
 criterion_main!(benches);
-
-

@@ -231,8 +231,8 @@ impl ConversationHistory {
         let message_count = self.messages.read().len();
 
         // Prune if either token limit OR message count limit exceeded
-        let needs_pruning = total_tokens > self.config.max_tokens 
-            || (self.config.overflow_strategy == OverflowStrategy::SlidingWindow 
+        let needs_pruning = total_tokens > self.config.max_tokens
+            || (self.config.overflow_strategy == OverflowStrategy::SlidingWindow
                 && message_count > self.config.sliding_window_size);
 
         if !needs_pruning {

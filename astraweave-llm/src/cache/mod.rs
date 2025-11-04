@@ -1,8 +1,8 @@
 // Prompt caching module for LLM plan generation
 // Provides exact-match caching with LRU eviction and optional similarity search
 
-use std::time::Instant;
 use astraweave_core::PlanIntent;
+use std::time::Instant;
 
 pub mod key;
 pub mod lru;
@@ -69,7 +69,7 @@ impl PromptCache {
     }
 
     /// Get a cached plan by key (with optional similarity matching)
-    /// 
+    ///
     /// Phase 7: Falls back to similarity search if exact match fails
     pub fn get(&self, key: &PromptKey) -> Option<(CachedPlan, CacheDecision)> {
         // Try exact match first
@@ -80,13 +80,15 @@ impl PromptCache {
 
         // Phase 7: Try similarity match
         if let Some((cached, score)) = self.find_similar(key) {
-            self.similarity_hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            self.similarity_hits
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             self.hits.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
             return Some((cached, CacheDecision::HitSimilar(score)));
         }
 
         // No match found
-        self.misses.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        self.misses
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         None
     }
 
@@ -98,22 +100,22 @@ impl PromptCache {
         // Note: This is O(n) but acceptable for small-medium cache sizes (<1000 entries)
         // For large caches, could use approximate nearest neighbor (ANN) index
         let all_keys = self.cache.keys();
-        
+
         for cached_key in &all_keys {
             // Only compare prompts with same model and similar temperature
             if cached_key.model != query_key.model {
                 continue;
             }
-            let temp_diff = (cached_key.temperature_q as i32 - query_key.temperature_q as i32).abs();
-            if temp_diff > 10 { // Allow ±0.1 temperature difference
+            let temp_diff =
+                (cached_key.temperature_q as i32 - query_key.temperature_q as i32).abs();
+            if temp_diff > 10 {
+                // Allow ±0.1 temperature difference
                 continue;
             }
 
             // Compute semantic similarity
-            let similarity = prompt_similarity(
-                &query_key.normalized_prompt,
-                &cached_key.normalized_prompt,
-            );
+            let similarity =
+                prompt_similarity(&query_key.normalized_prompt, &cached_key.normalized_prompt);
 
             // Update best match if this is better
             if similarity >= self.similarity_threshold {
@@ -139,7 +141,8 @@ impl PromptCache {
     pub fn put(&self, key: PromptKey, plan: CachedPlan) {
         let evicted = self.cache.put(key, plan);
         if evicted {
-            self.evictions.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            self.evictions
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         }
     }
 
@@ -158,15 +161,19 @@ impl PromptCache {
         self.cache.clear();
         self.hits.store(0, std::sync::atomic::Ordering::Relaxed);
         self.misses.store(0, std::sync::atomic::Ordering::Relaxed);
-        self.similarity_hits.store(0, std::sync::atomic::Ordering::Relaxed);
-        self.evictions.store(0, std::sync::atomic::Ordering::Relaxed);
+        self.similarity_hits
+            .store(0, std::sync::atomic::Ordering::Relaxed);
+        self.evictions
+            .store(0, std::sync::atomic::Ordering::Relaxed);
     }
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
         let hits = self.hits.load(std::sync::atomic::Ordering::Relaxed);
         let misses = self.misses.load(std::sync::atomic::Ordering::Relaxed);
-        let similarity_hits = self.similarity_hits.load(std::sync::atomic::Ordering::Relaxed);
+        let similarity_hits = self
+            .similarity_hits
+            .load(std::sync::atomic::Ordering::Relaxed);
         let total = hits + misses;
         let hit_rate = if total > 0 {
             (hits as f64 / total as f64 * 100.0) as u32
@@ -205,7 +212,11 @@ mod tests {
     fn make_test_plan(id: &str) -> PlanIntent {
         PlanIntent {
             plan_id: id.to_string(),
-            steps: vec![ActionStep::MoveTo { x: 1, y: 2, speed: None }],
+            steps: vec![ActionStep::MoveTo {
+                x: 1,
+                y: 2,
+                speed: None,
+            }],
         }
     }
 
@@ -312,4 +323,3 @@ mod tests {
         assert_eq!(stats.hit_rate, 66); // 2/3 = 66%
     }
 }
-

@@ -59,10 +59,10 @@
 //!
 //! **This is critical for networked multiplayer** (lockstep simulation).
 
-use rand::{Rng as RngTrait, RngCore, SeedableRng};
-use rand::rngs::StdRng;
-use rand::distr::uniform::{SampleUniform, SampleRange};
+use rand::distr::uniform::{SampleRange, SampleUniform};
 use rand::prelude::IndexedRandom;
+use rand::rngs::StdRng;
+use rand::{Rng as RngTrait, RngCore, SeedableRng};
 use serde::{Deserialize, Serialize};
 
 /// Deterministic random number generator for AI systems.
@@ -95,7 +95,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug)]
 pub struct Rng {
     inner: StdRng,
-    seed: u64,  // Store seed for debugging/logging
+    seed: u64, // Store seed for debugging/logging
 }
 
 // Manual Serialize/Deserialize implementation (StdRng doesn't implement Serialize in rand 0.9)
@@ -315,7 +315,10 @@ mod tests {
             let val2 = rng2.gen_range(10..100);
 
             assert_eq!(val1, val2, "gen_range should be deterministic");
-            assert!(val1 >= 10 && val1 < 100, "Value should be in range [10, 100)");
+            assert!(
+                val1 >= 10 && val1 < 100,
+                "Value should be in range [10, 100)"
+            );
         }
     }
 
@@ -354,7 +357,11 @@ mod tests {
         // NOTE: We only serialize the seed, not the RNG state.
         // This means deserialization gives us a fresh RNG from the same seed.
         // Verify that the deserialized RNG has the correct seed
-        assert_eq!(rng_restored.seed(), seed, "Deserialized RNG should have same seed");
+        assert_eq!(
+            rng_restored.seed(),
+            seed,
+            "Deserialized RNG should have same seed"
+        );
 
         // Verify that two RNGs from the same seed produce the same sequence
         let mut rng_fresh = Rng::from_seed(seed);
@@ -466,7 +473,7 @@ mod tests {
         // Known values for seed 0 (ChaCha12 via StdRng in rand 0.9)
         // Note: These values are specific to rand 0.9's StdRng (ChaCha12)
         // If rand updates, these values may change (that's OK - update expected values)
-        
+
         // We don't hardcode exact values (they change with rand versions)
         // Instead, verify consistency within this run
         let val1 = rng.gen_u64();

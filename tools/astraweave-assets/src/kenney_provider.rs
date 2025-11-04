@@ -11,9 +11,7 @@
 // Since there's no public API, we use manual URL configuration (like Poly Pizza).
 // =============================================================================
 
-use crate::provider::{
-    AssetProvider, AssetType, LicenseInfo, ProviderConfig, ResolvedAsset,
-};
+use crate::provider::{AssetProvider, AssetType, LicenseInfo, ProviderConfig, ResolvedAsset};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::collections::HashMap;
@@ -113,11 +111,7 @@ impl AssetProvider for KenneyProvider {
         &self.name
     }
 
-    async fn resolve(
-        &self,
-        handle: &str,
-        config: &ProviderConfig,
-    ) -> Result<ResolvedAsset> {
+    async fn resolve(&self, handle: &str, config: &ProviderConfig) -> Result<ResolvedAsset> {
         // Validate config
         self.validate_config(config)?;
 
@@ -147,10 +141,7 @@ impl AssetProvider for KenneyProvider {
                 Some(source_url.clone()),
             )?
         } else {
-            LicenseInfo::cc0(
-                Some("Kenney Vleugels".into()),
-                Some(source_url.clone()),
-            )
+            LicenseInfo::cc0(Some("Kenney Vleugels".into()), Some(source_url.clone()))
         };
 
         // Validate license is CC0
@@ -220,7 +211,9 @@ impl AssetProvider for KenneyProvider {
         let mut output = String::new();
 
         output.push_str("# Attribution - KENNEY.NL\n");
-        output.push_str("================================================================================\n\n");
+        output.push_str(
+            "================================================================================\n\n",
+        );
 
         output.push_str(&format!(
             "This directory contains {} assets from kenney:\n\n",
@@ -233,7 +226,9 @@ impl AssetProvider for KenneyProvider {
         output.push_str(&assets.len().to_string());
         output.push_str(" assets\n\n");
 
-        output.push_str("================================================================================\n\n");
+        output.push_str(
+            "================================================================================\n\n",
+        );
         output.push_str("## Detailed Attributions\n\n");
 
         // Per-asset details
@@ -260,8 +255,12 @@ impl AssetProvider for KenneyProvider {
             output.push_str("--------------------------------------------------------------------------------\n\n");
         }
 
-        output.push_str("\nAll Kenney.nl assets are CC0 (Public Domain) - no attribution required.\n");
-        output.push_str("However, attribution is appreciated: 'Assets by Kenney.nl (www.kenney.nl)'\n");
+        output.push_str(
+            "\nAll Kenney.nl assets are CC0 (Public Domain) - no attribution required.\n",
+        );
+        output.push_str(
+            "However, attribution is appreciated: 'Assets by Kenney.nl (www.kenney.nl)'\n",
+        );
         output.push_str(&format!("Generated: {}\n", chrono::Utc::now().to_rfc3339()));
 
         output
@@ -350,7 +349,10 @@ mod tests {
 
         let result = provider.resolve("test", &config).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid Kenney.nl URL"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid Kenney.nl URL"));
     }
 
     #[tokio::test]
@@ -372,7 +374,10 @@ mod tests {
 
         let result = provider.resolve("test", &config).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Kenney.nl only provides CC0"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Kenney.nl only provides CC0"));
     }
 
     #[tokio::test]
@@ -416,7 +421,10 @@ mod tests {
         };
         let result = provider.validate_config(&config);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires 'format'"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires 'format'"));
     }
 
     #[tokio::test]
@@ -438,7 +446,10 @@ mod tests {
         };
         let result = provider.validate_config(&config);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires 'source_url'"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires 'source_url'"));
     }
 
     #[test]
@@ -455,7 +466,10 @@ mod tests {
         };
         let result = KenneyProvider::validate_license(&license);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Kenney.nl only provides CC0"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Kenney.nl only provides CC0"));
     }
 
     #[test]
@@ -475,11 +489,17 @@ mod tests {
     fn test_infer_asset_type() {
         // From URL path
         assert_eq!(
-            KenneyProvider::infer_asset_type("https://kenney.nl/content/2-2d-assets/test.zip", "zip"),
+            KenneyProvider::infer_asset_type(
+                "https://kenney.nl/content/2-2d-assets/test.zip",
+                "zip"
+            ),
             AssetType::Sprite
         );
         assert_eq!(
-            KenneyProvider::infer_asset_type("https://kenney.nl/content/3-3d-assets/test.zip", "zip"),
+            KenneyProvider::infer_asset_type(
+                "https://kenney.nl/content/3-3d-assets/test.zip",
+                "zip"
+            ),
             AssetType::Model
         );
         assert_eq!(
@@ -503,22 +523,23 @@ mod tests {
         let provider = KenneyProvider::new();
 
         let mut metadata = HashMap::new();
-        metadata.insert("source_url".into(), "https://kenney.nl/assets/platformer-pack-redux".into());
+        metadata.insert(
+            "source_url".into(),
+            "https://kenney.nl/assets/platformer-pack-redux".into(),
+        );
         metadata.insert("author".into(), "Kenney Vleugels".into());
 
-        let assets = vec![
-            ResolvedAsset {
-                handle: "platformer_pack".into(),
-                provider: "kenney".into(),
-                asset_type: AssetType::Sprite,
-                urls: HashMap::new(),
-                license: LicenseInfo::cc0(
-                    Some("Kenney Vleugels".into()),
-                    Some("https://kenney.nl/assets/platformer-pack-redux".into()),
-                ),
-                metadata,
-            },
-        ];
+        let assets = vec![ResolvedAsset {
+            handle: "platformer_pack".into(),
+            provider: "kenney".into(),
+            asset_type: AssetType::Sprite,
+            urls: HashMap::new(),
+            license: LicenseInfo::cc0(
+                Some("Kenney Vleugels".into()),
+                Some("https://kenney.nl/assets/platformer-pack-redux".into()),
+            ),
+            metadata,
+        }];
 
         let attribution = provider.generate_attribution(&assets);
 

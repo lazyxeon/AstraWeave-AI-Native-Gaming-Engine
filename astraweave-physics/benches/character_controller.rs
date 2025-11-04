@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use astraweave_physics::PhysicsWorld;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::vec3;
 use std::hint::black_box;
 
@@ -14,7 +14,7 @@ fn setup_simple_world() -> PhysicsWorld {
 fn character_move_straight(c: &mut Criterion) {
     let mut world = setup_simple_world();
     let char_id = world.add_character(vec3(0.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     c.bench_function("character_move_straight", |b| {
         b.iter(|| {
             let desired_move = black_box(vec3(1.0, 0.0, 0.0));
@@ -27,7 +27,7 @@ fn character_move_straight(c: &mut Criterion) {
 fn character_move_diagonal(c: &mut Criterion) {
     let mut world = setup_simple_world();
     let char_id = world.add_character(vec3(0.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     c.bench_function("character_move_diagonal", |b| {
         b.iter(|| {
             let desired_move = black_box(vec3(1.0, 0.0, 1.0).normalize());
@@ -39,22 +39,22 @@ fn character_move_diagonal(c: &mut Criterion) {
 /// Benchmark: Multiple characters moving simultaneously
 fn character_move_batch(c: &mut Criterion) {
     let mut group = c.benchmark_group("character_move_batch");
-    
+
     for char_count in [1, 10, 50, 100].iter() {
         let mut world = setup_simple_world();
         let mut char_ids = Vec::new();
-        
+
         // Spawn characters in a grid
         let grid_size = (*char_count as f32).sqrt().ceil() as usize;
         let spacing = 3.0;
-        
+
         for i in 0..*char_count {
             let x = (i % grid_size) as f32 * spacing - (grid_size as f32 * spacing / 2.0);
             let z = (i / grid_size) as f32 * spacing - (grid_size as f32 * spacing / 2.0);
             let id = world.add_character(vec3(x, 1.0, z), vec3(0.4, 0.9, 0.4));
             char_ids.push(id);
         }
-        
+
         group.throughput(Throughput::Elements(*char_count as u64));
         group.bench_with_input(
             BenchmarkId::from_parameter(char_count),
@@ -69,14 +69,14 @@ fn character_move_batch(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
 /// Benchmark: Character controller with obstacle avoidance
 fn character_move_with_obstacles(c: &mut Criterion) {
     let mut world = setup_simple_world();
-    
+
     // Add wall of obstacles in front of character
     for i in 0..10 {
         world.add_dynamic_box(
@@ -86,9 +86,9 @@ fn character_move_with_obstacles(c: &mut Criterion) {
             astraweave_physics::Layers::DEFAULT,
         );
     }
-    
+
     let char_id = world.add_character(vec3(0.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     c.bench_function("character_move_with_obstacles", |b| {
         b.iter(|| {
             let desired_move = black_box(vec3(1.0, 0.0, 0.0));
@@ -100,7 +100,7 @@ fn character_move_with_obstacles(c: &mut Criterion) {
 /// Benchmark: Character controller step climbing
 fn character_step_climbing(c: &mut Criterion) {
     let mut world = setup_simple_world();
-    
+
     // Add step obstacles (small boxes to climb over)
     for i in 0..5 {
         world.add_dynamic_box(
@@ -110,9 +110,9 @@ fn character_step_climbing(c: &mut Criterion) {
             astraweave_physics::Layers::DEFAULT,
         );
     }
-    
+
     let char_id = world.add_character(vec3(-2.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     c.bench_function("character_step_climbing", |b| {
         b.iter(|| {
             let desired_move = black_box(vec3(1.0, 0.0, 0.0));
@@ -125,7 +125,7 @@ fn character_step_climbing(c: &mut Criterion) {
 fn character_full_tick(c: &mut Criterion) {
     let mut world = setup_simple_world();
     let char_id = world.add_character(vec3(0.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     c.bench_function("character_full_tick", |b| {
         b.iter(|| {
             let desired_move = black_box(vec3(1.0, 0.0, 0.0));
@@ -139,11 +139,9 @@ fn character_full_tick(c: &mut Criterion) {
 fn character_transform_lookup(c: &mut Criterion) {
     let mut world = setup_simple_world();
     let char_id = world.add_character(vec3(0.0, 1.0, 0.0), vec3(0.4, 0.9, 0.4));
-    
+
     c.bench_function("character_transform_lookup", |b| {
-        b.iter(|| {
-            black_box(world.body_transform(black_box(char_id)))
-        });
+        b.iter(|| black_box(world.body_transform(black_box(char_id))));
     });
 }
 

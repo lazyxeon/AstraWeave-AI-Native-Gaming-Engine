@@ -246,7 +246,7 @@ mod tests {
         "#;
 
         let manifest: AssetManifest = toml::from_str(toml).unwrap();
-        
+
         assert_eq!(manifest.hdris.len(), 1);
         let hdri = manifest.hdris.get("studio").unwrap();
         assert_eq!(hdri.id, "studio_small_09");
@@ -266,7 +266,7 @@ mod tests {
         "#;
 
         let manifest: AssetManifest = toml::from_str(toml).unwrap();
-        
+
         assert_eq!(manifest.models.len(), 1);
         let model = manifest.models.get("rock_set").unwrap();
         assert_eq!(model.id, "rocks_collection_a");
@@ -288,7 +288,7 @@ mod tests {
         "#;
 
         let manifest: AssetManifest = toml::from_str(toml).unwrap();
-        
+
         assert_eq!(manifest.output_dir, PathBuf::from("custom/output"));
         assert_eq!(manifest.cache_dir, PathBuf::from("custom/cache"));
     }
@@ -348,10 +348,13 @@ mod tests {
             handle: "test_asset".to_string(),
             id: "test_id".to_string(),
             kind: "texture".to_string(),
-            urls: [("albedo".to_string(), "https://example.com/albedo.png".to_string())]
-                .iter()
-                .cloned()
-                .collect(),
+            urls: [(
+                "albedo".to_string(),
+                "https://example.com/albedo.png".to_string(),
+            )]
+            .iter()
+            .cloned()
+            .collect(),
             paths: [("albedo".to_string(), PathBuf::from("test/albedo.png"))]
                 .iter()
                 .cloned()
@@ -372,10 +375,10 @@ mod tests {
 
         // Load
         let loaded = Lockfile::load(&lockfile_path).unwrap();
-        
+
         assert_eq!(loaded.version, 1);
         assert_eq!(loaded.assets.len(), 1);
-        
+
         let loaded_entry = loaded.assets.get("test_asset").unwrap();
         assert_eq!(loaded_entry.id, "test_id");
         assert_eq!(loaded_entry.kind, "texture");
@@ -393,7 +396,7 @@ mod tests {
         let lockfile_path = temp.path().join("nonexistent.lock");
 
         let lockfile = Lockfile::load(&lockfile_path).unwrap();
-        
+
         assert_eq!(lockfile.version, 1);
         assert_eq!(lockfile.assets.len(), 0);
     }
@@ -403,7 +406,7 @@ mod tests {
         use tempfile::TempDir;
 
         let temp = TempDir::new().unwrap();
-        
+
         // Create test file
         let test_file = temp.path().join("test.png");
         fs::write(&test_file, b"test data").unwrap();
@@ -507,11 +510,11 @@ mod tests {
 
         // Load
         let loaded = AssetManifest::load(&manifest_path).unwrap();
-        
+
         assert_eq!(loaded.output_dir, PathBuf::from("custom/output"));
         assert_eq!(loaded.cache_dir, PathBuf::from("custom/cache"));
         assert_eq!(loaded.textures.len(), 1);
-        
+
         let texture = loaded.textures.get("test_texture").unwrap();
         assert_eq!(texture.id, "test_id");
         assert_eq!(texture.maps, vec!["albedo"]);
@@ -523,7 +526,7 @@ mod tests {
 
         let temp = TempDir::new().unwrap();
         let manifest_path = temp.path().join("invalid.toml");
-        
+
         // Write invalid TOML
         fs::write(&manifest_path, "this is not valid toml {[}]").unwrap();
 
@@ -562,7 +565,7 @@ mod tests {
         // Read and verify it's valid TOML
         let content = fs::read_to_string(&lockfile_path).unwrap();
         let parsed: Lockfile = toml::from_str(&content).unwrap();
-        
+
         assert_eq!(parsed.version, 1);
         assert_eq!(parsed.assets.len(), 1);
     }

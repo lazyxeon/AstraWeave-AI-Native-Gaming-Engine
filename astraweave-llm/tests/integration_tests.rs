@@ -1,15 +1,16 @@
 //! Integration tests for LLM orchestration
-//! 
+//!
 //! Tests the full pipeline using PUBLIC APIs only
 //! Validates end-to-end behavior with real mock LLM client and caching
 
-use astraweave_llm::{
-    LlmClient, AlwaysErrMock, plan_from_llm, PlanSource,
-    build_prompt, parse_llm_plan, fallback_heuristic_plan,
+use astraweave_core::{
+    ActionStep, CompanionState, Constraints, EnemyState, IVec2, PlayerState, ToolRegistry,
+    ToolSpec, WorldSnapshot,
 };
 use astraweave_llm::telemetry::LlmTelemetry;
-use astraweave_core::{
-    WorldSnapshot, ToolRegistry, ToolSpec, CompanionState, PlayerState, EnemyState, IVec2, Constraints, ActionStep,
+use astraweave_llm::{
+    build_prompt, fallback_heuristic_plan, parse_llm_plan, plan_from_llm, AlwaysErrMock, LlmClient,
+    PlanSource,
 };
 use std::sync::Arc;
 
@@ -90,7 +91,8 @@ impl LlmClient for ValidPlanMock {
                 {"act": "MoveTo", "x": 5, "y": 5},
                 {"act": "CoverFire", "target_id": 99, "duration": 2.0}
             ]
-        }"#.to_string())
+        }"#
+        .to_string())
     }
 }
 
@@ -103,14 +105,14 @@ async fn test_end_to_end_valid_llm_response() {
     let snap = create_test_world_snapshot();
     let reg = create_test_registry();
     let client = ValidPlanMock;
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Llm(plan) => {
             assert_eq!(plan.plan_id, "integration-test-plan");
             assert_eq!(plan.steps.len(), 2);
-            
+
             // Verify steps are correct
             match &plan.steps[0] {
                 ActionStep::MoveTo { x, y, speed: _ } => {
@@ -119,9 +121,12 @@ async fn test_end_to_end_valid_llm_response() {
                 }
                 _ => panic!("Expected MoveTo as first step"),
             }
-            
+
             match &plan.steps[1] {
-                ActionStep::CoverFire { target_id, duration } => {
+                ActionStep::CoverFire {
+                    target_id,
+                    duration,
+                } => {
                     assert_eq!(*target_id, 99);
                     assert!((duration - 2.0).abs() < 0.001);
                 }
@@ -141,9 +146,9 @@ async fn test_fallback_on_llm_failure() {
     let snap = create_test_world_snapshot();
     let reg = create_test_registry();
     let client = AlwaysErrMock;
-    
+
     let result = plan_from_llm(&client, &snap, &reg).await;
-    
+
     match result {
         PlanSource::Llm(_) => panic!("Expected fallback, got LLM plan"),
         PlanSource::Fallback { plan, reason } => {
@@ -172,10 +177,14 @@ fn test_parse_valid_plan() {
             {"act": "Throw", "item": "smoke", "x": 15, "y": 25}
         ]
     }"#;
-    
+
     let result = parse_llm_plan(json, &reg);
-    assert!(result.is_ok(), "Failed to parse valid plan: {:?}", result.err());
-    
+    assert!(
+        result.is_ok(),
+        "Failed to parse valid plan: {:?}",
+        result.err()
+    );
+
     let plan = result.unwrap();
     assert_eq!(plan.plan_id, "parse-test");
     assert_eq!(plan.steps.len(), 2);
@@ -189,12 +198,12 @@ fn test_parse_valid_plan() {
 fn test_fallback_heuristic_plan() {
     let snap = create_test_world_snapshot();
     let reg = create_test_registry();
-    
+
     let plan = fallback_heuristic_plan(&snap, &reg);
-    
+
     assert_eq!(plan.plan_id, "heuristic-fallback");
     assert!(!plan.steps.is_empty(), "Fallback plan should have steps");
-    
+
     // Fallback heuristic generates at least one step (actual count varies by game state)
     assert!(plan.steps.len() >= 1, "Should have at least 1 step");
 }
@@ -206,22 +215,22 @@ fn test_fallback_heuristic_plan() {
 #[test]
 fn test_telemetry_tracking() {
     let telemetry = LlmTelemetry::new();
-    
+
     // Record operations
     telemetry.record_request();
     telemetry.record_success();
     telemetry.record_cache_hit();
-    
+
     telemetry.record_request();
     telemetry.record_error();
     telemetry.record_cache_miss();
-    
+
     telemetry.record_retry();
     telemetry.record_circuit_open();
-    
+
     // Validate counters
     let snapshot = telemetry.snapshot();
-    
+
     assert_eq!(snapshot.requests_total, 2);
     assert_eq!(snapshot.requests_success, 1);
     assert_eq!(snapshot.requests_error, 1);
@@ -239,9 +248,9 @@ fn test_telemetry_tracking() {
 fn test_build_prompt_structure() {
     let snap = create_test_world_snapshot();
     let reg = create_test_registry();
-    
+
     let prompt = build_prompt(&snap, &reg);
-    
+
     // Verify prompt contains expected elements
     assert!(prompt.contains("AI game companion planner"));
     assert!(prompt.contains("move_to"));
@@ -260,7 +269,7 @@ fn test_build_prompt_structure() {
 fn test_parse_invalid_json_fails() {
     let reg = create_test_registry();
     let invalid_json = "not valid json";
-    
+
     let result = parse_llm_plan(invalid_json, &reg);
     assert!(result.is_err(), "Should fail on invalid JSON");
 }
@@ -274,12 +283,12 @@ fn test_parse_plan_with_disallowed_tool() {
     let mut reg = create_test_registry();
     // Remove move_to tool
     reg.tools.retain(|t| t.name != "move_to");
-    
+
     let json = r#"{
         "plan_id": "test",
         "steps": [{"act": "MoveTo", "x": 5, "y": 5}]
     }"#;
-    
+
     let result = parse_llm_plan(json, &reg);
     assert!(result.is_err(), "Should fail with disallowed tool");
     assert!(result.unwrap_err().to_string().contains("disallowed"));
@@ -292,10 +301,10 @@ fn test_parse_plan_with_disallowed_tool() {
 #[test]
 fn test_telemetry_thread_safety() {
     use std::thread;
-    
+
     let telemetry = Arc::new(LlmTelemetry::new());
     let mut handles = vec![];
-    
+
     // Spawn 10 threads, each recording 100 requests
     for _ in 0..10 {
         let telemetry_clone = Arc::clone(&telemetry);
@@ -307,16 +316,22 @@ fn test_telemetry_thread_safety() {
         });
         handles.push(handle);
     }
-    
+
     // Wait for all threads
     for handle in handles {
         handle.join().unwrap();
     }
-    
+
     // Verify total count
     let snapshot = telemetry.snapshot();
-    assert_eq!(snapshot.requests_total, 1000, "Should have 1000 total requests");
-    assert_eq!(snapshot.requests_success, 1000, "Should have 1000 successful requests");
+    assert_eq!(
+        snapshot.requests_total, 1000,
+        "Should have 1000 total requests"
+    );
+    assert_eq!(
+        snapshot.requests_success, 1000,
+        "Should have 1000 successful requests"
+    );
 }
 
 // ============================================================================
@@ -328,11 +343,11 @@ async fn test_multiple_llm_calls() {
     let snap = create_test_world_snapshot();
     let reg = create_test_registry();
     let client = ValidPlanMock;
-    
+
     // Call 3 times (first call = cache miss, subsequent = cache hits if caching enabled)
     for i in 0..3 {
         let result = plan_from_llm(&client, &snap, &reg).await;
-        
+
         match result {
             PlanSource::Llm(plan) => {
                 assert_eq!(plan.plan_id, "integration-test-plan");

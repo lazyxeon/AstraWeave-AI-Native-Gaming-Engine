@@ -1,0 +1,393 @@
+warning: field `self_closing` is never read
+  --> crates\astract\astract-macro\src\parser.rs:14:9
+   |
+10 | pub struct RsxElement {
+   |            ---------- field in this struct
+...
+14 |     pub self_closing: bool,
+   |         ^^^^^^^^^^^^
+   |
+   = note: `RsxElement` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+   = note: `#[warn(dead_code)]` on by default
+
+warning: `astract-macro` (lib) generated 1 warning
+warning: field `dragging_node` is never read
+   --> crates\astract\src\graph\node_graph.rs:226:5
+    |
+220 | pub struct NodeGraph {
+    |            --------- field in this struct
+...
+226 |     dragging_node: Option<NodeId>,
+    |     ^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: `astract` (lib) generated 1 warning
+   Compiling astract v0.1.0 (C:\Users\pv2br\source\repos\AstraWeave-AI-Native-Gaming-Engine\crates\astract)
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+ --> crates\astract\benches\widget_benchmarks.rs:4:17
+  |
+4 | use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+  |                 ^^^^^^^^^
+  |
+  = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:61:54
+   |
+61 |                 chart.add_series("Data".to_string(), black_box(points.clone()), Color32::BLUE);
+   |                                                      ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:62:17
+   |
+62 |                 black_box(chart);
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:80:25
+   |
+80 |                         black_box(points.clone()),
+   |                         ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:84:17
+   |
+84 |                 black_box(chart);
+   |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+  --> crates\astract\benches\widget_benchmarks.rs:99:28
+   |
+99 |                 for grp in black_box(groups.clone()) {
+   |                            ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:102:17
+    |
+102 |                 black_box(chart);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:117:32
+    |
+117 |                 for cluster in black_box(clusters.clone()) {
+    |                                ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:120:17
+    |
+120 |                 black_box(scatter);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:144:17
+    |
+144 |                 black_box(graph);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:174:17
+    |
+174 |                 black_box(graph);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:195:17
+    |
+195 |                 black_box(tree);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:220:17
+    |
+220 |                 black_box(tree);
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:237:13
+    |
+237 |             black_box(picker);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:248:13
+    |
+248 |             black_box(slider);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:264:26
+    |
+264 |             tween.update(black_box(0.016)); // 60 FPS
+    |                          ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:265:13
+    |
+265 |             black_box(tween.value());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:286:34
+    |
+286 |                     tween.update(black_box(0.016));
+    |                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:287:21
+    |
+287 |                     black_box(tween.value());
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:301:27
+    |
+301 |             spring.update(black_box(0.016)); // 60 FPS
+    |                           ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:302:13
+    |
+302 |             black_box(spring.position());
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:322:35
+    |
+322 |                     spring.update(black_box(0.016));
+    |                                   ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:323:21
+    |
+323 |                     black_box(spring.position());
+    |                     ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:349:35
+    |
+349 |                 controller.update(black_box(0.016));
+    |                                   ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:350:17
+    |
+350 |                 black_box(controller.active_count());
+    |                 ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:367:50
+    |
+367 |             chart.add_series("Data".to_string(), black_box(points.clone()), Color32::BLUE);
+    |                                                  ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:368:13
+    |
+368 |             black_box(chart);
+    |             ^^^^^^^^^
+
+warning: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead
+   --> crates\astract\benches\widget_benchmarks.rs:381:17
+    |
+381 |                 black_box(cloned);
+    |                 ^^^^^^^^^
+
+warning: unused variable: `i`
+   --> crates\astract\benches\widget_benchmarks.rs:276:23
+    |
+276 |                 .map(|i| {
+    |                       ^ help: if this is intentional, prefix it with an underscore: `_i`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: `astract` (bench "widget_benchmarks") generated 29 warnings
+    Finished `bench` profile [optimized + debuginfo] target(s) in 1m 06s
+     Running benches\widget_benchmarks.rs (target\release\deps\widget_benchmarks-29dab808cbcedf5a.exe)
+Gnuplot not found, using plotters backend
+Benchmarking linechart_single_series/100
+Benchmarking linechart_single_series/100: Analyzing
+linechart_single_series/100
+                        time:   [748.98 ns 752.34 ns 765.78 ns]
+Benchmarking linechart_single_series/500
+Benchmarking linechart_single_series/500: Analyzing
+linechart_single_series/500
+                        time:   [936.31 ns 936.85 ns 939.03 ns]
+Benchmarking linechart_single_series/1000
+Benchmarking linechart_single_series/1000: Analyzing
+linechart_single_series/1000
+                        time:   [1.8189 ┬╡s 1.8327 ┬╡s 1.8361 ┬╡s]
+Benchmarking linechart_single_series/5000
+Benchmarking linechart_single_series/5000: Analyzing
+linechart_single_series/5000
+                        time:   [5.9198 ┬╡s 5.9597 ┬╡s 6.1195 ┬╡s]
+Benchmarking linechart_single_series/10000
+Benchmarking linechart_single_series/10000: Analyzing
+linechart_single_series/10000
+                        time:   [10.658 ┬╡s 10.704 ┬╡s 10.888 ┬╡s]
+
+Benchmarking linechart_multi_series/2
+Benchmarking linechart_multi_series/2: Analyzing
+linechart_multi_series/2
+                        time:   [2.6219 ┬╡s 2.6265 ┬╡s 2.6277 ┬╡s]
+Benchmarking linechart_multi_series/5
+Benchmarking linechart_multi_series/5: Analyzing
+linechart_multi_series/5
+                        time:   [8.6083 ┬╡s 8.6278 ┬╡s 8.7060 ┬╡s]
+Benchmarking linechart_multi_series/10
+Benchmarking linechart_multi_series/10: Analyzing
+linechart_multi_series/10
+                        time:   [14.910 ┬╡s 15.446 ┬╡s 15.580 ┬╡s]
+Benchmarking linechart_multi_series/20
+Benchmarking linechart_multi_series/20: Analyzing
+linechart_multi_series/20
+                        time:   [27.845 ┬╡s 27.924 ┬╡s 27.943 ┬╡s]
+
+Benchmarking barchart_groups/10
+Benchmarking barchart_groups/10: Analyzing
+barchart_groups/10      time:   [11.530 ┬╡s 11.555 ┬╡s 11.658 ┬╡s]
+Benchmarking barchart_groups/25
+Benchmarking barchart_groups/25: Analyzing
+barchart_groups/25      time:   [22.062 ┬╡s 22.307 ┬╡s 23.287 ┬╡s]
+Benchmarking barchart_groups/50
+Benchmarking barchart_groups/50: Analyzing
+barchart_groups/50      time:   [63.048 ┬╡s 65.226 ┬╡s 65.771 ┬╡s]
+Benchmarking barchart_groups/100
+Benchmarking barchart_groups/100: Analyzing
+barchart_groups/100     time:   [94.684 ┬╡s 95.488 ┬╡s 95.689 ┬╡s]
+
+Benchmarking scatterplot_clusters/5
+Benchmarking scatterplot_clusters/5: Analyzing
+scatterplot_clusters/5  time:   [4.6340 ┬╡s 4.6844 ┬╡s 4.8858 ┬╡s]
+Benchmarking scatterplot_clusters/10
+Benchmarking scatterplot_clusters/10: Analyzing
+scatterplot_clusters/10 time:   [9.4426 ┬╡s 9.4520 ┬╡s 9.4895 ┬╡s]
+Benchmarking scatterplot_clusters/20
+Benchmarking scatterplot_clusters/20: Analyzing
+scatterplot_clusters/20 time:   [25.520 ┬╡s 25.707 ┬╡s 26.458 ┬╡s]
+Benchmarking scatterplot_clusters/50
+Benchmarking scatterplot_clusters/50: Analyzing
+scatterplot_clusters/50 time:   [59.089 ┬╡s 59.175 ┬╡s 59.521 ┬╡s]
+
+Benchmarking nodegraph_nodes/10
+Benchmarking nodegraph_nodes/10: Analyzing
+nodegraph_nodes/10      time:   [16.830 ┬╡s 16.966 ┬╡s 17.506 ┬╡s]
+Benchmarking nodegraph_nodes/50
+Benchmarking nodegraph_nodes/50: Analyzing
+nodegraph_nodes/50      time:   [50.910 ┬╡s 52.790 ┬╡s 53.261 ┬╡s]
+Benchmarking nodegraph_nodes/100
+Benchmarking nodegraph_nodes/100: Analyzing
+nodegraph_nodes/100     time:   [97.513 ┬╡s 97.751 ┬╡s 97.811 ┬╡s]
+Benchmarking nodegraph_nodes/200
+Benchmarking nodegraph_nodes/200: Analyzing
+nodegraph_nodes/200     time:   [258.89 ┬╡s 267.56 ┬╡s 269.73 ┬╡s]
+
+Benchmarking nodegraph_edges/10
+Benchmarking nodegraph_edges/10: Analyzing
+nodegraph_edges/10      time:   [11.275 ┬╡s 14.405 ┬╡s 15.188 ┬╡s]
+Benchmarking nodegraph_edges/50
+Benchmarking nodegraph_edges/50: Analyzing
+nodegraph_edges/50      time:   [46.188 ┬╡s 47.099 ┬╡s 47.327 ┬╡s]
+Benchmarking nodegraph_edges/100
+Benchmarking nodegraph_edges/100: Analyzing
+nodegraph_edges/100     time:   [101.16 ┬╡s 105.52 ┬╡s 123.00 ┬╡s]
+
+Benchmarking treeview_nodes/100
+Benchmarking treeview_nodes/100: Analyzing
+treeview_nodes/100      time:   [63.288 ┬╡s 65.455 ┬╡s 65.997 ┬╡s]
+Benchmarking treeview_nodes/500
+Benchmarking treeview_nodes/500: Analyzing
+treeview_nodes/500      time:   [290.23 ┬╡s 331.74 ┬╡s 342.11 ┬╡s]
+Benchmarking treeview_nodes/1000
+Benchmarking treeview_nodes/1000: Analyzing
+treeview_nodes/1000     time:   [910.67 ┬╡s 914.29 ┬╡s 928.76 ┬╡s]
+Benchmarking treeview_nodes/2000
+Benchmarking treeview_nodes/2000: Analyzing
+treeview_nodes/2000     time:   [2.1804 ms 2.1962 ms 2.2595 ms]
+
+Benchmarking treeview_hierarchy/5
+Benchmarking treeview_hierarchy/5: Analyzing
+treeview_hierarchy/5    time:   [3.3454 ┬╡s 3.4319 ┬╡s 3.4536 ┬╡s]
+Benchmarking treeview_hierarchy/10
+Benchmarking treeview_hierarchy/10: Analyzing
+treeview_hierarchy/10   time:   [8.6222 ┬╡s 8.6672 ┬╡s 8.8472 ┬╡s]
+Benchmarking treeview_hierarchy/15
+Benchmarking treeview_hierarchy/15: Analyzing
+treeview_hierarchy/15   time:   [11.748 ┬╡s 11.814 ┬╡s 12.078 ┬╡s]
+Benchmarking treeview_hierarchy/20
+Benchmarking treeview_hierarchy/20: Analyzing
+treeview_hierarchy/20   time:   [22.220 ┬╡s 22.612 ┬╡s 22.710 ┬╡s]
+
+Benchmarking colorpicker_creation
+Benchmarking colorpicker_creation: Analyzing
+colorpicker_creation    time:   [2.9172 ns 2.9316 ns 2.9352 ns]
+
+Benchmarking rangeslider_creation
+Benchmarking rangeslider_creation: Analyzing
+rangeslider_creation    time:   [13.426 ns 13.690 ns 13.756 ns]
+
+Benchmarking tween_single_update
+Benchmarking tween_single_update: Analyzing
+tween_single_update     time:   [43.275 ns 43.429 ns 44.046 ns]
+
+Benchmarking tween_batch/100
+Benchmarking tween_batch/100: Analyzing
+tween_batch/100         time:   [4.8932 ┬╡s 5.1149 ┬╡s 5.1703 ┬╡s]
+Benchmarking tween_batch/500
+Benchmarking tween_batch/500: Analyzing
+tween_batch/500         time:   [19.430 ┬╡s 19.477 ┬╡s 19.488 ┬╡s]
+Benchmarking tween_batch/1000
+Benchmarking tween_batch/1000: Analyzing
+tween_batch/1000        time:   [41.917 ┬╡s 42.202 ┬╡s 43.342 ┬╡s]
+Benchmarking tween_batch/5000
+Benchmarking tween_batch/5000: Analyzing
+tween_batch/5000        time:   [205.81 ┬╡s 207.51 ┬╡s 214.29 ┬╡s]
+
+Benchmarking spring_single_update
+Benchmarking spring_single_update: Analyzing
+spring_single_update    time:   [23.539 ns 23.622 ns 23.955 ns]
+
+Benchmarking spring_batch/100
+Benchmarking spring_batch/100: Analyzing
+spring_batch/100        time:   [1.1920 ┬╡s 1.1996 ┬╡s 1.2300 ┬╡s]
+Benchmarking spring_batch/500
+Benchmarking spring_batch/500: Analyzing
+spring_batch/500        time:   [5.4176 ┬╡s 5.4415 ┬╡s 5.5370 ┬╡s]
+Benchmarking spring_batch/1000
+Benchmarking spring_batch/1000: Analyzing
+spring_batch/1000       time:   [11.937 ┬╡s 11.980 ┬╡s 12.150 ┬╡s]
+Benchmarking spring_batch/5000
+Benchmarking spring_batch/5000: Analyzing
+spring_batch/5000       time:   [68.375 ┬╡s 68.719 ┬╡s 70.095 ┬╡s]
+
+Benchmarking animation_controller/10
+Benchmarking animation_controller/10: Analyzing
+animation_controller/10 time:   [2.9483 ┬╡s 2.9813 ┬╡s 3.1136 ┬╡s]
+Benchmarking animation_controller/50
+Benchmarking animation_controller/50: Analyzing
+animation_controller/50 time:   [10.056 ┬╡s 12.804 ┬╡s 13.491 ┬╡s]
+Benchmarking animation_controller/100
+Benchmarking animation_controller/100: Analyzing
+animation_controller/100
+                        time:   [31.568 ┬╡s 31.882 ┬╡s 33.139 ┬╡s]
+Benchmarking animation_controller/500
+Benchmarking animation_controller/500: Analyzing
+animation_controller/500
+                        time:   [222.35 ┬╡s 224.73 ┬╡s 234.25 ┬╡s]
+
+Benchmarking linechart_recreation_1000pts
+Benchmarking linechart_recreation_1000pts: Analyzing
+linechart_recreation_1000pts
+                        time:   [2.3375 ┬╡s 2.4212 ┬╡s 2.4422 ┬╡s]
+
+Benchmarking point_vec_clone/100
+Benchmarking point_vec_clone/100: Analyzing
+point_vec_clone/100     time:   [239.32 ns 240.99 ns 241.41 ns]
+Benchmarking point_vec_clone/1000
+Benchmarking point_vec_clone/1000: Analyzing
+point_vec_clone/1000    time:   [1.1929 ┬╡s 1.2019 ┬╡s 1.2381 ┬╡s]
+Benchmarking point_vec_clone/10000
+Benchmarking point_vec_clone/10000: Analyzing
+point_vec_clone/10000   time:   [16.102 ┬╡s 16.120 ┬╡s 16.190 ┬╡s]
+

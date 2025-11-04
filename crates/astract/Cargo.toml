@@ -1,0 +1,22 @@
+[package]
+name = "astract"
+version = "0.1.0"
+edition = "2021"
+description = "React-style declarative UI framework for egui"
+license = "MIT"
+
+[dependencies]
+astract-macro = { path = "./astract-macro" }
+egui = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+eframe = "0.32"
+
+[[example]]
+name = "counter_component"
+path = "examples/counter_component.rs"
+
+[[bench]]
+name = "widget_benchmarks"
+harness = false

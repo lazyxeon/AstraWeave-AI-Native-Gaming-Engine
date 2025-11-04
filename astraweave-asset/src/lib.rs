@@ -30,12 +30,14 @@ pub mod gltf_loader {
         if bytes.len() >= 12 && &bytes[0..4] == b"glTF" {
             // GLB header: magic, version, length
             let _version = u32::from_le_bytes(
-                bytes[4..8].try_into()
-                    .context("Invalid GLB header: version field malformed")?
+                bytes[4..8]
+                    .try_into()
+                    .context("Invalid GLB header: version field malformed")?,
             );
             let _length = u32::from_le_bytes(
-                bytes[8..12].try_into()
-                    .context("Invalid GLB header: length field malformed")?
+                bytes[8..12]
+                    .try_into()
+                    .context("Invalid GLB header: length field malformed")?,
             );
             // Further parsing omitted in Phase 0
             Ok(())
@@ -675,8 +677,9 @@ pub mod gltf_loader {
                 }
 
                 max_time = max_time.max(
-                    *times.last()
-                        .expect("times vec is non-empty (checked above)")
+                    *times
+                        .last()
+                        .expect("times vec is non-empty (checked above)"),
                 );
 
                 let interpolation = match channel.sampler().interpolation() {
@@ -1176,7 +1179,8 @@ pub mod gltf_loader {
                             _ => bail!("Anim outputs not rotations"),
                         };
                         if inputs.len() == outputs.len() && !inputs.is_empty() {
-                            let duration = *inputs.last()
+                            let duration = *inputs
+                                .last()
                                 .expect("inputs vec is non-empty (checked above)");
                             clip = Some(AnimationClip {
                                 name: "legacy_idle".to_string(),

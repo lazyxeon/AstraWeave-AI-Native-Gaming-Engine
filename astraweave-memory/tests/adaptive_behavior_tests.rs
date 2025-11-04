@@ -125,12 +125,8 @@ fn test_weight_adaptation_cautious_playstyle() {
 
     // Store cautious combat episodes (low damage taken, support focus)
     for i in 0..10 {
-        let episode = create_support_episode(
-            &format!("cautious_{}", i),
-            "healing_spell",
-            0.9,
-            0.85,
-        );
+        let episode =
+            create_support_episode(&format!("cautious_{}", i), "healing_spell", 0.9, 0.85);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -183,12 +179,7 @@ fn test_validator_with_good_history() {
 
     // Store episodes with effective healing
     for i in 0..15 {
-        let episode = create_support_episode(
-            &format!("heal_{}", i),
-            "healing_spell",
-            0.9,
-            0.85,
-        );
+        let episode = create_support_episode(&format!("heal_{}", i), "healing_spell", 0.9, 0.85);
         storage.store_memory(&episode.to_memory().unwrap()).unwrap();
     }
 
@@ -261,12 +252,16 @@ fn test_validator_caching() {
     }
 
     // First validation
-    validator.validate_action("buff", "combat", &storage).unwrap();
+    validator
+        .validate_action("buff", "combat", &storage)
+        .unwrap();
     let stats1 = validator.get_stats();
     assert_eq!(stats1.cache_size, 1);
 
     // Second validation (should use cache)
-    validator.validate_action("buff", "combat", &storage).unwrap();
+    validator
+        .validate_action("buff", "combat", &storage)
+        .unwrap();
     let stats2 = validator.get_stats();
     assert_eq!(stats2.cache_size, 1);
 
@@ -419,7 +414,11 @@ fn test_weight_evolution_over_time() {
 
     // Support should now be weighted competitively due to recent success
     // May not exceed 0.5 due to mixed history, but should show adaptation
-    assert!(support_weight_phase2 >= 0.4, "Support weight should show adaptation: {}", support_weight_phase2);
+    assert!(
+        support_weight_phase2 >= 0.4,
+        "Support weight should show adaptation: {}",
+        support_weight_phase2
+    );
     assert!(manager.total_updates() > 6); // At least 6 node types updated twice
 }
 
@@ -431,17 +430,29 @@ fn test_validation_alternatives() {
     // Store good alternatives
     for i in 0..10 {
         storage
-            .store_memory(&create_support_episode(&format!("heal_{}", i), "heal", 0.9, 0.85).to_memory().unwrap())
+            .store_memory(
+                &create_support_episode(&format!("heal_{}", i), "heal", 0.9, 0.85)
+                    .to_memory()
+                    .unwrap(),
+            )
             .unwrap();
         storage
-            .store_memory(&create_support_episode(&format!("buff_{}", i), "buff", 0.85, 0.8).to_memory().unwrap())
+            .store_memory(
+                &create_support_episode(&format!("buff_{}", i), "buff", 0.85, 0.8)
+                    .to_memory()
+                    .unwrap(),
+            )
             .unwrap();
     }
 
     // Store bad action
     for i in 0..10 {
         storage
-            .store_memory(&create_support_episode(&format!("bad_{}", i), "bad_action", 0.3, 0.2).to_memory().unwrap())
+            .store_memory(
+                &create_support_episode(&format!("bad_{}", i), "bad_action", 0.3, 0.2)
+                    .to_memory()
+                    .unwrap(),
+            )
             .unwrap();
     }
 

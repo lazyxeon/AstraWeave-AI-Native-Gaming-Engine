@@ -544,21 +544,21 @@ mod tests {
     fn test_cluster_index_bounds() {
         // EDGE CASE: Cluster index calculation with boundary values
         let dims = ClusterDims { x: 16, y: 8, z: 24 };
-        
+
         // Test min corner (0, 0, 0)
         let idx_min = cluster_index(0, 0, 0, dims);
         assert_eq!(idx_min, 0);
-        
+
         // Test max corner (15, 7, 23)
         let idx_max = cluster_index(dims.x - 1, dims.y - 1, dims.z - 1, dims);
         let expected_max = (dims.x * dims.y * dims.z) - 1;
         assert_eq!(idx_max as usize, expected_max as usize);
-        
+
         // Test mid-range values
         let idx_mid = cluster_index(8, 4, 12, dims);
         let expected_mid = 8 + 4 * dims.x + 12 * (dims.x * dims.y);
         assert_eq!(idx_mid as usize, expected_mid as usize);
-        
+
         // Verify all valid indices are in range
         for iz in 0..dims.z {
             for iy in 0..dims.y {

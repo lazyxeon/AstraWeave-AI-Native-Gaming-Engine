@@ -8,12 +8,12 @@
 //! - No missing chunks in view frustum
 
 use astraweave_terrain::{
-    BackgroundChunkLoader, ChunkId, LodManager, StreamingConfig, StreamingDiagnostics,
-    WorldConfig, WorldGenerator,
+    BackgroundChunkLoader, ChunkId, LodManager, StreamingConfig, StreamingDiagnostics, WorldConfig,
+    WorldGenerator,
 };
 use glam::Vec3;
-use rand::Rng;
 use rand::rngs::StdRng;
+use rand::Rng;
 use rand::SeedableRng;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -21,9 +21,9 @@ use tokio::sync::RwLock;
 /// Camera movement pattern for testing
 #[derive(Debug, Clone, Copy)]
 enum MovementPattern {
-    Walk,      // 5 m/s
-    Sprint,    // 15 m/s
-    Teleport,  // Instant jump 500m
+    Walk,     // 5 m/s
+    Sprint,   // 15 m/s
+    Teleport, // Instant jump 500m
 }
 
 /// Camera path generator for soak testing
@@ -41,7 +41,7 @@ impl CameraPathGenerator {
             direction: Vec3::X,
         }
     }
-    
+
     /// Generate next camera position based on random pattern
     fn step(&mut self, dt: f32) -> (Vec3, Vec3) {
         let pattern = match self.rng.random_range(0..100) {
@@ -49,13 +49,13 @@ impl CameraPathGenerator {
             70..95 => MovementPattern::Sprint,
             _ => MovementPattern::Teleport,
         };
-        
+
         // Random direction change (10% chance)
         if self.rng.random_range(0..10) == 0 {
             let angle = self.rng.random_range(0.0..std::f32::consts::TAU);
             self.direction = Vec3::new(angle.cos(), 0.0, angle.sin()).normalize();
         }
-        
+
         // Apply movement
         match pattern {
             MovementPattern::Walk => {
@@ -73,7 +73,7 @@ impl CameraPathGenerator {
                 self.position += offset;
             }
         }
-        
+
         (self.position, self.direction)
     }
 }
@@ -103,7 +103,7 @@ impl Default for SoakTestConfig {
 
 /// Soak test results
 #[derive(Debug)]
-#[allow(dead_code)]  // Used for display in test output
+#[allow(dead_code)] // Used for display in test output
 struct SoakTestResults {
     total_ticks: usize,
     average_frame_ms: f32,
@@ -135,86 +135,83 @@ async fn run_soak_test(config: SoakTestConfig) -> SoakTestResults {
         ..Default::default()
     };
     let world_gen = Arc::new(RwLock::new(WorldGenerator::new(world_config)));
-    
+
     // Setup streaming components
     let streaming_config = StreamingConfig {
         chunk_size: config.chunk_size,
         view_distance: config.view_distance,
         max_loaded_chunks: 256,
         prefetch_distance: 4,
-        max_concurrent_loads: 8,  // Increased from 4 to 8
-        adaptive_throttle_threshold_ms: 10.0,  // NEW: throttle if frame >10ms
-        throttled_concurrent_loads: 2,  // NEW: reduce to 2 when throttling
+        max_concurrent_loads: 8,              // Increased from 4 to 8
+        adaptive_throttle_threshold_ms: 10.0, // NEW: throttle if frame >10ms
+        throttled_concurrent_loads: 2,        // NEW: reduce to 2 when throttling
     };
-    
+
     let loader = BackgroundChunkLoader::new(streaming_config, world_gen.clone());
     let mut lod_manager = LodManager::new(Default::default(), config.chunk_size);
     let mut diagnostics = StreamingDiagnostics::new(
         config.hitch_threshold_ms,
         100, // 100-frame history
     );
-    
+
     // Camera path generator
     let mut camera_path = CameraPathGenerator::new(12345, Vec3::new(128.0, 50.0, 128.0));
-    
+
     let dt = 1.0 / config.target_fps;
     let mut chunks_loaded_total = 0;
     let mut chunks_unloaded_total = 0;
     let mut missing_chunk_count = 0;
-    
+
     // Run soak test
     for tick in 0..config.duration_ticks {
         let frame_start = std::time::Instant::now();
-        
+
         // Update camera position
         let (camera_pos, camera_dir) = camera_path.step(dt);
         loader.update_camera(camera_pos, camera_dir).await;
         diagnostics.update_camera(camera_pos);
-        
+
         // Request chunks around camera (uses internal camera state)
         loader.request_chunks_around_camera().await;
-        
+
         // Process background loading (now uses internal world_gen)
         loader.process_load_queue().await;
-        
+
         // Give async tasks time to complete (simulate frame budget)
         std::thread::sleep(std::time::Duration::from_millis(5));
-        
+
         let loaded_this_frame = loader.collect_completed_chunks().await;
         chunks_loaded_total += loaded_this_frame;
-        
+
         // Unload distant chunks
         let unloaded = loader.unload_distant_chunks(camera_pos).await;
         chunks_unloaded_total += unloaded;
-        
+
         // Update LOD
         let loaded_chunks: Vec<ChunkId> = loader.get_loaded_chunk_ids().await;
         lod_manager.update_all_chunks(&loaded_chunks, camera_pos);
-        
+
         // Check for missing chunks in frustum
-        let view_chunks = ChunkId::get_chunks_in_radius(
-            camera_pos,
-            config.view_distance,
-            config.chunk_size,
-        );
+        let view_chunks =
+            ChunkId::get_chunks_in_radius(camera_pos, config.view_distance, config.chunk_size);
         for chunk_id in &view_chunks {
             if !loaded_chunks.contains(chunk_id) && !loader.is_loading(*chunk_id).await {
                 missing_chunk_count += 1;
             }
         }
-        
+
         // Update diagnostics
         let frame_time_ms = frame_start.elapsed().as_secs_f32() * 1000.0;
         diagnostics.record_frame(frame_time_ms);
-        
+
         // Update loader with frame time for adaptive throttling (Phase 2 optimization)
         loader.set_frame_time(frame_time_ms).await;
-        
+
         let stats = loader.get_stats().await;
         diagnostics.update_streaming_stats(stats);
         diagnostics.update_lod_stats(lod_manager.get_stats());
         diagnostics.update_memory(loaded_chunks.len(), 1024 * 1024); // Assume 1MB per chunk
-        
+
         // Progress report every 128 ticks
         if tick % 128 == 0 && tick > 0 {
             let report = diagnostics.generate_report();
@@ -230,11 +227,11 @@ async fn run_soak_test(config: SoakTestConfig) -> SoakTestResults {
             );
         }
     }
-    
+
     // Generate final results
     let final_report = diagnostics.generate_report();
     let memory_stats = diagnostics.memory_stats();
-    
+
     SoakTestResults {
         total_ticks: config.duration_ticks,
         average_frame_ms: final_report.frame_stats.average_ms,
@@ -253,26 +250,31 @@ async fn run_soak_test(config: SoakTestConfig) -> SoakTestResults {
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn streaming_soak_test_1024_ticks() {
     let config = SoakTestConfig::default();
-    
+
     println!("\n=== Streaming Integrity Soak Test ===");
-    println!("Duration: {} ticks ({:.1} minutes @ 60 FPS)", 
+    println!(
+        "Duration: {} ticks ({:.1} minutes @ 60 FPS)",
         config.duration_ticks,
         config.duration_ticks as f32 / 60.0 / 60.0
     );
     println!("Hitch threshold: {:.2}ms", config.hitch_threshold_ms);
-    println!("Max memory delta: {:.1}%\n", config.max_memory_delta_percent);
-    
+    println!(
+        "Max memory delta: {:.1}%\n",
+        config.max_memory_delta_percent
+    );
+
     let results = run_soak_test(config).await;
-    
+
     println!("\n=== Results ===");
-    println!("Average frame time: {:.2}ms ({:.1} FPS)", 
+    println!(
+        "Average frame time: {:.2}ms ({:.1} FPS)",
         results.average_frame_ms,
         1000.0 / results.average_frame_ms
     );
     println!("p99 frame time: {:.2}ms", results.p99_frame_ms);
-    println!("Hitch count: {} ({:.2}% of frames)", 
-        results.hitch_count,
-        results.hitch_rate
+    println!(
+        "Hitch count: {} ({:.2}% of frames)",
+        results.hitch_count, results.hitch_rate
     );
     println!("Peak memory: {:.1}MB", results.peak_memory_mb);
     println!("Final memory: {:.1}MB", results.final_memory_mb);
@@ -280,11 +282,14 @@ async fn streaming_soak_test_1024_ticks() {
     println!("Chunks loaded: {}", results.chunks_loaded_total);
     println!("Chunks unloaded: {}", results.chunks_unloaded_total);
     println!("Missing chunks: {}", results.missing_chunk_count);
-    
+
     // Validate acceptance criteria
     let passed = results.passed(&SoakTestConfig::default());
-    println!("\n=== Status: {} ===\n", if passed { "✅ PASSED" } else { "❌ FAILED" });
-    
+    println!(
+        "\n=== Status: {} ===\n",
+        if passed { "✅ PASSED" } else { "❌ FAILED" }
+    );
+
     // Assert success criteria
     assert!(
         results.p99_frame_ms < SoakTestConfig::default().hitch_threshold_ms,
@@ -292,14 +297,14 @@ async fn streaming_soak_test_1024_ticks() {
         results.p99_frame_ms,
         SoakTestConfig::default().hitch_threshold_ms
     );
-    
+
     assert!(
         results.memory_delta_percent.abs() < SoakTestConfig::default().max_memory_delta_percent,
         "Memory delta {:.2}% exceeds threshold {:.1}%",
         results.memory_delta_percent,
         SoakTestConfig::default().max_memory_delta_percent
     );
-    
+
     assert_eq!(
         results.missing_chunk_count, 0,
         "Found {} missing chunks in view frustum",
@@ -314,9 +319,9 @@ async fn streaming_quick_validation() {
         duration_ticks: 64,
         ..Default::default()
     };
-    
+
     let results = run_soak_test(config).await;
-    
+
     // Just ensure no panics and basic functionality
     assert!(results.average_frame_ms > 0.0);
     assert!(results.chunks_loaded_total > 0);

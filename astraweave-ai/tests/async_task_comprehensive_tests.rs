@@ -21,21 +21,21 @@ use tokio::time::sleep;
 #[tokio::test]
 async fn test_async_task_multiple_try_recv_consumes_result() {
     let handle = tokio::spawn(async { 42 });
-    
+
     // Wait for completion
     sleep(Duration::from_millis(10)).await;
-    
+
     let mut task = AsyncTask::new(handle);
-    
+
     // First call should succeed
     let result1 = task.try_recv();
     assert!(result1.is_some());
     assert_eq!(result1.unwrap().unwrap(), 42);
-    
+
     // Second call should return None (result consumed)
     let result2 = task.try_recv();
     assert!(result2.is_none());
-    
+
     // Third call should still return None
     let result3 = task.try_recv();
     assert!(result3.is_none());
@@ -56,10 +56,10 @@ async fn test_async_task_concurrent_spawns() {
             AsyncTask::new(handle)
         })
         .collect();
-    
+
     // Wait generously for all to complete
     sleep(Duration::from_millis(100)).await;
-    
+
     // Verify all tasks complete with correct values
     for (i, mut task) in tasks.into_iter().enumerate() {
         let result = task.try_recv();
@@ -75,20 +75,20 @@ async fn test_async_task_is_finished_lifecycle() {
         sleep(Duration::from_millis(50)).await;
         42
     });
-    
+
     let mut task = AsyncTask::new(handle);
-    
+
     // Should not be finished immediately
     assert!(!task.is_finished());
-    
+
     // Wait a bit (still running)
     sleep(Duration::from_millis(20)).await;
     assert!(!task.is_finished());
-    
+
     // Wait for completion
     sleep(Duration::from_millis(40)).await;
     assert!(task.is_finished());
-    
+
     // Should still report finished after try_recv
     let result = task.try_recv();
     assert!(result.is_some());
@@ -102,9 +102,9 @@ async fn test_async_task_zero_timeout() {
         sleep(Duration::from_millis(10)).await;
         42
     });
-    
+
     let mut task = AsyncTask::with_timeout(handle, Duration::ZERO);
-    
+
     // Should timeout immediately (even without sleep)
     match task.try_recv() {
         Some(Err(e)) => {
@@ -126,12 +126,12 @@ async fn test_async_task_large_timeout() {
         sleep(Duration::from_millis(10)).await;
         42
     });
-    
+
     let mut task = AsyncTask::with_timeout(handle, Duration::from_secs(3600)); // 1 hour
-    
+
     // Wait for task completion (with extra buffer for CI)
     sleep(Duration::from_millis(50)).await;
-    
+
     // Should complete successfully (not timeout)
     match task.try_recv() {
         Some(Ok(value)) => assert_eq!(value, 42),
@@ -144,23 +144,26 @@ async fn test_async_task_large_timeout() {
 async fn test_async_task_abort_stops_execution() {
     let executed = Arc::new(AtomicBool::new(false));
     let executed_clone = executed.clone();
-    
+
     let handle = tokio::spawn(async move {
         sleep(Duration::from_millis(50)).await;
         executed_clone.store(true, Ordering::SeqCst);
         42
     });
-    
+
     let task = AsyncTask::new(handle);
-    
+
     // Drop immediately (should abort)
     drop(task);
-    
+
     // Wait longer than task duration
     sleep(Duration::from_millis(100)).await;
-    
+
     // Task should NOT have executed (aborted before setting flag)
-    assert!(!executed.load(Ordering::SeqCst), "Task should have been aborted");
+    assert!(
+        !executed.load(Ordering::SeqCst),
+        "Task should have been aborted"
+    );
 }
 
 /// Test error propagation from task panic
@@ -171,12 +174,12 @@ async fn test_async_task_panic_propagation() {
         #[allow(unreachable_code)]
         42
     });
-    
+
     // Wait for panic to occur
     sleep(Duration::from_millis(10)).await;
-    
+
     let mut task = AsyncTask::new(handle);
-    
+
     // Should return error, not panic main thread
     match task.try_recv() {
         Some(Err(e)) => {
@@ -198,14 +201,14 @@ async fn test_async_task_await_result_consumes() {
         sleep(Duration::from_millis(10)).await;
         42
     });
-    
+
     let task = AsyncTask::new(handle);
-    
+
     // await_result consumes self
     let result = task.await_result().await;
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), 42);
-    
+
     // task is now consumed (can't use it again)
     // This is compile-time enforced, no runtime check needed
 }
@@ -215,20 +218,34 @@ async fn test_async_task_await_result_consumes() {
 async fn test_async_task_elapsed_precision() {
     let handle = tokio::spawn(async { 42 });
     let task = AsyncTask::new(handle);
-    
+
     // Check multiple times with very generous timing windows for CI
     let elapsed1 = task.elapsed();
     sleep(Duration::from_millis(30)).await;
     let elapsed2 = task.elapsed();
     sleep(Duration::from_millis(30)).await;
     let elapsed3 = task.elapsed();
-    
+
     // Elapsed should monotonically increase (this is the important property)
-    assert!(elapsed2 > elapsed1, "elapsed2 ({:?}) should be > elapsed1 ({:?})", elapsed2, elapsed1);
-    assert!(elapsed3 > elapsed2, "elapsed3 ({:?}) should be > elapsed2 ({:?})", elapsed3, elapsed2);
-    
+    assert!(
+        elapsed2 > elapsed1,
+        "elapsed2 ({:?}) should be > elapsed1 ({:?})",
+        elapsed2,
+        elapsed1
+    );
+    assert!(
+        elapsed3 > elapsed2,
+        "elapsed3 ({:?}) should be > elapsed2 ({:?})",
+        elapsed3,
+        elapsed2
+    );
+
     // Very generous sanity checks (20ms tolerance for CI timing variance)
-    assert!(elapsed1 < Duration::from_millis(20), "elapsed1 should be ~0ms, got {:?}", elapsed1);
+    assert!(
+        elapsed1 < Duration::from_millis(20),
+        "elapsed1 should be ~0ms, got {:?}",
+        elapsed1
+    );
     assert!(
         elapsed2 >= Duration::from_millis(20) && elapsed2 <= Duration::from_millis(60),
         "elapsed2 should be ~30ms, got {:?}",
@@ -249,11 +266,11 @@ async fn test_async_task_error_result() {
         sleep(Duration::from_millis(10)).await;
         Err::<i32, &str>("intentional error")
     });
-    
+
     sleep(Duration::from_millis(50)).await; // Extra buffer for CI
-    
+
     let mut task = AsyncTask::new(handle);
-    
+
     // Task should complete successfully (join succeeds)
     match task.try_recv() {
         Some(Ok(result)) => {
@@ -272,19 +289,23 @@ async fn test_async_task_concurrent_try_recv() {
         sleep(Duration::from_millis(200)).await; // Long enough to guarantee pending state
         42
     });
-    
+
     let mut task = AsyncTask::new(handle);
-    
+
     // Poll several times - should all return None (pending)
     for i in 0..5 {
         let result = task.try_recv();
-        assert!(result.is_none(), "Task should still be running at poll {}", i);
+        assert!(
+            result.is_none(),
+            "Task should still be running at poll {}",
+            i
+        );
         sleep(Duration::from_millis(20)).await; // Total: 100ms, well under 200ms
     }
-    
+
     // Wait for completion
     sleep(Duration::from_millis(120)).await; // 100ms + 120ms = 220ms total
-    
+
     // Now should succeed
     let result = task.try_recv();
     assert!(result.is_some());
@@ -299,12 +320,12 @@ async fn test_async_task_timeout_race_condition() {
         sleep(Duration::from_millis(30)).await;
         42
     });
-    
+
     let mut task = AsyncTask::with_timeout(handle, Duration::from_millis(100));
-    
+
     // Wait for task completion (before timeout)
     sleep(Duration::from_millis(60)).await;
-    
+
     // Should complete successfully (no timeout)
     match task.try_recv() {
         Some(Ok(value)) => assert_eq!(value, 42),
@@ -320,20 +341,20 @@ async fn test_async_task_is_finished_after_timeout() {
         sleep(Duration::from_secs(10)).await;
         42
     });
-    
+
     let mut task = AsyncTask::with_timeout(handle, Duration::from_millis(50));
-    
+
     // Not finished yet
     assert!(!task.is_finished());
-    
+
     // Wait for timeout
     sleep(Duration::from_millis(60)).await;
-    
+
     // Trigger timeout by calling try_recv
     let result = task.try_recv();
     assert!(result.is_some());
     assert!(result.unwrap().is_err()); // Timeout error
-    
+
     // Should now report finished (task was aborted)
     assert!(task.is_finished());
 }
@@ -342,13 +363,13 @@ async fn test_async_task_is_finished_after_timeout() {
 #[tokio::test]
 async fn test_async_task_await_result_on_completed() {
     let handle = tokio::spawn(async { 42 });
-    
+
     // Wait for completion
     sleep(Duration::from_millis(10)).await;
-    
+
     let task = AsyncTask::new(handle);
     assert!(task.is_finished());
-    
+
     // await_result should still work
     let result = task.await_result().await;
     assert!(result.is_ok());
@@ -360,30 +381,33 @@ async fn test_async_task_await_result_on_completed() {
 async fn test_async_task_drop_aborts_inflight() {
     let started = Arc::new(AtomicBool::new(false));
     let completed = Arc::new(AtomicBool::new(false));
-    
+
     let started_clone = started.clone();
     let completed_clone = completed.clone();
-    
+
     let handle = tokio::spawn(async move {
         started_clone.store(true, Ordering::SeqCst);
         sleep(Duration::from_millis(100)).await;
         completed_clone.store(true, Ordering::SeqCst);
         42
     });
-    
+
     let task = AsyncTask::new(handle);
-    
+
     // Give task time to start
     sleep(Duration::from_millis(20)).await;
     assert!(started.load(Ordering::SeqCst), "Task should have started");
     assert!(!task.is_finished());
-    
+
     // Drop while in-flight
     drop(task);
-    
+
     // Wait past completion time
     sleep(Duration::from_millis(100)).await;
-    
+
     // Task should NOT have completed (aborted)
-    assert!(!completed.load(Ordering::SeqCst), "Task should have been aborted before completion");
+    assert!(
+        !completed.load(Ordering::SeqCst),
+        "Task should have been aborted before completion"
+    );
 }

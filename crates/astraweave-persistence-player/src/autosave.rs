@@ -19,7 +19,7 @@ impl AutoSaver {
             dirty: false,
         }
     }
-    
+
     /// Create autosaver with custom interval
     pub fn with_interval(interval: Duration) -> Self {
         Self {
@@ -28,14 +28,14 @@ impl AutoSaver {
             dirty: false,
         }
     }
-    
+
     /// Mark profile as dirty (needs save)
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
     }
-    
+
     /// Update autosaver (call every frame or tick)
-    /// 
+    ///
     /// This will save the profile if:
     /// - Profile is dirty (has changes)
     /// - Interval has elapsed since last save
@@ -43,14 +43,14 @@ impl AutoSaver {
         if !self.dirty {
             return;
         }
-        
+
         if self.last_save.elapsed() >= self.interval {
             if let Err(e) = profile.quick_save() {
                 eprintln!("⚠️  Autosave failed: {}", e);
             } else {
                 println!("💾 Autosaved profile");
             }
-            
+
             self.last_save = Instant::now();
             self.dirty = false;
         }

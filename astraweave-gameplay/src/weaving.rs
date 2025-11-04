@@ -167,11 +167,18 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_ok(), "ReinforcePath should succeed");
         assert_eq!(budget.terrain_edits, 4, "Should consume 1 terrain edit");
-        
+
         let consequence = result.unwrap();
         assert_eq!(consequence.drop_multiplier, 1.1);
         assert_eq!(consequence.faction_disposition, 5);
@@ -196,10 +203,20 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_err(), "Should fail with no budget");
-        assert!(result.unwrap_err().to_string().contains("No terrain budget"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No terrain budget"));
     }
 
     #[test]
@@ -217,11 +234,18 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_ok(), "CollapseBridge should succeed");
         assert_eq!(budget.terrain_edits, 4, "Should consume 1 terrain edit");
-        
+
         let consequence = result.unwrap();
         assert_eq!(consequence.drop_multiplier, 0.9);
         assert_eq!(consequence.faction_disposition, -10);
@@ -242,10 +266,20 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_err(), "Should fail without point B");
-        assert!(result.unwrap_err().to_string().contains("Collapse needs A->B"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Collapse needs A->B"));
     }
 
     #[test]
@@ -263,12 +297,22 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_ok(), "RedirectWind should succeed");
         assert_eq!(budget.weather_ops, 2, "Should consume 1 weather op");
-        assert!(log_output.iter().any(|msg| msg.contains("Wind redirected")), "Should log wind redirect");
-        
+        assert!(
+            log_output.iter().any(|msg| msg.contains("Wind redirected")),
+            "Should log wind redirect"
+        );
+
         let consequence = result.unwrap();
         assert_eq!(consequence.weather_shift, Some("windy".to_string()));
     }
@@ -291,10 +335,20 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_err(), "Should fail with no weather budget");
-        assert!(result.unwrap_err().to_string().contains("No weather budget"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No weather budget"));
     }
 
     #[test]
@@ -312,12 +366,22 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_ok(), "LowerWater should succeed");
         assert_eq!(budget.weather_ops, 2, "Should consume 1 weather op");
-        assert!(log_output.iter().any(|msg| msg.contains("Waters receded")), "Should log water lowering");
-        
+        assert!(
+            log_output.iter().any(|msg| msg.contains("Waters receded")),
+            "Should log water lowering"
+        );
+
         let consequence = result.unwrap();
         assert_eq!(consequence.weather_shift, Some("dry".to_string()));
     }
@@ -337,11 +401,18 @@ mod tests {
         let mut log_output = Vec::new();
         let mut logger = |msg: String| log_output.push(msg);
 
-        let result = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op, &mut logger);
+        let result = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op,
+            &mut logger,
+        );
 
         assert!(result.is_ok(), "RaisePlatform should succeed");
         assert_eq!(budget.terrain_edits, 4, "Should consume 1 terrain edit");
-        
+
         let consequence = result.unwrap();
         assert_eq!(consequence.drop_multiplier, 1.05);
         assert_eq!(consequence.faction_disposition, 0);
@@ -363,7 +434,15 @@ mod tests {
             b: None,
             budget_cost: 1,
         };
-        apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op1, &mut logger).unwrap();
+        apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op1,
+            &mut logger,
+        )
+        .unwrap();
 
         // Apply RedirectWind
         let op2 = WeaveOp {
@@ -372,7 +451,15 @@ mod tests {
             b: Some(vec3(1.0, 0.0, 0.0)),
             budget_cost: 1,
         };
-        apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op2, &mut logger).unwrap();
+        apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op2,
+            &mut logger,
+        )
+        .unwrap();
 
         assert_eq!(budget.terrain_edits, 4, "Should have used 1 terrain edit");
         assert_eq!(budget.weather_ops, 2, "Should have used 1 weather op");
@@ -397,7 +484,14 @@ mod tests {
             b: None,
             budget_cost: 1,
         };
-        let result1 = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op1, &mut logger);
+        let result1 = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op1,
+            &mut logger,
+        );
         assert!(result1.is_ok(), "First terrain op should succeed");
 
         // Second terrain op fails (budget depleted)
@@ -407,7 +501,14 @@ mod tests {
             b: Some(vec3(1.0, 0.0, 1.0)),
             budget_cost: 1,
         };
-        let result2 = apply_weave_op(&mut world, &mut physics, &nav_src, &mut budget, &op2, &mut logger);
+        let result2 = apply_weave_op(
+            &mut world,
+            &mut physics,
+            &nav_src,
+            &mut budget,
+            &op2,
+            &mut logger,
+        );
         assert!(result2.is_err(), "Second terrain op should fail");
     }
 }

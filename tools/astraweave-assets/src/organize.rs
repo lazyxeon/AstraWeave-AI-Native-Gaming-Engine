@@ -65,9 +65,11 @@ impl AssetOrganizer {
 
             // Move/copy file to normalized location
             if download.path != dest_path {
-                fs::copy(&download.path, &dest_path)
-                    .await
-                    .context(format!("Failed to copy {} to {}", download.path.display(), dest_path.display()))?;
+                fs::copy(&download.path, &dest_path).await.context(format!(
+                    "Failed to copy {} to {}",
+                    download.path.display(),
+                    dest_path.display()
+                ))?;
 
                 // Remove original temp file
                 let _ = fs::remove_file(&download.path).await;
@@ -146,10 +148,8 @@ impl AssetOrganizer {
             );
         } else {
             // Add new entry
-            let attribution_entry = format!(
-                "## {} ({})\n\n",
-                entry.handle, entry.timestamp
-            ) + &format!("- **Asset ID**: {}\n", entry.id)
+            let attribution_entry = format!("## {} ({})\n\n", entry.handle, entry.timestamp)
+                + &format!("- **Asset ID**: {}\n", entry.id)
                 + &format!("- **Type**: {}\n", entry.kind)
                 + &format!("- **Resolution**: {}\n", entry.resolved_res)
                 + &format!("- **Source**: https://polyhaven.com/a/{}\n", entry.id)
@@ -202,9 +202,9 @@ impl AssetOrganizer {
                 let path = entry.path();
 
                 // Check if path or its parent is valid
-                let is_valid = valid_paths.iter().any(|vp| {
-                    path == *vp || path.starts_with(vp) || vp.starts_with(&path)
-                });
+                let is_valid = valid_paths
+                    .iter()
+                    .any(|vp| path == *vp || path.starts_with(vp) || vp.starts_with(&path));
 
                 if !is_valid {
                     // Prune this file/directory
@@ -282,13 +282,11 @@ impl AssetOrganizer {
 
             // Move/copy file to normalized location
             if download.path != dest_path {
-                fs::copy(&download.path, &dest_path)
-                    .await
-                    .context(format!(
-                        "Failed to copy {} to {}",
-                        download.path.display(),
-                        dest_path.display()
-                    ))?;
+                fs::copy(&download.path, &dest_path).await.context(format!(
+                    "Failed to copy {} to {}",
+                    download.path.display(),
+                    dest_path.display()
+                ))?;
 
                 // Remove original temp file
                 let _ = fs::remove_file(&download.path).await;

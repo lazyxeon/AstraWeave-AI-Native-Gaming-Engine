@@ -75,7 +75,10 @@ async fn test_license_validation_cc0_no_author_required() {
     let license = LicenseInfo::cc0(None, Some("https://example.com".to_string()));
 
     assert_eq!(license.spdx_id, "CC0-1.0");
-    assert!(!license.requires_attribution, "CC0 should not require attribution");
+    assert!(
+        !license.requires_attribution,
+        "CC0 should not require attribution"
+    );
     assert!(
         license.validate_permissive().is_ok(),
         "CC0 should be permissive"
@@ -163,7 +166,7 @@ async fn test_parallel_download_with_mock_server() {
         );
 
         let download_result = result.unwrap();
-        
+
         // Note: download_result.path reports the .tmp path, but atomic rename moves it to final .png
         // Verify the final file exists (not the .tmp)
         let expected_path = temp_dir.path().join(format!("file{}.png", &key[4..])); // Extract number from "fileN"
@@ -173,7 +176,7 @@ async fn test_parallel_download_with_mock_server() {
             key,
             expected_path
         );
-        
+
         assert!(
             download_result.size > 0,
             "File {} should have content (size: {})",
@@ -375,7 +378,10 @@ async fn test_concurrency_limiting() {
 
     // Note: We can't easily verify that only 2 were concurrent without instrumentation,
     // but we can verify that all completed successfully with the limit set.
-    println!("✅ 5 downloads completed with max_concurrent=2 in {:?}", duration);
+    println!(
+        "✅ 5 downloads completed with max_concurrent=2 in {:?}",
+        duration
+    );
 }
 
 // =============================================================================
@@ -454,7 +460,12 @@ async fn test_parallel_download_stress_test() {
     let duration = start.elapsed();
 
     // Verify all downloads succeeded
-    assert_eq!(results.len(), file_count, "Should have {} results", file_count);
+    assert_eq!(
+        results.len(),
+        file_count,
+        "Should have {} results",
+        file_count
+    );
 
     let mut success_count = 0;
     for (key, result) in results {

@@ -83,7 +83,10 @@ impl AssetProvider for PolyHavenProvider {
 
                 self.client.resolve_model(id, res, format).await?
             }
-            _ => anyhow::bail!("PolyHaven does not support asset type: {:?}", config.asset_type),
+            _ => anyhow::bail!(
+                "PolyHaven does not support asset type: {:?}",
+                config.asset_type
+            ),
         };
 
         // Convert old ResolvedAsset to new ResolvedAssetV2
@@ -111,7 +114,10 @@ impl AssetProvider for PolyHavenProvider {
     fn validate_config(&self, config: &ProviderConfig) -> Result<()> {
         // Check required fields
         if config.id.is_none() {
-            anyhow::bail!("Missing required field 'id' for PolyHaven asset '{}'", config.handle);
+            anyhow::bail!(
+                "Missing required field 'id' for PolyHaven asset '{}'",
+                config.handle
+            );
         }
 
         // Check resolution for textures/HDRIs/models

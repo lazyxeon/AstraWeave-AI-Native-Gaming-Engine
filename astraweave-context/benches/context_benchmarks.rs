@@ -1,8 +1,8 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use astraweave_context::{
     ContextConfig, ContextWindow, ContextWindowConfig, ConversationHistory, Message, Role,
     WindowType,
 };
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::hint::black_box;
 
 // ============================================================================
@@ -23,7 +23,10 @@ fn create_message_batch(count: usize) -> Vec<Message> {
             } else {
                 Role::Assistant
             };
-            create_test_message(role, &format!("Test message number {} with some content", i))
+            create_test_message(
+                role,
+                &format!("Test message number {} with some content", i),
+            )
         })
         .collect()
 }
@@ -151,32 +154,28 @@ fn bench_get_recent_messages(c: &mut Criterion) {
     let mut group = c.benchmark_group("get_recent_messages");
 
     for total in [50, 100, 200] {
-        group.bench_with_input(
-            BenchmarkId::from_parameter(total),
-            &total,
-            |b, &_total| {
-                b.iter_with_setup(
-                    || {
-                        // Setup: Create history with messages
-                        let config = ContextConfig {
-                            max_tokens: 10000,
-                            ..Default::default()
-                        };
-                        let history = ConversationHistory::new(config);
+        group.bench_with_input(BenchmarkId::from_parameter(total), &total, |b, &_total| {
+            b.iter_with_setup(
+                || {
+                    // Setup: Create history with messages
+                    let config = ContextConfig {
+                        max_tokens: 10000,
+                        ..Default::default()
+                    };
+                    let history = ConversationHistory::new(config);
 
-                        // Pre-populate with messages (sync operation)
-                        // Note: We can't use add_message here as it's async
-                        // This benchmark focuses on the get operation
-                        history
-                    },
-                    |history| {
-                        // Benchmark the retrieval (sync operation)
-                        let recent = history.get_recent_messages(20);
-                        black_box(recent)
-                    },
-                )
-            },
-        );
+                    // Pre-populate with messages (sync operation)
+                    // Note: We can't use add_message here as it's async
+                    // This benchmark focuses on the get operation
+                    history
+                },
+                |history| {
+                    // Benchmark the retrieval (sync operation)
+                    let recent = history.get_recent_messages(20);
+                    black_box(recent)
+                },
+            )
+        });
     }
 
     group.finish();

@@ -90,7 +90,7 @@ async fn test_error_handling_scenarios() {
     // Clear global cache to prevent cross-test pollution
     #[cfg(feature = "llm_cache")]
     astraweave_llm::clear_global_cache();
-    
+
     let world_snapshot = create_complex_scenario();
     let tool_registry = create_comprehensive_registry();
 

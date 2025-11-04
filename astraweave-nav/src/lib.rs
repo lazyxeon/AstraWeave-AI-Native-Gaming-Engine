@@ -30,12 +30,12 @@ impl NavMesh {
             .enumerate()
             .filter_map(|(i, t)| {
                 let n = (t.b - t.a).cross(t.c - t.a).normalize_or_zero();
-                
+
                 // Handle degenerate triangles (zero normal)
                 if n.length_squared() < 1e-6 {
                     return None;
                 }
-                
+
                 // Calculate angle from vertical (Y-axis)
                 // Accept only upward-facing triangles (dot product >= 0)
                 let dot = n.dot(Vec3::Y).clamp(-1.0, 1.0);
@@ -43,13 +43,13 @@ impl NavMesh {
                     // Downward-facing triangle, filter it
                     return None;
                 }
-                
+
                 let angle_from_vertical = dot.acos().to_degrees();
-                
+
                 // Accept triangles where angle from vertical <= max_slope
                 // (0° = flat horizontal, 90° = vertical wall)
                 let slope_ok = angle_from_vertical <= max_slope_deg;
-                
+
                 if !slope_ok {
                     return None;
                 }
@@ -90,7 +90,7 @@ impl NavMesh {
         }
         let (s, g) = (
             s.expect("BUG: start triangle should be Some after is_none check"),
-            g.expect("BUG: goal triangle should be Some after is_none check")
+            g.expect("BUG: goal triangle should be Some after is_none check"),
         );
         let idx_path = astar_tri(&self.tris, s, g);
         if idx_path.is_empty() {
@@ -397,7 +397,7 @@ mod tests {
         assert_eq!(nav.tris.len(), 2);
         assert_eq!(nav.tris[0].neighbors.len(), 0);
         assert_eq!(nav.tris[1].neighbors.len(), 0);
-        
+
         let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(10.5, 0.0, 0.5));
         assert_eq!(path.len(), 0); // No path possible
     }
@@ -532,7 +532,7 @@ mod tests {
         // Query point closest to tri 0
         let result = closest_tri(&tris, Vec3::new(0.4, 0.0, 0.4));
         assert_eq!(result, Some(0));
-        
+
         // Query point closest to tri 1
         let result = closest_tri(&tris, Vec3::new(10.1, 0.0, 10.1));
         assert_eq!(result, Some(1));
@@ -669,11 +669,11 @@ mod tests {
             Vec3::new(10.0, 0.0, 0.0),
         ];
         smooth(&mut pts, &[]);
-        
+
         // Endpoints unchanged
         assert_eq!(pts[0], Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(pts[2], Vec3::new(10.0, 0.0, 0.0));
-        
+
         // Middle point smoothed (weighted average with neighbors)
         // Formula: pts[1] = 0.25 * pts[0] + 0.5 * pts[1] + 0.25 * pts[2]
         // After 2 iterations of smoothing, middle point moves toward line
@@ -698,11 +698,11 @@ mod tests {
                 c: Vec3::new(2.0, 0.0, 2.0),
             },
         ];
-        
+
         let nav = NavMesh::bake(&tris, 0.5, 70.0);
         assert_eq!(nav.tris.len(), 2);
         assert!(nav.tris[0].neighbors.len() > 0 || nav.tris[1].neighbors.len() > 0); // Connected
-        
+
         // Path across the square
         let path = nav.find_path(Vec3::new(0.5, 0.0, 0.5), Vec3::new(1.5, 0.0, 1.5));
         assert!(path.len() >= 2);

@@ -1,10 +1,9 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::{
-    RetrievalConfig, RetrievalEngine, RetrievalQuery,
-    RagConfig, DiversityConfig, PerformanceConfig,
-    ConsolidationConfig, ForgettingConfig, InjectionConfig,
+    ConsolidationConfig, DiversityConfig, ForgettingConfig, InjectionConfig, PerformanceConfig,
+    RagConfig, RetrievalConfig, RetrievalEngine, RetrievalQuery,
 };
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
 use std::hint::black_box;
 
@@ -65,7 +64,11 @@ fn create_test_memories(count: usize) -> Vec<Memory> {
 }
 
 /// Create a test retrieval query
-fn create_test_query(text: &str, categories: Vec<MemoryCategory>, limit: Option<usize>) -> RetrievalQuery {
+fn create_test_query(
+    text: &str,
+    categories: Vec<MemoryCategory>,
+    limit: Option<usize>,
+) -> RetrievalQuery {
     RetrievalQuery {
         text: text.to_string(),
         categories,
@@ -326,7 +329,7 @@ fn bench_memory_deserialize_json(c: &mut Criterion) {
 fn bench_similarity_calculation(c: &mut Criterion) {
     let config = RetrievalConfig::default();
     let engine = RetrievalEngine::new(config);
-    
+
     c.bench_function("similarity_calculation", |b| {
         b.iter(|| {
             // Access private method through search (simplified benchmark)

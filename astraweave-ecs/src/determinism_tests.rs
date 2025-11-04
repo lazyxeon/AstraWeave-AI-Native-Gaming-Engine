@@ -34,7 +34,7 @@
 //! let e1 = world.spawn();  // Empty archetype
 //! let e2 = world.spawn();  // Empty archetype
 //! world.insert(e1, Position { x: 1.0, y: 1.0 });  // Moves e1 to Position archetype
-//! 
+//!
 //! // Iteration order: [e2, e1] (e2 still in empty archetype, e1 in Position archetype)
 //! // NOT spawn order [e1, e2]!
 //! ```
@@ -163,11 +163,7 @@ fn test_spawn_order_preserved() {
     // Collect entities (should match spawn order)
     let collected = collect_entities(&world);
 
-    assert_eq!(
-        collected.len(),
-        100,
-        "All 100 entities should be present"
-    );
+    assert_eq!(collected.len(), 100, "All 100 entities should be present");
 
     // Check spawn order preserved
     for (i, &entity) in collected.iter().enumerate() {
@@ -221,10 +217,22 @@ fn test_spawn_order_after_component_modifications() {
     // Add components to some entities (changes archetypes)
     for (i, &entity) in entities.iter().enumerate() {
         if i % 2 == 0 {
-            world.insert(entity, Position { x: i as f32, y: i as f32 });
+            world.insert(
+                entity,
+                Position {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
         }
         if i % 3 == 0 {
-            world.insert(entity, Velocity { x: i as f32, y: i as f32 });
+            world.insert(
+                entity,
+                Velocity {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
         }
     }
 
@@ -280,14 +288,8 @@ fn test_despawn_respawn_ordering() {
     );
 
     // Check e1, e3, e4 are present
-    assert!(
-        collected.contains(&e1),
-        "Entity e1 should be alive"
-    );
-    assert!(
-        collected.contains(&e3),
-        "Entity e3 should be alive"
-    );
+    assert!(collected.contains(&e1), "Entity e1 should be alive");
+    assert!(collected.contains(&e3), "Entity e3 should be alive");
     assert!(
         collected.contains(&e4),
         "Respawned entity e4 should be alive"
@@ -322,13 +324,28 @@ fn test_multiple_despawn_respawn_cycles() {
     assert_eq!(collected.len(), 5, "Should have 5 alive entities");
 
     // Check stale entities not present
-    assert!(!collected.contains(&entities[1]), "Despawned entity[1] should not appear");
-    assert!(!collected.contains(&entities[3]), "Despawned entity[3] should not appear");
+    assert!(
+        !collected.contains(&entities[1]),
+        "Despawned entity[1] should not appear"
+    );
+    assert!(
+        !collected.contains(&entities[3]),
+        "Despawned entity[3] should not appear"
+    );
 
     // Check alive entities present
-    assert!(collected.contains(&entities[0]), "Entity[0] should be alive");
-    assert!(collected.contains(&entities[2]), "Entity[2] should be alive");
-    assert!(collected.contains(&entities[4]), "Entity[4] should be alive");
+    assert!(
+        collected.contains(&entities[0]),
+        "Entity[0] should be alive"
+    );
+    assert!(
+        collected.contains(&entities[2]),
+        "Entity[2] should be alive"
+    );
+    assert!(
+        collected.contains(&entities[4]),
+        "Entity[4] should be alive"
+    );
     assert!(collected.contains(&e_new1), "New entity 1 should be alive");
     assert!(collected.contains(&e_new2), "New entity 2 should be alive");
 
@@ -354,9 +371,13 @@ fn test_archetype_deterministic_assignment() {
     world2.insert(e1_w2, Velocity { x: 1.0, y: 1.0 });
 
     // Get archetype IDs
-    let arch_id1 = world1.archetypes().get_entity_archetype(e1_w1)
+    let arch_id1 = world1
+        .archetypes()
+        .get_entity_archetype(e1_w1)
         .expect("Entity should have archetype");
-    let arch_id2 = world2.archetypes().get_entity_archetype(e1_w2)
+    let arch_id2 = world2
+        .archetypes()
+        .get_entity_archetype(e1_w2)
         .expect("Entity should have archetype");
 
     assert_eq!(
@@ -374,7 +395,9 @@ fn test_archetype_stable_across_operations() {
     world.insert(e1, Position { x: 1.0, y: 1.0 });
     world.insert(e1, Velocity { x: 1.0, y: 1.0 });
 
-    let arch_id1 = world.archetypes().get_entity_archetype(e1)
+    let arch_id1 = world
+        .archetypes()
+        .get_entity_archetype(e1)
         .expect("Entity should have archetype");
 
     // Spawn another entity with same components
@@ -382,7 +405,9 @@ fn test_archetype_stable_across_operations() {
     world.insert(e2, Position { x: 2.0, y: 2.0 });
     world.insert(e2, Velocity { x: 2.0, y: 2.0 });
 
-    let arch_id2 = world.archetypes().get_entity_archetype(e2)
+    let arch_id2 = world
+        .archetypes()
+        .get_entity_archetype(e2)
         .expect("Entity should have archetype");
 
     assert_eq!(
@@ -394,7 +419,9 @@ fn test_archetype_stable_across_operations() {
     world.remove::<Velocity>(e1);
     world.insert(e1, Velocity { x: 3.0, y: 3.0 });
 
-    let arch_id1_restored = world.archetypes().get_entity_archetype(e1)
+    let arch_id1_restored = world
+        .archetypes()
+        .get_entity_archetype(e1)
         .expect("Entity should have archetype");
 
     assert_eq!(
@@ -414,7 +441,13 @@ fn test_component_add_preserves_spawn_order() {
 
     // Add Position component to all entities (changes archetype for all)
     for (i, &entity) in entities.iter().enumerate() {
-        world.insert(entity, Position { x: i as f32, y: i as f32 });
+        world.insert(
+            entity,
+            Position {
+                x: i as f32,
+                y: i as f32,
+            },
+        );
     }
 
     // Collect entities
@@ -440,8 +473,20 @@ fn test_component_remove_preserves_spawn_order() {
     let entities: Vec<Entity> = (0..20)
         .map(|i| {
             let e = world.spawn();
-            world.insert(e, Position { x: i as f32, y: i as f32 });
-            world.insert(e, Velocity { x: i as f32, y: i as f32 });
+            world.insert(
+                e,
+                Position {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
+            world.insert(
+                e,
+                Velocity {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
             e
         })
         .collect();
@@ -478,23 +523,65 @@ fn test_mixed_component_operations_preserve_order() {
         match i % 4 {
             0 => {
                 // Add Position
-                world.insert(entity, Position { x: i as f32, y: i as f32 });
+                world.insert(
+                    entity,
+                    Position {
+                        x: i as f32,
+                        y: i as f32,
+                    },
+                );
             }
             1 => {
                 // Add Position + Velocity
-                world.insert(entity, Position { x: i as f32, y: i as f32 });
-                world.insert(entity, Velocity { x: i as f32, y: i as f32 });
+                world.insert(
+                    entity,
+                    Position {
+                        x: i as f32,
+                        y: i as f32,
+                    },
+                );
+                world.insert(
+                    entity,
+                    Velocity {
+                        x: i as f32,
+                        y: i as f32,
+                    },
+                );
             }
             2 => {
                 // Add Position + Velocity, then remove Velocity
-                world.insert(entity, Position { x: i as f32, y: i as f32 });
-                world.insert(entity, Velocity { x: i as f32, y: i as f32 });
+                world.insert(
+                    entity,
+                    Position {
+                        x: i as f32,
+                        y: i as f32,
+                    },
+                );
+                world.insert(
+                    entity,
+                    Velocity {
+                        x: i as f32,
+                        y: i as f32,
+                    },
+                );
                 world.remove::<Velocity>(entity);
             }
             3 => {
                 // Add Position + Health
-                world.insert(entity, Position { x: i as f32, y: i as f32 });
-                world.insert(entity, Health { current: 100, max: 100 });
+                world.insert(
+                    entity,
+                    Position {
+                        x: i as f32,
+                        y: i as f32,
+                    },
+                );
+                world.insert(
+                    entity,
+                    Health {
+                        current: 100,
+                        max: 100,
+                    },
+                );
             }
             _ => unreachable!(),
         }
@@ -533,10 +620,22 @@ fn test_repeated_iteration_produces_same_order() {
     for i in 0..50 {
         let e = world.spawn();
         if i % 2 == 0 {
-            world.insert(e, Position { x: i as f32, y: i as f32 });
+            world.insert(
+                e,
+                Position {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
         }
         if i % 3 == 0 {
-            world.insert(e, Velocity { x: i as f32, y: i as f32 });
+            world.insert(
+                e,
+                Velocity {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
         }
     }
 
@@ -565,7 +664,13 @@ fn test_query_iteration_deterministic() {
     let _entities: Vec<Entity> = (0..30)
         .map(|i| {
             let e = world.spawn();
-            world.insert(e, Position { x: i as f32, y: i as f32 });
+            world.insert(
+                e,
+                Position {
+                    x: i as f32,
+                    y: i as f32,
+                },
+            );
             e
         })
         .collect();

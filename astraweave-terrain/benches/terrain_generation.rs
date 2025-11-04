@@ -72,7 +72,7 @@ fn benchmark_world_generation(c: &mut Criterion) {
     // Week 3 Action 8: Disable erosion for performance testing
     // Erosion adds ~3ms overhead (10 iterations of flow simulation)
     config.noise.erosion_enabled = false;
-    
+
     let mut generator = WorldGenerator::new(config);
 
     c.bench_function("world_chunk_generation", |b| {

@@ -75,7 +75,10 @@ async fn main() -> anyhow::Result<()> {
             };
             println!(
                 "{} {} - {:.1}% overall ({}ms)",
-                pass_fail, result.scenario_id, result.overall_score * 100.0, result.elapsed_ms
+                pass_fail,
+                result.scenario_id,
+                result.overall_score * 100.0,
+                result.elapsed_ms
             );
 
             if !result.errors.is_empty() {

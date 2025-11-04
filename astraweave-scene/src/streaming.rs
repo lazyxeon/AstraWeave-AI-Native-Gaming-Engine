@@ -366,6 +366,3 @@ impl WorldPartitionManager {
 pub fn create_streaming_manager(partition: Arc<RwLock<WorldPartition>>) -> WorldPartitionManager {
     WorldPartitionManager::new(partition, StreamingConfig::default())
 }
-
-
-

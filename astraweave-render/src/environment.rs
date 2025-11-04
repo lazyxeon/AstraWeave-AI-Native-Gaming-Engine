@@ -249,18 +249,20 @@ impl SkyRenderer {
             }],
         });
 
-        self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Sky Bind Group"),
-            layout: &bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: self
-                    .uniform_buffer
-                    .as_ref()
-                    .expect("BUG: uniform_buffer should be Some after creation above")
-                    .as_entire_binding(),
-            }],
-        }));
+        self.bind_group = Some(
+            device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Sky Bind Group"),
+                layout: &bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self
+                        .uniform_buffer
+                        .as_ref()
+                        .expect("BUG: uniform_buffer should be Some after creation above")
+                        .as_entire_binding(),
+                }],
+            }),
+        );
 
         // Create render pipeline
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {

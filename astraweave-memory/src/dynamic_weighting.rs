@@ -5,8 +5,8 @@
 //! that align with the player's playstyle and have historically high effectiveness.
 
 use crate::{
-    EpisodeCategory, PatternDetector, PlaystylePattern, PreferenceProfile, ProfileBuilder,
-    MemoryStorage,
+    EpisodeCategory, MemoryStorage, PatternDetector, PlaystylePattern, PreferenceProfile,
+    ProfileBuilder,
 };
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -46,7 +46,9 @@ impl BehaviorNodeType {
     pub fn from_pattern(pattern: PlaystylePattern) -> Vec<BehaviorNodeType> {
         match pattern {
             PlaystylePattern::Aggressive => vec![BehaviorNodeType::Combat],
-            PlaystylePattern::Cautious => vec![BehaviorNodeType::Defensive, BehaviorNodeType::Support],
+            PlaystylePattern::Cautious => {
+                vec![BehaviorNodeType::Defensive, BehaviorNodeType::Support]
+            }
             PlaystylePattern::Explorative => vec![BehaviorNodeType::Exploration],
             PlaystylePattern::Social => vec![BehaviorNodeType::Social],
             PlaystylePattern::Analytical => vec![BehaviorNodeType::Analytical],
@@ -88,8 +90,8 @@ impl NodeWeight {
 
     /// Calculate final weight
     pub fn calculate(&mut self) -> f32 {
-        self.weight = (self.base_weight + self.pattern_bonus + self.effectiveness_bonus)
-            .clamp(0.0, 1.0);
+        self.weight =
+            (self.base_weight + self.pattern_bonus + self.effectiveness_bonus).clamp(0.0, 1.0);
         self.weight
     }
 
@@ -122,7 +124,7 @@ impl AdaptiveWeightManager {
     /// Create new adaptive weight manager
     pub fn new() -> Self {
         let mut weights = HashMap::new();
-        
+
         // Initialize all node types with neutral weights
         for node_type in [
             BehaviorNodeType::Combat,
@@ -161,7 +163,9 @@ impl AdaptiveWeightManager {
     /// Update weights based on player profile
     pub fn update_from_profile(&mut self, storage: &MemoryStorage) -> Result<()> {
         // Build player profile
-        let profile = self.builder.build_profile(storage)
+        let profile = self
+            .builder
+            .build_profile(storage)
             .context("Failed to build player profile")?;
 
         // Update weights based on dominant patterns
@@ -214,12 +218,13 @@ impl AdaptiveWeightManager {
         // Apply effectiveness bonuses
         for (node_type, weight) in self.weights.iter_mut() {
             let category = node_type.to_category();
-            
+
             if let Some(&preference) = profile.preferred_categories.get(&category) {
                 // Bonus is proportional to how much this category exceeds average
                 let relative_preference = (preference - avg_preference).max(0.0);
-                weight.effectiveness_bonus = (relative_preference * self.max_effectiveness_bonus * 2.0)
-                    .min(self.max_effectiveness_bonus);
+                weight.effectiveness_bonus =
+                    (relative_preference * self.max_effectiveness_bonus * 2.0)
+                        .min(self.max_effectiveness_bonus);
             } else {
                 weight.effectiveness_bonus = 0.0;
             }
@@ -236,10 +241,7 @@ impl AdaptiveWeightManager {
 
     /// Get all current weights
     pub fn get_all_weights(&self) -> HashMap<BehaviorNodeType, f32> {
-        self.weights
-            .iter()
-            .map(|(k, v)| (*k, v.weight))
-            .collect()
+        self.weights.iter().map(|(k, v)| (*k, v.weight)).collect()
     }
 
     /// Reset all weights to base values
@@ -285,11 +287,7 @@ mod tests {
     use crate::episode::Episode;
     use crate::{EpisodeOutcome, Observation};
 
-    fn create_test_episode(
-        id: &str,
-        category: EpisodeCategory,
-        quality: f32,
-    ) -> Episode {
+    fn create_test_episode(id: &str, category: EpisodeCategory, quality: f32) -> Episode {
         let mut episode = Episode::new(id.to_string(), category);
         episode.outcome = Some(EpisodeOutcome {
             success_rating: quality,
@@ -327,7 +325,7 @@ mod tests {
         let mut weight = NodeWeight::new(0.5);
         weight.pattern_bonus = 0.2;
         weight.effectiveness_bonus = 0.1;
-        
+
         let final_weight = weight.calculate();
         assert_eq!(final_weight, 0.8);
         assert_eq!(weight.weight, 0.8);
@@ -338,7 +336,7 @@ mod tests {
         let mut weight = NodeWeight::new(0.5);
         weight.pattern_bonus = 0.4;
         weight.effectiveness_bonus = 0.3;
-        
+
         let final_weight = weight.calculate();
         assert_eq!(final_weight, 1.0); // Clamped to max
     }
@@ -361,7 +359,7 @@ mod tests {
     #[test]
     fn test_manager_creation() {
         let manager = AdaptiveWeightManager::new();
-        
+
         // All node types should have neutral weights
         assert_eq!(manager.get_weight(BehaviorNodeType::Combat), 0.5);
         assert_eq!(manager.get_weight(BehaviorNodeType::Support), 0.5);
@@ -386,11 +384,8 @@ mod tests {
 
         // Store combat episodes with high quality
         for i in 0..10 {
-            let episode = create_test_episode(
-                &format!("combat_{}", i),
-                EpisodeCategory::Combat,
-                0.9,
-            );
+            let episode =
+                create_test_episode(&format!("combat_{}", i), EpisodeCategory::Combat, 0.9);
             storage.store_memory(&episode.to_memory().unwrap()).unwrap();
         }
 
@@ -399,8 +394,12 @@ mod tests {
 
         // Combat weight should increase (pattern: Aggressive or Efficient)
         let combat_weight = manager.get_weight(BehaviorNodeType::Combat);
-        assert!(combat_weight > 0.5, "Combat weight should increase: {}", combat_weight);
-        
+        assert!(
+            combat_weight > 0.5,
+            "Combat weight should increase: {}",
+            combat_weight
+        );
+
         // Total updates should reflect the operation
         assert!(manager.total_updates() > 0);
     }
@@ -412,11 +411,7 @@ mod tests {
 
         let mut storage = MemoryStorage::in_memory().unwrap();
         for i in 0..10 {
-            let episode = create_test_episode(
-                &format!("ep_{}", i),
-                EpisodeCategory::Combat,
-                0.9,
-            );
+            let episode = create_test_episode(&format!("ep_{}", i), EpisodeCategory::Combat, 0.9);
             storage.store_memory(&episode.to_memory().unwrap()).unwrap();
         }
 

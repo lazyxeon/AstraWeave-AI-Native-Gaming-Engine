@@ -46,7 +46,7 @@ mod tests {
     #[test]
     fn test_step_with_different_dt_values() {
         let mut world = World::new();
-        
+
         step(&mut world, &SimConfig { dt: 0.016 });
         step(&mut world, &SimConfig { dt: 0.033 });
         step(&mut world, &SimConfig { dt: 0.008 });

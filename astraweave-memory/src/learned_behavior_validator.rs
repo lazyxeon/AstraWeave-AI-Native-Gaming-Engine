@@ -4,7 +4,7 @@
 //! behaviors before execution. Validates that learned behaviors align with
 //! player preferences and don't introduce unsafe or inappropriate actions.
 
-use crate::{PreferenceProfile, ProfileBuilder, MemoryStorage};
+use crate::{MemoryStorage, PreferenceProfile, ProfileBuilder};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -158,7 +158,9 @@ impl BehaviorValidator {
         }
 
         // Build player profile
-        let profile = self.builder.build_profile(storage)
+        let profile = self
+            .builder
+            .build_profile(storage)
             .context("Failed to build player profile")?;
 
         // Validate against rules
@@ -204,7 +206,10 @@ impl BehaviorValidator {
         let has_optimal_response = profile.optimal_responses.contains_key(action_type);
         if !has_optimal_response {
             rule_violations.push("profile_alignment");
-            reasons.push(format!("Action '{}' not found in optimal responses", action_type));
+            reasons.push(format!(
+                "Action '{}' not found in optimal responses",
+                action_type
+            ));
         }
 
         // Check historical effectiveness
@@ -228,10 +233,7 @@ impl BehaviorValidator {
         if strict_violation {
             // Find alternatives
             let alternatives = self.suggest_alternatives(profile);
-            return ValidationResult::invalid(
-                &reasons.join("; "),
-                alternatives,
-            );
+            return ValidationResult::invalid(&reasons.join("; "), alternatives);
         }
 
         // Calculate confidence based on data quality
@@ -277,9 +279,7 @@ impl BehaviorValidator {
         profile
             .optimal_responses
             .iter()
-            .filter(|(_, pref)| {
-                pref.positive_response_rate > 0.6 && pref.avg_effectiveness > 0.6
-            })
+            .filter(|(_, pref)| pref.positive_response_rate > 0.6 && pref.avg_effectiveness > 0.6)
             .take(3)
             .map(|(action, _)| action.clone())
             .collect()
@@ -339,7 +339,7 @@ pub struct ValidationStats {
 mod tests {
     use super::*;
     use crate::episode::Episode;
-    use crate::{CompanionResponse, ActionResult, EpisodeCategory, EpisodeOutcome, Observation};
+    use crate::{ActionResult, CompanionResponse, EpisodeCategory, EpisodeOutcome, Observation};
 
     fn create_test_episode(
         id: &str,
@@ -441,8 +441,13 @@ mod tests {
             storage.store_memory(&episode.to_memory().unwrap()).unwrap();
         }
 
-        let result = validator.validate_action("healing_spell", "combat", &storage).unwrap();
-        assert!(result.valid, "Validation should pass with good historical data");
+        let result = validator
+            .validate_action("healing_spell", "combat", &storage)
+            .unwrap();
+        assert!(
+            result.valid,
+            "Validation should pass with good historical data"
+        );
         assert!(result.confidence > 0.0);
     }
 
@@ -451,7 +456,9 @@ mod tests {
         let storage = MemoryStorage::in_memory().unwrap();
         let mut validator = BehaviorValidator::new();
 
-        let result = validator.validate_action("unknown_action", "test", &storage).unwrap();
+        let result = validator
+            .validate_action("unknown_action", "test", &storage)
+            .unwrap();
         assert!(!result.valid, "Should be uncertain with no data");
         assert!(result.confidence < 0.5);
         assert!(result.reasons[0].contains("Insufficient"));
@@ -474,10 +481,14 @@ mod tests {
         }
 
         // First validation
-        let result1 = validator.validate_action("attack", "combat", &storage).unwrap();
-        
+        let result1 = validator
+            .validate_action("attack", "combat", &storage)
+            .unwrap();
+
         // Second validation (should hit cache)
-        let result2 = validator.validate_action("attack", "combat", &storage).unwrap();
+        let result2 = validator
+            .validate_action("attack", "combat", &storage)
+            .unwrap();
 
         assert_eq!(result1.valid, result2.valid);
         assert_eq!(result1.confidence, result2.confidence);

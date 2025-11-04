@@ -3,8 +3,8 @@
 // Generates multiple LOD levels for memory and performance optimization
 
 use glam::Vec3;
-use std::collections::{HashMap, BinaryHeap};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap};
 
 /// Level of Detail configuration
 #[derive(Debug, Clone)]
@@ -37,8 +37,18 @@ pub struct SimplificationMesh {
 }
 
 impl SimplificationMesh {
-    pub fn new(positions: Vec<Vec3>, normals: Vec<Vec3>, uvs: Vec<[f32; 2]>, indices: Vec<u32>) -> Self {
-        Self { positions, normals, uvs, indices }
+    pub fn new(
+        positions: Vec<Vec3>,
+        normals: Vec<Vec3>,
+        uvs: Vec<[f32; 2]>,
+        indices: Vec<u32>,
+    ) -> Self {
+        Self {
+            positions,
+            normals,
+            uvs,
+            indices,
+        }
     }
 
     pub fn vertex_count(&self) -> usize {
@@ -67,10 +77,16 @@ impl Quadric {
     fn from_plane(a: f64, b: f64, c: f64, d: f64) -> Self {
         Self {
             data: [
-                a * a, a * b, a * c, a * d,  // q11, q12, q13, q14
-                b * b, b * c, b * d,          // q22, q23, q24
-                c * c, c * d,                 // q33, q34
-                d * d,                        // q44
+                a * a,
+                a * b,
+                a * c,
+                a * d, // q11, q12, q13, q14
+                b * b,
+                b * c,
+                b * d, // q22, q23, q24
+                c * c,
+                c * d, // q33, q34
+                d * d, // q44
             ],
         }
     }
@@ -112,10 +128,10 @@ impl Quadric {
 /// Edge collapse candidate
 #[derive(Debug, Clone)]
 struct EdgeCollapse {
-    v1: usize,       // First vertex
-    v2: usize,       // Second vertex
-    error: f64,      // Quadric error of collapse
-    new_pos: Vec3,   // Optimal position after collapse
+    v1: usize,     // First vertex
+    v2: usize,     // Second vertex
+    error: f64,    // Quadric error of collapse
+    new_pos: Vec3, // Optimal position after collapse
 }
 
 impl PartialOrd for EdgeCollapse {
@@ -164,7 +180,11 @@ impl LODGenerator {
     }
 
     /// Simplify mesh to target vertex count using quadric error metrics
-    pub fn simplify(&self, mesh: &SimplificationMesh, target_vertices: usize) -> SimplificationMesh {
+    pub fn simplify(
+        &self,
+        mesh: &SimplificationMesh,
+        target_vertices: usize,
+    ) -> SimplificationMesh {
         if mesh.vertex_count() <= target_vertices {
             return mesh.clone();
         }
@@ -217,12 +237,8 @@ impl LODGenerator {
             let normal = (p1 - p0).cross(p2 - p0).normalize();
             let d = -normal.dot(p0);
 
-            let quadric = Quadric::from_plane(
-                normal.x as f64,
-                normal.y as f64,
-                normal.z as f64,
-                d as f64,
-            );
+            let quadric =
+                Quadric::from_plane(normal.x as f64, normal.y as f64, normal.z as f64, d as f64);
 
             // Add to all three vertices
             quadrics[i0] = quadrics[i0].add(&quadric);
@@ -337,7 +353,11 @@ impl LODGenerator {
     }
 
     /// Calculate reduction percentage achieved
-    pub fn calculate_reduction(&self, original: &SimplificationMesh, lod: &SimplificationMesh) -> f32 {
+    pub fn calculate_reduction(
+        &self,
+        original: &SimplificationMesh,
+        lod: &SimplificationMesh,
+    ) -> f32 {
         1.0 - (lod.vertex_count() as f32 / original.vertex_count() as f32)
     }
 }
@@ -364,16 +384,11 @@ mod tests {
 
         let indices = vec![
             // Front
-            0, 1, 2, 0, 2, 3,
-            // Back
-            5, 4, 7, 5, 7, 6,
-            // Left
-            4, 0, 3, 4, 3, 7,
-            // Right
-            1, 5, 6, 1, 6, 2,
-            // Top
-            3, 2, 6, 3, 6, 7,
-            // Bottom
+            0, 1, 2, 0, 2, 3, // Back
+            5, 4, 7, 5, 7, 6, // Left
+            4, 0, 3, 4, 3, 7, // Right
+            1, 5, 6, 1, 6, 2, // Top
+            3, 2, 6, 3, 6, 7, // Bottom
             4, 5, 1, 4, 1, 0,
         ];
 
@@ -411,7 +426,7 @@ mod tests {
     #[test]
     fn test_quadric_evaluation() {
         let quadric = Quadric::from_plane(0.0, 1.0, 0.0, 0.0); // XZ plane (y=0)
-        
+
         let on_plane = Vec3::new(1.0, 0.0, 1.0);
         let off_plane = Vec3::new(1.0, 1.0, 1.0);
 
@@ -426,7 +441,7 @@ mod tests {
     fn test_reduction_calculation() {
         let config = LODConfig {
             reduction_targets: vec![0.50], // Single 50% reduction target
-            max_error: 1.0, // Higher threshold for test mesh
+            max_error: 1.0,                // Higher threshold for test mesh
             preserve_boundaries: true,
         };
         let generator = LODGenerator::new(config);
@@ -462,10 +477,10 @@ mod tests {
         // EDGE CASE: Zero vertices
         let config = LODConfig::default();
         let generator = LODGenerator::new(config);
-        
+
         let empty_mesh = SimplificationMesh::new(vec![], vec![], vec![], vec![]);
         let simplified = generator.simplify(&empty_mesh, 0);
-        
+
         assert_eq!(simplified.vertex_count(), 0);
         assert_eq!(simplified.triangle_count(), 0);
     }
@@ -479,7 +494,7 @@ mod tests {
             preserve_boundaries: true,
         };
         let generator = LODGenerator::new(config);
-        
+
         // Simple triangle mesh (1 triangle = 3 vertices)
         let positions = vec![
             Vec3::new(0.0, 0.0, 0.0),
@@ -489,10 +504,10 @@ mod tests {
         let normals = vec![Vec3::new(0.0, 0.0, 1.0); 3];
         let uvs = vec![[0.0, 0.0]; 3];
         let indices = vec![0, 1, 2];
-        
+
         let mesh = SimplificationMesh::new(positions, normals, uvs, indices);
         let lods = generator.generate_lods(&mesh);
-        
+
         // Should generate LODs (algorithm may be conservative)
         assert!(lods.len() > 0);
         for lod in &lods {
@@ -505,10 +520,10 @@ mod tests {
     fn test_quadric_error_at_infinity() {
         // EDGE CASE: Quadric error calculation with extreme positions
         let quadric = Quadric::from_plane(0.0, 1.0, 0.0, 0.0); // XZ plane (y=0)
-        
+
         let extreme_pos = Vec3::new(1e10, 1e10, 1e10);
         let error = quadric.evaluate(extreme_pos);
-        
+
         // Error should be finite (not NaN/Inf)
         assert!(error.is_finite());
         assert!(error >= 0.0); // Quadric error is always non-negative
@@ -520,9 +535,9 @@ mod tests {
         let config = LODConfig::default();
         let generator = LODGenerator::new(config);
         let cube = create_test_cube();
-        
+
         let simplified = generator.simplify(&cube, 2); // Can't form a triangle
-        
+
         // Algorithm should either preserve minimum geometry or return valid mesh
         assert_eq!(simplified.indices.len() % 3, 0); // Still valid triangle mesh
         if simplified.triangle_count() > 0 {
@@ -543,13 +558,13 @@ mod tests {
         let normals = vec![Vec3::new(0.0, 1.0, 0.0); 4];
         let uvs = vec![[0.0, 0.0]; 4];
         let indices = vec![0, 1, 2, 1, 3, 2]; // Two triangles
-        
+
         let config = LODConfig::default();
         let generator = LODGenerator::new(config);
         let mesh = SimplificationMesh::new(positions, normals, uvs, indices);
-        
+
         let simplified = generator.simplify(&mesh, 3);
-        
+
         // Should handle coplanar geometry without errors
         assert!(simplified.vertex_count() > 0);
         assert_eq!(simplified.indices.len() % 3, 0);

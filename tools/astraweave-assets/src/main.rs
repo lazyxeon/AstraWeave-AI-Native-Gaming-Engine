@@ -2,8 +2,9 @@
 // AstraWeave Multi-Provider Asset Fetcher - Main CLI
 // =============================================================================
 
+use anyhow::{Context, Result};
 use astraweave_assets::direct_url_provider::DirectUrlProvider;
-use astraweave_assets::downloader::{Downloader, DownloadResult};
+use astraweave_assets::downloader::{DownloadResult, Downloader};
 use astraweave_assets::kenney_provider::KenneyProvider;
 use astraweave_assets::organize::AssetOrganizer;
 use astraweave_assets::polyhaven_provider::PolyHavenProvider;
@@ -12,14 +13,15 @@ use astraweave_assets::provider::{
 };
 use astraweave_assets::summary::FetchSummary;
 use astraweave_assets::unified_config::{UnifiedAssetEntry, UnifiedManifest};
-use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "astraweave-assets")]
-#[command(about = "Multi-provider asset fetcher (PolyHaven, Poly Pizza, OpenGameArt, itch.io, Kenney.nl)")]
+#[command(
+    about = "Multi-provider asset fetcher (PolyHaven, Poly Pizza, OpenGameArt, itch.io, Kenney.nl)"
+)]
 #[command(version)]
 struct Cli {
     #[command(subcommand)]
@@ -84,8 +86,7 @@ async fn fetch_command(
     quiet: bool,
 ) -> Result<()> {
     // Load manifest
-    let manifest = UnifiedManifest::load(manifest_path)
-        .context("Failed to load manifest")?;
+    let manifest = UnifiedManifest::load(manifest_path).context("Failed to load manifest")?;
 
     if !quiet {
         println!("🚀 AstraWeave Multi-Provider Asset Fetcher");
@@ -132,7 +133,8 @@ async fn fetch_command(
 
     // Fetch each asset
     for asset_entry in assets_to_fetch {
-        let provider = registry.get(&asset_entry.provider)
+        let provider = registry
+            .get(&asset_entry.provider)
             .with_context(|| format!("Unknown provider: {}", asset_entry.provider))?;
 
         if !quiet {
@@ -146,7 +148,10 @@ async fn fetch_command(
             };
             println!(
                 "{} Fetching {}: {} ({})",
-                icon, asset_entry.asset_type_str(), asset_entry.handle, asset_entry.provider
+                icon,
+                asset_entry.asset_type_str(),
+                asset_entry.handle,
+                asset_entry.provider
             );
         }
 
@@ -323,7 +328,9 @@ async fn regenerate_attributions_command(manifest_path: &Path) -> Result<()> {
     let organizer = AssetOrganizer::new(manifest.output_dir.clone(), manifest.cache_dir.clone());
 
     // Load lockfile
-    let lockfile = organizer.load_lockfile().await
+    let lockfile = organizer
+        .load_lockfile()
+        .await
         .context("Failed to load lockfile. Run 'fetch' first.")?;
 
     // Group assets by provider

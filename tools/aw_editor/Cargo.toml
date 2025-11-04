@@ -15,10 +15,13 @@ editor-sim = ["editor-core"]
 editor-full = ["editor-graphs", "editor-materials", "editor-terrain", "editor-nav", "editor-sim"]
 
 [dependencies]
-eframe = { workspace = true }
+eframe = { workspace = true, features = ["wgpu"] }
 egui = { workspace = true }
+egui-wgpu = "0.32.0"
 egui_dock = { workspace = true }
 egui_graphs = { workspace = true }
+wgpu = { workspace = true }
+bytemuck = { version = "1.19", features = ["derive"] }
 petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -29,8 +32,11 @@ thiserror = { workspace = true }
 image = "0.25"
 uuid = { version = "1", features = ["v4"] }
 walkdir = "2"
+winit = { workspace = true }
 rhai = { workspace = true }
 glam = { workspace = true }
+rand = "0.8"
+astract = { path = "../../crates/astract" }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs", optional = true }
 astraweave-render = { path = "../../astraweave-render", optional = true }
@@ -41,3 +47,15 @@ astraweave-dialogue = { path = "../../astraweave-dialogue" }
 astraweave-quests = { path = "../../astraweave-quests" }
 astraweave-nav = { path = "../../astraweave-nav" }
 astraweave-observability = { path = "../../astraweave-observability" }
+[dev-dependencies]
+approx = "0.5"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "gizmo_benchmarks"
+harness = false
+path = "benches/gizmo_benchmarks_simple.rs"
+
+[lib]
+name = "aw_editor_lib"
+path = "src/lib.rs"

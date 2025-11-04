@@ -4,7 +4,7 @@
 //! responses, and learning confidence based on episode history analysis.
 
 use crate::{
-    GameEpisode, EpisodeCategory, MemoryStorage, MemoryType, PatternDetector, PatternStrength,
+    EpisodeCategory, GameEpisode, MemoryStorage, MemoryType, PatternDetector, PatternStrength,
     PlaystylePattern,
 };
 use anyhow::{Context, Result};
@@ -62,10 +62,7 @@ impl ProfileBuilder {
     }
 
     /// Create with custom thresholds
-    pub fn with_thresholds(
-        convergence_threshold: f32,
-        convergence_min_episodes: usize,
-    ) -> Self {
+    pub fn with_thresholds(convergence_threshold: f32, convergence_min_episodes: usize) -> Self {
         Self {
             detector: PatternDetector::new(),
             convergence_threshold,
@@ -101,9 +98,8 @@ impl ProfileBuilder {
         );
 
         // Check convergence
-        let converged =
-            episode_count >= self.convergence_min_episodes
-                && learning_confidence >= self.convergence_threshold;
+        let converged = episode_count >= self.convergence_min_episodes
+            && learning_confidence >= self.convergence_threshold;
 
         Ok(PreferenceProfile {
             dominant_patterns,
@@ -126,13 +122,12 @@ impl ProfileBuilder {
 
         for id in &episode_ids {
             if let Some(memory) = storage.get_memory(id)? {
-                if let Ok(episode) = serde_json::from_value::<GameEpisode>(memory.content.data.clone())
+                if let Ok(episode) =
+                    serde_json::from_value::<GameEpisode>(memory.content.data.clone())
                 {
                     if let Some(outcome) = &episode.outcome {
                         let quality = outcome.quality_score();
-                        let entry = category_stats
-                            .entry(episode.category)
-                            .or_insert((0, 0.0));
+                        let entry = category_stats.entry(episode.category).or_insert((0, 0.0));
                         entry.0 += 1;
                         entry.1 += quality;
                     }
@@ -166,7 +161,8 @@ impl ProfileBuilder {
 
         for id in &episode_ids {
             if let Some(memory) = storage.get_memory(id)? {
-                if let Ok(episode) = serde_json::from_value::<GameEpisode>(memory.content.data.clone())
+                if let Ok(episode) =
+                    serde_json::from_value::<GameEpisode>(memory.content.data.clone())
                 {
                     // Extract companion actions and player responses
                     for obs in &episode.observations {
@@ -195,20 +191,22 @@ impl ProfileBuilder {
         let preferences = action_stats
             .into_iter()
             .filter(|(_, (count, _, _))| *count >= 3) // Minimum 3 occurrences
-            .map(|(action_type, (total, effectiveness_sum, positive_count))| {
-                let positive_response_rate = positive_count as f32 / total as f32;
-                let avg_effectiveness = effectiveness_sum / total as f32;
+            .map(
+                |(action_type, (total, effectiveness_sum, positive_count))| {
+                    let positive_response_rate = positive_count as f32 / total as f32;
+                    let avg_effectiveness = effectiveness_sum / total as f32;
 
-                (
-                    action_type.clone(),
-                    CompanionActionPreference {
-                        action_type,
-                        positive_response_rate,
-                        avg_effectiveness,
-                        sample_count: total,
-                    },
-                )
-            })
+                    (
+                        action_type.clone(),
+                        CompanionActionPreference {
+                            action_type,
+                            positive_response_rate,
+                            avg_effectiveness,
+                            sample_count: total,
+                        },
+                    )
+                },
+            )
             .collect();
 
         Ok(preferences)
@@ -231,11 +229,7 @@ impl ProfileBuilder {
 
         // Pattern strength factor
         let pattern_factor = if !patterns.is_empty() {
-            patterns
-                .iter()
-                .map(|p| p.confidence)
-                .sum::<f32>()
-                / patterns.len() as f32
+            patterns.iter().map(|p| p.confidence).sum::<f32>() / patterns.len() as f32
         } else {
             // Without detected patterns, use episode count as proxy
             (episode_count as f32 / 20.0).min(0.5)
@@ -254,11 +248,7 @@ impl ProfileBuilder {
     }
 
     /// Get recommended companion action for context
-    pub fn recommend_action(
-        &self,
-        profile: &PreferenceProfile,
-        context: &str,
-    ) -> Option<String> {
+    pub fn recommend_action(&self, profile: &PreferenceProfile, context: &str) -> Option<String> {
         profile
             .optimal_responses
             .get(context)
@@ -266,18 +256,13 @@ impl ProfileBuilder {
     }
 
     /// Predict player satisfaction for proposed action
-    pub fn predict_satisfaction(
-        &self,
-        profile: &PreferenceProfile,
-        action_type: &str,
-    ) -> f32 {
+    pub fn predict_satisfaction(&self, profile: &PreferenceProfile, action_type: &str) -> f32 {
         profile
             .optimal_responses
             .get(action_type)
             .map(|pref| {
                 // Combine response rate and effectiveness
-                (pref.positive_response_rate * 0.6 + pref.avg_effectiveness * 0.4)
-                    .clamp(0.0, 1.0)
+                (pref.positive_response_rate * 0.6 + pref.avg_effectiveness * 0.4).clamp(0.0, 1.0)
             })
             .unwrap_or(0.5) // Default neutral prediction
     }
@@ -315,7 +300,7 @@ impl Default for ProfileBuilder {
 mod tests {
     use super::*;
     use crate::episode::Episode;
-    use crate::{EpisodeOutcome, Observation, CompanionResponse, ActionResult};
+    use crate::{ActionResult, CompanionResponse, EpisodeOutcome, Observation};
 
     fn create_test_episode(
         id: &str,
@@ -367,11 +352,7 @@ mod tests {
         let builder = ProfileBuilder::new();
 
         // Test with few episodes
-        let confidence_low = builder.calculate_learning_confidence(
-            3,
-            &[],
-            &HashMap::new(),
-        );
+        let confidence_low = builder.calculate_learning_confidence(3, &[], &HashMap::new());
         assert!(confidence_low < 0.3);
 
         // Test with good patterns
@@ -382,16 +363,9 @@ mod tests {
             avg_quality: 0.75,
         }];
 
-        let categories = [(EpisodeCategory::Combat, 0.9)]
-            .iter()
-            .cloned()
-            .collect();
+        let categories = [(EpisodeCategory::Combat, 0.9)].iter().cloned().collect();
 
-        let confidence_high = builder.calculate_learning_confidence(
-            15,
-            &patterns,
-            &categories,
-        );
+        let confidence_high = builder.calculate_learning_confidence(15, &patterns, &categories);
         assert!(confidence_high > 0.5);
     }
 

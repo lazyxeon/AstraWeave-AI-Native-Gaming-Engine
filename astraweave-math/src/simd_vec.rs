@@ -16,7 +16,7 @@ with automatic fallback to scalar operations.
 
 Typical speedups (vs scalar glam operations):
 - Dot product: 2-3× faster
-- Cross product: 2-3× faster  
+- Cross product: 2-3× faster
 - Normalize: 2-3× faster
 
 ## Usage
@@ -213,7 +213,7 @@ unsafe fn cross_simd_sse2(a: Vec3, b: Vec3) -> Vec3 {
     // Multiply and subtract
     // mul1 = [a.y*b.z, a.z*b.x, a.x*b.y, 0]
     let mul1 = _mm_mul_ps(a_yzx, b_zxy);
-    
+
     // mul2 = [a.z*b.y, a.x*b.z, a.y*b.x, 0]
     let mul2 = _mm_mul_ps(a_zxy, b_yzx);
 
@@ -318,7 +318,10 @@ mod tests {
         let v = Vec3::new(3.0, 4.0, 0.0);
         let normalized = normalize_simd(v);
 
-        let length = (normalized.x * normalized.x + normalized.y * normalized.y + normalized.z * normalized.z).sqrt();
+        let length = (normalized.x * normalized.x
+            + normalized.y * normalized.y
+            + normalized.z * normalized.z)
+            .sqrt();
         assert_abs_diff_eq!(length, 1.0, epsilon = 1e-6);
     }
 

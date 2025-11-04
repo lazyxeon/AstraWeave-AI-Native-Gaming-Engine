@@ -96,11 +96,11 @@ mod tests {
     #[test]
     fn test_accessibility_subtitle_scale_ranges() {
         let mut acc = Accessibility::default();
-        
+
         // Small text
         acc.subtitle_scale = 0.5;
         assert_eq!(acc.subtitle_scale, 0.5);
-        
+
         // Large text
         acc.subtitle_scale = 2.0;
         assert_eq!(acc.subtitle_scale, 2.0);
@@ -109,13 +109,13 @@ mod tests {
     #[test]
     fn test_accessibility_colorblind_modes() {
         let mut acc = Accessibility::default();
-        
+
         acc.colorblind_mode = Some("deuteranopia".to_string());
         assert_eq!(acc.colorblind_mode.as_ref().unwrap(), "deuteranopia");
-        
+
         acc.colorblind_mode = Some("tritanopia".to_string());
         assert_eq!(acc.colorblind_mode.as_ref().unwrap(), "tritanopia");
-        
+
         acc.colorblind_mode = None;
         assert!(acc.colorblind_mode.is_none());
     }

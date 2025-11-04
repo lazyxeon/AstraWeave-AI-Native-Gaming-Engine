@@ -28,7 +28,7 @@ mod tests {
     #[test]
     fn test_weave_telemetry_default() {
         let telemetry = WeaveTelemetry::default();
-        
+
         assert_eq!(telemetry.ops_applied, 0);
         assert_eq!(telemetry.terrain_cost, 0);
         assert_eq!(telemetry.weather_cost, 0);
@@ -40,9 +40,9 @@ mod tests {
     #[test]
     fn test_add_terrain() {
         let mut telemetry = WeaveTelemetry::default();
-        
+
         telemetry.add_terrain(10);
-        
+
         assert_eq!(telemetry.ops_applied, 1, "Should increment ops count");
         assert_eq!(telemetry.terrain_cost, 10, "Should add terrain cost");
         assert_eq!(telemetry.weather_cost, 0, "Weather cost should remain 0");
@@ -51,9 +51,9 @@ mod tests {
     #[test]
     fn test_add_weather() {
         let mut telemetry = WeaveTelemetry::default();
-        
+
         telemetry.add_weather(5);
-        
+
         assert_eq!(telemetry.ops_applied, 1, "Should increment ops count");
         assert_eq!(telemetry.weather_cost, 5, "Should add weather cost");
         assert_eq!(telemetry.terrain_cost, 0, "Terrain cost should remain 0");
@@ -62,25 +62,28 @@ mod tests {
     #[test]
     fn test_multiple_operations() {
         let mut telemetry = WeaveTelemetry::default();
-        
+
         telemetry.add_terrain(10);
         telemetry.add_terrain(15);
         telemetry.add_weather(5);
         telemetry.add_weather(8);
-        
+
         assert_eq!(telemetry.ops_applied, 4, "Should count all operations");
-        assert_eq!(telemetry.terrain_cost, 25, "Should sum terrain costs (10+15)");
+        assert_eq!(
+            telemetry.terrain_cost, 25,
+            "Should sum terrain costs (10+15)"
+        );
         assert_eq!(telemetry.weather_cost, 13, "Should sum weather costs (5+8)");
     }
 
     #[test]
     fn test_manual_field_assignment() {
         let mut telemetry = WeaveTelemetry::default();
-        
+
         telemetry.est_time_saved_sec = 120.5;
         telemetry.risk_score = 0.75;
         telemetry.reward_score = 1.5;
-        
+
         assert_eq!(telemetry.est_time_saved_sec, 120.5);
         assert_eq!(telemetry.risk_score, 0.75);
         assert_eq!(telemetry.reward_score, 1.5);
@@ -91,9 +94,9 @@ mod tests {
         let mut original = WeaveTelemetry::default();
         original.add_terrain(10);
         original.add_weather(5);
-        
+
         let cloned = original.clone();
-        
+
         assert_eq!(cloned.ops_applied, original.ops_applied);
         assert_eq!(cloned.terrain_cost, original.terrain_cost);
         assert_eq!(cloned.weather_cost, original.weather_cost);

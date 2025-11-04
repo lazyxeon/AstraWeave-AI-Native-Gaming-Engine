@@ -682,11 +682,21 @@ mod tests {
 
         // Spawn two companions
         let close_ally = app.world.spawn();
-        app.world.insert(close_ally, CPos { pos: IVec2 { x: 1, y: 1 } });
+        app.world.insert(
+            close_ally,
+            CPos {
+                pos: IVec2 { x: 1, y: 1 },
+            },
+        );
         app.world.insert(close_ally, CTeam { id: 1 });
 
         let far_ally = app.world.spawn();
-        app.world.insert(far_ally, CPos { pos: IVec2 { x: 10, y: 10 } });
+        app.world.insert(
+            far_ally,
+            CPos {
+                pos: IVec2 { x: 10, y: 10 },
+            },
+        );
         app.world.insert(far_ally, CTeam { id: 1 });
 
         // Create EntityBridge mapping legacy id 5 -> far_ally
@@ -772,15 +782,30 @@ mod tests {
 
         // Spawn companions at different positions
         let ally1 = app.world.spawn();
-        app.world.insert(ally1, CPos { pos: IVec2 { x: 3, y: 0 } }); // Distance 3
+        app.world.insert(
+            ally1,
+            CPos {
+                pos: IVec2 { x: 3, y: 0 },
+            },
+        ); // Distance 3
         app.world.insert(ally1, CTeam { id: 1 });
 
         let ally2 = app.world.spawn();
-        app.world.insert(ally2, CPos { pos: IVec2 { x: 2, y: 1 } }); // Distance 3
+        app.world.insert(
+            ally2,
+            CPos {
+                pos: IVec2 { x: 2, y: 1 },
+            },
+        ); // Distance 3
         app.world.insert(ally2, CTeam { id: 1 });
 
         let ally3 = app.world.spawn();
-        app.world.insert(ally3, CPos { pos: IVec2 { x: 1, y: 1 } }); // Distance 2 (closest)
+        app.world.insert(
+            ally3,
+            CPos {
+                pos: IVec2 { x: 1, y: 1 },
+            },
+        ); // Distance 2 (closest)
         app.world.insert(ally3, CTeam { id: 1 });
 
         let mut positions = std::collections::BTreeMap::new();
@@ -814,7 +839,11 @@ mod tests {
         };
 
         let mapped = map_legacy_companion_to_ecs(&positions, &teams, &snap, 1, &app.world);
-        assert_eq!(mapped, Some(ally3), "Should map to closest by Manhattan distance");
+        assert_eq!(
+            mapped,
+            Some(ally3),
+            "Should map to closest by Manhattan distance"
+        );
 
         Ok(())
     }
@@ -827,12 +856,22 @@ mod tests {
 
         // Spawn closest entity as team 2 (should be ignored)
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 1, y: 0 } }); // Distance 1
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 1, y: 0 },
+            },
+        ); // Distance 1
         app.world.insert(enemy, CTeam { id: 2 });
 
         // Spawn farther entity as team 1 (should be selected)
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 5, y: 5 } }); // Distance 10
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 5, y: 5 },
+            },
+        ); // Distance 10
         app.world.insert(ally, CTeam { id: 1 });
 
         let mut positions = std::collections::BTreeMap::new();
@@ -884,19 +923,37 @@ mod tests {
 
         // Spawn ECS companion and enemy
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
         // System should still run via ECS-only path
-        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should set desired pos via ECS-only path");
+        assert!(
+            app.world.get::<CDesiredPos>(ally).is_some(),
+            "Should set desired pos via ECS-only path"
+        );
 
         Ok(())
     }
@@ -913,19 +970,37 @@ mod tests {
 
         // Spawn ECS companion
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
         // Should fallback to ECS-only path (legacy path requires both player and companion)
-        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should use ECS-only fallback");
+        assert!(
+            app.world.get::<CDesiredPos>(ally).is_some(),
+            "Should use ECS-only fallback"
+        );
 
         Ok(())
     }
@@ -942,19 +1017,37 @@ mod tests {
 
         // Spawn ECS companion
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
         // Should fallback to ECS-only path
-        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should use ECS-only fallback");
+        assert!(
+            app.world.get::<CDesiredPos>(ally).is_some(),
+            "Should use ECS-only fallback"
+        );
 
         Ok(())
     }
@@ -965,7 +1058,7 @@ mod tests {
         // This tests the FULL happy path including event emission
         let mut w = World::new();
         use astraweave_core::Team;
-        
+
         // Setup world where orchestrator WILL generate a plan (enemy far away to trigger MoveTo)
         let _player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
         let _comp = w.spawn("Companion", IVec2 { x: 1, y: 0 }, Team { id: 1 }, 80, 5);
@@ -975,10 +1068,20 @@ mod tests {
 
         // Spawn ECS companion with matching position (for map_legacy_companion_to_ecs)
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 1, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 1, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 5 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         app = app.run_fixed(1);
 
@@ -987,13 +1090,17 @@ mod tests {
         // 1. CDesiredPos was set (MoveTo action was in plan)
         // 2. OR an event was emitted (plan was processed even if no MoveTo)
         let has_desired_pos = app.world.get::<CDesiredPos>(ally).is_some();
-        let has_planned_event = if let Some(events) = app.world.get_resource_mut::<Events<AiPlannedEvent>>() {
-            let mut reader = events.reader();
-            !reader.drain().collect::<Vec<_>>().is_empty()
-        } else {
-            false
-        };
-        let has_failed_event = if let Some(events) = app.world.get_resource_mut::<Events<AiPlanningFailedEvent>>() {
+        let has_planned_event =
+            if let Some(events) = app.world.get_resource_mut::<Events<AiPlannedEvent>>() {
+                let mut reader = events.reader();
+                !reader.drain().collect::<Vec<_>>().is_empty()
+            } else {
+                false
+            };
+        let has_failed_event = if let Some(events) = app
+            .world
+            .get_resource_mut::<Events<AiPlanningFailedEvent>>()
+        {
             let mut reader = events.reader();
             !reader.drain().collect::<Vec<_>>().is_empty()
         } else {
@@ -1014,10 +1121,10 @@ mod tests {
         // Verify system handles legacy world planning when plan has NO valid actions
         // This specifically tests the else branch (lines 120-128) where map_legacy succeeds
         // but no MoveTo action is found, triggering AiPlanningFailedEvent
-        
+
         use astraweave_core::Team;
         let mut w = World::new();
-        
+
         // Setup world with player + companion but circumstances that won't generate useful plan
         // (e.g., close together, no enemies, no objectives)
         let _player = w.spawn("Player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 0);
@@ -1028,10 +1135,20 @@ mod tests {
 
         // Spawn ECS companion
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         app = app.run_fixed(1);
 
@@ -1040,20 +1157,24 @@ mod tests {
         // 2. OR system fell through to ECS-only path and set CDesiredPos
         // 3. OR AiPlannedEvent was emitted (if plan DID have MoveTo despite our setup)
         // Any of these outcomes proves the code path executed without crashing
-        
+
         let has_desired_pos = app.world.get::<CDesiredPos>(ally).is_some();
-        let has_failed_event = if let Some(events) = app.world.get_resource_mut::<Events<AiPlanningFailedEvent>>() {
+        let has_failed_event = if let Some(events) = app
+            .world
+            .get_resource_mut::<Events<AiPlanningFailedEvent>>()
+        {
             let mut reader = events.reader();
             !reader.drain().collect::<Vec<_>>().is_empty()
         } else {
             false
         };
-        let has_planned_event = if let Some(events) = app.world.get_resource_mut::<Events<AiPlannedEvent>>() {
-            let mut reader = events.reader();
-            !reader.drain().collect::<Vec<_>>().is_empty()
-        } else {
-            false
-        };
+        let has_planned_event =
+            if let Some(events) = app.world.get_resource_mut::<Events<AiPlannedEvent>>() {
+                let mut reader = events.reader();
+                !reader.drain().collect::<Vec<_>>().is_empty()
+            } else {
+                false
+            };
 
         // Legacy path executed successfully (one of the three outcomes occurred)
         assert!(
@@ -1073,26 +1194,48 @@ mod tests {
 
         // Don't add plugin (to test event initialization in sys_ai_planning)
         // Manually add system
-        app.schedule.add_system("ai_planning", sys_ai_planning as ecs::SystemFn);
+        app.schedule
+            .add_system("ai_planning", sys_ai_planning as ecs::SystemFn);
 
         // Spawn companion
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         // Events resource should NOT exist yet
-        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_none(), "Events should not exist before system run");
+        assert!(
+            app.world.get_resource::<Events<AiPlannedEvent>>().is_none(),
+            "Events should not exist before system run"
+        );
 
         app = app.run_fixed(1);
 
         // System should have created Events resource
-        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_some(), "System should initialize Events resource");
+        assert!(
+            app.world.get_resource::<Events<AiPlannedEvent>>().is_some(),
+            "System should initialize Events resource"
+        );
 
         Ok(())
     }
@@ -1110,37 +1253,83 @@ mod tests {
 
         // Spawn three companions
         let ally1 = app.world.spawn();
-        app.world.insert(ally1, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally1,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally1, CTeam { id: 1 });
         app.world.insert(ally1, CAmmo { rounds: 10 });
-        app.world.insert(ally1, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally1,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let ally2 = app.world.spawn();
-        app.world.insert(ally2, CPos { pos: IVec2 { x: 2, y: 0 } });
+        app.world.insert(
+            ally2,
+            CPos {
+                pos: IVec2 { x: 2, y: 0 },
+            },
+        );
         app.world.insert(ally2, CTeam { id: 1 });
         app.world.insert(ally2, CAmmo { rounds: 5 });
-        app.world.insert(ally2, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally2,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let ally3 = app.world.spawn();
-        app.world.insert(ally3, CPos { pos: IVec2 { x: 4, y: 0 } });
+        app.world.insert(
+            ally3,
+            CPos {
+                pos: IVec2 { x: 4, y: 0 },
+            },
+        );
         app.world.insert(ally3, CTeam { id: 1 });
         app.world.insert(ally3, CAmmo { rounds: 15 });
-        app.world.insert(ally3, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally3,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         // Spawn enemy
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 10, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 10, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
         // All three companions should have desired positions set
-        assert!(app.world.get::<CDesiredPos>(ally1).is_some(), "Ally 1 should have desired pos");
-        assert!(app.world.get::<CDesiredPos>(ally2).is_some(), "Ally 2 should have desired pos");
-        assert!(app.world.get::<CDesiredPos>(ally3).is_some(), "Ally 3 should have desired pos");
+        assert!(
+            app.world.get::<CDesiredPos>(ally1).is_some(),
+            "Ally 1 should have desired pos"
+        );
+        assert!(
+            app.world.get::<CDesiredPos>(ally2).is_some(),
+            "Ally 2 should have desired pos"
+        );
+        assert!(
+            app.world.get::<CDesiredPos>(ally3).is_some(),
+            "Ally 3 should have desired pos"
+        );
 
         // Three planned events should be published
-        let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>()
+        let evs = app
+            .world
+            .get_resource_mut::<Events<AiPlannedEvent>>()
             .ok_or_else(|| anyhow!("Events missing"))?;
         let mut rdr = evs.reader();
         let v: Vec<_> = rdr.drain().collect();
@@ -1157,7 +1346,12 @@ mod tests {
         app = app.add_plugin(AiPlanningPlugin);
 
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
 
@@ -1169,13 +1363,21 @@ mod tests {
         app.world.insert(ally, CCooldowns { map: cds_map });
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
         // System should run without panic (cooldowns conversion successful)
-        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should handle cooldowns conversion");
+        assert!(
+            app.world.get::<CDesiredPos>(ally).is_some(),
+            "Should handle cooldowns conversion"
+        );
 
         Ok(())
     }
@@ -1188,31 +1390,61 @@ mod tests {
         app = app.add_plugin(AiPlanningPlugin);
 
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         // Spawn multiple enemies (team 2)
         let enemy1 = app.world.spawn();
-        app.world.insert(enemy1, CPos { pos: IVec2 { x: 3, y: 0 } });
+        app.world.insert(
+            enemy1,
+            CPos {
+                pos: IVec2 { x: 3, y: 0 },
+            },
+        );
         app.world.insert(enemy1, CTeam { id: 2 });
 
         let enemy2 = app.world.spawn();
-        app.world.insert(enemy2, CPos { pos: IVec2 { x: 6, y: 0 } });
+        app.world.insert(
+            enemy2,
+            CPos {
+                pos: IVec2 { x: 6, y: 0 },
+            },
+        );
         app.world.insert(enemy2, CTeam { id: 2 });
 
         // Spawn team 0 entity (should be ignored)
         let neutral = app.world.spawn();
-        app.world.insert(neutral, CPos { pos: IVec2 { x: 10, y: 0 } });
+        app.world.insert(
+            neutral,
+            CPos {
+                pos: IVec2 { x: 10, y: 0 },
+            },
+        );
         app.world.insert(neutral, CTeam { id: 0 });
 
         app = app.run_fixed(1);
 
         // Ally should move towards one of the enemies (team 2 filtering worked)
-        let desired = app.world.get::<CDesiredPos>(ally)
+        let desired = app
+            .world
+            .get::<CDesiredPos>(ally)
             .ok_or_else(|| anyhow!("Desired pos missing"))?;
-        assert!(desired.pos.x > 0, "Should move towards enemies (positive x)");
+        assert!(
+            desired.pos.x > 0,
+            "Should move towards enemies (positive x)"
+        );
 
         Ok(())
     }
@@ -1228,18 +1460,35 @@ mod tests {
         let mut app = build_app_with_ai(w, 0.016);
 
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
-        let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>()
+        let evs = app
+            .world
+            .get_resource_mut::<Events<AiPlannedEvent>>()
             .ok_or_else(|| anyhow!("Events missing"))?;
         let mut rdr = evs.reader();
         let v: Vec<_> = rdr.drain().collect();
@@ -1259,14 +1508,26 @@ mod tests {
 
         // Spawn companion without enemies
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: std::collections::BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: std::collections::BTreeMap::new(),
+            },
+        );
 
         app = app.run_fixed(1);
 
-        let evs = app.world.get_resource_mut::<Events<AiPlanningFailedEvent>>()
+        let evs = app
+            .world
+            .get_resource_mut::<Events<AiPlanningFailedEvent>>()
             .ok_or_else(|| anyhow!("Failed events missing"))?;
         let mut rdr = evs.reader();
         let v: Vec<_> = rdr.drain().collect();
@@ -1274,7 +1535,10 @@ mod tests {
         assert_eq!(v.len(), 1, "Should have one failed event");
         assert_eq!(v[0].entity, ally, "Failed event should reference ally");
         assert!(!v[0].reason.is_empty(), "Failed event should have reason");
-        assert!(v[0].reason.contains("No valid"), "Reason should mention 'No valid'");
+        assert!(
+            v[0].reason.contains("No valid"),
+            "Reason should mention 'No valid'"
+        );
 
         Ok(())
     }
@@ -1290,18 +1554,31 @@ mod tests {
         app = app.add_plugin(AiPlanningPlugin);
 
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         // Missing CAmmo and CCooldowns
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         app = app.run_fixed(1);
 
         // System should use default values (0 ammo, empty cooldowns)
-        assert!(app.world.get::<CDesiredPos>(ally).is_some(), "Should handle missing components gracefully");
+        assert!(
+            app.world.get::<CDesiredPos>(ally).is_some(),
+            "Should handle missing components gracefully"
+        );
 
         Ok(())
     }
@@ -1316,9 +1593,11 @@ mod tests {
         app = app.run_fixed(1);
 
         // System should run without panic
-        assert!(app.world.get_resource::<Events<AiPlannedEvent>>().is_some(), "Should initialize events even with empty world");
+        assert!(
+            app.world.get_resource::<Events<AiPlannedEvent>>().is_some(),
+            "Should initialize events even with empty world"
+        );
 
         Ok(())
     }
 }
-
