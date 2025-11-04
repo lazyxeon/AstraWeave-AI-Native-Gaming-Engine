@@ -13,9 +13,7 @@
 //! cargo run -p phi3_demo --release
 //! ```
 
-use astraweave_core::{
-    CompanionState, EnemyState, Entity, IVec2, PlayerState, Poi, WorldSnapshot,
-};
+use astraweave_core::{CompanionState, EnemyState, Entity, IVec2, PlayerState, Poi, WorldSnapshot};
 use astraweave_llm::phi3_ollama::Phi3Ollama;
 use astraweave_llm::prompts::{quick, PromptBuilder};
 use astraweave_llm::LlmClient;
@@ -29,11 +27,14 @@ async fn main() -> anyhow::Result<()> {
 
     // Step 1: Health Check
     println!("{}", "🔍 Checking Phi-3 setup...".yellow());
-    
+
     // Use fast variant for low-latency demo (phi3:game - optimized mini for 6GB VRAM)
     let client = Phi3Ollama::fast();
-    
-    println!("{}", "⚡ Using phi3:game model (3.8B params, optimized for 6GB VRAM)".bright_yellow());
+
+    println!(
+        "{}",
+        "⚡ Using phi3:game model (3.8B params, optimized for 6GB VRAM)".bright_yellow()
+    );
     println!("{}", "   Expected latency: 0.5-2s per request".dimmed());
 
     let health = client.health_check().await?;
@@ -46,7 +47,10 @@ async fn main() -> anyhow::Result<()> {
 
     println!("{}", "✅ Ollama server: Running".green());
     println!("{}", "✅ Model phi3:medium: Available".green());
-    println!("📦 Ollama version: {}", health.ollama_version.bright_white());
+    println!(
+        "📦 Ollama version: {}",
+        health.ollama_version.bright_white()
+    );
     println!();
 
     // Step 2: Create Tactical Scenario
@@ -148,12 +152,15 @@ fn print_scenario(scenario: &WorldSnapshot) {
     println!("  🎯 Objective: {}", scenario.objective.as_ref().unwrap());
 }
 
-async fn run_tactical_demo(
-    client: &Phi3Ollama,
-    scenario: &WorldSnapshot,
-) -> anyhow::Result<()> {
-    println!("{}", "━━━ TACTICAL AI (Aggressive) ━━━".bright_magenta().bold());
-    println!("{}", "Optimized for combat effectiveness and direct engagement".dimmed());
+async fn run_tactical_demo(client: &Phi3Ollama, scenario: &WorldSnapshot) -> anyhow::Result<()> {
+    println!(
+        "{}",
+        "━━━ TACTICAL AI (Aggressive) ━━━".bright_magenta().bold()
+    );
+    println!(
+        "{}",
+        "Optimized for combat effectiveness and direct engagement".dimmed()
+    );
     println!();
 
     let prompt = quick::tactical_prompt(scenario, "Eliminate all hostiles");
@@ -164,20 +171,27 @@ async fn run_tactical_demo(
     let response = client.complete(&prompt).await?;
 
     let duration = start.elapsed();
-    println!("{} ({:.2}s)", "✅ Response received".green(), duration.as_secs_f32());
+    println!(
+        "{} ({:.2}s)",
+        "✅ Response received".green(),
+        duration.as_secs_f32()
+    );
     println!();
 
     print_llm_response("TACTICAL", &response);
     Ok(())
 }
 
-async fn run_stealth_demo(
-    client: &Phi3Ollama,
-    scenario: &WorldSnapshot,
-) -> anyhow::Result<()> {
+async fn run_stealth_demo(client: &Phi3Ollama, scenario: &WorldSnapshot) -> anyhow::Result<()> {
     println!();
-    println!("{}", "━━━ STEALTH AI (Cautious) ━━━".bright_magenta().bold());
-    println!("{}", "Optimized for silent infiltration and avoidance".dimmed());
+    println!(
+        "{}",
+        "━━━ STEALTH AI (Cautious) ━━━".bright_magenta().bold()
+    );
+    println!(
+        "{}",
+        "Optimized for silent infiltration and avoidance".dimmed()
+    );
     println!();
 
     let prompt = quick::stealth_prompt(scenario, "pos(30, 20)");
@@ -188,20 +202,27 @@ async fn run_stealth_demo(
     let response = client.complete(&prompt).await?;
 
     let duration = start.elapsed();
-    println!("{} ({:.2}s)", "✅ Response received".green(), duration.as_secs_f32());
+    println!(
+        "{} ({:.2}s)",
+        "✅ Response received".green(),
+        duration.as_secs_f32()
+    );
     println!();
 
     print_llm_response("STEALTH", &response);
     Ok(())
 }
 
-async fn run_support_demo(
-    client: &Phi3Ollama,
-    scenario: &WorldSnapshot,
-) -> anyhow::Result<()> {
+async fn run_support_demo(client: &Phi3Ollama, scenario: &WorldSnapshot) -> anyhow::Result<()> {
     println!();
-    println!("{}", "━━━ SUPPORT AI (Team-focused) ━━━".bright_magenta().bold());
-    println!("{}", "Optimized for ally protection and defensive tactics".dimmed());
+    println!(
+        "{}",
+        "━━━ SUPPORT AI (Team-focused) ━━━".bright_magenta().bold()
+    );
+    println!(
+        "{}",
+        "Optimized for ally protection and defensive tactics".dimmed()
+    );
     println!();
 
     // Modify scenario: player is wounded
@@ -216,20 +237,27 @@ async fn run_support_demo(
     let response = client.complete(&prompt).await?;
 
     let duration = start.elapsed();
-    println!("{} ({:.2}s)", "✅ Response received".green(), duration.as_secs_f32());
+    println!(
+        "{} ({:.2}s)",
+        "✅ Response received".green(),
+        duration.as_secs_f32()
+    );
     println!();
 
     print_llm_response("SUPPORT", &response);
     Ok(())
 }
 
-async fn run_exploration_demo(
-    client: &Phi3Ollama,
-    scenario: &WorldSnapshot,
-) -> anyhow::Result<()> {
+async fn run_exploration_demo(client: &Phi3Ollama, scenario: &WorldSnapshot) -> anyhow::Result<()> {
     println!();
-    println!("{}", "━━━ EXPLORATION AI (Curious) ━━━".bright_magenta().bold());
-    println!("{}", "Optimized for reconnaissance and POI investigation".dimmed());
+    println!(
+        "{}",
+        "━━━ EXPLORATION AI (Curious) ━━━".bright_magenta().bold()
+    );
+    println!(
+        "{}",
+        "Optimized for reconnaissance and POI investigation".dimmed()
+    );
     println!();
 
     let prompt = quick::exploration_prompt(scenario);
@@ -240,7 +268,11 @@ async fn run_exploration_demo(
     let response = client.complete(&prompt).await?;
 
     let duration = start.elapsed();
-    println!("{} ({:.2}s)", "✅ Response received".green(), duration.as_secs_f32());
+    println!(
+        "{} ({:.2}s)",
+        "✅ Response received".green(),
+        duration.as_secs_f32()
+    );
     println!();
 
     print_llm_response("EXPLORATION", &response);
@@ -252,8 +284,16 @@ async fn run_custom_prompt_demo(
     scenario: &WorldSnapshot,
 ) -> anyhow::Result<()> {
     println!();
-    println!("{}", "━━━ CUSTOM PROMPT (Builder API) ━━━".bright_magenta().bold());
-    println!("{}", "Demonstrating PromptBuilder with custom constraints".dimmed());
+    println!(
+        "{}",
+        "━━━ CUSTOM PROMPT (Builder API) ━━━"
+            .bright_magenta()
+            .bold()
+    );
+    println!(
+        "{}",
+        "Demonstrating PromptBuilder with custom constraints".dimmed()
+    );
     println!();
 
     let prompt = PromptBuilder::new()
@@ -265,13 +305,20 @@ async fn run_custom_prompt_demo(
         .add_constraint("Prioritize high-value targets (enemies in cover)")
         .build();
 
-    println!("{}", "🧠 Querying Phi-3 with custom constraints...".yellow());
+    println!(
+        "{}",
+        "🧠 Querying Phi-3 with custom constraints...".yellow()
+    );
     let start = std::time::Instant::now();
 
     let response = client.complete(&prompt).await?;
 
     let duration = start.elapsed();
-    println!("{} ({:.2}s)", "✅ Response received".green(), duration.as_secs_f32());
+    println!(
+        "{} ({:.2}s)",
+        "✅ Response received".green(),
+        duration.as_secs_f32()
+    );
     println!();
 
     print_llm_response("CUSTOM", &response);
@@ -279,7 +326,11 @@ async fn run_custom_prompt_demo(
 }
 
 fn print_llm_response(role: &str, response: &str) {
-    println!("{} {}", "📋".bright_yellow(), format!("[{}]", role).bright_white().bold());
+    println!(
+        "{} {}",
+        "📋".bright_yellow(),
+        format!("[{}]", role).bright_white().bold()
+    );
     println!("{}", "─".repeat(60).dimmed());
 
     // Try to parse as JSON and pretty-print

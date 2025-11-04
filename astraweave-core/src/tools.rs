@@ -547,7 +547,7 @@ mod tests {
         obstacles.insert((2, 2));
         obstacles.insert((3, 2));
         obstacles.insert((4, 2));
-        
+
         let start = iv2(0, 0);
         let goal = iv2(4, 0);
         let bounds = (-10, -10, 10, 10);
@@ -574,13 +574,13 @@ mod tests {
         let mut obstacles = HashSet::new();
         // Add obstacle that blocks enemy LOS but not player LOS
         obstacles.insert((3, 0));
-        
+
         let bounds = (-10, -10, 10, 10);
         let from = iv2(0, 0);
         let player = iv2(-5, 0); // Player to the left
-        let enemy = iv2(5, 0);   // Enemy to the right
+        let enemy = iv2(5, 0); // Enemy to the right
         let radius = 5;
-        
+
         let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
         // Should find positions behind obstacle (relative to enemy)
         // Not asserting exact count as geometry is complex, just that some exist
@@ -593,13 +593,13 @@ mod tests {
     fn test_find_cover_positions_with_obstacles() {
         let mut obstacles = HashSet::new();
         obstacles.insert((2, 0)); // Obstacle between from and enemy
-        
+
         let bounds = (-10, -10, 10, 10);
         let from = iv2(0, 0);
         let player = iv2(-5, 0);
         let enemy = iv2(5, 0);
         let radius = 3;
-        
+
         let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
         // Positions behind obstacle should provide cover from enemy
         for pos in &cover {
@@ -616,7 +616,7 @@ mod tests {
         let player = iv2(0, 0);
         let enemy = iv2(0, 1);
         let radius = 1;
-        
+
         // All nearby positions have LOS from both player and enemy (same line)
         let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
         // Should be empty or very limited
@@ -631,7 +631,7 @@ mod tests {
         let player = iv2(-5, 0);
         let enemy = iv2(5, 0);
         let radius = 10; // Large radius but bounded
-        
+
         let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
         // All positions should be within bounds
         for pos in &cover {
@@ -645,13 +645,13 @@ mod tests {
         let mut obstacles = HashSet::new();
         obstacles.insert((1, 0));
         obstacles.insert((0, 1));
-        
+
         let bounds = (-10, -10, 10, 10);
         let from = iv2(0, 0);
         let player = iv2(-5, 0);
         let enemy = iv2(5, 0);
         let radius = 2;
-        
+
         let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
         // Cover positions should not include obstacles
         for pos in &cover {
@@ -667,7 +667,7 @@ mod tests {
         let player = iv2(-5, 0);
         let enemy = iv2(5, 0);
         let radius = 0;
-        
+
         let cover = find_cover_positions(&obstacles, bounds, from, player, enemy, radius);
         // Radius 0 means only check (0,0)
         assert!(cover.len() <= 1);

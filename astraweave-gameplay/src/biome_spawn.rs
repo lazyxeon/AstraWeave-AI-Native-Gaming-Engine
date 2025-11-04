@@ -92,7 +92,7 @@ mod tests {
     fn test_spawn_resources_deterministic() {
         let biome = create_test_biome();
         let seed = 42;
-        
+
         let resources1 = spawn_resources(
             seed,
             vec3(-10.0, 0.0, -10.0),
@@ -101,7 +101,7 @@ mod tests {
             &biome,
             None,
         );
-        
+
         let resources2 = spawn_resources(
             seed,
             vec3(-10.0, 0.0, -10.0),
@@ -113,10 +113,19 @@ mod tests {
 
         assert_eq!(resources1.len(), resources2.len());
         for (r1, r2) in resources1.iter().zip(resources2.iter()) {
-            assert_eq!(r1.kind, r2.kind, "Same seed should produce same resource types");
+            assert_eq!(
+                r1.kind, r2.kind,
+                "Same seed should produce same resource types"
+            );
             assert_eq!(r1.pos, r2.pos, "Same seed should produce same positions");
-            assert_eq!(r1.amount, r2.amount, "Same seed should produce same amounts");
-            assert_eq!(r1.respawn_time, r2.respawn_time, "Same seed should produce same respawn times");
+            assert_eq!(
+                r1.amount, r2.amount,
+                "Same seed should produce same amounts"
+            );
+            assert_eq!(
+                r1.respawn_time, r2.respawn_time,
+                "Same seed should produce same respawn times"
+            );
         }
     }
 
@@ -125,27 +134,24 @@ mod tests {
         let biome = create_test_biome();
         let area_min = vec3(-5.0, 1.0, -5.0);
         let area_max = vec3(5.0, 1.0, 5.0);
-        
-        let resources = spawn_resources(
-            54321,
-            area_min,
-            area_max,
-            20,
-            &biome,
-            None,
-        );
+
+        let resources = spawn_resources(54321, area_min, area_max, 20, &biome, None);
 
         for node in &resources {
             assert!(
                 node.pos.x >= area_min.x && node.pos.x <= area_max.x,
                 "X position should be within bounds: {} not in [{}, {}]",
-                node.pos.x, area_min.x, area_max.x
+                node.pos.x,
+                area_min.x,
+                area_max.x
             );
             assert_eq!(node.pos.y, area_min.y, "Y position should match area_min.y");
             assert!(
                 node.pos.z >= area_min.z && node.pos.z <= area_max.z,
                 "Z position should be within bounds: {} not in [{}, {}]",
-                node.pos.z, area_min.z, area_max.z
+                node.pos.z,
+                area_min.z,
+                area_max.z
             );
         }
     }
@@ -153,7 +159,7 @@ mod tests {
     #[test]
     fn test_spawn_resources_amount_range() {
         let biome = create_test_biome();
-        
+
         let resources = spawn_resources(
             99999,
             vec3(-10.0, 0.0, -10.0),
@@ -167,7 +173,9 @@ mod tests {
             assert!(
                 node.amount >= biome.base_amount.0 && node.amount <= biome.base_amount.1,
                 "Amount should be in range [{}, {}], got {}",
-                biome.base_amount.0, biome.base_amount.1, node.amount
+                biome.base_amount.0,
+                biome.base_amount.1,
+                node.amount
             );
         }
     }
@@ -175,7 +183,7 @@ mod tests {
     #[test]
     fn test_spawn_resources_respawn_time_range() {
         let biome = create_test_biome();
-        
+
         let resources = spawn_resources(
             77777,
             vec3(-10.0, 0.0, -10.0),
@@ -189,7 +197,9 @@ mod tests {
             assert!(
                 node.respawn_time >= biome.respawn.0 && node.respawn_time <= biome.respawn.1,
                 "Respawn time should be in range [{}, {}], got {}",
-                biome.respawn.0, biome.respawn.1, node.respawn_time
+                biome.respawn.0,
+                biome.respawn.1,
+                node.respawn_time
             );
         }
     }
@@ -202,7 +212,7 @@ mod tests {
             faction_disposition: 0,
             weather_shift: None,
         };
-        
+
         let resources_no_weave = spawn_resources(
             11111,
             vec3(-10.0, 0.0, -10.0),
@@ -211,7 +221,7 @@ mod tests {
             &biome,
             None,
         );
-        
+
         let resources_with_weave = spawn_resources(
             11111,
             vec3(-10.0, 0.0, -10.0),
@@ -233,7 +243,7 @@ mod tests {
     #[test]
     fn test_spawn_resources_resource_distribution() {
         let biome = create_test_biome();
-        
+
         let resources = spawn_resources(
             22222,
             vec3(-10.0, 0.0, -10.0),
@@ -243,21 +253,42 @@ mod tests {
             None,
         );
 
-        let wood_count = resources.iter().filter(|r| r.kind == ResourceKind::Wood).count();
-        let fiber_count = resources.iter().filter(|r| r.kind == ResourceKind::Fiber).count();
-        let essence_count = resources.iter().filter(|r| r.kind == ResourceKind::Essence).count();
+        let wood_count = resources
+            .iter()
+            .filter(|r| r.kind == ResourceKind::Wood)
+            .count();
+        let fiber_count = resources
+            .iter()
+            .filter(|r| r.kind == ResourceKind::Fiber)
+            .count();
+        let essence_count = resources
+            .iter()
+            .filter(|r| r.kind == ResourceKind::Essence)
+            .count();
 
         // With weights [50, 30, 20], expect roughly 50%, 30%, 20% distribution
         // Allow some variance due to randomness
-        assert!(wood_count > 40 && wood_count < 60, "Wood should be ~50% (got {})", wood_count);
-        assert!(fiber_count > 20 && fiber_count < 40, "Fiber should be ~30% (got {})", fiber_count);
-        assert!(essence_count > 10 && essence_count < 30, "Essence should be ~20% (got {})", essence_count);
+        assert!(
+            wood_count > 40 && wood_count < 60,
+            "Wood should be ~50% (got {})",
+            wood_count
+        );
+        assert!(
+            fiber_count > 20 && fiber_count < 40,
+            "Fiber should be ~30% (got {})",
+            fiber_count
+        );
+        assert!(
+            essence_count > 10 && essence_count < 30,
+            "Essence should be ~20% (got {})",
+            essence_count
+        );
     }
 
     #[test]
     fn test_spawn_resources_timer_initialized() {
         let biome = create_test_biome();
-        
+
         let resources = spawn_resources(
             33333,
             vec3(-10.0, 0.0, -10.0),

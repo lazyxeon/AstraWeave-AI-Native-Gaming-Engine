@@ -23,7 +23,7 @@ use std::collections::BTreeMap;
 #[test]
 fn test_worldsnapshot_default_construction() {
     let snap = WorldSnapshot::default();
-    
+
     assert_eq!(snap.t, 0.0);
     assert_eq!(snap.player.hp, 100);
     assert_eq!(snap.player.pos.x, 0);
@@ -44,18 +44,18 @@ fn test_worldsnapshot_with_data() {
         stance: "crouch".to_string(),
         orders: vec!["hold".to_string(), "defend".to_string()],
     };
-    
+
     let mut cooldowns = BTreeMap::new();
     cooldowns.insert("attack".to_string(), 2.5);
     cooldowns.insert("coverfire".to_string(), 5.0);
-    
+
     let companion = CompanionState {
         ammo: 25,
         cooldowns,
         morale: 0.75,
         pos: IVec2 { x: 3, y: 8 },
     };
-    
+
     let enemies = vec![
         EnemyState {
             id: 1,
@@ -72,7 +72,7 @@ fn test_worldsnapshot_with_data() {
             last_seen: 2.0,
         },
     ];
-    
+
     let pois = vec![
         Poi {
             k: "objective".to_string(),
@@ -83,9 +83,9 @@ fn test_worldsnapshot_with_data() {
             pos: IVec2 { x: 15, y: 10 },
         },
     ];
-    
+
     let obstacles = vec![IVec2 { x: 10, y: 10 }, IVec2 { x: 11, y: 10 }];
-    
+
     let snap = WorldSnapshot {
         t: 12.5,
         player,
@@ -95,7 +95,7 @@ fn test_worldsnapshot_with_data() {
         obstacles,
         objective: Some("secure_area".to_string()),
     };
-    
+
     // Validate field access
     assert_eq!(snap.t, 12.5);
     assert_eq!(snap.player.hp, 80);
@@ -124,7 +124,7 @@ fn test_worldsnapshot_empty_collections() {
         obstacles: vec![],
         objective: None,
     };
-    
+
     assert!(snap.enemies.is_empty());
     assert!(snap.pois.is_empty());
     assert!(snap.obstacles.is_empty());
@@ -145,7 +145,7 @@ fn test_companionstate_edge_cases() {
         pos: IVec2 { x: 0, y: 0 },
     };
     assert_eq!(low_ammo.ammo, 0);
-    
+
     // Zero morale
     let broken_morale = CompanionState {
         ammo: 10,
@@ -154,7 +154,7 @@ fn test_companionstate_edge_cases() {
         pos: IVec2 { x: 0, y: 0 },
     };
     assert_eq!(broken_morale.morale, 0.0);
-    
+
     // High morale
     let max_morale = CompanionState {
         ammo: 10,
@@ -163,14 +163,14 @@ fn test_companionstate_edge_cases() {
         pos: IVec2 { x: 0, y: 0 },
     };
     assert_eq!(max_morale.morale, 2.0);
-    
+
     // Many cooldowns
     let mut many_cds = BTreeMap::new();
     many_cds.insert("attack".to_string(), 1.5);
     many_cds.insert("coverfire".to_string(), 3.0);
     many_cds.insert("throw".to_string(), 2.0);
     many_cds.insert("revive".to_string(), 5.0);
-    
+
     let loaded_cooldowns = CompanionState {
         ammo: 10,
         cooldowns: many_cds,
@@ -193,7 +193,7 @@ fn test_enemystate_edge_cases() {
         last_seen: 0.0,
     };
     assert_eq!(dead.hp, 0);
-    
+
     // Negative HP (overkill damage)
     let overkilled = EnemyState {
         id: 11,
@@ -203,7 +203,7 @@ fn test_enemystate_edge_cases() {
         last_seen: 0.0,
     };
     assert_eq!(overkilled.hp, -10);
-    
+
     // Very old last_seen (lost track)
     let forgotten = EnemyState {
         id: 12,
@@ -213,13 +213,16 @@ fn test_enemystate_edge_cases() {
         last_seen: 100.0, // 100 seconds ago
     };
     assert_eq!(forgotten.last_seen, 100.0);
-    
+
     // Various cover types
     let covers = vec!["none", "half", "full", "partial", "heavy"];
     for (i, cover_type) in covers.iter().enumerate() {
         let enemy = EnemyState {
             id: i as u32,
-            pos: IVec2 { x: i as i32, y: i as i32 },
+            pos: IVec2 {
+                x: i as i32,
+                y: i as i32,
+            },
             hp: 100,
             cover: cover_type.to_string(),
             last_seen: 0.0,
@@ -238,7 +241,7 @@ fn test_playerstate_edge_cases() {
         orders: vec![],
     };
     assert_eq!(dead.hp, 0);
-    
+
     // Many orders
     let busy = PlayerState {
         hp: 100,
@@ -254,13 +257,16 @@ fn test_playerstate_edge_cases() {
     assert_eq!(busy.orders.len(), 4);
     assert_eq!(busy.orders[0], "move_to_alpha");
     assert_eq!(busy.orders[3], "regroup_delta");
-    
+
     // Various stances
     let stances = vec!["stand", "crouch", "prone", "cover"];
     for (i, stance) in stances.iter().enumerate() {
         let player = PlayerState {
             hp: 100,
-            pos: IVec2 { x: i as i32, y: i as i32 },
+            pos: IVec2 {
+                x: i as i32,
+                y: i as i32,
+            },
             stance: stance.to_string(),
             orders: vec![],
         };
@@ -281,7 +287,7 @@ fn test_planintent_construction() {
     };
     assert_eq!(empty.plan_id, "plan-empty-001");
     assert!(empty.steps.is_empty());
-    
+
     // Single step plan
     let single = PlanIntent {
         plan_id: "plan-single-002".to_string(),
@@ -293,7 +299,7 @@ fn test_planintent_construction() {
     };
     assert_eq!(single.plan_id, "plan-single-002");
     assert_eq!(single.steps.len(), 1);
-    
+
     // Multi-step plan
     let multi = PlanIntent {
         plan_id: "plan-multi-003".to_string(),
@@ -314,7 +320,7 @@ fn test_planintent_construction() {
 #[test]
 fn test_planintent_default() {
     let default_plan = PlanIntent::default();
-    
+
     assert_eq!(default_plan.plan_id, "");
     assert!(default_plan.steps.is_empty());
 }
@@ -339,7 +345,7 @@ fn test_actionstep_movement_variants() {
         }
         _ => panic!("Expected MoveTo variant"),
     }
-    
+
     // MoveTo without speed (default)
     let move_default = ActionStep::MoveTo {
         x: 5,
@@ -354,33 +360,39 @@ fn test_actionstep_movement_variants() {
         }
         _ => panic!("Expected MoveTo variant"),
     }
-    
+
     // Approach
     let approach = ActionStep::Approach {
         target_id: 1,
         distance: 10.0,
     };
     match approach {
-        ActionStep::Approach { target_id, distance } => {
+        ActionStep::Approach {
+            target_id,
+            distance,
+        } => {
             assert_eq!(target_id, 1);
             assert_eq!(distance, 10.0);
         }
         _ => panic!("Expected Approach variant"),
     }
-    
+
     // Retreat
     let retreat = ActionStep::Retreat {
         target_id: 2,
         distance: 20.0,
     };
     match retreat {
-        ActionStep::Retreat { target_id, distance } => {
+        ActionStep::Retreat {
+            target_id,
+            distance,
+        } => {
             assert_eq!(target_id, 2);
             assert_eq!(distance, 20.0);
         }
         _ => panic!("Expected Retreat variant"),
     }
-    
+
     // TakeCover with position
     let cover_pos = ActionStep::TakeCover {
         position: Some(IVec2 { x: 15, y: 15 }),
@@ -391,7 +403,7 @@ fn test_actionstep_movement_variants() {
         }
         _ => panic!("Expected TakeCover variant"),
     }
-    
+
     // TakeCover without position (find nearest)
     let cover_auto = ActionStep::TakeCover { position: None };
     match cover_auto {
@@ -400,20 +412,23 @@ fn test_actionstep_movement_variants() {
         }
         _ => panic!("Expected TakeCover variant"),
     }
-    
+
     // Strafe
     let strafe = ActionStep::Strafe {
         target_id: 3,
         direction: StrafeDirection::Left,
     };
     match strafe {
-        ActionStep::Strafe { target_id, direction } => {
+        ActionStep::Strafe {
+            target_id,
+            direction,
+        } => {
             assert_eq!(target_id, 3);
             assert_eq!(direction, StrafeDirection::Left);
         }
         _ => panic!("Expected Strafe variant"),
     }
-    
+
     // Patrol
     let patrol = ActionStep::Patrol {
         waypoints: vec![
@@ -442,7 +457,7 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected Attack variant"),
     }
-    
+
     // AimedShot
     let aimed = ActionStep::AimedShot { target_id: 6 };
     match aimed {
@@ -451,7 +466,7 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected AimedShot variant"),
     }
-    
+
     // QuickAttack
     let quick = ActionStep::QuickAttack { target_id: 7 };
     match quick {
@@ -460,7 +475,7 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected QuickAttack variant"),
     }
-    
+
     // HeavyAttack
     let heavy = ActionStep::HeavyAttack { target_id: 8 };
     match heavy {
@@ -469,7 +484,7 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected HeavyAttack variant"),
     }
-    
+
     // AoEAttack
     let aoe = ActionStep::AoEAttack {
         x: 20,
@@ -484,7 +499,7 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected AoEAttack variant"),
     }
-    
+
     // ThrowExplosive
     let explosive = ActionStep::ThrowExplosive { x: 30, y: 35 };
     match explosive {
@@ -494,20 +509,23 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected ThrowExplosive variant"),
     }
-    
+
     // CoverFire
     let cover_fire = ActionStep::CoverFire {
         target_id: 9,
         duration: 3.0,
     };
     match cover_fire {
-        ActionStep::CoverFire { target_id, duration } => {
+        ActionStep::CoverFire {
+            target_id,
+            duration,
+        } => {
             assert_eq!(target_id, 9);
             assert_eq!(duration, 3.0);
         }
         _ => panic!("Expected CoverFire variant"),
     }
-    
+
     // Charge
     let charge = ActionStep::Charge { target_id: 10 };
     match charge {
@@ -516,7 +534,7 @@ fn test_actionstep_combat_variants() {
         }
         _ => panic!("Expected Charge variant"),
     }
-    
+
     // ThrowSmoke (defensive but often combat-related)
     let smoke = ActionStep::ThrowSmoke { x: 15, y: 20 };
     match smoke {
@@ -538,7 +556,7 @@ fn test_ivec2_equality() {
     let b = IVec2 { x: 10, y: 20 };
     let c = IVec2 { x: 11, y: 20 };
     let d = IVec2 { x: 10, y: 21 };
-    
+
     assert_eq!(a, b);
     assert_ne!(a, c);
     assert_ne!(a, d);
@@ -551,12 +569,12 @@ fn test_ivec2_edge_cases() {
     let zero = IVec2 { x: 0, y: 0 };
     assert_eq!(zero.x, 0);
     assert_eq!(zero.y, 0);
-    
+
     // Negative coordinates
     let negative = IVec2 { x: -10, y: -20 };
     assert_eq!(negative.x, -10);
     assert_eq!(negative.y, -20);
-    
+
     // Large coordinates
     let large = IVec2 {
         x: 1_000_000,
@@ -564,12 +582,12 @@ fn test_ivec2_edge_cases() {
     };
     assert_eq!(large.x, 1_000_000);
     assert_eq!(large.y, 2_000_000);
-    
+
     // Mixed signs
     let mixed = IVec2 { x: -5, y: 10 };
     assert_eq!(mixed.x, -5);
     assert_eq!(mixed.y, 10);
-    
+
     // Default
     let default_vec = IVec2::default();
     assert_eq!(default_vec, IVec2 { x: 0, y: 0 });

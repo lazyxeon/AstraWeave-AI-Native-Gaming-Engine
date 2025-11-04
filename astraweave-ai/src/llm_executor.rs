@@ -598,7 +598,10 @@ mod tests {
         // Wait for completion
         sleep(Duration::from_millis(200)).await;
         let result3 = task.try_recv();
-        assert!(result3.is_some(), "Task should be complete after 250ms total");
+        assert!(
+            result3.is_some(),
+            "Task should be complete after 250ms total"
+        );
     }
 
     #[tokio::test]
@@ -626,7 +629,7 @@ mod tests {
         // Task should complete with original snapshot values
         let result = task.try_recv();
         assert!(result.is_some(), "Task should complete");
-        
+
         // Unwrap: Option -> Result -> Result -> PlanIntent
         let plan = result.unwrap().unwrap().unwrap();
 

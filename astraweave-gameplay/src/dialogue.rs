@@ -211,7 +211,9 @@ mod tests {
                         Choice {
                             text: "I have a quest".to_string(),
                             go_to: "n2".to_string(),
-                            require: vec![Cond::Has { key: "quest_token".to_string() }],
+                            require: vec![Cond::Has {
+                                key: "quest_token".to_string(),
+                            }],
                         },
                     ],
                     end: false,
@@ -244,7 +246,7 @@ mod tests {
     fn test_dialogue_state_new() {
         let dialogue = create_simple_dialogue();
         let state = DialogueState::new(&dialogue);
-        
+
         assert_eq!(state.idx, 0); // Should start at n0
         assert_eq!(state.map.len(), 3); // 3 nodes mapped
         assert!(state.vars.is_empty());
@@ -254,7 +256,7 @@ mod tests {
     fn test_current_node() {
         let dialogue = create_simple_dialogue();
         let state = DialogueState::new(&dialogue);
-        
+
         let node = state.current(&dialogue);
         assert_eq!(node.id, "n0");
         assert!(node.line.is_some());
@@ -265,12 +267,12 @@ mod tests {
     fn test_choose_valid_choice_no_conditions() {
         let dialogue = create_simple_dialogue();
         let mut state = DialogueState::new(&dialogue);
-        
+
         // Choose first option (no requirements)
         let success = state.choose(&dialogue, 0);
         assert!(success);
         assert_eq!(state.idx, 1); // Should move to n1
-        
+
         // Verify set_vars applied
         assert_eq!(state.vars.get("mood"), Some(&"neutral".to_string()));
     }
@@ -279,7 +281,7 @@ mod tests {
     fn test_choose_fails_without_required_condition() {
         let dialogue = create_simple_dialogue();
         let mut state = DialogueState::new(&dialogue);
-        
+
         // Choose second option (requires quest_token, which we don't have)
         let success = state.choose(&dialogue, 1);
         assert!(!success);
@@ -291,10 +293,12 @@ mod tests {
     fn test_choose_succeeds_with_required_condition() {
         let dialogue = create_simple_dialogue();
         let mut state = DialogueState::new(&dialogue);
-        
+
         // Manually set the required variable
-        state.vars.insert("quest_token".to_string(), "true".to_string());
-        
+        state
+            .vars
+            .insert("quest_token".to_string(), "true".to_string());
+
         // Now choose second option
         let success = state.choose(&dialogue, 1);
         assert!(success);
@@ -306,7 +310,7 @@ mod tests {
     fn test_choose_invalid_index() {
         let dialogue = create_simple_dialogue();
         let mut state = DialogueState::new(&dialogue);
-        
+
         // Choose invalid index
         let success = state.choose(&dialogue, 99);
         assert!(!success);
@@ -317,8 +321,11 @@ mod tests {
     fn test_eval_cond_eq_true() {
         let mut vars = HashMap::new();
         vars.insert("mood".to_string(), "happy".to_string());
-        
-        let cond = Cond::Eq { key: "mood".to_string(), val: "happy".to_string() };
+
+        let cond = Cond::Eq {
+            key: "mood".to_string(),
+            val: "happy".to_string(),
+        };
         assert!(eval(&cond, &vars));
     }
 
@@ -326,8 +333,11 @@ mod tests {
     fn test_eval_cond_eq_false() {
         let mut vars = HashMap::new();
         vars.insert("mood".to_string(), "sad".to_string());
-        
-        let cond = Cond::Eq { key: "mood".to_string(), val: "happy".to_string() };
+
+        let cond = Cond::Eq {
+            key: "mood".to_string(),
+            val: "happy".to_string(),
+        };
         assert!(!eval(&cond, &vars));
     }
 
@@ -335,8 +345,11 @@ mod tests {
     fn test_eval_cond_ne_true() {
         let mut vars = HashMap::new();
         vars.insert("mood".to_string(), "sad".to_string());
-        
-        let cond = Cond::Ne { key: "mood".to_string(), val: "happy".to_string() };
+
+        let cond = Cond::Ne {
+            key: "mood".to_string(),
+            val: "happy".to_string(),
+        };
         assert!(eval(&cond, &vars));
     }
 
@@ -344,8 +357,11 @@ mod tests {
     fn test_eval_cond_ne_false() {
         let mut vars = HashMap::new();
         vars.insert("mood".to_string(), "happy".to_string());
-        
-        let cond = Cond::Ne { key: "mood".to_string(), val: "happy".to_string() };
+
+        let cond = Cond::Ne {
+            key: "mood".to_string(),
+            val: "happy".to_string(),
+        };
         assert!(!eval(&cond, &vars));
     }
 
@@ -353,16 +369,20 @@ mod tests {
     fn test_eval_cond_has_true() {
         let mut vars = HashMap::new();
         vars.insert("quest_token".to_string(), "value".to_string());
-        
-        let cond = Cond::Has { key: "quest_token".to_string() };
+
+        let cond = Cond::Has {
+            key: "quest_token".to_string(),
+        };
         assert!(eval(&cond, &vars));
     }
 
     #[test]
     fn test_eval_cond_has_false() {
         let vars = HashMap::new();
-        
-        let cond = Cond::Has { key: "quest_token".to_string() };
+
+        let cond = Cond::Has {
+            key: "quest_token".to_string(),
+        };
         assert!(!eval(&cond, &vars));
     }
 
@@ -370,7 +390,7 @@ mod tests {
     fn test_compile_banter_simple() {
         let src = "[Guard] Hello there!\n[Player] Hi!";
         let dialogue = compile_banter_to_nodes("banter1", src);
-        
+
         assert_eq!(dialogue.id, "banter1");
         assert_eq!(dialogue.start, "n0");
         assert_eq!(dialogue.nodes.len(), 2);
@@ -382,7 +402,7 @@ mod tests {
     fn test_compile_banter_with_set_var() {
         let src = "[Guard] Welcome!\n-> mood=happy";
         let dialogue = compile_banter_to_nodes("banter2", src);
-        
+
         assert_eq!(dialogue.nodes.len(), 1);
         let line = dialogue.nodes[0].line.as_ref().unwrap();
         assert_eq!(line.set_vars.len(), 1);
@@ -393,7 +413,7 @@ mod tests {
     fn test_compile_banter_with_condition() {
         let src = "[Guard] How are you?\n? mood == happy : goto n1";
         let dialogue = compile_banter_to_nodes("banter3", src);
-        
+
         assert_eq!(dialogue.nodes.len(), 1);
         assert_eq!(dialogue.nodes[0].choices.len(), 1);
         let choice = &dialogue.nodes[0].choices[0];
@@ -405,8 +425,7 @@ mod tests {
     fn test_compile_banter_marks_last_node_as_end() {
         let src = "[Guard] Goodbye!";
         let dialogue = compile_banter_to_nodes("banter4", src);
-        
+
         assert!(dialogue.nodes.last().unwrap().end);
     }
 }
-

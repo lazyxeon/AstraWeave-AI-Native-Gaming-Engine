@@ -20,25 +20,25 @@ pub struct MemoryStorage {
 impl MemoryStorage {
     /// Create new storage with file-backed SQLite database
     pub fn new<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let conn = Connection::open(path.as_ref())
-            .context("Failed to open SQLite database")?;
-        
+        let conn = Connection::open(path.as_ref()).context("Failed to open SQLite database")?;
+
         let storage = Self { conn };
-        storage.initialize_schema()
+        storage
+            .initialize_schema()
             .context("Failed to initialize database schema")?;
-        
+
         Ok(storage)
     }
 
     /// Create in-memory storage (for testing)
     pub fn in_memory() -> Result<Self> {
-        let conn = Connection::open_in_memory()
-            .context("Failed to create in-memory database")?;
-        
+        let conn = Connection::open_in_memory().context("Failed to create in-memory database")?;
+
         let storage = Self { conn };
-        storage.initialize_schema()
+        storage
+            .initialize_schema()
             .context("Failed to initialize database schema")?;
-        
+
         Ok(storage)
     }
 
@@ -84,18 +84,18 @@ impl MemoryStorage {
             INSERT OR IGNORE INTO metadata (key, value) VALUES ('created_at', datetime('now'));
             "#
         )?;
-        
+
         Ok(())
     }
 
     /// Store memory in database (insert or replace)
     pub fn store_memory(&mut self, memory: &Memory) -> Result<()> {
-        let content_json = serde_json::to_string(&memory.content)
-            .context("Failed to serialize memory content")?;
-        
+        let content_json =
+            serde_json::to_string(&memory.content).context("Failed to serialize memory content")?;
+
         let metadata_json = serde_json::to_string(&memory.metadata)
             .context("Failed to serialize memory metadata")?;
-        
+
         let embedding_blob = memory.embedding.as_ref().map(|emb| {
             // Convert Vec<f32> to bytes
             emb.iter()
@@ -125,10 +125,12 @@ impl MemoryStorage {
 
         // Store tags
         for tag in &memory.metadata.tags {
-            self.conn.execute(
-                "INSERT OR IGNORE INTO memory_tags (memory_id, tag) VALUES (?1, ?2)",
-                params![&memory.id, tag],
-            ).context("Failed to insert memory tag")?;
+            self.conn
+                .execute(
+                    "INSERT OR IGNORE INTO memory_tags (memory_id, tag) VALUES (?1, ?2)",
+                    params![&memory.id, tag],
+                )
+                .context("Failed to insert memory tag")?;
         }
 
         Ok(())
@@ -156,7 +158,7 @@ impl MemoryStorage {
                     .context("Failed to deserialize memory content")?;
                 let metadata = serde_json::from_str(&metadata_json)
                     .context("Failed to deserialize memory metadata")?;
-                
+
                 let embedding = embedding_blob.map(|blob| {
                     blob.chunks_exact(4)
                         .map(|chunk| f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]))
@@ -180,11 +182,12 @@ impl MemoryStorage {
     /// Query memories by type
     pub fn query_by_type(&self, memory_type: MemoryType) -> Result<Vec<String>> {
         let memory_type_str = format!("{:?}", memory_type);
-        let mut stmt = self.conn.prepare(
-            "SELECT id FROM memories WHERE memory_type = ?1 ORDER BY created_at DESC"
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM memories WHERE memory_type = ?1 ORDER BY created_at DESC")?;
 
-        let ids = stmt.query_map(params![memory_type_str], |row| row.get(0))?
+        let ids = stmt
+            .query_map(params![memory_type_str], |row| row.get(0))?
             .collect::<Result<Vec<String>, _>>()?;
 
         Ok(ids)
@@ -192,11 +195,12 @@ impl MemoryStorage {
 
     /// Query memories by tag
     pub fn query_by_tag(&self, tag: &str) -> Result<Vec<String>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT memory_id FROM memory_tags WHERE tag = ?1"
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT memory_id FROM memory_tags WHERE tag = ?1")?;
 
-        let ids = stmt.query_map(params![tag], |row| row.get(0))?
+        let ids = stmt
+            .query_map(params![tag], |row| row.get(0))?
             .collect::<Result<Vec<String>, _>>()?;
 
         Ok(ids)
@@ -204,11 +208,12 @@ impl MemoryStorage {
 
     /// Query most recent memories
     pub fn query_recent(&self, limit: usize) -> Result<Vec<String>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id FROM memories ORDER BY created_at DESC LIMIT ?1"
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM memories ORDER BY created_at DESC LIMIT ?1")?;
 
-        let ids = stmt.query_map(params![limit as i64], |row| row.get(0))?
+        let ids = stmt
+            .query_map(params![limit as i64], |row| row.get(0))?
             .collect::<Result<Vec<String>, _>>()?;
 
         Ok(ids)
@@ -217,10 +222,11 @@ impl MemoryStorage {
     /// Query most important memories
     pub fn query_important(&self, min_importance: f32, limit: usize) -> Result<Vec<String>> {
         let mut stmt = self.conn.prepare(
-            "SELECT id FROM memories WHERE importance >= ?1 ORDER BY importance DESC LIMIT ?2"
+            "SELECT id FROM memories WHERE importance >= ?1 ORDER BY importance DESC LIMIT ?2",
         )?;
 
-        let ids = stmt.query_map(params![min_importance, limit as i64], |row| row.get(0))?
+        let ids = stmt
+            .query_map(params![min_importance, limit as i64], |row| row.get(0))?
             .collect::<Result<Vec<String>, _>>()?;
 
         Ok(ids)
@@ -240,10 +246,14 @@ impl MemoryStorage {
             WHERE memory_type = ?1 AND importance >= ?2 
             ORDER BY importance DESC 
             LIMIT ?3
-            "#
+            "#,
         )?;
 
-        let ids = stmt.query_map(params![memory_type_str, min_importance, limit as i64], |row| row.get(0))?
+        let ids = stmt
+            .query_map(
+                params![memory_type_str, min_importance, limit as i64],
+                |row| row.get(0),
+            )?
             .collect::<Result<Vec<String>, _>>()?;
 
         Ok(ids)
@@ -251,12 +261,10 @@ impl MemoryStorage {
 
     /// Count total memories
     pub fn count_memories(&self) -> Result<usize> {
-        let count: i64 = self.conn.query_row(
-            "SELECT COUNT(*) FROM memories",
-            [],
-            |row| row.get(0),
-        )?;
-        
+        let count: i64 = self
+            .conn
+            .query_row("SELECT COUNT(*) FROM memories", [], |row| row.get(0))?;
+
         Ok(count as usize)
     }
 
@@ -268,17 +276,16 @@ impl MemoryStorage {
             params![memory_type_str],
             |row| row.get(0),
         )?;
-        
+
         Ok(count as usize)
     }
 
     /// Delete memory by ID
     pub fn delete_memory(&mut self, id: &str) -> Result<bool> {
-        let rows_affected = self.conn.execute(
-            "DELETE FROM memories WHERE id = ?1",
-            params![id],
-        )?;
-        
+        let rows_affected = self
+            .conn
+            .execute("DELETE FROM memories WHERE id = ?1", params![id])?;
+
         Ok(rows_affected > 0)
     }
 
@@ -288,7 +295,7 @@ impl MemoryStorage {
             "DELETE FROM memories WHERE created_at < ?1",
             params![before_timestamp],
         )?;
-        
+
         Ok(deleted)
     }
 
@@ -298,17 +305,18 @@ impl MemoryStorage {
             "DELETE FROM memories WHERE importance < ?1",
             params![max_importance],
         )?;
-        
+
         Ok(deleted)
     }
 
     /// Get all unique tags
     pub fn get_all_tags(&self) -> Result<Vec<String>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT DISTINCT tag FROM memory_tags ORDER BY tag"
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT DISTINCT tag FROM memory_tags ORDER BY tag")?;
 
-        let tags = stmt.query_map([], |row| row.get(0))?
+        let tags = stmt
+            .query_map([], |row| row.get(0))?
             .collect::<Result<Vec<String>, _>>()?;
 
         Ok(tags)
@@ -321,7 +329,7 @@ impl MemoryStorage {
             [],
             |row| row.get(0),
         )?;
-        
+
         Ok(version)
     }
 
@@ -348,19 +356,22 @@ impl MemoryStorage {
     /// Get database statistics
     pub fn get_stats(&self) -> Result<StorageStats> {
         let total_memories = self.count_memories()?;
-        
+
         let episodic_count = self.count_by_type(MemoryType::Episodic)?;
         let semantic_count = self.count_by_type(MemoryType::Semantic)?;
         let procedural_count = self.count_by_type(MemoryType::Procedural)?;
         let emotional_count = self.count_by_type(MemoryType::Emotional)?;
-        
+
         let total_tags = self.get_all_tags()?.len();
-        
-        let db_size: i64 = self.conn.query_row(
-            "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()",
-            [],
-            |row| row.get(0),
-        ).unwrap_or(0);
+
+        let db_size: i64 = self
+            .conn
+            .query_row(
+                "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
 
         Ok(StorageStats {
             total_memories,
@@ -437,9 +448,12 @@ mod tests {
         let mut storage = MemoryStorage::in_memory().unwrap();
         let memory = create_test_memory("test_001", MemoryType::Episodic, 0.8);
 
-        storage.store_memory(&memory).expect("Failed to store memory");
-        
-        let retrieved = storage.get_memory("test_001")
+        storage
+            .store_memory(&memory)
+            .expect("Failed to store memory");
+
+        let retrieved = storage
+            .get_memory("test_001")
             .expect("Failed to retrieve memory")
             .expect("Memory not found");
 
@@ -452,9 +466,15 @@ mod tests {
     fn test_query_by_type() {
         let mut storage = MemoryStorage::in_memory().unwrap();
 
-        storage.store_memory(&create_test_memory("ep1", MemoryType::Episodic, 0.8)).unwrap();
-        storage.store_memory(&create_test_memory("ep2", MemoryType::Episodic, 0.7)).unwrap();
-        storage.store_memory(&create_test_memory("sem1", MemoryType::Semantic, 0.9)).unwrap();
+        storage
+            .store_memory(&create_test_memory("ep1", MemoryType::Episodic, 0.8))
+            .unwrap();
+        storage
+            .store_memory(&create_test_memory("ep2", MemoryType::Episodic, 0.7))
+            .unwrap();
+        storage
+            .store_memory(&create_test_memory("sem1", MemoryType::Semantic, 0.9))
+            .unwrap();
 
         let episodic_ids = storage.query_by_type(MemoryType::Episodic).unwrap();
         assert_eq!(episodic_ids.len(), 2);
@@ -484,8 +504,12 @@ mod tests {
     fn test_importance_query() {
         let mut storage = MemoryStorage::in_memory().unwrap();
 
-        storage.store_memory(&create_test_memory("low", MemoryType::Episodic, 0.3)).unwrap();
-        storage.store_memory(&create_test_memory("high", MemoryType::Episodic, 0.9)).unwrap();
+        storage
+            .store_memory(&create_test_memory("low", MemoryType::Episodic, 0.3))
+            .unwrap();
+        storage
+            .store_memory(&create_test_memory("high", MemoryType::Episodic, 0.9))
+            .unwrap();
 
         let important = storage.query_important(0.5, 10).unwrap();
         assert_eq!(important.len(), 1);
@@ -495,7 +519,9 @@ mod tests {
     #[test]
     fn test_delete() {
         let mut storage = MemoryStorage::in_memory().unwrap();
-        storage.store_memory(&create_test_memory("delete_me", MemoryType::Episodic, 0.8)).unwrap();
+        storage
+            .store_memory(&create_test_memory("delete_me", MemoryType::Episodic, 0.8))
+            .unwrap();
 
         assert_eq!(storage.count_memories().unwrap(), 1);
 
@@ -509,8 +535,12 @@ mod tests {
     fn test_stats() {
         let mut storage = MemoryStorage::in_memory().unwrap();
 
-        storage.store_memory(&create_test_memory("ep1", MemoryType::Episodic, 0.8)).unwrap();
-        storage.store_memory(&create_test_memory("sem1", MemoryType::Semantic, 0.7)).unwrap();
+        storage
+            .store_memory(&create_test_memory("ep1", MemoryType::Episodic, 0.8))
+            .unwrap();
+        storage
+            .store_memory(&create_test_memory("sem1", MemoryType::Semantic, 0.7))
+            .unwrap();
 
         let stats = storage.get_stats().unwrap();
         assert_eq!(stats.total_memories, 2);

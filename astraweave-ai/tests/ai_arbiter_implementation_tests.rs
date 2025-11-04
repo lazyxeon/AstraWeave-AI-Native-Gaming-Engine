@@ -11,15 +11,15 @@
 //! - Error handling: Empty plans, invalid indices
 //! - Metrics tracking: All counters increment correctly
 
+use anyhow::{anyhow, Result};
 use astraweave_ai::ai_arbiter::{AIArbiter, AIControlMode};
 use astraweave_ai::llm_executor::LlmExecutor;
 use astraweave_ai::orchestrator::{Orchestrator, OrchestratorAsync};
-use astraweave_core::schema::{WorldSnapshot, PlayerState, CompanionState, EnemyState, IVec2};
+use astraweave_core::schema::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
 use astraweave_core::{ActionStep, PlanIntent};
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use anyhow::{Result, anyhow};
 
 // ============================================================================
 // Mock Orchestrators
@@ -84,7 +84,10 @@ struct MockGoap {
 
 impl MockGoap {
     fn new(action: ActionStep) -> Self {
-        Self { action, empty_plan: false }
+        Self {
+            action,
+            empty_plan: false,
+        }
     }
 
     fn with_empty_plan() -> Self {
@@ -149,15 +152,13 @@ fn create_test_snapshot(t: f32) -> WorldSnapshot {
             cooldowns: BTreeMap::new(),
             morale: 1.0,
         },
-        enemies: vec![
-            EnemyState {
-                id: 1,
-                pos: IVec2 { x: 10, y: 10 },
-                hp: 50,
-                cover: "low".into(),
-                last_seen: 0.0,
-            },
-        ],
+        enemies: vec![EnemyState {
+            id: 1,
+            pos: IVec2 { x: 10, y: 10 },
+            hp: 50,
+            cover: "low".into(),
+            last_seen: 0.0,
+        }],
         pois: vec![],
         obstacles: vec![],
         objective: Some("Test objective".into()),
@@ -169,16 +170,22 @@ fn create_arbiter_with_mocks(
     bt: Box<dyn Orchestrator>,
     llm_delay: Duration,
 ) -> AIArbiter {
-    let mock_llm = Arc::new(MockLlmOrch::new()
-        .with_delay(llm_delay.as_millis() as u64)
-        .with_plan(PlanIntent {
-            plan_id: "llm".into(),
-            steps: vec![
-                ActionStep::MoveTo { x: 1, y: 1, speed: None },
-                ActionStep::Scan { radius: 5.0 },
-                ActionStep::Attack { target_id: 1 },
-            ],
-        }));
+    let mock_llm = Arc::new(
+        MockLlmOrch::new()
+            .with_delay(llm_delay.as_millis() as u64)
+            .with_plan(PlanIntent {
+                plan_id: "llm".into(),
+                steps: vec![
+                    ActionStep::MoveTo {
+                        x: 1,
+                        y: 1,
+                        speed: None,
+                    },
+                    ActionStep::Scan { radius: 5.0 },
+                    ActionStep::Attack { target_id: 1 },
+                ],
+            }),
+    );
 
     let runtime = tokio::runtime::Handle::current();
     let llm_executor = LlmExecutor::new(mock_llm, runtime);
@@ -220,7 +227,11 @@ async fn test_update_executing_llm_returns_plan_steps_sequentially() {
     let plan = PlanIntent {
         plan_id: "test-plan".into(),
         steps: vec![
-            ActionStep::MoveTo { x: 1, y: 1, speed: None },
+            ActionStep::MoveTo {
+                x: 1,
+                y: 1,
+                speed: None,
+            },
             ActionStep::Scan { radius: 5.0 },
             ActionStep::Attack { target_id: 1 },
         ],
@@ -231,20 +242,37 @@ async fn test_update_executing_llm_returns_plan_steps_sequentially() {
 
     // Step 1: MoveTo
     let action1 = arbiter.update(&snap);
-    assert!(matches!(action1, ActionStep::MoveTo { x: 1, y: 1, speed: None }));
-    assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 1 }));
+    assert!(matches!(
+        action1,
+        ActionStep::MoveTo {
+            x: 1,
+            y: 1,
+            speed: None
+        }
+    ));
+    assert!(matches!(
+        arbiter.mode(),
+        AIControlMode::ExecutingLLM { step_index: 1 }
+    ));
 
     // Step 2: Scan
     let action2 = arbiter.update(&snap);
     assert!(matches!(action2, ActionStep::Scan { radius: 5.0 }));
-    assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 2 }));
+    assert!(matches!(
+        arbiter.mode(),
+        AIControlMode::ExecutingLLM { step_index: 2 }
+    ));
 
     // Step 3: Attack (last step)
     let action3 = arbiter.update(&snap);
     assert!(matches!(action3, ActionStep::Attack { target_id: 1 }));
 
     // After last step, should transition back to GOAP
-    assert_eq!(arbiter.mode(), AIControlMode::GOAP, "Should transition to GOAP after plan exhaustion");
+    assert_eq!(
+        arbiter.mode(),
+        AIControlMode::GOAP,
+        "Should transition to GOAP after plan exhaustion"
+    );
 
     // Metrics: 3 LLM steps executed
     let (_, _, _, _, _, llm_steps) = arbiter.metrics();
@@ -261,10 +289,17 @@ async fn test_update_goap_fallback_when_empty_plan() {
     let action = arbiter.update(&snap);
 
     // GOAP has no steps, should fall back to BT
-    assert!(matches!(action, ActionStep::Scan { radius: 15.0 }), "Should return BT action when GOAP plan is empty");
+    assert!(
+        matches!(action, ActionStep::Scan { radius: 15.0 }),
+        "Should return BT action when GOAP plan is empty"
+    );
 
     // Should have transitioned to BT
-    assert_eq!(arbiter.mode(), AIControlMode::BehaviorTree, "Should transition to BehaviorTree when GOAP fails");
+    assert_eq!(
+        arbiter.mode(),
+        AIControlMode::BehaviorTree,
+        "Should transition to BehaviorTree when GOAP fails"
+    );
 }
 
 // ============================================================================
@@ -275,15 +310,18 @@ async fn test_update_goap_fallback_when_empty_plan() {
 async fn test_maybe_request_llm_respects_cooldown() {
     let goap = Box::new(MockGoap::new(ActionStep::Wait { duration: 1.0 }));
     let bt = Box::new(MockBT::new(ActionStep::Wait { duration: 1.0 }));
-    let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
-        .with_llm_cooldown(5.0); // 5 second cooldown
+    let mut arbiter =
+        create_arbiter_with_mocks(goap, bt, Duration::from_millis(100)).with_llm_cooldown(5.0); // 5 second cooldown
 
     // First update: Should allow LLM request (t=0.0, cooldown starts at -999.0)
     let snap1 = create_test_snapshot(0.0);
     arbiter.update(&snap1);
 
     // Should have active LLM task
-    assert!(arbiter.is_llm_active(), "Should have active LLM task after first update");
+    assert!(
+        arbiter.is_llm_active(),
+        "Should have active LLM task after first update"
+    );
 
     // Metrics: 1 LLM request
     let (_, requests1, _, _, _, _) = arbiter.metrics();
@@ -295,7 +333,10 @@ async fn test_maybe_request_llm_respects_cooldown() {
 
     // Metrics: Still 1 LLM request (active task prevents new request)
     let (_, requests2, _, _, _, _) = arbiter.metrics();
-    assert_eq!(requests2, 1, "Should still have 1 LLM request (active task blocks)");
+    assert_eq!(
+        requests2, 1,
+        "Should still have 1 LLM request (active task blocks)"
+    );
 
     // Wait for LLM completion and transition
     tokio::time::sleep(Duration::from_millis(150)).await;
@@ -303,7 +344,10 @@ async fn test_maybe_request_llm_respects_cooldown() {
     arbiter.update(&snap_transition); // This polls the result and transitions to ExecutingLLM
 
     // Verify we transitioned to ExecutingLLM
-    assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { .. }), "Should be in ExecutingLLM mode");
+    assert!(
+        matches!(arbiter.mode(), AIControlMode::ExecutingLLM { .. }),
+        "Should be in ExecutingLLM mode"
+    );
 
     // Now exhaust the plan to return to GOAP
     arbiter.update(&snap_transition); // Step 1
@@ -311,7 +355,11 @@ async fn test_maybe_request_llm_respects_cooldown() {
     arbiter.update(&snap_transition); // Step 3, exhausts plan, transitions to GOAP
 
     // Verify back in GOAP mode
-    assert_eq!(arbiter.mode(), AIControlMode::GOAP, "Should be back in GOAP mode");
+    assert_eq!(
+        arbiter.mode(),
+        AIControlMode::GOAP,
+        "Should be back in GOAP mode"
+    );
 
     // Third update (t=8.0): Should allow new request (cooldown expired AND back in GOAP)
     let snap3 = create_test_snapshot(8.0);
@@ -319,15 +367,18 @@ async fn test_maybe_request_llm_respects_cooldown() {
 
     // Metrics: 2 LLM requests (cooldown expired AND previous task completed)
     let (_, requests3, _, _, _, _) = arbiter.metrics();
-    assert_eq!(requests3, 2, "Should have 2 LLM requests after cooldown expires and plan exhausted");
+    assert_eq!(
+        requests3, 2,
+        "Should have 2 LLM requests after cooldown expires and plan exhausted"
+    );
 }
 
 #[tokio::test]
 async fn test_maybe_request_llm_skips_when_executing_llm() {
     let goap = Box::new(MockGoap::new(ActionStep::Wait { duration: 1.0 }));
     let bt = Box::new(MockBT::new(ActionStep::Wait { duration: 1.0 }));
-    let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_secs(10))
-        .with_llm_cooldown(0.0); // Zero cooldown (always allow)
+    let mut arbiter =
+        create_arbiter_with_mocks(goap, bt, Duration::from_secs(10)).with_llm_cooldown(0.0); // Zero cooldown (always allow)
 
     // Manually inject LLM plan
     let plan = PlanIntent {
@@ -367,8 +418,13 @@ async fn test_poll_llm_result_success_transitions_to_executing_llm() {
     arbiter.update(&snap2);
 
     // Should have transitioned to ExecutingLLM
-    assert!(matches!(arbiter.mode(), AIControlMode::ExecutingLLM { step_index: 1 }),
-        "Should transition to ExecutingLLM after LLM success");
+    assert!(
+        matches!(
+            arbiter.mode(),
+            AIControlMode::ExecutingLLM { step_index: 1 }
+        ),
+        "Should transition to ExecutingLLM after LLM success"
+    );
 
     // Metrics: 1 success
     let (transitions, _, successes, failures, _, _) = arbiter.metrics();
@@ -380,8 +436,7 @@ async fn test_poll_llm_result_success_transitions_to_executing_llm() {
 #[tokio::test]
 async fn test_poll_llm_result_failure_stays_in_goap() {
     // Create arbiter with failing LLM (returns error, no plan)
-    let mock_llm = Arc::new(MockLlmOrch::new()
-        .with_delay(100)); // No plan set, will return error
+    let mock_llm = Arc::new(MockLlmOrch::new().with_delay(100)); // No plan set, will return error
     let runtime = tokio::runtime::Handle::current();
     let llm_executor = LlmExecutor::new(mock_llm, runtime);
 
@@ -401,10 +456,17 @@ async fn test_poll_llm_result_failure_stays_in_goap() {
     let action = arbiter.update(&snap2);
 
     // Should still be in GOAP
-    assert_eq!(arbiter.mode(), AIControlMode::GOAP, "Should stay in GOAP after LLM failure");
+    assert_eq!(
+        arbiter.mode(),
+        AIControlMode::GOAP,
+        "Should stay in GOAP after LLM failure"
+    );
 
     // Should return GOAP action
-    assert!(matches!(action, ActionStep::Scan { radius: 10.0 }), "Should return GOAP action");
+    assert!(
+        matches!(action, ActionStep::Scan { radius: 10.0 }),
+        "Should return GOAP action"
+    );
 
     // Metrics: 1 failure, 0 successes
     let (_, _, successes, failures, _, _) = arbiter.metrics();
@@ -430,14 +492,20 @@ async fn test_transition_to_goap_clears_plan() {
     arbiter.transition_to_llm(plan);
 
     // Verify plan exists
-    assert!(arbiter.current_plan().is_some(), "Should have plan after transition_to_llm");
+    assert!(
+        arbiter.current_plan().is_some(),
+        "Should have plan after transition_to_llm"
+    );
 
     // Exhaust plan (triggers transition to GOAP)
     let snap = create_test_snapshot(0.0);
     arbiter.update(&snap);
 
     // Plan should be cleared
-    assert!(arbiter.current_plan().is_none(), "Plan should be cleared after transition to GOAP");
+    assert!(
+        arbiter.current_plan().is_none(),
+        "Plan should be cleared after transition to GOAP"
+    );
     assert_eq!(arbiter.mode(), AIControlMode::GOAP);
 }
 
@@ -452,12 +520,25 @@ async fn test_transition_to_bt_clears_task_and_plan() {
     let action = arbiter.update(&snap1);
 
     // Should have transitioned to BT immediately (empty GOAP plan)
-    assert_eq!(arbiter.mode(), AIControlMode::BehaviorTree, "Should transition to BT on empty GOAP plan");
-    assert!(matches!(action, ActionStep::Scan { radius: 15.0 }), "Should return BT action");
+    assert_eq!(
+        arbiter.mode(),
+        AIControlMode::BehaviorTree,
+        "Should transition to BT on empty GOAP plan"
+    );
+    assert!(
+        matches!(action, ActionStep::Scan { radius: 15.0 }),
+        "Should return BT action"
+    );
 
     // Verify no LLM task was created (BT fallback doesn't use LLM)
-    assert!(!arbiter.is_llm_active(), "Should not have LLM task in BT mode");
-    assert!(arbiter.current_plan().is_none(), "Should not have plan in BT mode");
+    assert!(
+        !arbiter.is_llm_active(),
+        "Should not have LLM task in BT mode"
+    );
+    assert!(
+        arbiter.current_plan().is_none(),
+        "Should not have plan in BT mode"
+    );
 }
 
 // ============================================================================
@@ -504,7 +585,7 @@ async fn test_executing_llm_without_plan_falls_back_to_goap() {
         steps: vec![ActionStep::Wait { duration: 1.0 }],
     };
     arbiter.transition_to_llm(plan);
-    
+
     // Exhaust plan to transition to GOAP
     let snap1 = create_test_snapshot(0.0);
     arbiter.update(&snap1);
@@ -521,8 +602,8 @@ async fn test_executing_llm_without_plan_falls_back_to_goap() {
 async fn test_metrics_track_all_counters() {
     let goap = Box::new(MockGoap::new(ActionStep::Wait { duration: 1.0 }));
     let bt = Box::new(MockBT::new(ActionStep::Wait { duration: 1.0 }));
-    let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
-        .with_llm_cooldown(0.5); // Short cooldown
+    let mut arbiter =
+        create_arbiter_with_mocks(goap, bt, Duration::from_millis(100)).with_llm_cooldown(0.5); // Short cooldown
 
     let snap1 = create_test_snapshot(0.0);
     let snap2 = create_test_snapshot(1.0);
@@ -530,7 +611,7 @@ async fn test_metrics_track_all_counters() {
 
     // Update 1: GOAP action, LLM request
     arbiter.update(&snap1);
-    
+
     // Update 2: GOAP action (LLM still running)
     arbiter.update(&snap2);
 
@@ -558,8 +639,8 @@ async fn test_metrics_track_all_counters() {
 async fn test_with_llm_cooldown_configures_cooldown() {
     let goap = Box::new(MockGoap::new(ActionStep::Wait { duration: 1.0 }));
     let bt = Box::new(MockBT::new(ActionStep::Wait { duration: 1.0 }));
-    let mut arbiter = create_arbiter_with_mocks(goap, bt, Duration::from_millis(100))
-        .with_llm_cooldown(10.0); // 10 second cooldown
+    let mut arbiter =
+        create_arbiter_with_mocks(goap, bt, Duration::from_millis(100)).with_llm_cooldown(10.0); // 10 second cooldown
 
     // First request at t=0
     let snap1 = create_test_snapshot(0.0);
@@ -572,7 +653,10 @@ async fn test_with_llm_cooldown_configures_cooldown() {
     let snap2 = create_test_snapshot(5.0);
     arbiter.update(&snap2);
     let (_, requests2, _, _, _, _) = arbiter.metrics();
-    assert_eq!(requests2, 1, "Should still have 1 request (active task blocks)");
+    assert_eq!(
+        requests2, 1,
+        "Should still have 1 request (active task blocks)"
+    );
 
     // Wait for LLM completion and transition
     tokio::time::sleep(Duration::from_millis(150)).await;
@@ -585,11 +669,18 @@ async fn test_with_llm_cooldown_configures_cooldown() {
     arbiter.update(&snap_transition); // Step 3, exhausts plan
 
     // Verify back in GOAP
-    assert_eq!(arbiter.mode(), AIControlMode::GOAP, "Should be back in GOAP mode");
+    assert_eq!(
+        arbiter.mode(),
+        AIControlMode::GOAP,
+        "Should be back in GOAP mode"
+    );
 
     // Third update at t=11 (cooldown expired AND back in GOAP)
     let snap3 = create_test_snapshot(11.0);
     arbiter.update(&snap3);
     let (_, requests3, _, _, _, _) = arbiter.metrics();
-    assert_eq!(requests3, 2, "Should have 2 requests after cooldown expires and plan exhausted");
+    assert_eq!(
+        requests3, 2,
+        "Should have 2 requests after cooldown expires and plan exhausted"
+    );
 }

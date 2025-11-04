@@ -1,7 +1,7 @@
 // Week 5 Action 19: GPU Instancing Module
 // Batches identical meshes to reduce draw calls and improve rendering performance
 
-use glam::{Mat4, Vec3, Quat};
+use glam::{Mat4, Quat, Vec3};
 use std::collections::HashMap;
 use wgpu;
 use wgpu::util::DeviceExt;
@@ -73,7 +73,11 @@ pub struct Instance {
 
 impl Instance {
     pub fn new(position: Vec3, rotation: Quat, scale: Vec3) -> Self {
-        Self { position, rotation, scale }
+        Self {
+            position,
+            rotation,
+            scale,
+        }
     }
 
     pub fn identity() -> Self {
@@ -124,9 +128,8 @@ impl InstanceBatch {
             return;
         }
 
-        let instance_data: Vec<InstanceRaw> = self.instances.iter()
-            .map(|inst| inst.to_raw())
-            .collect();
+        let instance_data: Vec<InstanceRaw> =
+            self.instances.iter().map(|inst| inst.to_raw()).collect();
 
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("Instance Buffer (mesh {})", self.mesh_id)),
@@ -164,7 +167,10 @@ impl InstanceManager {
 
     /// Add instance for a specific mesh
     pub fn add_instance(&mut self, mesh_id: u64, instance: Instance) {
-        let batch = self.batches.entry(mesh_id).or_insert_with(|| InstanceBatch::new(mesh_id));
+        let batch = self
+            .batches
+            .entry(mesh_id)
+            .or_insert_with(|| InstanceBatch::new(mesh_id));
         batch.add_instance(instance);
         self.total_instances += 1;
     }
@@ -172,7 +178,10 @@ impl InstanceManager {
     /// Add multiple instances for a mesh at once
     pub fn add_instances(&mut self, mesh_id: u64, instances: Vec<Instance>) {
         let count = instances.len();
-        let batch = self.batches.entry(mesh_id).or_insert_with(|| InstanceBatch::new(mesh_id));
+        let batch = self
+            .batches
+            .entry(mesh_id)
+            .or_insert_with(|| InstanceBatch::new(mesh_id));
         for instance in instances {
             batch.add_instance(instance);
         }
@@ -255,7 +264,9 @@ pub struct InstancePatternBuilder {
 
 impl InstancePatternBuilder {
     pub fn new() -> Self {
-        Self { instances: Vec::new() }
+        Self {
+            instances: Vec::new(),
+        }
     }
 
     /// Create a grid pattern of instances
@@ -281,11 +292,8 @@ impl InstancePatternBuilder {
             let x = angle.cos() * radius;
             let z = angle.sin() * radius;
             let rotation = Quat::from_rotation_y(angle + std::f32::consts::PI);
-            self.instances.push(Instance::new(
-                Vec3::new(x, 0.0, z),
-                rotation,
-                Vec3::ONE,
-            ));
+            self.instances
+                .push(Instance::new(Vec3::new(x, 0.0, z), rotation, Vec3::ONE));
         }
         self
     }
@@ -346,12 +354,8 @@ mod tests {
 
     #[test]
     fn test_instance_creation() {
-        let instance = Instance::new(
-            Vec3::new(1.0, 2.0, 3.0),
-            Quat::IDENTITY,
-            Vec3::ONE,
-        );
-        
+        let instance = Instance::new(Vec3::new(1.0, 2.0, 3.0), Quat::IDENTITY, Vec3::ONE);
+
         assert_eq!(instance.position, Vec3::new(1.0, 2.0, 3.0));
         assert_eq!(instance.scale, Vec3::ONE);
     }
@@ -360,7 +364,7 @@ mod tests {
     fn test_instance_to_raw() {
         let instance = Instance::identity();
         let raw = instance.to_raw();
-        
+
         // Identity matrix should have 1s on diagonal
         assert_eq!(raw.model[0][0], 1.0);
         assert_eq!(raw.model[1][1], 1.0);
@@ -371,12 +375,12 @@ mod tests {
     #[test]
     fn test_batch_management() {
         let mut batch = InstanceBatch::new(42);
-        
+
         assert_eq!(batch.instance_count(), 0);
-        
+
         batch.add_instance(Instance::identity());
         batch.add_instance(Instance::identity());
-        
+
         assert_eq!(batch.instance_count(), 2);
         assert_eq!(batch.mesh_id, 42);
     }
@@ -384,15 +388,15 @@ mod tests {
     #[test]
     fn test_instance_manager() {
         let mut manager = InstanceManager::new();
-        
+
         // Add instances for two different meshes
         manager.add_instance(1, Instance::identity());
         manager.add_instance(1, Instance::identity());
         manager.add_instance(2, Instance::identity());
-        
+
         assert_eq!(manager.total_instances(), 3);
         assert_eq!(manager.batch_count(), 2);
-        
+
         // 3 instances -> 2 batches = 1 draw call saved
         manager.calculate_draw_call_savings();
         assert_eq!(manager.draw_calls_saved(), 1);
@@ -401,31 +405,29 @@ mod tests {
     #[test]
     fn test_draw_call_reduction() {
         let mut manager = InstanceManager::new();
-        
+
         // 100 instances of same mesh
         for _ in 0..100 {
             manager.add_instance(1, Instance::identity());
         }
-        
+
         manager.calculate_draw_call_savings();
-        
+
         // Without instancing: 100 draw calls
         // With instancing: 1 draw call
         // Saved: 99 draw calls
         assert_eq!(manager.draw_calls_saved(), 99);
-        
+
         let reduction = manager.draw_call_reduction_percent();
         assert!((reduction - 99.0).abs() < 0.01);
     }
 
     #[test]
     fn test_grid_pattern() {
-        let instances = InstancePatternBuilder::new()
-            .grid(3, 3, 2.0)
-            .build();
-        
+        let instances = InstancePatternBuilder::new().grid(3, 3, 2.0).build();
+
         assert_eq!(instances.len(), 9); // 3x3 grid
-        
+
         // Check corner positions
         assert_eq!(instances[0].position, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(instances[8].position, Vec3::new(4.0, 0.0, 4.0)); // (2*2, 0, 2*2)
@@ -433,12 +435,10 @@ mod tests {
 
     #[test]
     fn test_circle_pattern() {
-        let instances = InstancePatternBuilder::new()
-            .circle(8, 10.0)
-            .build();
-        
+        let instances = InstancePatternBuilder::new().circle(8, 10.0).build();
+
         assert_eq!(instances.len(), 8);
-        
+
         // All instances should be roughly 10 units from origin
         for instance in &instances {
             let distance = instance.position.length();
@@ -453,9 +453,9 @@ mod tests {
             .with_scale_variation(0.8, 1.2)
             .with_random_rotation_y()
             .build();
-        
+
         assert_eq!(instances.len(), 4);
-        
+
         // All scales should be in range [0.8, 1.2]
         for instance in &instances {
             let scale = instance.scale.x; // Uniform scale
@@ -468,11 +468,11 @@ mod tests {
         let mut manager = InstanceManager::new();
         manager.add_instance(1, Instance::identity());
         manager.add_instance(2, Instance::identity());
-        
+
         assert_eq!(manager.total_instances(), 2);
-        
+
         manager.clear();
-        
+
         assert_eq!(manager.total_instances(), 0);
         assert_eq!(manager.batch_count(), 0);
     }

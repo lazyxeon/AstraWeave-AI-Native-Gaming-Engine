@@ -14,7 +14,11 @@ mod ecs_systems_tests {
         World::new()
     }
 
-    fn create_anti_cheat_component(player_id: &str, trust_score: f32, anomalies: Vec<String>) -> CAntiCheat {
+    fn create_anti_cheat_component(
+        player_id: &str,
+        trust_score: f32,
+        anomalies: Vec<String>,
+    ) -> CAntiCheat {
         CAntiCheat {
             player_id: player_id.to_string(),
             trust_score,
@@ -71,7 +75,8 @@ mod ecs_systems_tests {
 
         // Create player with rapid input anomaly
         let entity = world.spawn();
-        let anti_cheat = create_anti_cheat_component("player2", 0.90, vec!["rapid_input".to_string()]);
+        let anti_cheat =
+            create_anti_cheat_component("player2", 0.90, vec!["rapid_input".to_string()]);
         world.insert(entity, anti_cheat);
 
         // Run input validation system
@@ -85,7 +90,9 @@ mod ecs_systems_tests {
             anti_cheat.trust_score
         );
         assert!(
-            anti_cheat.anomaly_flags.contains(&"rapid_input".to_string()),
+            anti_cheat
+                .anomaly_flags
+                .contains(&"rapid_input".to_string()),
             "Rapid input anomaly should be flagged"
         );
     }
@@ -130,7 +137,10 @@ mod ecs_systems_tests {
 
         // Create 3 players with different profiles
         let entity1 = world.spawn();
-        world.insert(entity1, create_anti_cheat_component("player1", 0.95, vec![]));
+        world.insert(
+            entity1,
+            create_anti_cheat_component("player1", 0.95, vec![]),
+        );
 
         let entity2 = world.spawn();
         world.insert(
@@ -139,7 +149,10 @@ mod ecs_systems_tests {
         );
 
         let entity3 = world.spawn();
-        world.insert(entity3, create_anti_cheat_component("player3", 0.60, vec![]));
+        world.insert(
+            entity3,
+            create_anti_cheat_component("player3", 0.60, vec![]),
+        );
 
         // Run input validation system
         input_validation_system(&mut world);
@@ -367,7 +380,10 @@ mod ecs_systems_tests {
         );
 
         let entity3 = world.spawn();
-        world.insert(entity3, create_anti_cheat_component("player3", 0.95, vec![]));
+        world.insert(
+            entity3,
+            create_anti_cheat_component("player3", 0.95, vec![]),
+        );
 
         // Run anomaly detection system
         anomaly_detection_system(&mut world);
@@ -387,16 +403,28 @@ mod ecs_systems_tests {
 
         // Create 4 players: 2 low trust (< 0.5), 2 high trust
         let entity1 = world.spawn();
-        world.insert(entity1, create_anti_cheat_component("player1", 0.30, vec![]));
+        world.insert(
+            entity1,
+            create_anti_cheat_component("player1", 0.30, vec![]),
+        );
 
         let entity2 = world.spawn();
-        world.insert(entity2, create_anti_cheat_component("player2", 0.40, vec![]));
+        world.insert(
+            entity2,
+            create_anti_cheat_component("player2", 0.40, vec![]),
+        );
 
         let entity3 = world.spawn();
-        world.insert(entity3, create_anti_cheat_component("player3", 0.80, vec![]));
+        world.insert(
+            entity3,
+            create_anti_cheat_component("player3", 0.80, vec![]),
+        );
 
         let entity4 = world.spawn();
-        world.insert(entity4, create_anti_cheat_component("player4", 0.90, vec![]));
+        world.insert(
+            entity4,
+            create_anti_cheat_component("player4", 0.90, vec![]),
+        );
 
         // Run anomaly detection system
         anomaly_detection_system(&mut world);
@@ -423,16 +451,28 @@ mod ecs_systems_tests {
 
         // Create 4 players: 3 low trust (< 0.5), 1 high trust (> 50% low trust)
         let entity1 = world.spawn();
-        world.insert(entity1, create_anti_cheat_component("player1", 0.30, vec![]));
+        world.insert(
+            entity1,
+            create_anti_cheat_component("player1", 0.30, vec![]),
+        );
 
         let entity2 = world.spawn();
-        world.insert(entity2, create_anti_cheat_component("player2", 0.40, vec![]));
+        world.insert(
+            entity2,
+            create_anti_cheat_component("player2", 0.40, vec![]),
+        );
 
         let entity3 = world.spawn();
-        world.insert(entity3, create_anti_cheat_component("player3", 0.20, vec![]));
+        world.insert(
+            entity3,
+            create_anti_cheat_component("player3", 0.20, vec![]),
+        );
 
         let entity4 = world.spawn();
-        world.insert(entity4, create_anti_cheat_component("player4", 0.90, vec![]));
+        world.insert(
+            entity4,
+            create_anti_cheat_component("player4", 0.90, vec![]),
+        );
 
         // Run anomaly detection system
         anomaly_detection_system(&mut world);

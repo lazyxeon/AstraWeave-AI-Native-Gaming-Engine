@@ -418,15 +418,15 @@ pub fn hash_data(data: &[u8]) -> String {
 }
 
 #[cfg(test)]
-mod signature_tests;
-#[cfg(test)]
 mod anticheat_tests;
+#[cfg(test)]
+mod ecs_systems_tests;
 #[cfg(test)]
 mod llm_validation_tests;
 #[cfg(test)]
 mod script_sandbox_tests;
 #[cfg(test)]
-mod ecs_systems_tests;
+mod signature_tests;
 
 #[cfg(test)]
 mod tests {

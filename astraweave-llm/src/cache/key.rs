@@ -4,18 +4,18 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 /// A cache key for LLM prompts
-/// 
+///
 /// The key is based on:
 /// - Normalized prompt text (whitespace collapsed, trimmed)
 /// - Model identifier
 /// - Temperature (quantized to 0.1 precision)
 /// - Tool registry hash (for tool vocabulary changes)
-/// 
+///
 /// Phase 7: Stores normalized_prompt for semantic similarity matching
 #[derive(Debug, Clone)]
 pub struct PromptKey {
     prompt_hash: u64,
-    pub model: String, // Phase 7: Made public for similarity matching
+    pub model: String,      // Phase 7: Made public for similarity matching
     pub temperature_q: u32, // Phase 7: Made public for similarity matching (temperature * 100)
     tools_hash: u64,
     /// Phase 7: Normalized prompt text for similarity search (not included in hash/eq)
@@ -47,7 +47,7 @@ impl Eq for PromptKey {}
 
 impl PromptKey {
     /// Create a new prompt key
-    /// 
+    ///
     /// # Arguments
     /// * `prompt` - The prompt text (will be normalized)
     /// * `model` - The model identifier (e.g., "phi3:medium")
@@ -82,7 +82,7 @@ impl PromptKey {
 }
 
 /// Normalize a prompt for stable hashing
-/// 
+///
 /// - Trim whitespace
 /// - Collapse multiple spaces into single space
 /// - Remove volatile sections (timestamps, random seeds, etc.)
@@ -93,7 +93,7 @@ fn normalize_prompt(prompt: &str) -> String {
 
     for line in prompt.lines() {
         let trimmed = line.trim();
-        
+
         // Skip volatile sections (markers for data that changes frequently)
         if trimmed.starts_with("<!-- VOLATILE:") {
             in_volatile_section = true;
@@ -144,7 +144,7 @@ fn hash_string(s: &str) -> u64 {
 fn hash_tools(tools: &[&str]) -> u64 {
     let mut sorted_tools = tools.to_vec();
     sorted_tools.sort_unstable();
-    
+
     let mut hasher = DefaultHasher::new();
     for tool in sorted_tools {
         tool.hash(&mut hasher);
@@ -160,10 +160,10 @@ mod tests {
     fn test_prompt_normalization_whitespace() {
         let prompt1 = "hello   world\n\n  foo   bar  ";
         let prompt2 = "hello world foo bar";
-        
+
         let norm1 = normalize_prompt(prompt1);
         let norm2 = normalize_prompt(prompt2);
-        
+
         assert_eq!(norm1, norm2);
         assert_eq!(norm1, "hello world foo bar");
     }
@@ -172,10 +172,10 @@ mod tests {
     fn test_prompt_normalization_timestamps() {
         let prompt1 = "Context\nTimestamp: 2025-10-14T10:30:00\nAgent state";
         let prompt2 = "Context\nTimestamp: 2025-10-14T11:45:00\nAgent state";
-        
+
         let norm1 = normalize_prompt(prompt1);
         let norm2 = normalize_prompt(prompt2);
-        
+
         // Timestamps should be stripped, making these equal
         assert_eq!(norm1, norm2);
         assert_eq!(norm1, "Context Agent state");
@@ -190,7 +190,7 @@ mod tests {
         <!-- /VOLATILE -->
         More static content
         "#;
-        
+
         let normalized = normalize_prompt(prompt);
         assert!(!normalized.contains("seed"));
         assert!(!normalized.contains("12345"));
@@ -202,7 +202,7 @@ mod tests {
     fn test_key_equality_same_normalized() {
         let key1 = PromptKey::new("hello  world", "model1", 0.7, &["move", "attack"]);
         let key2 = PromptKey::new("hello world", "model1", 0.7, &["move", "attack"]);
-        
+
         assert_eq!(key1, key2);
     }
 
@@ -210,7 +210,7 @@ mod tests {
     fn test_key_inequality_different_prompt() {
         let key1 = PromptKey::new("hello world", "model1", 0.7, &["move"]);
         let key2 = PromptKey::new("goodbye world", "model1", 0.7, &["move"]);
-        
+
         assert_ne!(key1, key2);
     }
 
@@ -218,7 +218,7 @@ mod tests {
     fn test_key_inequality_different_model() {
         let key1 = PromptKey::new("hello", "model1", 0.7, &["move"]);
         let key2 = PromptKey::new("hello", "model2", 0.7, &["move"]);
-        
+
         assert_ne!(key1, key2);
     }
 
@@ -226,7 +226,7 @@ mod tests {
     fn test_key_inequality_different_temperature() {
         let key1 = PromptKey::new("hello", "model1", 0.7, &["move"]);
         let key2 = PromptKey::new("hello", "model1", 0.8, &["move"]);
-        
+
         assert_ne!(key1, key2);
     }
 
@@ -235,7 +235,7 @@ mod tests {
         // Very small temperature differences should hash to same key
         let key1 = PromptKey::new("hello", "model1", 0.701, &["move"]);
         let key2 = PromptKey::new("hello", "model1", 0.699, &["move"]);
-        
+
         assert_eq!(key1, key2); // Both round to 70
     }
 
@@ -243,10 +243,10 @@ mod tests {
     fn test_tools_hash_order_independence() {
         let tools1 = &["move", "attack", "defend"];
         let tools2 = &["defend", "move", "attack"];
-        
+
         let hash1 = hash_tools(tools1);
         let hash2 = hash_tools(tools2);
-        
+
         assert_eq!(hash1, hash2);
     }
 
@@ -254,10 +254,10 @@ mod tests {
     fn test_tools_hash_sensitivity() {
         let tools1 = &["move", "attack"];
         let tools2 = &["move", "defend"];
-        
+
         let hash1 = hash_tools(tools1);
         let hash2 = hash_tools(tools2);
-        
+
         assert_ne!(hash1, hash2);
     }
 }

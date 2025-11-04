@@ -208,25 +208,28 @@ pub fn draw_ui(
                     load_demo = true;
                 }
                 if ui.button("Save JSON").clicked() {
-                    if let Some(ref tlv) = *tl.lock()
-                        .expect("Timeline mutex poisoned - cannot recover") {
+                    if let Some(ref tlv) =
+                        *tl.lock().expect("Timeline mutex poisoned - cannot recover")
+                    {
                         let s = serde_json::to_string_pretty(tlv).unwrap();
                         ui.ctx().copy_text(s);
                     }
                 }
                 // Load/Save to assets
                 {
-                    let mut name = filename.lock()
+                    let mut name = filename
+                        .lock()
                         .expect("Filename mutex poisoned - cannot recover");
                     ui.text_edit_singleline(&mut *name);
                     if ui.button("Load File").clicked() {
                         match std::fs::read_to_string(&*name) {
                             Ok(s) => match serde_json::from_str::<awc::Timeline>(&s) {
                                 Ok(new_tl) => {
-                                    *tl.lock()
-                                        .expect("Timeline mutex poisoned - cannot recover") = Some(new_tl);
+                                    *tl.lock().expect("Timeline mutex poisoned - cannot recover") =
+                                        Some(new_tl);
                                     *seq.lock()
-                                        .expect("Sequencer mutex poisoned - cannot recover") = Some(awc::Sequencer::new());
+                                        .expect("Sequencer mutex poisoned - cannot recover") =
+                                        Some(awc::Sequencer::new());
                                 }
                                 Err(e) => {
                                     ui.label(format!("Parse error: {}", e));
@@ -238,8 +241,9 @@ pub fn draw_ui(
                         }
                     }
                     if ui.button("Save File").clicked() {
-                        if let Some(ref tlv) = *tl.lock()
-                            .expect("Timeline mutex poisoned - cannot recover") {
+                        if let Some(ref tlv) =
+                            *tl.lock().expect("Timeline mutex poisoned - cannot recover")
+                        {
                             match serde_json::to_string_pretty(tlv) {
                                 Ok(s) => {
                                     let _ = std::fs::create_dir_all("assets/cinematics");
@@ -254,19 +258,23 @@ pub fn draw_ui(
                     }
                 }
                 if ui.button("Play").clicked() {
-                    let mut seq_guard = seq.lock()
+                    let mut seq_guard = seq
+                        .lock()
                         .expect("Sequencer mutex poisoned - cannot recover");
                     if seq_guard.is_none() {
                         *seq_guard = Some(awc::Sequencer::new());
                     }
                 }
                 if ui.button("Step 0.5s").clicked() {
-                    let mut seq_guard = seq.lock()
+                    let mut seq_guard = seq
+                        .lock()
                         .expect("Sequencer mutex poisoned - cannot recover");
-                    if let (Some(ref mut seqv), Some(tlv)) =
-                        (seq_guard.as_mut(), tl.lock()
-                            .expect("Timeline mutex poisoned - cannot recover").as_ref())
-                    {
+                    if let (Some(ref mut seqv), Some(tlv)) = (
+                        seq_guard.as_mut(),
+                        tl.lock()
+                            .expect("Timeline mutex poisoned - cannot recover")
+                            .as_ref(),
+                    ) {
                         if let Ok(evs) = seqv.step(0.5, tlv) {
                             for e in evs {
                                 ui.label(format!("{:4.1}s: {:?}", seqv.t.0, e));
@@ -303,10 +311,10 @@ pub fn draw_ui(
                     start: awc::Time(0.0),
                     params: serde_json::json!({"duration": 0.5}),
                 });
-                *tl.lock()
-                    .expect("Timeline mutex poisoned - cannot recover") = Some(new_tl);
+                *tl.lock().expect("Timeline mutex poisoned - cannot recover") = Some(new_tl);
                 *seq.lock()
-                    .expect("Sequencer mutex poisoned - cannot recover") = Some(awc::Sequencer::new());
+                    .expect("Sequencer mutex poisoned - cannot recover") =
+                    Some(awc::Sequencer::new());
             }
         });
 

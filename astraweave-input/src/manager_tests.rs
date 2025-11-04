@@ -20,11 +20,11 @@ mod input_manager_tests {
     use winit::keyboard::KeyCode;
 
     /// Helper function to create an InputManager with custom bindings.
-    /// 
+    ///
     /// # Arguments
     /// * `context` - The initial input context (Gameplay or UI)
     /// * `bindings` - The binding set to use
-    /// 
+    ///
     /// # Returns
     /// A new InputManager instance configured with the provided bindings
     fn create_manager_with_bindings(context: InputContext, bindings: BindingSet) -> InputManager {
@@ -32,11 +32,11 @@ mod input_manager_tests {
     }
 
     /// Helper function to create a keyboard binding for an action.
-    /// 
+    ///
     /// # Arguments
     /// * `action` - The action to bind
     /// * `key` - The keyboard key to bind to the action
-    /// 
+    ///
     /// # Returns
     /// A tuple of (Action, Binding) ready for insertion into a BindingSet
     fn bind_key(action: Action, key: KeyCode) -> (Action, Binding) {
@@ -50,11 +50,11 @@ mod input_manager_tests {
     }
 
     /// Helper function to create a mouse button binding for an action.
-    /// 
+    ///
     /// # Arguments
     /// * `action` - The action to bind
     /// * `button` - The mouse button to bind to the action
-    /// 
+    ///
     /// # Returns
     /// A tuple of (Action, Binding) ready for insertion into a BindingSet
     fn bind_mouse(action: Action, button: MouseButton) -> (Action, Binding) {
@@ -109,7 +109,7 @@ mod input_manager_tests {
 
         // Call clear_frame to verify it doesn't panic
         manager.clear_frame();
-        
+
         // Verify state remains consistent
         assert!(!manager.just_pressed(Action::Jump));
         assert!(!manager.just_pressed(Action::AttackLight));
@@ -119,13 +119,13 @@ mod input_manager_tests {
     #[test]
     fn test_multiple_bindings() {
         let mut bindings = BindingSet::default();
-        
+
         // Bind multiple actions
         let (action1, binding1) = bind_key(Action::MoveForward, KeyCode::KeyW);
         let (action2, binding2) = bind_key(Action::MoveBackward, KeyCode::KeyS);
         let (action3, binding3) = bind_key(Action::MoveLeft, KeyCode::KeyA);
         let (action4, binding4) = bind_key(Action::MoveRight, KeyCode::KeyD);
-        
+
         bindings.actions.insert(action1, binding1);
         bindings.actions.insert(action2, binding2);
         bindings.actions.insert(action3, binding3);
@@ -144,10 +144,10 @@ mod input_manager_tests {
     #[test]
     fn test_mouse_bindings() {
         let mut bindings = BindingSet::default();
-        
+
         let (action1, binding1) = bind_mouse(Action::AttackLight, MouseButton::Left);
         let (action2, binding2) = bind_mouse(Action::AttackHeavy, MouseButton::Right);
-        
+
         bindings.actions.insert(action1, binding1);
         bindings.actions.insert(action2, binding2);
 
@@ -155,11 +155,21 @@ mod input_manager_tests {
 
         // Verify mouse bindings exist
         assert_eq!(
-            manager.bindings.actions.get(&Action::AttackLight).unwrap().mouse,
+            manager
+                .bindings
+                .actions
+                .get(&Action::AttackLight)
+                .unwrap()
+                .mouse,
             Some(MouseButton::Left)
         );
         assert_eq!(
-            manager.bindings.actions.get(&Action::AttackHeavy).unwrap().mouse,
+            manager
+                .bindings
+                .actions
+                .get(&Action::AttackHeavy)
+                .unwrap()
+                .mouse,
             Some(MouseButton::Right)
         );
     }
@@ -226,7 +236,7 @@ mod input_manager_tests {
         bindings.actions.insert(action, binding);
 
         let bindings_clone = bindings.clone();
-        
+
         assert_eq!(bindings.actions.len(), bindings_clone.actions.len());
         assert!(bindings_clone.actions.contains_key(&Action::MoveForward));
     }
@@ -244,7 +254,8 @@ mod input_manager_tests {
         let (action2, binding2) = bind_key(Action::Interact, KeyCode::KeyE);
         ui_bindings.actions.insert(action2, binding2);
 
-        let gameplay_manager = create_manager_with_bindings(InputContext::Gameplay, gameplay_bindings);
+        let gameplay_manager =
+            create_manager_with_bindings(InputContext::Gameplay, gameplay_bindings);
         let ui_manager = create_manager_with_bindings(InputContext::UI, ui_bindings);
 
         assert_eq!(gameplay_manager.context, InputContext::Gameplay);
@@ -257,7 +268,7 @@ mod input_manager_tests {
         // Create binding set with default axes but no action bindings
         let mut bindings = BindingSet::default();
         bindings.actions.clear(); // Remove all default action bindings
-        
+
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
 
         // With no action bindings, all actions should be unbound
@@ -281,13 +292,13 @@ mod input_manager_tests {
     #[test]
     fn test_action_enum_coverage() {
         let mut bindings = BindingSet::default();
-        
+
         // Default bindings already include many actions (21+)
         // Let's add a few more to test the API
         let (a7, b7) = bind_mouse(Action::AttackLight, MouseButton::Left);
         let (a8, b8) = bind_mouse(Action::AttackHeavy, MouseButton::Right);
         let (a9, b9) = bind_key(Action::Ability1, KeyCode::KeyQ);
-        
+
         bindings.actions.insert(a7, b7);
         bindings.actions.insert(a8, b8);
         bindings.actions.insert(a9, b9);
@@ -309,14 +320,14 @@ mod input_manager_tests {
     #[test]
     fn test_stress_all_actions_bound() {
         let mut bindings = BindingSet::default();
-        
+
         // Bind all remaining UI actions
         let (a1, b1) = bind_key(Action::OpenInventory, KeyCode::KeyI);
         let (a2, b2) = bind_key(Action::OpenMap, KeyCode::KeyM);
         let (a3, b3) = bind_key(Action::OpenQuests, KeyCode::KeyQ);
         let (a4, b4) = bind_key(Action::OpenCrafting, KeyCode::KeyC);
         let (a5, b5) = bind_key(Action::OpenMenu, KeyCode::Escape);
-        
+
         bindings.actions.insert(a1, b1);
         bindings.actions.insert(a2, b2);
         bindings.actions.insert(a3, b3);
@@ -324,11 +335,14 @@ mod input_manager_tests {
         bindings.actions.insert(a5, b5);
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Default has 21 bindings, we're adding UI-specific actions
         // Some might overlap, so just verify we have a reasonable number
         assert!(manager.bindings.actions.len() >= 21);
-        assert!(manager.bindings.actions.contains_key(&Action::OpenInventory));
+        assert!(manager
+            .bindings
+            .actions
+            .contains_key(&Action::OpenInventory));
         assert!(manager.bindings.actions.contains_key(&Action::OpenMap));
     }
 
@@ -372,7 +386,7 @@ mod input_manager_tests {
     #[test]
     fn test_stress_binding_clones() {
         let bindings = BindingSet::default();
-        
+
         // Clone bindings 100 times
         let mut clones = Vec::new();
         for _ in 0..100 {
@@ -406,7 +420,7 @@ mod input_manager_tests {
     #[test]
     fn test_stress_multiple_managers() {
         let bindings = BindingSet::default();
-        
+
         // Create 50 managers
         let mut managers = Vec::new();
         for i in 0..50 {
@@ -433,20 +447,23 @@ mod input_manager_tests {
     #[test]
     fn test_stress_duplicate_bindings() {
         let mut bindings = BindingSet::default();
-        
+
         // Bind same key to different actions (last wins)
         let (a1, b1) = bind_key(Action::MoveForward, KeyCode::KeyW);
         let (a2, b2) = bind_key(Action::Jump, KeyCode::KeyW);
         let (a3, b3) = bind_key(Action::Sprint, KeyCode::KeyW);
-        
+
         bindings.actions.insert(a1, b1);
         bindings.actions.insert(a2, b2);
         bindings.actions.insert(a3, b3);
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Sprint should be bound to W (last write wins)
-        assert_eq!(manager.bindings.actions.get(&Action::Sprint).unwrap().key, Some(KeyCode::KeyW));
+        assert_eq!(
+            manager.bindings.actions.get(&Action::Sprint).unwrap().key,
+            Some(KeyCode::KeyW)
+        );
     }
 
     // Stress Test 8: Empty and refill binding set
@@ -484,13 +501,13 @@ mod input_manager_tests {
     #[test]
     fn test_stress_all_mouse_buttons() {
         let mut bindings = BindingSet::default();
-        
+
         let (a1, b1) = bind_mouse(Action::AttackLight, MouseButton::Left);
         let (a2, b2) = bind_mouse(Action::AttackHeavy, MouseButton::Right);
         let (a3, b3) = bind_mouse(Action::Ability1, MouseButton::Middle);
         let (a4, b4) = bind_mouse(Action::Ability2, MouseButton::Back);
         let (a5, b5) = bind_mouse(Action::Interact, MouseButton::Forward);
-        
+
         bindings.actions.insert(a1, b1);
         bindings.actions.insert(a2, b2);
         bindings.actions.insert(a3, b3);
@@ -498,7 +515,7 @@ mod input_manager_tests {
         bindings.actions.insert(a5, b5);
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Verify all mouse bindings exist
         assert!(manager.bindings.actions.contains_key(&Action::AttackLight));
         assert!(manager.bindings.actions.contains_key(&Action::AttackHeavy));
@@ -531,7 +548,11 @@ mod input_manager_tests {
 
         for i in 0..100 {
             let _ = manager.is_down(Action::Jump);
-            manager.set_context(if i % 2 == 0 { InputContext::UI } else { InputContext::Gameplay });
+            manager.set_context(if i % 2 == 0 {
+                InputContext::UI
+            } else {
+                InputContext::Gameplay
+            });
             let _ = manager.just_pressed(Action::AttackLight);
         }
 
@@ -542,11 +563,11 @@ mod input_manager_tests {
     #[test]
     fn test_stress_many_contexts() {
         let bindings = BindingSet::default();
-        
+
         let gameplay_managers: Vec<_> = (0..25)
             .map(|_| create_manager_with_bindings(InputContext::Gameplay, bindings.clone()))
             .collect();
-        
+
         let ui_managers: Vec<_> = (0..25)
             .map(|_| create_manager_with_bindings(InputContext::UI, bindings.clone()))
             .collect();
@@ -591,7 +612,7 @@ mod input_manager_tests {
     #[test]
     fn test_stress_binding_modifications() {
         let mut bindings = BindingSet::default();
-        
+
         // Modify bindings 100 times
         for i in 0..100 {
             let key = match i % 5 {
@@ -606,7 +627,10 @@ mod input_manager_tests {
         }
 
         // Final binding should be KeyE
-        assert_eq!(bindings.actions.get(&Action::Interact).unwrap().key, Some(KeyCode::KeyE));
+        assert_eq!(
+            bindings.actions.get(&Action::Interact).unwrap().key,
+            Some(KeyCode::KeyE)
+        );
     }
 
     // ========================================
@@ -617,19 +641,28 @@ mod input_manager_tests {
     #[test]
     fn test_edge_empty_binding() {
         let mut bindings = BindingSet::default();
-        
+
         // Create completely empty binding
-        bindings.actions.insert(Action::Ability1, Binding {
-            key: None,
-            mouse: None,
-            gamepad: None,
-        });
+        bindings.actions.insert(
+            Action::Ability1,
+            Binding {
+                key: None,
+                mouse: None,
+                gamepad: None,
+            },
+        );
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Should still contain the action, just unbound
         assert!(manager.bindings.actions.contains_key(&Action::Ability1));
-        assert!(manager.bindings.actions.get(&Action::Ability1).unwrap().key.is_none());
+        assert!(manager
+            .bindings
+            .actions
+            .get(&Action::Ability1)
+            .unwrap()
+            .key
+            .is_none());
     }
 
     // Edge Case 2: Query action not in binding set
@@ -639,7 +672,7 @@ mod input_manager_tests {
         bindings.actions.clear(); // Remove all bindings
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Querying unbound action should return false, not panic
         assert!(!manager.is_down(Action::MoveForward));
         assert!(!manager.just_pressed(Action::Jump));
@@ -653,7 +686,7 @@ mod input_manager_tests {
 
         // Switch to UI context (no bindings configured for it)
         manager.set_context(InputContext::UI);
-        
+
         // Should still be valid, just with gameplay bindings
         assert_eq!(manager.context, InputContext::UI);
     }
@@ -662,16 +695,19 @@ mod input_manager_tests {
     #[test]
     fn test_edge_multi_input_binding() {
         let mut bindings = BindingSet::default();
-        
+
         // Bind Jump to both keyboard and mouse
-        bindings.actions.insert(Action::Jump, Binding {
-            key: Some(KeyCode::Space),
-            mouse: Some(MouseButton::Middle),
-            gamepad: None,
-        });
+        bindings.actions.insert(
+            Action::Jump,
+            Binding {
+                key: Some(KeyCode::Space),
+                mouse: Some(MouseButton::Middle),
+                gamepad: None,
+            },
+        );
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         let jump_binding = manager.bindings.actions.get(&Action::Jump).unwrap();
         assert_eq!(jump_binding.key, Some(KeyCode::Space));
         assert_eq!(jump_binding.mouse, Some(MouseButton::Middle));
@@ -682,18 +718,18 @@ mod input_manager_tests {
     fn test_edge_ui_actions_in_gameplay() {
         let mut bindings = BindingSet::default();
         bindings.actions.clear();
-        
+
         // Only bind UI actions
         let (a1, b1) = bind_key(Action::UiAccept, KeyCode::Enter);
         let (a2, b2) = bind_key(Action::UiBack, KeyCode::Escape);
         let (a3, b3) = bind_key(Action::UiUp, KeyCode::ArrowUp);
-        
+
         bindings.actions.insert(a1, b1);
         bindings.actions.insert(a2, b2);
         bindings.actions.insert(a3, b3);
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Should work fine, context is just a label
         assert_eq!(manager.context, InputContext::Gameplay);
         assert_eq!(manager.bindings.actions.len(), 3);
@@ -713,33 +749,36 @@ mod input_manager_tests {
     #[test]
     fn test_edge_rare_keycodes() {
         let mut bindings = BindingSet::default();
-        
+
         let (a1, b1) = bind_key(Action::Ability1, KeyCode::F13);
         let (a2, b2) = bind_key(Action::Ability2, KeyCode::Pause);
         let (a3, b3) = bind_key(Action::OpenMenu, KeyCode::NumpadEnter);
-        
+
         bindings.actions.insert(a1, b1);
         bindings.actions.insert(a2, b2);
         bindings.actions.insert(a3, b3);
 
         let manager = create_manager_with_bindings(InputContext::Gameplay, bindings);
-        
+
         // Should handle rare keys just fine
-        assert_eq!(manager.bindings.actions.get(&Action::Ability1).unwrap().key, Some(KeyCode::F13));
+        assert_eq!(
+            manager.bindings.actions.get(&Action::Ability1).unwrap().key,
+            Some(KeyCode::F13)
+        );
     }
 
     // Edge Case 8: All UI navigation actions bound
     #[test]
     fn test_edge_all_ui_navigation() {
         let mut bindings = BindingSet::default();
-        
+
         let (a1, b1) = bind_key(Action::UiAccept, KeyCode::Enter);
         let (a2, b2) = bind_key(Action::UiBack, KeyCode::Escape);
         let (a3, b3) = bind_key(Action::UiUp, KeyCode::ArrowUp);
         let (a4, b4) = bind_key(Action::UiDown, KeyCode::ArrowDown);
         let (a5, b5) = bind_key(Action::UiLeft, KeyCode::ArrowLeft);
         let (a6, b6) = bind_key(Action::UiRight, KeyCode::ArrowRight);
-        
+
         bindings.actions.insert(a1, b1);
         bindings.actions.insert(a2, b2);
         bindings.actions.insert(a3, b3);
@@ -748,7 +787,7 @@ mod input_manager_tests {
         bindings.actions.insert(a6, b6);
 
         let manager = create_manager_with_bindings(InputContext::UI, bindings);
-        
+
         // All 6 UI navigation actions should be bound
         assert!(manager.bindings.actions.contains_key(&Action::UiAccept));
         assert!(manager.bindings.actions.contains_key(&Action::UiBack));
@@ -766,7 +805,7 @@ mod input_manager_tests {
 
         // Immediately switch context
         manager.set_context(InputContext::UI);
-        
+
         assert_eq!(manager.context, InputContext::UI);
     }
 
@@ -778,7 +817,7 @@ mod input_manager_tests {
 
         // Clear frame immediately (should be no-op but shouldn't panic)
         manager.clear_frame();
-        
+
         assert!(!manager.just_pressed(Action::Jump));
     }
 
@@ -863,7 +902,7 @@ mod input_manager_tests {
 
         // Modify original
         bindings.actions.clear();
-        
+
         // Clone should be unaffected
         assert!(clone.actions.len() > 0);
         assert_eq!(bindings.actions.len(), 0);
@@ -885,10 +924,13 @@ mod save_tests {
     // Helper to create test bindings
     fn create_test_bindings() -> BindingSet {
         let mut bindings = BindingSet::default();
-        bindings.actions.insert(Action::Jump, Binding {
-            key: Some(KeyCode::Space),
-            ..Default::default()
-        });
+        bindings.actions.insert(
+            Action::Jump,
+            Binding {
+                key: Some(KeyCode::Space),
+                ..Default::default()
+            },
+        );
         bindings
     }
 
@@ -942,7 +984,7 @@ mod save_tests {
     fn test_save_empty_bindings() {
         let mut bindings = BindingSet::default();
         bindings.actions.clear();
-        
+
         let path = "test_output/empty_bindings.json";
         save_bindings(path, &bindings).expect("Failed to save empty bindings");
 
@@ -1009,7 +1051,7 @@ mod save_tests {
     #[test]
     fn test_save_overwrite() {
         let path = "test_output/overwrite.json";
-        
+
         // Save first version
         let bindings1 = create_test_bindings();
         save_bindings(path, &bindings1).expect("Failed to save first version");
@@ -1038,7 +1080,7 @@ mod save_tests {
 
         // Read raw content
         let content = fs::read_to_string(path).expect("Failed to read file");
-        
+
         // Pretty-printed JSON should have newlines
         assert!(content.contains('\n'));
         assert!(content.contains("actions"));
@@ -1052,7 +1094,7 @@ mod save_tests {
     #[test]
     fn test_multiple_saves_same_dir() {
         let bindings = create_test_bindings();
-        
+
         save_bindings("test_output/file1.json", &bindings).expect("Failed to save file1");
         save_bindings("test_output/file2.json", &bindings).expect("Failed to save file2");
         save_bindings("test_output/file3.json", &bindings).expect("Failed to save file3");

@@ -160,7 +160,7 @@ mod tests {
         assert_eq!(verts.len(), 24, "Cube should have 24 vertices");
         // 6 faces × 2 triangles × 3 indices = 36 indices
         assert_eq!(indices.len(), 36, "Cube should have 36 indices");
-        
+
         // Verify all indices are valid
         for &idx in &indices {
             assert!((idx as usize) < verts.len(), "Index out of bounds");
@@ -175,7 +175,7 @@ mod tests {
             let len_sq = v.normal[0].powi(2) + v.normal[1].powi(2) + v.normal[2].powi(2);
             assert!((len_sq - 1.0).abs() < 1e-5, "Normal should be unit length");
         }
-        
+
         // Verify face normals are correct (6 faces with 4 verts each)
         for face_idx in 0..6 {
             let start = face_idx * 4;
@@ -196,7 +196,7 @@ mod tests {
             assert!(v.uv[0] >= 0.0 && v.uv[0] <= 1.0, "UV.x should be in [0,1]");
             assert!(v.uv[1] >= 0.0 && v.uv[1] <= 1.0, "UV.y should be in [0,1]");
         }
-        
+
         // Verify each face has 4 corners with proper UVs
         for face_idx in 0..6 {
             let start = face_idx * 4;
@@ -216,9 +216,13 @@ mod tests {
         assert_eq!(verts.len(), 4, "Plane should have 4 vertices");
         // 2 triangles × 3 indices = 6 indices
         assert_eq!(indices.len(), 6, "Plane should have 6 indices");
-        
+
         // Verify indices form 2 triangles
-        assert_eq!(&indices[..], &[0, 1, 2, 0, 2, 3], "Plane indices should be correct");
+        assert_eq!(
+            &indices[..],
+            &[0, 1, 2, 0, 2, 3],
+            "Plane indices should be correct"
+        );
     }
 
     #[test]
@@ -239,13 +243,25 @@ mod tests {
             assert!(v.position[0] >= -1.0 && v.position[0] <= 1.0, "X in [-1,1]");
             assert!(v.position[2] >= -1.0 && v.position[2] <= 1.0, "Z in [-1,1]");
         }
-        
+
         // Verify corners are correct
         let positions: Vec<_> = verts.iter().map(|v| v.position).collect();
-        assert!(positions.contains(&[-1.0, 0.0, -1.0]), "Should have corner (-1,0,-1)");
-        assert!(positions.contains(&[1.0, 0.0, -1.0]), "Should have corner (1,0,-1)");
-        assert!(positions.contains(&[1.0, 0.0, 1.0]), "Should have corner (1,0,1)");
-        assert!(positions.contains(&[-1.0, 0.0, 1.0]), "Should have corner (-1,0,1)");
+        assert!(
+            positions.contains(&[-1.0, 0.0, -1.0]),
+            "Should have corner (-1,0,-1)"
+        );
+        assert!(
+            positions.contains(&[1.0, 0.0, -1.0]),
+            "Should have corner (1,0,-1)"
+        );
+        assert!(
+            positions.contains(&[1.0, 0.0, 1.0]),
+            "Should have corner (1,0,1)"
+        );
+        assert!(
+            positions.contains(&[-1.0, 0.0, 1.0]),
+            "Should have corner (-1,0,1)"
+        );
     }
 
     #[test]
@@ -262,8 +278,12 @@ mod tests {
         let (verts, _) = sphere(8, 8, 2.5);
         // Verify all vertices are approximately at radius 2.5
         for v in &verts {
-            let dist = (v.position[0].powi(2) + v.position[1].powi(2) + v.position[2].powi(2)).sqrt();
-            assert!((dist - 2.5).abs() < 1e-4, "Vertex distance should match radius");
+            let dist =
+                (v.position[0].powi(2) + v.position[1].powi(2) + v.position[2].powi(2)).sqrt();
+            assert!(
+                (dist - 2.5).abs() < 1e-4,
+                "Vertex distance should match radius"
+            );
         }
     }
 
@@ -274,11 +294,11 @@ mod tests {
         for v in &verts {
             let len_sq = v.normal[0].powi(2) + v.normal[1].powi(2) + v.normal[2].powi(2);
             assert!((len_sq - 1.0).abs() < 1e-5, "Normal should be unit length");
-            
+
             // Normal should align with position (for unit sphere)
-            let dot = v.normal[0] * v.position[0] 
-                    + v.normal[1] * v.position[1]
-                    + v.normal[2] * v.position[2];
+            let dot = v.normal[0] * v.position[0]
+                + v.normal[1] * v.position[1]
+                + v.normal[2] * v.position[2];
             assert!(dot > 0.99, "Normal should point outward from center");
         }
     }
@@ -308,8 +328,12 @@ mod tests {
         for &idx in &indices {
             assert!((idx as usize) < verts.len(), "Index should be in bounds");
         }
-        
+
         // Verify indices form triangles (multiple of 3)
-        assert_eq!(indices.len() % 3, 0, "Indices should form complete triangles");
+        assert_eq!(
+            indices.len() % 3,
+            0,
+            "Indices should form complete triangles"
+        );
     }
 }

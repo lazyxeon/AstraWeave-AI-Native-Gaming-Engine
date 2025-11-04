@@ -9,7 +9,7 @@
 
 use anyhow::Result;
 use astraweave_audio::{AudioEngine, DialoguePlayer, MusicTrack};
-use astraweave_gameplay::dialogue::{Dialogue, DialogueState, Node, Line};
+use astraweave_gameplay::dialogue::{Dialogue, DialogueState, Line, Node};
 use glam::Vec3;
 use std::fs::{self, File};
 use std::io::Write;
@@ -39,7 +39,7 @@ fn test_dialogue_file_path_with_spaces() -> Result<()> {
 folder = "tests/assets/advanced/speakers/space name"
 files = ["test voice.wav"]
 "#;
-    
+
     let toml_path = "tests/assets/advanced/space_voice_bank.toml";
     fs::create_dir_all("tests/assets/advanced")?;
     let mut file = File::create(toml_path)?;
@@ -65,7 +65,7 @@ files = ["test voice.wav"]
     let state = DialogueState::new(&dialogue);
 
     let mut audio_engine = AudioEngine::new()?;
-    
+
     {
         let mut player = DialoguePlayer {
             audio: &mut audio_engine,
@@ -84,7 +84,7 @@ files = ["test voice.wav"]
 
     // Cleanup
     let _ = fs::remove_dir_all("tests/assets/advanced");
-    
+
     Ok(())
 }
 
@@ -102,11 +102,11 @@ fn test_voice_ducking_edge_cases() -> Result<()> {
     // Case 1: Very short voice (should clamp to 0.1s minimum)
     engine.play_voice_file("tests/assets/test_voice_duck.wav", Some(0.01))?;
     engine.tick(0.02);
-    
+
     // Case 2: Negative duration (should clamp to 0.1s minimum)
     engine.play_voice_file("tests/assets/test_voice_duck.wav", Some(-1.0))?;
     engine.tick(0.02);
-    
+
     // Case 3: Very long duration (should clamp to 30s maximum)
     engine.play_voice_file("tests/assets/test_voice_duck.wav", Some(100.0))?;
     engine.tick(0.02);
@@ -138,7 +138,10 @@ fn test_music_crossfade_negative_duration() -> Result<()> {
 
     // Negative crossfade duration (should be treated as 0 or clamped)
     let result = engine.play_music(track, -1.0);
-    assert!(result.is_ok(), "Should handle negative crossfade duration gracefully");
+    assert!(
+        result.is_ok(),
+        "Should handle negative crossfade duration gracefully"
+    );
 
     engine.tick(0.05);
     thread::sleep(Duration::from_millis(50));
@@ -162,7 +165,7 @@ fn test_music_tick_without_crossfade() -> Result<()> {
 
     // Play without crossfade (crossfade_sec = 0.0)
     engine.play_music(track, 0.0)?;
-    
+
     // Tick multiple times to exercise tick logic without crossfade
     for _ in 0..20 {
         engine.tick(0.05);
@@ -214,7 +217,7 @@ fn test_spatial_volume_maximum_master() -> Result<()> {
     engine.set_master_volume(1.0);
 
     let emitter_id = 2001;
-    let pos = Vec3::ZERO;  // At listener position
+    let pos = Vec3::ZERO; // At listener position
 
     engine.play_sfx_3d_file(emitter_id, "tests/assets/test_beep_max.wav", pos)?;
 
@@ -236,7 +239,7 @@ fn test_spatial_volume_maximum_master() -> Result<()> {
 #[test]
 fn test_voice_bank_load_nonexistent_file() -> Result<()> {
     let result = astraweave_audio::load_voice_bank("nonexistent_voice_bank.toml");
-    
+
     assert!(
         result.is_err(),
         "Should return error for nonexistent voice bank file"
@@ -258,7 +261,7 @@ fn test_dialogue_override_file_not_found() -> Result<()> {
 [map.test_dlg]
 n0 = "tests/assets/override_test/NONEXISTENT.wav"
 "#;
-    
+
     let toml_path = "tests/assets/override_test/override_map.toml";
     let mut file = File::create(toml_path)?;
     file.write_all(toml_data.as_bytes())?;
@@ -288,7 +291,7 @@ n0 = "tests/assets/override_test/NONEXISTENT.wav"
     let state = DialogueState::new(&dialogue);
 
     let mut audio_engine = AudioEngine::new()?;
-    
+
     {
         let mut player = DialoguePlayer {
             audio: &mut audio_engine,
@@ -300,7 +303,10 @@ n0 = "tests/assets/override_test/NONEXISTENT.wav"
 
         // Should fall back to beep when override file doesn't exist
         let result = player.speak_current(&dialogue, &state)?;
-        assert!(result, "Should fall back to beep when override file missing");
+        assert!(
+            result,
+            "Should fall back to beep when override file missing"
+        );
     }
 
     audio_engine.tick(0.05);
@@ -320,7 +326,12 @@ n0 = "tests/assets/override_test/NONEXISTENT.wav"
 fn test_rapid_master_volume_changes() -> Result<()> {
     let mut engine = AudioEngine::new()?;
 
-    test_asset_generator::generate_test_beep("tests/assets/test_beep_rapid.wav", 440.0, 1.0, 22050)?;
+    test_asset_generator::generate_test_beep(
+        "tests/assets/test_beep_rapid.wav",
+        440.0,
+        1.0,
+        22050,
+    )?;
 
     // Play a long sound
     engine.play_sfx_file("tests/assets/test_beep_rapid.wav")?;

@@ -16,33 +16,40 @@ fn create_test_world(entity_count: usize) -> World {
         // Distribute components across entities for realism
         // ~80% have position
         if i % 5 != 0 {
-            world.insert(entity, CPos {
-                pos: IVec2 {
-                    x: (i as i32) % 100,
-                    y: (i as i32) / 100,
+            world.insert(
+                entity,
+                CPos {
+                    pos: IVec2 {
+                        x: (i as i32) % 100,
+                        y: (i as i32) / 100,
+                    },
                 },
-            });
+            );
         }
 
         // ~60% have health
         if i % 5 < 3 {
-            world.insert(entity, CHealth {
-                hp: 100 - (i as i32) % 100,
-            });
+            world.insert(
+                entity,
+                CHealth {
+                    hp: 100 - (i as i32) % 100,
+                },
+            );
         }
 
         // ~40% have team
         if i % 5 < 2 {
-            world.insert(entity, CTeam {
-                id: (i % 4) as u8,
-            });
+            world.insert(entity, CTeam { id: (i % 4) as u8 });
         }
 
         // ~20% have ammo
         if i % 5 == 0 {
-            world.insert(entity, CAmmo {
-                rounds: 30 - (i as i32) % 30,
-            });
+            world.insert(
+                entity,
+                CAmmo {
+                    rounds: 30 - (i as i32) % 30,
+                },
+            );
         }
 
         // ~10% have AI agent marker
@@ -53,10 +60,9 @@ fn create_test_world(entity_count: usize) -> World {
         // ~5% have cooldowns (expensive component)
         if i % 20 == 0 {
             let mut cooldowns = CCooldowns::default();
-            cooldowns.map.insert(
-                cooldowns::CooldownKey::ThrowSmoke,
-                (i % 10) as f32 * 0.1,
-            );
+            cooldowns
+                .map
+                .insert(cooldowns::CooldownKey::ThrowSmoke, (i % 10) as f32 * 0.1);
             world.insert(entity, cooldowns);
         }
     }

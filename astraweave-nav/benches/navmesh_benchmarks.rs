@@ -76,11 +76,7 @@ fn bench_baking_100_triangles(c: &mut Criterion) {
 
     c.bench_function("bake_100_triangles", |b| {
         b.iter(|| {
-            let nm = NavMesh::bake(
-                black_box(&tris),
-                black_box(0.5),
-                black_box(60.0),
-            );
+            let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
             black_box(nm)
         })
     });
@@ -92,11 +88,7 @@ fn bench_baking_1k_triangles(c: &mut Criterion) {
 
     c.bench_function("bake_1k_triangles", |b| {
         b.iter(|| {
-            let nm = NavMesh::bake(
-                black_box(&tris),
-                black_box(0.5),
-                black_box(60.0),
-            );
+            let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
             black_box(nm)
         })
     });
@@ -108,11 +100,7 @@ fn bench_baking_10k_triangles(c: &mut Criterion) {
 
     c.bench_function("bake_10k_triangles", |b| {
         b.iter(|| {
-            let nm = NavMesh::bake(
-                black_box(&tris),
-                black_box(0.5),
-                black_box(60.0),
-            );
+            let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
             black_box(nm)
         })
     });
@@ -244,11 +232,7 @@ fn bench_baking_scaling(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::from_parameter(size), size, |b, _| {
             b.iter(|| {
-                let nm = NavMesh::bake(
-                    black_box(&tris),
-                    black_box(0.5),
-                    black_box(60.0),
-                );
+                let nm = NavMesh::bake(black_box(&tris), black_box(0.5), black_box(60.0));
                 black_box(nm)
             })
         });

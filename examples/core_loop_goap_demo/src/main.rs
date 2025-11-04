@@ -193,7 +193,9 @@ impl DemoState {
     }
 
     fn execute_action(&mut self, action: &GoapAction) -> bool {
-        let agent_pos = self.world.pos_of(self.agent_id)
+        let agent_pos = self
+            .world
+            .pos_of(self.agent_id)
             .expect("Agent entity should have Position component");
 
         match action {
@@ -273,7 +275,9 @@ impl DemoState {
     }
 
     fn move_toward(&mut self, target: IVec2) -> bool {
-        let agent_pos = self.world.pos_of(self.agent_id)
+        let agent_pos = self
+            .world
+            .pos_of(self.agent_id)
             .expect("Agent entity should have Position component");
 
         if agent_pos == target {
@@ -316,7 +320,9 @@ impl DemoState {
         }
 
         // Agent state
-        let agent_pos = self.world.pos_of(self.agent_id)
+        let agent_pos = self
+            .world
+            .pos_of(self.agent_id)
             .expect("Agent entity should have Position component");
         println!("\nAgent: pos=({}, {})", agent_pos.x, agent_pos.y);
         println!("Hunger: {}/100", self.hunger);

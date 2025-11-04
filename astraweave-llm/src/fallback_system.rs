@@ -5,7 +5,6 @@
 /// - Tier 2: Simplified LLM (10 most common tools, compressed prompts)
 /// - Tier 3: Heuristic (rule-based planning, no LLM)
 /// - Tier 4: Emergency (safe default: Scan + Wait)
-
 use anyhow::{Context, Result};
 use astraweave_core::{ActionStep, PlanIntent, ToolRegistry, WorldSnapshot};
 use std::collections::HashMap;
@@ -95,14 +94,12 @@ impl FallbackOrchestrator {
                 "ThrowExplosive".to_string(),
                 "AoEAttack".to_string(),
                 "TakeCover".to_string(),
-                
                 // Target-based tools (target_id param)
                 "Attack".to_string(),
                 "Approach".to_string(),
                 "Retreat".to_string(),
                 "MarkTarget".to_string(),
                 "Distract".to_string(),
-                
                 // Simple tools (no params or duration param)
                 "Reload".to_string(),
                 "Scan".to_string(),
@@ -125,11 +122,11 @@ impl FallbackOrchestrator {
         // LATENCY OPTIMIZATION: Skip Tier 1 (FullLlm ~13k chars) and start with Tier 2 (SimplifiedLlm ~2k chars)
         // This reduces prompt processing time by ~60% (21.2s → ~10-12s expected)
         // Based on Phase 7 validation: simplified prompt achieved 8.46s vs 21.2s with full prompt
-        let mut current_tier = FallbackTier::SimplifiedLlm;  // Was: FallbackTier::FullLlm
+        let mut current_tier = FallbackTier::SimplifiedLlm; // Was: FallbackTier::FullLlm
 
         loop {
             let tier_start = std::time::Instant::now();
-            
+
             match self.try_tier(current_tier, client, snap, reg).await {
                 Ok(plan) => {
                     let duration_ms = tier_start.elapsed().as_millis() as u64;
@@ -147,7 +144,12 @@ impl FallbackOrchestrator {
                         start.elapsed().as_millis()
                     );
 
-                    self.record_success(current_tier, &attempts, start.elapsed().as_millis() as u64).await;
+                    self.record_success(
+                        current_tier,
+                        &attempts,
+                        start.elapsed().as_millis() as u64,
+                    )
+                    .await;
 
                     return FallbackResult {
                         plan,
@@ -159,7 +161,7 @@ impl FallbackOrchestrator {
                 Err(e) => {
                     let duration_ms = tier_start.elapsed().as_millis() as u64;
                     warn!("Tier {} failed: {}", current_tier.as_str(), e);
-                    
+
                     attempts.push(FallbackAttempt {
                         tier: current_tier,
                         success: false,
@@ -221,11 +223,11 @@ impl FallbackOrchestrator {
 
         let start = std::time::Instant::now();
         let mut results = HashMap::new();
-        
+
         // Start with SimplifiedLlm (same optimization as single-agent)
         let mut current_tier = FallbackTier::SimplifiedLlm;
         let mut remaining_agents = agents;
-        
+
         info!(
             "Batch planning for {} agents starting at tier {}",
             remaining_agents.len(),
@@ -234,14 +236,17 @@ impl FallbackOrchestrator {
 
         loop {
             let tier_start = std::time::Instant::now();
-            
+
             match current_tier {
                 FallbackTier::FullLlm | FallbackTier::SimplifiedLlm => {
                     // Try batch LLM inference
-                    match self.try_batch_llm_tier(current_tier, client, &remaining_agents, reg).await {
+                    match self
+                        .try_batch_llm_tier(current_tier, client, &remaining_agents, reg)
+                        .await
+                    {
                         Ok(batch_results) => {
                             let duration_ms = tier_start.elapsed().as_millis() as u64;
-                            
+
                             info!(
                                 "Batch LLM tier {} succeeded for {} agents ({} ms)",
                                 current_tier.as_str(),
@@ -253,13 +258,13 @@ impl FallbackOrchestrator {
                             for (agent_id, result) in batch_results {
                                 results.insert(agent_id, result);
                             }
-                            
+
                             remaining_agents.clear(); // All done!
                             break;
                         }
                         Err(e) => {
                             warn!("Batch tier {} failed: {}", current_tier.as_str(), e);
-                            
+
                             // Fall back to next tier
                             if let Some(next_tier) = current_tier.next() {
                                 current_tier = next_tier;
@@ -287,8 +292,11 @@ impl FallbackOrchestrator {
                         };
                         results.insert(*agent_id, result);
                     }
-                    
-                    debug!("Heuristic tier completed for {} agents", remaining_agents.len());
+
+                    debug!(
+                        "Heuristic tier completed for {} agents",
+                        remaining_agents.len()
+                    );
                     remaining_agents.clear();
                     break;
                 }
@@ -309,8 +317,11 @@ impl FallbackOrchestrator {
                         };
                         results.insert(*agent_id, result);
                     }
-                    
-                    warn!("Emergency tier completed for {} agents", remaining_agents.len());
+
+                    warn!(
+                        "Emergency tier completed for {} agents",
+                        remaining_agents.len()
+                    );
                     remaining_agents.clear();
                     break;
                 }
@@ -335,18 +346,19 @@ impl FallbackOrchestrator {
         reg: &ToolRegistry,
     ) -> Result<HashMap<AgentId, FallbackResult>> {
         let start = std::time::Instant::now();
-        
+
         // Create batch request
         let mut executor = BatchInferenceExecutor::new();
         for (agent_id, snap) in agents {
             executor.queue_agent(*agent_id, snap.clone());
         }
-        
+
         // Determine tool list based on tier
         let tool_list = match tier {
             FallbackTier::FullLlm => {
                 // Use all tools from registry
-                reg.tools.iter()
+                reg.tools
+                    .iter()
                     .map(|t| t.name.clone())
                     .collect::<Vec<_>>()
                     .join("|")
@@ -357,13 +369,15 @@ impl FallbackOrchestrator {
             }
             _ => unreachable!("try_batch_llm_tier called with non-LLM tier"),
         };
-        
+
         // Execute batch
-        let batch_response = executor.execute_batch(client, &tool_list).await
+        let batch_response = executor
+            .execute_batch(client, &tool_list)
+            .await
             .context("Batch LLM execution failed")?;
-        
+
         let duration_ms = start.elapsed().as_millis() as u64;
-        
+
         // Convert BatchResponse to HashMap<AgentId, FallbackResult>
         let mut results = HashMap::new();
         for (agent_id, _snap) in agents {
@@ -384,7 +398,7 @@ impl FallbackOrchestrator {
                 anyhow::bail!("Batch response missing plan for agent {}", agent_id);
             }
         }
-        
+
         Ok(results)
     }
 
@@ -420,11 +434,13 @@ impl FallbackOrchestrator {
         };
 
         let prompt = build_enhanced_prompt(snap, reg, &config);
-        let response = client.complete(&prompt).await
+        let response = client
+            .complete(&prompt)
+            .await
             .context("LLM request failed")?;
 
-        let parse_result = parse_llm_response(&response, reg)
-            .context("Failed to parse LLM response")?;
+        let parse_result =
+            parse_llm_response(&response, reg).context("Failed to parse LLM response")?;
 
         debug!(
             "Full LLM succeeded: {} steps via {}",
@@ -449,9 +465,7 @@ impl FallbackOrchestrator {
         // This reduces latency by 1.5-2× based on compression.rs tests
         let tool_list = self.simplified_tools.join("|");
         let prompt = PromptCompressor::build_optimized_prompt(
-            snap,
-            &tool_list,
-            "tactical", // Default to tactical AI role
+            snap, &tool_list, "tactical", // Default to tactical AI role
         );
 
         // Previous code (commented for reference):
@@ -464,7 +478,9 @@ impl FallbackOrchestrator {
         // };
         // let prompt = build_simplified_prompt(snap, &simplified_reg);
 
-        let response = client.complete(&prompt).await
+        let response = client
+            .complete(&prompt)
+            .await
             .context("Simplified LLM request failed")?;
 
         let parse_result = parse_llm_response(&response, &simplified_reg)
@@ -514,7 +530,10 @@ impl FallbackOrchestrator {
                     snap.me.pos.x - 2
                 };
                 steps.push(ActionStep::TakeCover {
-                    position: Some(astraweave_core::IVec2 { x: cover_x, y: snap.me.pos.y }),
+                    position: Some(astraweave_core::IVec2 {
+                        x: cover_x,
+                        y: snap.me.pos.y,
+                    }),
                 });
             }
         }
@@ -550,7 +569,7 @@ impl FallbackOrchestrator {
     /// Tier 4: Emergency safe default
     fn emergency_plan(&self, _snap: &WorldSnapshot) -> PlanIntent {
         warn!("Using emergency fallback plan");
-        
+
         PlanIntent {
             plan_id: format!("emergency-{}", uuid::Uuid::new_v4()),
             steps: vec![
@@ -562,7 +581,9 @@ impl FallbackOrchestrator {
 
     /// Create simplified registry with top 10 tools
     fn create_simplified_registry(&self, reg: &ToolRegistry) -> ToolRegistry {
-        let simplified_tools: Vec<_> = reg.tools.iter()
+        let simplified_tools: Vec<_> = reg
+            .tools
+            .iter()
             .filter(|t| self.simplified_tools.contains(&t.name))
             .cloned()
             .collect();
@@ -574,23 +595,36 @@ impl FallbackOrchestrator {
     }
 
     /// Record successful planning
-    async fn record_success(&self, tier: FallbackTier, attempts: &[FallbackAttempt], duration_ms: u64) {
+    async fn record_success(
+        &self,
+        tier: FallbackTier,
+        attempts: &[FallbackAttempt],
+        duration_ms: u64,
+    ) {
         let mut metrics = self.metrics.write().await;
         metrics.total_requests += 1;
 
-        *metrics.tier_successes.entry(tier.as_str().to_string()).or_insert(0) += 1;
+        *metrics
+            .tier_successes
+            .entry(tier.as_str().to_string())
+            .or_insert(0) += 1;
 
         // Record failures for earlier tiers
         for attempt in attempts {
             if !attempt.success {
-                *metrics.tier_failures.entry(attempt.tier.as_str().to_string()).or_insert(0) += 1;
+                *metrics
+                    .tier_failures
+                    .entry(attempt.tier.as_str().to_string())
+                    .or_insert(0) += 1;
             }
         }
 
         // Update averages
         let total = metrics.total_requests as f32;
-        metrics.average_attempts = (metrics.average_attempts * (total - 1.0) + attempts.len() as f32) / total;
-        metrics.average_duration_ms = (metrics.average_duration_ms * (total - 1.0) + duration_ms as f32) / total;
+        metrics.average_attempts =
+            (metrics.average_attempts * (total - 1.0) + attempts.len() as f32) / total;
+        metrics.average_duration_ms =
+            (metrics.average_duration_ms * (total - 1.0) + duration_ms as f32) / total;
     }
 
     /// Get current metrics
@@ -609,7 +643,10 @@ impl Default for FallbackOrchestrator {
 /// ⚠️ DEPRECATED: Replaced by PromptCompressor::build_optimized_prompt()
 /// This function is kept for backward compatibility but is no longer used.
 /// New code should use compression.rs for 30-40% latency improvement.
-#[deprecated(since = "0.2.0", note = "use PromptCompressor::build_optimized_prompt instead")]
+#[deprecated(
+    since = "0.2.0",
+    note = "use PromptCompressor::build_optimized_prompt instead"
+)]
 #[allow(dead_code)]
 fn build_simplified_prompt(snap: &WorldSnapshot, reg: &ToolRegistry) -> String {
     // Build tool list with parameter hints
@@ -632,21 +669,26 @@ SIMPLE (no params or one param):
   Scan: {"act": "Scan", "radius": 15.0}
   Wait: {"act": "Wait", "duration": 2.0}
   Block: {"act": "Block"}
-  Heal: {"act": "Heal"}"#.to_string()
+  Heal: {"act": "Heal"}"#
+            .to_string()
     } else {
         // Group tools by parameter pattern from actual registry
         let mut position_tools = Vec::new();
         let mut target_tools = Vec::new();
         let mut simple_tools = Vec::new();
-        
+
         for tool in &reg.tools {
             let has_xy = tool.args.contains_key("x") && tool.args.contains_key("y");
             let has_target = tool.args.contains_key("target_id");
             let param_count = tool.args.len();
-            
+
             if has_xy {
                 // Build example with all required params
-                let mut params = vec![("act", tool.name.clone()), ("x", "10".to_string()), ("y", "5".to_string())];
+                let mut params = vec![
+                    ("act", tool.name.clone()),
+                    ("x", "10".to_string()),
+                    ("y", "5".to_string()),
+                ];
                 for (key, val) in &tool.args {
                     if key != "x" && key != "y" {
                         let example_val = match val.as_str() {
@@ -662,7 +704,10 @@ SIMPLE (no params or one param):
                 position_tools.push((tool.name.as_str(), example));
             } else if has_target {
                 // Build example with all required params
-                let mut param_parts = vec![format!("\"act\": \"{}\"", tool.name), "\"target_id\": 1".to_string()];
+                let mut param_parts = vec![
+                    format!("\"act\": \"{}\"", tool.name),
+                    "\"target_id\": 1".to_string(),
+                ];
                 for (key, val) in &tool.args {
                     if key != "target_id" {
                         let example_val = match val.as_str() {
@@ -680,20 +725,26 @@ SIMPLE (no params or one param):
                 let example = if param_count == 0 {
                     format!("{{\"act\": \"{}\"}}", tool.name)
                 } else {
-                    let (key, val) = tool.args.iter().next()
+                    let (key, val) = tool
+                        .args
+                        .iter()
+                        .next()
                         .expect("param_count check ensures at least one argument exists");
                     let example_val = match val.as_str() {
                         s if s.contains("f32") => "5.0",
                         _ => "null",
                     };
-                    format!("{{\"act\": \"{}\", \"{}\": {}}}", tool.name, key, example_val)
+                    format!(
+                        "{{\"act\": \"{}\", \"{}\": {}}}",
+                        tool.name, key, example_val
+                    )
                 };
                 simple_tools.push((tool.name.as_str(), example));
             }
         }
-        
+
         let mut desc = String::from("ALLOWED TOOLS (use ONLY these exact names):\n\n");
-        
+
         if !position_tools.is_empty() {
             desc.push_str("POSITION-BASED (need x, y):\n");
             for (name, example) in position_tools.iter().take(5) {
@@ -701,7 +752,7 @@ SIMPLE (no params or one param):
             }
             desc.push('\n');
         }
-        
+
         if !target_tools.is_empty() {
             desc.push_str("TARGET-BASED (need target_id, some need distance):\n");
             for (name, example) in target_tools.iter().take(5) {
@@ -709,25 +760,31 @@ SIMPLE (no params or one param):
             }
             desc.push('\n');
         }
-        
+
         if !simple_tools.is_empty() {
             desc.push_str("SIMPLE (no params or one param):\n");
             for (name, example) in simple_tools.iter().take(5) {
                 desc.push_str(&format!("  {}: {}\n", name, example));
             }
         }
-        
+
         desc
     };
-    
+
     // Count available enemies for target_id hints
     let enemy_hint = if !snap.enemies.is_empty() {
-        format!("  (Use target_id from enemies: {})", 
-                snap.enemies.iter().map(|e| e.id.to_string()).collect::<Vec<_>>().join(", "))
+        format!(
+            "  (Use target_id from enemies: {})",
+            snap.enemies
+                .iter()
+                .map(|e| e.id.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
     } else {
         String::new()
     };
-    
+
     format!(
         r#"You are a tactical AI. Generate ONE JSON plan using ONLY tools listed below.
 
@@ -776,7 +833,7 @@ Be concise. Use 1-3 steps maximum."#,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{Constraints, ToolSpec, CompanionState, PlayerState};
+    use astraweave_core::{CompanionState, Constraints, PlayerState, ToolSpec};
     use async_trait::async_trait;
     use std::collections::BTreeMap;
 
@@ -789,7 +846,10 @@ mod tests {
     impl LlmClient for MockLlmClient {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             let mut count = self.call_count.write().await;
-            let response = self.responses.get(*count).cloned()
+            let response = self
+                .responses
+                .get(*count)
+                .cloned()
                 .unwrap_or_else(|| r#"{"plan_id": "fallback", "steps": []}"#.to_string());
             *count += 1;
             Ok(response)
@@ -821,13 +881,34 @@ mod tests {
     fn create_test_registry() -> ToolRegistry {
         ToolRegistry {
             tools: vec![
-                ToolSpec { name: "move_to".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "attack".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "scan".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "Scan".to_string(), args: BTreeMap::new() },  // PascalCase for validation
-                ToolSpec { name: "heal".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "reload".to_string(), args: BTreeMap::new() },
-                ToolSpec { name: "take_cover".to_string(), args: BTreeMap::new() },
+                ToolSpec {
+                    name: "move_to".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "attack".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "scan".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "Scan".to_string(),
+                    args: BTreeMap::new(),
+                }, // PascalCase for validation
+                ToolSpec {
+                    name: "heal".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "reload".to_string(),
+                    args: BTreeMap::new(),
+                },
+                ToolSpec {
+                    name: "take_cover".to_string(),
+                    args: BTreeMap::new(),
+                },
             ],
             constraints: Constraints {
                 enforce_cooldowns: false,
@@ -840,7 +921,9 @@ mod tests {
     #[tokio::test]
     async fn test_full_llm_success() {
         let client = MockLlmClient {
-            responses: vec![r#"{"plan_id": "test-1", "steps": [{"act": "Scan", "radius": 10.0}]}"#.to_string()],
+            responses: vec![
+                r#"{"plan_id": "test-1", "steps": [{"act": "Scan", "radius": 10.0}]}"#.to_string(),
+            ],
             call_count: Arc::new(RwLock::new(0)),
         };
 
@@ -849,7 +932,7 @@ mod tests {
         let reg = create_test_registry();
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
-        
+
         // LATENCY OPTIMIZATION: Now starts with SimplifiedLlm instead of FullLlm
         assert_eq!(result.tier, FallbackTier::SimplifiedLlm);
         assert_eq!(result.attempts.len(), 1);
@@ -861,10 +944,7 @@ mod tests {
     async fn test_fallback_to_heuristic() {
         // LLM returns invalid JSON
         let client = MockLlmClient {
-            responses: vec![
-                "This is not JSON".to_string(),
-                "Also not JSON".to_string(),
-            ],
+            responses: vec!["This is not JSON".to_string(), "Also not JSON".to_string()],
             call_count: Arc::new(RwLock::new(0)),
         };
 
@@ -873,7 +953,7 @@ mod tests {
         let reg = create_test_registry();
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
-        
+
         // Should fall through to heuristic
         // LATENCY OPTIMIZATION: Now tries SimplifiedLlm → Heuristic (2 attempts) instead of Full → Simplified → Heuristic (3 attempts)
         assert_eq!(result.tier, FallbackTier::Heuristic);
@@ -889,9 +969,12 @@ mod tests {
         let reg = create_test_registry();
 
         let plan = orchestrator.try_heuristic(&snap, &reg);
-        
+
         // Should include heal step
-        assert!(plan.steps.iter().any(|s| matches!(s, ActionStep::Heal { .. })));
+        assert!(plan
+            .steps
+            .iter()
+            .any(|s| matches!(s, ActionStep::Heal { .. })));
     }
 
     #[tokio::test]
@@ -902,7 +985,7 @@ mod tests {
         let reg = create_test_registry();
 
         let plan = orchestrator.try_heuristic(&snap, &reg);
-        
+
         // Should include reload step
         assert!(plan.steps.iter().any(|s| matches!(s, ActionStep::Reload)));
     }
@@ -913,7 +996,7 @@ mod tests {
         let snap = create_test_snapshot();
 
         let plan = orchestrator.emergency_plan(&snap);
-        
+
         assert_eq!(plan.steps.len(), 2);
         assert!(matches!(plan.steps[0], ActionStep::Scan { .. }));
         assert!(matches!(plan.steps[1], ActionStep::Wait { .. }));
@@ -931,22 +1014,22 @@ mod tests {
         let reg = create_test_registry();
 
         orchestrator.plan_with_fallback(&client, &snap, &reg).await;
-        
+
         let metrics = orchestrator.get_metrics().await;
         assert_eq!(metrics.total_requests, 1);
         // LATENCY OPTIMIZATION: Now starts with simplified_llm instead of full_llm
         assert!(metrics.tier_successes.contains_key("simplified_llm"));
     }
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // Batch Planning Tests
     // ═══════════════════════════════════════════════════════════════════════
-    
+
     /// Mock LLM that returns batch JSON response
     struct MockBatchLlm {
         response: String,
     }
-    
+
     impl MockBatchLlm {
         fn for_agents(count: usize) -> Self {
             let mut plans = Vec::new();
@@ -960,83 +1043,88 @@ mod tests {
             Self { response: json }
         }
     }
-    
+
     #[async_trait]
     impl LlmClient for MockBatchLlm {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             Ok(self.response.clone())
         }
-        
+
         async fn complete_streaming(
             &self,
             _prompt: &str,
-        ) -> Result<std::pin::Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>> {
+        ) -> Result<std::pin::Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>>
+        {
             // Simulate streaming by chunking response
             let response = self.response.clone();
             let chunk_size = response.len() / 3;
-            
+
             let chunks: Vec<String> = if chunk_size > 0 {
                 vec![
                     response[..chunk_size].to_string(),
-                    response[chunk_size..chunk_size*2].to_string(),
-                    response[chunk_size*2..].to_string(),
+                    response[chunk_size..chunk_size * 2].to_string(),
+                    response[chunk_size * 2..].to_string(),
                 ]
             } else {
                 vec![response]
             };
-            
+
             Ok(Box::pin(futures_util::stream::iter(
-                chunks.into_iter().map(Ok)
+                chunks.into_iter().map(Ok),
             )))
         }
     }
-    
+
     #[tokio::test]
     async fn test_batch_planning_success() {
         let client = MockBatchLlm::for_agents(3);
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
-        
+
         let agents = vec![
             (1, create_test_snapshot()),
             (2, create_test_snapshot()),
             (3, create_test_snapshot()),
         ];
-        
-        let results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
-        
+
+        let results = orchestrator
+            .plan_batch_with_fallback(&client, agents, &reg)
+            .await;
+
         assert_eq!(results.len(), 3);
         assert!(results.contains_key(&1));
         assert!(results.contains_key(&2));
         assert!(results.contains_key(&3));
-        
+
         // All should succeed at SimplifiedLlm tier
         for (_, result) in &results {
             assert_eq!(result.tier, FallbackTier::SimplifiedLlm);
             assert!(!result.plan.steps.is_empty());
         }
     }
-    
+
     #[tokio::test]
     async fn test_batch_planning_deterministic() {
         let client = MockBatchLlm::for_agents(3);
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
-        
+
         // Run batch planning 3 times with agents in different order
         let mut all_results = Vec::new();
-        
+
         for _ in 0..3 {
             let agents = vec![
                 (3, create_test_snapshot()),
                 (1, create_test_snapshot()),
                 (2, create_test_snapshot()),
             ];
-            
-            let results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
+
+            let results = orchestrator
+                .plan_batch_with_fallback(&client, agents, &reg)
+                .await;
             all_results.push(results);
         }
-        
+
         // All runs should have same agent IDs with plans
         for results in &all_results {
             assert_eq!(results.len(), 3);
@@ -1044,7 +1132,7 @@ mod tests {
             assert!(results.contains_key(&2));
             assert!(results.contains_key(&3));
         }
-        
+
         // All should use same tier
         for results in &all_results {
             for (_, result) in results {
@@ -1052,72 +1140,75 @@ mod tests {
             }
         }
     }
-    
+
     #[tokio::test]
     async fn test_batch_planning_empty() {
         let client = MockBatchLlm::for_agents(0);
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
-        
+
         let agents = vec![];
-        let results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
-        
+        let results = orchestrator
+            .plan_batch_with_fallback(&client, agents, &reg)
+            .await;
+
         assert!(results.is_empty());
     }
-    
+
     #[tokio::test]
     async fn test_batch_planning_fallback_to_heuristic() {
         // LLM returns invalid JSON
         struct FailingLlm;
-        
+
         #[async_trait]
         impl LlmClient for FailingLlm {
             async fn complete(&self, _prompt: &str) -> Result<String> {
                 Ok("invalid json".to_string())
             }
         }
-        
+
         let client = FailingLlm;
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
-        
-        let agents = vec![
-            (1, create_test_snapshot()),
-            (2, create_test_snapshot()),
-        ];
-        
-        let results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
-        
+
+        let agents = vec![(1, create_test_snapshot()), (2, create_test_snapshot())];
+
+        let results = orchestrator
+            .plan_batch_with_fallback(&client, agents, &reg)
+            .await;
+
         assert_eq!(results.len(), 2);
-        
+
         // Should fall back to heuristic for both
         for (_, result) in &results {
             assert_eq!(result.tier, FallbackTier::Heuristic);
             assert!(!result.plan.steps.is_empty());
         }
     }
-    
+
     #[tokio::test]
     async fn test_batch_vs_single_agent_compatibility() {
         let client = MockBatchLlm::for_agents(1);
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
         let snap = create_test_snapshot();
-        
+
         // Run single-agent planning
         let single_result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
-        
+
         // Run batch planning with 1 agent
         let agents = vec![(1, snap.clone())];
-        let batch_results = orchestrator.plan_batch_with_fallback(&client, agents, &reg).await;
-        
+        let batch_results = orchestrator
+            .plan_batch_with_fallback(&client, agents, &reg)
+            .await;
+
         assert_eq!(batch_results.len(), 1);
         let batch_result = batch_results.get(&1).unwrap();
-        
+
         // Both should use same tier
         assert_eq!(single_result.tier, batch_result.tier);
         assert_eq!(single_result.tier, FallbackTier::SimplifiedLlm);
-        
+
         // Both should have non-empty plans
         assert!(!single_result.plan.steps.is_empty());
         assert!(!batch_result.plan.steps.is_empty());

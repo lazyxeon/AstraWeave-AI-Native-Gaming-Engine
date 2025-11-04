@@ -80,7 +80,7 @@ proptest! {
         for (i, &entity1) in entities.iter().enumerate() {
             for (j, &entity2) in entities.iter().enumerate() {
                 if i != j {
-                    prop_assert_ne!(entity1.id(), entity2.id(), 
+                    prop_assert_ne!(entity1.id(), entity2.id(),
                         "Entities at indices {} and {} have duplicate IDs: {:?} vs {:?}",
                         i, j, entity1, entity2);
                 }
@@ -91,7 +91,7 @@ proptest! {
     /// Property: Component insertion is idempotent
     #[test]
     fn prop_component_insertion_idempotent(
-        spawn_count in 1usize..50, 
+        spawn_count in 1usize..50,
         insert_count in 1usize..10,
         x in any::<i32>(),
         y in any::<i32>()
@@ -175,14 +175,14 @@ proptest! {
 
         // First entity should have Velocity but not Position
         prop_assert!(world.get::<PropPosition>(first_entity).is_none());
-        prop_assert_eq!(world.get::<PropVelocity>(first_entity).copied(), 
+        prop_assert_eq!(world.get::<PropVelocity>(first_entity).copied(),
             Some(PropVelocity { dx: first_i as i32 * 2, dy: first_i as i32 * 3 }));
 
         // Other entities should still have both components
         for &(entity, i) in entities.iter().skip(1) {
-            prop_assert_eq!(world.get::<PropPosition>(entity).copied(), 
+            prop_assert_eq!(world.get::<PropPosition>(entity).copied(),
                 Some(PropPosition { x: i as i32, y: i as i32 }));
-            prop_assert_eq!(world.get::<PropVelocity>(entity).copied(), 
+            prop_assert_eq!(world.get::<PropVelocity>(entity).copied(),
                 Some(PropVelocity { dx: i as i32 * 2, dy: i as i32 * 3 }));
         }
     }
@@ -291,7 +291,7 @@ proptest! {
         for &entity in &entities {
             let has_position = world.has::<PropPosition>(entity);
             let get_position = world.get::<PropPosition>(entity).is_some();
-            prop_assert_eq!(has_position, get_position, 
+            prop_assert_eq!(has_position, get_position,
                 "has() and get().is_some() should agree for entity {:?}", entity);
         }
     }
@@ -334,12 +334,12 @@ proptest! {
 
         // Verify all returned entities actually have the component
         for entity in pos_entities {
-            prop_assert!(world.has::<PropPosition>(entity), 
+            prop_assert!(world.has::<PropPosition>(entity),
                 "Entity {:?} from entities_with::<Position>() should have Position", entity);
         }
 
         for entity in vel_entities {
-            prop_assert!(world.has::<PropVelocity>(entity), 
+            prop_assert!(world.has::<PropVelocity>(entity),
                 "Entity {:?} from entities_with::<Velocity>() should have Velocity", entity);
         }
     }

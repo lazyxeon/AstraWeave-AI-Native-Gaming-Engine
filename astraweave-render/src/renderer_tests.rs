@@ -75,7 +75,10 @@ mod tests {
             });
 
             assert_eq!(buffer.size(), camera_size);
-            assert_eq!(buffer.usage(), wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
+            assert_eq!(
+                buffer.usage(),
+                wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
+            );
         });
     }
 
@@ -787,10 +790,26 @@ mod tests {
         use crate::clustered::ClusterDims;
 
         let configs = vec![
-            ClusterDims { x: 50, y: 38, z: 16 }, // 800x600, 16px tiles
-            ClusterDims { x: 120, y: 68, z: 24 }, // 1920x1080, 16px tiles
-            ClusterDims { x: 160, y: 90, z: 32 }, // 2560x1440, 16px tiles
-            ClusterDims { x: 240, y: 135, z: 32 }, // 3840x2160, 16px tiles
+            ClusterDims {
+                x: 50,
+                y: 38,
+                z: 16,
+            }, // 800x600, 16px tiles
+            ClusterDims {
+                x: 120,
+                y: 68,
+                z: 24,
+            }, // 1920x1080, 16px tiles
+            ClusterDims {
+                x: 160,
+                y: 90,
+                z: 32,
+            }, // 2560x1440, 16px tiles
+            ClusterDims {
+                x: 240,
+                y: 135,
+                z: 32,
+            }, // 3840x2160, 16px tiles
         ];
 
         for dims in configs {
@@ -1497,20 +1516,18 @@ mod tests {
 
     #[test]
     fn test_animation_clip_creation() {
-        use crate::animation::{AnimationClip, AnimationChannel, ChannelData, Interpolation};
+        use crate::animation::{AnimationChannel, AnimationClip, ChannelData, Interpolation};
         use glam::vec3;
 
         let clip = AnimationClip {
             name: "test_clip".to_string(),
             duration: 2.0,
-            channels: vec![
-                AnimationChannel {
-                    target_joint_index: 0,
-                    times: vec![0.0, 1.0, 2.0],
-                    data: ChannelData::Translation(vec![vec3(0.0, 0.0, 0.0)]),
-                    interpolation: Interpolation::Linear,
-                },
-            ],
+            channels: vec![AnimationChannel {
+                target_joint_index: 0,
+                times: vec![0.0, 1.0, 2.0],
+                data: ChannelData::Translation(vec![vec3(0.0, 0.0, 0.0)]),
+                interpolation: Interpolation::Linear,
+            }],
         };
 
         assert_eq!(clip.name, "test_clip");
@@ -1571,7 +1588,11 @@ mod tests {
         use crate::culling::FrustumPlanes;
         use glam::{vec3, Mat4};
 
-        let view = Mat4::look_at_rh(vec3(0.0, 0.0, 10.0), vec3(0.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
+        let view = Mat4::look_at_rh(
+            vec3(0.0, 0.0, 10.0),
+            vec3(0.0, 0.0, 0.0),
+            vec3(0.0, 1.0, 0.0),
+        );
         let proj = Mat4::perspective_rh(std::f32::consts::PI / 4.0, 16.0 / 9.0, 0.1, 100.0);
         let view_proj = proj * view;
 
@@ -1580,7 +1601,8 @@ mod tests {
         // Frustum should have 6 planes with valid normals
         assert_eq!(frustum.planes.len(), 6);
         for plane in &frustum.planes {
-            let normal_len = (plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]).sqrt();
+            let normal_len =
+                (plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]).sqrt();
             assert!(normal_len > 0.9 && normal_len < 1.1); // Normalized
         }
     }
@@ -1640,7 +1662,11 @@ mod tests {
         let sun_pos = tod.get_sun_position();
 
         // At sunrise, sun should be near horizon (y ≈ 0)
-        assert!(sun_pos.y.abs() < 0.2, "Sun should be near horizon at sunrise: {}", sun_pos.y);
+        assert!(
+            sun_pos.y.abs() < 0.2,
+            "Sun should be near horizon at sunrise: {}",
+            sun_pos.y
+        );
         assert!(sun_pos.length() > 0.99 && sun_pos.length() < 1.01); // Normalized
     }
 
@@ -1652,7 +1678,11 @@ mod tests {
         let sun_pos = tod.get_sun_position();
 
         // At sunset, sun should be near horizon (y ≈ 0)
-        assert!(sun_pos.y.abs() < 0.2, "Sun should be near horizon at sunset: {}", sun_pos.y);
+        assert!(
+            sun_pos.y.abs() < 0.2,
+            "Sun should be near horizon at sunset: {}",
+            sun_pos.y
+        );
         assert!(sun_pos.length() > 0.99 && sun_pos.length() < 1.01); // Normalized
     }
 
@@ -1664,7 +1694,11 @@ mod tests {
         let sun_pos = tod.get_sun_position();
 
         // At midnight, sun should be below horizon (y < 0)
-        assert!(sun_pos.y < 0.0, "Sun should be below horizon at midnight: {}", sun_pos.y);
+        assert!(
+            sun_pos.y < 0.0,
+            "Sun should be below horizon at midnight: {}",
+            sun_pos.y
+        );
         assert!(sun_pos.length() > 0.99 && sun_pos.length() < 1.01); // Normalized
     }
 
@@ -1677,7 +1711,10 @@ mod tests {
         let moon_pos = tod.get_moon_position();
 
         // Moon should be opposite to sun
-        assert!((sun_pos + moon_pos).length() < 0.01, "Moon should be opposite sun");
+        assert!(
+            (sun_pos + moon_pos).length() < 0.01,
+            "Moon should be opposite sun"
+        );
     }
 
     #[test]
@@ -1711,8 +1748,11 @@ mod tests {
         let color = tod.get_light_color();
 
         // Daytime should have warm colors (all components > 0.5)
-        assert!(color.x > 0.5 && color.y > 0.5 && color.z > 0.4,
-            "Daytime light should be warm: {:?}", color);
+        assert!(
+            color.x > 0.5 && color.y > 0.5 && color.z > 0.4,
+            "Daytime light should be warm: {:?}",
+            color
+        );
     }
 
     #[test]
@@ -1727,9 +1767,9 @@ mod tests {
     #[test]
     fn test_weather_system_creation() {
         use crate::environment::WeatherSystem;
-            
+
         let weather = WeatherSystem::new();
-            
+
         // Weather should start clear
         assert!(!weather.is_raining());
         assert!(!weather.is_snowing());
@@ -1833,10 +1873,12 @@ mod tests {
             "#;
 
             // Verify shader compiles successfully
-            let shader = ctx.device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("material_test_shader"),
-                source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_source)),
-            });
+            let shader = ctx
+                .device
+                .create_shader_module(wgpu::ShaderModuleDescriptor {
+                    label: Some("material_test_shader"),
+                    source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(shader_source)),
+                });
 
             drop(shader);
         });
@@ -1872,11 +1914,13 @@ mod tests {
             ];
 
             // Create vertex buffer (mimics what Renderer does)
-            let vertex_buf = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("test_vertex_buffer"),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
+            let vertex_buf = ctx
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("test_vertex_buffer"),
+                    contents: bytemuck::cast_slice(&vertices),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
 
             // Verify buffer size
             let expected_size = vertices.len() * std::mem::size_of::<Vertex>();
@@ -1892,11 +1936,13 @@ mod tests {
             let indices: Vec<u32> = vec![0, 1, 2, 2, 1, 3]; // 2 triangles
 
             // Create index buffer
-            let index_buf = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("test_index_buffer"),
-                contents: bytemuck::cast_slice(&indices),
-                usage: wgpu::BufferUsages::INDEX,
-            });
+            let index_buf = ctx
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("test_index_buffer"),
+                    contents: bytemuck::cast_slice(&indices),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
 
             // Verify buffer size
             let expected_size = indices.len() * std::mem::size_of::<u32>();
@@ -1921,11 +1967,13 @@ mod tests {
                 })
                 .collect();
 
-            let vertex_buf = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("large_vertex_buffer"),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
+            let vertex_buf = ctx
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("large_vertex_buffer"),
+                    contents: bytemuck::cast_slice(&vertices),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
 
             // Each vertex is 48 bytes (3 + 3 + 4 + 2 floats)
             assert_eq!(vertex_buf.size(), 1000 * 48);
@@ -1935,7 +1983,7 @@ mod tests {
     #[test]
     fn test_instance_raw_conversion() {
         use crate::types::{Instance, InstanceRaw};
-        use glam::{Mat4, vec3};
+        use glam::{vec3, Mat4};
 
         // Create instance with transform
         let transform = Mat4::from_scale_rotation_translation(
@@ -1966,7 +2014,7 @@ mod tests {
     #[test]
     fn test_instance_batch_conversion() {
         use crate::types::{Instance, InstanceRaw};
-        use glam::{Mat4, vec3};
+        use glam::{vec3, Mat4};
 
         let instances: Vec<Instance> = (0..10)
             .map(|i| Instance {
@@ -1990,7 +2038,7 @@ mod tests {
     #[test]
     fn test_instance_buffer_upload() {
         use crate::types::{Instance, InstanceRaw};
-        use glam::{Mat4, vec3};
+        use glam::{vec3, Mat4};
 
         pollster::block_on(async {
             let ctx = TestRendererContext::new().await;
@@ -2006,11 +2054,13 @@ mod tests {
             let raw_instances: Vec<InstanceRaw> = instances.iter().map(|i| i.raw()).collect();
 
             // Create instance buffer
-            let instance_buf = ctx.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("test_instance_buffer"),
-                contents: bytemuck::cast_slice(&raw_instances),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            });
+            let instance_buf = ctx
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("test_instance_buffer"),
+                    contents: bytemuck::cast_slice(&raw_instances),
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                });
 
             // Verify buffer size
             let expected_size = raw_instances.len() * std::mem::size_of::<InstanceRaw>();
@@ -2020,15 +2070,10 @@ mod tests {
 
     #[test]
     fn test_camera_ubo_packing() {
-        use glam::{Mat4, vec3};
+        use glam::{vec3, Mat4};
 
         // Simulate camera UBO data (80 bytes: mat4 + vec3 + pad)
-        let view_proj = Mat4::perspective_rh(
-            std::f32::consts::PI / 4.0,
-            16.0 / 9.0,
-            0.1,
-            100.0,
-        );
+        let view_proj = Mat4::perspective_rh(std::f32::consts::PI / 4.0, 16.0 / 9.0, 0.1, 100.0);
         let light_dir = vec3(0.0, -1.0, 0.0).normalize();
 
         #[repr(C)]
@@ -2072,7 +2117,7 @@ mod tests {
 
             // Depth view should be accessible
             let _view = &depth.view;
-            
+
             // Verify we can create a render pass with depth attachment
             let color_tex = ctx.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("test_color"),
@@ -2090,9 +2135,11 @@ mod tests {
             });
 
             let color_view = color_tex.create_view(&wgpu::TextureViewDescriptor::default());
-            let mut encoder = ctx.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("test_encoder"),
-            });
+            let mut encoder = ctx
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("test_encoder"),
+                });
 
             {
                 let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -2122,4 +2169,3 @@ mod tests {
         });
     }
 }
-

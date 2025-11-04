@@ -17,9 +17,7 @@ use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Through
 use glam::IVec2;
 use std::hint::black_box as std_black_box;
 
-use astraweave_pcg::{
-    EncounterConstraints, EncounterGenerator, LayoutGenerator, Room, SeedRng,
-};
+use astraweave_pcg::{EncounterConstraints, EncounterGenerator, LayoutGenerator, Room, SeedRng};
 
 // ============================================================================
 // Benchmark 1: RNG Operations
@@ -411,7 +409,10 @@ fn bench_scaling(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(*encounter_count as u64));
         group.bench_with_input(
-            BenchmarkId::new("encounter_generation", format!("{}_encounters", encounter_count)),
+            BenchmarkId::new(
+                "encounter_generation",
+                format!("{}_encounters", encounter_count),
+            ),
             encounter_count,
             |b, &count| {
                 let constraints = EncounterConstraints {

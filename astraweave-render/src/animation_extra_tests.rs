@@ -48,7 +48,11 @@ mod animation_extra_tests {
         // Quaternion slerp at t=1.0 should equal t2.rotation (within floating-point tolerance)
         // Use absolute difference of components since quaternions can have -q = q equivalence
         let dot = result.rotation.dot(t2.rotation).abs();
-        assert!(dot > 0.999, "Expected quaternions to match, got dot product: {}", dot);
+        assert!(
+            dot > 0.999,
+            "Expected quaternions to match, got dot product: {}",
+            dot
+        );
     }
 
     #[test]
@@ -77,9 +81,9 @@ mod animation_extra_tests {
             rotation,
             scale: Vec3::ONE,
         };
-        
+
         let mat = t.to_matrix();
-        
+
         // Rotating 90° around Y should transform (1,0,0) to approximately (0,0,-1)
         let vec = Vec3::new(1.0, 0.0, 0.0);
         let transformed = mat.transform_point3(vec);
@@ -94,11 +98,11 @@ mod animation_extra_tests {
             rotation: Quat::IDENTITY,
             scale: Vec3::new(2.0, 3.0, 4.0),
         };
-        
+
         let mat = t.to_matrix();
         let vec = Vec3::new(1.0, 1.0, 1.0);
         let transformed = mat.transform_point3(vec);
-        
+
         assert_eq!(transformed, Vec3::new(2.0, 3.0, 4.0));
     }
 
@@ -117,7 +121,7 @@ mod animation_extra_tests {
         };
 
         state.update(1.0, 2.0);
-        
+
         // Time should not advance when not playing
         assert_eq!(state.time, 0.5);
     }
@@ -133,7 +137,7 @@ mod animation_extra_tests {
         };
 
         state.update(0.5, 1.0); // time = 0.2 + (-1.0 * 0.5) = -0.3
-        
+
         // Should wrap around: 1.0 + (-0.3 % 1.0) = 1.0 - 0.3 = 0.7
         assert!((state.time - 0.7).abs() < 0.001);
     }
@@ -149,7 +153,7 @@ mod animation_extra_tests {
         };
 
         state.update(3.6, 1.0); // time = 0.5 + 3.6 = 4.1 -> wraps to 0.1
-        
+
         assert!((state.time - 0.1).abs() < 0.001);
     }
 
@@ -164,7 +168,7 @@ mod animation_extra_tests {
         };
 
         state.update(1.0, 2.0);
-        
+
         // Time should not change with zero speed
         assert_eq!(state.time, 0.5);
     }
@@ -172,15 +176,15 @@ mod animation_extra_tests {
     #[test]
     fn test_animation_state_play_pause_stop() {
         let mut state = AnimationState::default();
-        
+
         assert!(!state.playing);
-        
+
         state.play();
         assert!(state.playing);
-        
+
         state.pause();
         assert!(!state.playing);
-        
+
         state.time = 1.5;
         state.stop();
         assert!(!state.playing);
@@ -194,9 +198,9 @@ mod animation_extra_tests {
             playing: false,
             ..Default::default()
         };
-        
+
         state.restart();
-        
+
         assert_eq!(state.time, 0.0);
         assert!(state.playing);
     }
@@ -225,7 +229,7 @@ mod animation_extra_tests {
         };
 
         let transforms = clip.sample(0.5, &skeleton);
-        
+
         // Should return bind pose (default transform)
         assert_eq!(transforms.len(), 1);
         assert_eq!(transforms[0].translation, Vec3::ZERO);
@@ -257,7 +261,7 @@ mod animation_extra_tests {
         };
 
         let transforms = clip.sample(0.5, &skeleton);
-        
+
         // Should return bind pose (invalid channel ignored)
         assert_eq!(transforms.len(), 1);
         assert_eq!(transforms[0].translation, Vec3::ZERO);
@@ -321,7 +325,7 @@ mod animation_extra_tests {
         };
 
         let transforms = clip.sample(0.5, &skeleton);
-        
+
         // Rotation should be interpolated (slerp)
         // At t=0.5, should be roughly halfway between identity and 180° rotation
         let result_angle = transforms[0].rotation.to_axis_angle().1;
@@ -352,7 +356,7 @@ mod animation_extra_tests {
         };
 
         let transforms = clip.sample(0.5, &skeleton);
-        
+
         // Scale should be lerped: (1,1,1) -> (3,3,3) at t=0.5 = (2,2,2)
         assert_eq!(transforms[0].scale, Vec3::splat(2.0));
     }
@@ -393,7 +397,7 @@ mod animation_extra_tests {
         ];
 
         let matrices = compute_joint_matrices(&skeleton, &local_transforms);
-        
+
         assert_eq!(matrices.len(), 2);
         assert_eq!(matrices[0].w_axis.truncate(), Vec3::new(1.0, 0.0, 0.0));
         assert_eq!(matrices[1].w_axis.truncate(), Vec3::new(0.0, 2.0, 0.0));
@@ -441,7 +445,7 @@ mod animation_extra_tests {
         ];
 
         let matrices = compute_joint_matrices(&skeleton, &local_transforms);
-        
+
         // Cumulative positions: (1,0,0), (2,0,0), (3,0,0)
         assert_eq!(matrices[0].w_axis.truncate(), Vec3::new(1.0, 0.0, 0.0));
         assert_eq!(matrices[1].w_axis.truncate(), Vec3::new(2.0, 0.0, 0.0));
@@ -466,7 +470,7 @@ mod animation_extra_tests {
         }];
 
         let matrices = compute_joint_matrices(&skeleton, &local_transforms);
-        
+
         // World = (2,0,0), then multiply by inverse bind (-1,0,0)
         // Result should be (1,0,0)
         assert_eq!(matrices[0].w_axis.truncate(), Vec3::new(1.0, 0.0, 0.0));
@@ -553,7 +557,7 @@ mod animation_extra_tests {
     #[test]
     fn test_joint_palette_default() {
         let palette = JointPalette::default();
-        
+
         assert_eq!(palette.joint_count, 0);
         assert_eq!(palette.joints[0].matrix, Mat4::IDENTITY.to_cols_array_2d());
     }
@@ -562,7 +566,7 @@ mod animation_extra_tests {
     fn test_joint_palette_from_matrices_empty() {
         let matrices: Vec<Mat4> = vec![];
         let palette = JointPalette::from_matrices(&matrices);
-        
+
         assert_eq!(palette.joint_count, 0);
     }
 
@@ -572,9 +576,9 @@ mod animation_extra_tests {
         let matrices: Vec<Mat4> = (0..300)
             .map(|i| Mat4::from_translation(Vec3::new(i as f32, 0.0, 0.0)))
             .collect();
-        
+
         let palette = JointPalette::from_matrices(&matrices);
-        
+
         // Should clamp to MAX_JOINTS
         assert_eq!(palette.joint_count, MAX_JOINTS as u32);
     }
@@ -583,9 +587,9 @@ mod animation_extra_tests {
     fn test_joint_palette_matrix_conversion() {
         let matrix = Mat4::from_translation(Vec3::new(5.0, 10.0, 15.0));
         let gpu_matrix = JointMatrixGPU::from(matrix);
-        
+
         assert_eq!(gpu_matrix.matrix, matrix.to_cols_array_2d());
-        
+
         // Check translation component (last column)
         assert_eq!(gpu_matrix.matrix[3][0], 5.0);
         assert_eq!(gpu_matrix.matrix[3][1], 10.0);

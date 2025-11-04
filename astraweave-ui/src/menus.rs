@@ -8,7 +8,12 @@
 use super::menu::MenuAction;
 
 /// Create a styled button with hover effects
-fn styled_button(ui: &mut egui::Ui, text: &str, size: egui::Vec2, highlight: bool) -> egui::Response {
+fn styled_button(
+    ui: &mut egui::Ui,
+    text: &str,
+    size: egui::Vec2,
+    highlight: bool,
+) -> egui::Response {
     let base_color = if highlight {
         egui::Color32::from_rgb(80, 180, 80)
     } else {
@@ -28,7 +33,7 @@ fn styled_button(ui: &mut egui::Ui, text: &str, size: egui::Vec2, highlight: boo
         style.visuals.widgets.inactive.weak_bg_fill = base_color;
         style.visuals.widgets.hovered.weak_bg_fill = hover_color;
         style.visuals.widgets.active.weak_bg_fill = hover_color;
-        
+
         ui.add_sized(
             size,
             egui::Button::new(egui::RichText::new(text).size(20.0).color(text_color))
@@ -82,33 +87,25 @@ pub fn show_main_menu(ctx: &egui::Context) -> MenuAction {
                 ui.add_space(60.0);
 
                 // Buttons with hover effects
-                if styled_button(ui, "New Game", egui::vec2(300.0, 50.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "New Game", egui::vec2(300.0, 50.0), false).clicked() {
                     action = MenuAction::NewGame;
                 }
 
                 ui.add_space(15.0);
 
-                if styled_button(ui, "Load Game", egui::vec2(300.0, 50.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "Load Game", egui::vec2(300.0, 50.0), false).clicked() {
                     action = MenuAction::LoadGame;
                 }
 
                 ui.add_space(15.0);
 
-                if styled_button(ui, "Settings", egui::vec2(300.0, 50.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "Settings", egui::vec2(300.0, 50.0), false).clicked() {
                     action = MenuAction::Settings;
                 }
 
                 ui.add_space(15.0);
 
-                if styled_button(ui, "Quit", egui::vec2(300.0, 50.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "Quit", egui::vec2(300.0, 50.0), false).clicked() {
                     action = MenuAction::Quit;
                 }
 
@@ -162,32 +159,25 @@ pub fn show_pause_menu(ctx: &egui::Context) -> MenuAction {
                 ui.add_space(50.0);
 
                 // Resume button (highlighted with hover effect)
-                if styled_button(ui, "Resume", egui::vec2(300.0, 50.0), true)
-                    .clicked()
-                {
+                if styled_button(ui, "Resume", egui::vec2(300.0, 50.0), true).clicked() {
                     action = MenuAction::Resume;
                 }
 
                 ui.add_space(15.0);
 
-                if styled_button(ui, "Save Game", egui::vec2(300.0, 50.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "Save Game", egui::vec2(300.0, 50.0), false).clicked() {
                     action = MenuAction::SaveGame;
                 }
 
                 ui.add_space(15.0);
 
-                if styled_button(ui, "Settings", egui::vec2(300.0, 50.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "Settings", egui::vec2(300.0, 50.0), false).clicked() {
                     action = MenuAction::Settings;
                 }
 
                 ui.add_space(15.0);
 
-                if styled_button(ui, "Quit to Main Menu", egui::vec2(300.0, 50.0), false)
-                    .clicked()
+                if styled_button(ui, "Quit to Main Menu", egui::vec2(300.0, 50.0), false).clicked()
                 {
                     action = MenuAction::Quit;
                 }
@@ -207,15 +197,14 @@ pub fn show_pause_menu(ctx: &egui::Context) -> MenuAction {
     action
 }
 
-
 /// Show settings menu UI with graphics/audio/controls settings (Week 2 Days 1-3)
 pub fn show_settings_menu(
-    ctx: &egui::Context, 
+    ctx: &egui::Context,
     settings: &mut super::menu::SettingsState,
     rebinding_key: &mut Option<String>,
 ) -> MenuAction {
     use super::menu::QualityPreset;
-    
+
     let mut action = MenuAction::None;
 
     // Full-screen dark background
@@ -249,7 +238,7 @@ pub fn show_settings_menu(
                 );
 
                 ui.add_space(30.0);
-            });            // Main content (left-aligned for controls)
+            }); // Main content (left-aligned for controls)
             ui.add_space(10.0);
 
             // === GRAPHICS SETTINGS ===
@@ -270,22 +259,23 @@ pub fn show_settings_menu(
                 );
                 ui.add_space(10.0);
 
-                let current_res_text = format!("{}x{}", settings.graphics.resolution.0, settings.graphics.resolution.1);
-                
+                let current_res_text = format!(
+                    "{}x{}",
+                    settings.graphics.resolution.0, settings.graphics.resolution.1
+                );
+
                 egui::ComboBox::from_id_salt("resolution")
                     .selected_text(current_res_text)
                     .width(150.0)
                     .show_ui(ui, |ui| {
-                        let resolutions = [
-                            (1280, 720),
-                            (1920, 1080),
-                            (2560, 1440),
-                            (3840, 2160),
-                        ];
-                        
+                        let resolutions = [(1280, 720), (1920, 1080), (2560, 1440), (3840, 2160)];
+
                         for &(w, h) in &resolutions {
                             let text = format!("{}x{}", w, h);
-                            if ui.selectable_value(&mut settings.graphics.resolution, (w, h), text).clicked() {
+                            if ui
+                                .selectable_value(&mut settings.graphics.resolution, (w, h), text)
+                                .clicked()
+                            {
                                 // Resolution changed
                             }
                         }
@@ -308,7 +298,11 @@ pub fn show_settings_menu(
                     .width(150.0)
                     .show_ui(ui, |ui| {
                         for &preset in QualityPreset::all() {
-                            ui.selectable_value(&mut settings.graphics.quality, preset, preset.as_str());
+                            ui.selectable_value(
+                                &mut settings.graphics.quality,
+                                preset,
+                                preset.as_str(),
+                            );
                         }
                     });
             });
@@ -430,7 +424,8 @@ pub fn show_settings_menu(
             // Key bindings section (no inner scroll - outer ScrollArea handles everything)
             {
                 // Helper function for key binding row
-                let mut show_key_binding = |ui: &mut egui::Ui, label: &str, key: &mut String, key_id: &str| {
+                let mut show_key_binding =
+                    |ui: &mut egui::Ui, label: &str, key: &mut String, key_id: &str| {
                         ui.horizontal(|ui| {
                             ui.label(
                                 egui::RichText::new(format!("{}:", label))
@@ -452,35 +447,63 @@ pub fn show_settings_menu(
                                 egui::Color32::from_rgb(100, 150, 200)
                             };
 
-                            if ui.add(
-                                egui::Button::new(button_text)
-                                    .fill(button_color)
-                                    .min_size(egui::vec2(120.0, 30.0))
-                            ).clicked() {
+                            if ui
+                                .add(
+                                    egui::Button::new(button_text)
+                                        .fill(button_color)
+                                        .min_size(egui::vec2(120.0, 30.0)),
+                                )
+                                .clicked()
+                            {
                                 *rebinding_key = Some(key_id.to_string());
                             }
                         });
                         ui.add_space(5.0);
                     };
 
-                    // Movement keys
-                    show_key_binding(ui, "Move Forward", &mut settings.controls.move_forward, "move_forward");
-                    show_key_binding(ui, "Move Backward", &mut settings.controls.move_backward, "move_backward");
-                    show_key_binding(ui, "Move Left", &mut settings.controls.move_left, "move_left");
-                    show_key_binding(ui, "Move Right", &mut settings.controls.move_right, "move_right");
-                    
-                    ui.add_space(5.0);
-                    
+                // Movement keys
+                show_key_binding(
+                    ui,
+                    "Move Forward",
+                    &mut settings.controls.move_forward,
+                    "move_forward",
+                );
+                show_key_binding(
+                    ui,
+                    "Move Backward",
+                    &mut settings.controls.move_backward,
+                    "move_backward",
+                );
+                show_key_binding(
+                    ui,
+                    "Move Left",
+                    &mut settings.controls.move_left,
+                    "move_left",
+                );
+                show_key_binding(
+                    ui,
+                    "Move Right",
+                    &mut settings.controls.move_right,
+                    "move_right",
+                );
+
+                ui.add_space(5.0);
+
                 // Action keys
                 show_key_binding(ui, "Jump", &mut settings.controls.jump, "jump");
                 show_key_binding(ui, "Crouch", &mut settings.controls.crouch, "crouch");
                 show_key_binding(ui, "Sprint", &mut settings.controls.sprint, "sprint");
                 show_key_binding(ui, "Attack", &mut settings.controls.attack, "attack");
                 show_key_binding(ui, "Interact", &mut settings.controls.interact, "interact");
-                show_key_binding(ui, "Inventory", &mut settings.controls.inventory, "inventory");
+                show_key_binding(
+                    ui,
+                    "Inventory",
+                    &mut settings.controls.inventory,
+                    "inventory",
+                );
             }
 
-            ui.add_space(15.0);            // Mouse sensitivity
+            ui.add_space(15.0); // Mouse sensitivity
             ui.horizontal(|ui| {
                 ui.label(
                     egui::RichText::new("Mouse Sensitivity:")
@@ -511,8 +534,7 @@ pub fn show_settings_menu(
 
             // Reset to defaults button
             ui.vertical_centered(|ui| {
-                if styled_button(ui, "Reset to Defaults", egui::vec2(200.0, 35.0), false)
-                    .clicked()
+                if styled_button(ui, "Reset to Defaults", egui::vec2(200.0, 35.0), false).clicked()
                 {
                     settings.controls = super::menu::ControlsSettings::default();
                     *rebinding_key = None;
@@ -526,19 +548,28 @@ pub fn show_settings_menu(
                 // Apply and Cancel buttons (side by side)
                 ui.horizontal(|ui| {
                     // Apply button (green with hover)
-                    let apply_btn = ui.scope(|ui| {
-                        let style = ui.style_mut();
-                        style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(80, 180, 80);
-                        style.visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(100, 220, 100);
-                        style.visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(100, 220, 100);
-                        
-                        ui.add_sized(
-                            egui::vec2(140.0, 45.0),
-                            egui::Button::new(egui::RichText::new("Apply").size(18.0).color(egui::Color32::WHITE))
+                    let apply_btn = ui
+                        .scope(|ui| {
+                            let style = ui.style_mut();
+                            style.visuals.widgets.inactive.weak_bg_fill =
+                                egui::Color32::from_rgb(80, 180, 80);
+                            style.visuals.widgets.hovered.weak_bg_fill =
+                                egui::Color32::from_rgb(100, 220, 100);
+                            style.visuals.widgets.active.weak_bg_fill =
+                                egui::Color32::from_rgb(100, 220, 100);
+
+                            ui.add_sized(
+                                egui::vec2(140.0, 45.0),
+                                egui::Button::new(
+                                    egui::RichText::new("Apply")
+                                        .size(18.0)
+                                        .color(egui::Color32::WHITE),
+                                )
                                 .corner_radius(8.0),
-                        )
-                    }).inner;
-                    
+                            )
+                        })
+                        .inner;
+
                     if apply_btn.clicked() {
                         action = MenuAction::ApplySettings;
                     }
@@ -546,19 +577,28 @@ pub fn show_settings_menu(
                     ui.add_space(10.0);
 
                     // Cancel button (red with hover)
-                    let cancel_btn = ui.scope(|ui| {
-                        let style = ui.style_mut();
-                        style.visuals.widgets.inactive.weak_bg_fill = egui::Color32::from_rgb(180, 80, 80);
-                        style.visuals.widgets.hovered.weak_bg_fill = egui::Color32::from_rgb(220, 100, 100);
-                        style.visuals.widgets.active.weak_bg_fill = egui::Color32::from_rgb(220, 100, 100);
-                        
-                        ui.add_sized(
-                            egui::vec2(140.0, 45.0),
-                            egui::Button::new(egui::RichText::new("Cancel").size(18.0).color(egui::Color32::WHITE))
+                    let cancel_btn = ui
+                        .scope(|ui| {
+                            let style = ui.style_mut();
+                            style.visuals.widgets.inactive.weak_bg_fill =
+                                egui::Color32::from_rgb(180, 80, 80);
+                            style.visuals.widgets.hovered.weak_bg_fill =
+                                egui::Color32::from_rgb(220, 100, 100);
+                            style.visuals.widgets.active.weak_bg_fill =
+                                egui::Color32::from_rgb(220, 100, 100);
+
+                            ui.add_sized(
+                                egui::vec2(140.0, 45.0),
+                                egui::Button::new(
+                                    egui::RichText::new("Cancel")
+                                        .size(18.0)
+                                        .color(egui::Color32::WHITE),
+                                )
                                 .corner_radius(8.0),
-                        )
-                    }).inner;
-                    
+                            )
+                        })
+                        .inner;
+
                     if cancel_btn.clicked() {
                         action = MenuAction::CancelSettings;
                     }
@@ -567,9 +607,7 @@ pub fn show_settings_menu(
                 ui.add_space(15.0);
 
                 // Back button
-                if styled_button(ui, "Back", egui::vec2(250.0, 45.0), false)
-                    .clicked()
-                {
+                if styled_button(ui, "Back", egui::vec2(250.0, 45.0), false).clicked() {
                     action = MenuAction::Quit; // "Back" acts as quit from settings
                     *rebinding_key = None; // Clear any active rebinding
                 }
@@ -588,5 +626,3 @@ pub fn show_settings_menu(
 
     action
 }
-
-

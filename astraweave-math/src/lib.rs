@@ -65,33 +65,18 @@ Typical speedups vs scalar glam operations (x86_64 SSE2):
 
 */
 
-pub mod simd_vec;
 pub mod simd_mat;
-pub mod simd_quat;
 pub mod simd_movement;
+pub mod simd_quat;
+pub mod simd_vec;
 
 // Re-exports for convenience
-pub use simd_vec::{
-    dot_simd,
-    cross_simd,
-    normalize_simd,
-    length_simd,
-    length_squared_simd,
-};
+pub use simd_vec::{cross_simd, dot_simd, length_simd, length_squared_simd, normalize_simd};
 
 pub use simd_mat::{
-    mul_simd,
-    transpose_simd,
-    inverse_simd,
-    transform_point_simd,
-    transform_points_batch,
+    inverse_simd, mul_simd, transform_point_simd, transform_points_batch, transpose_simd,
 };
 
 pub use simd_quat::{
-    mul_quat_simd,
-    normalize_quat_simd,
-    slerp_simd,
-    dot_quat_simd,
-    normalize_batch,
-    slerp_batch,
+    dot_quat_simd, mul_quat_simd, normalize_batch, normalize_quat_simd, slerp_batch, slerp_simd,
 };

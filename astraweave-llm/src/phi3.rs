@@ -46,19 +46,19 @@ use crate::LlmClient;
 pub struct Phi3Config {
     /// Maximum tokens to generate per request
     pub max_tokens: usize,
-    
+
     /// Temperature (0.0 = deterministic, 1.0 = creative)
     pub temperature: f32,
-    
+
     /// Top-p sampling (nucleus sampling)
     pub top_p: f32,
-    
+
     /// Repetition penalty (1.0 = no penalty)
     pub repeat_penalty: f32,
-    
+
     /// Device to run inference on
     pub device: Phi3Device,
-    
+
     /// Enable KV cache for faster multi-turn conversations
     pub use_kv_cache: bool,
 }
@@ -99,15 +99,15 @@ pub enum Phi3Device {
 pub struct Phi3Medium {
     #[cfg(feature = "phi3")]
     model: Arc<Mutex<phi3_model::Model>>,
-    
+
     #[cfg(feature = "phi3")]
     tokenizer: Arc<Tokenizer>,
-    
+
     #[cfg(feature = "phi3")]
     device: Device,
-    
+
     config: Phi3Config,
-    
+
     /// Model path (for debugging/logging)
     model_path: String,
 }
@@ -130,16 +130,17 @@ impl Phi3Medium {
     pub async fn load_q4<P: AsRef<Path>>(model_path: P) -> Result<Self> {
         let path_str = model_path.as_ref().to_string_lossy().to_string();
         tracing::info!("Loading Phi-3 Medium Q4 from: {}", path_str);
-        
+
         let config = Phi3Config::default();
         let device = Self::select_device(config.device)?;
-        
+
         tracing::info!("Selected device: {:?}", device);
-        
+
         // Load tokenizer (HuggingFace format, bundled with model or downloaded)
-        let tokenizer = Self::load_tokenizer(&model_path).await
+        let tokenizer = Self::load_tokenizer(&model_path)
+            .await
             .context("Failed to load tokenizer")?;
-        
+
         // Load quantized model weights
         let model_weights = tokio::task::spawn_blocking({
             let path = model_path.as_ref().to_path_buf();
@@ -162,10 +163,12 @@ impl Phi3Medium {
         })
         .await
         .context("Model loading task panicked")??;
-        
-        tracing::info!("Phi-3 Medium Q4 loaded successfully ({} MB)", 
-            Self::estimate_model_size_mb());
-        
+
+        tracing::info!(
+            "Phi-3 Medium Q4 loaded successfully ({} MB)",
+            Self::estimate_model_size_mb()
+        );
+
         Ok(Self {
             model: Arc::new(Mutex::new(model_weights)),
             tokenizer: Arc::new(tokenizer),
@@ -174,18 +177,18 @@ impl Phi3Medium {
             model_path: path_str,
         })
     }
-    
+
     /// Load Phi-3 with custom configuration
     #[cfg(feature = "phi3")]
     pub async fn load_q4_with_config<P: AsRef<Path>>(
-        model_path: P, 
-        config: Phi3Config
+        model_path: P,
+        config: Phi3Config,
     ) -> Result<Self> {
         let mut model = Self::load_q4(model_path).await?;
         model.config = config;
         Ok(model)
     }
-    
+
     /// Select the best available device for inference
     #[cfg(feature = "phi3")]
     fn select_device(device_pref: Phi3Device) -> Result<Device> {
@@ -197,13 +200,13 @@ impl Phi3Medium {
                     tracing::info!("Auto-selected CUDA device 0");
                     return Ok(device);
                 }
-                
+
                 #[cfg(all(target_os = "macos", feature = "metal"))]
                 if let Ok(device) = Device::new_metal(0) {
                     tracing::info!("Auto-selected Metal device");
                     return Ok(device);
                 }
-                
+
                 tracing::info!("Auto-selected CPU device");
                 Ok(Device::Cpu)
             }
@@ -213,18 +216,15 @@ impl Phi3Medium {
                 Device::new_cuda(idx).context("Failed to initialize CUDA device")
             }
             #[cfg(all(feature = "phi3", target_os = "macos"))]
-            Phi3Device::Metal => {
-                Device::new_metal(0).context("Failed to initialize Metal device")
-            }
+            Phi3Device::Metal => Device::new_metal(0).context("Failed to initialize Metal device"),
         }
     }
-    
+
     /// Load tokenizer from model directory or HuggingFace Hub
     #[cfg(feature = "phi3")]
     async fn load_tokenizer<P: AsRef<Path>>(model_path: P) -> Result<Tokenizer> {
-        let model_dir = model_path.as_ref().parent()
-            .context("Invalid model path")?;
-        
+        let model_dir = model_path.as_ref().parent().context("Invalid model path")?;
+
         // Try local tokenizer.json first
         let tokenizer_path = model_dir.join("tokenizer.json");
         if tokenizer_path.exists() {
@@ -232,26 +232,29 @@ impl Phi3Medium {
             return Tokenizer::from_file(&tokenizer_path)
                 .map_err(|e| anyhow::anyhow!("Failed to load tokenizer: {}", e));
         }
-        
+
         // Fallback: download from HuggingFace Hub
-        tracing::info!("Downloading tokenizer from HuggingFace Hub: microsoft/Phi-3-medium-128k-instruct");
-        let api = hf_hub::api::tokio::Api::new()
-            .context("Failed to initialize HuggingFace API")?;
-        
+        tracing::info!(
+            "Downloading tokenizer from HuggingFace Hub: microsoft/Phi-3-medium-128k-instruct"
+        );
+        let api = hf_hub::api::tokio::Api::new().context("Failed to initialize HuggingFace API")?;
+
         let repo = api.model("microsoft/Phi-3-medium-128k-instruct".to_string());
-        let tokenizer_file = repo.get("tokenizer.json").await
+        let tokenizer_file = repo
+            .get("tokenizer.json")
+            .await
             .context("Failed to download tokenizer from HuggingFace")?;
-        
+
         Tokenizer::from_file(tokenizer_file)
             .map_err(|e| anyhow::anyhow!("Failed to load downloaded tokenizer: {}", e))
     }
-    
+
     /// Estimate model size in megabytes (Q4 quantization)
     fn estimate_model_size_mb() -> usize {
         // Phi-3 Medium: ~14B parameters * 0.5 bytes/param (4-bit) = ~7GB
         7168
     }
-    
+
     /// Generate text completion using the model
     ///
     /// # Arguments
@@ -261,64 +264,66 @@ impl Phi3Medium {
     /// Generated text (continuation of prompt)
     #[cfg(feature = "phi3")]
     pub async fn generate(&self, prompt: &str) -> Result<String> {
-        let tokens = self.tokenizer.encode(prompt, true)
+        let tokens = self
+            .tokenizer
+            .encode(prompt, true)
             .map_err(|e| anyhow::anyhow!("Tokenization failed: {}", e))?
             .get_ids()
             .to_vec();
-        
+
         tracing::debug!("Tokenized prompt: {} tokens", tokens.len());
-        
+
         let model = self.model.clone();
         let device = self.device.clone();
         let config = self.config.clone();
         let tokenizer = self.tokenizer.clone();
-        
+
         // Run inference in blocking task (CPU/GPU bound)
         let generated_tokens = tokio::task::spawn_blocking(move || -> Result<Vec<u32>> {
             let mut model_guard = model.blocking_lock();
             let mut tokens = tokens;
             let mut generated = Vec::new();
-            
+
             for _ in 0..config.max_tokens {
                 // Convert tokens to tensor
-                let input_tensor = Tensor::new(&tokens[..], &device)?
-                    .unsqueeze(0)?; // Add batch dimension
-                
+                let input_tensor = Tensor::new(&tokens[..], &device)?.unsqueeze(0)?; // Add batch dimension
+
                 // Forward pass
                 let logits = model_guard.forward(&input_tensor)?;
-                
+
                 // Sample next token
                 let next_token = Self::sample_token(
-                    &logits, 
-                    config.temperature, 
+                    &logits,
+                    config.temperature,
                     config.top_p,
                     config.repeat_penalty,
                     &tokens,
                 )?;
-                
+
                 // Check for EOS token (Phi-3 EOS is typically 2 or 32000)
                 if next_token == 2 || next_token == 32000 {
                     break;
                 }
-                
+
                 tokens.push(next_token);
                 generated.push(next_token);
             }
-            
+
             Ok(generated)
         })
         .await
         .context("Inference task panicked")??;
-        
+
         // Decode generated tokens
-        let output = tokenizer.decode(&generated_tokens, true)
+        let output = tokenizer
+            .decode(&generated_tokens, true)
             .map_err(|e| anyhow::anyhow!("Decoding failed: {}", e))?;
-        
+
         tracing::debug!("Generated {} tokens: {}", generated_tokens.len(), output);
-        
+
         Ok(output)
     }
-    
+
     /// Sample next token from logits using temperature and top-p
     #[cfg(feature = "phi3")]
     fn sample_token(
@@ -330,7 +335,7 @@ impl Phi3Medium {
     ) -> Result<u32> {
         // Get last token logits
         let logits = logits.squeeze(0)?.to_vec1::<f32>()?;
-        
+
         // Apply repetition penalty
         let mut logits = logits;
         for &token in context.iter().rev().take(64) {
@@ -338,22 +343,24 @@ impl Phi3Medium {
                 logits[token as usize] /= repeat_penalty;
             }
         }
-        
+
         // Apply temperature
         let logits: Vec<f32> = logits.iter().map(|&x| x / temperature).collect();
-        
+
         // Softmax to probabilities
         let max_logit = logits.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
         let exp_logits: Vec<f32> = logits.iter().map(|&x| (x - max_logit).exp()).collect();
         let sum_exp: f32 = exp_logits.iter().sum();
         let probs: Vec<f32> = exp_logits.iter().map(|&x| x / sum_exp).collect();
-        
+
         // Top-p (nucleus) sampling
         let mut indices: Vec<usize> = (0..probs.len()).collect();
         indices.sort_by(|&a, &b| {
-            probs[b].partial_cmp(&probs[a]).unwrap_or(std::cmp::Ordering::Equal)
+            probs[b]
+                .partial_cmp(&probs[a])
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
-        
+
         let mut cumulative = 0.0;
         let mut nucleus_size = 0;
         for &idx in &indices {
@@ -363,12 +370,12 @@ impl Phi3Medium {
                 break;
             }
         }
-        
+
         // Sample from nucleus
         use rand::Rng;
         let mut rng = rand::thread_rng();
         let sample_val: f32 = rng.gen_range(0.0..cumulative);
-        
+
         let mut acc = 0.0;
         for &idx in indices.iter().take(nucleus_size) {
             acc += probs[idx];
@@ -376,16 +383,16 @@ impl Phi3Medium {
                 return Ok(idx as u32);
             }
         }
-        
+
         // Fallback: return most likely token
         Ok(indices[0] as u32)
     }
-    
+
     /// Get current configuration
     pub fn config(&self) -> &Phi3Config {
         &self.config
     }
-    
+
     /// Update configuration
     pub fn set_config(&mut self, config: Phi3Config) {
         self.config = config;
@@ -396,28 +403,24 @@ impl Phi3Medium {
 #[cfg(not(feature = "phi3"))]
 impl Phi3Medium {
     pub async fn load_q4<P: AsRef<Path>>(_model_path: P) -> Result<Self> {
-        anyhow::bail!(
-            "Phi-3 support not compiled. Rebuild with --features phi3"
-        )
+        anyhow::bail!("Phi-3 support not compiled. Rebuild with --features phi3")
     }
-    
+
     pub async fn load_q4_with_config<P: AsRef<Path>>(
-        _model_path: P, 
-        _config: Phi3Config
+        _model_path: P,
+        _config: Phi3Config,
     ) -> Result<Self> {
-        anyhow::bail!(
-            "Phi-3 support not compiled. Rebuild with --features phi3"
-        )
+        anyhow::bail!("Phi-3 support not compiled. Rebuild with --features phi3")
     }
-    
+
     pub async fn generate(&self, _prompt: &str) -> Result<String> {
         unreachable!("Phi-3 not compiled")
     }
-    
+
     pub fn config(&self) -> &Phi3Config {
         &self.config
     }
-    
+
     pub fn set_config(&mut self, config: Phi3Config) {
         self.config = config;
     }
@@ -431,7 +434,7 @@ impl LlmClient for Phi3Medium {
         {
             self.generate(&prompt).await
         }
-        
+
         #[cfg(not(feature = "phi3"))]
         {
             let _ = prompt;
@@ -453,28 +456,32 @@ impl std::fmt::Debug for Phi3Medium {
 #[cfg(all(test, feature = "phi3"))]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     #[ignore] // Requires model file to be present
     async fn test_phi3_load() {
         let result = Phi3Medium::load_q4("models/phi3-medium-128k-q4.gguf").await;
-        assert!(result.is_ok(), "Failed to load Phi-3 model: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to load Phi-3 model: {:?}",
+            result.err()
+        );
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires model file
     async fn test_phi3_generate() {
-        let model = Phi3Medium::load_q4("models/phi3-medium-128k-q4.gguf").await
+        let model = Phi3Medium::load_q4("models/phi3-medium-128k-q4.gguf")
+            .await
             .expect("Failed to load model");
-        
+
         let prompt = "You are a game AI. Your task is to";
-        let response = model.generate(prompt).await
-            .expect("Generation failed");
-        
+        let response = model.generate(prompt).await.expect("Generation failed");
+
         assert!(!response.is_empty(), "Generated empty response");
         println!("Generated: {}", response);
     }
-    
+
     #[tokio::test]
     async fn test_phi3_stub_without_feature() {
         // This test runs when phi3 feature is disabled

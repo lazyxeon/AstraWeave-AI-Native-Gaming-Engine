@@ -11,8 +11,8 @@
 //! - +80-120 tokens per prompt (with examples)
 //! - Net cost savings from reduced retries (15-25% fewer requests)
 
-use std::collections::HashMap;
 use lazy_static::lazy_static;
+use std::collections::HashMap;
 
 /// Few-shot example for a specific prompt role
 #[derive(Debug, Clone)]
@@ -26,7 +26,7 @@ lazy_static! {
     /// Registry of few-shot examples by role
     pub static ref EXAMPLE_REGISTRY: HashMap<&'static str, Vec<FewShotExample>> = {
         let mut map = HashMap::new();
-        
+
         // Tactical AI examples
         map.insert("tactical", vec![
             FewShotExample {
@@ -40,7 +40,7 @@ lazy_static! {
                 reasoning: "Outnumbered: smoke obscures LOS, reposition near player",
             },
         ]);
-        
+
         // Stealth AI examples
         map.insert("stealth", vec![
             FewShotExample {
@@ -49,7 +49,7 @@ lazy_static! {
                 reasoning: "Wait for patrol to pass, then advance",
             },
         ]);
-        
+
         // Support AI examples
         map.insert("support", vec![
             FewShotExample {
@@ -58,7 +58,7 @@ lazy_static! {
                 reasoning: "Smoke covers approach, revive downed ally",
             },
         ]);
-        
+
         map
     };
 }
@@ -68,7 +68,7 @@ pub fn add_few_shot_examples(base_prompt: &str, role: &str, max_examples: usize)
     if let Some(examples) = EXAMPLE_REGISTRY.get(role) {
         let mut prompt = base_prompt.to_string();
         prompt.push_str("\n\nExamples:\n");
-        
+
         for (i, example) in examples.iter().take(max_examples).enumerate() {
             prompt.push_str(&format!(
                 "{}. Input:{}\nOutput:{}\n",
@@ -77,7 +77,7 @@ pub fn add_few_shot_examples(base_prompt: &str, role: &str, max_examples: usize)
                 example.output
             ));
         }
-        
+
         prompt
     } else {
         base_prompt.to_string()
@@ -95,7 +95,7 @@ pub fn get_examples(role: &str) -> Vec<FewShotExample> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_tactical_examples() {
         let examples = get_examples("tactical");
@@ -104,7 +104,7 @@ mod tests {
         assert!(examples[0].output.contains("plan_id"));
         assert!(examples[0].reasoning.contains("cover"));
     }
-    
+
     #[test]
     fn test_stealth_examples() {
         let examples = get_examples("stealth");
@@ -112,7 +112,7 @@ mod tests {
         assert!(examples[0].output.contains("Wait"));
         assert!(examples[0].reasoning.contains("patrol"));
     }
-    
+
     #[test]
     fn test_support_examples() {
         let examples = get_examples("support");
@@ -120,31 +120,31 @@ mod tests {
         assert!(examples[0].output.contains("Revive"));
         assert!(examples[0].reasoning.contains("Smoke")); // Capitalized
     }
-    
+
     #[test]
     fn test_add_few_shot_to_prompt() {
         let base = "Tactical AI prompt here.";
         let enhanced = add_few_shot_examples(base, "tactical", 2);
-        
+
         assert!(enhanced.contains("Tactical AI"));
         assert!(enhanced.contains("Examples:"));
         assert!(enhanced.contains("Input:"));
         assert!(enhanced.contains("Output:"));
         assert!(enhanced.contains("plan_id"));
     }
-    
+
     #[test]
     fn test_unknown_role_returns_base() {
         let base = "Unknown role prompt.";
         let result = add_few_shot_examples(base, "unknown_role", 2);
         assert_eq!(result, base); // No examples added
     }
-    
+
     #[test]
     fn test_max_examples_limit() {
         let base = "Tactical AI prompt.";
         let enhanced = add_few_shot_examples(base, "tactical", 1);
-        
+
         // Should only have 1 example (numbered "1.")
         assert!(enhanced.contains("1. Input:"));
         assert!(!enhanced.contains("2. Input:")); // Second example not included

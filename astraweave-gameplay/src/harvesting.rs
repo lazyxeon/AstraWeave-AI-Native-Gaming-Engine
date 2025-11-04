@@ -59,12 +59,12 @@ mod tests {
     fn test_harvest_full_amount() {
         let mut node = create_test_node();
         let mut inv = create_test_inventory();
-        
+
         let harvested = node.harvest(&mut inv, 5);
-        
+
         assert_eq!(harvested, 5, "Should harvest requested amount");
         assert_eq!(node.amount, 5, "Node should have 5 resources left");
-        
+
         // Verify inventory received resources
         assert_eq!(inv.resources.len(), 1);
         assert_eq!(inv.resources[0].0, ResourceKind::Wood);
@@ -76,9 +76,9 @@ mod tests {
         let mut node = create_test_node();
         node.amount = 3; // Only 3 available
         let mut inv = create_test_inventory();
-        
+
         let harvested = node.harvest(&mut inv, 10);
-        
+
         assert_eq!(harvested, 3, "Should only harvest what's available");
         assert_eq!(node.amount, 0, "Node should be depleted");
         assert_eq!(inv.resources[0].1, 3);
@@ -89,9 +89,9 @@ mod tests {
         let mut node = create_test_node();
         node.amount = 5;
         let mut inv = create_test_inventory();
-        
+
         node.harvest(&mut inv, 5); // Deplete completely
-        
+
         assert_eq!(node.amount, 0, "Node should be depleted");
         assert_eq!(node.timer, 30.0, "Timer should be set to respawn_time");
     }
@@ -100,10 +100,10 @@ mod tests {
     fn test_harvest_multiple_times() {
         let mut node = create_test_node();
         let mut inv = create_test_inventory();
-        
+
         node.harvest(&mut inv, 3);
         node.harvest(&mut inv, 4);
-        
+
         assert_eq!(node.amount, 3, "Should have 3 left (10-3-4)");
         assert_eq!(inv.resources[0].1, 7, "Inventory should have 7 total (3+4)");
     }
@@ -111,10 +111,13 @@ mod tests {
     #[test]
     fn test_tick_with_resources_available() {
         let mut node = create_test_node();
-        
+
         node.tick(1.0);
-        
-        assert_eq!(node.amount, 10, "Amount should not change when resources available");
+
+        assert_eq!(
+            node.amount, 10,
+            "Amount should not change when resources available"
+        );
         assert_eq!(node.timer, 0.0, "Timer should remain at 0");
     }
 
@@ -123,9 +126,9 @@ mod tests {
         let mut node = create_test_node();
         node.amount = 0;
         node.timer = 30.0;
-        
+
         node.tick(5.0);
-        
+
         assert_eq!(node.timer, 25.0, "Timer should count down");
         assert_eq!(node.amount, 0, "Should still be depleted");
     }
@@ -135,11 +138,14 @@ mod tests {
         let mut node = create_test_node();
         node.amount = 0;
         node.timer = 1.0;
-        
+
         node.tick(1.5); // Tick past respawn time
-        
+
         assert!(node.amount > 0, "Should respawn resources");
-        assert!(node.amount >= 1 && node.amount <= 15, "Should respawn 1-15 resources (1 + rand % 5)");
+        assert!(
+            node.amount >= 1 && node.amount <= 15,
+            "Should respawn 1-15 resources (1 + rand % 5)"
+        );
         assert_eq!(node.timer, 0.0, "Timer should reset");
     }
 }

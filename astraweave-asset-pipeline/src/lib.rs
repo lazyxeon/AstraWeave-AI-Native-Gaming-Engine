@@ -17,7 +17,7 @@
 //! # fn example() -> anyhow::Result<()> {
 //! let rgba_image = image::open("texture.png")?.to_rgba8();
 //! let compressed = compress_bc7(&rgba_image)?;
-//! 
+//!
 //! println!("Compressed from {} to {} bytes ({:.1}% reduction)",
 //!     rgba_image.len(),
 //!     compressed.len(),
@@ -27,12 +27,12 @@
 //! # }
 //! ```
 
-pub mod texture;
 pub mod mesh;
+pub mod texture;
 pub mod validator;
 
-pub use texture::{compress_bc7, CompressionStats};
 pub use mesh::{optimize_mesh, MeshOptimizationStats};
+pub use texture::{compress_bc7, CompressionStats};
 pub use validator::{AssetValidator, ValidationReport};
 
 /// Re-export meshopt for direct access

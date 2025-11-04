@@ -393,7 +393,7 @@ impl RateLimiter {
         }
 
         let mut model_limits = self.model_limits.write().await;
-        
+
         // Get or create model limit entry
         let model_limit = model_limits
             .entry(context.model.clone())
@@ -404,7 +404,7 @@ impl RateLimiter {
                     self.config.default_tpm,
                 )
             });
-        
+
         model_limit.update_success_rate(success);
         debug!(
             "Updated success rate for model {}: {} (multiplier: {})",

@@ -24,7 +24,8 @@ pub struct CompressionStats {
 impl CompressionStats {
     pub fn new(original_size: usize, compressed_size: usize, time_ms: u64) -> Self {
         let ratio = original_size as f32 / compressed_size.max(1) as f32;
-        let reduction_percent = 100.0 * (1.0 - compressed_size as f32 / original_size.max(1) as f32);
+        let reduction_percent =
+            100.0 * (1.0 - compressed_size as f32 / original_size.max(1) as f32);
         Self {
             original_size,
             compressed_size,
@@ -53,7 +54,7 @@ impl CompressionStats {
 /// # fn example() -> anyhow::Result<()> {
 /// let rgba = image::open("texture.png")?.to_rgba8();
 /// let compressed = compress_bc7(&rgba)?;
-/// 
+///
 /// // Expect 4:1 compression (75% reduction)
 /// assert!(compressed.len() < rgba.len() / 4);
 /// # Ok(())
@@ -62,9 +63,9 @@ impl CompressionStats {
 #[cfg(feature = "bc7")]
 pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
     let start = std::time::Instant::now();
-    
+
     let (width, height) = rgba.dimensions();
-    
+
     // BC7 requires dimensions divisible by 4
     if width % 4 != 0 || height % 4 != 0 {
         anyhow::bail!(
@@ -73,11 +74,11 @@ pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
             height
         );
     }
-    
+
     // For now, implement simplified BC7 compression
     // Production version would use intel-tex or basis-universal
     let compressed = compress_bc7_simple(rgba)?;
-    
+
     let elapsed = start.elapsed().as_millis() as u64;
     tracing::info!(
         "BC7 compressed {}×{} in {}ms ({} → {} bytes, {:.1}% reduction)",
@@ -88,7 +89,7 @@ pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
         compressed.len(),
         100.0 * (1.0 - compressed.len() as f32 / rgba.len() as f32)
     );
-    
+
     Ok(compressed)
 }
 
@@ -105,17 +106,17 @@ fn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {
     let num_blocks_x = width / 4;
     let num_blocks_y = height / 4;
     let total_blocks = num_blocks_x * num_blocks_y;
-    
+
     // BC7 block size is 16 bytes (4×4 pixels compressed)
     let compressed_size = (total_blocks * 16) as usize;
     let mut compressed = vec![0u8; compressed_size];
-    
+
     // Process each 4×4 block
     for block_y in 0..num_blocks_y {
         for block_x in 0..num_blocks_x {
             let block_index = (block_y * num_blocks_x + block_x) as usize;
             let block_offset = block_index * 16;
-            
+
             // Extract 4×4 block
             let mut block_pixels: [[u8; 4]; 16] = [[0; 4]; 16];
             for py in 0..4 {
@@ -127,13 +128,16 @@ fn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {
                     block_pixels[pixel_index] = pixel.0;
                 }
             }
-            
+
             // Simplified BC7 encoding (mode 6: 7-bit color + 1-bit alpha)
             // Real BC7 has 8 modes with adaptive selection
-            encode_bc7_block(&block_pixels, &mut compressed[block_offset..block_offset + 16]);
+            encode_bc7_block(
+                &block_pixels,
+                &mut compressed[block_offset..block_offset + 16],
+            );
         }
     }
-    
+
     Ok(compressed)
 }
 
@@ -144,21 +148,21 @@ fn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {
     // - Byte 0: Mode bits (0b01000000 for mode 6)
     // - Bytes 1-14: Compressed color data
     // - Bytes 15-16: Index bits
-    
+
     // Mode 6 marker
     output[0] = 0b01000000;
-    
+
     // Find color endpoints (min/max RGB)
     let mut min_color = [255u8; 3];
     let mut max_color = [0u8; 3];
-    
+
     for pixel in pixels.iter() {
         for c in 0..3 {
             min_color[c] = min_color[c].min(pixel[c]);
             max_color[c] = max_color[c].max(pixel[c]);
         }
     }
-    
+
     // Store endpoints (7-bit quantized)
     output[1] = min_color[0] >> 1; // R min
     output[2] = min_color[1] >> 1; // G min
@@ -166,7 +170,7 @@ fn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {
     output[4] = max_color[0] >> 1; // R max
     output[5] = max_color[1] >> 1; // G max
     output[6] = max_color[2] >> 1; // B max
-    
+
     // Store alpha endpoints (8-bit)
     let mut min_alpha = 255u8;
     let mut max_alpha = 0u8;
@@ -176,12 +180,12 @@ fn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {
     }
     output[7] = min_alpha;
     output[8] = max_alpha;
-    
+
     // Encode indices (4 bits per pixel, 16 pixels = 64 bits = 8 bytes)
     // Simplified: just use nearest endpoint
     for i in 0..16 {
         let pixel = &pixels[i];
-        
+
         // Compute distance to each endpoint
         let dist_min: u32 = (0..3)
             .map(|c| {
@@ -189,17 +193,17 @@ fn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {
                 (diff * diff) as u32
             })
             .sum();
-        
+
         let dist_max: u32 = (0..3)
             .map(|c| {
                 let diff = pixel[c] as i32 - max_color[c] as i32;
                 (diff * diff) as u32
             })
             .sum();
-        
+
         // 4-bit index (0-15 for interpolation)
         let index = if dist_min < dist_max { 0u8 } else { 15u8 };
-        
+
         // Pack 2 indices per byte
         let byte_index = 9 + i / 2;
         if byte_index >= output.len() {
@@ -236,7 +240,7 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
 /// # fn example() -> anyhow::Result<()> {
 /// let rgba = image::open("texture.png")?.to_rgba8();
 /// let compressed = compress_astc(&rgba, AstcBlockSize::Block4x4)?;
-/// 
+///
 /// // 4×4 blocks give 8:1 compression (87.5% reduction)
 /// assert!(compressed.len() < rgba.len() / 8);
 /// # Ok(())
@@ -245,14 +249,14 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
 #[cfg(feature = "astc")]
 pub fn compress_astc(rgba: &RgbaImage, block_size: AstcBlockSize) -> Result<Vec<u8>> {
     use basis_universal::*;
-    
+
     let start = std::time::Instant::now();
     let (width, height) = rgba.dimensions();
-    
+
     // ASTC encoding via basis-universal
     // (This is a placeholder - real implementation needs basis-universal ASTC encoder)
     let compressed = vec![0u8; (width * height / (block_size.pixels() as u32)) as usize * 16];
-    
+
     let elapsed = start.elapsed().as_millis() as u64;
     tracing::info!(
         "ASTC compressed {}×{} ({:?}) in {}ms ({} → {} bytes)",
@@ -263,7 +267,7 @@ pub fn compress_astc(rgba: &RgbaImage, block_size: AstcBlockSize) -> Result<Vec<
         rgba.len(),
         compressed.len()
     );
-    
+
     Ok(compressed)
 }
 
@@ -292,7 +296,7 @@ impl AstcBlockSize {
             Self::Block8x8 => 64,
         }
     }
-    
+
     /// Get bits per pixel
     pub fn bpp(self) -> f32 {
         128.0 / self.pixels() as f32 // ASTC blocks are 128 bits
@@ -308,7 +312,7 @@ mod tests {
         assert_eq!(AstcBlockSize::Block4x4.pixels(), 16);
         assert_eq!(AstcBlockSize::Block6x6.pixels(), 36);
         assert_eq!(AstcBlockSize::Block8x8.pixels(), 64);
-        
+
         assert!((AstcBlockSize::Block4x4.bpp() - 8.0).abs() < 0.01);
         assert!((AstcBlockSize::Block6x6.bpp() - 3.56).abs() < 0.01);
         assert!((AstcBlockSize::Block8x8.bpp() - 2.0).abs() < 0.01);
@@ -324,12 +328,12 @@ mod tests {
                 img.put_pixel(x, y, image::Rgba([128, 128, 128, 255]));
             }
         }
-        
+
         let compressed = compress_bc7(&img).expect("BC7 compression failed");
-        
+
         // BC7 compresses 4×4 pixels (16 pixels × 4 bytes = 64 bytes) to 16 bytes
         assert_eq!(compressed.len(), 16);
-        
+
         // Verify mode byte (should be mode 6 = 0b01000000)
         assert_eq!(compressed[0] & 0b11111110, 0b01000000);
     }

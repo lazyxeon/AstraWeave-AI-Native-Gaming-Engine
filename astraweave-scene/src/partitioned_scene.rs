@@ -261,6 +261,3 @@ impl ScenePartitionExt for Scene {
         PartitionedScene::new(grid_config, streaming_config)
     }
 }
-
-
-

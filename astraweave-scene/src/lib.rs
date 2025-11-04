@@ -537,6 +537,3 @@ pub mod ecs {
 pub mod ecs {
     // Stub when ECS not enabled
 }
-
-
-

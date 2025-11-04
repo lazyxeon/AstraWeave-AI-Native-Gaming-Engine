@@ -155,7 +155,7 @@ mod tests {
     fn test_spawn_entity() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 5, y: 10 }, Team { id: 0 }, 100, 30);
-        
+
         assert_eq!(e, 1);
         assert_eq!(w.next_id, 2);
         assert_eq!(w.name(e), Some("player"));
@@ -172,7 +172,7 @@ mod tests {
         let e1 = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
         let e2 = w.spawn("enemy", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 50, 15);
         let e3 = w.spawn("companion", IVec2 { x: 5, y: 5 }, Team { id: 1 }, 80, 20);
-        
+
         assert_eq!(e1, 1);
         assert_eq!(e2, 2);
         assert_eq!(e3, 3);
@@ -193,12 +193,12 @@ mod tests {
     fn test_tick_decrements_cooldowns() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         w.cooldowns_mut(e).unwrap().map.insert("attack".into(), 5.0);
         w.cooldowns_mut(e).unwrap().map.insert("heal".into(), 10.0);
-        
+
         w.tick(2.0);
-        
+
         let cds = w.cooldowns(e).unwrap();
         assert!((cds.map.get("attack").unwrap() - 3.0).abs() < 1e-6);
         assert!((cds.map.get("heal").unwrap() - 8.0).abs() < 1e-6);
@@ -208,10 +208,10 @@ mod tests {
     fn test_tick_cooldowns_bottom_at_zero() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         w.cooldowns_mut(e).unwrap().map.insert("attack".into(), 1.0);
         w.tick(2.0);
-        
+
         let cds = w.cooldowns(e).unwrap();
         assert_eq!(*cds.map.get("attack").unwrap(), 0.0);
     }
@@ -220,7 +220,7 @@ mod tests {
     fn test_pose_getter() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 7, y: 13 }, Team { id: 0 }, 100, 30);
-        
+
         let pose = w.pose(e).unwrap();
         assert_eq!(pose.pos.x, 7);
         assert_eq!(pose.pos.y, 13);
@@ -230,9 +230,9 @@ mod tests {
     fn test_pose_mut() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         w.pose_mut(e).unwrap().pos = IVec2 { x: 20, y: 30 };
-        
+
         assert_eq!(w.pose(e).unwrap().pos, IVec2 { x: 20, y: 30 });
     }
 
@@ -247,7 +247,7 @@ mod tests {
     fn test_health_getter() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 75, 30);
-        
+
         assert_eq!(w.health(e).unwrap().hp, 75);
     }
 
@@ -255,9 +255,9 @@ mod tests {
     fn test_health_mut() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         w.health_mut(e).unwrap().hp = 50;
-        
+
         assert_eq!(w.health(e).unwrap().hp, 50);
     }
 
@@ -271,7 +271,7 @@ mod tests {
     fn test_team_getter() {
         let mut w = World::new();
         let e = w.spawn("enemy", IVec2 { x: 0, y: 0 }, Team { id: 2 }, 50, 15);
-        
+
         assert_eq!(w.team(e).unwrap().id, 2);
     }
 
@@ -285,7 +285,7 @@ mod tests {
     fn test_ammo_getter() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 42);
-        
+
         assert_eq!(w.ammo(e).unwrap().rounds, 42);
     }
 
@@ -293,9 +293,9 @@ mod tests {
     fn test_ammo_mut() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         w.ammo_mut(e).unwrap().rounds = 10;
-        
+
         assert_eq!(w.ammo(e).unwrap().rounds, 10);
     }
 
@@ -309,7 +309,7 @@ mod tests {
     fn test_cooldowns_getter() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         let cds = w.cooldowns(e).unwrap();
         assert!(cds.map.is_empty());
     }
@@ -318,9 +318,9 @@ mod tests {
     fn test_cooldowns_mut() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         w.cooldowns_mut(e).unwrap().map.insert("attack".into(), 5.0);
-        
+
         let cds = w.cooldowns(e).unwrap();
         assert_eq!(*cds.map.get("attack").unwrap(), 5.0);
     }
@@ -335,7 +335,7 @@ mod tests {
     fn test_name_getter() {
         let mut w = World::new();
         let e = w.spawn("hero", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        
+
         assert_eq!(w.name(e), Some("hero"));
     }
 
@@ -352,15 +352,15 @@ mod tests {
         let e1 = w.spawn("enemy1", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 50, 15);
         let e2 = w.spawn("enemy2", IVec2 { x: 15, y: 15 }, Team { id: 2 }, 50, 15);
         let c1 = w.spawn("companion", IVec2 { x: 5, y: 5 }, Team { id: 1 }, 80, 20);
-        
+
         let team_0 = w.all_of_team(0);
         assert_eq!(team_0.len(), 1);
         assert!(team_0.contains(&p1));
-        
+
         let team_1 = w.all_of_team(1);
         assert_eq!(team_1.len(), 1);
         assert!(team_1.contains(&c1));
-        
+
         let team_2 = w.all_of_team(2);
         assert_eq!(team_2.len(), 2);
         assert!(team_2.contains(&e1));
@@ -381,7 +381,7 @@ mod tests {
         let e1 = w.spawn("enemy1", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 50, 15);
         let e2 = w.spawn("enemy2", IVec2 { x: 15, y: 15 }, Team { id: 2 }, 50, 15);
         let c1 = w.spawn("companion", IVec2 { x: 5, y: 5 }, Team { id: 1 }, 80, 20);
-        
+
         let enemies_of_player = w.enemies_of(0);
         assert_eq!(enemies_of_player.len(), 3);
         assert!(enemies_of_player.contains(&e1));
@@ -401,7 +401,7 @@ mod tests {
     fn test_pos_of() {
         let mut w = World::new();
         let e = w.spawn("player", IVec2 { x: 12, y: 34 }, Team { id: 0 }, 100, 30);
-        
+
         let pos = w.pos_of(e).unwrap();
         assert_eq!(pos.x, 12);
         assert_eq!(pos.y, 34);
@@ -417,10 +417,10 @@ mod tests {
     fn test_entities() {
         let mut w = World::new();
         assert!(w.entities().is_empty());
-        
+
         let e1 = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
         let e2 = w.spawn("enemy", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 50, 15);
-        
+
         let entities = w.entities();
         assert_eq!(entities.len(), 2);
         assert!(entities.contains(&e1));
@@ -431,7 +431,7 @@ mod tests {
     fn test_obstacle_present() {
         let mut w = World::new();
         w.obstacles.insert((5, 10));
-        
+
         assert!(w.obstacle(IVec2 { x: 5, y: 10 }));
     }
 
@@ -447,7 +447,7 @@ mod tests {
         w.obstacles.insert((0, 0));
         w.obstacles.insert((5, 5));
         w.obstacles.insert((10, 10));
-        
+
         assert!(w.obstacle(IVec2 { x: 0, y: 0 }));
         assert!(w.obstacle(IVec2 { x: 5, y: 5 }));
         assert!(w.obstacle(IVec2 { x: 10, y: 10 }));

@@ -52,15 +52,13 @@ mod tests {
             .expect("Failed to find adapter");
 
         adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("test_device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_defaults(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: Default::default(),
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("test_device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_defaults(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: Default::default(),
+            })
             .await
             .expect("Failed to create device")
     }
@@ -95,13 +93,8 @@ mod tests {
     fn test_depth_create_different_sizes() {
         pollster::block_on(async {
             let (device, _queue) = create_test_device().await;
-            
-            let configs = vec![
-                (1920, 1080),
-                (1280, 720),
-                (640, 480),
-                (256, 256),
-            ];
+
+            let configs = vec![(1920, 1080), (1280, 720), (640, 480), (256, 256)];
 
             for (width, height) in configs {
                 let config = wgpu::SurfaceConfiguration {
@@ -138,7 +131,7 @@ mod tests {
             };
 
             let depth = Depth::create(&device, &config);
-            
+
             // Verify struct format matches texture format
             assert_eq!(depth.format, depth.texture.format());
         });

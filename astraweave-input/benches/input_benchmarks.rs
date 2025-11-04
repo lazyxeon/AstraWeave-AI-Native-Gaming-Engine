@@ -55,21 +55,16 @@ fn bench_binding_set_creation(c: &mut Criterion) {
 
 fn bench_input_manager_creation(c: &mut Criterion) {
     let bindings = BindingSet::default();
-    
+
     c.bench_function("input_manager_creation", |b| {
-        b.iter(|| {
-            black_box(InputManager::new(
-                InputContext::Gameplay,
-                bindings.clone()
-            ))
-        })
+        b.iter(|| black_box(InputManager::new(InputContext::Gameplay, bindings.clone())))
     });
 }
 
 fn bench_context_switching(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let mut manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("context_switching", |b| {
         b.iter(|| {
             manager.set_context(black_box(InputContext::UI));
@@ -81,29 +76,25 @@ fn bench_context_switching(c: &mut Criterion) {
 fn bench_is_down_query(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("is_down_query", |b| {
-        b.iter(|| {
-            black_box(manager.is_down(Action::MoveForward))
-        })
+        b.iter(|| black_box(manager.is_down(Action::MoveForward)))
     });
 }
 
 fn bench_just_pressed_query(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("just_pressed_query", |b| {
-        b.iter(|| {
-            black_box(manager.just_pressed(Action::Jump))
-        })
+        b.iter(|| black_box(manager.just_pressed(Action::Jump)))
     });
 }
 
 fn bench_clear_frame(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let mut manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("clear_frame", |b| {
         b.iter(|| {
             manager.clear_frame();
@@ -114,18 +105,16 @@ fn bench_clear_frame(c: &mut Criterion) {
 fn bench_binding_lookup(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("binding_lookup", |b| {
-        b.iter(|| {
-            black_box(manager.bindings.actions.get(&Action::MoveForward))
-        })
+        b.iter(|| black_box(manager.bindings.actions.get(&Action::MoveForward)))
     });
 }
 
 fn bench_multiple_queries(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("multiple_queries", |b| {
         b.iter(|| {
             black_box(manager.is_down(Action::MoveForward));
@@ -139,11 +128,9 @@ fn bench_multiple_queries(c: &mut Criterion) {
 
 fn bench_binding_set_clone(c: &mut Criterion) {
     let bindings = BindingSet::default();
-    
+
     c.bench_function("binding_set_clone", |b| {
-        b.iter(|| {
-            black_box(bindings.clone())
-        })
+        b.iter(|| black_box(bindings.clone()))
     });
 }
 
@@ -157,7 +144,7 @@ fn bench_action_insertion(c: &mut Criterion) {
                     key: Some(KeyCode::KeyQ),
                     mouse: None,
                     gamepad: None,
-                })
+                }),
             );
         })
     });
@@ -166,11 +153,9 @@ fn bench_action_insertion(c: &mut Criterion) {
 fn bench_sensitivity_access(c: &mut Criterion) {
     let bindings = BindingSet::default();
     let manager = InputManager::new(InputContext::Gameplay, bindings);
-    
+
     c.bench_function("sensitivity_access", |b| {
-        b.iter(|| {
-            black_box(manager.look_sensitivity)
-        })
+        b.iter(|| black_box(manager.look_sensitivity))
     });
 }
 

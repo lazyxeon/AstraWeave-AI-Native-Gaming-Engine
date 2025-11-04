@@ -433,6 +433,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "astract"
+version = "0.1.0"
+dependencies = [
+ "astract-macro",
+ "criterion 0.7.0",
+ "eframe",
+ "egui 0.32.3",
+]
+
+[[package]]
+name = "astract-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
+name = "astract_gallery"
+version = "0.1.0"
+dependencies = [
+ "astract",
+ "eframe",
+]
+
+[[package]]
 name = "astraweave-ai"
 version = "0.1.0"
 dependencies = [
@@ -1706,6 +1733,8 @@ name = "aw_editor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "approx",
+ "astract",
  "astraweave-asset",
  "astraweave-author",
  "astraweave-behavior",
@@ -1716,14 +1745,18 @@ dependencies = [
  "astraweave-observability",
  "astraweave-quests",
  "astraweave-render",
+ "bytemuck",
+ "criterion 0.5.1",
  "eframe",
  "egui 0.32.3",
+ "egui-wgpu",
  "egui_dock",
  "egui_graphs",
  "glam",
  "image",
  "notify",
  "petgraph",
+ "rand 0.8.5",
  "rhai",
  "serde",
  "serde_json",
@@ -1731,6 +1764,8 @@ dependencies = [
  "toml 0.9.8",
  "uuid",
  "walkdir",
+ "wgpu",
+ "winit",
 ]
 
 [[package]]

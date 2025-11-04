@@ -15,11 +15,11 @@ use glam::{Vec2, Vec3};
 pub struct CompressedVertex {
     /// Position (3x f32, 12 bytes) - kept full precision for quality
     pub position: [f32; 3],
-    
+
     /// Normal encoded in octahedral format (2x i16, 4 bytes)
     /// Reduces from 12 bytes (3x f32) to 4 bytes
     pub normal_oct: [i16; 2],
-    
+
     /// UV coordinates as half-floats (2x f16, 4 bytes)
     /// Reduces from 8 bytes (2x f32) to 4 bytes
     // Total: 20 bytes vs standard 32 bytes = 37.5% reduction
@@ -29,10 +29,10 @@ pub struct CompressedVertex {
 impl CompressedVertex {
     /// Standard vertex size (position + normal + uv)
     pub const STANDARD_SIZE: usize = 32; // 12 + 12 + 8
-    
+
     /// Compressed vertex size
     pub const COMPRESSED_SIZE: usize = 20; // 12 + 4 + 4
-    
+
     /// Memory reduction percentage
     pub const MEMORY_REDUCTION: f32 = 0.375; // 37.5%
 }
@@ -64,7 +64,7 @@ impl OctahedralEncoder {
         // Project onto octahedron (sum of absolute components = 1)
         let sum = normal.x.abs() + normal.y.abs() + normal.z.abs();
         let oct = Vec2::new(normal.x / sum, normal.y / sum);
-        
+
         // Wrap octahedron if in lower hemisphere
         let wrapped = if normal.z < 0.0 {
             Vec2::new(
@@ -74,15 +74,15 @@ impl OctahedralEncoder {
         } else {
             oct
         };
-        
+
         // Quantize to signed 16-bit integers
         // Range [-1, 1] → [-32767, 32767]
         let x = (wrapped.x * 32767.0).clamp(-32767.0, 32767.0) as i16;
         let y = (wrapped.y * 32767.0).clamp(-32767.0, 32767.0) as i16;
-        
+
         [x, y]
     }
-    
+
     /// Decode octahedral coordinates back to a normalized 3D vector
     ///
     /// # Arguments
@@ -100,14 +100,11 @@ impl OctahedralEncoder {
     pub fn decode(encoded: [i16; 2]) -> Vec3 {
         // Dequantize from signed 16-bit integers
         // Range [-32767, 32767] → [-1, 1]
-        let oct = Vec2::new(
-            encoded[0] as f32 / 32767.0,
-            encoded[1] as f32 / 32767.0,
-        );
-        
+        let oct = Vec2::new(encoded[0] as f32 / 32767.0, encoded[1] as f32 / 32767.0);
+
         // Reconstruct z coordinate
         let z = 1.0 - oct.x.abs() - oct.y.abs();
-        
+
         // Unwrap octahedron if in lower hemisphere
         let unwrapped = if z < 0.0 {
             Vec2::new(
@@ -117,11 +114,11 @@ impl OctahedralEncoder {
         } else {
             oct
         };
-        
+
         // Reconstruct 3D vector and normalize
         Vec3::new(unwrapped.x, unwrapped.y, z).normalize()
     }
-    
+
     /// Compute encoding error (for quality assessment)
     ///
     /// # Arguments
@@ -168,7 +165,7 @@ impl HalfFloatEncoder {
         // Use half crate for IEEE 754 compliant conversion
         half::f16::from_f32(value).to_bits()
     }
-    
+
     /// Decode a 16-bit half-float to 32-bit float
     ///
     /// # Arguments
@@ -179,12 +176,12 @@ impl HalfFloatEncoder {
     pub fn decode(encoded: u16) -> f32 {
         half::f16::from_bits(encoded).to_f32()
     }
-    
+
     /// Encode a Vec2 (UV coordinates) to two half-floats
     pub fn encode_vec2(uv: Vec2) -> [u16; 2] {
         [Self::encode(uv.x), Self::encode(uv.y)]
     }
-    
+
     /// Decode two half-floats to Vec2 (UV coordinates)
     pub fn decode_vec2(encoded: [u16; 2]) -> Vec2 {
         Vec2::new(Self::decode(encoded[0]), Self::decode(encoded[1]))
@@ -211,7 +208,7 @@ impl VertexCompressor {
             uv_half: HalfFloatEncoder::encode_vec2(uv),
         }
     }
-    
+
     /// Decompress a compressed vertex to standard format
     ///
     /// # Arguments
@@ -223,10 +220,10 @@ impl VertexCompressor {
         let position = Vec3::from_array(vertex.position);
         let normal = OctahedralEncoder::decode(vertex.normal_oct);
         let uv = HalfFloatEncoder::decode_vec2(vertex.uv_half);
-        
+
         (position, normal, uv)
     }
-    
+
     /// Compress a batch of vertices
     ///
     /// # Arguments
@@ -244,9 +241,17 @@ impl VertexCompressor {
         normals: &[Vec3],
         uvs: &[Vec2],
     ) -> Vec<CompressedVertex> {
-        assert_eq!(positions.len(), normals.len(), "Position and normal counts must match");
-        assert_eq!(positions.len(), uvs.len(), "Position and UV counts must match");
-        
+        assert_eq!(
+            positions.len(),
+            normals.len(),
+            "Position and normal counts must match"
+        );
+        assert_eq!(
+            positions.len(),
+            uvs.len(),
+            "Position and UV counts must match"
+        );
+
         positions
             .iter()
             .zip(normals.iter())
@@ -254,7 +259,7 @@ impl VertexCompressor {
             .map(|((pos, norm), uv)| Self::compress(*pos, *norm, *uv))
             .collect()
     }
-    
+
     /// Calculate memory savings for a given vertex count
     ///
     /// # Arguments
@@ -267,8 +272,13 @@ impl VertexCompressor {
         let compressed_bytes = vertex_count * CompressedVertex::COMPRESSED_SIZE;
         let savings_bytes = standard_bytes - compressed_bytes;
         let savings_percent = (savings_bytes as f32 / standard_bytes as f32) * 100.0;
-        
-        (standard_bytes, compressed_bytes, savings_bytes, savings_percent)
+
+        (
+            standard_bytes,
+            compressed_bytes,
+            savings_bytes,
+            savings_percent,
+        )
     }
 }
 
@@ -276,85 +286,85 @@ impl VertexCompressor {
 mod tests {
     use super::*;
     use approx::assert_relative_eq;
-    
+
     #[test]
     fn test_octahedral_encoding_up_vector() {
         let normal = Vec3::Y; // Up vector (0, 1, 0)
         let encoded = OctahedralEncoder::encode(normal);
         let decoded = OctahedralEncoder::decode(encoded);
-        
+
         assert_relative_eq!(decoded.x, normal.x, epsilon = 0.01);
         assert_relative_eq!(decoded.y, normal.y, epsilon = 0.01);
         assert_relative_eq!(decoded.z, normal.z, epsilon = 0.01);
     }
-    
+
     #[test]
     fn test_octahedral_encoding_diagonal() {
         let normal = Vec3::new(1.0, 1.0, 1.0).normalize();
         let encoded = OctahedralEncoder::encode(normal);
         let _decoded = OctahedralEncoder::decode(encoded);
-        
+
         // Angular error should be < 1 degree
         let error = OctahedralEncoder::encoding_error(normal);
         assert!(error < 0.017, "Angular error too high: {} radians", error);
     }
-    
+
     #[test]
     fn test_octahedral_encoding_negative() {
         let normal = Vec3::new(0.0, -1.0, 0.0); // Down vector
         let encoded = OctahedralEncoder::encode(normal);
         let decoded = OctahedralEncoder::decode(encoded);
-        
+
         assert_relative_eq!(decoded.x, normal.x, epsilon = 0.01);
         assert_relative_eq!(decoded.y, normal.y, epsilon = 0.01);
         assert_relative_eq!(decoded.z, normal.z, epsilon = 0.01);
     }
-    
+
     #[test]
     fn test_half_float_encoding() {
         let values = [0.0, 0.25, 0.5, 0.75, 1.0];
-        
+
         for &value in &values {
             let encoded = HalfFloatEncoder::encode(value);
             let decoded = HalfFloatEncoder::decode(encoded);
-            
+
             // Half-float precision for [0, 1] range is ~0.001
             assert_relative_eq!(decoded, value, epsilon = 0.001);
         }
     }
-    
+
     #[test]
     fn test_half_float_uv_encoding() {
         let uv = Vec2::new(0.5, 0.75);
         let encoded = HalfFloatEncoder::encode_vec2(uv);
         let decoded = HalfFloatEncoder::decode_vec2(encoded);
-        
+
         assert_relative_eq!(decoded.x, uv.x, epsilon = 0.001);
         assert_relative_eq!(decoded.y, uv.y, epsilon = 0.001);
     }
-    
+
     #[test]
     fn test_vertex_compression_roundtrip() {
         let position = Vec3::new(1.0, 2.0, 3.0);
         let normal = Vec3::new(0.0, 1.0, 0.0);
         let uv = Vec2::new(0.5, 0.5);
-        
+
         let compressed = VertexCompressor::compress(position, normal, uv);
         let (dec_pos, dec_norm, dec_uv) = VertexCompressor::decompress(&compressed);
-        
+
         // Position should be exact (no compression)
         assert_eq!(dec_pos, position);
-        
+
         // Normal should be close (octahedral encoding)
         assert_relative_eq!(dec_norm.x, normal.x, epsilon = 0.01);
         assert_relative_eq!(dec_norm.y, normal.y, epsilon = 0.01);
         assert_relative_eq!(dec_norm.z, normal.z, epsilon = 0.01);
-        
+
         // UV should be close (half-float encoding)
         assert_relative_eq!(dec_uv.x, uv.x, epsilon = 0.001);
         assert_relative_eq!(dec_uv.y, uv.y, epsilon = 0.001);
     }
-    
+
     #[test]
     fn test_batch_compression() {
         let positions = vec![
@@ -362,21 +372,17 @@ mod tests {
             Vec3::new(1.0, 0.0, 0.0),
             Vec3::new(0.0, 1.0, 0.0),
         ];
-        let normals = vec![
-            Vec3::Y,
-            Vec3::Y,
-            Vec3::Y,
-        ];
+        let normals = vec![Vec3::Y, Vec3::Y, Vec3::Y];
         let uvs = vec![
             Vec2::new(0.0, 0.0),
             Vec2::new(1.0, 0.0),
             Vec2::new(0.0, 1.0),
         ];
-        
+
         let compressed = VertexCompressor::compress_batch(&positions, &normals, &uvs);
-        
+
         assert_eq!(compressed.len(), 3);
-        
+
         for (i, vertex) in compressed.iter().enumerate() {
             let (pos, norm, uv) = VertexCompressor::decompress(vertex);
             assert_eq!(pos, positions[i]);
@@ -385,23 +391,23 @@ mod tests {
             assert_relative_eq!(uv.y, uvs[i].y, epsilon = 0.001);
         }
     }
-    
+
     #[test]
     fn test_memory_savings_calculation() {
         let vertex_count = 10000;
-        let (standard, compressed, savings, percent) = 
+        let (standard, compressed, savings, percent) =
             VertexCompressor::calculate_savings(vertex_count);
-        
+
         assert_eq!(standard, 320000); // 10k * 32 bytes
         assert_eq!(compressed, 200000); // 10k * 20 bytes
         assert_eq!(savings, 120000); // 120 KB saved
         assert_relative_eq!(percent, 37.5, epsilon = 0.1);
     }
-    
+
     #[test]
     fn test_compressed_vertex_size() {
         use std::mem::size_of;
-        
+
         // Verify struct packing is as expected
         assert_eq!(size_of::<CompressedVertex>(), 20);
         assert_eq!(CompressedVertex::COMPRESSED_SIZE, 20);

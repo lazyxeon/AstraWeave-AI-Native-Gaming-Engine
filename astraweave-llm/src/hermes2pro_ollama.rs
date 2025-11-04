@@ -66,16 +66,16 @@ use crate::LlmClient;
 pub struct Hermes2ProOllama {
     /// Ollama API endpoint (default: http://localhost:11434)
     pub url: String,
-    
+
     /// Model name (default: "adrienbrault/nous-hermes2pro:Q4_K_M")
     pub model: String,
-    
+
     /// Temperature for sampling (0.0 = deterministic, 1.0 = creative)
     pub temperature: f32,
-    
+
     /// Maximum tokens to generate
     pub max_tokens: usize,
-    
+
     /// System prompt for game AI context
     pub system_prompt: Option<String>,
 }
@@ -101,7 +101,7 @@ impl Hermes2ProOllama {
             system_prompt: Some(DEFAULT_SYSTEM_PROMPT.to_string()),
         }
     }
-    
+
     /// Create Hermes 2 Pro client for localhost (convenience method)
     ///
     /// Uses the recommended Q4_K_M quantization for best balance of speed and quality.
@@ -112,9 +112,12 @@ impl Hermes2ProOllama {
     /// let client = Hermes2ProOllama::localhost(); // Uses adrienbrault/nous-hermes2pro:Q4_K_M
     /// ```
     pub fn localhost() -> Self {
-        Self::new("http://localhost:11434", "adrienbrault/nous-hermes2pro:Q4_K_M")
+        Self::new(
+            "http://localhost:11434",
+            "adrienbrault/nous-hermes2pro:Q4_K_M",
+        )
     }
-    
+
     /// Create optimized Hermes 2 Pro client for low-latency game AI
     ///
     /// Uses lower temperature (0.5) and fewer max tokens (128) for faster inference.
@@ -126,61 +129,68 @@ impl Hermes2ProOllama {
     /// let client = Hermes2ProOllama::fast(); // Low latency variant
     /// ```
     pub fn fast() -> Self {
-        Self::new("http://localhost:11434", "adrienbrault/nous-hermes2pro:Q4_K_M")
-            .with_temperature(0.5)
-            .with_max_tokens(128)
+        Self::new(
+            "http://localhost:11434",
+            "adrienbrault/nous-hermes2pro:Q4_K_M",
+        )
+        .with_temperature(0.5)
+        .with_max_tokens(128)
     }
-    
+
     /// Set temperature (0.0 = deterministic, 1.0 = creative)
     pub fn with_temperature(mut self, temp: f32) -> Self {
         self.temperature = temp;
         self
     }
-    
+
     /// Set max tokens to generate
     pub fn with_max_tokens(mut self, max: usize) -> Self {
         self.max_tokens = max;
         self
     }
-    
+
     /// Set custom system prompt
     pub fn with_system_prompt(mut self, prompt: impl Into<String>) -> Self {
         self.system_prompt = Some(prompt.into());
         self
     }
-    
+
     /// Clear system prompt (use only user messages)
     pub fn without_system_prompt(mut self) -> Self {
         self.system_prompt = None;
         self
     }
-    
+
     /// Check if Ollama server is running and model is available
     pub async fn health_check(&self) -> Result<HealthStatus> {
         let client = reqwest::Client::new();
-        
+
         // Check server is running
         let server_url = format!("{}/api/tags", self.url);
-        let response = client.get(&server_url)
+        let response = client
+            .get(&server_url)
             .send()
             .await
             .context("Failed to connect to Ollama server")?;
-        
+
         if !response.status().is_success() {
             anyhow::bail!("Ollama server returned error: {}", response.status());
         }
-        
+
         // Parse available models
-        let body: serde_json::Value = response.json().await
+        let body: serde_json::Value = response
+            .json()
+            .await
             .context("Failed to parse Ollama response")?;
-        
-        let models = body["models"].as_array()
+
+        let models = body["models"]
+            .as_array()
             .context("Invalid response from Ollama")?;
-        
-        let model_available = models.iter().any(|m| {
-            m["name"].as_str().unwrap_or("") == self.model
-        });
-        
+
+        let model_available = models
+            .iter()
+            .any(|m| m["name"].as_str().unwrap_or("") == self.model);
+
         Ok(HealthStatus {
             server_running: true,
             model_available,
@@ -203,7 +213,7 @@ impl HealthStatus {
     pub fn is_ready(&self) -> bool {
         self.server_running && self.model_available
     }
-    
+
     pub fn error_message(&self) -> Option<String> {
         if !self.server_running {
             Some("Ollama server not running. Start with: ollama serve".to_string())
@@ -244,22 +254,22 @@ impl LlmClient for Hermes2ProOllama {
         static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
         let client = CLIENT.get_or_init(|| {
             reqwest::Client::builder()
-                .pool_max_idle_per_host(10)  // Keep connections alive
+                .pool_max_idle_per_host(10) // Keep connections alive
                 .pool_idle_timeout(std::time::Duration::from_secs(90))
-                .timeout(std::time::Duration::from_secs(120))  // 2 min timeout
+                .timeout(std::time::Duration::from_secs(120)) // 2 min timeout
                 .build()
                 .expect("Failed to create HTTP client")
         });
-        
+
         let url = format!("{}/api/generate", self.url);
-        
+
         // Build request with system prompt if configured
         let full_prompt = if let Some(ref system) = self.system_prompt {
             format!("{}\n\n{}", system, prompt)
         } else {
             prompt.to_string()
         };
-        
+
         let body = json!({
             "model": self.model,
             "prompt": full_prompt,
@@ -270,7 +280,7 @@ impl LlmClient for Hermes2ProOllama {
                 "num_ctx": 8192,  // Hermes 2 Pro supports 8192 tokens (2× Phi-3)
             }
         });
-        
+
         // ═══ DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
         eprintln!("║        PROMPT SENT TO HERMES 2 PRO (via Ollama)              ║");
@@ -283,30 +293,33 @@ impl LlmClient for Hermes2ProOllama {
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
         eprintln!("{}", full_prompt);
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
-        
+
         tracing::debug!("Sending request to Ollama: {}", self.model);
         let start = std::time::Instant::now();
-        
-        let response = client.post(&url)
+
+        let response = client
+            .post(&url)
             .json(&body)
             .send()
             .await
             .context("Failed to send request to Ollama")?;
-        
+
         if !response.status().is_success() {
             anyhow::bail!("Ollama returned error: {}", response.status());
         }
-        
-        let response_json: serde_json::Value = response.json().await
+
+        let response_json: serde_json::Value = response
+            .json()
+            .await
             .context("Failed to parse Ollama response")?;
-        
+
         let text = response_json["response"]
             .as_str()
             .context("Missing 'response' field in Ollama output")?
             .to_string();
-        
+
         let duration = start.elapsed();
-        
+
         // ═══ DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
         eprintln!("║        HERMES 2 PRO RAW RESPONSE (via Ollama)                ║");
@@ -316,12 +329,16 @@ impl LlmClient for Hermes2ProOllama {
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
         eprintln!("{}", text);
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
-        
-        tracing::debug!("Received {} chars from Ollama in {:.2}s", text.len(), duration.as_secs_f32());
-        
+
+        tracing::debug!(
+            "Received {} chars from Ollama in {:.2}s",
+            text.len(),
+            duration.as_secs_f32()
+        );
+
         Ok(text)
     }
-    
+
     /// Complete with streaming support (progressive response delivery)
     ///
     /// Returns a stream of text chunks as they arrive from Ollama. Enables:
@@ -342,7 +359,7 @@ impl LlmClient for Hermes2ProOllama {
     /// # async fn example() -> anyhow::Result<()> {
     /// let client = Hermes2ProOllama::localhost();
     /// let mut stream = client.complete_streaming("Generate plan").await?;
-    /// 
+    ///
     /// let mut full_response = String::new();
     /// while let Some(chunk) = stream.next().await {
     ///     let text = chunk?;
@@ -357,7 +374,7 @@ impl LlmClient for Hermes2ProOllama {
         prompt: &str,
     ) -> Result<std::pin::Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>> {
         use futures_util::StreamExt;
-        
+
         // Use static client with connection pooling
         static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
         let client = CLIENT.get_or_init(|| {
@@ -368,16 +385,16 @@ impl LlmClient for Hermes2ProOllama {
                 .build()
                 .expect("Failed to create HTTP client")
         });
-        
+
         let url = format!("{}/api/generate", self.url);
-        
+
         // Build request with system prompt
         let full_prompt = if let Some(ref system) = self.system_prompt {
             format!("{}\n\n{}", system, prompt)
         } else {
             prompt.to_string()
         };
-        
+
         let body = json!({
             "model": self.model,
             "prompt": full_prompt,
@@ -388,7 +405,7 @@ impl LlmClient for Hermes2ProOllama {
                 "num_ctx": 8192,
             }
         });
-        
+
         // ═══ DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
         eprintln!("║    STREAMING REQUEST TO HERMES 2 PRO (via Ollama)            ║");
@@ -399,26 +416,27 @@ impl LlmClient for Hermes2ProOllama {
         eprintln!("Stream: ENABLED");
         eprintln!("Prompt Length: {} chars", full_prompt.len());
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
-        
+
         tracing::debug!("Sending streaming request to Ollama: {}", self.model);
-        
-        let response = client.post(&url)
+
+        let response = client
+            .post(&url)
             .json(&body)
             .send()
             .await
             .context("Failed to send streaming request to Ollama")?;
-        
+
         if !response.status().is_success() {
             anyhow::bail!("Ollama streaming returned error: {}", response.status());
         }
-        
+
         // Convert bytes_stream to text chunk stream
         // Ollama streams NDJSON (newline-delimited JSON):
         //   {"response": "text", "done": false}\n
         //   {"response": "more", "done": false}\n
         //   {"response": "", "done": true}\n
         let byte_stream = response.bytes_stream();
-        
+
         // Transform bytes → NDJSON lines → text chunks
         let text_stream = byte_stream
             .scan(String::new(), |buffer, chunk_result| {
@@ -426,34 +444,36 @@ impl LlmClient for Hermes2ProOllama {
                 let chunk = match chunk_result {
                     Ok(bytes) => bytes,
                     Err(e) => {
-                        return futures_util::future::ready(Some(vec![Err(
-                            anyhow::anyhow!("Stream error: {}", e)
-                        )]));
+                        return futures_util::future::ready(Some(vec![Err(anyhow::anyhow!(
+                            "Stream error: {}",
+                            e
+                        ))]));
                     }
                 };
-                
+
                 // Append to buffer
                 let text = match String::from_utf8(chunk.to_vec()) {
                     Ok(s) => s,
                     Err(e) => {
-                        return futures_util::future::ready(Some(vec![Err(
-                            anyhow::anyhow!("UTF-8 decode error: {}", e)
-                        )]));
+                        return futures_util::future::ready(Some(vec![Err(anyhow::anyhow!(
+                            "UTF-8 decode error: {}",
+                            e
+                        ))]));
                     }
                 };
                 buffer.push_str(&text);
-                
+
                 // Extract complete JSON lines (separated by \n)
                 let mut results = Vec::new();
                 while let Some(newline_pos) = buffer.find('\n') {
                     // Clone the line before draining to avoid borrow checker issues
                     let line = buffer[..newline_pos].trim().to_string();
                     buffer.drain(..=newline_pos);
-                    
+
                     if line.is_empty() {
                         continue;
                     }
-                    
+
                     // Parse NDJSON line
                     match serde_json::from_str::<serde_json::Value>(&line) {
                         Ok(json) => {
@@ -463,7 +483,7 @@ impl LlmClient for Hermes2ProOllama {
                                     results.push(Ok(response_text.to_string()));
                                 }
                             }
-                            
+
                             // Check if done
                             if json["done"].as_bool() == Some(true) {
                                 tracing::debug!("Streaming complete (done: true)");
@@ -475,7 +495,7 @@ impl LlmClient for Hermes2ProOllama {
                         }
                     }
                 }
-                
+
                 // Return extracted results (empty vec if no complete lines yet)
                 if results.is_empty() {
                     futures_util::future::ready(Some(vec![]))
@@ -484,7 +504,7 @@ impl LlmClient for Hermes2ProOllama {
                 }
             })
             .flat_map(futures_util::stream::iter);
-        
+
         Ok(Box::pin(text_stream))
     }
 }
@@ -492,42 +512,45 @@ impl LlmClient for Hermes2ProOllama {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_hermes2pro_ollama_creation() {
-        let client = Hermes2ProOllama::new("http://localhost:11434", "adrienbrault/nous-hermes2pro:Q4_K_M");
+        let client = Hermes2ProOllama::new(
+            "http://localhost:11434",
+            "adrienbrault/nous-hermes2pro:Q4_K_M",
+        );
         assert_eq!(client.url, "http://localhost:11434");
         assert_eq!(client.model, "adrienbrault/nous-hermes2pro:Q4_K_M");
         assert_eq!(client.temperature, 0.7);
         assert_eq!(client.max_tokens, 512);
         assert!(client.system_prompt.is_some());
     }
-    
+
     #[test]
     fn test_localhost_convenience() {
         let client = Hermes2ProOllama::localhost();
         assert_eq!(client.url, "http://localhost:11434");
         assert_eq!(client.model, "adrienbrault/nous-hermes2pro:Q4_K_M");
     }
-    
+
     #[test]
     fn test_builder_pattern() {
         let client = Hermes2ProOllama::localhost()
             .with_temperature(0.5)
             .with_max_tokens(256)
             .without_system_prompt();
-        
+
         assert_eq!(client.temperature, 0.5);
         assert_eq!(client.max_tokens, 256);
         assert!(client.system_prompt.is_none());
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires Ollama running
     async fn test_health_check() {
         let client = Hermes2ProOllama::localhost();
         let health = client.health_check().await;
-        
+
         // If Ollama is running, this should succeed
         if let Ok(status) = health {
             assert!(status.server_running);
@@ -535,119 +558,156 @@ mod tests {
             println!("Model available: {}", status.model_available);
         }
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires Ollama + adrienbrault/nous-hermes2pro:Q4_K_M
     async fn test_complete() {
         let client = Hermes2ProOllama::localhost();
-        
+
         // Check health first
         let health = client.health_check().await.expect("Health check failed");
         if !health.is_ready() {
             panic!("{}", health.error_message().unwrap());
         }
-        
+
         let prompt = "You are at position (5,5). Enemy at (10,8). Generate a tactical plan.";
-        let response = client.complete(prompt).await
-            .expect("Completion failed");
-        
+        let response = client.complete(prompt).await.expect("Completion failed");
+
         assert!(!response.is_empty());
         println!("Hermes 2 Pro response:\n{}", response);
-        
+
         // Try to parse as JSON
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&response);
         if let Ok(json) = parsed {
-            println!("Parsed JSON: {}", serde_json::to_string_pretty(&json).unwrap());
+            println!(
+                "Parsed JSON: {}",
+                serde_json::to_string_pretty(&json).unwrap()
+            );
         }
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires Ollama + adrienbrault/nous-hermes2pro:Q4_K_M
     async fn test_complete_streaming() {
         use futures_util::StreamExt;
-        
+
         let client = Hermes2ProOllama::localhost();
-        
+
         // Check health first
         let health = client.health_check().await.expect("Health check failed");
         if !health.is_ready() {
             panic!("{}", health.error_message().unwrap());
         }
-        
+
         let prompt = "You are at position (5,5). Enemy at (10,8). Generate a tactical plan.";
-        
+
         println!("\n═══ Starting Streaming Test ═══");
         let start = std::time::Instant::now();
-        
-        let mut stream = client.complete_streaming(prompt).await
+
+        let mut stream = client
+            .complete_streaming(prompt)
+            .await
             .expect("Streaming failed to start");
-        
+
         let mut full_response = String::new();
         let mut chunk_count = 0;
         let mut time_to_first_chunk = None;
-        
+
         while let Some(chunk_result) = stream.next().await {
             let chunk = chunk_result.expect("Chunk error");
-            
+
             if time_to_first_chunk.is_none() {
                 time_to_first_chunk = Some(start.elapsed());
-                println!("⚡ Time to first chunk: {:.2}s", time_to_first_chunk.unwrap().as_secs_f32());
+                println!(
+                    "⚡ Time to first chunk: {:.2}s",
+                    time_to_first_chunk.unwrap().as_secs_f32()
+                );
             }
-            
+
             chunk_count += 1;
             full_response.push_str(&chunk);
-            
-            println!("Chunk #{}: {} chars (total: {})", chunk_count, chunk.len(), full_response.len());
+
+            println!(
+                "Chunk #{}: {} chars (total: {})",
+                chunk_count,
+                chunk.len(),
+                full_response.len()
+            );
         }
-        
+
         let total_time = start.elapsed();
-        
+
         println!("\n═══ Streaming Complete ═══");
         println!("Total chunks: {}", chunk_count);
         println!("Total time: {:.2}s", total_time.as_secs_f32());
-        println!("Time to first chunk: {:.2}s", time_to_first_chunk.unwrap().as_secs_f32());
+        println!(
+            "Time to first chunk: {:.2}s",
+            time_to_first_chunk.unwrap().as_secs_f32()
+        );
         println!("Final response length: {} chars", full_response.len());
         println!("\nFull response:\n{}", full_response);
-        
-        assert!(!full_response.is_empty(), "Streaming returned empty response");
+
+        assert!(
+            !full_response.is_empty(),
+            "Streaming returned empty response"
+        );
         assert!(chunk_count > 0, "No chunks received");
-        
+
         // Verify time-to-first-chunk is significantly faster than total time
         let ttfc_ratio = time_to_first_chunk.unwrap().as_secs_f32() / total_time.as_secs_f32();
-        println!("\nTime-to-first-chunk ratio: {:.1}% of total time", ttfc_ratio * 100.0);
-        
+        println!(
+            "\nTime-to-first-chunk ratio: {:.1}% of total time",
+            ttfc_ratio * 100.0
+        );
+
         // Try to parse as JSON
         let parsed: Result<serde_json::Value, _> = serde_json::from_str(&full_response);
         if let Ok(json) = parsed {
-            println!("\nParsed JSON: {}", serde_json::to_string_pretty(&json).unwrap());
+            println!(
+                "\nParsed JSON: {}",
+                serde_json::to_string_pretty(&json).unwrap()
+            );
         }
     }
-    
+
     #[tokio::test]
     #[ignore] // Requires Ollama + adrienbrault/nous-hermes2pro:Q4_K_M
     async fn test_streaming_vs_blocking_consistency() {
         use futures_util::StreamExt;
-        
-        let client = Hermes2ProOllama::localhost()
-            .with_temperature(0.0);  // Deterministic for consistency check
-        
+
+        let client = Hermes2ProOllama::localhost().with_temperature(0.0); // Deterministic for consistency check
+
         let prompt = "Generate JSON: {\"action\": \"move\", \"x\": 5, \"y\": 10}";
-        
+
         // Get blocking response
         let blocking_response = client.complete(prompt).await.expect("Blocking failed");
-        
+
         // Get streaming response
-        let mut stream = client.complete_streaming(prompt).await.expect("Streaming failed");
+        let mut stream = client
+            .complete_streaming(prompt)
+            .await
+            .expect("Streaming failed");
         let mut streaming_response = String::new();
         while let Some(chunk) = stream.next().await {
             streaming_response.push_str(&chunk.expect("Chunk error"));
         }
-        
-        println!("Blocking response ({} chars):\n{}", blocking_response.len(), blocking_response);
-        println!("\nStreaming response ({} chars):\n{}", streaming_response.len(), streaming_response);
-        
+
+        println!(
+            "Blocking response ({} chars):\n{}",
+            blocking_response.len(),
+            blocking_response
+        );
+        println!(
+            "\nStreaming response ({} chars):\n{}",
+            streaming_response.len(),
+            streaming_response
+        );
+
         // Responses should be identical (or at least very similar with temp=0.0)
-        assert_eq!(blocking_response.trim(), streaming_response.trim(),
-            "Streaming and blocking responses should match with temperature=0.0");
+        assert_eq!(
+            blocking_response.trim(),
+            streaming_response.trim(),
+            "Streaming and blocking responses should match with temperature=0.0"
+        );
     }
 }

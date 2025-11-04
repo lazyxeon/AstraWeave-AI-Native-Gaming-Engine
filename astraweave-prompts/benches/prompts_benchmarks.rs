@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use astraweave_prompts::{PromptContext, PromptEngine, PromptTemplate, TemplateEngine};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
 use std::hint::black_box;
 
@@ -9,10 +9,7 @@ use std::hint::black_box;
 
 /// Create a simple template
 fn create_simple_template() -> PromptTemplate {
-    PromptTemplate::new(
-        "simple",
-        "Hello {{name}}, you are {{role}}!",
-    )
+    PromptTemplate::new("simple", "Hello {{name}}, you are {{role}}!")
 }
 
 /// Create a complex template with multiple variables
@@ -53,7 +50,10 @@ fn create_complex_context() -> PromptContext {
     ctx.set("character.name".to_string(), "Aria".into());
     ctx.set("character.class".to_string(), "Mage".into());
     ctx.set("location.name".to_string(), "Ancient Library".into());
-    ctx.set("location.description".to_string(), "A vast repository of magical knowledge".into());
+    ctx.set(
+        "location.description".to_string(),
+        "A vast repository of magical knowledge".into(),
+    );
     ctx.set("objective".to_string(), "Find the Crystal of Wisdom".into());
     ctx.set("inventory.count".to_string(), "12".into());
     ctx.set("status.health".to_string(), "85".into());
@@ -68,9 +68,18 @@ fn create_dialogue_context() -> PromptContext {
     let mut ctx = PromptContext::new();
     ctx.set("npc.name".to_string(), "Elena".into());
     ctx.set("npc.role".to_string(), "Wise Mage".into());
-    ctx.set("npc.personality".to_string(), "mysterious and helpful".into());
-    ctx.set("player.message".to_string(), "What magic can you teach me?".into());
-    ctx.set("context".to_string(), "The player has proven their worth".into());
+    ctx.set(
+        "npc.personality".to_string(),
+        "mysterious and helpful".into(),
+    );
+    ctx.set(
+        "player.message".to_string(),
+        "What magic can you teach me?".into(),
+    );
+    ctx.set(
+        "context".to_string(),
+        "The player has proven their worth".into(),
+    );
     ctx
 }
 
@@ -259,10 +268,7 @@ fn bench_context_add_variables(c: &mut Criterion) {
                 || PromptContext::new(),
                 |mut context| {
                     for i in 0..count {
-                        context.set(
-                            format!("var_{}", i),
-                            format!("value_{}", i).into(),
-                        );
+                        context.set(format!("var_{}", i), format!("value_{}", i).into());
                     }
                     black_box(context)
                 },

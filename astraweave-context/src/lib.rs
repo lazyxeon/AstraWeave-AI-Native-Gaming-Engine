@@ -275,7 +275,7 @@ pub enum ContextOperation {
 }
 
 /// Get current Unix timestamp in seconds
-/// 
+///
 /// Returns 0 if the system clock is before UNIX_EPOCH (extremely rare edge case).
 pub fn current_timestamp() -> u64 {
     std::time::SystemTime::now()

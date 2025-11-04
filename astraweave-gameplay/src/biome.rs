@@ -61,13 +61,13 @@ mod tests {
     #[test]
     fn test_generate_island_room_floor_triangles() {
         let triangles = generate_island_room();
-        
+
         // First floor triangle
         let floor_tri1 = &triangles[0];
         assert_eq!(floor_tri1.a, vec3(-4.0, 0.0, -4.0));
         assert_eq!(floor_tri1.b, vec3(4.0, 0.0, -4.0));
         assert_eq!(floor_tri1.c, vec3(4.0, 0.0, 4.0));
-        
+
         // Second floor triangle
         let floor_tri2 = &triangles[1];
         assert_eq!(floor_tri2.a, vec3(-4.0, 0.0, -4.0));
@@ -78,16 +78,16 @@ mod tests {
     #[test]
     fn test_generate_island_room_ramp_geometry() {
         let triangles = generate_island_room();
-        
+
         // Ramp triangles should be at indices 2 and 3
         let ramp_tri1 = &triangles[2];
         let ramp_tri2 = &triangles[3];
-        
+
         // Ramp starts at y=0.0 and rises to y=0.6
         assert_eq!(ramp_tri1.a.y, 0.0, "Ramp base should be at ground level");
         assert_eq!(ramp_tri1.b.y, 0.6, "Ramp top should be at plateau level");
         assert_eq!(ramp_tri1.c.y, 0.6, "Ramp top should be at plateau level");
-        
+
         assert_eq!(ramp_tri2.a.y, 0.0);
         assert_eq!(ramp_tri2.b.y, 0.6);
         assert_eq!(ramp_tri2.c.y, 0.0);
@@ -96,16 +96,16 @@ mod tests {
     #[test]
     fn test_generate_island_room_plateau_geometry() {
         let triangles = generate_island_room();
-        
+
         // Plateau triangles should be at indices 4 and 5
         let plateau_tri1 = &triangles[4];
         let plateau_tri2 = &triangles[5];
-        
+
         // All plateau vertices should be at y=0.6
         assert_eq!(plateau_tri1.a.y, 0.6, "Plateau should be elevated");
         assert_eq!(plateau_tri1.b.y, 0.6);
         assert_eq!(plateau_tri1.c.y, 0.6);
-        
+
         assert_eq!(plateau_tri2.a.y, 0.6);
         assert_eq!(plateau_tri2.b.y, 0.6);
         assert_eq!(plateau_tri2.c.y, 0.6);
@@ -116,13 +116,25 @@ mod tests {
         let triangles = generate_island_room();
         let floor_tri1 = &triangles[0];
         let floor_tri2 = &triangles[1];
-        
+
         // Floor should cover an 8x8 area (from -4 to +4 in x and z)
-        let min_x = floor_tri1.a.x.min(floor_tri1.b.x).min(floor_tri1.c.x)
-            .min(floor_tri2.a.x).min(floor_tri2.b.x).min(floor_tri2.c.x);
-        let max_x = floor_tri1.a.x.max(floor_tri1.b.x).max(floor_tri1.c.x)
-            .max(floor_tri2.a.x).max(floor_tri2.b.x).max(floor_tri2.c.x);
-        
+        let min_x = floor_tri1
+            .a
+            .x
+            .min(floor_tri1.b.x)
+            .min(floor_tri1.c.x)
+            .min(floor_tri2.a.x)
+            .min(floor_tri2.b.x)
+            .min(floor_tri2.c.x);
+        let max_x = floor_tri1
+            .a
+            .x
+            .max(floor_tri1.b.x)
+            .max(floor_tri1.c.x)
+            .max(floor_tri2.a.x)
+            .max(floor_tri2.b.x)
+            .max(floor_tri2.c.x);
+
         assert_eq!(min_x, -4.0, "Floor should start at x=-4");
         assert_eq!(max_x, 4.0, "Floor should end at x=4");
     }
@@ -132,9 +144,9 @@ mod tests {
         let a = vec3(1.0, 2.0, 3.0);
         let b = vec3(4.0, 5.0, 6.0);
         let c = vec3(7.0, 8.0, 9.0);
-        
+
         let triangle = tri(a, b, c);
-        
+
         assert_eq!(triangle.a, a);
         assert_eq!(triangle.b, b);
         assert_eq!(triangle.c, c);

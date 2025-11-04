@@ -90,7 +90,10 @@ mod tests {
         let throw = registry.tools.iter().find(|t| t.name == "throw");
         assert!(throw.is_some());
         let tool = throw.unwrap();
-        assert_eq!(tool.args.get("item"), Some(&"enum[smoke,grenade]".to_string()));
+        assert_eq!(
+            tool.args.get("item"),
+            Some(&"enum[smoke,grenade]".to_string())
+        );
     }
 
     #[test]

@@ -76,7 +76,7 @@ mod chunk_tests {
     fn test_chunk_id_round_trip() {
         let chunk_size = 64.0;
         let original_id = ChunkId::new(10, -5);
-        
+
         let world_pos = original_id.to_world_pos(chunk_size);
         let reconstructed = ChunkId::from_world_pos(world_pos, chunk_size);
 
@@ -115,7 +115,7 @@ mod chunk_tests {
         // Test larger radius
         let radius = 5;
         let chunks = ChunkId::get_chunks_in_radius(center_pos, radius, chunk_size);
-        
+
         // Should be (2*r+1)^2
         let expected_count = ((2 * radius + 1) * (2 * radius + 1)) as usize;
         assert_eq!(chunks.len(), expected_count);
@@ -161,7 +161,10 @@ mod chunk_tests {
         let dist1 = id1.distance_to(id2);
         let dist2 = id2.distance_to(id1);
 
-        assert!((dist1 - dist2).abs() < 0.0001, "Distance should be symmetric");
+        assert!(
+            (dist1 - dist2).abs() < 0.0001,
+            "Distance should be symmetric"
+        );
     }
 
     #[test]
@@ -203,7 +206,8 @@ mod chunk_tests {
         Heightmap::new(HeightmapConfig {
             resolution: 32,
             ..Default::default()
-        }).expect("Failed to create test heightmap")
+        })
+        .expect("Failed to create test heightmap")
     }
 
     fn create_test_biome_map(size: usize) -> Vec<BiomeType> {
@@ -229,7 +233,7 @@ mod chunk_tests {
         let biome_map = create_test_biome_map(32 * 32);
 
         let chunk = TerrainChunk::new(id, heightmap, biome_map);
-        
+
         let retrieved_heightmap = chunk.heightmap();
         assert_eq!(retrieved_heightmap.resolution(), 32);
     }
@@ -242,10 +246,12 @@ mod chunk_tests {
         let biome_map = create_test_biome_map(biome_count);
 
         let chunk = TerrainChunk::new(id, heightmap, biome_map);
-        
+
         let retrieved_biome_map = chunk.biome_map();
         assert_eq!(retrieved_biome_map.len(), biome_count);
-        assert!(retrieved_biome_map.iter().all(|b| *b == BiomeType::Grassland));
+        assert!(retrieved_biome_map
+            .iter()
+            .all(|b| *b == BiomeType::Grassland));
     }
 
     #[test]
@@ -257,7 +263,7 @@ mod chunk_tests {
         let chunk = TerrainChunk::new(id, heightmap, biome_map);
 
         assert!(chunk.is_mesh_dirty(), "New chunk should be dirty");
-        
+
         // Note: mark_clean() is not exposed in TerrainChunk API from the file read
         // If it's private, we can't test it directly
     }
@@ -297,35 +303,41 @@ mod chunk_tests {
     #[test]
     fn test_chunk_grid_layout() {
         let chunk_size = 64.0;
-        
+
         // Create a grid of chunks
         let center = ChunkId::new(0, 0);
-        let neighbors = ChunkId::get_chunks_in_radius(
-            center.to_center_pos(chunk_size),
-            1,
-            chunk_size,
-        );
+        let neighbors =
+            ChunkId::get_chunks_in_radius(center.to_center_pos(chunk_size), 1, chunk_size);
 
         // Should have 3x3 grid
         assert_eq!(neighbors.len(), 9);
 
         // Verify grid contains all expected chunks
         let expected_ids = vec![
-            ChunkId::new(-1, -1), ChunkId::new(0, -1), ChunkId::new(1, -1),
-            ChunkId::new(-1,  0), ChunkId::new(0,  0), ChunkId::new(1,  0),
-            ChunkId::new(-1,  1), ChunkId::new(0,  1), ChunkId::new(1,  1),
+            ChunkId::new(-1, -1),
+            ChunkId::new(0, -1),
+            ChunkId::new(1, -1),
+            ChunkId::new(-1, 0),
+            ChunkId::new(0, 0),
+            ChunkId::new(1, 0),
+            ChunkId::new(-1, 1),
+            ChunkId::new(0, 1),
+            ChunkId::new(1, 1),
         ];
 
         for expected in expected_ids.iter() {
-            assert!(neighbors.contains(expected), 
-                "Grid should contain chunk {:?}", expected);
+            assert!(
+                neighbors.contains(expected),
+                "Grid should contain chunk {:?}",
+                expected
+            );
         }
     }
 
     #[test]
     fn test_chunk_coordinate_systems() {
         let chunk_size = 64.0;
-        
+
         // Test various coordinate system conversions
         let test_cases = vec![
             (Vec3::new(0.0, 0.0, 0.0), ChunkId::new(0, 0)),
@@ -337,8 +349,11 @@ mod chunk_tests {
 
         for (world_pos, expected_id) in test_cases {
             let computed_id = ChunkId::from_world_pos(world_pos, chunk_size);
-            assert_eq!(computed_id, expected_id,
-                "World pos {:?} should map to chunk {:?}", world_pos, expected_id);
+            assert_eq!(
+                computed_id, expected_id,
+                "World pos {:?} should map to chunk {:?}",
+                world_pos, expected_id
+            );
 
             // Verify round-trip preserves chunk origin
             let origin = computed_id.to_world_pos(chunk_size);
@@ -353,9 +368,9 @@ mod chunk_tests {
 
         // Test positions exactly on chunk boundaries
         let boundary_cases = vec![
-            Vec3::new(63.999, 0.0, 0.0),  // Just before boundary
-            Vec3::new(64.0, 0.0, 0.0),    // Exactly on boundary
-            Vec3::new(64.001, 0.0, 0.0),  // Just after boundary
+            Vec3::new(63.999, 0.0, 0.0), // Just before boundary
+            Vec3::new(64.0, 0.0, 0.0),   // Exactly on boundary
+            Vec3::new(64.001, 0.0, 0.0), // Just after boundary
         ];
 
         let id0 = ChunkId::from_world_pos(boundary_cases[0], chunk_size);
@@ -381,9 +396,14 @@ mod chunk_tests {
 
         for (id1, id2, expected_dist) in chunks {
             let dist = id1.distance_to(id2);
-            assert!((dist - expected_dist).abs() < 0.01,
+            assert!(
+                (dist - expected_dist).abs() < 0.01,
                 "Distance from {:?} to {:?} should be {}, got {}",
-                id1, id2, expected_dist, dist);
+                id1,
+                id2,
+                expected_dist,
+                dist
+            );
         }
     }
 
@@ -445,8 +465,11 @@ mod chunk_tests {
             let reconstructed_origin = id.to_world_pos(chunk_size);
             let reconstructed_id = ChunkId::from_world_pos(reconstructed_origin, chunk_size);
 
-            assert_eq!(id, reconstructed_id, 
-                "Extreme position {:?} should round-trip correctly", pos);
+            assert_eq!(
+                id, reconstructed_id,
+                "Extreme position {:?} should round-trip correctly",
+                pos
+            );
         }
     }
 
@@ -471,8 +494,11 @@ mod chunk_tests {
         // Verify all chunks have unique IDs
         let mut id_set = std::collections::HashSet::new();
         for chunk in chunks.iter() {
-            assert!(id_set.insert(chunk.id()), 
-                "Chunk ID {:?} should be unique", chunk.id());
+            assert!(
+                id_set.insert(chunk.id()),
+                "Chunk ID {:?} should be unique",
+                chunk.id()
+            );
         }
     }
 
@@ -496,8 +522,11 @@ mod chunk_tests {
             let chunk = TerrainChunk::new(id, heightmap.clone(), biome_map);
 
             let retrieved = chunk.biome_map();
-            assert!(retrieved.iter().all(|b| *b == biome),
-                "All biomes should be {:?}", biome);
+            assert!(
+                retrieved.iter().all(|b| *b == biome),
+                "All biomes should be {:?}",
+                biome
+            );
         }
     }
 }

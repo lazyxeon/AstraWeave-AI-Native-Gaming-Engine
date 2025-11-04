@@ -30,20 +30,14 @@ pub use storage::{MemoryStorage, StorageStats};
 
 // Behavioral pattern detection and learning
 pub mod pattern_detection;
-pub use pattern_detection::{
-    ActionPattern, PatternDetector, PatternStrength, PlaystylePattern,
-};
+pub use pattern_detection::{ActionPattern, PatternDetector, PatternStrength, PlaystylePattern};
 
 pub mod preference_profile;
-pub use preference_profile::{
-    CompanionActionPreference, PreferenceProfile, ProfileBuilder,
-};
+pub use preference_profile::{CompanionActionPreference, PreferenceProfile, ProfileBuilder};
 
 // Adaptive behavior trees (Phase 4)
 pub mod dynamic_weighting;
-pub use dynamic_weighting::{
-    AdaptiveWeightManager, BehaviorNodeType, NodeWeight,
-};
+pub use dynamic_weighting::{AdaptiveWeightManager, BehaviorNodeType, NodeWeight};
 
 pub mod learned_behavior_validator;
 pub use learned_behavior_validator::{

@@ -323,7 +323,11 @@ fn test_voice_file_playback() {
     let duration = Some(2.0); // 2 second duration hint
     let result = engine.play_voice_file("tests/fixtures/voice_test.wav", duration);
 
-    assert!(result.is_ok(), "Voice file playback failed: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Voice file playback failed: {:?}",
+        result.err()
+    );
 
     engine.tick(2.0); // Let voice play
     assert!(true, "Voice file playback handled");

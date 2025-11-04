@@ -120,11 +120,7 @@ impl UnifiedManifest {
 
     /// Get list of all unique providers in manifest
     pub fn providers(&self) -> Vec<String> {
-        let mut providers: Vec<String> = self
-            .assets
-            .iter()
-            .map(|a| a.provider.clone())
-            .collect();
+        let mut providers: Vec<String> = self.assets.iter().map(|a| a.provider.clone()).collect();
         providers.sort();
         providers.dedup();
         providers

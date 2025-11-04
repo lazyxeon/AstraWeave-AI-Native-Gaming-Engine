@@ -8,7 +8,8 @@ use std::any::{Any, TypeId};
 use std::collections::HashMap;
 
 /// Handler for inserting type-erased components into World.
-type InsertHandler = Box<dyn Fn(&mut crate::World, crate::Entity, Box<dyn Any + Send + Sync>) + Send + Sync>;
+type InsertHandler =
+    Box<dyn Fn(&mut crate::World, crate::Entity, Box<dyn Any + Send + Sync>) + Send + Sync>;
 
 /// Handler for removing type-erased components from World.
 type RemoveHandler = Box<dyn Fn(&mut crate::World, crate::Entity) + Send + Sync>;
@@ -53,7 +54,9 @@ impl TypeRegistry {
         self.insert_handlers.insert(
             type_id,
             Box::new(
-                |world: &mut crate::World, entity: crate::Entity, component: Box<dyn Any + Send + Sync>| {
+                |world: &mut crate::World,
+                 entity: crate::Entity,
+                 component: Box<dyn Any + Send + Sync>| {
                     if let Ok(component) = component.downcast::<T>() {
                         world.insert(entity, *component);
                     } else {

@@ -33,9 +33,9 @@ pub mod terrain_material; // Phase PBR-F: Terrain layering with splat maps and t
 #[cfg(feature = "skinning-gpu")]
 pub mod skinning_gpu; // Phase 2 Task 5 Phase D: GPU skinning pipeline
 
-pub mod vertex_compression; // Week 5 Action 19: Vertex compression
+pub mod instancing;
 pub mod lod_generator; // Week 5 Action 19: LOD generation with quadric error metrics
-pub mod instancing; // Week 5 Action 19: GPU instancing for draw call reduction (octahedral normals, half-float UVs)
+pub mod vertex_compression; // Week 5 Action 19: Vertex compression // Week 5 Action 19: GPU instancing for draw call reduction (octahedral normals, half-float UVs)
 
 #[cfg(test)]
 mod animation_extra_tests; // Phase 7: Additional animation tests

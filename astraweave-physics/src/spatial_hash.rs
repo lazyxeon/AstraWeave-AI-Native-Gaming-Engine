@@ -117,14 +117,14 @@ type GridCell = (i32, i32, i32);
 pub struct SpatialHash<T> {
     /// Grid cell size (world units)
     cell_size: f32,
-    
+
     /// Inverse cell size (for faster division-free grid coordinate calculation)
     inv_cell_size: f32,
-    
+
     /// Grid storage: (x, y, z) → [object IDs]
     /// Uses FxHashMap for faster non-cryptographic hashing
     grid: rustc_hash::FxHashMap<GridCell, Vec<T>>,
-    
+
     /// Total objects currently in grid
     object_count: usize,
 }
@@ -141,7 +141,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// ```
     pub fn new(cell_size: f32) -> Self {
         assert!(cell_size > 0.0, "Cell size must be positive");
-        
+
         Self {
             cell_size,
             inv_cell_size: 1.0 / cell_size,
@@ -166,7 +166,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
         let max_cell = self.world_to_cell(aabb.max);
 
         let mut cells = Vec::new();
-        
+
         // Iterate over all cells that the AABB spans
         for x in min_cell.0..=max_cell.0 {
             for y in min_cell.1..=max_cell.1 {
@@ -194,14 +194,11 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// ```
     pub fn insert(&mut self, id: T, aabb: AABB) {
         let cells = self.get_overlapping_cells(&aabb);
-        
+
         for cell in cells {
-            self.grid
-                .entry(cell)
-                .or_default()
-                .push(id);
+            self.grid.entry(cell).or_default().push(id);
         }
-        
+
         self.object_count += 1;
     }
 
@@ -220,7 +217,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     /// ```
     /// let query_aabb = AABB::from_sphere(pos, radius);
     /// let candidates = grid.query(query_aabb);
-    /// 
+    ///
     /// for &candidate_id in &candidates {
     ///     // Perform detailed collision test with candidate
     /// }
@@ -326,13 +323,16 @@ mod tests {
         let aabb3 = AABB::from_sphere(Vec3::new(5.0, 0.0, 0.0), 1.0);
 
         assert!(aabb1.intersects(&aabb2), "Adjacent AABBs should intersect");
-        assert!(!aabb1.intersects(&aabb3), "Distant AABBs should not intersect");
+        assert!(
+            !aabb1.intersects(&aabb3),
+            "Distant AABBs should not intersect"
+        );
     }
 
     #[test]
     fn test_spatial_hash_insertion() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         let aabb = AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 1.0);
         grid.insert(1, aabb);
 
@@ -343,7 +343,7 @@ mod tests {
     #[test]
     fn test_spatial_hash_query() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         // Insert objects in different cells
         grid.insert(1, AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 1.0));
         grid.insert(2, AABB::from_sphere(Vec3::new(15.0, 0.0, 5.0), 1.0));
@@ -351,7 +351,7 @@ mod tests {
 
         // Query near object 1
         let results = grid.query(AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 1.0));
-        
+
         // Should find object 1, but not objects 2 or 3 (in different cells)
         assert!(results.contains(&1));
         // Note: Might find 2 if cells are adjacent, but definitely not 3
@@ -360,7 +360,7 @@ mod tests {
     #[test]
     fn test_spatial_hash_clear() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         grid.insert(1, AABB::from_sphere(Vec3::ZERO, 1.0));
         assert_eq!(grid.object_count(), 1);
 
@@ -372,40 +372,43 @@ mod tests {
     #[test]
     fn test_multi_cell_spanning() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         // Large AABB spanning multiple cells
         let large_aabb = AABB {
             min: Vec3::new(0.0, 0.0, 0.0),
             max: Vec3::new(25.0, 25.0, 25.0),
         };
-        
+
         grid.insert(1, large_aabb);
-        
+
         // Object should be in multiple cells (3×3×3 = 27 cells)
-        assert!(grid.cell_count() >= 27, "Large object should span multiple cells");
+        assert!(
+            grid.cell_count() >= 27,
+            "Large object should span multiple cells"
+        );
     }
 
     #[test]
     fn test_query_unique_deduplication() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         // Insert object spanning multiple cells
         let large_aabb = AABB {
             min: Vec3::new(0.0, 0.0, 0.0),
             max: Vec3::new(15.0, 0.0, 0.0),
         };
-        
+
         grid.insert(1, large_aabb);
-        
+
         // Query overlapping multiple cells
         let query_aabb = AABB {
             min: Vec3::new(0.0, 0.0, 0.0),
             max: Vec3::new(15.0, 0.0, 0.0),
         };
-        
+
         let results = grid.query(query_aabb);
         let unique_results = grid.query_unique(query_aabb);
-        
+
         // query() may return duplicates, query_unique() should not
         assert!(unique_results.len() <= results.len());
         assert_eq!(unique_results.len(), 1, "Should find object 1 exactly once");
@@ -414,24 +417,27 @@ mod tests {
     #[test]
     fn test_cell_size_calculation() {
         let grid = SpatialHash::<u32>::new(5.0);
-        
+
         let cell1 = grid.world_to_cell(Vec3::new(0.0, 0.0, 0.0));
         let cell2 = grid.world_to_cell(Vec3::new(4.9, 0.0, 0.0));
         let cell3 = grid.world_to_cell(Vec3::new(5.1, 0.0, 0.0));
 
-        assert_eq!(cell1, cell2, "Points in same cell should have same cell coords");
+        assert_eq!(
+            cell1, cell2,
+            "Points in same cell should have same cell coords"
+        );
         assert_ne!(cell1, cell3, "Points in different cells should differ");
     }
 
     #[test]
     fn test_stats() {
         let mut grid = SpatialHash::<u32>::new(10.0);
-        
+
         // Insert 3 objects in same cell
         for i in 0..3 {
             grid.insert(i, AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 0.5));
         }
-        
+
         let stats = grid.stats();
         assert_eq!(stats.object_count, 3);
         assert!(stats.average_objects_per_cell >= 3.0);

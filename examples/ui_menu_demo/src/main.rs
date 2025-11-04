@@ -45,9 +45,18 @@
 /// - Improved button styling and animations
 use anyhow::Result;
 use astraweave_ui::{
-    DamageType, EnemyData, EnemyFaction, HudManager, MenuAction, MenuManager, UiLayer,
+    DamageType,
+    EnemyData,
+    EnemyFaction,
+    HudManager,
+    MenuAction,
+    MenuManager,
+    Objective,
+    PoiMarker,
+    PoiType,
     // Week 3 Day 3: Quest tracker & minimap
-    Quest, Objective, PoiMarker, PoiType,
+    Quest,
+    UiLayer,
 };
 use log::{error, info, warn};
 use std::sync::Arc;
@@ -104,7 +113,7 @@ impl Default for App {
     fn default() -> Self {
         // Initialize HUD manager with demo quest and POI markers
         let mut hud_manager = HudManager::new();
-        
+
         // Week 3 Day 3: Demo quest
         hud_manager.active_quest = Some(Quest {
             id: 1,
@@ -115,7 +124,7 @@ impl Default for App {
                     id: 1,
                     description: "Collect Crystal Shards".to_string(),
                     completed: false,
-                    progress: Some((3, 5)),  // 3 out of 5 collected
+                    progress: Some((3, 5)), // 3 out of 5 collected
                 },
                 Objective {
                     id: 2,
@@ -131,12 +140,12 @@ impl Default for App {
                 },
             ],
         });
-        
+
         // Week 3 Day 3: POI markers for minimap
         hud_manager.poi_markers = vec![
             PoiMarker {
                 id: 1,
-                world_pos: (10.0, 5.0),  // 2D (X, Z)
+                world_pos: (10.0, 5.0), // 2D (X, Z)
                 poi_type: PoiType::Objective,
                 label: Some("Shard Location".to_string()),
             },
@@ -159,11 +168,11 @@ impl Default for App {
                 label: Some("Guardian Lair".to_string()),
             },
         ];
-        
+
         // Week 3 Day 3: Player position and rotation for minimap
-        hud_manager.player_position = (0.0, 0.0);  // Center of map
-        hud_manager.player_rotation = 0.0;  // Facing north
-        
+        hud_manager.player_position = (0.0, 0.0); // Center of map
+        hud_manager.player_rotation = 0.0; // Facing north
+
         Self {
             ui_layer: None,
             menu_manager: MenuManager::new(),
@@ -181,20 +190,23 @@ impl Default for App {
             demo_enemies: vec![
                 // Enemy 1: Hostile with 75% health
                 {
-                    let mut enemy = EnemyData::new(1, (5.0, 2.0, 0.0), 100.0, EnemyFaction::Hostile);
-                    enemy.health = 75.0;  // Start damaged
+                    let mut enemy =
+                        EnemyData::new(1, (5.0, 2.0, 0.0), 100.0, EnemyFaction::Hostile);
+                    enemy.health = 75.0; // Start damaged
                     enemy
                 },
                 // Enemy 2: Neutral with 50% health
                 {
-                    let mut enemy = EnemyData::new(2, (-5.0, 1.5, 0.0), 100.0, EnemyFaction::Neutral);
-                    enemy.health = 50.0;  // Start damaged
+                    let mut enemy =
+                        EnemyData::new(2, (-5.0, 1.5, 0.0), 100.0, EnemyFaction::Neutral);
+                    enemy.health = 50.0; // Start damaged
                     enemy
                 },
                 // Enemy 3: Friendly with 90% health
                 {
-                    let mut enemy = EnemyData::new(3, (0.0, 3.0, 0.0), 100.0, EnemyFaction::Friendly);
-                    enemy.health = 90.0;  // Start damaged
+                    let mut enemy =
+                        EnemyData::new(3, (0.0, 3.0, 0.0), 100.0, EnemyFaction::Friendly);
+                    enemy.health = 90.0; // Start damaged
                     enemy
                 },
             ],
@@ -221,8 +233,8 @@ impl Default for App {
 impl App {
     /// Start a demo dialogue with branching choices
     fn start_demo_dialogue(&mut self) {
-        use astraweave_ui::{DialogueNode, DialogueChoice};
-        
+        use astraweave_ui::{DialogueChoice, DialogueNode};
+
         let first_node = DialogueNode {
             id: 1,
             speaker_name: "Mysterious Stranger".to_string(),
@@ -240,8 +252,8 @@ impl App {
 
     /// Load a dialogue node by ID (creates branching conversation tree)
     fn load_dialogue_node(&mut self, node_id: u32) {
-        use astraweave_ui::{DialogueNode, DialogueChoice};
-        
+        use astraweave_ui::{DialogueChoice, DialogueNode};
+
         let node = match node_id {
             2 => DialogueNode {
                 id: 2,
@@ -279,7 +291,7 @@ impl App {
                 return;
             }
         };
-        
+
         self.hud_manager.start_dialogue(node);
         info!("Loaded dialogue node {}", node_id);
     }
@@ -310,15 +322,13 @@ impl App {
 
         // Request device and queue
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("UI Demo Device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                    memory_hints: Default::default(),
-                    trace: Default::default(),
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("UI Demo Device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            })
             .await?;
 
         let device = Arc::new(device);
@@ -365,14 +375,14 @@ impl App {
         {
             if self.audio_engine.is_some() {
                 info!("Audio engine initialized (callbacks available)");
-                
+
                 // Example: Minimap click sound callback
                 // self.hud_manager.set_minimap_click_callback(|dist| {
                 //     // Pitch varies: 800Hz at center → 1200Hz at edge
                 //     let pitch_hz = 800.0 + (dist * 400.0);
                 //     // Play beep: audio.play_sfx_beep(pitch_hz, 0.05, 0.3);
                 // });
-                
+
                 // Example: Ping spawn sound callback (3D spatial audio)
                 // self.hud_manager.set_ping_spawn_callback(|world_pos| {
                 //     // Play 3D beep at world position
@@ -431,8 +441,12 @@ impl App {
 
             // Update the appropriate key binding
             match rebinding_key_id.as_str() {
-                "move_forward" => self.menu_manager.settings.controls.move_forward = key_name.clone(),
-                "move_backward" => self.menu_manager.settings.controls.move_backward = key_name.clone(),
+                "move_forward" => {
+                    self.menu_manager.settings.controls.move_forward = key_name.clone()
+                }
+                "move_backward" => {
+                    self.menu_manager.settings.controls.move_backward = key_name.clone()
+                }
                 "move_left" => self.menu_manager.settings.controls.move_left = key_name.clone(),
                 "move_right" => self.menu_manager.settings.controls.move_right = key_name.clone(),
                 "jump" => self.menu_manager.settings.controls.jump = key_name.clone(),
@@ -476,19 +490,21 @@ impl App {
                         match c.as_str() {
                             "1" | "2" | "3" | "4" => {
                                 let choice_id = c.parse::<u32>().unwrap_or(0);
-                                if let Some(next_node_id) = self.hud_manager.select_dialogue_choice(choice_id - 1) {
+                                if let Some(next_node_id) =
+                                    self.hud_manager.select_dialogue_choice(choice_id - 1)
+                                {
                                     // Load next dialogue node
                                     self.load_dialogue_node(next_node_id);
                                 } else {
                                     // End dialogue
                                     self.hud_manager.end_dialogue();
                                 }
-                                return;  // Don't process other key handlers
+                                return; // Don't process other key handlers
                             }
                             _ => {}
                         }
                     }
-                    
+
                     // Normal game controls
                     match c.as_str() {
                         "1" if self.hud_manager.active_dialogue.is_none() => {
@@ -509,7 +525,11 @@ impl App {
                         }
                         "3" if self.hud_manager.active_dialogue.is_none() => {
                             // Self-damage at player position (center) - only if not in dialogue
-                            self.hud_manager.spawn_damage(10, (0.0, 0.5, 0.0), DamageType::SelfDamage);
+                            self.hud_manager.spawn_damage(
+                                10,
+                                (0.0, 0.5, 0.0),
+                                DamageType::SelfDamage,
+                            );
                             info!("Spawned self-damage (10)");
                         }
                         "q" | "Q" => {
@@ -538,19 +558,24 @@ impl App {
                         }
                         "h" | "H" => {
                             // Week 4 Day 1: Heal player (trigger health increase animation)
-                            self.hud_manager.player_stats.health = 
-                                (self.hud_manager.player_stats.health + 20.0).min(self.hud_manager.player_stats.max_health);
-                            info!("Player healed +20 HP (current: {:.0}/{:.0})", 
+                            self.hud_manager.player_stats.health =
+                                (self.hud_manager.player_stats.health + 20.0)
+                                    .min(self.hud_manager.player_stats.max_health);
+                            info!(
+                                "Player healed +20 HP (current: {:.0}/{:.0})",
                                 self.hud_manager.player_stats.health,
-                                self.hud_manager.player_stats.max_health);
+                                self.hud_manager.player_stats.max_health
+                            );
                         }
                         "d" | "D" => {
                             // Week 4 Day 1: Damage player (trigger health decrease animation + flash)
-                            self.hud_manager.player_stats.health = 
+                            self.hud_manager.player_stats.health =
                                 (self.hud_manager.player_stats.health - 15.0).max(0.0);
-                            info!("Player took 15 damage (current: {:.0}/{:.0})", 
+                            info!(
+                                "Player took 15 damage (current: {:.0}/{:.0})",
                                 self.hud_manager.player_stats.health,
-                                self.hud_manager.player_stats.max_health);
+                                self.hud_manager.player_stats.max_health
+                            );
                         }
                         "n" | "N" => {
                             // Week 4 Day 3: Trigger "New Quest!" notification
@@ -611,29 +636,47 @@ impl App {
         let now = std::time::Instant::now();
         let delta = now.duration_since(self.last_frame_time).as_secs_f32();
         self.frame_count += 1;
-        
+
         // Update demo time for animations
         self.demo_time += delta;
-        
+
         // Update FPS every 30 frames
         if self.frame_count >= 30 {
             self.fps = self.frame_count as f32 / delta;
             self.last_frame_time = now;
             self.frame_count = 0;
         }
-        
+
         // Update HUD (damage number animations, etc.)
         self.hud_manager.update(delta);
-        
+
         // Sync demo enemies to HUD
         self.hud_manager.enemies = self.demo_enemies.clone();
 
-        let window = self.window.as_ref().ok_or_else(|| anyhow::anyhow!("No window"))?;
-        let surface = self.surface.as_ref().ok_or_else(|| anyhow::anyhow!("No surface"))?;
-        let device = self.device.as_ref().ok_or_else(|| anyhow::anyhow!("No device"))?;
-        let queue = self.queue.as_ref().ok_or_else(|| anyhow::anyhow!("No queue"))?;
-        let config = self.config.as_ref().ok_or_else(|| anyhow::anyhow!("No config"))?;
-        let ui_layer = self.ui_layer.as_mut().ok_or_else(|| anyhow::anyhow!("No UI layer"))?;
+        let window = self
+            .window
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No window"))?;
+        let surface = self
+            .surface
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No surface"))?;
+        let device = self
+            .device
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No device"))?;
+        let queue = self
+            .queue
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No queue"))?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("No config"))?;
+        let ui_layer = self
+            .ui_layer
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("No UI layer"))?;
 
         // Get next framebuffer
         let output = match surface.get_current_texture() {
@@ -708,34 +751,34 @@ impl App {
                     );
                 });
         }
-        
+
         // Render HUD overlay (Week 3: in-game UI elements)
         // Only render when in-game (not in menus)
         if self.in_game && !self.menu_manager.is_menu_visible() {
             self.hud_manager.render(ctx);
-            
+
             // Week 3 Day 5: Demo tooltips for UI elements
             // Show tooltip when hovering over top-right corner (minimap region approximation)
             if self.hud_manager.state().show_minimap {
                 let screen_width = config.width as f32;
-                let minimap_x = screen_width - 220.0;  // Minimap is 200px + 20px margin
+                let minimap_x = screen_width - 220.0; // Minimap is 200px + 20px margin
                 let minimap_y = 20.0;
                 let minimap_size = 200.0;
-                
+
                 // Check if mouse is in minimap region
-                if self.mouse_position.0 >= minimap_x 
+                if self.mouse_position.0 >= minimap_x
                     && self.mouse_position.0 <= minimap_x + minimap_size
                     && self.mouse_position.1 >= minimap_y
-                    && self.mouse_position.1 <= minimap_y + minimap_size 
+                    && self.mouse_position.1 <= minimap_y + minimap_size
                 {
                     use astraweave_ui::TooltipData;
-                    
-                    let rotation_mode = if self.hud_manager.state().minimap_rotation { 
-                        "Player-Relative" 
-                    } else { 
-                        "North-Up" 
+
+                    let rotation_mode = if self.hud_manager.state().minimap_rotation {
+                        "Player-Relative"
+                    } else {
+                        "North-Up"
                     };
-                    
+
                     let tooltip = TooltipData {
                         title: "Minimap".to_string(),
                         description: "Shows nearby area and points of interest. Press M to toggle visibility, R to change rotation mode.".to_string(),
@@ -745,28 +788,30 @@ impl App {
                         ],
                         flavor_text: Some("The ancient cartographers would be jealous.".to_string()),
                     };
-                    
+
                     self.hud_manager.show_tooltip(tooltip, self.mouse_position);
                 } else {
                     // Hide tooltip when not hovering
                     self.hud_manager.hide_tooltip();
                 }
             }
-            
+
             // Show tooltip when hovering over quest tracker region (left side)
-            if self.hud_manager.state().show_objectives && self.hud_manager.hovered_tooltip.is_none() {
+            if self.hud_manager.state().show_objectives
+                && self.hud_manager.hovered_tooltip.is_none()
+            {
                 let quest_x = 20.0;
                 let quest_y = 60.0;
                 let quest_width = 350.0;
-                let quest_height = 200.0;  // Approximate
-                
+                let quest_height = 200.0; // Approximate
+
                 if self.mouse_position.0 >= quest_x
                     && self.mouse_position.0 <= quest_x + quest_width
                     && self.mouse_position.1 >= quest_y
                     && self.mouse_position.1 <= quest_y + quest_height
                 {
                     use astraweave_ui::TooltipData;
-                    
+
                     let tooltip = TooltipData {
                         title: "Active Quest".to_string(),
                         description: "Track your current quest objectives. Press Q to toggle, C to collapse/expand.".to_string(),
@@ -776,7 +821,7 @@ impl App {
                         ],
                         flavor_text: None,
                     };
-                    
+
                     self.hud_manager.show_tooltip(tooltip, self.mouse_position);
                 }
             }
@@ -826,7 +871,7 @@ impl App {
                     // Let MenuManager handle quit (context-sensitive: settings->back, pause->main, main->exit)
                     let was_main_menu = self.menu_manager.is_main_menu();
                     self.menu_manager.handle_action(MenuAction::Quit);
-                    
+
                     // Only exit if we were on main menu
                     if was_main_menu {
                         info!("Quitting application...");
@@ -959,7 +1004,6 @@ fn main() -> Result<()> {
     info!("Week 4 Day 2: Damage number arc motion, combos, impact shake");
     info!("Week 4 Day 3: Quest notification slide animations");
     info!("Week 4 Day 4: Minimap zoom, dynamic POI icons, click-to-ping (NEW!)");
-
 
     // Create event loop and app
     let event_loop = EventLoop::new()?;

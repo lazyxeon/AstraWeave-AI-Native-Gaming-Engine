@@ -2,7 +2,7 @@
 //! Tests cover: WorldSnapshot building, PerceptionConfig, LOS filtering, enemy state aggregation
 
 use astraweave_core::perception::{build_snapshot, PerceptionConfig};
-use astraweave_core::{Entity, IVec2, World, Team};
+use astraweave_core::{Entity, IVec2, Team, World};
 
 #[test]
 fn test_build_snapshot_basic() {
@@ -15,7 +15,14 @@ fn test_build_snapshot_basic() {
     let enemy1 = w.spawn("enemy1", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 50, 10);
 
     let cfg = PerceptionConfig { los_max: 20 };
-    let snap = build_snapshot(&w, player, companion, &[enemy1], Some("breach_door".into()), &cfg);
+    let snap = build_snapshot(
+        &w,
+        player,
+        companion,
+        &[enemy1],
+        Some("breach_door".into()),
+        &cfg,
+    );
 
     // Verify player state
     assert_eq!(snap.player.hp, 100);
@@ -59,7 +66,7 @@ fn test_build_snapshot_multiple_enemies() {
     let snap = build_snapshot(&w, player, companion, &[enemy1, enemy2, enemy3], None, &cfg);
 
     assert_eq!(snap.enemies.len(), 3);
-    
+
     // Verify all enemies present
     let enemy_ids: Vec<Entity> = snap.enemies.iter().map(|e| e.id).collect();
     assert!(enemy_ids.contains(&enemy1));
@@ -74,10 +81,10 @@ fn test_build_snapshot_los_filtering() {
 
     let player = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
     let companion = w.spawn("companion", IVec2 { x: 1, y: 0 }, Team { id: 1 }, 80, 30);
-    
+
     // Close enemy (within LOS)
     let enemy_close = w.spawn("enemy_close", IVec2 { x: 5, y: 5 }, Team { id: 2 }, 50, 10);
-    
+
     // Far enemy (beyond LOS)
     let enemy_far = w.spawn("enemy_far", IVec2 { x: 50, y: 50 }, Team { id: 2 }, 75, 10);
 

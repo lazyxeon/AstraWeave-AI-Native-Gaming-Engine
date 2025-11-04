@@ -96,9 +96,9 @@ impl Events {
             .entry(TypeId::of::<E>())
             .or_insert_with(|| Box::new(EventQueue::<E>::new()));
 
-        let queue = queue
-            .downcast_mut::<EventQueue<E>>()
-            .expect("EventQueue type mismatch: just inserted correct type, downcast should never fail");
+        let queue = queue.downcast_mut::<EventQueue<E>>().expect(
+            "EventQueue type mismatch: just inserted correct type, downcast should never fail",
+        );
         queue.send(event, self.current_frame);
     }
 
@@ -157,7 +157,7 @@ impl Events {
     pub fn update(&mut self) {
         #[cfg(feature = "profiling")]
         span!("ECS::Events::update");
-        
+
         self.current_frame += 1;
 
         // Cleanup old events from all queues
@@ -367,7 +367,11 @@ mod tests {
         }
 
         // Verify events are gone
-        assert_eq!(events.len::<TestEvent>(), 0, "Events should be consumed after drain");
+        assert_eq!(
+            events.len::<TestEvent>(),
+            0,
+            "Events should be consumed after drain"
+        );
     }
 
     #[test]
@@ -442,20 +446,28 @@ mod tests {
     #[test]
     fn test_multiple_event_types_independent() {
         #[derive(Clone, Debug)]
-        struct EventA { id: u32 }
+        struct EventA {
+            id: u32,
+        }
         impl Event for EventA {}
 
         #[derive(Clone, Debug)]
-        struct EventB { name: String }
+        struct EventB {
+            name: String,
+        }
         impl Event for EventB {}
 
         let mut events = Events::new();
 
         // Send events of different types
         events.send(EventA { id: 1 });
-        events.send(EventB { name: "first".to_string() });
+        events.send(EventB {
+            name: "first".to_string(),
+        });
         events.send(EventA { id: 2 });
-        events.send(EventB { name: "second".to_string() });
+        events.send(EventB {
+            name: "second".to_string(),
+        });
 
         // Each type should maintain its own FIFO order
         let a_events: Vec<_> = events.read::<EventA>().collect();
@@ -473,11 +485,17 @@ mod tests {
     #[test]
     fn test_clear_one_type_preserves_others() {
         #[derive(Clone, Debug)]
-        struct EventA { #[allow(dead_code)] value: i32 }
+        struct EventA {
+            #[allow(dead_code)]
+            value: i32,
+        }
         impl Event for EventA {}
 
         #[derive(Clone, Debug)]
-        struct EventB { #[allow(dead_code)] value: i32 }
+        struct EventB {
+            #[allow(dead_code)]
+            value: i32,
+        }
         impl Event for EventB {}
 
         let mut events = Events::new();
@@ -567,11 +585,17 @@ mod tests {
     #[test]
     fn test_clear_all_removes_all_event_types() {
         #[derive(Clone, Debug)]
-        struct EventA { #[allow(dead_code)] value: i32 }
+        struct EventA {
+            #[allow(dead_code)]
+            value: i32,
+        }
         impl Event for EventA {}
 
         #[derive(Clone, Debug)]
-        struct EventB { #[allow(dead_code)] value: i32 }
+        struct EventB {
+            #[allow(dead_code)]
+            value: i32,
+        }
         impl Event for EventB {}
 
         let mut events = Events::new();

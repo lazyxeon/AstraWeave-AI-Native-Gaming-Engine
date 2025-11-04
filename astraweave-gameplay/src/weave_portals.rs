@@ -187,7 +187,7 @@ mod tests {
         let edge = shared_edge(&a, &b, 1e-3);
         assert!(edge.is_some());
         let (p0, p1) = edge.unwrap();
-        
+
         // Should find the two shared vertices
         let shared_verts = vec![Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)];
         assert!(shared_verts.contains(&p0) || shared_verts.contains(&p1));
@@ -367,7 +367,11 @@ mod tests {
                 },
                 NavTri {
                     idx: 2,
-                    verts: [Vec3::new(2.0, 0.0, 0.0), Vec3::new(3.0, 0.0, 0.0), Vec3::new(0.5, 0.0, 1.0)],
+                    verts: [
+                        Vec3::new(2.0, 0.0, 0.0),
+                        Vec3::new(3.0, 0.0, 0.0),
+                        Vec3::new(0.5, 0.0, 1.0),
+                    ],
                     normal: Vec3::Y,
                     center: Vec3::new(1.833, 0.0, 0.333),
                     neighbors: vec![1],
@@ -380,14 +384,12 @@ mod tests {
 
         // Should create 2 portals (0-1 and 1-2)
         assert_eq!(pg.portals.len(), 2);
-        
+
         // Middle triangle should have 2 portals
         assert_eq!(pg.tri_to_portals[1].len(), 2);
-        
+
         // Edge triangles should have 1 portal each
         assert_eq!(pg.tri_to_portals[0].len(), 1);
         assert_eq!(pg.tri_to_portals[2].len(), 1);
     }
 }
-
-

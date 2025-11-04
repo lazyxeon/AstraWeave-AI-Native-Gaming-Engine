@@ -105,7 +105,8 @@ fn benchmark_serialize_entity_batch(c: &mut Criterion) {
             &encoded,
             |b, encoded| {
                 b.iter(|| {
-                    let decoded: Vec<EntitySnapshot> = postcard::from_bytes(black_box(encoded)).unwrap();
+                    let decoded: Vec<EntitySnapshot> =
+                        postcard::from_bytes(black_box(encoded)).unwrap();
                     black_box(decoded)
                 })
             },
@@ -158,7 +159,11 @@ fn benchmark_save_load_cycle(c: &mut Criterion) {
             |b, bundle| {
                 b.iter(|| {
                     let _path = save_manager
-                        .save(black_box("player1"), black_box(0), black_box(bundle.clone()))
+                        .save(
+                            black_box("player1"),
+                            black_box(0),
+                            black_box(bundle.clone()),
+                        )
                         .unwrap();
                 })
             },
@@ -169,7 +174,9 @@ fn benchmark_save_load_cycle(c: &mut Criterion) {
 
         group.bench_function(BenchmarkId::new("load", entity_count), |b| {
             b.iter(|| {
-                let (_bundle, _path) = save_manager.load_latest_slot(black_box("player1"), black_box(0)).unwrap();
+                let (_bundle, _path) = save_manager
+                    .load_latest_slot(black_box("player1"), black_box(0))
+                    .unwrap();
             })
         });
     }
@@ -302,7 +309,11 @@ fn benchmark_scaling_entity_count(c: &mut Criterion) {
             |b, (mgr, bundle)| {
                 b.iter(|| {
                     let _path = mgr
-                        .save(black_box("player1"), black_box(0), black_box((*bundle).clone()))
+                        .save(
+                            black_box("player1"),
+                            black_box(0),
+                            black_box((*bundle).clone()),
+                        )
                         .unwrap();
                 })
             },
@@ -316,7 +327,9 @@ fn benchmark_scaling_entity_count(c: &mut Criterion) {
             &save_manager,
             |b, mgr| {
                 b.iter(|| {
-                    let (_bundle, _path) = mgr.load_latest_slot(black_box("player1"), black_box(0)).unwrap();
+                    let (_bundle, _path) = mgr
+                        .load_latest_slot(black_box("player1"), black_box(0))
+                        .unwrap();
                 })
             },
         );

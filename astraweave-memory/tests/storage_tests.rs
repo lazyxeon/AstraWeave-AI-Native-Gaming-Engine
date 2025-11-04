@@ -11,7 +11,12 @@ use astraweave_memory::{
 use chrono::Utc;
 use std::time::SystemTime;
 
-fn create_test_memory(id: &str, memory_type: MemoryType, importance: f32, tags: Vec<String>) -> Memory {
+fn create_test_memory(
+    id: &str,
+    memory_type: MemoryType,
+    importance: f32,
+    tags: Vec<String>,
+) -> Memory {
     Memory {
         id: id.to_string(),
         memory_type,
@@ -52,7 +57,7 @@ fn create_test_memory(id: &str, memory_type: MemoryType, importance: f32, tags: 
 fn test_storage_initialization() {
     let storage = MemoryStorage::in_memory().expect("Failed to create in-memory storage");
     assert_eq!(storage.count_memories().unwrap(), 0);
-    
+
     let version = storage.get_schema_version().unwrap();
     assert_eq!(version, "1");
 }
@@ -68,8 +73,10 @@ fn test_basic_crud_operations() {
         0.8,
         vec!["test".to_string(), "crud".to_string()],
     );
-    
-    storage.store_memory(&memory).expect("Failed to store memory");
+
+    storage
+        .store_memory(&memory)
+        .expect("Failed to store memory");
     assert_eq!(storage.count_memories().unwrap(), 1);
 
     // Read
@@ -77,7 +84,7 @@ fn test_basic_crud_operations() {
         .get_memory("crud_test_001")
         .expect("Query failed")
         .expect("Memory not found");
-    
+
     assert_eq!(retrieved.id, "crud_test_001");
     assert_eq!(retrieved.memory_type, MemoryType::Episodic);
     assert!((retrieved.metadata.importance - 0.8).abs() < 0.01);
@@ -89,8 +96,10 @@ fn test_basic_crud_operations() {
     let mut updated_memory = memory.clone();
     updated_memory.metadata.importance = 0.9;
     updated_memory.content.text = "Updated content".to_string();
-    
-    storage.store_memory(&updated_memory).expect("Failed to update");
+
+    storage
+        .store_memory(&updated_memory)
+        .expect("Failed to update");
     assert_eq!(storage.count_memories().unwrap(), 1); // Still 1 memory
 
     let updated_retrieved = storage.get_memory("crud_test_001").unwrap().unwrap();
@@ -101,7 +110,7 @@ fn test_basic_crud_operations() {
     let deleted = storage.delete_memory("crud_test_001").unwrap();
     assert!(deleted);
     assert_eq!(storage.count_memories().unwrap(), 0);
-    
+
     let after_delete = storage.get_memory("crud_test_001").unwrap();
     assert!(after_delete.is_none());
 }
@@ -111,11 +120,46 @@ fn test_query_by_type() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
     // Store different types
-    storage.store_memory(&create_test_memory("ep1", MemoryType::Episodic, 0.8, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("ep2", MemoryType::Episodic, 0.7, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("sem1", MemoryType::Semantic, 0.9, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("proc1", MemoryType::Procedural, 0.6, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("emo1", MemoryType::Emotional, 0.85, vec![])).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "ep1",
+            MemoryType::Episodic,
+            0.8,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "ep2",
+            MemoryType::Episodic,
+            0.7,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "sem1",
+            MemoryType::Semantic,
+            0.9,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "proc1",
+            MemoryType::Procedural,
+            0.6,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "emo1",
+            MemoryType::Emotional,
+            0.85,
+            vec![],
+        ))
+        .unwrap();
 
     // Query episodic
     let episodic = storage.query_by_type(MemoryType::Episodic).unwrap();
@@ -139,26 +183,32 @@ fn test_query_by_type() {
 fn test_query_by_tag() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
-    storage.store_memory(&create_test_memory(
-        "combat1",
-        MemoryType::Episodic,
-        0.8,
-        vec!["combat".to_string(), "boss".to_string()],
-    )).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "combat1",
+            MemoryType::Episodic,
+            0.8,
+            vec!["combat".to_string(), "boss".to_string()],
+        ))
+        .unwrap();
 
-    storage.store_memory(&create_test_memory(
-        "combat2",
-        MemoryType::Episodic,
-        0.7,
-        vec!["combat".to_string(), "arena".to_string()],
-    )).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "combat2",
+            MemoryType::Episodic,
+            0.7,
+            vec!["combat".to_string(), "arena".to_string()],
+        ))
+        .unwrap();
 
-    storage.store_memory(&create_test_memory(
-        "dialogue1",
-        MemoryType::Episodic,
-        0.6,
-        vec!["dialogue".to_string(), "npc".to_string()],
-    )).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "dialogue1",
+            MemoryType::Episodic,
+            0.6,
+            vec!["dialogue".to_string(), "npc".to_string()],
+        ))
+        .unwrap();
 
     // Query by combat tag
     let combat_memories = storage.query_by_tag("combat").unwrap();
@@ -186,13 +236,34 @@ fn test_query_recent() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
     // Add memories with slight delays (in real usage they'd have different timestamps)
-    storage.store_memory(&create_test_memory("old1", MemoryType::Episodic, 0.5, vec![])).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "old1",
+            MemoryType::Episodic,
+            0.5,
+            vec![],
+        ))
+        .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(10));
-    
-    storage.store_memory(&create_test_memory("mid1", MemoryType::Episodic, 0.6, vec![])).unwrap();
+
+    storage
+        .store_memory(&create_test_memory(
+            "mid1",
+            MemoryType::Episodic,
+            0.6,
+            vec![],
+        ))
+        .unwrap();
     std::thread::sleep(std::time::Duration::from_millis(10));
-    
-    storage.store_memory(&create_test_memory("new1", MemoryType::Episodic, 0.7, vec![])).unwrap();
+
+    storage
+        .store_memory(&create_test_memory(
+            "new1",
+            MemoryType::Episodic,
+            0.7,
+            vec![],
+        ))
+        .unwrap();
 
     // Query 2 most recent
     let recent = storage.query_recent(2).unwrap();
@@ -205,10 +276,38 @@ fn test_query_recent() {
 fn test_query_important() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
-    storage.store_memory(&create_test_memory("low", MemoryType::Episodic, 0.2, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("medium", MemoryType::Episodic, 0.5, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("high", MemoryType::Episodic, 0.9, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("critical", MemoryType::Episodic, 1.0, vec![])).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "low",
+            MemoryType::Episodic,
+            0.2,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "medium",
+            MemoryType::Episodic,
+            0.5,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "high",
+            MemoryType::Episodic,
+            0.9,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "critical",
+            MemoryType::Episodic,
+            1.0,
+            vec![],
+        ))
+        .unwrap();
 
     // Query importance >= 0.7
     let important = storage.query_important(0.7, 10).unwrap();
@@ -226,17 +325,42 @@ fn test_query_important() {
 fn test_query_by_type_and_importance() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
-    storage.store_memory(&create_test_memory("ep_low", MemoryType::Episodic, 0.3, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("ep_high", MemoryType::Episodic, 0.9, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("sem_high", MemoryType::Semantic, 0.95, vec![])).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "ep_low",
+            MemoryType::Episodic,
+            0.3,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "ep_high",
+            MemoryType::Episodic,
+            0.9,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "sem_high",
+            MemoryType::Semantic,
+            0.95,
+            vec![],
+        ))
+        .unwrap();
 
     // Query episodic with importance >= 0.5
-    let results = storage.query_by_type_and_importance(MemoryType::Episodic, 0.5, 10).unwrap();
+    let results = storage
+        .query_by_type_and_importance(MemoryType::Episodic, 0.5, 10)
+        .unwrap();
     assert_eq!(results.len(), 1);
     assert_eq!(results[0], "ep_high");
 
     // Query semantic with importance >= 0.9
-    let sem_results = storage.query_by_type_and_importance(MemoryType::Semantic, 0.9, 10).unwrap();
+    let sem_results = storage
+        .query_by_type_and_importance(MemoryType::Semantic, 0.9, 10)
+        .unwrap();
     assert_eq!(sem_results.len(), 1);
     assert_eq!(sem_results[0], "sem_high");
 }
@@ -245,9 +369,30 @@ fn test_query_by_type_and_importance() {
 fn test_prune_operations() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
-    storage.store_memory(&create_test_memory("keep1", MemoryType::Episodic, 0.8, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("prune1", MemoryType::Episodic, 0.2, vec![])).unwrap();
-    storage.store_memory(&create_test_memory("prune2", MemoryType::Episodic, 0.3, vec![])).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "keep1",
+            MemoryType::Episodic,
+            0.8,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "prune1",
+            MemoryType::Episodic,
+            0.2,
+            vec![],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "prune2",
+            MemoryType::Episodic,
+            0.3,
+            vec![],
+        ))
+        .unwrap();
 
     assert_eq!(storage.count_memories().unwrap(), 3);
 
@@ -267,7 +412,7 @@ fn test_episode_to_memory_storage() {
 
     // Create episode with proper constructor
     let mut episode = GameEpisode::new("combat_episode_001".to_string(), EpisodeCategory::Combat);
-    
+
     // Add observations with proper structure
     episode.add_observation(Observation::new(
         0,
@@ -306,8 +451,12 @@ fn test_episode_to_memory_storage() {
     });
 
     // Convert to Memory and store
-    let memory = episode.to_memory().expect("Failed to convert episode to memory");
-    storage.store_memory(&memory).expect("Failed to store episode memory");
+    let memory = episode
+        .to_memory()
+        .expect("Failed to convert episode to memory");
+    storage
+        .store_memory(&memory)
+        .expect("Failed to store episode memory");
 
     // Retrieve and validate
     let retrieved = storage
@@ -318,7 +467,7 @@ fn test_episode_to_memory_storage() {
     assert_eq!(retrieved.memory_type, MemoryType::Episodic);
     assert_eq!(retrieved.metadata.tags.len(), 2);
     assert!(retrieved.metadata.tags.contains(&"combat".to_string()));
-    
+
     // Check importance (should be high due to good outcome)
     assert!(retrieved.metadata.importance > 0.7);
 }
@@ -342,7 +491,8 @@ fn test_multiple_episode_storage() {
     });
 
     // Create dialogue episode
-    let mut dialogue_ep = GameEpisode::new("ep_dialogue_001".to_string(), EpisodeCategory::Dialogue);
+    let mut dialogue_ep =
+        GameEpisode::new("ep_dialogue_001".to_string(), EpisodeCategory::Dialogue);
     dialogue_ep.tags = vec!["dialogue".to_string(), "npc".to_string()];
     dialogue_ep.outcome = Some(EpisodeOutcome {
         success_rating: 0.8,
@@ -356,7 +506,10 @@ fn test_multiple_episode_storage() {
     });
 
     // Create exploration episode
-    let mut exploration_ep = GameEpisode::new("ep_exploration_001".to_string(), EpisodeCategory::Exploration);
+    let mut exploration_ep = GameEpisode::new(
+        "ep_exploration_001".to_string(),
+        EpisodeCategory::Exploration,
+    );
     exploration_ep.tags = vec!["exploration".to_string(), "discovery".to_string()];
     exploration_ep.outcome = Some(EpisodeOutcome {
         success_rating: 0.95,
@@ -370,9 +523,15 @@ fn test_multiple_episode_storage() {
     });
 
     // Store all episodes
-    storage.store_memory(&combat_ep.to_memory().unwrap()).unwrap();
-    storage.store_memory(&dialogue_ep.to_memory().unwrap()).unwrap();
-    storage.store_memory(&exploration_ep.to_memory().unwrap()).unwrap();
+    storage
+        .store_memory(&combat_ep.to_memory().unwrap())
+        .unwrap();
+    storage
+        .store_memory(&dialogue_ep.to_memory().unwrap())
+        .unwrap();
+    storage
+        .store_memory(&exploration_ep.to_memory().unwrap())
+        .unwrap();
 
     // Verify count
     assert_eq!(storage.count_memories().unwrap(), 3);
@@ -394,10 +553,38 @@ fn test_multiple_episode_storage() {
 fn test_storage_stats() {
     let mut storage = MemoryStorage::in_memory().unwrap();
 
-    storage.store_memory(&create_test_memory("ep1", MemoryType::Episodic, 0.8, vec!["combat".to_string()])).unwrap();
-    storage.store_memory(&create_test_memory("ep2", MemoryType::Episodic, 0.7, vec!["dialogue".to_string()])).unwrap();
-    storage.store_memory(&create_test_memory("sem1", MemoryType::Semantic, 0.9, vec!["knowledge".to_string()])).unwrap();
-    storage.store_memory(&create_test_memory("proc1", MemoryType::Procedural, 0.6, vec!["skill".to_string()])).unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "ep1",
+            MemoryType::Episodic,
+            0.8,
+            vec!["combat".to_string()],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "ep2",
+            MemoryType::Episodic,
+            0.7,
+            vec!["dialogue".to_string()],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "sem1",
+            MemoryType::Semantic,
+            0.9,
+            vec!["knowledge".to_string()],
+        ))
+        .unwrap();
+    storage
+        .store_memory(&create_test_memory(
+            "proc1",
+            MemoryType::Procedural,
+            0.6,
+            vec!["skill".to_string()],
+        ))
+        .unwrap();
 
     let stats = storage.get_stats().expect("Failed to get stats");
 
@@ -413,15 +600,29 @@ fn test_storage_stats() {
 fn test_persistence_across_instances() {
     // Use temp file for this test
     let temp_path = std::env::temp_dir().join("astraweave_storage_test.db");
-    
+
     // Cleanup if exists
     let _ = std::fs::remove_file(&temp_path);
 
     // Create first instance and store data
     {
         let mut storage = MemoryStorage::new(&temp_path).expect("Failed to create storage");
-        storage.store_memory(&create_test_memory("persist1", MemoryType::Episodic, 0.8, vec![])).unwrap();
-        storage.store_memory(&create_test_memory("persist2", MemoryType::Semantic, 0.9, vec![])).unwrap();
+        storage
+            .store_memory(&create_test_memory(
+                "persist1",
+                MemoryType::Episodic,
+                0.8,
+                vec![],
+            ))
+            .unwrap();
+        storage
+            .store_memory(&create_test_memory(
+                "persist2",
+                MemoryType::Semantic,
+                0.9,
+                vec![],
+            ))
+            .unwrap();
         assert_eq!(storage.count_memories().unwrap(), 2);
         // storage dropped here
     }
@@ -430,10 +631,10 @@ fn test_persistence_across_instances() {
     {
         let storage = MemoryStorage::new(&temp_path).expect("Failed to reopen storage");
         assert_eq!(storage.count_memories().unwrap(), 2);
-        
+
         let mem1 = storage.get_memory("persist1").unwrap();
         assert!(mem1.is_some());
-        
+
         let mem2 = storage.get_memory("persist2").unwrap();
         assert!(mem2.is_some());
     }
@@ -453,7 +654,7 @@ fn test_embedding_storage() {
 
     let retrieved = storage.get_memory("with_embedding").unwrap().unwrap();
     assert!(retrieved.embedding.is_some());
-    
+
     let embedding = retrieved.embedding.unwrap();
     assert_eq!(embedding.len(), 5);
     assert!((embedding[0] - 0.1).abs() < 0.001);
@@ -466,17 +667,19 @@ fn test_optimize_operation() {
 
     // Add some data
     for i in 0..10 {
-        storage.store_memory(&create_test_memory(
-            &format!("opt_{}", i),
-            MemoryType::Episodic,
-            0.5,
-            vec![],
-        )).unwrap();
+        storage
+            .store_memory(&create_test_memory(
+                &format!("opt_{}", i),
+                MemoryType::Episodic,
+                0.5,
+                vec![],
+            ))
+            .unwrap();
     }
 
     // Optimize should not fail
     storage.optimize().expect("Optimize failed");
-    
+
     // Data should still be accessible
     assert_eq!(storage.count_memories().unwrap(), 10);
 }

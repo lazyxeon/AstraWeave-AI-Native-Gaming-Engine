@@ -82,7 +82,8 @@ fn benchmark_snapshot_compression(c: &mut Criterion) {
             &compressed,
             |b, data| {
                 b.iter(|| {
-                    let decompressed = lz4_flex::decompress_size_prepended(black_box(data)).unwrap();
+                    let decompressed =
+                        lz4_flex::decompress_size_prepended(black_box(data)).unwrap();
                     black_box(decompressed)
                 })
             },
@@ -450,8 +451,7 @@ fn compute_delta(base: &NetworkSnapshot, modified: &NetworkSnapshot) -> NetworkS
 
 fn apply_delta(base: &mut NetworkSnapshot, delta: &NetworkSnapshot) {
     for (entity_id, delta_state) in &delta.entity_states {
-        base.entity_states
-            .insert(*entity_id, delta_state.clone());
+        base.entity_states.insert(*entity_id, delta_state.clone());
     }
     base.server_tick = delta.server_tick;
 }

@@ -27,24 +27,33 @@ fn main() -> Result<()> {
     println!("Created world with {} entities", 3);
     println!(
         "  Player at {:?} with {} HP",
-        world.pos_of(player)
+        world
+            .pos_of(player)
             .expect("Player entity should have Position component"),
-        world.health(player)
-            .expect("Player entity should have Health component").hp
+        world
+            .health(player)
+            .expect("Player entity should have Health component")
+            .hp
     );
     println!(
         "  Companion at {:?} with {} HP",
-        world.pos_of(companion)
+        world
+            .pos_of(companion)
             .expect("Companion entity should have Position component"),
-        world.health(companion)
-            .expect("Companion entity should have Health component").hp
+        world
+            .health(companion)
+            .expect("Companion entity should have Health component")
+            .hp
     );
     println!(
         "  Enemy at {:?} with {} HP",
-        world.pos_of(enemy)
+        world
+            .pos_of(enemy)
             .expect("Enemy entity should have Position component"),
-        world.health(enemy)
-            .expect("Enemy entity should have Health component").hp
+        world
+            .health(enemy)
+            .expect("Enemy entity should have Health component")
+            .hp
     );
 
     // Simulate some game time

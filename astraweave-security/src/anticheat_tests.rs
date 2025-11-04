@@ -23,9 +23,18 @@ mod anticheat_tests {
         let result = validate_player_input(&anti_cheat);
 
         assert!(result.is_valid, "Clean player should be valid");
-        assert_eq!(result.trust_score, 1.0, "Clean player should have 1.0 trust");
-        assert!(result.warnings.is_empty(), "Clean player should have no warnings");
-        assert!(result.anomalies.is_empty(), "Clean player should have no anomalies");
+        assert_eq!(
+            result.trust_score, 1.0,
+            "Clean player should have 1.0 trust"
+        );
+        assert!(
+            result.warnings.is_empty(),
+            "Clean player should have no warnings"
+        );
+        assert!(
+            result.anomalies.is_empty(),
+            "Clean player should have no anomalies"
+        );
     }
 
     #[test]
@@ -40,10 +49,16 @@ mod anticheat_tests {
         let result = validate_player_input(&anti_cheat);
 
         assert!(result.is_valid, "Rapid input alone should still be valid");
-        assert_eq!(result.trust_score, 0.8, "Rapid input should reduce trust to 0.8");
+        assert_eq!(
+            result.trust_score, 0.8,
+            "Rapid input should reduce trust to 0.8"
+        );
         assert_eq!(result.warnings.len(), 1, "Should have 1 warning");
         assert_eq!(result.anomalies.len(), 1, "Should have 1 anomaly");
-        assert!(result.warnings[0].contains("rapid input"), "Warning should mention rapid input");
+        assert!(
+            result.warnings[0].contains("rapid input"),
+            "Warning should mention rapid input"
+        );
     }
 
     #[test]
@@ -57,10 +72,19 @@ mod anticheat_tests {
 
         let result = validate_player_input(&anti_cheat);
 
-        assert!(result.is_valid, "Impossible movement alone should still be valid");
-        assert_eq!(result.trust_score, 0.5, "Impossible movement should reduce trust to 0.5");
+        assert!(
+            result.is_valid,
+            "Impossible movement alone should still be valid"
+        );
+        assert_eq!(
+            result.trust_score, 0.5,
+            "Impossible movement should reduce trust to 0.5"
+        );
         assert_eq!(result.warnings.len(), 1, "Should have 1 warning");
-        assert!(result.warnings[0].contains("movement"), "Warning should mention movement");
+        assert!(
+            result.warnings[0].contains("movement"),
+            "Warning should mention movement"
+        );
     }
 
     #[test]
@@ -74,10 +98,19 @@ mod anticheat_tests {
 
         let result = validate_player_input(&anti_cheat);
 
-        assert!(result.is_valid, "Single memory tamper should be at threshold");
-        assert_eq!(result.trust_score, 0.3, "Memory tamper should reduce trust to 0.3");
+        assert!(
+            result.is_valid,
+            "Single memory tamper should be at threshold"
+        );
+        assert_eq!(
+            result.trust_score, 0.3,
+            "Memory tamper should reduce trust to 0.3"
+        );
         assert_eq!(result.warnings.len(), 1, "Should have 1 warning");
-        assert!(result.warnings[0].contains("Memory tampering"), "Warning should mention memory");
+        assert!(
+            result.warnings[0].contains("Memory tampering"),
+            "Warning should mention memory"
+        );
     }
 
     #[test]
@@ -100,12 +133,18 @@ mod anticheat_tests {
             warnings: vec![],
             anomalies: vec![],
         };
-        assert!(!result_manual.is_valid, "Trust score 0.2 should be invalid (not > 0.2)");
+        assert!(
+            !result_manual.is_valid,
+            "Trust score 0.2 should be invalid (not > 0.2)"
+        );
 
         // Test just above threshold
         result_manual.trust_score = 0.21;
         result_manual.is_valid = 0.21 > 0.2;
-        assert!(result_manual.is_valid, "Trust score 0.21 should be valid (> 0.2)");
+        assert!(
+            result_manual.is_valid,
+            "Trust score 0.21 should be valid (> 0.2)"
+        );
     }
 
     // ============================================================================
@@ -125,7 +164,10 @@ mod anticheat_tests {
 
         // 1.0 * 0.8 (rapid) * 0.5 (movement) = 0.4
         assert!(result.is_valid, "Trust score 0.4 should still be valid");
-        assert_eq!(result.trust_score, 0.4, "Two anomalies should compound: 1.0 * 0.8 * 0.5 = 0.4");
+        assert_eq!(
+            result.trust_score, 0.4,
+            "Two anomalies should compound: 1.0 * 0.8 * 0.5 = 0.4"
+        );
         assert_eq!(result.warnings.len(), 2, "Should have 2 warnings");
         assert_eq!(result.anomalies.len(), 2, "Should have 2 anomalies");
     }
@@ -146,7 +188,10 @@ mod anticheat_tests {
         let result = validate_player_input(&anti_cheat);
 
         // 1.0 * 0.8 * 0.5 * 0.3 = 0.12
-        assert!(!result.is_valid, "Trust score 0.12 should be invalid (< 0.2)");
+        assert!(
+            !result.is_valid,
+            "Trust score 0.12 should be invalid (< 0.2)"
+        );
         assert!(
             (result.trust_score - 0.12).abs() < 0.001,
             "Three anomalies: 1.0 * 0.8 * 0.5 * 0.3 = 0.12, got {}",
@@ -174,8 +219,15 @@ mod anticheat_tests {
         // Implementation uses .contains() which only checks ONCE, not per duplicate
         // So duplicates are treated the same as a single flag
         assert!(result.is_valid, "Should still be valid");
-        assert_eq!(result.trust_score, 0.8, "Duplicates ignored: .contains() checks once = 0.8");
-        assert_eq!(result.warnings.len(), 1, "Should have 1 warning (.contains() fires once)");
+        assert_eq!(
+            result.trust_score, 0.8,
+            "Duplicates ignored: .contains() checks once = 0.8"
+        );
+        assert_eq!(
+            result.warnings.len(),
+            1,
+            "Should have 1 warning (.contains() fires once)"
+        );
         assert_eq!(result.anomalies.len(), 1, "Should have 1 anomaly");
     }
 
@@ -185,18 +237,24 @@ mod anticheat_tests {
             player_id: "player8".to_string(),
             trust_score: 1.0,
             last_validation: 0,
-            anomaly_flags: vec![
-                "unknown_flag".to_string(),
-                "another_unknown".to_string(),
-            ],
+            anomaly_flags: vec!["unknown_flag".to_string(), "another_unknown".to_string()],
         };
 
         let result = validate_player_input(&anti_cheat);
 
         assert!(result.is_valid, "Unknown flags should not affect validity");
-        assert_eq!(result.trust_score, 1.0, "Unknown flags should not reduce trust");
-        assert!(result.warnings.is_empty(), "Unknown flags should not generate warnings");
-        assert!(result.anomalies.is_empty(), "Unknown flags should not be anomalies");
+        assert_eq!(
+            result.trust_score, 1.0,
+            "Unknown flags should not reduce trust"
+        );
+        assert!(
+            result.warnings.is_empty(),
+            "Unknown flags should not generate warnings"
+        );
+        assert!(
+            result.anomalies.is_empty(),
+            "Unknown flags should not be anomalies"
+        );
     }
 
     // ============================================================================
@@ -214,8 +272,14 @@ mod anticheat_tests {
 
         let result = validate_player_input(&anti_cheat);
 
-        assert!(result.is_valid, "Empty player ID should still validate cleanly");
-        assert_eq!(result.trust_score, 1.0, "Empty ID shouldn't affect trust score");
+        assert!(
+            result.is_valid,
+            "Empty player ID should still validate cleanly"
+        );
+        assert_eq!(
+            result.trust_score, 1.0,
+            "Empty ID shouldn't affect trust score"
+        );
     }
 
     #[test]
@@ -236,8 +300,14 @@ mod anticheat_tests {
         let result = validate_player_input(&anti_cheat);
 
         // Validation logic doesn't use timestamp, so future timestamp is ignored
-        assert!(result.is_valid, "Future timestamp should not affect validation");
-        assert_eq!(result.trust_score, 1.0, "Future timestamp should not affect trust");
+        assert!(
+            result.is_valid,
+            "Future timestamp should not affect validation"
+        );
+        assert_eq!(
+            result.trust_score, 1.0,
+            "Future timestamp should not affect trust"
+        );
     }
 
     #[test]
@@ -265,13 +335,20 @@ mod anticheat_tests {
 
         // Implementation uses .contains() which only checks ONCE per flag type
         // So 1000 duplicate flags = 3 unique flags = 0.8 * 0.5 * 0.3 = 0.12
-        assert!(!result.is_valid, "All three flag types should result in invalid player");
+        assert!(
+            !result.is_valid,
+            "All three flag types should result in invalid player"
+        );
         assert!(
             (result.trust_score - 0.12).abs() < 0.001,
             "Trust score should be 0.12 (3 unique flags), got {}",
             result.trust_score
         );
-        assert_eq!(result.warnings.len(), 3, "Should have 3 warnings (one per unique flag)");
+        assert_eq!(
+            result.warnings.len(),
+            3,
+            "Should have 3 warnings (one per unique flag)"
+        );
         assert_eq!(result.anomalies.len(), 3, "Should have 3 anomalies");
     }
 
@@ -291,14 +368,19 @@ mod anticheat_tests {
         let result = validate_player_input(&anti_cheat);
 
         // Common botting pattern: rapid input + impossible movement
-        assert_eq!(result.trust_score, 0.4, "Common bot pattern should reduce to 0.4");
+        assert_eq!(
+            result.trust_score, 0.4,
+            "Common bot pattern should reduce to 0.4"
+        );
         assert!(result.is_valid, "0.4 is still above 0.2 threshold");
         assert!(
             result.anomalies.contains(&"rapid_input".to_string()),
             "Should detect rapid input"
         );
         assert!(
-            result.anomalies.contains(&"impossible_movement".to_string()),
+            result
+                .anomalies
+                .contains(&"impossible_movement".to_string()),
             "Should detect impossible movement"
         );
     }
@@ -318,8 +400,14 @@ mod anticheat_tests {
         let result = validate_player_input(&anti_cheat);
 
         // 1.0 * 0.5 * 0.3 = 0.15
-        assert!(!result.is_valid, "Movement + memory tamper should be invalid");
-        assert_eq!(result.trust_score, 0.15, "Should be 0.15 (below 0.2 threshold)");
+        assert!(
+            !result.is_valid,
+            "Movement + memory tamper should be invalid"
+        );
+        assert_eq!(
+            result.trust_score, 0.15,
+            "Should be 0.15 (below 0.2 threshold)"
+        );
     }
 
     #[test]
@@ -335,7 +423,10 @@ mod anticheat_tests {
 
         // Note: validate_player_input doesn't use existing trust_score,
         // it calculates fresh from flags. This is a design choice.
-        assert_eq!(result.trust_score, 0.8, "Should calculate fresh trust from flags");
+        assert_eq!(
+            result.trust_score, 0.8,
+            "Should calculate fresh trust from flags"
+        );
         assert!(result.is_valid, "Fresh calculation should still be valid");
     }
 }

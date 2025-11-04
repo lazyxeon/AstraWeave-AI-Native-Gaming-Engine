@@ -1,7 +1,7 @@
-use glam::Vec3;
-use rapier3d::prelude::*;
 use crate::{DamageType, Stats};
 use astraweave_physics::PhysicsWorld;
+use glam::Vec3;
+use rapier3d::prelude::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct IFrame {
@@ -45,30 +45,30 @@ pub fn perform_attack_sweep(
     // Calculate sweep direction and distance
     let dir = to - from;
     let distance = dir.length();
-    
+
     // Early exit if sweep distance is negligible
     if distance <= 1e-3 {
         return None;
     }
-    
+
     let dir_normalized = dir / distance;
-    
+
     // Adjust raycast to character center height (assuming 2m tall characters)
     let ray_from = from + Vec3::new(0.0, 1.0, 0.0);
-    
+
     // Use a raycast with radius check for simplified attack detection
     let ray = Ray::new(
         point![ray_from.x, ray_from.y, ray_from.z],
         vector![dir_normalized.x, dir_normalized.y, dir_normalized.z],
     );
-    
+
     // Create filter to exclude self from raycast
     let filter = if let Some(self_handle) = phys.handle_of(self_id) {
         QueryFilter::default().exclude_rigid_body(self_handle)
     } else {
         QueryFilter::default()
     };
-    
+
     // Cast ray and check hits within radius
     if let Some((collider_handle, hit)) = phys.query_pipeline.cast_ray_and_get_normal(
         &phys.bodies,
@@ -87,13 +87,13 @@ pub fn perform_attack_sweep(
                     if target_id == self_id {
                         return None;
                     }
-                    
+
                     // Check if hit is within attack radius (for sweep effect)
                     let hit_point_dist = hit.time_of_impact;
                     if hit_point_dist > distance {
                         return None;
                     }
-                    
+
                     // Filter by attack cone (check if target is within forward cone)
                     // This prevents hitting targets behind the attacker
                     let hit_point = ray_from + dir_normalized * hit_point_dist;
@@ -102,12 +102,12 @@ pub fn perform_attack_sweep(
                         return None;
                     }
                     let dot = dir_normalized.dot(to_target);
-                    
+
                     // Only hit targets in front (dot > 0.5 = ~60 degree cone)
                     if dot < 0.5 {
                         return None;
                     }
-                    
+
                     // Find the matching combatant target
                     if let Some(target) = targets.iter_mut().find(|t| t.body == target_id) {
                         // Check parry window
@@ -122,7 +122,7 @@ pub fn perform_attack_sweep(
                                 });
                             }
                         }
-                        
+
                         // Check invincibility frames
                         if let Some(iframe) = &target.iframes {
                             if iframe.time_left > 0.0 {
@@ -133,7 +133,7 @@ pub fn perform_attack_sweep(
                                 });
                             }
                         }
-                        
+
                         // Apply damage
                         let damage = target.stats.apply_damage(base_damage, dtype);
                         return Some(HitResult {
@@ -146,7 +146,7 @@ pub fn perform_attack_sweep(
             }
         }
     }
-    
+
     None
 }
 
@@ -180,16 +180,16 @@ mod tests {
     #[test]
     fn test_single_enemy_hit() {
         let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create attacker and target
         let attacker_id = phys.add_character(Vec3::ZERO, Vec3::new(0.5, 1.0, 0.5));
         let target_id = phys.add_character(Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
-        
+
         // Step physics to update query pipeline
         phys.step();
-        
+
         let mut targets = vec![create_test_combatant(target_id, 100)];
-        
+
         // Perform attack sweep from attacker toward target
         let result = perform_attack_sweep(
             &mut phys,
@@ -201,14 +201,14 @@ mod tests {
             DamageType::Physical,
             &mut targets,
         );
-        
+
         // Verify hit was registered
         assert!(result.is_some(), "Attack should hit the target");
         let hit = result.unwrap();
         assert_eq!(hit.target, target_id);
         assert_eq!(hit.damage, 20);
         assert!(!hit.parried);
-        
+
         // Verify target took damage
         assert_eq!(targets[0].stats.hp, 80);
     }
@@ -218,16 +218,16 @@ mod tests {
     #[test]
     fn test_cone_filtering() {
         let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create attacker and target behind attacker
         let attacker_id = phys.add_character(Vec3::ZERO, Vec3::new(0.5, 1.0, 0.5));
         let target_id = phys.add_character(Vec3::new(-2.0, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
-        
+
         // Step physics to update query pipeline
         phys.step();
-        
+
         let mut targets = vec![create_test_combatant(target_id, 100)];
-        
+
         // Perform attack sweep forward (target is behind, should not hit)
         let result = perform_attack_sweep(
             &mut phys,
@@ -239,9 +239,12 @@ mod tests {
             DamageType::Physical,
             &mut targets,
         );
-        
+
         // Verify no hit (target is behind attacker, outside cone)
-        assert!(result.is_none(), "Attack should not hit target outside cone");
+        assert!(
+            result.is_none(),
+            "Attack should not hit target outside cone"
+        );
         assert_eq!(targets[0].stats.hp, 100, "Target should take no damage");
     }
 
@@ -250,20 +253,20 @@ mod tests {
     #[test]
     fn test_first_hit_only() {
         let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create attacker and two targets in line
         let attacker_id = phys.add_character(Vec3::ZERO, Vec3::new(0.5, 1.0, 0.5));
         let target1_id = phys.add_character(Vec3::new(1.5, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
         let target2_id = phys.add_character(Vec3::new(3.0, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
-        
+
         // Step physics to update query pipeline
         phys.step();
-        
+
         let mut targets = vec![
             create_test_combatant(target1_id, 100),
             create_test_combatant(target2_id, 100),
         ];
-        
+
         // Perform attack sweep through both targets
         let result = perform_attack_sweep(
             &mut phys,
@@ -275,12 +278,12 @@ mod tests {
             DamageType::Physical,
             &mut targets,
         );
-        
+
         // Verify only first target was hit
         assert!(result.is_some(), "Attack should hit first target");
         let hit = result.unwrap();
         assert_eq!(hit.target, target1_id, "Should hit first target in line");
-        
+
         // Verify only first target took damage
         assert_eq!(targets[0].stats.hp, 80, "First target should take damage");
         assert_eq!(targets[1].stats.hp, 100, "Second target should not be hit");
@@ -291,16 +294,16 @@ mod tests {
     #[test]
     fn test_range_limiting() {
         let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create attacker and distant target
         let attacker_id = phys.add_character(Vec3::ZERO, Vec3::new(0.5, 1.0, 0.5));
         let target_id = phys.add_character(Vec3::new(10.0, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
-        
+
         // Step physics to update query pipeline
         phys.step();
-        
+
         let mut targets = vec![create_test_combatant(target_id, 100)];
-        
+
         // Perform short-range attack (target is too far)
         let result = perform_attack_sweep(
             &mut phys,
@@ -312,7 +315,7 @@ mod tests {
             DamageType::Physical,
             &mut targets,
         );
-        
+
         // Verify no hit due to range
         assert!(result.is_none(), "Attack should not reach distant target");
         assert_eq!(targets[0].stats.hp, 100, "Target should take no damage");
@@ -323,14 +326,14 @@ mod tests {
     #[test]
     fn test_parry_blocks_damage() {
         let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create attacker and target with active parry
         let attacker_id = phys.add_character(Vec3::ZERO, Vec3::new(0.5, 1.0, 0.5));
         let target_id = phys.add_character(Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
-        
+
         // Step physics to update query pipeline
         phys.step();
-        
+
         let mut targets = vec![Combatant {
             body: target_id,
             stats: Stats {
@@ -347,7 +350,7 @@ mod tests {
                 active: true,
             }),
         }];
-        
+
         // Perform attack sweep
         let result = perform_attack_sweep(
             &mut phys,
@@ -359,18 +362,28 @@ mod tests {
             DamageType::Physical,
             &mut targets,
         );
-        
+
         // Verify hit was parried
         assert!(result.is_some(), "Attack should register as hit");
         let hit = result.unwrap();
         assert_eq!(hit.target, target_id);
         assert_eq!(hit.damage, 0, "Parried attack should deal no damage");
         assert!(hit.parried, "Attack should be marked as parried");
-        
+
         // Verify target took no damage and parry was consumed
-        assert_eq!(targets[0].stats.hp, 100, "Target should take no damage from parry");
-        assert_eq!(targets[0].parry.as_ref().unwrap().window, 0.0, "Parry window should be consumed");
-        assert!(!targets[0].parry.as_ref().unwrap().active, "Parry should be deactivated");
+        assert_eq!(
+            targets[0].stats.hp, 100,
+            "Target should take no damage from parry"
+        );
+        assert_eq!(
+            targets[0].parry.as_ref().unwrap().window,
+            0.0,
+            "Parry window should be consumed"
+        );
+        assert!(
+            !targets[0].parry.as_ref().unwrap().active,
+            "Parry should be deactivated"
+        );
     }
 
     /// Test 6: Invincibility Frames
@@ -378,14 +391,14 @@ mod tests {
     #[test]
     fn test_iframes_block_damage() {
         let mut phys = PhysicsWorld::new(Vec3::new(0.0, -9.81, 0.0));
-        
+
         // Create attacker and target with iframes
         let attacker_id = phys.add_character(Vec3::ZERO, Vec3::new(0.5, 1.0, 0.5));
         let target_id = phys.add_character(Vec3::new(2.0, 0.0, 0.0), Vec3::new(0.5, 1.0, 0.5));
-        
+
         // Step physics to update query pipeline
         phys.step();
-        
+
         let mut targets = vec![Combatant {
             body: target_id,
             stats: Stats {
@@ -399,7 +412,7 @@ mod tests {
             iframes: Some(IFrame { time_left: 0.5 }),
             parry: None,
         }];
-        
+
         // Perform attack sweep
         let result = perform_attack_sweep(
             &mut phys,
@@ -411,15 +424,22 @@ mod tests {
             DamageType::Physical,
             &mut targets,
         );
-        
+
         // Verify hit was blocked by iframes
         assert!(result.is_some(), "Attack should register as hit");
         let hit = result.unwrap();
         assert_eq!(hit.damage, 0, "Attack during iframes should deal no damage");
         assert!(!hit.parried, "iframes are not parries");
-        
+
         // Verify target took no damage and iframes persist
-        assert_eq!(targets[0].stats.hp, 100, "Target should take no damage during iframes");
-        assert_eq!(targets[0].iframes.as_ref().unwrap().time_left, 0.5, "iframes should not be consumed by attack");
+        assert_eq!(
+            targets[0].stats.hp, 100,
+            "Target should take no damage during iframes"
+        );
+        assert_eq!(
+            targets[0].iframes.as_ref().unwrap().time_left,
+            0.5,
+            "iframes should not be consumed by attack"
+        );
     }
 }

@@ -1,4 +1,4 @@
-// Veilweaver Demo - Showcase of AstraWeave AI-Native Game Engine  
+// Veilweaver Demo - Showcase of AstraWeave AI-Native Game Engine
 // Demonstrates: Phi-3 LLM integration, telemetry, 60 FPS headless simulation
 
 use anyhow::{Context, Result};
@@ -202,10 +202,14 @@ fn main() -> Result<()> {
     info!("   Total frames: {}", frame_count);
     info!("   Total time: {:.2}s", total_time.as_secs_f32());
     info!("   Average FPS: {:.1}", avg_fps);
-    info!("   FPS min/p50/p95/p99: {:.1}/{:.1}/{:.1}/{:.1}",
-        stats.fps_min, stats.fps_p50, stats.fps_p95, stats.fps_p99);
-    info!("   Frame time avg/p95/max: {:.2}ms/{:.2}ms/{:.2}ms",
-        stats.frame_time_avg, stats.frame_time_p95, stats.frame_time_max);
+    info!(
+        "   FPS min/p50/p95/p99: {:.1}/{:.1}/{:.1}/{:.1}",
+        stats.fps_min, stats.fps_p50, stats.fps_p95, stats.fps_p99
+    );
+    info!(
+        "   Frame time avg/p95/max: {:.2}ms/{:.2}ms/{:.2}ms",
+        stats.frame_time_avg, stats.frame_time_p95, stats.frame_time_max
+    );
 
     // Export telemetry
     std::fs::create_dir_all("target/telemetry")?;
@@ -216,8 +220,22 @@ fn main() -> Result<()> {
     // Check acceptance criteria
     info!("");
     info!("📊 Acceptance Criteria:");
-    info!("   60 FPS p95: {} (target: ≥60)", if stats.fps_p95 >= 60.0 { "✅ PASS" } else { "❌ FAIL" });
-    info!("   Frame time p95: {} (target: ≤16.67ms)", if stats.frame_time_p95 <= 16.67 { "✅ PASS" } else { "❌ FAIL" });
+    info!(
+        "   60 FPS p95: {} (target: ≥60)",
+        if stats.fps_p95 >= 60.0 {
+            "✅ PASS"
+        } else {
+            "❌ FAIL"
+        }
+    );
+    info!(
+        "   Frame time p95: {} (target: ≤16.67ms)",
+        if stats.frame_time_p95 <= 16.67 {
+            "✅ PASS"
+        } else {
+            "❌ FAIL"
+        }
+    );
     info!("   Zero crashes: ✅ PASS (demo completed successfully)");
     info!("   Telemetry export: ✅ PASS (JSON file created)");
 

@@ -15,9 +15,11 @@
 //! 3. Large battle (100 agents) - target capacity
 //! 4. Massive battle (500 agents) - stress test
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
-use astraweave_core::{ActionStep, CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot, PlanIntent};
+use astraweave_core::{
+    ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
+};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::BTreeMap;
 use std::time::Instant;
 
@@ -26,11 +28,7 @@ use std::time::Instant;
 // ============================================================================
 
 /// Create a WorldSnapshot for a single agent
-fn create_agent_snapshot(
-    agent_id: usize,
-    agent_pos: IVec2,
-    enemy_count: usize,
-) -> WorldSnapshot {
+fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) -> WorldSnapshot {
     let enemies: Vec<EnemyState> = (0..enemy_count)
         .map(|i| EnemyState {
             id: (agent_id * 1000 + i) as u32,
@@ -40,7 +38,7 @@ fn create_agent_snapshot(
             last_seen: 0.0,
         })
         .collect();
-    
+
     WorldSnapshot {
         t: 0.0,
         me: CompanionState {
@@ -75,15 +73,14 @@ fn perception_phase(agent_count: usize, enemies_per_agent: usize) -> Vec<WorldSn
 /// Simulate planning phase for N agents
 fn planning_phase(snapshots: &[WorldSnapshot]) -> Vec<PlanIntent> {
     let mut controller = CAiController::new(PlannerMode::Rule);
-    
+
     snapshots
         .iter()
         .map(|snap| {
-            dispatch_planner(&mut controller, snap, None)
-                .unwrap_or_else(|_| PlanIntent {
-                    plan_id: "fallback".to_string(),
-                    steps: vec![ActionStep::Wait],
-                })
+            dispatch_planner(&mut controller, snap, None).unwrap_or_else(|_| PlanIntent {
+                plan_id: "fallback".to_string(),
+                steps: vec![ActionStep::Wait],
+            })
         })
         .collect()
 }
@@ -109,13 +106,13 @@ fn full_multi_agent_pipeline(
 ) -> (Vec<WorldSnapshot>, Vec<PlanIntent>, usize) {
     // Phase 1: Perception (create snapshots)
     let snapshots = perception_phase(agent_count, enemies_per_agent);
-    
+
     // Phase 2: Planning (generate plans)
     let plans = planning_phase(&snapshots);
-    
+
     // Phase 3: Validation (validate plans)
     let valid_count = validation_phase(&plans);
-    
+
     (snapshots, plans, valid_count)
 }
 
@@ -125,151 +122,126 @@ fn full_multi_agent_pipeline(
 
 fn bench_full_multi_agent_pipeline(c: &mut Criterion) {
     let mut group = c.benchmark_group("full_multi_agent_pipeline");
-    
+
     let scenarios = [
         (10, 3, "small_10a_3e"),
         (50, 5, "medium_50a_5e"),
         (100, 5, "large_100a_5e"),
         (500, 5, "stress_500a_5e"),
     ];
-    
+
     for (agent_count, enemies_per_agent, name) in scenarios {
         group.bench_with_input(
             BenchmarkId::from_parameter(name),
             &(agent_count, enemies_per_agent),
             |b, &(agents, enemies)| {
-                b.iter(|| {
-                    full_multi_agent_pipeline(
-                        black_box(agents),
-                        black_box(enemies)
-                    )
-                })
-            }
+                b.iter(|| full_multi_agent_pipeline(black_box(agents), black_box(enemies)))
+            },
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_perception_phase(c: &mut Criterion) {
     let mut group = c.benchmark_group("perception_phase");
-    
+
     let scenarios = [
         (10, 3, "10_agents_3_enemies"),
         (50, 5, "50_agents_5_enemies"),
         (100, 5, "100_agents_5_enemies"),
         (500, 5, "500_agents_5_enemies"),
     ];
-    
+
     for (agent_count, enemies_per_agent, name) in scenarios {
         group.bench_with_input(
             BenchmarkId::from_parameter(name),
             &(agent_count, enemies_per_agent),
             |b, &(agents, enemies)| {
-                b.iter(|| {
-                    perception_phase(
-                        black_box(agents),
-                        black_box(enemies)
-                    )
-                })
-            }
+                b.iter(|| perception_phase(black_box(agents), black_box(enemies)))
+            },
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_planning_phase(c: &mut Criterion) {
     let mut group = c.benchmark_group("planning_phase");
-    
+
     let scenarios = [
         (10, "10_agents"),
         (50, "50_agents"),
         (100, "100_agents"),
         (500, "500_agents"),
     ];
-    
+
     for (agent_count, name) in scenarios {
         let snapshots = perception_phase(agent_count, 5);
-        
+
         group.bench_with_input(
             BenchmarkId::from_parameter(name),
             &snapshots,
-            |b, snapshots| {
-                b.iter(|| {
-                    planning_phase(black_box(snapshots))
-                })
-            }
+            |b, snapshots| b.iter(|| planning_phase(black_box(snapshots))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_validation_phase(c: &mut Criterion) {
     let mut group = c.benchmark_group("validation_phase");
-    
+
     let snapshots = perception_phase(100, 5);
     let plans = planning_phase(&snapshots);
-    
+
     group.bench_function("100_plans", |b| {
-        b.iter(|| {
-            validation_phase(black_box(&plans))
-        })
+        b.iter(|| validation_phase(black_box(&plans)))
     });
-    
+
     group.finish();
 }
 
 fn bench_feedback_phase(c: &mut Criterion) {
     let mut group = c.benchmark_group("feedback_phase");
-    
+
     let mut snapshots = perception_phase(100, 5);
     let plans = planning_phase(&snapshots);
-    
+
     group.bench_function("100_agents", |b| {
-        b.iter(|| {
-            feedback_phase(black_box(&plans), black_box(&mut snapshots))
-        })
+        b.iter(|| feedback_phase(black_box(&plans), black_box(&mut snapshots)))
     });
-    
+
     group.finish();
 }
 
 fn bench_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("multi_agent_scaling");
-    
+
     // Test scaling from 1 to 1000 agents
     let agent_counts = [1, 10, 50, 100, 200, 500, 1000];
-    
+
     for &agent_count in &agent_counts {
         group.bench_with_input(
             BenchmarkId::from_parameter(agent_count),
             &agent_count,
-            |b, &agents| {
-                b.iter(|| {
-                    full_multi_agent_pipeline(
-                        black_box(agents),
-                        black_box(5)
-                    )
-                })
-            }
+            |b, &agents| b.iter(|| full_multi_agent_pipeline(black_box(agents), black_box(5))),
         );
     }
-    
+
     group.finish();
 }
 
 fn bench_per_agent_latency(c: &mut Criterion) {
     let mut group = c.benchmark_group("per_agent_latency");
-    
+
     // Measure per-agent cost at different scales
     let scenarios = [
         (10, "10_agents"),
         (100, "100_agents"),
         (1000, "1000_agents"),
     ];
-    
+
     for (agent_count, name) in scenarios {
         group.bench_with_input(
             BenchmarkId::from_parameter(name),
@@ -281,14 +253,14 @@ fn bench_per_agent_latency(c: &mut Criterion) {
                         let _ = full_multi_agent_pipeline(black_box(agents), black_box(5));
                     }
                     let elapsed = start.elapsed();
-                    
+
                     // Return per-agent time
                     elapsed / (iters as u32 * agents as u32)
                 })
-            }
+            },
         );
     }
-    
+
     group.finish();
 }
 

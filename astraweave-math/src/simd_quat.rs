@@ -38,7 +38,7 @@ pub fn mul_quat_simd(a: Quat, b: Quat) -> Quat {
             a * b
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         a * b
@@ -52,33 +52,30 @@ unsafe fn mul_quat_simd_sse2(a: Quat, b: Quat) -> Quat {
     // Load quaternions as [x, y, z, w] - using _ prefix since we compute from components
     let _qa = _mm_setr_ps(a.x, a.y, a.z, a.w);
     let _qb = _mm_setr_ps(b.x, b.y, b.z, b.w);
-    
+
     // Hamilton product: (a.w*b + b.w*a + cross(a, b), a.w*b.w - dot(a.xyz, b.xyz))
-    
+
     // Broadcast components
     let aw = _mm_set1_ps(a.w);
     let bw = _mm_set1_ps(b.w);
-    
+
     // Vector parts (xyz)
     let a_xyz = _mm_setr_ps(a.x, a.y, a.z, 0.0);
     let b_xyz = _mm_setr_ps(b.x, b.y, b.z, 0.0);
-    
+
     // Cross product (a.xyz × b.xyz)
     let a_yzx = _mm_shuffle_ps(a_xyz, a_xyz, 0b11_00_10_01); // [y, z, x, 0]
     let a_zxy = _mm_shuffle_ps(a_xyz, a_xyz, 0b11_01_00_10); // [z, x, y, 0]
     let b_yzx = _mm_shuffle_ps(b_xyz, b_xyz, 0b11_00_10_01);
     let b_zxy = _mm_shuffle_ps(b_xyz, b_xyz, 0b11_01_00_10);
-    
-    let cross = _mm_sub_ps(
-        _mm_mul_ps(a_yzx, b_zxy),
-        _mm_mul_ps(a_zxy, b_yzx)
-    );
-    
+
+    let cross = _mm_sub_ps(_mm_mul_ps(a_yzx, b_zxy), _mm_mul_ps(a_zxy, b_yzx));
+
     // Vector part: a.w*b.xyz + b.w*a.xyz + cross(a, b)
     let mut vec_part = _mm_mul_ps(aw, b_xyz);
     vec_part = _mm_add_ps(vec_part, _mm_mul_ps(bw, a_xyz));
     vec_part = _mm_add_ps(vec_part, cross);
-    
+
     // Scalar part: a.w*b.w - dot(a.xyz, b.xyz)
     let dot = _mm_mul_ps(a_xyz, b_xyz);
     let dot_sum = {
@@ -87,14 +84,14 @@ unsafe fn mul_quat_simd_sse2(a: Quat, b: Quat) -> Quat {
         let shuf = _mm_movehl_ps(shuf, sums);
         _mm_add_ss(sums, shuf)
     };
-    
+
     let scalar_part = _mm_sub_ss(_mm_mul_ss(aw, bw), dot_sum);
-    
+
     // Combine: [vec_part.x, vec_part.y, vec_part.z, scalar_part]
     let mut result = [0.0f32; 4];
     _mm_storeu_ps(result.as_mut_ptr(), vec_part);
     _mm_store_ss(&mut result[3], scalar_part);
-    
+
     Quat::from_xyzw(result[0], result[1], result[2], result[3])
 }
 
@@ -127,7 +124,7 @@ pub fn normalize_quat_simd(q: Quat) -> Quat {
             q.normalize()
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         q.normalize()
@@ -139,7 +136,7 @@ pub fn normalize_quat_simd(q: Quat) -> Quat {
 #[target_feature(enable = "sse2")]
 unsafe fn normalize_quat_simd_sse2(q: Quat) -> Quat {
     let qv = _mm_setr_ps(q.x, q.y, q.z, q.w);
-    
+
     // Compute length squared
     let sq = _mm_mul_ps(qv, qv);
     let sum = {
@@ -148,19 +145,19 @@ unsafe fn normalize_quat_simd_sse2(q: Quat) -> Quat {
         let shuf = _mm_movehl_ps(shuf, sums);
         _mm_add_ss(sums, shuf)
     };
-    
+
     // Broadcast to all lanes
     let len_sq = _mm_shuffle_ps(sum, sum, 0b00_00_00_00);
-    
+
     // Use sqrt + div for better precision (vs rsqrt)
     let len = _mm_sqrt_ps(len_sq);
-    
+
     // Normalize
     let normalized = _mm_div_ps(qv, len);
-    
+
     let mut result = [0.0f32; 4];
     _mm_storeu_ps(result.as_mut_ptr(), normalized);
-    
+
     Quat::from_xyzw(result[0], result[1], result[2], result[3])
 }
 
@@ -194,7 +191,7 @@ pub fn slerp_simd(a: Quat, b: Quat, t: f32) -> Quat {
             a.slerp(b, t)
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         a.slerp(b, t)
@@ -290,7 +287,7 @@ pub fn dot_quat_simd(a: Quat, b: Quat) -> f32 {
             a.dot(b)
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         a.dot(b)
@@ -303,16 +300,16 @@ pub fn dot_quat_simd(a: Quat, b: Quat) -> f32 {
 unsafe fn dot_quat_simd_sse2(a: Quat, b: Quat) -> f32 {
     let qa = _mm_setr_ps(a.x, a.y, a.z, a.w);
     let qb = _mm_setr_ps(b.x, b.y, b.z, b.w);
-    
+
     // Multiply components
     let prod = _mm_mul_ps(qa, qb);
-    
+
     // Horizontal sum
     let shuf = _mm_shuffle_ps(prod, prod, 0b00_01_10_11);
     let sums = _mm_add_ps(prod, shuf);
     let shuf = _mm_movehl_ps(shuf, sums);
     let result = _mm_add_ss(sums, shuf);
-    
+
     _mm_cvtss_f32(result)
 }
 
@@ -325,7 +322,7 @@ mod tests {
     fn test_mul_quat_simd_identity() {
         let q1 = Quat::IDENTITY;
         let q2 = Quat::from_rotation_y(std::f32::consts::PI / 2.0);
-        
+
         let result = mul_quat_simd(q1, q2);
         assert_relative_eq!(result.x, q2.x, epsilon = 0.0001);
         assert_relative_eq!(result.y, q2.y, epsilon = 0.0001);
@@ -337,10 +334,10 @@ mod tests {
     fn test_mul_quat_simd_composition() {
         let q1 = Quat::from_rotation_x(std::f32::consts::PI / 4.0);
         let q2 = Quat::from_rotation_y(std::f32::consts::PI / 4.0);
-        
+
         let result = mul_quat_simd(q1, q2);
         let expected = q1 * q2;
-        
+
         assert_relative_eq!(result.x, expected.x, epsilon = 0.001);
         assert_relative_eq!(result.y, expected.y, epsilon = 0.001);
         assert_relative_eq!(result.z, expected.z, epsilon = 0.001);
@@ -351,7 +348,7 @@ mod tests {
     fn test_normalize_quat_simd() {
         let q = Quat::from_xyzw(1.0, 2.0, 3.0, 4.0);
         let normalized = normalize_quat_simd(q);
-        
+
         let len = normalized.length();
         assert_relative_eq!(len, 1.0, epsilon = 0.0001);
     }
@@ -360,7 +357,7 @@ mod tests {
     fn test_normalize_quat_simd_already_normalized() {
         let q = Quat::IDENTITY;
         let normalized = normalize_quat_simd(q);
-        
+
         assert_relative_eq!(normalized.x, q.x, epsilon = 0.0001);
         assert_relative_eq!(normalized.y, q.y, epsilon = 0.0001);
         assert_relative_eq!(normalized.z, q.z, epsilon = 0.0001);
@@ -371,10 +368,10 @@ mod tests {
     fn test_slerp_simd_halfway() {
         let q1 = Quat::IDENTITY;
         let q2 = Quat::from_rotation_y(std::f32::consts::PI);
-        
+
         let mid = slerp_simd(q1, q2, 0.5);
         let expected = q1.slerp(q2, 0.5);
-        
+
         assert_relative_eq!(mid.x, expected.x, epsilon = 0.001);
         assert_relative_eq!(mid.y, expected.y, epsilon = 0.001);
         assert_relative_eq!(mid.z, expected.z, epsilon = 0.001);
@@ -385,7 +382,7 @@ mod tests {
     fn test_dot_quat_simd() {
         let q1 = Quat::IDENTITY;
         let q2 = Quat::IDENTITY;
-        
+
         let dot = dot_quat_simd(q1, q2);
         assert_relative_eq!(dot, 1.0, epsilon = 0.0001);
     }
@@ -394,10 +391,10 @@ mod tests {
     fn test_dot_quat_simd_orthogonal() {
         let q1 = Quat::from_rotation_x(std::f32::consts::PI / 2.0);
         let q2 = Quat::from_rotation_y(std::f32::consts::PI / 2.0);
-        
+
         let dot = dot_quat_simd(q1, q2);
         let expected = q1.dot(q2);
-        
+
         assert_relative_eq!(dot, expected, epsilon = 0.001);
     }
 
@@ -408,10 +405,10 @@ mod tests {
             Quat::from_xyzw(0.0, 2.0, 0.0, 0.0),
             Quat::from_xyzw(0.0, 0.0, 3.0, 0.0),
         ];
-        
+
         let normalized = normalize_batch(&quats);
         assert_eq!(normalized.len(), 3);
-        
+
         for q in normalized {
             assert_relative_eq!(q.length(), 1.0, epsilon = 0.0001);
         }
@@ -423,10 +420,10 @@ mod tests {
             (Quat::IDENTITY, Quat::from_rotation_y(1.0)),
             (Quat::IDENTITY, Quat::from_rotation_x(1.0)),
         ];
-        
+
         let interpolated = slerp_batch(&pairs, 0.5);
         assert_eq!(interpolated.len(), 2);
-        
+
         for q in interpolated {
             assert_relative_eq!(q.length(), 1.0, epsilon = 0.001);
         }

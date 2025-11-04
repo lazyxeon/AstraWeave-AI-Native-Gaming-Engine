@@ -98,10 +98,10 @@ mod tests {
     fn test_events_send_and_len() {
         let mut events: Events<i32> = Events::default();
         let mut writer = events.writer();
-        
+
         writer.send(42);
         writer.send(100);
-        
+
         drop(writer);
         assert_eq!(events.len(), 2);
         assert!(!events.is_empty());
@@ -111,16 +111,16 @@ mod tests {
     fn test_events_drain() {
         let mut events: Events<i32> = Events::default();
         let mut writer = events.writer();
-        
+
         writer.send(1);
         writer.send(2);
         writer.send(3);
-        
+
         drop(writer);
-        
+
         let mut reader = events.reader();
         let drained: Vec<_> = reader.drain().collect();
-        
+
         assert_eq!(drained, vec![1, 2, 3]);
         drop(reader);
         assert!(events.is_empty());
@@ -130,13 +130,13 @@ mod tests {
     fn test_events_clear() {
         let mut events: Events<i32> = Events::default();
         let mut writer = events.writer();
-        
+
         writer.send(1);
         writer.send(2);
-        
+
         drop(writer);
         events.clear();
-        
+
         assert!(events.is_empty());
         assert_eq!(events.len(), 0);
     }
@@ -149,7 +149,7 @@ mod tests {
             from: IVec2 { x: 0, y: 0 },
             to: IVec2 { x: 5, y: 5 },
         };
-        
+
         assert_eq!(event.from, IVec2 { x: 0, y: 0 });
         assert_eq!(event.to, IVec2 { x: 5, y: 5 });
     }
@@ -167,7 +167,7 @@ mod tests {
             from: IVec2 { x: 0, y: 0 },
             to: IVec2 { x: 5, y: 5 },
         };
-        
+
         assert_eq!(event1, event2);
     }
 
@@ -178,7 +178,7 @@ mod tests {
             entity,
             target: IVec2 { x: 10, y: 20 },
         };
-        
+
         assert_eq!(event.target, IVec2 { x: 10, y: 20 });
     }
 
@@ -189,7 +189,7 @@ mod tests {
             entity,
             reason: "no path".into(),
         };
-        
+
         assert_eq!(event.reason, "no path");
     }
 
@@ -201,7 +201,7 @@ mod tests {
             tool_verb: "MoveTo".into(),
             reason: "blocked".into(),
         };
-        
+
         assert_eq!(event.tool_verb, "MoveTo");
         assert_eq!(event.reason, "blocked");
     }
@@ -214,7 +214,7 @@ mod tests {
             old_hp: 100,
             new_hp: 75,
         };
-        
+
         assert_eq!(event.old_hp, 100);
         assert_eq!(event.new_hp, 75);
     }

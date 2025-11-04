@@ -35,12 +35,7 @@ fn create_scalable_snapshot(enemy_count: usize) -> WorldSnapshot {
     let mut pois = vec![];
     for i in 0..5 {
         pois.push(Poi {
-            k: if i % 2 == 0 {
-                "objective"
-            } else {
-                "medkit"
-            }
-            .to_string(),
+            k: if i % 2 == 0 { "objective" } else { "medkit" }.to_string(),
             pos: IVec2 {
                 x: 75 + i as i32 * 5,
                 y: 75,

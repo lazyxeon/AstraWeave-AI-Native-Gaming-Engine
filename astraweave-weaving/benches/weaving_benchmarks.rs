@@ -84,9 +84,7 @@ fn bench_pattern_detection(c: &mut Criterion) {
         ];
 
         let mut metrics = metrics_low_health.clone();
-        metrics
-            .resource_scarcity
-            .insert("food".to_string(), 0.7);
+        metrics.resource_scarcity.insert("food".to_string(), 0.7);
 
         b.iter(|| {
             let mut all_patterns = BTreeMap::new();
@@ -239,21 +237,11 @@ fn bench_adjudication(c: &mut Criterion) {
         b.iter(|| {
             adjudicator.begin_tick();
             let intents = vec![
-                WeaveIntent::new("intent1")
-                    .with_priority(0.9)
-                    .with_cost(5),
-                WeaveIntent::new("intent2")
-                    .with_priority(0.7)
-                    .with_cost(3),
-                WeaveIntent::new("intent3")
-                    .with_priority(0.5)
-                    .with_cost(2),
-                WeaveIntent::new("intent4")
-                    .with_priority(0.3)
-                    .with_cost(4),
-                WeaveIntent::new("intent5")
-                    .with_priority(0.2)
-                    .with_cost(1),
+                WeaveIntent::new("intent1").with_priority(0.9).with_cost(5),
+                WeaveIntent::new("intent2").with_priority(0.7).with_cost(3),
+                WeaveIntent::new("intent3").with_priority(0.5).with_cost(2),
+                WeaveIntent::new("intent4").with_priority(0.3).with_cost(4),
+                WeaveIntent::new("intent5").with_priority(0.2).with_cost(1),
             ];
             let approved = adjudicator.adjudicate(intents);
             std_black_box(approved)
@@ -397,12 +385,8 @@ fn bench_full_pipeline(c: &mut Criterion) {
             recent_damage_events: 5,
             time_since_event: 2.0,
         };
-        metrics
-            .resource_scarcity
-            .insert("food".to_string(), 0.7);
-        metrics
-            .resource_scarcity
-            .insert("water".to_string(), 0.5);
+        metrics.resource_scarcity.insert("food".to_string(), 0.7);
+        metrics.resource_scarcity.insert("water".to_string(), 0.5);
 
         b.iter(|| {
             // Step 1: Pattern detection
@@ -461,9 +445,7 @@ fn bench_full_pipeline(c: &mut Criterion) {
                     recent_damage_events: count / 10,
                     time_since_event: 2.0,
                 };
-                metrics
-                    .resource_scarcity
-                    .insert("food".to_string(), 0.7);
+                metrics.resource_scarcity.insert("food".to_string(), 0.7);
 
                 b.iter(|| {
                     let mut patterns = BTreeMap::new();

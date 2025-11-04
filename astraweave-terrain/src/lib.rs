@@ -27,7 +27,9 @@ pub use chunk::{ChunkId, ChunkManager, TerrainChunk};
 pub use climate::{ClimateConfig, ClimateMap};
 pub use heightmap::{Heightmap, HeightmapConfig};
 pub use lod_blending::{LodBlender, MorphConfig, MorphedMesh, MorphingLodManager};
-pub use lod_manager::{ChunkLodState, LodConfig as LodHysteresisConfig, LodLevel, LodManager, LodStats}; // Week 4
+pub use lod_manager::{
+    ChunkLodState, LodConfig as LodHysteresisConfig, LodLevel, LodManager, LodStats,
+}; // Week 4
 pub use meshing::{
     AsyncMeshGenerator, ChunkMesh, DualContouring, LodConfig, LodMeshGenerator, MeshVertex,
 };
@@ -39,8 +41,7 @@ pub use partition_integration::{
 };
 pub use scatter::{ScatterConfig, ScatterResult, VegetationInstance, VegetationScatter};
 pub use streaming_diagnostics::{
-    ChunkLoadState, DiagnosticReport, FrameStats, HitchDetector, MemoryStats,
-    StreamingDiagnostics,
+    ChunkLoadState, DiagnosticReport, FrameStats, HitchDetector, MemoryStats, StreamingDiagnostics,
 }; // Week 4
 pub use structures::{
     StructureConfig, StructureGenerator, StructureInstance, StructureResult, StructureType,
@@ -52,9 +53,9 @@ use serde::{Deserialize, Serialize};
 
 // Phase 5: Comprehensive test modules
 #[cfg(test)]
-mod voxel_data_tests;
-#[cfg(test)]
 mod chunk_tests;
+#[cfg(test)]
+mod voxel_data_tests;
 
 /// Configuration for the world generator
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,7 +131,7 @@ impl WorldGenerator {
     ) -> anyhow::Result<(TerrainChunk, ScatterResult)> {
         // Generate the basic terrain chunk (lock-free)
         let chunk = self.generate_chunk(chunk_id)?;
-        
+
         // Register with chunk manager
         self.chunk_manager.add_chunk(chunk.clone());
 
@@ -188,7 +189,7 @@ impl WorldGenerator {
 
         Ok(result)
     }
-    
+
     /// Generate a terrain chunk at the given position (lock-free, parallel-safe)
     /// NOTE: Does NOT add to chunk_manager - caller must handle that separately
     pub fn generate_chunk(&self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
@@ -229,9 +230,12 @@ impl WorldGenerator {
         // NOTE: chunk_manager.add_chunk() removed - caller handles registration
         Ok(chunk)
     }
-    
+
     /// Generate and register a chunk (mutable version for compatibility)
-    pub fn generate_and_register_chunk(&mut self, chunk_id: ChunkId) -> anyhow::Result<TerrainChunk> {
+    pub fn generate_and_register_chunk(
+        &mut self,
+        chunk_id: ChunkId,
+    ) -> anyhow::Result<TerrainChunk> {
         let chunk = self.generate_chunk(chunk_id)?;
         self.chunk_manager.add_chunk(chunk.clone());
         Ok(chunk)

@@ -215,13 +215,13 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Success);
         ctx.register_action("a2", || BehaviorStatus::Success);
         ctx.register_action("a3", || BehaviorStatus::Success);
-        
+
         let seq = BehaviorNode::Sequence(vec![
             BehaviorNode::Action("a1".to_string()),
             BehaviorNode::Action("a2".to_string()),
             BehaviorNode::Action("a3".to_string()),
         ]);
-        
+
         assert_eq!(seq.tick(&ctx), BehaviorStatus::Success);
     }
 
@@ -231,13 +231,13 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Success);
         ctx.register_action("a2", || BehaviorStatus::Failure);
         ctx.register_action("a3", || BehaviorStatus::Success);
-        
+
         let seq = BehaviorNode::Sequence(vec![
             BehaviorNode::Action("a1".to_string()),
             BehaviorNode::Action("a2".to_string()),
             BehaviorNode::Action("a3".to_string()),
         ]);
-        
+
         assert_eq!(seq.tick(&ctx), BehaviorStatus::Failure);
     }
 
@@ -247,13 +247,13 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Success);
         ctx.register_action("a2", || BehaviorStatus::Running);
         ctx.register_action("a3", || BehaviorStatus::Success);
-        
+
         let seq = BehaviorNode::Sequence(vec![
             BehaviorNode::Action("a1".to_string()),
             BehaviorNode::Action("a2".to_string()),
             BehaviorNode::Action("a3".to_string()),
         ]);
-        
+
         assert_eq!(seq.tick(&ctx), BehaviorStatus::Running);
     }
 
@@ -272,13 +272,13 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Failure);
         ctx.register_action("a2", || BehaviorStatus::Failure);
         ctx.register_action("a3", || BehaviorStatus::Failure);
-        
+
         let sel = BehaviorNode::Selector(vec![
             BehaviorNode::Action("a1".to_string()),
             BehaviorNode::Action("a2".to_string()),
             BehaviorNode::Action("a3".to_string()),
         ]);
-        
+
         assert_eq!(sel.tick(&ctx), BehaviorStatus::Failure);
     }
 
@@ -288,13 +288,13 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Failure);
         ctx.register_action("a2", || BehaviorStatus::Success);
         ctx.register_action("a3", || BehaviorStatus::Failure);
-        
+
         let sel = BehaviorNode::Selector(vec![
             BehaviorNode::Action("a1".to_string()),
             BehaviorNode::Action("a2".to_string()),
             BehaviorNode::Action("a3".to_string()),
         ]);
-        
+
         assert_eq!(sel.tick(&ctx), BehaviorStatus::Success);
     }
 
@@ -304,13 +304,13 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Failure);
         ctx.register_action("a2", || BehaviorStatus::Running);
         ctx.register_action("a3", || BehaviorStatus::Success);
-        
+
         let sel = BehaviorNode::Selector(vec![
             BehaviorNode::Action("a1".to_string()),
             BehaviorNode::Action("a2".to_string()),
             BehaviorNode::Action("a3".to_string()),
         ]);
-        
+
         assert_eq!(sel.tick(&ctx), BehaviorStatus::Running);
     }
 
@@ -388,12 +388,12 @@ mod tests {
             *count_clone.lock().unwrap() += 1;
             BehaviorStatus::Success
         });
-        
+
         let node = BehaviorNode::Decorator(
             DecoratorType::Repeat(5),
             Box::new(BehaviorNode::Action("increment".to_string())),
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Success);
         assert_eq!(*count.lock().unwrap(), 5);
     }
@@ -412,12 +412,12 @@ mod tests {
                 BehaviorStatus::Failure
             }
         });
-        
+
         let node = BehaviorNode::Decorator(
             DecoratorType::Repeat(5),
             Box::new(BehaviorNode::Action("fail_at_3".to_string())),
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Failure);
         assert_eq!(*count.lock().unwrap(), 3);
     }
@@ -436,12 +436,12 @@ mod tests {
                 BehaviorStatus::Failure
             }
         });
-        
+
         let node = BehaviorNode::Decorator(
             DecoratorType::Retry(5),
             Box::new(BehaviorNode::Action("succeed_at_3".to_string())),
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Success);
         assert_eq!(*attempt.lock().unwrap(), 3);
     }
@@ -450,12 +450,12 @@ mod tests {
     fn test_retry_exhausted() {
         let mut ctx = BehaviorContext::new();
         ctx.register_action("always_fail", || BehaviorStatus::Failure);
-        
+
         let node = BehaviorNode::Decorator(
             DecoratorType::Retry(3),
             Box::new(BehaviorNode::Action("always_fail".to_string())),
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Failure);
     }
 
@@ -467,7 +467,7 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Success);
         ctx.register_action("a2", || BehaviorStatus::Success);
         ctx.register_action("a3", || BehaviorStatus::Failure);
-        
+
         let node = BehaviorNode::Parallel(
             vec![
                 BehaviorNode::Action("a1".to_string()),
@@ -476,7 +476,7 @@ mod tests {
             ],
             2, // threshold: 2 successes needed
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Success);
     }
 
@@ -486,7 +486,7 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Success);
         ctx.register_action("a2", || BehaviorStatus::Failure);
         ctx.register_action("a3", || BehaviorStatus::Failure);
-        
+
         let node = BehaviorNode::Parallel(
             vec![
                 BehaviorNode::Action("a1".to_string()),
@@ -495,7 +495,7 @@ mod tests {
             ],
             2, // threshold: 2 successes needed
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Failure);
     }
 
@@ -505,7 +505,7 @@ mod tests {
         ctx.register_action("a1", || BehaviorStatus::Success);
         ctx.register_action("a2", || BehaviorStatus::Running);
         ctx.register_action("a3", || BehaviorStatus::Failure);
-        
+
         let node = BehaviorNode::Parallel(
             vec![
                 BehaviorNode::Action("a1".to_string()),
@@ -514,7 +514,7 @@ mod tests {
             ],
             2, // threshold: 2 successes needed
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Running);
     }
 
@@ -529,12 +529,12 @@ mod tests {
     fn test_parallel_threshold_exceeds_children() {
         let mut ctx = BehaviorContext::new();
         ctx.register_action("a1", || BehaviorStatus::Success);
-        
+
         let node = BehaviorNode::Parallel(
             vec![BehaviorNode::Action("a1".to_string())],
             5, // threshold > children count
         );
-        
+
         assert_eq!(node.tick(&ctx), BehaviorStatus::Failure);
     }
 
@@ -551,10 +551,10 @@ mod tests {
     fn test_behavior_graph_tick() {
         let mut ctx = BehaviorContext::new();
         ctx.register_action("succeed", || BehaviorStatus::Success);
-        
+
         let root = BehaviorNode::Action("succeed".to_string());
         let graph = BehaviorGraph::new(root);
-        
+
         assert_eq!(graph.tick(&ctx), BehaviorStatus::Success);
     }
 
@@ -562,7 +562,7 @@ mod tests {
     fn test_behavior_graph_current_node_name() {
         let root = BehaviorNode::Action("test".to_string());
         let graph = BehaviorGraph::new(root);
-        
+
         assert_eq!(graph.current_node_name(), Some("root".to_string()));
     }
 
@@ -575,7 +575,7 @@ mod tests {
         ctx.register_action("a2", || BehaviorStatus::Success);
         ctx.register_action("a3", || BehaviorStatus::Success);
         ctx.register_action("a4", || BehaviorStatus::Success);
-        
+
         // Selector [ Sequence [a1, a2], Sequence [a3, a4] ]
         let root = BehaviorNode::Selector(vec![
             BehaviorNode::Sequence(vec![
@@ -587,7 +587,7 @@ mod tests {
                 BehaviorNode::Action("a4".to_string()),
             ]),
         ]);
-        
+
         assert_eq!(root.tick(&ctx), BehaviorStatus::Success);
     }
 
@@ -596,7 +596,7 @@ mod tests {
         let mut ctx = BehaviorContext::new();
         ctx.register_action("fail", || BehaviorStatus::Failure);
         ctx.register_action("succeed", || BehaviorStatus::Success);
-        
+
         // Sequence [ Inverter(fail), succeed ]
         let root = BehaviorNode::Sequence(vec![
             BehaviorNode::Decorator(
@@ -605,7 +605,7 @@ mod tests {
             ),
             BehaviorNode::Action("succeed".to_string()),
         ]);
-        
+
         assert_eq!(root.tick(&ctx), BehaviorStatus::Success);
     }
 }

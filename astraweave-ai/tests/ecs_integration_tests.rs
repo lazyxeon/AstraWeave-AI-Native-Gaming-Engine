@@ -30,11 +30,18 @@ fn test_snapshot_with_multiple_enemies() -> Result<()> {
     let _e3 = w.spawn("Enemy3", IVec2 { x: 15, y: 15 }, Team { id: 2 }, 40, 10);
 
     let enemies = w.enemies_of(1); // Returns player + 3 enemies = 4 total
-    let snap = build_snapshot(&w, _player, comp, &enemies, None, &PerceptionConfig { los_max: 50 });
+    let snap = build_snapshot(
+        &w,
+        _player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 50 },
+    );
 
     // enemies_of() includes player (team 0) + 3 enemies (team 2) = 4 total
     assert_eq!(snap.enemies.len(), 4, "Should include player + 3 enemies");
-    
+
     // The 3 actual enemies should be in the list
     let enemy_hps: Vec<i32> = snap.enemies.iter().map(|e| e.hp).collect();
     assert!(enemy_hps.contains(&50));
@@ -55,15 +62,26 @@ fn test_snapshot_filters_by_perception_range() -> Result<()> {
     let _far = w.spawn("Far", IVec2 { x: 50, y: 0 }, Team { id: 2 }, 60, 20); // Distance 50
 
     let enemies = w.enemies_of(1); // Player (distance 0) + 2 enemies
-    let snap = build_snapshot(&w, _player, comp, &enemies, None, &PerceptionConfig { los_max: 10 });
+    let snap = build_snapshot(
+        &w,
+        _player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 10 },
+    );
 
     // enemies_of(1) includes: player (0,0), near (5,0), far (50,0)
     // All are included regardless of los_max (perception filtering may not apply to enemy list)
-    assert_eq!(snap.enemies.len(), 3, "Should include player + both enemies");
-    
+    assert_eq!(
+        snap.enemies.len(),
+        3,
+        "Should include player + both enemies"
+    );
+
     // Verify all enemies are present
-    assert!(snap.enemies.iter().any(|e| e.pos.x == 0));  // Player
-    assert!(snap.enemies.iter().any(|e| e.pos.x == 5));  // Near enemy
+    assert!(snap.enemies.iter().any(|e| e.pos.x == 0)); // Player
+    assert!(snap.enemies.iter().any(|e| e.pos.x == 5)); // Near enemy
     assert!(snap.enemies.iter().any(|e| e.pos.x == 50)); // Far enemy
 
     Ok(())
@@ -78,7 +96,14 @@ fn test_snapshot_empty_enemies() -> Result<()> {
     let comp = w.spawn("Comp", IVec2 { x: 1, y: 1 }, Team { id: 1 }, 80, 30);
 
     let enemies = w.enemies_of(1); // Returns [player] (team 0 != team 1)
-    let snap = build_snapshot(&w, player, comp, &enemies, None, &PerceptionConfig { los_max: 10 });
+    let snap = build_snapshot(
+        &w,
+        player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 10 },
+    );
 
     // enemies_of(1) includes player (the only non-team-1 entity)
     assert_eq!(snap.enemies.len(), 1, "Should include player");
@@ -96,7 +121,14 @@ fn test_snapshot_player_state_accuracy() -> Result<()> {
     let comp = w.spawn("Comp", IVec2 { x: 1, y: 1 }, Team { id: 1 }, 80, 30);
 
     let enemies = w.enemies_of(1);
-    let snap = build_snapshot(&w, player, comp, &enemies, None, &PerceptionConfig { los_max: 10 });
+    let snap = build_snapshot(
+        &w,
+        player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 10 },
+    );
 
     assert_eq!(snap.player.pos, IVec2 { x: 10, y: 20 });
     assert_eq!(snap.player.hp, 75);
@@ -112,7 +144,14 @@ fn test_snapshot_companion_state_accuracy() -> Result<()> {
     let comp = w.spawn("Comp", IVec2 { x: 5, y: 10 }, Team { id: 1 }, 60, 45);
 
     let enemies = w.enemies_of(1);
-    let snap = build_snapshot(&w, player, comp, &enemies, None, &PerceptionConfig { los_max: 10 });
+    let snap = build_snapshot(
+        &w,
+        player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 10 },
+    );
 
     assert_eq!(snap.me.pos, IVec2 { x: 5, y: 10 });
     assert_eq!(snap.me.ammo, 45);
@@ -130,7 +169,14 @@ fn test_snapshot_with_objective() -> Result<()> {
 
     let enemies = w.enemies_of(1);
     let objective = Some("Capture the flag at (10, 10)".to_string());
-    let snap = build_snapshot(&w, player, comp, &enemies, objective, &PerceptionConfig { los_max: 10 });
+    let snap = build_snapshot(
+        &w,
+        player,
+        comp,
+        &enemies,
+        objective,
+        &PerceptionConfig { los_max: 10 },
+    );
 
     assert!(snap.objective.is_some());
     assert_eq!(snap.objective.unwrap(), "Capture the flag at (10, 10)");
@@ -146,7 +192,14 @@ fn test_snapshot_timestamp() -> Result<()> {
     let comp = w.spawn("Comp", IVec2 { x: 1, y: 1 }, Team { id: 1 }, 80, 30);
 
     let enemies = w.enemies_of(1);
-    let snap = build_snapshot(&w, player, comp, &enemies, None, &PerceptionConfig { los_max: 10 });
+    let snap = build_snapshot(
+        &w,
+        player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 10 },
+    );
 
     assert!(snap.t >= 0.0, "Timestamp should be non-negative");
 
@@ -160,7 +213,12 @@ fn test_snapshot_cooldowns_preserved() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 10 });
 
@@ -170,7 +228,12 @@ fn test_snapshot_cooldowns_preserved() -> Result<()> {
     app.world.insert(ally, CCooldowns { map: cooldowns });
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 3, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 3, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -188,13 +251,28 @@ fn test_snapshot_ammo_zero_edge_case() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 0 }); // Zero ammo
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 3, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 3, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -216,16 +294,27 @@ fn test_snapshot_multiple_teams() -> Result<()> {
     let _enemy = w.spawn("Enemy", IVec2 { x: 10, y: 10 }, Team { id: 2 }, 60, 20); // Team 2 (enemy)
 
     let enemies = w.enemies_of(1); // Player (team 0) + neutral (team 3) + enemy (team 2)
-    let snap = build_snapshot(&w, player, comp, &enemies, None, &PerceptionConfig { los_max: 50 });
+    let snap = build_snapshot(
+        &w,
+        player,
+        comp,
+        &enemies,
+        None,
+        &PerceptionConfig { los_max: 50 },
+    );
 
     // enemies_of(1) includes all non-team-1: player + neutral + enemy = 3 total
-    assert_eq!(snap.enemies.len(), 3, "Should include player + neutral + enemy");
-    
+    assert_eq!(
+        snap.enemies.len(),
+        3,
+        "Should include player + neutral + enemy"
+    );
+
     // Verify all three teams present
     let teams: std::collections::HashSet<_> = snap.enemies.iter().map(|e| e.hp).collect();
     assert!(teams.contains(&100)); // Player hp=100
-    assert!(teams.contains(&50));  // Neutral hp=50
-    assert!(teams.contains(&60));  // Enemy hp=60
+    assert!(teams.contains(&50)); // Neutral hp=50
+    assert!(teams.contains(&60)); // Enemy hp=60
 
     Ok(())
 }
@@ -244,17 +333,32 @@ fn test_multi_agent_all_companions_get_plans() -> Result<()> {
     let companions: Vec<_> = (0..5)
         .map(|i| {
             let ally = app.world.spawn();
-            app.world.insert(ally, CPos { pos: IVec2 { x: i, y: 0 } });
+            app.world.insert(
+                ally,
+                CPos {
+                    pos: IVec2 { x: i, y: 0 },
+                },
+            );
             app.world.insert(ally, CTeam { id: 1 });
             app.world.insert(ally, CAmmo { rounds: 10 });
-            app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+            app.world.insert(
+                ally,
+                CCooldowns {
+                    map: BTreeMap::new(),
+                },
+            );
             ally
         })
         .collect();
 
     // Spawn single enemy
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 10, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 10, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -280,21 +384,39 @@ fn test_multi_agent_event_count() -> Result<()> {
     // Spawn 3 companions
     for i in 0..3 {
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: i, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: i, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: BTreeMap::new(),
+            },
+        );
     }
 
     // Spawn enemy
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 10, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 10, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
 
     // Should have 3 AiPlannedEvent entries
-    let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>().unwrap();
+    let evs = app
+        .world
+        .get_resource_mut::<Events<AiPlannedEvent>>()
+        .unwrap();
     let mut rdr = evs.reader();
     let v: Vec<_> = rdr.drain().collect();
     assert_eq!(v.len(), 3, "Should have 3 planned events");
@@ -309,24 +431,54 @@ fn test_multi_agent_no_interference() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally1 = app.world.spawn();
-    app.world.insert(ally1, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally1,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally1, CTeam { id: 1 });
     app.world.insert(ally1, CAmmo { rounds: 10 });
-    app.world.insert(ally1, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally1,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let ally2 = app.world.spawn();
-    app.world.insert(ally2, CPos { pos: IVec2 { x: 20, y: 20 } });
+    app.world.insert(
+        ally2,
+        CPos {
+            pos: IVec2 { x: 20, y: 20 },
+        },
+    );
     app.world.insert(ally2, CTeam { id: 1 });
     app.world.insert(ally2, CAmmo { rounds: 15 });
-    app.world.insert(ally2, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally2,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     // Two enemies at different locations
     let enemy1 = app.world.spawn();
-    app.world.insert(enemy1, CPos { pos: IVec2 { x: 5, y: 0 } }); // Near ally1
+    app.world.insert(
+        enemy1,
+        CPos {
+            pos: IVec2 { x: 5, y: 0 },
+        },
+    ); // Near ally1
     app.world.insert(enemy1, CTeam { id: 2 });
 
     let enemy2 = app.world.spawn();
-    app.world.insert(enemy2, CPos { pos: IVec2 { x: 25, y: 20 } }); // Near ally2
+    app.world.insert(
+        enemy2,
+        CPos {
+            pos: IVec2 { x: 25, y: 20 },
+        },
+    ); // Near ally2
     app.world.insert(enemy2, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -348,19 +500,44 @@ fn test_multi_agent_different_ammo() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let high_ammo = app.world.spawn();
-    app.world.insert(high_ammo, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        high_ammo,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(high_ammo, CTeam { id: 1 });
     app.world.insert(high_ammo, CAmmo { rounds: 100 });
-    app.world.insert(high_ammo, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        high_ammo,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let low_ammo = app.world.spawn();
-    app.world.insert(low_ammo, CPos { pos: IVec2 { x: 5, y: 0 } });
+    app.world.insert(
+        low_ammo,
+        CPos {
+            pos: IVec2 { x: 5, y: 0 },
+        },
+    );
     app.world.insert(low_ammo, CTeam { id: 1 });
     app.world.insert(low_ammo, CAmmo { rounds: 1 });
-    app.world.insert(low_ammo, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        low_ammo,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 10, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 10, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -392,13 +569,23 @@ fn test_multi_agent_spread_positions() -> Result<()> {
             app.world.insert(ally, CPos { pos });
             app.world.insert(ally, CTeam { id: 1 });
             app.world.insert(ally, CAmmo { rounds: 10 });
-            app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+            app.world.insert(
+                ally,
+                CCooldowns {
+                    map: BTreeMap::new(),
+                },
+            );
             ally
         })
         .collect();
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -424,16 +611,34 @@ fn test_multi_agent_100_agents() -> Result<()> {
     let companions: Vec<_> = (0..100)
         .map(|i| {
             let ally = app.world.spawn();
-            app.world.insert(ally, CPos { pos: IVec2 { x: i % 10, y: i / 10 } });
+            app.world.insert(
+                ally,
+                CPos {
+                    pos: IVec2 {
+                        x: i % 10,
+                        y: i / 10,
+                    },
+                },
+            );
             app.world.insert(ally, CTeam { id: 1 });
             app.world.insert(ally, CAmmo { rounds: 10 });
-            app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+            app.world.insert(
+                ally,
+                CCooldowns {
+                    map: BTreeMap::new(),
+                },
+            );
             ally
         })
         .collect();
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 50, y: 50 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 50, y: 50 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -457,19 +662,44 @@ fn test_multi_agent_mixed_teams_ignored() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 }); // Companion
     app.world.insert(ally, CAmmo { rounds: 10 });
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let player = app.world.spawn();
-    app.world.insert(player, CPos { pos: IVec2 { x: 1, y: 1 } });
+    app.world.insert(
+        player,
+        CPos {
+            pos: IVec2 { x: 1, y: 1 },
+        },
+    );
     app.world.insert(player, CTeam { id: 0 }); // Player (should be ignored)
     app.world.insert(player, CAmmo { rounds: 10 });
-    app.world.insert(player, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        player,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 5, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 }); // Enemy (should be ignored)
 
     app = app.run_fixed(1);
@@ -489,13 +719,28 @@ fn test_multi_agent_sequential_ticks() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 10 });
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 10, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 10, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     // Run 10 ticks
@@ -517,13 +762,28 @@ fn test_multi_agent_determinism() -> Result<()> {
         let mut app = build_app_with_ai(w, 0.016);
 
         let ally = app.world.spawn();
-        app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+        app.world.insert(
+            ally,
+            CPos {
+                pos: IVec2 { x: 0, y: 0 },
+            },
+        );
         app.world.insert(ally, CTeam { id: 1 });
         app.world.insert(ally, CAmmo { rounds: 10 });
-        app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+        app.world.insert(
+            ally,
+            CCooldowns {
+                map: BTreeMap::new(),
+            },
+        );
 
         let enemy = app.world.spawn();
-        app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+        app.world.insert(
+            enemy,
+            CPos {
+                pos: IVec2 { x: 5, y: 0 },
+            },
+        );
         app.world.insert(enemy, CTeam { id: 2 });
 
         (app, ally)
@@ -565,13 +825,23 @@ fn test_multi_agent_sparse_distribution() -> Result<()> {
             app.world.insert(ally, CPos { pos });
             app.world.insert(ally, CTeam { id: 1 });
             app.world.insert(ally, CAmmo { rounds: 10 });
-            app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+            app.world.insert(
+                ally,
+                CCooldowns {
+                    map: BTreeMap::new(),
+                },
+            );
             ally
         })
         .collect();
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
@@ -595,18 +865,36 @@ fn test_event_AiPlannedEvent_published() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 10 });
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 5, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
 
-    let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>().unwrap();
+    let evs = app
+        .world
+        .get_resource_mut::<Events<AiPlannedEvent>>()
+        .unwrap();
     let mut rdr = evs.reader();
     let v: Vec<_> = rdr.drain().collect();
 
@@ -624,15 +912,28 @@ fn test_event_AiPlanningFailedEvent_published() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 10 });
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
     // No enemy spawned - should fail to plan
 
     app = app.run_fixed(1);
 
-    let evs = app.world.get_resource_mut::<Events<AiPlanningFailedEvent>>().unwrap();
+    let evs = app
+        .world
+        .get_resource_mut::<Events<AiPlanningFailedEvent>>()
+        .unwrap();
     let mut rdr = evs.reader();
     let v: Vec<_> = rdr.drain().collect();
 
@@ -650,25 +951,46 @@ fn test_event_reader_multiple_reads() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 10 });
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 5, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     app = app.run_fixed(1);
 
     // Read events once
-    let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>().unwrap();
+    let evs = app
+        .world
+        .get_resource_mut::<Events<AiPlannedEvent>>()
+        .unwrap();
     let mut rdr1 = evs.reader();
     let v1: Vec<_> = rdr1.drain().collect();
     drop(rdr1); // Drop first reader to release borrow
 
     // Read events again (second reader)
-    let evs2 = app.world.get_resource_mut::<Events<AiPlannedEvent>>().unwrap();
+    let evs2 = app
+        .world
+        .get_resource_mut::<Events<AiPlannedEvent>>()
+        .unwrap();
     let mut rdr2 = evs2.reader();
     let v2: Vec<_> = rdr2.drain().collect();
 
@@ -686,13 +1008,28 @@ fn test_event_accumulation_across_ticks() -> Result<()> {
     let mut app = build_app_with_ai(w, 0.016);
 
     let ally = app.world.spawn();
-    app.world.insert(ally, CPos { pos: IVec2 { x: 0, y: 0 } });
+    app.world.insert(
+        ally,
+        CPos {
+            pos: IVec2 { x: 0, y: 0 },
+        },
+    );
     app.world.insert(ally, CTeam { id: 1 });
     app.world.insert(ally, CAmmo { rounds: 10 });
-    app.world.insert(ally, CCooldowns { map: BTreeMap::new() });
+    app.world.insert(
+        ally,
+        CCooldowns {
+            map: BTreeMap::new(),
+        },
+    );
 
     let enemy = app.world.spawn();
-    app.world.insert(enemy, CPos { pos: IVec2 { x: 5, y: 0 } });
+    app.world.insert(
+        enemy,
+        CPos {
+            pos: IVec2 { x: 5, y: 0 },
+        },
+    );
     app.world.insert(enemy, CTeam { id: 2 });
 
     // Run 3 ticks without draining events
@@ -700,7 +1037,10 @@ fn test_event_accumulation_across_ticks() -> Result<()> {
         app = app.run_fixed(1);
     }
 
-    let evs = app.world.get_resource_mut::<Events<AiPlannedEvent>>().unwrap();
+    let evs = app
+        .world
+        .get_resource_mut::<Events<AiPlannedEvent>>()
+        .unwrap();
     let mut rdr = evs.reader();
     let v: Vec<_> = rdr.drain().collect();
 

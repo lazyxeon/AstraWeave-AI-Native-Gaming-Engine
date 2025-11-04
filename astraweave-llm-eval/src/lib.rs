@@ -44,18 +44,18 @@ pub struct Scenario {
     pub id: String,
     pub scenario_type: ScenarioType,
     pub description: String,
-    pub prompt: String,                // Direct prompt for LLM
-    pub expected_actions: Vec<String>, // Expected action types (e.g., ["MoveTo", "CoverFire"])
+    pub prompt: String,                 // Direct prompt for LLM
+    pub expected_actions: Vec<String>,  // Expected action types (e.g., ["MoveTo", "CoverFire"])
     pub forbidden_actions: Vec<String>, // Actions that should never appear
 }
 
 /// Scoring weights for evaluation
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScoringWeights {
-    pub validity: f64,          // 40% - Plan parses correctly
-    pub goal_achievement: f64,  // 30% - Steps achieve the goal
-    pub safety: f64,            // 15% - No dangerous actions
-    pub coherence: f64,         // 15% - Logical step ordering
+    pub validity: f64,         // 40% - Plan parses correctly
+    pub goal_achievement: f64, // 30% - Steps achieve the goal
+    pub safety: f64,           // 15% - No dangerous actions
+    pub coherence: f64,        // 15% - Logical step ordering
 }
 
 impl Default for ScoringWeights {
@@ -74,11 +74,11 @@ impl Default for ScoringWeights {
 pub struct ScenarioResult {
     pub scenario_id: String,
     pub scenario_type: ScenarioType,
-    pub validity_score: f64,      // 0.0 - 1.0
-    pub goal_score: f64,          // 0.0 - 1.0
-    pub safety_score: f64,        // 0.0 - 1.0
-    pub coherence_score: f64,     // 0.0 - 1.0
-    pub overall_score: f64,       // Weighted average
+    pub validity_score: f64,  // 0.0 - 1.0
+    pub goal_score: f64,      // 0.0 - 1.0
+    pub safety_score: f64,    // 0.0 - 1.0
+    pub coherence_score: f64, // 0.0 - 1.0
+    pub overall_score: f64,   // Weighted average
     pub elapsed_ms: u64,
     pub raw_response: String,
     pub parsed_plan: Option<PlanIntent>,
@@ -361,15 +361,18 @@ impl EvaluationSuite {
         let forbidden = &scenario.forbidden_actions;
 
         // Check for forbidden actions
-        let violations = steps.iter().filter(|s| {
-            forbidden.iter().any(|f| match (f.as_str(), s) {
-                ("MoveTo", ActionStep::MoveTo { .. }) => true,
-                ("Throw", ActionStep::Throw { .. }) => true,
-                ("CoverFire", ActionStep::CoverFire { .. }) => true,
-                ("Revive", ActionStep::Revive { .. }) => true,
-                _ => false,
+        let violations = steps
+            .iter()
+            .filter(|s| {
+                forbidden.iter().any(|f| match (f.as_str(), s) {
+                    ("MoveTo", ActionStep::MoveTo { .. }) => true,
+                    ("Throw", ActionStep::Throw { .. }) => true,
+                    ("CoverFire", ActionStep::CoverFire { .. }) => true,
+                    ("Revive", ActionStep::Revive { .. }) => true,
+                    _ => false,
+                })
             })
-        }).count();
+            .count();
 
         if violations == 0 {
             1.0

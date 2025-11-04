@@ -38,7 +38,7 @@ pub fn mul_simd(a: Mat4, b: Mat4) -> Mat4 {
             a * b // Fallback to glam
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         a * b // Fallback to glam
@@ -54,29 +54,29 @@ unsafe fn mul_simd_sse2(a: Mat4, b: Mat4) -> Mat4 {
     let b_col1 = _mm_loadu_ps(b.col(1).as_ref().as_ptr());
     let b_col2 = _mm_loadu_ps(b.col(2).as_ref().as_ptr());
     let b_col3 = _mm_loadu_ps(b.col(3).as_ref().as_ptr());
-    
+
     let mut result = Mat4::ZERO;
-    
+
     // Process each row of A
     for i in 0..4 {
         let a_row = a.row(i);
-        
+
         // Broadcast each element of row to 4-wide vector
         let a0 = _mm_set1_ps(a_row.x);
         let a1 = _mm_set1_ps(a_row.y);
         let a2 = _mm_set1_ps(a_row.z);
         let a3 = _mm_set1_ps(a_row.w);
-        
+
         // Multiply and accumulate: result[i] = a0*b0 + a1*b1 + a2*b2 + a3*b3
         let mut acc = _mm_mul_ps(a0, b_col0);
         acc = _mm_add_ps(acc, _mm_mul_ps(a1, b_col1));
         acc = _mm_add_ps(acc, _mm_mul_ps(a2, b_col2));
         acc = _mm_add_ps(acc, _mm_mul_ps(a3, b_col3));
-        
+
         // Store result row
         let mut row_data = [0.0f32; 4];
         _mm_storeu_ps(row_data.as_mut_ptr(), acc);
-        
+
         // Set row in result matrix
         let result_col0 = result.col_mut(0);
         result_col0[i] = row_data[0];
@@ -87,7 +87,7 @@ unsafe fn mul_simd_sse2(a: Mat4, b: Mat4) -> Mat4 {
         let result_col3 = result.col_mut(3);
         result_col3[i] = row_data[3];
     }
-    
+
     result
 }
 
@@ -124,7 +124,7 @@ pub fn transpose_simd(m: Mat4) -> Mat4 {
             m.transpose()
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         m.transpose()
@@ -140,39 +140,39 @@ unsafe fn transpose_simd_sse2(m: Mat4) -> Mat4 {
     let col1 = _mm_loadu_ps(m.col(1).as_ref().as_ptr());
     let col2 = _mm_loadu_ps(m.col(2).as_ref().as_ptr());
     let col3 = _mm_loadu_ps(m.col(3).as_ref().as_ptr());
-    
+
     // Transpose 4×4 using SSE2 shuffle instructions
     // Step 1: Interleave low/high pairs
     let tmp0 = _mm_unpacklo_ps(col0, col1); // [c0.x, c1.x, c0.y, c1.y]
     let tmp1 = _mm_unpackhi_ps(col0, col1); // [c0.z, c1.z, c0.w, c1.w]
     let tmp2 = _mm_unpacklo_ps(col2, col3); // [c2.x, c3.x, c2.y, c3.y]
     let tmp3 = _mm_unpackhi_ps(col2, col3); // [c2.z, c3.z, c2.w, c3.w]
-    
+
     // Step 2: Move low/high halves to get final rows
     let row0 = _mm_movelh_ps(tmp0, tmp2); // [c0.x, c1.x, c2.x, c3.x]
     let row1 = _mm_movehl_ps(tmp2, tmp0); // [c0.y, c1.y, c2.y, c3.y]
     let row2 = _mm_movelh_ps(tmp1, tmp3); // [c0.z, c1.z, c2.z, c3.z]
     let row3 = _mm_movehl_ps(tmp3, tmp1); // [c0.w, c1.w, c2.w, c3.w]
-    
+
     // Store as columns (rows become columns in column-major)
     let mut result = Mat4::ZERO;
-    
+
     let mut col0_data = [0.0f32; 4];
     _mm_storeu_ps(col0_data.as_mut_ptr(), row0);
     *result.col_mut(0) = col0_data.into();
-    
+
     let mut col1_data = [0.0f32; 4];
     _mm_storeu_ps(col1_data.as_mut_ptr(), row1);
     *result.col_mut(1) = col1_data.into();
-    
+
     let mut col2_data = [0.0f32; 4];
     _mm_storeu_ps(col2_data.as_mut_ptr(), row2);
     *result.col_mut(2) = col2_data.into();
-    
+
     let mut col3_data = [0.0f32; 4];
     _mm_storeu_ps(col3_data.as_mut_ptr(), row3);
     *result.col_mut(3) = col3_data.into();
-    
+
     result
 }
 
@@ -233,7 +233,7 @@ pub fn transform_point_simd(m: Mat4, p: Vec3) -> Vec3 {
             m.transform_point3(p)
         }
     }
-    
+
     #[cfg(not(target_arch = "x86_64"))]
     {
         m.transform_point3(p)
@@ -246,29 +246,29 @@ pub fn transform_point_simd(m: Mat4, p: Vec3) -> Vec3 {
 unsafe fn transform_point_simd_sse2(m: Mat4, p: Vec3) -> Vec3 {
     // Load point as [x, y, z, 1.0]
     let point = _mm_setr_ps(p.x, p.y, p.z, 1.0);
-    
+
     // Load matrix columns
     let col0 = _mm_loadu_ps(m.col(0).as_ref().as_ptr());
     let col1 = _mm_loadu_ps(m.col(1).as_ref().as_ptr());
     let col2 = _mm_loadu_ps(m.col(2).as_ref().as_ptr());
     let col3 = _mm_loadu_ps(m.col(3).as_ref().as_ptr());
-    
+
     // Broadcast each component
     let x = _mm_shuffle_ps(point, point, 0b00_00_00_00);
     let y = _mm_shuffle_ps(point, point, 0b01_01_01_01);
     let z = _mm_shuffle_ps(point, point, 0b10_10_10_10);
     let w = _mm_shuffle_ps(point, point, 0b11_11_11_11);
-    
+
     // Multiply and accumulate
     let mut result = _mm_mul_ps(x, col0);
     result = _mm_add_ps(result, _mm_mul_ps(y, col1));
     result = _mm_add_ps(result, _mm_mul_ps(z, col2));
     result = _mm_add_ps(result, _mm_mul_ps(w, col3));
-    
+
     // Extract xyz (ignore w for point transform)
     let mut data = [0.0f32; 4];
     _mm_storeu_ps(data.as_mut_ptr(), result);
-    
+
     Vec3::new(data[0], data[1], data[2])
 }
 
@@ -304,7 +304,7 @@ mod tests {
     fn test_mul_simd_identity() {
         let identity = Mat4::IDENTITY;
         let m = Mat4::from_scale(Vec3::splat(2.0));
-        
+
         let result = mul_simd(identity, m);
         assert_eq!(result, m);
     }
@@ -313,18 +313,14 @@ mod tests {
     fn test_mul_simd_scale() {
         let a = Mat4::from_scale(Vec3::splat(2.0));
         let b = Mat4::from_scale(Vec3::splat(3.0));
-        
+
         let result = mul_simd(a, b);
         let expected = Mat4::from_scale(Vec3::splat(6.0));
-        
+
         // Compare element-wise with tolerance
         for i in 0..4 {
             for j in 0..4 {
-                assert_relative_eq!(
-                    result.col(j)[i],
-                    expected.col(j)[i],
-                    epsilon = 0.0001
-                );
+                assert_relative_eq!(result.col(j)[i], expected.col(j)[i], epsilon = 0.0001);
             }
         }
     }
@@ -332,14 +328,11 @@ mod tests {
     #[test]
     fn test_transpose_simd() {
         let m = Mat4::from_cols_array(&[
-            1.0, 2.0, 3.0, 4.0,
-            5.0, 6.0, 7.0, 8.0,
-            9.0, 10.0, 11.0, 12.0,
-            13.0, 14.0, 15.0, 16.0,
+            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
         ]);
-        
+
         let t = transpose_simd(m);
-        
+
         // Check that rows become columns
         assert_eq!(t.col(0), m.row(0));
         assert_eq!(t.col(1), m.row(1));
@@ -358,7 +351,7 @@ mod tests {
     fn test_transform_point_simd() {
         let translation = Mat4::from_translation(Vec3::new(1.0, 2.0, 3.0));
         let point = Vec3::ZERO;
-        
+
         let result = transform_point_simd(translation, point);
         assert_relative_eq!(result.x, 1.0, epsilon = 0.0001);
         assert_relative_eq!(result.y, 2.0, epsilon = 0.0001);
@@ -369,7 +362,7 @@ mod tests {
     fn test_transform_point_simd_scale() {
         let scale = Mat4::from_scale(Vec3::splat(2.0));
         let point = Vec3::new(1.0, 2.0, 3.0);
-        
+
         let result = transform_point_simd(scale, point);
         assert_relative_eq!(result.x, 2.0, epsilon = 0.0001);
         assert_relative_eq!(result.y, 4.0, epsilon = 0.0001);
@@ -380,10 +373,10 @@ mod tests {
     fn test_transform_points_batch() {
         let m = Mat4::from_translation(Vec3::new(1.0, 0.0, 0.0));
         let points = vec![Vec3::ZERO, Vec3::X, Vec3::Y];
-        
+
         let transformed = transform_points_batch(m, &points);
         assert_eq!(transformed.len(), 3);
-        
+
         assert_relative_eq!(transformed[0].x, 1.0, epsilon = 0.0001);
         assert_relative_eq!(transformed[1].x, 2.0, epsilon = 0.0001);
         assert_relative_eq!(transformed[2].x, 1.0, epsilon = 0.0001);
@@ -393,18 +386,14 @@ mod tests {
     fn test_inverse_simd() {
         let scale = Mat4::from_scale(Vec3::splat(2.0));
         let inv = inverse_simd(scale);
-        
+
         let identity = mul_simd(scale, inv);
-        
+
         // Should be close to identity
         for i in 0..4 {
             for j in 0..4 {
                 let expected = if i == j { 1.0 } else { 0.0 };
-                assert_relative_eq!(
-                    identity.col(j)[i],
-                    expected,
-                    epsilon = 0.001
-                );
+                assert_relative_eq!(identity.col(j)[i], expected, epsilon = 0.001);
             }
         }
     }

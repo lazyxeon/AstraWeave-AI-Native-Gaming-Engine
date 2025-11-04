@@ -1,0 +1,15 @@
+title = "Untitled"
+biome = "temperate_forest"
+seed = 42
+biome_paints = []
+obstacles = []
+npcs = []
+fate_threads = []
+
+[sky]
+time_of_day = "dawn"
+weather = "clear"
+
+[boss]
+director_budget_script = ""
+phase_script = ""

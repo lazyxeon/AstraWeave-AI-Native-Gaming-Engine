@@ -304,7 +304,7 @@ mod tests {
     #[test]
     fn test_skinned_vertex_layout_stride() {
         let layout = SkinnedVertex::layout();
-        // 3f32 (pos) + 3f32 (norm) + 4f32 (tan) + 4u16 (joints) + 4f32 (weights) 
+        // 3f32 (pos) + 3f32 (norm) + 4f32 (tan) + 4u16 (joints) + 4f32 (weights)
         // = 12+12+16+8+16 = 64 bytes
         assert_eq!(layout.array_stride, 64);
         assert_eq!(layout.step_mode, wgpu::VertexStepMode::Vertex);
@@ -331,12 +331,12 @@ mod tests {
         let pos = Vec3::new(1.0, 2.0, 3.0);
         let scale = Vec3::new(2.0, 2.0, 2.0);
         let color = [1.0, 0.0, 0.0, 1.0];
-        
+
         let inst = Instance::from_pos_scale_color(pos, scale, color);
-        
+
         assert_eq!(inst.color, color);
         assert_eq!(inst.material_id, 0);
-        
+
         // Verify position is correct
         let pos_from_mat = Vec3::new(
             inst.transform.w_axis.x,
@@ -351,19 +351,19 @@ mod tests {
         let transform = Mat4::from_translation(Vec3::new(5.0, 10.0, 15.0));
         let color = [0.5, 0.5, 0.5, 1.0];
         let material_id = 42;
-        
+
         let inst = Instance {
             transform,
             color,
             material_id,
         };
-        
+
         let raw = inst.raw();
-        
+
         assert_eq!(raw.color, color);
         assert_eq!(raw.material_id, material_id);
         assert_eq!(raw._padding, [0; 3]);
-        
+
         // Verify model matrix is correct
         assert_eq!(raw.model[3][0], 5.0); // translation x
         assert_eq!(raw.model[3][1], 10.0); // translation y
@@ -414,7 +414,7 @@ mod tests {
         let idx_near = cluster_index(400, 400, 800, 800, 1.0, 0.1, 100.0, dims);
         let idx_mid = cluster_index(400, 400, 800, 800, 50.0, 0.1, 100.0, dims);
         let idx_far = cluster_index(400, 400, 800, 800, 95.0, 0.1, 100.0, dims);
-        
+
         // Indices should be different (depth slicing working)
         assert!(idx_near < idx_mid);
         assert!(idx_mid < idx_far);
@@ -425,6 +425,9 @@ mod tests {
         let dims = ClusterDims { x: 4, y: 4, z: 4 };
         // Out-of-bounds coordinates should clamp
         let idx = cluster_index(10000, 10000, 800, 800, 150.0, 0.1, 100.0, dims);
-        assert!(idx < dims.x * dims.y * dims.z, "Index should be within bounds");
+        assert!(
+            idx < dims.x * dims.y * dims.z,
+            "Index should be within bounds"
+        );
     }
 }

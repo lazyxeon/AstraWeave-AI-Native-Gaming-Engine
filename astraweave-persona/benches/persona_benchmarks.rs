@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use astraweave_memory::persona::{CompanionProfile, Episode, Fact, Persona, Skill};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::hint::black_box;
 
 // ============================================================================
@@ -50,7 +50,11 @@ fn create_test_episode(title: &str) -> Episode {
 }
 
 /// Create a comprehensive companion profile
-fn create_comprehensive_profile(num_facts: usize, num_skills: usize, num_episodes: usize) -> CompanionProfile {
+fn create_comprehensive_profile(
+    num_facts: usize,
+    num_skills: usize,
+    num_episodes: usize,
+) -> CompanionProfile {
     let mut profile = CompanionProfile::new_default();
     profile.persona = create_test_persona();
 
@@ -72,7 +76,9 @@ fn create_comprehensive_profile(num_facts: usize, num_skills: usize, num_episode
 
     // Add episodes
     for i in 0..num_episodes {
-        profile.episodes.push(create_test_episode(&format!("Episode {}", i)));
+        profile
+            .episodes
+            .push(create_test_episode(&format!("Episode {}", i)));
     }
 
     // Add player preferences

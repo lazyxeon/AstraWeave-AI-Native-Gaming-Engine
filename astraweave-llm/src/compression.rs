@@ -40,7 +40,7 @@ Rules:
 
 JSON: {plan_id:str,steps:[{act,args}]}"#
     }
-    
+
     /// Compress stealth AI prompt (20-25% reduction)
     pub fn compress_stealth_prompt() -> &'static str {
         r#"Stealth AI: Reach target undetected.
@@ -57,7 +57,7 @@ Rules:
 
 JSON: {plan_id:str,steps:[{act,args}]}"#
     }
-    
+
     /// Compress support AI prompt (25% reduction)
     pub fn compress_support_prompt() -> &'static str {
         r#"Support AI: Keep allies alive.
@@ -74,7 +74,7 @@ Rules:
 
 JSON: {plan_id:str,steps:[{act,args}]}"#
     }
-    
+
     /// Compress exploration AI prompt (20% reduction)
     pub fn compress_exploration_prompt() -> &'static str {
         r#"Exploration AI: Map territory, locate objectives.
@@ -91,7 +91,7 @@ Rules:
 
 JSON: {plan_id:str,steps:[{act,args}]}"#
     }
-    
+
     /// Compress world snapshot to compact JSON (30-40% reduction)
     pub fn snapshot_to_compact_json(snapshot: &WorldSnapshot) -> String {
         // Use abbreviations: plr=player, pos=position, hp=health
@@ -119,15 +119,12 @@ JSON: {plan_id:str,steps:[{act,args}]}"#
                 "pos": [poi.pos.x, poi.pos.y],
             })).collect::<Vec<_>>(),
             "obs": snapshot.obstacles.iter().map(|obs| json!([obs.x, obs.y])).collect::<Vec<_>>(),
-        }).to_string() // Compact (no pretty printing)
+        })
+        .to_string() // Compact (no pretty printing)
     }
-    
+
     /// Build optimized prompt for LLM planning (30-35% reduction)
-    pub fn build_optimized_prompt(
-        snapshot: &WorldSnapshot,
-        tool_list: &str,
-        role: &str,
-    ) -> String {
+    pub fn build_optimized_prompt(snapshot: &WorldSnapshot, tool_list: &str, role: &str) -> String {
         let system = match role {
             "tactical" => Self::compress_tactical_prompt(),
             "stealth" => Self::compress_stealth_prompt(),
@@ -135,7 +132,7 @@ JSON: {plan_id:str,steps:[{act,args}]}"#
             "exploration" => Self::compress_exploration_prompt(),
             _ => Self::compress_tactical_prompt(), // Default
         };
-        
+
         format!(
             r#"{system}
 
@@ -152,9 +149,9 @@ Snapshot: {snap}"#,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{PlayerState, CompanionState, EnemyState, IVec2, Poi};
+    use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, Poi};
     use std::collections::BTreeMap;
-    
+
     fn create_test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
             t: 0.0,
@@ -170,26 +167,22 @@ mod tests {
                 ammo: 50,
                 cooldowns: BTreeMap::new(),
             },
-            enemies: vec![
-                EnemyState {
-                    id: 99,
-                    pos: IVec2 { x: 10, y: 8 },
-                    hp: 100,
-                    cover: "wall".to_string(),
-                    last_seen: 0.0,
-                },
-            ],
-            pois: vec![
-                Poi {
-                    k: "ammo".to_string(),
-                    pos: IVec2 { x: 7, y: 7 },
-                },
-            ],
+            enemies: vec![EnemyState {
+                id: 99,
+                pos: IVec2 { x: 10, y: 8 },
+                hp: 100,
+                cover: "wall".to_string(),
+                last_seen: 0.0,
+            }],
+            pois: vec![Poi {
+                k: "ammo".to_string(),
+                pos: IVec2 { x: 7, y: 7 },
+            }],
             obstacles: vec![],
             objective: Some("Eliminate enemy 99".to_string()),
         }
     }
-    
+
     #[test]
     fn test_compress_tactical_prompt() {
         let prompt = PromptCompressor::compress_tactical_prompt();
@@ -198,7 +191,7 @@ mod tests {
         assert!(prompt.contains("Cover before engage"));
         assert!(prompt.len() < 400); // Should be under 400 chars (was ~900+)
     }
-    
+
     #[test]
     fn test_compress_stealth_prompt() {
         let prompt = PromptCompressor::compress_stealth_prompt();
@@ -207,52 +200,51 @@ mod tests {
         assert!(prompt.contains("NO CoverFire"));
         assert!(prompt.len() < 350);
     }
-    
+
     #[test]
     fn test_compact_json_snapshot() {
         let snapshot = create_test_snapshot();
         let json = PromptCompressor::snapshot_to_compact_json(&snapshot);
-        
+
         // Verify it's valid JSON
-        let parsed: serde_json::Value = serde_json::from_str(&json)
-            .expect("Invalid JSON");
-        
+        let parsed: serde_json::Value = serde_json::from_str(&json).expect("Invalid JSON");
+
         // Check abbreviations
         assert!(parsed["plr"].is_object());
         assert!(parsed["plr"]["pos"].is_array());
         assert_eq!(parsed["plr"]["pos"][0], 5);
         assert_eq!(parsed["plr"]["pos"][1], 5);
         assert_eq!(parsed["plr"]["hp"], 100);
-        
+
         // Check enemies
         assert!(parsed["enemies"].is_array());
         assert_eq!(parsed["enemies"][0]["id"], 99);
         assert_eq!(parsed["enemies"][0]["pos"][0], 10);
-        
+
         // Verify compactness (no whitespace)
         assert!(!json.contains("  ")); // No double spaces
         assert!(!json.contains("\n")); // No newlines
     }
-    
+
     #[test]
     fn test_build_optimized_prompt() {
         let snapshot = create_test_snapshot();
         let tools = "MoveTo|Throw|CoverFire|Revive";
-        
+
         let tactical = PromptCompressor::build_optimized_prompt(&snapshot, tools, "tactical");
         assert!(tactical.contains("Tactical AI"));
         assert!(tactical.contains("Tools:"));
         assert!(tactical.contains("Snapshot:"));
         assert!(tactical.contains("\"plr\"")); // Compact JSON
-        
+
         let stealth = PromptCompressor::build_optimized_prompt(&snapshot, tools, "stealth");
         assert!(stealth.contains("Stealth AI"));
     }
-    
+
     #[test]
     fn test_compression_ratio() {
         let snapshot = create_test_snapshot();
-        
+
         // Original (pretty JSON)
         let original_json = serde_json::to_string_pretty(&json!({
             "player": {
@@ -271,20 +263,25 @@ mod tests {
                 "health": e.hp,
                 "cover": e.cover,
             })).collect::<Vec<_>>(),
-        })).unwrap();
-        
+        }))
+        .unwrap();
+
         // Compressed
         let compressed_json = PromptCompressor::snapshot_to_compact_json(&snapshot);
-        
+
         let reduction = 100.0 * (1.0 - (compressed_json.len() as f32 / original_json.len() as f32));
         println!("Original: {} bytes", original_json.len());
         println!("Compressed: {} bytes", compressed_json.len());
         println!("Reduction: {:.1}%", reduction);
-        
+
         // Should achieve at least 30% reduction
-        assert!(reduction >= 30.0, "Compression ratio too low: {:.1}%", reduction);
+        assert!(
+            reduction >= 30.0,
+            "Compression ratio too low: {:.1}%",
+            reduction
+        );
     }
-    
+
     #[test]
     fn test_action_docs_compact() {
         let docs = ACTION_DOCS;

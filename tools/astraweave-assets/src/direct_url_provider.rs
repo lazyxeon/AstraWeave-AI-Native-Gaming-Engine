@@ -187,13 +187,25 @@ impl AssetProvider for DirectUrlProvider {
     fn validate_config(&self, config: &ProviderConfig) -> Result<()> {
         // Check required fields
         if config.url.is_none() {
-            anyhow::bail!("Missing required field 'url' for {} asset '{}'", self.provider_name, config.handle);
+            anyhow::bail!(
+                "Missing required field 'url' for {} asset '{}'",
+                self.provider_name,
+                config.handle
+            );
         }
         if config.license.is_none() {
-            anyhow::bail!("Missing required field 'license' for {} asset '{}'", self.provider_name, config.handle);
+            anyhow::bail!(
+                "Missing required field 'license' for {} asset '{}'",
+                self.provider_name,
+                config.handle
+            );
         }
         if config.format.is_none() {
-            anyhow::bail!("Missing required field 'format' for {} asset '{}'", self.provider_name, config.handle);
+            anyhow::bail!(
+                "Missing required field 'format' for {} asset '{}'",
+                self.provider_name,
+                config.handle
+            );
         }
 
         // Validate license
@@ -201,8 +213,8 @@ impl AssetProvider for DirectUrlProvider {
         let author = config.author.clone();
         let source_url = config.source_url.clone();
 
-        let license = LicenseInfo::from_spdx(license_spdx, author, source_url)
-            .with_context(|| {
+        let license =
+            LicenseInfo::from_spdx(license_spdx, author, source_url).with_context(|| {
                 format!(
                     "Invalid license '{}' for {} asset '{}'",
                     license_spdx, self.provider_name, config.handle

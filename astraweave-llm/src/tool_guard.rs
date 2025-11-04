@@ -223,7 +223,11 @@ impl ToolGuard {
     }
 
     /// Validate a batch of actions
-    pub fn validate_actions<F>(&self, actions: &[ActionStep], validator: &F) -> Vec<ValidationResult>
+    pub fn validate_actions<F>(
+        &self,
+        actions: &[ActionStep],
+        validator: &F,
+    ) -> Vec<ValidationResult>
     where
         F: Fn(&ActionStep) -> bool,
     {
@@ -333,7 +337,11 @@ mod tests {
     fn test_tool_guard_basic() {
         let guard = ToolGuard::new();
 
-        let action = ActionStep::MoveTo { x: 5, y: 10, speed: None };
+        let action = ActionStep::MoveTo {
+            x: 5,
+            y: 10,
+            speed: None,
+        };
 
         let result = guard.validate_action(&action, &|_| true);
         assert!(result.is_valid());
@@ -393,7 +401,11 @@ mod tests {
         let guard = ToolGuard::new();
 
         let actions = vec![
-            ActionStep::MoveTo { x: 5, y: 10, speed: None },
+            ActionStep::MoveTo {
+                x: 5,
+                y: 10,
+                speed: None,
+            },
             ActionStep::CoverFire {
                 target_id: 99,
                 duration: 2.0,
@@ -404,10 +416,7 @@ mod tests {
         assert!(guard.all_valid(&actions, &|_| true));
 
         // CoverFire is invalid
-        assert!(!guard.all_valid(&actions, &|a| !matches!(
-            a,
-            ActionStep::CoverFire { .. }
-        )));
+        assert!(!guard.all_valid(&actions, &|a| !matches!(a, ActionStep::CoverFire { .. })));
     }
 
     #[test]
@@ -432,7 +441,14 @@ mod tests {
         let guard = ToolGuard::new();
 
         // Valid
-        guard.validate_action(&ActionStep::MoveTo { x: 5, y: 10, speed: None }, &|_| true);
+        guard.validate_action(
+            &ActionStep::MoveTo {
+                x: 5,
+                y: 10,
+                speed: None,
+            },
+            &|_| true,
+        );
 
         // Invalid
         guard.validate_action(
@@ -460,10 +476,13 @@ mod tests {
         let guard = ToolGuard::new();
         guard.set_policy("MoveTo", ToolPolicy::Allowed);
 
-        let action = ActionStep::MoveTo { x: 5, y: 10, speed: None };
+        let action = ActionStep::MoveTo {
+            x: 5,
+            y: 10,
+            speed: None,
+        };
 
         let result = guard.validate_action(&action, &|_| false); // Validator says no
         assert!(result.is_valid()); // But policy says yes (Allowed overrides validator)
     }
 }
-

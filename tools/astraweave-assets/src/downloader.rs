@@ -80,10 +80,7 @@ impl Downloader {
                 tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
             }
 
-            match self
-                .download_attempt(url, &temp_path, show_progress)
-                .await
-            {
+            match self.download_attempt(url, &temp_path, show_progress).await {
                 Ok(result) => {
                     // Atomic move to final destination
                     fs::rename(&temp_path, dest_path)
@@ -150,7 +147,10 @@ impl Downloader {
                             .expect("Invalid progress template")
                             .progress_chars("#>-"),
                     );
-                    pb.set_message(format!("Downloading {}", Self::filename_from_url(&task.url)));
+                    pb.set_message(format!(
+                        "Downloading {}",
+                        Self::filename_from_url(&task.url)
+                    ));
                     Some(pb)
                 } else {
                     None
@@ -174,14 +174,7 @@ impl Downloader {
                     // Create temp file
                     let temp_path = task.dest_path.with_extension("tmp");
 
-                    match Self::download_single(
-                        &client,
-                        &task.url,
-                        &temp_path,
-                        pb.as_ref(),
-                    )
-                    .await
-                    {
+                    match Self::download_single(&client, &task.url, &temp_path, pb.as_ref()).await {
                         Ok(result) => {
                             // Atomic move
                             if let Err(e) = tokio::fs::rename(&temp_path, &task.dest_path).await {
@@ -209,7 +202,8 @@ impl Downloader {
 
                 (
                     task.key,
-                    Err(last_error.unwrap_or_else(|| anyhow::anyhow!("Download failed after retries"))),
+                    Err(last_error
+                        .unwrap_or_else(|| anyhow::anyhow!("Download failed after retries"))),
                 )
             });
 
@@ -251,11 +245,7 @@ impl Downloader {
             .context("Failed to send request")?;
 
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "HTTP error {}: {}",
-                response.status(),
-                url
-            ));
+            return Err(anyhow::anyhow!("HTTP error {}: {}", response.status(), url));
         }
 
         // Get content length
@@ -325,11 +315,7 @@ impl Downloader {
             .context("Failed to send request")?;
 
         if !response.status().is_success() {
-            return Err(anyhow::anyhow!(
-                "HTTP error {}: {}",
-                response.status(),
-                url
-            ));
+            return Err(anyhow::anyhow!("HTTP error {}: {}", response.status(), url));
         }
 
         // Get content length

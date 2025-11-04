@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use astraweave_physics::{Layers, PhysicsWorld};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use glam::vec3;
 use std::hint::black_box;
 
@@ -12,8 +12,13 @@ fn setup_world() -> PhysicsWorld {
 fn rigid_body_single_step(c: &mut Criterion) {
     let mut world = setup_world();
     world.create_ground_plane(vec3(50.0, 0.5, 50.0), 0.9);
-    world.add_dynamic_box(vec3(0.0, 10.0, 0.0), vec3(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
-    
+    world.add_dynamic_box(
+        vec3(0.0, 10.0, 0.0),
+        vec3(0.5, 0.5, 0.5),
+        1.0,
+        Layers::DEFAULT,
+    );
+
     c.bench_function("rigid_body_single_step", |b| {
         b.iter(|| {
             world.step();
@@ -24,15 +29,15 @@ fn rigid_body_single_step(c: &mut Criterion) {
 /// Benchmark: Physics step with multiple rigid bodies
 fn rigid_body_batch_step(c: &mut Criterion) {
     let mut group = c.benchmark_group("rigid_body_batch_step");
-    
+
     for body_count in [1, 10, 50, 100, 200].iter() {
         let mut world = setup_world();
         world.create_ground_plane(vec3(50.0, 0.5, 50.0), 0.9);
-        
+
         // Add bodies in a grid pattern above ground
         let grid_size = (*body_count as f32).sqrt().ceil() as usize;
         let spacing = 2.0;
-        
+
         for i in 0..*body_count {
             let x = (i % grid_size) as f32 * spacing - (grid_size as f32 * spacing / 2.0);
             let z = (i / grid_size) as f32 * spacing - (grid_size as f32 * spacing / 2.0);
@@ -43,7 +48,7 @@ fn rigid_body_batch_step(c: &mut Criterion) {
                 Layers::DEFAULT,
             );
         }
-        
+
         group.throughput(Throughput::Elements(*body_count as u64));
         group.bench_with_input(
             BenchmarkId::from_parameter(body_count),
@@ -55,7 +60,7 @@ fn rigid_body_batch_step(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -84,15 +89,11 @@ fn rigid_body_trimesh_creation(c: &mut Criterion) {
         vec3(0.0, 0.0, 10.0),
     ];
     let indices = vec![[0, 1, 2], [0, 2, 3]];
-    
+
     c.bench_function("rigid_body_trimesh_creation", |b| {
         b.iter(|| {
             let mut world = setup_world();
-            black_box(world.add_static_trimesh(
-                &vertices,
-                &indices,
-                Layers::DEFAULT,
-            ))
+            black_box(world.add_static_trimesh(&vertices, &indices, Layers::DEFAULT))
         });
     });
 }
@@ -106,11 +107,9 @@ fn rigid_body_transform_lookup(c: &mut Criterion) {
         1.0,
         Layers::DEFAULT,
     );
-    
+
     c.bench_function("rigid_body_transform_lookup", |b| {
-        b.iter(|| {
-            black_box(world.body_transform(black_box(body_id)))
-        });
+        b.iter(|| black_box(world.body_transform(black_box(body_id))));
     });
 }
 
@@ -118,7 +117,7 @@ fn rigid_body_transform_lookup(c: &mut Criterion) {
 fn rigid_body_stacked_simulation(c: &mut Criterion) {
     let mut world = setup_world();
     world.create_ground_plane(vec3(50.0, 0.5, 50.0), 0.9);
-    
+
     // Create a tower of boxes (challenging for solver)
     for i in 0..10 {
         world.add_dynamic_box(
@@ -128,7 +127,7 @@ fn rigid_body_stacked_simulation(c: &mut Criterion) {
             Layers::DEFAULT,
         );
     }
-    
+
     c.bench_function("rigid_body_stacked_simulation", |b| {
         b.iter(|| {
             world.step();
@@ -145,8 +144,8 @@ fn rigid_body_destructible_creation(c: &mut Criterion) {
                 vec3(0.0, 10.0, 0.0),
                 vec3(0.5, 0.5, 0.5),
                 1.0,
-                100.0,  // health
-                50.0,   // break_impulse
+                100.0, // health
+                50.0,  // break_impulse
             ))
         });
     });
@@ -156,7 +155,7 @@ fn rigid_body_destructible_creation(c: &mut Criterion) {
 fn rigid_body_mixed_simulation(c: &mut Criterion) {
     let mut world = setup_world();
     world.create_ground_plane(vec3(50.0, 0.5, 50.0), 0.9);
-    
+
     // Add dynamic boxes
     for i in 0..10 {
         world.add_dynamic_box(
@@ -166,15 +165,12 @@ fn rigid_body_mixed_simulation(c: &mut Criterion) {
             Layers::DEFAULT,
         );
     }
-    
+
     // Add characters (kinematic bodies)
     for i in 0..5 {
-        world.add_character(
-            vec3(0.0, 1.0, (i as f32) * 3.0),
-            vec3(0.4, 0.9, 0.4),
-        );
+        world.add_character(vec3(0.0, 1.0, (i as f32) * 3.0), vec3(0.4, 0.9, 0.4));
     }
-    
+
     // Add destructible boxes
     for i in 0..5 {
         world.add_destructible_box(
@@ -185,7 +181,7 @@ fn rigid_body_mixed_simulation(c: &mut Criterion) {
             50.0,
         );
     }
-    
+
     c.bench_function("rigid_body_mixed_simulation", |b| {
         b.iter(|| {
             world.step();

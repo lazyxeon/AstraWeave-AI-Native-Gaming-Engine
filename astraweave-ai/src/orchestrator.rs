@@ -63,8 +63,12 @@ impl Orchestrator for RuleOrchestrator {
                         ActionStep::MoveTo {
                             speed: None,
                             // Use saturating arithmetic to prevent overflow with extreme coordinates
-                            x: m.pos.x.saturating_add(first.pos.x.saturating_sub(m.pos.x).signum() * 2),
-                            y: m.pos.y.saturating_add(first.pos.y.saturating_sub(m.pos.y).signum() * 2),
+                            x: m.pos
+                                .x
+                                .saturating_add(first.pos.x.saturating_sub(m.pos.x).signum() * 2),
+                            y: m.pos
+                                .y
+                                .saturating_add(first.pos.y.saturating_sub(m.pos.y).signum() * 2),
                         },
                         ActionStep::CoverFire {
                             target_id: first.id,
@@ -708,7 +712,11 @@ mod tests {
         let orch = make_system_orchestrator(Some(cfg));
 
         // Should return UtilityOrchestrator (name check with full module path)
-        assert!(orch.name().contains("UtilityOrchestrator"), "Expected UtilityOrchestrator, got: {}", orch.name());
+        assert!(
+            orch.name().contains("UtilityOrchestrator"),
+            "Expected UtilityOrchestrator, got: {}",
+            orch.name()
+        );
     }
 
     #[test]
@@ -718,7 +726,11 @@ mod tests {
         let orch = make_system_orchestrator(None);
 
         // Should use default config (use_llm=false) and return UtilityOrchestrator
-        assert!(orch.name().contains("UtilityOrchestrator"), "Expected UtilityOrchestrator, got: {}", orch.name());
+        assert!(
+            orch.name().contains("UtilityOrchestrator"),
+            "Expected UtilityOrchestrator, got: {}",
+            orch.name()
+        );
     }
 
     #[test]
@@ -746,7 +758,10 @@ mod tests {
         let rule = RuleOrchestrator;
         let plan = rule.propose_plan(&snap);
 
-        assert!(plan.steps.is_empty(), "Should return empty plan with no enemies");
+        assert!(
+            plan.steps.is_empty(),
+            "Should return empty plan with no enemies"
+        );
     }
 
     #[test]
@@ -761,7 +776,11 @@ mod tests {
             matches!(plan.steps.first(), Some(ActionStep::Throw { .. })),
             "First action should be Throw when smoke cooldown ready"
         );
-        assert_eq!(plan.steps.len(), 3, "Should have 3 steps: Throw, MoveTo, CoverFire");
+        assert_eq!(
+            plan.steps.len(),
+            3,
+            "Should have 3 steps: Throw, MoveTo, CoverFire"
+        );
     }
 
     #[test]
@@ -776,7 +795,11 @@ mod tests {
             matches!(plan.steps.first(), Some(ActionStep::MoveTo { .. })),
             "First action should be MoveTo when smoke cooldown not ready"
         );
-        assert_eq!(plan.steps.len(), 2, "Should have 2 steps: MoveTo, CoverFire");
+        assert_eq!(
+            plan.steps.len(),
+            2,
+            "Should have 2 steps: MoveTo, CoverFire"
+        );
     }
 
     // ========================================
@@ -808,8 +831,14 @@ mod tests {
         let util = UtilityOrchestrator;
         let plan = util.propose_plan(&snap);
 
-        assert!(plan.steps.is_empty(), "Should return empty steps when no enemies");
-        assert!(plan.plan_id.starts_with("util-"), "Plan ID should start with 'util-'");
+        assert!(
+            plan.steps.is_empty(),
+            "Should return empty steps when no enemies"
+        );
+        assert!(
+            plan.plan_id.starts_with("util-"),
+            "Plan ID should start with 'util-'"
+        );
     }
 
     #[test]
@@ -818,19 +847,36 @@ mod tests {
         let snap = snap_basic(0, 0, 4, 0, 0.0); // Enemy at distance 4, smoke ready
 
         let util = UtilityOrchestrator;
-        
+
         // Run multiple times - should be deterministic
         let plan1 = util.propose_plan(&snap);
         let plan2 = util.propose_plan(&snap);
         let plan3 = util.propose_plan(&snap);
 
-        assert_eq!(plan1.steps.len(), plan2.steps.len(), "Plans should be identical (deterministic)");
-        assert_eq!(plan2.steps.len(), plan3.steps.len(), "Plans should be identical (deterministic)");
-        
+        assert_eq!(
+            plan1.steps.len(),
+            plan2.steps.len(),
+            "Plans should be identical (deterministic)"
+        );
+        assert_eq!(
+            plan2.steps.len(),
+            plan3.steps.len(),
+            "Plans should be identical (deterministic)"
+        );
+
         // All should choose smoke throw as first action (highest score)
-        assert!(matches!(plan1.steps.first(), Some(ActionStep::Throw { .. })));
-        assert!(matches!(plan2.steps.first(), Some(ActionStep::Throw { .. })));
-        assert!(matches!(plan3.steps.first(), Some(ActionStep::Throw { .. })));
+        assert!(matches!(
+            plan1.steps.first(),
+            Some(ActionStep::Throw { .. })
+        ));
+        assert!(matches!(
+            plan2.steps.first(),
+            Some(ActionStep::Throw { .. })
+        ));
+        assert!(matches!(
+            plan3.steps.first(),
+            Some(ActionStep::Throw { .. })
+        ));
     }
 
     #[test]
@@ -855,7 +901,11 @@ mod tests {
         let plan = util.propose_plan(&snap);
 
         // Distance <= 3, should add CoverFire after MoveTo
-        assert_eq!(plan.steps.len(), 2, "Should have MoveTo + CoverFire when close");
+        assert_eq!(
+            plan.steps.len(),
+            2,
+            "Should have MoveTo + CoverFire when close"
+        );
         assert!(
             matches!(plan.steps.get(1), Some(ActionStep::CoverFire { .. })),
             "Second action should be CoverFire when enemy close"
@@ -902,8 +952,16 @@ mod tests {
         let plan_sync = util.propose_plan(&snap);
         let plan_async = block_on(util.plan(snap, 100)).expect("utility async plan failed");
 
-        assert_eq!(plan_sync.steps.len(), plan_async.steps.len(), "Sync and async should produce same plan");
-        assert_eq!(plan_sync.plan_id.len(), plan_async.plan_id.len(), "Plan IDs should have same format");
+        assert_eq!(
+            plan_sync.steps.len(),
+            plan_async.steps.len(),
+            "Sync and async should produce same plan"
+        );
+        assert_eq!(
+            plan_sync.plan_id.len(),
+            plan_async.plan_id.len(),
+            "Plan IDs should have same format"
+        );
     }
 
     // ========================================
@@ -976,8 +1034,12 @@ mod tests {
         let action = goap.next_action(&snap);
 
         // propose_plan should return single-step plan matching next_action
-        assert_eq!(plan.steps.len(), 1, "propose_plan should return single-step plan");
-        
+        assert_eq!(
+            plan.steps.len(),
+            1,
+            "propose_plan should return single-step plan"
+        );
+
         // Both should produce same action type (MoveTo for distance > 2)
         match (&plan.steps[0], &action) {
             (ActionStep::MoveTo { .. }, ActionStep::MoveTo { .. }) => { /* OK */ }
@@ -995,7 +1057,11 @@ mod tests {
         let plan_sync = goap.propose_plan(&snap);
         let plan_async = block_on(goap.plan(snap, 100)).expect("goap async plan failed");
 
-        assert_eq!(plan_sync.steps.len(), plan_async.steps.len(), "Sync and async GOAP should produce same plan");
+        assert_eq!(
+            plan_sync.steps.len(),
+            plan_async.steps.len(),
+            "Sync and async GOAP should produce same plan"
+        );
     }
 
     // ========================================
@@ -1009,7 +1075,10 @@ mod tests {
         let rule = RuleOrchestrator;
         let plan = rule.propose_plan(&snap);
 
-        assert!(plan.plan_id.starts_with("plan-"), "Plan ID should start with 'plan-'");
+        assert!(
+            plan.plan_id.starts_with("plan-"),
+            "Plan ID should start with 'plan-'"
+        );
         // Plan ID should be "plan-" + timestamp (t * 1000.0) as i64
         // For snap.t = 1.234, should be "plan-1234"
         assert_eq!(plan.plan_id, "plan-1234", "Plan ID should encode timestamp");
@@ -1041,8 +1110,14 @@ mod tests {
 
         // Should move toward enemy: (0,0) -> (1,1) using signum
         if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.first() {
-            assert_eq!(*x, 1, "Should move one step in x direction (signum(5-0) = 1)");
-            assert_eq!(*y, 1, "Should move one step in y direction (signum(3-0) = 1)");
+            assert_eq!(
+                *x, 1,
+                "Should move one step in x direction (signum(5-0) = 1)"
+            );
+            assert_eq!(
+                *y, 1,
+                "Should move one step in y direction (signum(3-0) = 1)"
+            );
         } else {
             panic!("Expected MoveTo when smoke on cooldown");
         }
@@ -1056,7 +1131,11 @@ mod tests {
         let plan_sync = rule.propose_plan(&snap);
         let plan_async = block_on(rule.plan(snap, 100)).expect("rule async plan failed");
 
-        assert_eq!(plan_sync.steps.len(), plan_async.steps.len(), "Sync and async RuleOrch should produce same plan");
+        assert_eq!(
+            plan_sync.steps.len(),
+            plan_async.steps.len(),
+            "Sync and async RuleOrch should produce same plan"
+        );
         // Verify first action matches
         match (&plan_sync.steps.first(), &plan_async.steps.first()) {
             (Some(ActionStep::Throw { .. }), Some(ActionStep::Throw { .. })) => { /* OK */ }
@@ -1093,8 +1172,14 @@ mod tests {
         };
 
         let debug_str = format!("{:?}", cfg);
-        assert!(debug_str.contains("use_llm"), "Debug output should contain field names");
-        assert!(debug_str.contains("phi3:medium"), "Debug output should contain model name");
+        assert!(
+            debug_str.contains("use_llm"),
+            "Debug output should contain field names"
+        );
+        assert!(
+            debug_str.contains("phi3:medium"),
+            "Debug output should contain model name"
+        );
     }
 
     #[test]
@@ -1102,12 +1187,12 @@ mod tests {
         // unwrap_or_else only triggers if var is NOT SET (Err), not if it's empty string
         // Empty strings ARE valid values and get used as-is
         // This test verifies that behavior
-        
+
         // CRITICAL: Remove vars first to ensure clean state (other tests may set them)
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
         std::env::remove_var("OLLAMA_URL");
         std::env::remove_var("OLLAMA_MODEL");
-        
+
         // Now set to empty strings
         std::env::set_var("ASTRAWEAVE_USE_LLM", "");
         std::env::set_var("OLLAMA_URL", "");
@@ -1118,8 +1203,14 @@ mod tests {
         // Empty string != "1" or "true", should be false
         assert_eq!(cfg.use_llm, false, "Empty string should parse as false");
         // Empty strings ARE used as-is (unwrap_or_else doesn't treat "" as missing)
-        assert_eq!(cfg.ollama_url, "", "Empty URL should be used as-is (not defaulted)");
-        assert_eq!(cfg.ollama_model, "", "Empty model should be used as-is (not defaulted)");
+        assert_eq!(
+            cfg.ollama_url, "",
+            "Empty URL should be used as-is (not defaulted)"
+        );
+        assert_eq!(
+            cfg.ollama_model, "",
+            "Empty model should be used as-is (not defaulted)"
+        );
 
         // Cleanup
         std::env::remove_var("ASTRAWEAVE_USE_LLM");
@@ -1140,8 +1231,17 @@ mod tests {
         let goap_name = block_on(async { goap.name() });
 
         // Type names should contain the struct names
-        assert!(rule_name.contains("RuleOrchestrator"), "Default name() should return type name");
-        assert!(util_name.contains("UtilityOrchestrator"), "Default name() should return type name");
-        assert!(goap_name.contains("GoapOrchestrator"), "Default name() should return type name");
+        assert!(
+            rule_name.contains("RuleOrchestrator"),
+            "Default name() should return type name"
+        );
+        assert!(
+            util_name.contains("UtilityOrchestrator"),
+            "Default name() should return type name"
+        );
+        assert!(
+            goap_name.contains("GoapOrchestrator"),
+            "Default name() should return type name"
+        );
     }
 }

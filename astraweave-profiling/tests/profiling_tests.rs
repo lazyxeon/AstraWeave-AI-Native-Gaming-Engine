@@ -63,7 +63,7 @@ mod profiling_disabled_tests {
         frame_mark!();
         plot!("metric", 0.0);
         message!("test");
-        
+
         // RAII spans should be zero-sized
         let _span = ProfileSpan::new("zero_cost");
     }

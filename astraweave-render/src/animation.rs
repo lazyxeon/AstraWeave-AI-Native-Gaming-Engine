@@ -611,10 +611,10 @@ mod tests {
             joints: vec![],
             root_indices: vec![],
         };
-        
+
         let local_transforms = vec![];
         let matrices = compute_joint_matrices(&skeleton, &local_transforms);
-        
+
         assert_eq!(matrices.len(), 0);
     }
 
@@ -645,10 +645,8 @@ mod tests {
         // Will panic or produce partial results - testing that it doesn't hang
         // Note: This may panic (expected for invalid input), so we wrap in catch_unwind
         use std::panic;
-        let result = panic::catch_unwind(|| {
-            compute_joint_matrices(&skeleton, &local_transforms)
-        });
-        
+        let result = panic::catch_unwind(|| compute_joint_matrices(&skeleton, &local_transforms));
+
         // Either panics (expected) or returns some result
         assert!(result.is_err() || result.is_ok());
     }
@@ -674,15 +672,12 @@ mod tests {
             root_indices: vec![0],
         };
 
-        let local_transforms = vec![
-            Transform::default(),
-            Transform::default(),
-        ];
+        let local_transforms = vec![Transform::default(), Transform::default()];
 
         // Should complete without hanging (may treat child as orphan)
         let matrices = compute_joint_matrices(&skeleton, &local_transforms);
         assert_eq!(matrices.len(), 2);
-        
+
         // Root should have identity matrix (no parent)
         assert_eq!(matrices[0], Mat4::IDENTITY);
     }

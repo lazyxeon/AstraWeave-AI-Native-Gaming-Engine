@@ -160,7 +160,9 @@ impl MaterialIntegrator {
         hot_reload_manager: Option<&mut crate::material_hot_reload::MaterialReloadManager>,
     ) -> Result<&MaterialPackRuntime> {
         if self.cache.contains_key(biome) {
-            return Ok(self.cache.get(biome)
+            return Ok(self
+                .cache
+                .get(biome)
                 .expect("BUG: cache should contain biome after contains_key check"));
         }
         // Support both authoring roots; prefer assets/materials over assets/textures when both exist
@@ -300,7 +302,9 @@ impl MaterialIntegrator {
             bind_group,
         };
         self.cache.insert(biome.to_string(), runtime);
-        Ok(self.cache.get(biome)
+        Ok(self
+            .cache
+            .get(biome)
             .expect("BUG: cache should contain biome after insert"))
     }
 
@@ -408,7 +412,9 @@ impl MaterialIntegrator {
         };
         self.cache.insert(biome.to_string(), runtime);
         self.set_current(biome);
-        Ok(self.cache.get(biome)
+        Ok(self
+            .cache
+            .get(biome)
             .expect("BUG: cache should contain biome after insert"))
     }
 

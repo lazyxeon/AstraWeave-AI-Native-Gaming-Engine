@@ -138,16 +138,22 @@ mod core_tests {
     #[test]
     fn test_voice_bank_creation() {
         let mut speakers = HashMap::new();
-        speakers.insert("Companion".to_string(), VoiceSpec {
-            folder: "assets/voices/Companion".to_string(),
-            files: vec!["line_01.wav".to_string()],
-            tts_voice: None,
-        });
-        speakers.insert("Player".to_string(), VoiceSpec {
-            folder: "assets/voices/Player".to_string(),
-            files: vec![],
-            tts_voice: Some("player_voice".to_string()),
-        });
+        speakers.insert(
+            "Companion".to_string(),
+            VoiceSpec {
+                folder: "assets/voices/Companion".to_string(),
+                files: vec!["line_01.wav".to_string()],
+                tts_voice: None,
+            },
+        );
+        speakers.insert(
+            "Player".to_string(),
+            VoiceSpec {
+                folder: "assets/voices/Player".to_string(),
+                files: vec![],
+                tts_voice: Some("player_voice".to_string()),
+            },
+        );
 
         let bank = VoiceBank { speakers };
         assert_eq!(bank.speakers.len(), 2);
@@ -167,10 +173,12 @@ mod core_tests {
     fn test_load_voice_bank_valid_toml() -> Result<()> {
         // Ensure target directory exists
         std::fs::create_dir_all("target")?;
-        
+
         // Create a temporary TOML file
         let test_toml = "target/test_voices.toml";
-        std::fs::write(test_toml, r#"
+        std::fs::write(
+            test_toml,
+            r#"
 [speakers.TestSpeaker]
 folder = "assets/voices/TestSpeaker"
 files = ["line_01.wav", "line_02.wav"]
@@ -178,21 +186,28 @@ tts_voice = "test_voice"
 
 [speakers.AnotherSpeaker]
 folder = "assets/voices/Another"
-"#)?;
+"#,
+        )?;
 
         let bank = load_voice_bank(test_toml)?;
         assert_eq!(bank.speakers.len(), 2);
-        
-        let test_spec = bank.speakers.get("TestSpeaker").expect("TestSpeaker should exist");
+
+        let test_spec = bank
+            .speakers
+            .get("TestSpeaker")
+            .expect("TestSpeaker should exist");
         assert_eq!(test_spec.folder, "assets/voices/TestSpeaker");
         assert_eq!(test_spec.files.len(), 2);
         assert_eq!(test_spec.tts_voice, Some("test_voice".to_string()));
-        
-        let another_spec = bank.speakers.get("AnotherSpeaker").expect("AnotherSpeaker should exist");
+
+        let another_spec = bank
+            .speakers
+            .get("AnotherSpeaker")
+            .expect("AnotherSpeaker should exist");
         assert_eq!(another_spec.folder, "assets/voices/Another");
         assert_eq!(another_spec.files.len(), 0); // Default empty
         assert!(another_spec.tts_voice.is_none()); // Default None
-        
+
         std::fs::remove_file(test_toml)?;
         Ok(())
     }
@@ -207,16 +222,19 @@ folder = "assets/voices/Another"
     fn test_load_voice_bank_invalid_toml() -> Result<()> {
         // Ensure target directory exists
         std::fs::create_dir_all("target")?;
-        
+
         let test_toml = "target/test_invalid.toml";
-        std::fs::write(test_toml, r#"
+        std::fs::write(
+            test_toml,
+            r#"
 [speakers.Broken
 this is not valid TOML
-"#)?;
+"#,
+        )?;
 
         let result = load_voice_bank(test_toml);
         assert!(result.is_err(), "Should fail when TOML is invalid");
-        
+
         std::fs::remove_file(test_toml)?;
         Ok(())
     }

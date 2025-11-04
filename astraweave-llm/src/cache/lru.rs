@@ -2,11 +2,11 @@
 // Thread-safe via interior mutability (Mutex)
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use std::hash::Hash;
+use std::sync::{Arc, Mutex};
 
 /// A simple LRU (Least Recently Used) cache
-/// 
+///
 /// This implementation uses a HashMap and tracks access order.
 /// When capacity is exceeded, the least recently used item is evicted.
 pub struct LruCache<K, V> {
@@ -38,13 +38,15 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
 
     /// Get a value from the cache, updating its access time
     pub fn get(&self, key: &K) -> Option<V> {
-        let mut inner = self.inner.lock()
+        let mut inner = self
+            .inner
+            .lock()
             .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
-        
+
         // Update access counter first
         inner.access_counter += 1;
         let new_access = inner.access_counter;
-        
+
         // Then try to get and update entry
         if let Some(entry) = inner.map.get_mut(key) {
             entry.last_access = new_access;
@@ -55,12 +57,14 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     }
 
     /// Put a value into the cache
-    /// 
+    ///
     /// Returns true if an item was evicted, false otherwise
     pub fn put(&self, key: K, value: V) -> bool {
-        let mut inner = self.inner.lock()
+        let mut inner = self
+            .inner
+            .lock()
             .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
-        
+
         // Update access counter first
         inner.access_counter += 1;
         let new_access = inner.access_counter;
@@ -76,7 +80,9 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
         let mut evicted = false;
         if inner.map.len() >= inner.capacity {
             // Find key with minimum last_access
-            if let Some(lru_key) = inner.map.iter()
+            if let Some(lru_key) = inner
+                .map
+                .iter()
                 .min_by_key(|(_, entry)| entry.last_access)
                 .map(|(k, _)| k.clone())
             {
@@ -86,19 +92,24 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
         }
 
         // Insert new entry
-        inner.map.insert(key, CacheEntry {
-            value,
-            last_access: new_access,
-        });
+        inner.map.insert(
+            key,
+            CacheEntry {
+                value,
+                last_access: new_access,
+            },
+        );
 
         evicted
     }
 
     /// Get the current number of items in the cache
     pub fn len(&self) -> usize {
-        self.inner.lock()
+        self.inner
+            .lock()
             .expect("LruCache mutex poisoned: another thread panicked while holding the lock")
-            .map.len()
+            .map
+            .len()
     }
 
     /// Check if the cache is empty
@@ -109,7 +120,9 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
     /// Clear all items from the cache
     #[allow(dead_code)]
     pub fn clear(&self) {
-        let mut inner = self.inner.lock()
+        let mut inner = self
+            .inner
+            .lock()
             .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
         inner.map.clear();
         inner.access_counter = 0;
@@ -117,7 +130,9 @@ impl<K: Hash + Eq + Clone, V: Clone> LruCache<K, V> {
 
     /// Phase 7: Get all keys in the cache (for similarity search)
     pub fn keys(&self) -> Vec<K> {
-        let inner = self.inner.lock()
+        let inner = self
+            .inner
+            .lock()
             .expect("LruCache mutex poisoned: another thread panicked while holding the lock");
         inner.map.keys().cloned().collect()
     }
@@ -190,7 +205,7 @@ mod tests {
         cache.put("c", 3);
 
         assert_eq!(cache.get(&"a"), Some(1)); // "a" should still be present
-        assert_eq!(cache.get(&"b"), None);    // "b" should be evicted
+        assert_eq!(cache.get(&"b"), None); // "b" should be evicted
         assert_eq!(cache.get(&"c"), Some(3));
     }
 

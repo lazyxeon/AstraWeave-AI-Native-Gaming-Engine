@@ -37,7 +37,7 @@ pub enum PlanSource {
 pub trait LlmClient: Send + Sync {
     /// Complete a prompt and return the full response (blocking until complete)
     async fn complete(&self, prompt: &str) -> Result<String>;
-    
+
     /// Complete a prompt with streaming support (progressive response delivery)
     ///
     /// Returns a stream of text chunks as they arrive from the LLM. Enables:
@@ -67,7 +67,9 @@ pub trait LlmClient: Send + Sync {
     ) -> Result<std::pin::Pin<Box<dyn futures_util::Stream<Item = Result<String>> + Send>>> {
         // Default: call blocking complete() and wrap in single-chunk stream
         let result = self.complete(prompt).await?;
-        Ok(Box::pin(futures_util::stream::once(async move { Ok(result) })))
+        Ok(Box::pin(futures_util::stream::once(
+            async move { Ok(result) },
+        )))
     }
 }
 
@@ -141,7 +143,7 @@ impl LlmClient for OllamaClient {
 
         let client = reqwest::Client::new();
         let start = std::time::Instant::now();
-        
+
         let response = client
             .post(format!("{}/api/generate", self.url))
             .json(&body)
@@ -1290,7 +1292,7 @@ pub mod compression;
 pub mod few_shot;
 
 /// Generate a plan using LLM with Phase 7 multi-tier fallback system
-/// 
+///
 /// This function uses a 4-tier fallback chain:
 /// 1. Full LLM with all 37 tools
 /// 2. Simplified LLM with 10 most common tools
@@ -1314,25 +1316,28 @@ pub async fn plan_from_llm(
             0.7,       // TODO: Extract temperature from client
             &tool_names,
         );
-        
+
         // Check cache first
         if let Some((cached_plan, _decision)) = GLOBAL_CACHE.get(&cache_key) {
             #[cfg(feature = "debug_io")]
-            eprintln!("[plan_from_llm] Cache HIT - returning cached plan: {}", cached_plan.plan.plan_id);
-            
+            eprintln!(
+                "[plan_from_llm] Cache HIT - returning cached plan: {}",
+                cached_plan.plan.plan_id
+            );
+
             return PlanSource::Llm(cached_plan.plan);
         }
-        
+
         #[cfg(feature = "debug_io")]
         eprintln!("[plan_from_llm] Cache MISS - calling fallback orchestrator");
     }
-    
+
     // Cache miss or disabled - use Phase 7 multi-tier fallback
     use crate::fallback_system::FallbackOrchestrator;
-    
+
     let orchestrator = FallbackOrchestrator::new();
     let result = orchestrator.plan_with_fallback(client, snap, reg).await;
-    
+
     #[cfg(feature = "debug_io")]
     eprintln!(
         "[plan_from_llm] Fallback orchestrator succeeded at tier {} after {} attempts ({} ms)",
@@ -1340,7 +1345,7 @@ pub async fn plan_from_llm(
         result.attempts.len(),
         result.total_duration_ms
     );
-    
+
     // Cache successful LLM plans (Tier 1 or Tier 2)
     #[cfg(feature = "llm_cache")]
     {
@@ -1354,12 +1359,12 @@ pub async fn plan_from_llm(
                 tokens_saved: estimate_tokens(&prompt),
             };
             GLOBAL_CACHE.put(cache_key, cached_plan);
-            
+
             #[cfg(feature = "debug_io")]
             eprintln!("[plan_from_llm] Cached new plan: {}", result.plan.plan_id);
         }
     }
-    
+
     // Return appropriate PlanSource based on tier
     match result.tier {
         fallback_system::FallbackTier::FullLlm | fallback_system::FallbackTier::SimplifiedLlm => {
@@ -1640,7 +1645,8 @@ mod tests {
             PlanSource::Fallback { plan, .. } => {
                 // Phase 7: Plans are generated with UUID-based IDs
                 assert!(
-                    plan.plan_id.starts_with("heuristic-") || plan.plan_id.starts_with("emergency-"),
+                    plan.plan_id.starts_with("heuristic-")
+                        || plan.plan_id.starts_with("emergency-"),
                     "Expected heuristic or emergency plan, got: {}",
                     plan.plan_id
                 );
@@ -1664,7 +1670,8 @@ mod tests {
             PlanSource::Fallback { plan, .. } => {
                 // Phase 7: Plans are generated with UUID-based IDs
                 assert!(
-                    plan.plan_id.starts_with("heuristic-") || plan.plan_id.starts_with("emergency-"),
+                    plan.plan_id.starts_with("heuristic-")
+                        || plan.plan_id.starts_with("emergency-"),
                     "Expected heuristic or emergency plan, got: {}",
                     plan.plan_id
                 );
@@ -1840,4 +1847,3 @@ mod tests {
         assert_eq!(res.steps.len(), 1);
     }
 }
-

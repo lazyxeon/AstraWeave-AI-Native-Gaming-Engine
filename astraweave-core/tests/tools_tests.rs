@@ -2,8 +2,8 @@
 //! Tests cover: ToolCtx, coordinate conversion, LOS, pathfinding (BFS/A*), cover positions
 
 use astraweave_core::tools::{
-    astar_path, find_cover_positions, glam_to_schema, los_clear, path_exists, schema_to_glam,
-    Poi, Tool, ToolCtx,
+    astar_path, find_cover_positions, glam_to_schema, los_clear, path_exists, schema_to_glam, Poi,
+    Tool, ToolCtx,
 };
 use astraweave_core::IVec2;
 use std::collections::HashSet;

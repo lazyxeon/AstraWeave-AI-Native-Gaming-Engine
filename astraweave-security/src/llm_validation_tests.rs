@@ -154,7 +154,10 @@ mod llm_validation_tests {
 
         let result = sanitize_llm_prompt(prompt, &validator);
 
-        assert!(result.is_ok(), "Suspicious keywords should be prefixed, not rejected");
+        assert!(
+            result.is_ok(),
+            "Suspicious keywords should be prefixed, not rejected"
+        );
         assert_eq!(
             result.unwrap(),
             "SAFE: How do I hack into a system?",
@@ -170,7 +173,10 @@ mod llm_validation_tests {
         let result = sanitize_llm_prompt(prompt, &validator);
 
         assert!(result.is_ok(), "exploit keyword should trigger safe mode");
-        assert!(result.unwrap().starts_with("SAFE:"), "Should add SAFE: prefix");
+        assert!(
+            result.unwrap().starts_with("SAFE:"),
+            "Should add SAFE: prefix"
+        );
     }
 
     #[test]
@@ -181,7 +187,10 @@ mod llm_validation_tests {
         let result = sanitize_llm_prompt(prompt, &validator);
 
         assert!(result.is_ok(), "cheat keyword should trigger safe mode");
-        assert!(result.unwrap().starts_with("SAFE:"), "Should add SAFE: prefix");
+        assert!(
+            result.unwrap().starts_with("SAFE:"),
+            "Should add SAFE: prefix"
+        );
     }
 
     #[test]
@@ -192,7 +201,10 @@ mod llm_validation_tests {
         let result = sanitize_llm_prompt(prompt, &validator);
 
         assert!(result.is_ok(), "bypass keyword should trigger safe mode");
-        assert!(result.unwrap().starts_with("SAFE:"), "Should add SAFE: prefix");
+        assert!(
+            result.unwrap().starts_with("SAFE:"),
+            "Should add SAFE: prefix"
+        );
     }
 
     #[test]
@@ -223,8 +235,14 @@ mod llm_validation_tests {
         let result = sanitize_llm_prompt(prompt, &validator);
 
         // to_lowercase() is used for content filtering
-        assert!(result.is_ok(), "Uppercase keywords should still trigger filtering");
-        assert!(result.unwrap().starts_with("SAFE:"), "Should detect uppercase HACK");
+        assert!(
+            result.is_ok(),
+            "Uppercase keywords should still trigger filtering"
+        );
+        assert!(
+            result.unwrap().starts_with("SAFE:"),
+            "Should detect uppercase HACK"
+        );
     }
 
     #[test]
@@ -251,7 +269,11 @@ mod llm_validation_tests {
         let result = sanitize_llm_prompt(prompt, &validator);
 
         assert!(result.is_ok(), "Unicode characters should be accepted");
-        assert_eq!(result.unwrap(), prompt, "Unicode should pass through unchanged");
+        assert_eq!(
+            result.unwrap(),
+            prompt,
+            "Unicode should pass through unchanged"
+        );
     }
 
     // ============================================================================

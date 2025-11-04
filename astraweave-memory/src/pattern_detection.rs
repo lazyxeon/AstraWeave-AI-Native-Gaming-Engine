@@ -3,7 +3,7 @@
 //! Analyzes stored episodes to detect player playstyle patterns,
 //! action preferences, and companion effectiveness in different contexts.
 
-use crate::{GameEpisode, EpisodeCategory, MemoryStorage, MemoryType};
+use crate::{EpisodeCategory, GameEpisode, MemoryStorage, MemoryType};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -104,7 +104,8 @@ impl PatternDetector {
         let mut episodes = Vec::new();
         for id in &episode_ids {
             if let Some(memory) = storage.get_memory(id)? {
-                if let Ok(episode) = serde_json::from_value::<GameEpisode>(memory.content.data.clone())
+                if let Ok(episode) =
+                    serde_json::from_value::<GameEpisode>(memory.content.data.clone())
                 {
                     episodes.push(episode);
                 }
@@ -227,7 +228,8 @@ impl PatternDetector {
 
         for id in &episode_ids {
             if let Some(memory) = storage.get_memory(id)? {
-                if let Ok(episode) = serde_json::from_value::<GameEpisode>(memory.content.data.clone())
+                if let Ok(episode) =
+                    serde_json::from_value::<GameEpisode>(memory.content.data.clone())
                 {
                     // Extract action sequences
                     let sequences = self.extract_sequences(&episode, 2, 4);
@@ -245,11 +247,13 @@ impl PatternDetector {
         let mut patterns: Vec<ActionPattern> = sequence_stats
             .into_iter()
             .filter(|(_, (freq, _))| *freq >= min_frequency)
-            .map(|(sequence, (frequency, total_effectiveness))| ActionPattern {
-                sequence,
-                frequency,
-                avg_effectiveness: total_effectiveness / frequency as f32,
-            })
+            .map(
+                |(sequence, (frequency, total_effectiveness))| ActionPattern {
+                    sequence,
+                    frequency,
+                    avg_effectiveness: total_effectiveness / frequency as f32,
+                },
+            )
             .collect();
 
         // Sort by frequency descending
@@ -307,12 +311,11 @@ impl PatternDetector {
 
         for id in &episode_ids {
             if let Some(memory) = storage.get_memory(id)? {
-                if let Ok(episode) = serde_json::from_value::<GameEpisode>(memory.content.data.clone())
+                if let Ok(episode) =
+                    serde_json::from_value::<GameEpisode>(memory.content.data.clone())
                 {
                     if let Some(outcome) = &episode.outcome {
-                        let entry = category_stats
-                            .entry(episode.category)
-                            .or_insert((0, 0.0));
+                        let entry = category_stats.entry(episode.category).or_insert((0, 0.0));
                         entry.0 += 1;
                         entry.1 += outcome.companion_effectiveness;
                     }
@@ -340,7 +343,8 @@ impl PatternDetector {
 
         for id in &episode_ids {
             if let Some(memory) = storage.get_memory(id)? {
-                if let Ok(episode) = serde_json::from_value::<GameEpisode>(memory.content.data.clone())
+                if let Ok(episode) =
+                    serde_json::from_value::<GameEpisode>(memory.content.data.clone())
                 {
                     *distribution.entry(episode.category).or_insert(0) += 1;
                 }
@@ -503,7 +507,8 @@ mod tests {
             create_combat_episode("ep3", 200.0, 20.0, 15000), // Cautious, not aggressive
         ];
 
-        let confidence = detector.calculate_pattern_confidence(PlaystylePattern::Aggressive, &episodes);
+        let confidence =
+            detector.calculate_pattern_confidence(PlaystylePattern::Aggressive, &episodes);
 
         // 2 out of 3 episodes are aggressive
         assert!(confidence > 0.4); // At least 40% confidence

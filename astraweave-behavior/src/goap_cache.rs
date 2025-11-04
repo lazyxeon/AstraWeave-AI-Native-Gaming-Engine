@@ -7,9 +7,9 @@
 use astraweave_profiling::span;
 
 use crate::goap::{GoapAction, GoapGoal, WorldState};
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{HashMap, VecDeque};
 use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 
 /// Cache key for GOAP plans based on scenario fingerprint
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -34,7 +34,7 @@ impl PlanCacheKey {
     ) -> Self {
         Self {
             state_hash: Self::hash_world_state_bucketed(current_state),
-            goal_hash: Self::hash_world_state(& goal.desired_state),
+            goal_hash: Self::hash_world_state(&goal.desired_state),
             action_count: available_actions.len(),
         }
     }
@@ -163,12 +163,9 @@ impl PlanCache {
     ) -> Option<Vec<GoapAction>> {
         #[cfg(feature = "profiling")]
         span!("AI::PlanCache::get");
-        
-        let (key, action_hash) = PlanCacheKey::with_action_validation(
-            current_state,
-            goal,
-            available_actions,
-        );
+
+        let (key, action_hash) =
+            PlanCacheKey::with_action_validation(current_state, goal, available_actions);
 
         if let Some(cached) = self.cache.get_mut(&key) {
             // Validate action set hasn't changed
@@ -205,11 +202,8 @@ impl PlanCache {
         available_actions: &[GoapAction],
         plan: Vec<GoapAction>,
     ) {
-        let (key, action_hash) = PlanCacheKey::with_action_validation(
-            current_state,
-            goal,
-            available_actions,
-        );
+        let (key, action_hash) =
+            PlanCacheKey::with_action_validation(current_state, goal, available_actions);
 
         // Evict oldest entry if at capacity
         if self.cache.len() >= self.max_size && !self.cache.contains_key(&key) {
@@ -305,10 +299,13 @@ impl CachedGoapPlanner {
         }
 
         // Cache miss - run planner
-        let plan = self.base_planner.plan(current_state, goal, available_actions)?;
+        let plan = self
+            .base_planner
+            .plan(current_state, goal, available_actions)?;
 
         // Store in cache for future use
-        self.cache.put(current_state, goal, available_actions, plan.clone());
+        self.cache
+            .put(current_state, goal, available_actions, plan.clone());
 
         Some(plan)
     }
@@ -398,7 +395,11 @@ mod tests {
         // Retrieve plan
         let cached = cache.get(&state, &goal, &actions);
         assert!(cached.is_some(), "Cache should hit for stored plan");
-        assert_eq!(cached.unwrap().len(), 2, "Cached plan should have 2 actions");
+        assert_eq!(
+            cached.unwrap().len(),
+            2,
+            "Cached plan should have 2 actions"
+        );
 
         // Check stats
         assert_eq!(cache.stats().hits, 1);
@@ -463,7 +464,10 @@ mod tests {
 
         // Try to get with modified actions (should invalidate)
         let cached = cache.get(&state, &goal, &actions2);
-        assert!(cached.is_none(), "Cache should invalidate when actions change");
+        assert!(
+            cached.is_none(),
+            "Cache should invalidate when actions change"
+        );
         assert_eq!(cache.stats().invalidations, 1, "Should have 1 invalidation");
     }
 

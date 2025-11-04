@@ -45,7 +45,7 @@
 //! ```
 
 #[cfg(feature = "profiling")]
-use astraweave_profiling::{span, plot};
+use astraweave_profiling::{plot, span};
 
 pub mod archetype;
 pub mod blob_vec;
@@ -54,8 +54,8 @@ pub mod entity_allocator;
 pub mod events;
 pub mod rng;
 pub mod sparse_set;
-pub mod type_registry;
 mod system_param;
+pub mod type_registry;
 
 #[cfg(test)]
 mod determinism_tests;
@@ -111,17 +111,22 @@ impl World {
     pub fn spawn(&mut self) -> Entity {
         #[cfg(feature = "profiling")]
         span!("ECS::World::spawn");
-        
+
         let e = self.entity_allocator.spawn();
-        
+
         #[cfg(feature = "profiling")]
-        plot!("ECS::entity_count", self.entity_allocator.alive_count() as u64);
-        
+        plot!(
+            "ECS::entity_count",
+            self.entity_allocator.alive_count() as u64
+        );
+
         // An entity with no components lives in the empty archetype.
         let empty_sig = ArchetypeSignature::new(vec![]);
         let archetype_id = self.archetypes.get_or_create_archetype(empty_sig);
         self.archetypes.set_entity_archetype(e, archetype_id);
-        let archetype = self.archetypes.get_archetype_mut(archetype_id)
+        let archetype = self
+            .archetypes
+            .get_archetype_mut(archetype_id)
             .expect("BUG: archetype should exist after get_or_create_archetype");
         archetype.add_entity(e, HashMap::new());
         e
@@ -159,23 +164,31 @@ impl World {
         is_removing: bool,
     ) {
         // 1. Get current archetype and component data
-        let old_archetype_id = self.archetypes.get_entity_archetype(entity)
+        let old_archetype_id = self
+            .archetypes
+            .get_entity_archetype(entity)
             .expect("BUG: entity should have archetype");
 
         let mut current_components = {
-            let old_archetype = self.archetypes.get_archetype_mut(old_archetype_id)
+            let old_archetype = self
+                .archetypes
+                .get_archetype_mut(old_archetype_id)
                 .expect("BUG: archetype should exist for entity");
             old_archetype.remove_entity_components(entity)
         };
 
         // 2. Determine new signature
         let new_sig_types = {
-            let old_archetype = self.archetypes.get_archetype(old_archetype_id)
+            let old_archetype = self
+                .archetypes
+                .get_archetype(old_archetype_id)
                 .expect("BUG: archetype should exist");
             let mut sig_types: Vec<_> = old_archetype.signature.components.clone();
             if is_removing {
                 // For removal, the `new_components` map just contains the TypeId of the component to remove.
-                let type_to_remove = new_components.keys().next()
+                let type_to_remove = new_components
+                    .keys()
+                    .next()
                     .expect("BUG: remove should have at least one component type");
                 sig_types.retain(|&tid| tid != *type_to_remove);
             } else {
@@ -199,7 +212,9 @@ impl World {
 
         // 5. Add entity with all components to new archetype
         let final_components = if is_removing {
-            let type_to_remove = new_components.keys().next()
+            let type_to_remove = new_components
+                .keys()
+                .next()
                 .expect("BUG: remove should have at least one component type");
             current_components.remove(type_to_remove);
             current_components
@@ -208,7 +223,9 @@ impl World {
             current_components
         };
 
-        let new_archetype = self.archetypes.get_archetype_mut(new_archetype_id)
+        let new_archetype = self
+            .archetypes
+            .get_archetype_mut(new_archetype_id)
             .expect("BUG: archetype should exist after get_or_create_archetype");
         new_archetype.add_entity(entity, final_components);
     }
@@ -216,12 +233,12 @@ impl World {
     pub fn get<T: Component>(&self, e: Entity) -> Option<&T> {
         #[cfg(feature = "profiling")]
         span!("ECS::World::get");
-        
+
         // Validate entity is alive
         if !self.is_alive(e) {
             return None;
         }
-        
+
         let archetype_id = self.archetypes.get_entity_archetype(e)?;
         let archetype = self.archetypes.get_archetype(archetype_id)?;
         archetype.get::<T>(e)
@@ -232,7 +249,7 @@ impl World {
         if !self.is_alive(e) {
             return None;
         }
-        
+
         let archetype_id = self.archetypes.get_entity_archetype(e)?;
         let archetype = self.archetypes.get_archetype_mut(archetype_id)?;
         archetype.get_mut::<T>(e)
@@ -258,7 +275,9 @@ impl World {
             .collect::<Vec<_>>();
 
         for archetype_id in archetypes_with_t {
-            let archetype = self.archetypes.get_archetype_mut(archetype_id)
+            let archetype = self
+                .archetypes
+                .get_archetype_mut(archetype_id)
                 .expect("BUG: archetype should exist from archetypes_with_component");
             // NEW: entities_vec() now returns &[Entity] (zero-cost!)
             let entities: Vec<Entity> = archetype.entities_vec().to_vec();
@@ -297,7 +316,7 @@ impl World {
         if !self.is_alive(e) {
             return false;
         }
-        
+
         if !self.has::<T>(e) {
             return false;
         }
@@ -337,7 +356,9 @@ impl World {
 
         // Remove from archetype (removes entity AND all components)
         if let Some(archetype_id) = self.archetypes.get_entity_archetype(entity) {
-            let archetype = self.archetypes.get_archetype_mut(archetype_id)
+            let archetype = self
+                .archetypes
+                .get_archetype_mut(archetype_id)
                 .expect("BUG: archetype should exist for entity");
             // Use remove_entity_components to properly clean up packed storage
             archetype.remove_entity_components(entity);
@@ -404,7 +425,7 @@ impl Schedule {
     pub fn run(&self, world: &mut World) {
         #[cfg(feature = "profiling")]
         span!("ECS::Schedule::run");
-        
+
         for s in &self.stages {
             for f in &s.systems {
                 (f)(world);
@@ -439,7 +460,7 @@ impl App {
             schedule,
         }
     }
-    
+
     pub fn add_system(&mut self, stage: &'static str, sys: SystemFn) {
         self.schedule.add_system(stage, sys);
     }
@@ -485,7 +506,7 @@ impl World {
         if !self.is_alive(entity) {
             return; // Stale entity, silently ignore
         }
-        
+
         // TODO: Full type registry dispatch with closures requires refactoring to avoid
         // borrow checker issues (self is borrowed immutably for registry lookup, but
         // handler needs &mut self). For now, this is a stub that will be improved in
@@ -505,7 +526,7 @@ impl World {
         if !self.is_alive(entity) {
             return; // Stale entity, silently ignore
         }
-        
+
         panic!(
             "remove_by_type_id not fully implemented - type_id {:?}. \
              See PR #2 implementation notes.",
@@ -665,17 +686,17 @@ mod tests {
     #[test]
     fn test_count_single_component() {
         let mut world = World::new();
-        
+
         assert_eq!(world.count::<Position>(), 0);
-        
+
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
         assert_eq!(world.count::<Position>(), 1);
-        
+
         let e2 = world.spawn();
         world.insert(e2, Position { x: 2.0, y: 2.0 });
         assert_eq!(world.count::<Position>(), 2);
-        
+
         let _e3 = world.spawn();
         world.insert(_e3, Velocity { vx: 1.0, vy: 1.0 });
         assert_eq!(world.count::<Position>(), 2);
@@ -685,16 +706,16 @@ mod tests {
     #[test]
     fn test_count_across_archetypes() {
         let mut world = World::new();
-        
+
         // Archetype 1: Position only
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
-        
+
         // Archetype 2: Position + Velocity
         let e2 = world.spawn();
         world.insert(e2, Position { x: 2.0, y: 2.0 });
         world.insert(e2, Velocity { vx: 1.0, vy: 1.0 });
-        
+
         // Should count both
         assert_eq!(world.count::<Position>(), 2);
         assert_eq!(world.count::<Velocity>(), 1);
@@ -703,16 +724,16 @@ mod tests {
     #[test]
     fn test_entities_with_single_component() {
         let mut world = World::new();
-        
+
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
-        
+
         let e2 = world.spawn();
         world.insert(e2, Position { x: 2.0, y: 2.0 });
-        
+
         let _e3 = world.spawn();
         world.insert(_e3, Velocity { vx: 1.0, vy: 1.0 });
-        
+
         let entities = world.entities_with::<Position>();
         assert_eq!(entities.len(), 2);
         assert!(entities.contains(&e1));
@@ -729,14 +750,14 @@ mod tests {
     #[test]
     fn test_entities_with_across_archetypes() {
         let mut world = World::new();
-        
+
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
-        
+
         let e2 = world.spawn();
         world.insert(e2, Position { x: 2.0, y: 2.0 });
         world.insert(e2, Velocity { vx: 1.0, vy: 1.0 });
-        
+
         let entities = world.entities_with::<Position>();
         assert_eq!(entities.len(), 2);
         assert!(entities.contains(&e1));
@@ -746,17 +767,17 @@ mod tests {
     #[test]
     fn test_each_mut_modify_components() {
         let mut world = World::new();
-        
+
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
-        
+
         let e2 = world.spawn();
         world.insert(e2, Position { x: 2.0, y: 2.0 });
-        
+
         world.each_mut::<Position>(|_e, pos| {
             pos.x += 10.0;
         });
-        
+
         assert_eq!(world.get::<Position>(e1).unwrap().x, 11.0);
         assert_eq!(world.get::<Position>(e2).unwrap().x, 12.0);
     }
@@ -764,18 +785,18 @@ mod tests {
     #[test]
     fn test_each_mut_with_entity_access() {
         let mut world = World::new();
-        
+
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
-        
+
         let e2 = world.spawn();
         world.insert(e2, Position { x: 2.0, y: 2.0 });
-        
+
         let mut visited = Vec::new();
         world.each_mut::<Position>(|entity, _pos| {
             visited.push(entity);
         });
-        
+
         assert_eq!(visited.len(), 2);
         assert!(visited.contains(&e1));
         assert!(visited.contains(&e2));
@@ -784,15 +805,15 @@ mod tests {
     #[test]
     fn test_entity_count() {
         let mut world = World::new();
-        
+
         assert_eq!(world.entity_count(), 0);
-        
+
         let e1 = world.spawn();
         assert_eq!(world.entity_count(), 1);
-        
+
         let _e2 = world.spawn();
         assert_eq!(world.entity_count(), 2);
-        
+
         world.despawn(e1);
         assert_eq!(world.entity_count(), 1);
     }
@@ -806,10 +827,10 @@ mod tests {
         let mut world = World::new();
         let entity = world.spawn();
         world.despawn(entity);
-        
+
         // Insert on stale entity should be ignored silently
         world.insert(entity, Position { x: 1.0, y: 1.0 });
-        
+
         assert!(!world.has::<Position>(entity));
         assert_eq!(world.count::<Position>(), 0);
     }
@@ -820,7 +841,7 @@ mod tests {
         let entity = world.spawn();
         world.insert(entity, Position { x: 1.0, y: 1.0 });
         world.despawn(entity);
-        
+
         assert!(world.get::<Position>(entity).is_none());
     }
 
@@ -830,7 +851,7 @@ mod tests {
         let entity = world.spawn();
         world.insert(entity, Position { x: 1.0, y: 1.0 });
         world.despawn(entity);
-        
+
         assert!(world.get_mut::<Position>(entity).is_none());
     }
 
@@ -840,7 +861,7 @@ mod tests {
         let entity = world.spawn();
         world.insert(entity, Position { x: 1.0, y: 1.0 });
         world.despawn(entity);
-        
+
         assert!(!world.has::<Position>(entity));
     }
 
@@ -850,7 +871,7 @@ mod tests {
         let entity = world.spawn();
         world.insert(entity, Position { x: 1.0, y: 1.0 });
         world.despawn(entity);
-        
+
         assert!(!world.remove::<Position>(entity));
     }
 
@@ -858,7 +879,7 @@ mod tests {
     fn test_despawn_stale_entity_returns_false() {
         let mut world = World::new();
         let entity = world.spawn();
-        
+
         assert!(world.despawn(entity));
         assert!(!world.despawn(entity)); // Second despawn should return false
     }
@@ -868,7 +889,7 @@ mod tests {
         let mut world = World::new();
         let entity = world.spawn();
         world.insert(entity, Position { x: 1.0, y: 1.0 });
-        
+
         // Removing component that doesn't exist
         assert!(!world.remove::<Velocity>(entity));
     }
@@ -893,9 +914,9 @@ mod tests {
     fn test_resource_replace() {
         let mut world = World::new();
         world.insert_resource(TestResource(10));
-        
+
         world.insert_resource(TestResource(20));
-        
+
         let resource = world.get_resource::<TestResource>().unwrap();
         assert_eq!(resource.0, 20);
     }
@@ -914,7 +935,7 @@ mod tests {
     #[test]
     fn test_app_insert_resource() {
         let app = App::new().insert_resource(TestResource(42));
-        
+
         let resource = app.world.get_resource::<TestResource>().unwrap();
         assert_eq!(resource.0, 42);
     }
@@ -924,11 +945,11 @@ mod tests {
         fn test_system(world: &mut World) {
             world.insert_resource(TestResource(99));
         }
-        
+
         let mut app = App::new();
         app.add_system("simulation", test_system);
         app = app.run_fixed(1);
-        
+
         let resource = app.world.get_resource::<TestResource>().unwrap();
         assert_eq!(resource.0, 99);
     }
@@ -938,18 +959,18 @@ mod tests {
         fn system_a(world: &mut World) {
             world.insert_resource(TestResource(10));
         }
-        
+
         fn system_b(world: &mut World) {
             if let Some(resource) = world.get_resource_mut::<TestResource>() {
                 resource.0 += 5;
             }
         }
-        
+
         let mut app = App::new();
         app.add_system("simulation", system_a);
         app.add_system("simulation", system_b);
         app = app.run_fixed(1);
-        
+
         let resource = app.world.get_resource::<TestResource>().unwrap();
         assert_eq!(resource.0, 15);
     }
@@ -963,11 +984,11 @@ mod tests {
                 world.insert_resource(TestResource(1));
             }
         }
-        
+
         let mut app = App::new();
         app.add_system("simulation", increment_system);
         app = app.run_fixed(10);
-        
+
         let resource = app.world.get_resource::<TestResource>().unwrap();
         assert_eq!(resource.0, 10);
     }
@@ -979,13 +1000,13 @@ mod tests {
     #[test]
     fn test_archetypes_read_access() {
         let mut world = World::new();
-        
+
         let e1 = world.spawn();
         world.insert(e1, Position { x: 1.0, y: 1.0 });
-        
+
         let archetypes = world.archetypes();
         let archetype_count = archetypes.iter().count();
-        
+
         // Should have at least 2 archetypes: empty and Position-only
         assert!(archetype_count >= 2);
     }
@@ -994,7 +1015,7 @@ mod tests {
     fn test_spawn_creates_empty_archetype_entity() {
         let mut world = World::new();
         let entity = world.spawn();
-        
+
         // Entity should exist in empty archetype
         assert!(world.is_alive(entity));
         assert_eq!(world.entity_count(), 1);

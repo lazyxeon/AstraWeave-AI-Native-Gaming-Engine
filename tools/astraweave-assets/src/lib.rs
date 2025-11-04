@@ -6,7 +6,8 @@ pub use kenney_provider::KenneyProvider;
 pub use organize::AssetOrganizer;
 pub use polyhaven::{PolyHavenClient, ResolvedAsset};
 pub use provider::{
-    AssetProvider, AssetType, LicenseInfo, ProviderConfig, ProviderRegistry, ResolvedAsset as ResolvedAssetV2,
+    AssetProvider, AssetType, LicenseInfo, ProviderConfig, ProviderRegistry,
+    ResolvedAsset as ResolvedAssetV2,
 };
 pub use summary::FetchSummary;
 
@@ -30,15 +31,12 @@ pub mod ensure_asset {
     use std::path::PathBuf;
 
     /// Ensure asset exists locally, fetching if necessary
-    pub async fn ensure_asset(
-        manifest_path: &Path,
-        handle: &str,
-    ) -> Result<Vec<PathBuf>> {
+    pub async fn ensure_asset(manifest_path: &Path, handle: &str) -> Result<Vec<PathBuf>> {
         // Load manifest
-        let manifest = AssetManifest::load(manifest_path)
-            .context("Failed to load manifest")?;
+        let manifest = AssetManifest::load(manifest_path).context("Failed to load manifest")?;
 
-        let organizer = AssetOrganizer::new(manifest.output_dir.clone(), manifest.cache_dir.clone());
+        let organizer =
+            AssetOrganizer::new(manifest.output_dir.clone(), manifest.cache_dir.clone());
 
         // Check if cached
         if organizer.is_cached(handle).await {
@@ -67,7 +65,9 @@ pub mod ensure_asset {
             let mut downloads = std::collections::HashMap::new();
 
             for (map_name, url) in &resolved.urls {
-                let temp_path = manifest.cache_dir.join(format!("_temp_{}_{}.tmp", handle, map_name));
+                let temp_path = manifest
+                    .cache_dir
+                    .join(format!("_temp_{}_{}.tmp", handle, map_name));
                 let result = downloader.download(url, &temp_path, false).await?;
                 downloads.insert(map_name.clone(), result);
             }
@@ -83,7 +83,9 @@ pub mod ensure_asset {
             let mut downloads = std::collections::HashMap::new();
 
             if let Some(url) = resolved.urls.get("hdri") {
-                let temp_path = manifest.cache_dir.join(format!("_temp_{}_hdri.tmp", handle));
+                let temp_path = manifest
+                    .cache_dir
+                    .join(format!("_temp_{}_hdri.tmp", handle));
                 let result = downloader.download(url, &temp_path, false).await?;
                 downloads.insert("hdri".to_string(), result);
             }
@@ -101,7 +103,9 @@ pub mod ensure_asset {
             let mut downloads = std::collections::HashMap::new();
 
             if let Some(url) = resolved.urls.get("model") {
-                let temp_path = manifest.cache_dir.join(format!("_temp_{}_model.tmp", handle));
+                let temp_path = manifest
+                    .cache_dir
+                    .join(format!("_temp_{}_model.tmp", handle));
                 let result = downloader.download(url, &temp_path, false).await?;
                 downloads.insert("model".to_string(), result);
             }

@@ -1,3 +1,4 @@
+use anyhow::Result;
 /// Phase 7: Comprehensive Integration Tests
 ///
 /// Tests the complete Phase 7 implementation:
@@ -5,15 +6,13 @@
 /// - Enhanced prompt templates (37 tools, few-shot learning)
 /// - Robust plan parser (5-stage extraction, hallucination detection)
 /// - Semantic cache similarity matching
-
 use astraweave_core::{
-    ActionStep, CompanionState, Constraints, EnemyState, IVec2, PlayerState, PlanIntent,
+    ActionStep, CompanionState, Constraints, EnemyState, IVec2, PlanIntent, PlayerState,
     ToolRegistry, ToolSpec, WorldSnapshot,
 };
 use astraweave_llm::{plan_from_llm, LlmClient, PlanSource};
 use async_trait::async_trait;
 use std::collections::BTreeMap;
-use anyhow::Result;
 
 // ============================================================================
 // Test 1: End-to-End Fallback Orchestration
@@ -31,7 +30,7 @@ async fn test_phase7_complete_fallback_chain() {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             let mut count = self.call_count.lock().await;
             *count += 1;
-            
+
             // First 2 calls fail (Tier 1 Full LLM, Tier 2 Simplified LLM)
             if *count <= 2 {
                 Err(anyhow::anyhow!("LLM temporarily unavailable"))
@@ -91,7 +90,8 @@ async fn test_phase7_hallucination_detection() {
                     {"act": "LaserBeam", "target_id": 5},
                     {"act": "TimeTravel", "seconds": -3600}
                 ]
-            }"#.to_string())
+            }"#
+            .to_string())
         }
     }
 
@@ -142,24 +142,34 @@ async fn test_phase7_robust_json_parsing() {
         ```json
         {"plan_id": "test-1", "steps": [{"act": "Scan", "radius": 10.0}]}
         ```
-        "#.to_string(),
+        "#
+        .to_string(),
     };
     let result1 = plan_from_llm(&client1, &snap, &reg).await;
-    assert!(matches!(result1, PlanSource::Llm(_)), "Should parse code fence JSON");
+    assert!(
+        matches!(result1, PlanSource::Llm(_)),
+        "Should parse code fence JSON"
+    );
 
     // Test 2: JSON in envelope
     let client2 = RobustParsingClient {
         response: r#"{"message": {"content": "{\"plan_id\": \"test-2\", \"steps\": [{\"act\": \"Wait\", \"duration\": 1.0}]}"}}"#.to_string(),
     };
     let result2 = plan_from_llm(&client2, &snap, &reg).await;
-    assert!(matches!(result2, PlanSource::Llm(_)), "Should parse envelope JSON");
+    assert!(
+        matches!(result2, PlanSource::Llm(_)),
+        "Should parse envelope JSON"
+    );
 
     // Test 3: Tolerant plan_id variations
     let client3 = RobustParsingClient {
         response: r#"{"planId": "test-3", "steps": [{"act": "Scan", "radius": 5.0}]}"#.to_string(),
     };
     let result3 = plan_from_llm(&client3, &snap, &reg).await;
-    assert!(matches!(result3, PlanSource::Llm(_)), "Should handle planId variant");
+    assert!(
+        matches!(result3, PlanSource::Llm(_)),
+        "Should handle planId variant"
+    );
 }
 
 // ============================================================================
@@ -168,10 +178,10 @@ async fn test_phase7_robust_json_parsing() {
 
 #[tokio::test]
 async fn test_phase7_cache_similarity() {
-    use astraweave_llm::cache::{PromptCache, CacheDecision, CachedPlan};
-    
+    use astraweave_llm::cache::{CacheDecision, CachedPlan, PromptCache};
+
     let cache = PromptCache::with_similarity_threshold(10, 0.8);
-    
+
     // Cache a plan
     let key1 = astraweave_llm::cache::PromptKey::new(
         "Attack enemy at position 5 and then retreat to cover",
@@ -179,21 +189,28 @@ async fn test_phase7_cache_similarity() {
         0.7,
         &["attack", "move_to", "take_cover"],
     );
-    
+
     let plan1 = PlanIntent {
         plan_id: "cached-plan-1".to_string(),
         steps: vec![
             ActionStep::Attack { target_id: 1 },
-            ActionStep::MoveTo { x: 10, y: 10, speed: None },
+            ActionStep::MoveTo {
+                x: 10,
+                y: 10,
+                speed: None,
+            },
         ],
     };
-    
-    cache.put(key1, CachedPlan {
-        plan: plan1.clone(),
-        created_at: std::time::Instant::now(),
-        tokens_saved: 500,
-    });
-    
+
+    cache.put(
+        key1,
+        CachedPlan {
+            plan: plan1.clone(),
+            created_at: std::time::Instant::now(),
+            tokens_saved: 500,
+        },
+    );
+
     // Query with similar prompt (should hit via similarity)
     let key2 = astraweave_llm::cache::PromptKey::new(
         "Attack foe at position 5 and then fall back to cover",
@@ -201,9 +218,9 @@ async fn test_phase7_cache_similarity() {
         0.7,
         &["attack", "move_to", "take_cover"],
     );
-    
+
     let result = cache.get(&key2);
-    
+
     // Should get similarity hit
     if let Some((cached_plan, decision)) = result {
         assert_eq!(cached_plan.plan.plan_id, "cached-plan-1");
@@ -222,10 +239,13 @@ async fn test_phase7_cache_similarity() {
         // This is acceptable - the feature works but threshold might need tuning
         println!("⚠️  Cache miss - similarity below threshold (acceptable for simple matching)");
     }
-    
+
     // Verify stats
     let stats = cache.stats();
-    assert!(stats.hits > 0 || stats.misses > 0, "Should have recorded lookup");
+    assert!(
+        stats.hits > 0 || stats.misses > 0,
+        "Should have recorded lookup"
+    );
 }
 
 // ============================================================================
@@ -235,31 +255,41 @@ async fn test_phase7_cache_similarity() {
 #[test]
 fn test_phase7_all_37_tools_defined() {
     use astraweave_core::get_all_tools;
-    
+
     let tools = get_all_tools();
-    
+
     // Verify we have all 37 tools
     assert_eq!(tools.len(), 37, "Should have exactly 37 tools");
-    
+
     // Verify all categories are represented
     let categories = vec![
-        "Movement", "Offensive", "Defensive", 
-        "Equipment", "Tactical", "Utility"
+        "Movement",
+        "Offensive",
+        "Defensive",
+        "Equipment",
+        "Tactical",
+        "Utility",
     ];
-    
+
     for category in categories {
-        let count = tools.iter()
-            .filter(|t| t.category == category)
-            .count();
+        let count = tools.iter().filter(|t| t.category == category).count();
         assert!(count > 0, "Category '{}' should have tools", category);
     }
-    
+
     // Verify key tools exist
     let key_tool_names = vec![
-        "move_to", "attack", "take_cover", "heal", "reload",
-        "scan", "wait", "retreat", "approach", "dodge"
+        "move_to",
+        "attack",
+        "take_cover",
+        "heal",
+        "reload",
+        "scan",
+        "wait",
+        "retreat",
+        "approach",
+        "dodge",
     ];
-    
+
     for tool_name in key_tool_names {
         assert!(
             tools.iter().any(|t| t.name == tool_name),
@@ -276,10 +306,10 @@ fn test_phase7_all_37_tools_defined() {
 #[test]
 fn test_phase7_enhanced_prompts() {
     use astraweave_llm::prompt_template::{build_enhanced_prompt, PromptConfig};
-    
+
     let snap = create_simple_scenario();
     let reg = create_full_registry();
-    
+
     // Test with all features enabled
     let config = PromptConfig {
         include_examples: true,
@@ -288,14 +318,14 @@ fn test_phase7_enhanced_prompts() {
         max_examples: 5,
         strict_json_only: true,
     };
-    
+
     let prompt = build_enhanced_prompt(&snap, &reg, &config);
-    
+
     // Verify prompt includes key sections
     assert!(prompt.contains("tactical AI"), "Should have system message");
     assert!(prompt.contains("JSON"), "Should mention JSON format");
     assert!(prompt.len() > 1000, "Prompt should be comprehensive");
-    
+
     // Test with minimal config
     let minimal_config = PromptConfig {
         include_examples: false,
@@ -304,9 +334,12 @@ fn test_phase7_enhanced_prompts() {
         max_examples: 0,
         strict_json_only: true,
     };
-    
+
     let minimal_prompt = build_enhanced_prompt(&snap, &reg, &minimal_config);
-    assert!(minimal_prompt.len() < prompt.len(), "Minimal prompt should be shorter");
+    assert!(
+        minimal_prompt.len() < prompt.len(),
+        "Minimal prompt should be shorter"
+    );
 }
 
 // ============================================================================
@@ -317,33 +350,36 @@ fn test_phase7_enhanced_prompts() {
 #[tokio::test]
 async fn test_phase7_metrics_tracking() {
     use astraweave_llm::fallback_system::FallbackOrchestrator;
-    
+
     let orchestrator = FallbackOrchestrator::new();
-    
+
     // Get initial metrics
     let initial_metrics = orchestrator.get_metrics().await;
     assert_eq!(initial_metrics.total_requests, 0);
-    
+
     // Make a request (will use mock client)
     struct SuccessClient;
-    
+
     #[async_trait]
     impl LlmClient for SuccessClient {
         async fn complete(&self, _prompt: &str) -> Result<String> {
             Ok(r#"{"plan_id": "test", "steps": [{"act": "Wait", "duration": 1.0}]}"#.to_string())
         }
     }
-    
+
     let client = SuccessClient;
     let snap = create_simple_scenario();
     let reg = create_full_registry();
-    
+
     let _result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
-    
+
     // Verify metrics updated
     let final_metrics = orchestrator.get_metrics().await;
     assert_eq!(final_metrics.total_requests, 1);
-    assert!(final_metrics.tier_successes.len() > 0, "Should track tier successes");
+    assert!(
+        final_metrics.tier_successes.len() > 0,
+        "Should track tier successes"
+    );
 }
 
 // ============================================================================
@@ -413,16 +449,46 @@ fn create_full_registry() -> ToolRegistry {
     // Create registry with common tools for testing
     ToolRegistry {
         tools: vec![
-            ToolSpec { name: "move_to".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "attack".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "take_cover".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "heal".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "reload".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "scan".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "wait".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "retreat".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "approach".to_string(), args: BTreeMap::new() },
-            ToolSpec { name: "dodge".to_string(), args: BTreeMap::new() },
+            ToolSpec {
+                name: "move_to".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "attack".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "take_cover".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "heal".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "reload".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "scan".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "wait".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "retreat".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "approach".to_string(),
+                args: BTreeMap::new(),
+            },
+            ToolSpec {
+                name: "dodge".to_string(),
+                args: BTreeMap::new(),
+            },
         ],
         constraints: Constraints {
             enforce_cooldowns: true,

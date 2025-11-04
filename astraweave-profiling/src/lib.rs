@@ -21,17 +21,17 @@ use astraweave_profiling::{span, frame_mark};
 fn game_loop() {
     loop {
         span!("frame");
-        
+
         {
             span!("update");
             update_game();
         }
-        
+
         {
             span!("render");
             render_game();
         }
-        
+
         frame_mark!();
     }
 }
@@ -39,7 +39,7 @@ fn game_loop() {
 fn update_game() {
     span!("physics");
     // Physics simulation
-    
+
     span!("AI");
     // AI updates
 }
@@ -128,7 +128,10 @@ macro_rules! plot {
         #[cfg(feature = "profiling")]
         tracy_client::Client::running()
             .expect("Tracy client should be running")
-            .plot(tracy_client::PlotName::new_leak($name.to_string()), $value as f64);
+            .plot(
+                tracy_client::PlotName::new_leak($name.to_string()),
+                $value as f64,
+            );
     };
 }
 
@@ -328,7 +331,7 @@ mod tests {
     fn test_span_compiles() {
         // These should compile to no-ops without profiling feature
         span!("test");
-        
+
         {
             span!("nested");
             // Nested span
