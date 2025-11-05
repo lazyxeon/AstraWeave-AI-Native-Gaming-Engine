@@ -455,6 +455,8 @@ pub struct Renderer {
 
     // Asset streaming and residency management
     _residency_manager: crate::residency::ResidencyManager,
+
+    bind_groups_invalidated: bool,
 }
 
 impl Renderer {
@@ -2801,6 +2803,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 std::sync::Arc::new(std::sync::Mutex::new(astraweave_asset::AssetDatabase::new())),
                 512, // 512 MB default max memory
             ),
+            bind_groups_invalidated: false,
         })
     }
 
@@ -3205,6 +3208,17 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // Render sky first into HDR
         // TODO: Replace with the correct color target view for sky rendering (e.g., main color target or postprocess output)
         // self.sky.render(&mut enc, &self.main_color_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+
+        // Replace with:
+        let sky_color_target = &self.hdr_view;  // Use HDR view as the main color target for sky
+        self.sky.render(&mut enc, sky_color_target, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+
+        // Ensure bind groups are properly recreated or updated if needed to avoid corruption
+        // Add safety check before render pass
+        if self.bind_groups_invalidated {
+            self.recreate_bind_groups();
+            self.bind_groups_invalidated = false;
+        }
 
         {
             #[cfg(feature = "profiling")]
@@ -4481,6 +4495,32 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         self.queue
             .write_buffer(&self.skin_palette_buf, 0, bytemuck::cast_slice(&data));
+    }
+
+    fn recreate_bind_groups(&mut self) {
+        // Recreate camera bind group
+        self.camera_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &self.camera_bgl,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: self.camera_buf.as_entire_binding(),
+            }],
+            label: Some("camera_bg"),
+        });
+
+        // Similarly recreate other bind groups (light, material, etc.)
+        // For light:
+        self.light_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &self.light_bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: self.light_buf.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureViewArray(&self.shadow_views) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&self.shadow_sampler) },
+            ],
+            label: Some("light_bg"),
+        });
+
+        // Add recreations for materials, instances, etc., based on existing setup
     }
 }
 

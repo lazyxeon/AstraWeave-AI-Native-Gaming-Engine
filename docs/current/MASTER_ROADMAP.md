@@ -113,296 +113,168 @@ This document is the **single authoritative source** for AstraWeave's strategic 
 
 ---
 
-## Three-Phase Strategic Plan (12 Months)
+## Unified Strategic Roadmap (15 Phases, 12-18 Months)
 
-### Phase A: Foundation Hardening (Months 1-3)
+This merges the existing Phase A-C with a detailed 15-phase extension for full completion. Phases 1-3 align with hardening/optimization, 4-15 build to world-standard readiness.
 
-**Goal**: Eliminate critical blockers preventing production deployment  
-**Focus**: Robustness, correctness, testing infrastructure  
-**Theme**: "Make it work reliably before making it fast"
+### Phase 1: Rendering System Overhaul (Months 1-3)
+**Focus**: Address low coverage (53.89%), incomplete features, bugs. Achieve 95%+ coverage, full PBR/GI/particles, cross-platform stability.
 
-#### Month 1: Critical Blockers Resolution
+**Key Tasks**:
+1. Audit/Fix bugs (e.g., GPU corruption).
+2. Complete features (shadows, post-processing, Nanite enhancements).
+3. Optimize (Tracy, SIMD).
+4. Test (unit/integration/fuzz, golden renders).
 
-**Week 1-2: Core Error Handling** - ✅ **COMPLETE (Oct 21-26)**
+**Quality Gates**: 95% coverage, 60 FPS at 10M polys.
+**Estimated Effort**: 12 weeks.
 
-**Deliverable**: Zero `.unwrap()` in astraweave-ecs and astraweave-core + Mission-critical test coverage
+### Phase 2: AI and Cognition Completion (Months 4-5)
+**Focus**: Fix LLM bugs, optimize for 50k+ agents, add multi-agent RL.
 
-**Progress (Oct 21-28)**:
-- ✅ astraweave-ecs: 96.67% coverage (was 70.03%, +26.64pp) - **MISSION-CRITICAL TIER**
-- ✅ astraweave-core: 95.24% coverage (was 65.27%, +29.97pp) - **MISSION-CRITICAL TIER**
-- ✅ astraweave-behavior: 94.34% coverage (was 54.46%, +39.88pp) - **MISSION-CRITICAL TIER**
-- ✅ astraweave-ai: 97.39% coverage (was 59.30%, +38.09pp) - **MISSION-CRITICAL TIER**
-- ✅ astraweave-audio: 91.42% coverage (was 65.22%, +26.20pp) - **OUTSTANDING TIER**
-- ✅ **P1-B Coverage Sprint**: Gameplay 92.39% (+51.12pp), Terrain 77.39% (+11.04pp), Render 53.89% (+1.45pp)
-- ✅ ~25 unwraps remaining (was 50+, 50% reduction)
-- ✅ **1,225 total tests** (was 463, +762 tests, +165% growth)
-- ✅ **ALL P0+P1-A crates now 90%+!** (historic milestone)
+**Key Tasks**:
+1. Audit/Fix (e.g., parsing, fallbacks).
+2. Features (RL integration).
+3. Optimize (cache eviction).
+4. Test (fuzz intents, 50k benchmarks).
 
-**Remaining Work**:
-- [ ] Replace remaining ~25 `.unwrap()` calls with proper error types (scheduled for next sprint)
-- [x] Achieve 90%+ coverage in all P0 crates - ✅ **COMPLETE!**
+**Quality Gates**: 98% coverage, 2M+ plans/sec.
+**Estimated Effort**: 8 weeks.
 
-**Estimated Time Remaining**: 2-4 hours for unwrap cleanup
+### Phase 3: ECS and Simulation Core (Months 5-6)
+**Focus**: Eliminate unwraps, add parallelism, determinism audits.
 
-**Acceptance Criteria**:
-- [ ] Zero `.unwrap()` in `astraweave-ecs/src/` (excluding tests) - **DEFERRED to unwrap cleanup sprint**
-- [ ] Zero `.unwrap()` in `astraweave-core/src/` (excluding tests) - **DEFERRED to unwrap cleanup sprint**
-- [x] All public APIs return `Result<T, E>` where appropriate - ✅ **COMPLETE**
-- [x] 100+ tests added across P0 crates - ✅ **COMPLETE (262 tests added since v1.3)**
-- [x] Existing tests still pass (no regressions) - ✅ **COMPLETE (959/959 passing)**
-- [x] **NEW**: 90%+ coverage in all P0 crates - ✅ **COMPLETE (90.00% average, all 5 crates 90%+)**
+**Key Tasks**:
+1. Safety refactor.
+2. Parallelism (Rayon).
+3. Testing (property-based).
 
-**Week 3-4: LLM Error Handling & Evaluation**
-- **Deliverable 1**: Robust error handling in LLM integration
-  - Define LlmError types (Timeout, InvalidJson, DisallowedTool, NetworkError, ValidationFailed)
-  - Replace `.unwrap()` in astraweave-llm
-  - Add 15+ LLM error tests
-- **Deliverable 2**: LLM evaluation harness (astraweave-llm-eval)
-  - EvaluationHarness struct with test scenarios
-  - Scoring functions (safety, coherence, goal achievement)
-  - Batch evaluation runner
-  - CSV/JSON result export
-- **Acceptance Criteria**:
-  - [ ] Zero `.unwrap()` in astraweave-llm
-  - [ ] 10+ test scenarios defined
-  - [ ] Evaluation runs successfully on Hermes 2 Pro
-  - [ ] Scoring metrics validated (0.0-100.0 scale)
+**Quality Gates**: 99% coverage, <1 ns/entity.
+**Estimated Effort**: 6 weeks.
 
-#### Month 2: Test Coverage Push (60%+ Target) - ✅ **EXCEEDED (Oct 21-28)**
+### Phase 4: Physics and Navigation (Months 6-7)
+**Focus**: Fix ragdoll sync, add dynamic obstacles, optimize A*.
 
-**Status**: ✅ **TARGET VASTLY EXCEEDED** (~76% overall, was targeting 60%+)
+**Key Tasks**:
+1. Integration fixes.
+2. Features (crowd sim).
+3. Testing (5k entities).
 
-**Week 1: AI Crate Critical Coverage** - ✅ **COMPLETE**
-- **Current**: 97.39% (was 11 tests, now 103 tests, +837% increase!)
-- **Status**: ✅ Mission-Critical tier (97.39%, exceeds 95% target!)
-- **Achievement**: Comprehensive integration tests, full source coverage
+**Quality Gates**: 95% coverage, zero desyncs.
+**Estimated Effort**: 6 weeks.
 
-**Week 2: ECS/Core Coverage Improvement** - ✅ **COMPLETE**
-- **astraweave-ecs**: ✅ 96.67% (was 70%, **+26.67pp**, EXCEEDS 95% target)
-- **astraweave-core**: ✅ 95.24% (was 65%, **+30.24pp**, EXCEEDS 95% target)
-- **Tests Added**: +305 tests (ECS +224, Core +81)
-- **Timeline**: 4 days (was estimated 10-15 hours)
+### Phase 5: Audio and Input (Months 7-8)
+**Focus**: Fix clipping, add accessibility.
 
-**Week 3: P1-B Crate Measurement & Improvement** - ✅ **COMPLETE (Oct 27-28)**
-- **Crates**: astraweave-render, scene, terrain, gameplay
-- **Status**: ALL MEASURED + Significant improvements!
-  - Gameplay: 92.39% (+51.12pp, **EXCEEDS 90% TARGET!** ⭐⭐⭐⭐⭐)
-  - Terrain: 77.39% (+11.04pp, **EXCEEDS 70% TARGET!** ⭐⭐⭐⭐)
-  - Render: 53.89% (+1.45pp, **EXCELLENT for GPU crate!** ⭐⭐⭐)
-  - Scene: 0% (llvm-cov inline test bug, fix needed)
-- **Work Completed**: Gameplay +84 tests, Terrain baseline corrected, Render Phase 1 (+18 edge case tests)
+**Key Tasks**:
+1. Buffering opts.
+2. Features (reverb).
+3. Testing (spatial fuzz).
 
-**Month 2 Acceptance Criteria**:
-- [x] Overall coverage 60%+ across measured crates - ✅ **~76% ACHIEVED!**
-- [x] All P0 crates maintain 85%+ - ✅ **94.71% ACHIEVED!**
-- [x] All P1-A crates at 80%+ - ✅ **96.43% ACHIEVED (ECS+Core+AI)**
-- [x] P1-B crates measured and improved to 60-70% - ✅ **55.92% ACHIEVED (2/4 above target, render EXCELLENT for GPU)**
+**Quality Gates**: 95% coverage, zero underruns.
+**Estimated Effort**: 4 weeks.
 
-#### Month 3: Integration Testing & Determinism
+### Phase 6: UI and Cinematics (Months 8-9)
+**Focus**: Complete framework, timeline editor.
 
-**Week 1-2: Cross-System Integration Tests**
-- **Focus**: ECS → AI → Physics → Rendering pipeline
-- **Tests**:
-  - Full AI planning cycle (perception, reasoning, planning, execution, feedback)
-  - Combat physics integration (raycast attack, parry, iframes, damage)
-  - Skeletal animation pipeline (currently 0/4 tests)
-  - Material batching and rendering
-- **Target**: 20+ integration tests
-- **Timeline**: 15-20 hours
+**Key Tasks**:
+1. Polish (animations, controllers).
+2. Integration (ECS events).
+3. Testing (UI automation).
 
-**Week 3: Determinism Validation**
-- **Goal**: Prove AstraWeave is 100% deterministic for replay/multiplayer
-- **Implementation**:
-  - ECS system ordering tests
-  - RNG seeding tests (deterministic WorldSnapshot generation)
-  - Capture/replay validation (3+ runs, bit-identical results)
-  - Physics determinism tests (fixed timestep, no floating-point drift)
-- **Acceptance Criteria**:
-  - [ ] 10+ determinism tests passing
-  - [ ] Replay system validated (3 runs, identical output)
-  - [ ] Documentation of deterministic guarantees
+**Quality Gates**: 95% coverage.
+**Estimated Effort**: 6 weeks.
 
-**Week 4: Phase A Review & Gap Analysis**
-- **Deliverable**: Month 3 completion summary
-- **Metrics**: Coverage %, error handling audit, integration test count
-- **Decision Point**: Proceed to Phase B or iterate on gaps
+### Phase 7: Gameplay Systems (Months 9-10)
+**Focus**: Complete mechanics, add visual modding.
 
----
+**Key Tasks**:
+1. Features (procedural quests).
+2. Tools (aw_editor extensions).
+3. Testing (gameplay loops).
 
-### Phase B: Performance & Scale (Months 4-6)
+**Quality Gates**: 95% coverage.
+**Estimated Effort**: 8 weeks.
 
-**Goal**: Achieve production performance targets  
-**Focus**: Optimization, profiling, scalability  
-**Theme**: "Make it fast enough for real games"
+### Phase 8: Networking and Multiplayer (Months 10-11)
+**Focus**: Add prediction, voice, scale to 500 players.
 
-#### Month 4: Performance Baseline Establishment
+**Key Tasks**:
+1. Enhancements (lag comp).
+2. Testing (packet loss sim).
 
-**Week 1-2: Comprehensive Profiling Infrastructure**
-- **Tools**: Tracy profiler integration (Week 8 proof-of-concept exists)
-- **Benchmarks**: Expand coverage to all core systems
-  - ECS: World creation, entity spawn, tick, query iteration
-  - AI: Planning (GOAP, BT, LLM), perception, tool validation
-  - Physics: Character controller, rigid body, raycast, collision
-  - Rendering: Material batching, mesh optimization, GPU skinning
-  - Terrain: Chunk generation, marching cubes, LOD
-- **Deliverable**: Master benchmark report with baselines
-- **Timeline**: 12-16 hours
+**Quality Gates**: 100% determinism.
+**Estimated Effort**: 8 weeks.
 
-**Week 3: Memory Profiling**
-- **Goal**: Reduce heap churn, identify allocations in hot paths
-- **Tools**: Rust allocator hooks, heaptrack
-- **Focus Areas**:
-  - ECS component storage (archetype allocation)
-  - AI planning (WorldSnapshot copies, plan allocations)
-  - Physics (collision detection, spatial hash)
-  - Rendering (vertex buffer uploads, texture streaming)
-- **Acceptance Criteria**:
-  - [ ] Memory profiling report with hotspots identified
-  - [ ] 20%+ reduction in allocations per frame
+### Phase 9: Persistence and Assets (Months 11-12)
+**Focus**: Robust saves, full pipeline.
 
-**Week 4: Performance Target Setting**
-- **60 FPS Budget**: 16.67ms per frame
-  - ECS: <2ms (12%)
-  - AI: <5ms (30%)
-  - Physics: <3ms (18%)
-  - Rendering: <6ms (36%)
-  - Misc: <0.67ms (4%)
-- **Deliverable**: Per-system performance budgets documented
+**Key Tasks**:
+1. Features (versioned saves).
+2. Optimization (streaming).
 
-#### Month 5: Optimization Sprint
+**Quality Gates**: Zero corruption.
+**Estimated Effort**: 4 weeks.
 
-**Week 1-2: Material Batching & GPU Optimization**
-- **Current**: Unknown performance
-- **Target**: 1,000+ draw calls per frame without frame drops
-- **Implementation**:
-  - GPU instancing for repeated meshes (Week 5 infrastructure exists)
-  - Texture array batching (MaterialManager supports this)
-  - Vertex compression (Week 5 infrastructure exists)
-  - LOD generation (Week 5 infrastructure exists)
-- **Acceptance Criteria**:
-  - [ ] 1,000+ entities @ 60 FPS
-  - [ ] <1ms draw call submission overhead
+### Phase 10: Performance and Optimization (Months 12-13)
+**Focus**: Global opts, low-end 60 FPS.
 
-**Week 3: LLM Inference Optimization**
-- **Current**: Unknown latency (likely 500ms-2s per plan)
-- **Target**: <200ms average, <500ms p95
-- **Strategies**:
-  - Batch inference (reuse LLM context across agents)
-  - Prompt optimization (reduce token count by 30%+)
-  - Async streaming (start executing before full plan received)
-  - Cache common plans (LRU cache exists)
-- **Acceptance Criteria**:
-  - [ ] <200ms average LLM planning latency
-  - [ ] 10+ agents planning concurrently without blocking
+**Key Tasks**:
+1. Profiling (full Tracy).
+2. Benchmarks (50k agents).
 
-**Week 4: Parallel ECS Scheduling (Advanced)**
-- **Current**: Sequential system execution
-- **Target**: Parallel execution where determinism allows
-- **Implementation**:
-  - Dependency graph analysis (which systems are independent?)
-  - rayon parallel queries (where safe)
-  - Read-only query parallelization
-- **Acceptance Criteria**:
-  - [ ] 30%+ frame time reduction from parallelization
-  - [ ] Determinism still guaranteed (tests passing)
+**Quality Gates**: 20× headroom.
+**Estimated Effort**: 6 weeks.
 
-#### Month 6: Scalability Testing
+### Phase 11: Platform Expansion (Months 13-14)
+**Focus**: Mobile, WebGPU, VR.
 
-**Week 1-2: Stress Testing**
-- **Goal**: Find breaking points, ensure graceful degradation
-- **Scenarios**:
-  - 10,000 entities @ 60 FPS
-  - 100 AI agents planning simultaneously
-  - 1,000+ rigid bodies in physics simulation
-  - 10,000+ draw calls per frame
-- **Deliverable**: Stress test report with breaking points identified
+**Key Tasks**:
+1. Ports (cross-compile).
+2. Features (touch/VR).
 
-**Week 3-4: Asset Pipeline Optimization**
-- **Focus**: Large world streaming, texture compression, mesh LOD
-- **Implementation**:
-  - Async cell streaming (astraweave-scene exists)
-  - BC7/BC5 texture compression pipeline
-  - Mesh LOD generation (Week 5 infrastructure exists)
-  - Material preloading and caching
-- **Acceptance Criteria**:
-  - [ ] 10+ GB worlds stream without hitching
-  - [ ] <100ms texture load time (p95)
+**Quality Gates**: All platforms.
+**Estimated Effort**: 8 weeks.
 
----
+### Phase 12: Security and Compliance (Months 14-15)
+**Focus**: OWASP audits, accessibility.
 
-### Phase C: Production Polish (Months 7-12)
+**Key Tasks**:
+1. Audits (CodeQL fixes).
+2. Features (data export).
 
-**Goal**: Ship-quality engine with comprehensive tooling  
-**Focus**: Content pipeline, observability, LLM production readiness  
-**Theme**: "Make it ready to ship real games"
+**Quality Gates**: A+ Scorecard.
+**Estimated Effort**: 4 weeks.
 
-#### Month 7-8: Content Pipeline & Editor
+### Phase 13: Documentation and Tools (Months 15-16)
+**Focus**: Full mdBook, plugin ecosystem.
 
-**Week 1-4: Asset Pipeline Production Readiness**
-- **Current**: MaterialManager, async loaders exist but untested at scale
-- **Deliverable**: Complete asset import/export pipeline
-- **Features**:
-  - GLTF/FBX model import with animation
-  - Texture compression (PNG → BC7/BC5)
-  - Material authoring (TOML → GPU arrays)
-  - HDRI/skybox import
-  - Asset signing and validation
-- **Tools**: aw_asset_cli enhancements
+**Key Tasks**:
+1. Write (API/tutorials).
+2. Tools (full IDE).
 
-**Week 5-8: Editor Enhancements**
-- **Current**: aw_editor exists with 14 panels
-- **Improvements**:
-  - Live asset preview (material, mesh, animation)
-  - In-editor profiling (Tracy integration)
-  - Visual scripting (behavior tree, GOAP goal editor)
-  - Play-in-editor support
-- **Timeline**: 40-60 hours
+**Quality Gates**: 100% API coverage.
+**Estimated Effort**: 6 weeks.
 
-#### Month 9-10: LLM Production Readiness
+### Phase 14: Full Integration and Demo Game (Months 16-17)
+**Focus**: Expand Veilweaver to full RPG.
 
-**Week 1-2: Fallback Strategies**
-- **Problem**: LLM can fail/timeout/produce invalid plans
-- **Solutions**:
-  - Multi-tier fallback: LLM → GOAP → BehaviorTree → Emergency
-  - Plan validation and sanitization
-  - Timeout handling (arbiter already has this)
-  - Retry with simplified prompt
-- **Acceptance Criteria**:
-  - [ ] 100% fallback coverage (every failure has fallback)
-  - [ ] <1% failure rate in production testing
+**Key Tasks**:
+1. Integrate all systems.
+2. Polish (balance/assets).
 
-**Week 3-4: Observability & Monitoring**
-- **Goal**: Understand AI behavior in production
-- **Features**:
-  - LLM plan telemetry (latency, success rate, token count)
-  - AI decision heatmaps (what actions are agents choosing?)
-  - Performance dashboards (FPS, memory, network)
-  - Crash reporting and error logging
-- **Tools**: astraweave-observability enhancements
+**Quality Gates**: Ship v1.0.
+**Estimated Effort**: 8 weeks.
 
-#### Month 11-12: Production Hardening
+### Phase 15: Release and Maintenance (Month 18+)
+**Focus**: v1.0 launch, ongoing support.
 
-**Week 1-2: Save/Load System**
-- **Goal**: Serialize entire game state
-- **Implementation**:
-  - ECS world serialization (all components)
-  - Player profile (settings, unlocks, stats)
-  - Save slot management with versioning
-  - Corruption detection and recovery
-- **Timeline**: 15-25 hours
+**Key Tasks**:
+1. Packaging (binaries).
+2. Maintenance (issues/updates).
 
-**Week 3-4: Final Polish & Demo Game**
-- **Deliverable**: Veilweaver Demo Level (5-10 min gameplay)
-- **Features**:
-  - Complete UI (menus, HUD, dialogue)
-  - AI companions with LLM planning
-  - Combat physics and fate-weaving mechanics
-  - Save/load functionality
-  - Performance @ 60 FPS on mid-range hardware
-- **Success Criteria**:
-  - [ ] Playable demo level complete
-  - [ ] All acceptance criteria from Phases A-C met
-  - [ ] Public release candidate
+**Quality Gates**: Stable releases.
+**Estimated Effort**: Ongoing.
 
 ---
 
@@ -703,6 +575,7 @@ This document is the **single authoritative source** for AstraWeave's strategic 
 | 1.2 | Oct 27, 2025 | **P1-B baselines + Gameplay 90%+ achieved**: Measured all 4 P1-B crates. **P1-B average: 34.29% → 55.92%** (Gameplay 41.27% → 92.39% +51.12pp!, Terrain 66.35% → 77.39% +11.04pp, Render 29.54% → 53.89% +24.35pp, Scene 0% → 48.54% +48.54pp). **Test count**: 962 → 1,248 (+286 tests, +29.7%). **Measured crates**: 8 → 13 (+62.5%). **Key findings**: (1) Scene 0% FIXED via integration tests, (2) Gameplay 92.39% EXCEEDS 90% target, (3) Terrain 77.39% EXCEEDS 70% target, (4) Render 53.89% EXCEEDS GPU industry standards. **Next**: P1-C/D measurement. | AI Team |
 | 1.1 | Oct 25, 2025 | **Dramatic progress update**: Test coverage 83% (was ~35%, +48pp), ECS 87.43% (+17.40pp), Core 78.52% (+13.25pp), AI 85 tests (+673%), unwraps reduced 50%, **Phase A Month 2 target achieved early!** | AI Team |
 | 1.0 | Oct 21, 2025 | Initial master roadmap consolidating 14 strategic docs | AI Team |
+| **1.19** | **November 5, 2025** | **✅ INTEGRATED COMPREHENSIVE 15-PHASE DEVELOPMENT PLAN, EXTENDING THE STRATEGIC ROADMAP FOR FULL ENGINE COMPLETION.**: Integrated comprehensive 15-phase development plan, extending the strategic roadmap for full engine completion. | AI Assistant |
 
 ---
 
