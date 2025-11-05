@@ -43,7 +43,7 @@ pollster = "0.3"
 env_logger = "0.11"
 
 [features]
-default = ["csm", "materials", "ibl"]
+default = ["csm", "materials", "ibl", "megalights"]
 
 # Core features (Phase 1)
 csm = []                    # Cascade shadow maps
@@ -52,11 +52,11 @@ ibl = []                    # Image-based lighting
 point-shadows = []          # Omnidirectional shadow maps
 post-processing = []        # Bloom, tonemapping
 
+# AstraWeave Extensions (original work)
+megalights = []             # GPU-accelerated light culling (100k+ lights)
+nanite = []                 # Virtualized geometry (10M+ polys)
+
 # Advanced features (Phase 2+)
 ssao = []                   # Screen-space ambient occlusion
 ssr = []                    # Screen-space reflections
 volumetric-fog = []         # Volumetric fog
-meshlets = []               # Meshlet rendering (Nanite-like)
-
-# Extensions
-megalights = []             # Phase 2: 100k+ lights optimization

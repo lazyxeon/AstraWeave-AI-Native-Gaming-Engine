@@ -1982,7 +1982,7 @@ mod tests {
 
     #[test]
     fn test_instance_raw_conversion() {
-        use crate::types::{Instance, InstanceRaw};
+        use crate::types::Instance;
         use glam::{vec3, Mat4};
 
         // Create instance with transform

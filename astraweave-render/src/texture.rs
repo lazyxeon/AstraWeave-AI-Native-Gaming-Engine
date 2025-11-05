@@ -1,7 +1,6 @@
 use anyhow::Result;
 #[cfg(feature = "textures")]
 use image::GenericImageView;
-use std::path::Path;
 
 /// A loaded texture with its GPU resources
 pub struct Texture {

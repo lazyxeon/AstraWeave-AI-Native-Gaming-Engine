@@ -9,12 +9,12 @@
 //! The module is renderer-agnostic: it exposes bind group layout helpers and texture views
 //! that consumers can bind into their shading pipelines.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 #[cfg(feature = "textures")]
 use image::GenericImageView;
 #[cfg(feature = "textures")]
 use std::collections::HashMap;
-use std::{borrow::Cow, path::Path};
+use std::borrow::Cow;
 
 /// Quality presets for IBL resource sizes
 #[derive(Clone, Copy, Debug)]

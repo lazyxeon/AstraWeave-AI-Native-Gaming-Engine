@@ -140,7 +140,7 @@ mod tests {
     use astraweave_asset::AssetMetadata;
 
     #[test]
-    fn test_residency_load_and_evict() {
+    fn test_residency_load_and_evict() -> Result<(), Box<dyn std::error::Error>> {
         let db = Arc::new(Mutex::new(AssetDatabase::new()));
         let mut rm = ResidencyManager::new(db.clone(), 10); // 10 MB limit
 
@@ -193,5 +193,6 @@ mod tests {
         assert!(!rm.loaded_assets.contains_key(&guid));
         assert!(rm.loaded_assets.contains_key(&guid2));
         assert_eq!(rm.current_memory_mb, 7); // 6MB rounds up to 7MB (size/MB + 1)
+        Ok(())
     }
 }

@@ -622,7 +622,7 @@ mod tests {
     }
 
     #[test]
-    fn test_toml_parsing_basic() {
+    fn test_toml_parsing_basic() -> Result<(), Box<dyn std::error::Error>> {
         let toml_str = r#"
 [biome]
 name = "test_biome"
@@ -670,10 +670,11 @@ albedo = "dirt_albedo.png"
         assert_eq!(doc.layer[0].tiling, Some([2.0, 2.0]));
         assert_eq!(doc.layer[1].key, "dirt");
         assert_eq!(doc.layer[1].normal, None);
+        Ok(())
     }
 
     #[test]
-    fn test_arrays_toml_parsing() {
+    fn test_arrays_toml_parsing() -> Result<(), Box<dyn std::error::Error>> {
         let toml_str = r#"
 [layers]
 grass = 0
@@ -688,6 +689,7 @@ stone = 2
         assert_eq!(arrays.layers.get("grass"), Some(&0));
         assert_eq!(arrays.layers.get("dirt"), Some(&1));
         assert_eq!(arrays.layers.get("stone"), Some(&2));
+        Ok(())
     }
 
     #[test]
