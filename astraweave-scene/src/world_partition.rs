@@ -36,6 +36,7 @@
 //! partition.assign_entity_to_cell(entity_id, entity_pos);
 //! ```
 
+use astraweave_asset::cell_loader::{CellMetadata, ComponentData as CellComponentData};
 use glam::{Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
@@ -346,6 +347,8 @@ pub struct Cell {
     pub entities: Vec<Entity>,
     pub assets: Vec<AssetRef>,
     pub bounds: AABB,
+    pub entity_blueprints: Vec<CellEntityBlueprint>,
+    pub metadata: Option<CellMetadata>,
 }
 
 impl Cell {
@@ -360,6 +363,8 @@ impl Cell {
             entities: Vec::new(),
             assets: Vec::new(),
             bounds,
+            entity_blueprints: Vec::new(),
+            metadata: None,
         }
     }
 
@@ -370,6 +375,34 @@ impl Cell {
     pub fn is_loading(&self) -> bool {
         self.state == CellState::Loading
     }
+
+    pub fn components_of_type<'a>(&'a self, component_type: &str) -> impl Iterator<Item = CellComponentView<'a>> + 'a {
+        self.entity_blueprints
+            .iter()
+            .flat_map(move |entity| {
+                entity.components.iter().filter_map(move |component| {
+                    if component.component_type == component_type {
+                        Some(CellComponentView { entity, component })
+                    } else {
+                        None
+                    }
+                })
+            })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CellEntityBlueprint {
+    pub name: Option<String>,
+    pub position: [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
+    pub components: Vec<CellComponentData>,
+}
+
+pub struct CellComponentView<'a> {
+    pub entity: &'a CellEntityBlueprint,
+    pub component: &'a CellComponentData,
 }
 
 /// Grid configuration

@@ -16,3 +16,7 @@ astraweave-prompts = { path = "../astraweave-prompts" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 futures = "0.3"
+
+[features]
+default = []
+veilweaver_slice = []

@@ -64,7 +64,7 @@ def fix_render_pipeline_descriptor(content):
     
     # Also handle cases where fragment is the last field
     content = re.sub(
-        r'(fragment:\s*Some\([^}]+\}\),)\s*\n(\s*)\}\s*\)(?!,)',
+        r'(?s)(fragment:\s*Some\(\s*[^\{]+\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}\s*\),)\s*\n(\s*)\}\s*\)(?!,)',
         r'\1\n\2    cache: None,\n\2})',
         content
     )

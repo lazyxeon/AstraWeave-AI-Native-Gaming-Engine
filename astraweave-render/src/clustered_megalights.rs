@@ -66,17 +66,17 @@ pub struct MegaLightsRenderer {
     count_pipeline: wgpu::ComputePipeline,
     prefix_sum_pipeline: wgpu::ComputePipeline,
     write_indices_pipeline: wgpu::ComputePipeline,
-    
+
     // Bind group layouts
     count_bind_group_layout: wgpu::BindGroupLayout,
     prefix_sum_bind_group_layout: wgpu::BindGroupLayout,
     write_indices_bind_group_layout: wgpu::BindGroupLayout,
-    
+
     // Bind groups (rebuilt when buffers change)
     count_bind_group: Option<wgpu::BindGroup>,
     prefix_sum_bind_group: Option<wgpu::BindGroup>,
     write_indices_bind_group: Option<wgpu::BindGroup>,
-    
+
     // Configuration
     cluster_dims: (u32, u32, u32),
     max_lights: usize,
@@ -92,182 +92,186 @@ impl MegaLightsRenderer {
         let count_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("MegaLights Count Shader"),
             source: wgpu::ShaderSource::Wgsl(
-                include_str!("../shaders/megalights/count_lights.wgsl").into()
+                include_str!("../shaders/megalights/count_lights.wgsl").into(),
             ),
         });
-        
+
         let prefix_sum_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("MegaLights Prefix Sum Shader"),
             source: wgpu::ShaderSource::Wgsl(
-                include_str!("../shaders/megalights/prefix_sum.wgsl").into()
+                include_str!("../shaders/megalights/prefix_sum.wgsl").into(),
             ),
         });
-        
+
         let write_indices_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("MegaLights Write Indices Shader"),
             source: wgpu::ShaderSource::Wgsl(
-                include_str!("../shaders/megalights/write_indices.wgsl").into()
+                include_str!("../shaders/megalights/write_indices.wgsl").into(),
             ),
         });
-        
+
         // Create bind group layouts
-        let count_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("MegaLights Count BG Layout"),
-            entries: &[
-                // @binding(0): lights (storage, read)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+        let count_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("MegaLights Count BG Layout"),
+                entries: &[
+                    // @binding(0): lights (storage, read)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(1): clusters (storage, read)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(1): clusters (storage, read)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(2): light_counts (storage, read_write, atomic)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(2): light_counts (storage, read_write, atomic)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(3): params (uniform)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(3): params (uniform)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
-        
-        let prefix_sum_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("MegaLights Prefix Sum BG Layout"),
-            entries: &[
-                // @binding(0): input (storage, read)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                ],
+            });
+
+        let prefix_sum_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("MegaLights Prefix Sum BG Layout"),
+                entries: &[
+                    // @binding(0): input (storage, read)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(1): output (storage, read_write)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(1): output (storage, read_write)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(2): params (uniform)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(2): params (uniform)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
-        
-        let write_indices_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("MegaLights Write Indices BG Layout"),
-            entries: &[
-                // @binding(0): lights (storage, read)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                ],
+            });
+
+        let write_indices_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("MegaLights Write Indices BG Layout"),
+                entries: &[
+                    // @binding(0): lights (storage, read)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(1): clusters (storage, read)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(1): clusters (storage, read)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(2): light_offsets (storage, read)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(2): light_offsets (storage, read)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(3): light_indices (storage, read_write)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: false },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(3): light_indices (storage, read_write)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                // @binding(4): params (uniform)
-                wgpu::BindGroupLayoutEntry {
-                    binding: 4,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    // @binding(4): params (uniform)
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
-        
+                ],
+            });
+
         // Create compute pipelines
-        let count_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("MegaLights Count Pipeline Layout"),
-            bind_group_layouts: &[&count_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        
+        let count_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("MegaLights Count Pipeline Layout"),
+                bind_group_layouts: &[&count_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
         let count_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("MegaLights Count Pipeline"),
             layout: Some(&count_pipeline_layout),
@@ -276,37 +280,41 @@ impl MegaLightsRenderer {
             compilation_options: Default::default(),
             cache: None,
         });
-        
-        let prefix_sum_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("MegaLights Prefix Sum Pipeline Layout"),
-            bind_group_layouts: &[&prefix_sum_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        
-        let prefix_sum_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("MegaLights Prefix Sum Pipeline"),
-            layout: Some(&prefix_sum_pipeline_layout),
-            module: &prefix_sum_shader,
-            entry_point: Some("prefix_sum"),
-            compilation_options: Default::default(),
-            cache: None,
-        });
-        
-        let write_indices_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("MegaLights Write Indices Pipeline Layout"),
-            bind_group_layouts: &[&write_indices_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-        
-        let write_indices_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("MegaLights Write Indices Pipeline"),
-            layout: Some(&write_indices_pipeline_layout),
-            module: &write_indices_shader,
-            entry_point: Some("write_light_indices"),
-            compilation_options: Default::default(),
-            cache: None,
-        });
-        
+
+        let prefix_sum_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("MegaLights Prefix Sum Pipeline Layout"),
+                bind_group_layouts: &[&prefix_sum_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        let prefix_sum_pipeline =
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("MegaLights Prefix Sum Pipeline"),
+                layout: Some(&prefix_sum_pipeline_layout),
+                module: &prefix_sum_shader,
+                entry_point: Some("prefix_sum"),
+                compilation_options: Default::default(),
+                cache: None,
+            });
+
+        let write_indices_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("MegaLights Write Indices Pipeline Layout"),
+                bind_group_layouts: &[&write_indices_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+
+        let write_indices_pipeline =
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("MegaLights Write Indices Pipeline"),
+                layout: Some(&write_indices_pipeline_layout),
+                module: &write_indices_shader,
+                entry_point: Some("write_light_indices"),
+                compilation_options: Default::default(),
+                cache: None,
+            });
+
         Ok(Self {
             count_pipeline,
             prefix_sum_pipeline,
@@ -321,7 +329,7 @@ impl MegaLightsRenderer {
             max_lights,
         })
     }
-    
+
     /// Update bind groups when buffers change
     pub fn update_bind_groups(
         &mut self,
@@ -357,7 +365,7 @@ impl MegaLightsRenderer {
                 },
             ],
         }));
-        
+
         // Prefix sum bind group
         self.prefix_sum_bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("MegaLights Prefix Sum Bind Group"),
@@ -377,36 +385,37 @@ impl MegaLightsRenderer {
                 },
             ],
         }));
-        
+
         // Write indices bind group
-        self.write_indices_bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("MegaLights Write Indices Bind Group"),
-            layout: &self.write_indices_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: light_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: cluster_bounds_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: light_offsets_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: light_indices_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 4,
-                    resource: params_buffer.as_entire_binding(),
-                },
-            ],
-        }));
+        self.write_indices_bind_group =
+            Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("MegaLights Write Indices Bind Group"),
+                layout: &self.write_indices_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: light_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: cluster_bounds_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: light_offsets_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: light_indices_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 4,
+                        resource: params_buffer.as_entire_binding(),
+                    },
+                ],
+            }));
     }
-    
+
     /// Dispatch GPU light culling (3-stage pipeline)
     ///
     /// Performance: <0.1ms @ 1000 lights on RTX 3060 (68× faster than CPU)
@@ -414,79 +423,81 @@ impl MegaLightsRenderer {
     /// # Panics
     /// - If bind groups not initialized (call update_bind_groups first)
     /// - If light_count > max_lights
-    pub fn dispatch(
-        &self,
-        encoder: &mut wgpu::CommandEncoder,
-        light_count: u32,
-    ) -> Result<()> {
+    pub fn dispatch(&self, encoder: &mut wgpu::CommandEncoder, light_count: u32) -> Result<()> {
         anyhow::ensure!(
             light_count as usize <= self.max_lights,
             "Light count {} exceeds max_lights {}",
             light_count,
             self.max_lights
         );
-        
-        let count_bg = self.count_bind_group.as_ref()
+
+        let count_bg = self
+            .count_bind_group
+            .as_ref()
             .context("Count bind group not initialized")?;
-        let prefix_sum_bg = self.prefix_sum_bind_group.as_ref()
+        let prefix_sum_bg = self
+            .prefix_sum_bind_group
+            .as_ref()
             .context("Prefix sum bind group not initialized")?;
-        let write_indices_bg = self.write_indices_bind_group.as_ref()
+        let write_indices_bg = self
+            .write_indices_bind_group
+            .as_ref()
             .context("Write indices bind group not initialized")?;
-        
+
         let total_clusters = self.cluster_dims.0 * self.cluster_dims.1 * self.cluster_dims.2;
-        
+
         // Stage 1: Count lights per cluster
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("MegaLights Count Pass"),
                 timestamp_writes: None,
             });
-            
+
             pass.set_pipeline(&self.count_pipeline);
             pass.set_bind_group(0, count_bg, &[]);
-            
+
             // Workgroup size = 64 (from shader @workgroup_size(64, 1, 1))
             let workgroups_x = (self.cluster_dims.0 + 63) / 64;
             let workgroups_y = self.cluster_dims.1;
             let workgroups_z = self.cluster_dims.2;
-            
+
             pass.dispatch_workgroups(workgroups_x, workgroups_y, workgroups_z);
         }
-        
+
         // Stage 2: Prefix sum (exclusive scan)
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("MegaLights Prefix Sum Pass"),
                 timestamp_writes: None,
             });
-            
+
             pass.set_pipeline(&self.prefix_sum_pipeline);
             pass.set_bind_group(0, prefix_sum_bg, &[]);
-            
+
             // Workgroup size = 256, each thread processes 2 elements
             // For 8192 clusters: (8192 + 511) / 512 = 16 workgroups
             let workgroups = (total_clusters + 511) / 512;
             pass.dispatch_workgroups(workgroups, 1, 1);
         }
-        
+
         // Stage 3: Write light indices
         {
             let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
                 label: Some("MegaLights Write Indices Pass"),
                 timestamp_writes: None,
             });
-            
+
             pass.set_pipeline(&self.write_indices_pipeline);
             pass.set_bind_group(0, write_indices_bg, &[]);
-            
+
             // Same workgroup layout as count pass
             let workgroups_x = (self.cluster_dims.0 + 63) / 64;
             let workgroups_y = self.cluster_dims.1;
             let workgroups_z = self.cluster_dims.2;
-            
+
             pass.dispatch_workgroups(workgroups_x, workgroups_y, workgroups_z);
         }
-        
+
         Ok(())
     }
 }
@@ -494,27 +505,27 @@ impl MegaLightsRenderer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_cluster_params_layout() {
         // Ensure ClusterParams matches WGSL struct layout (16-byte aligned)
         assert_eq!(std::mem::size_of::<ClusterParams>(), 32);
         assert_eq!(std::mem::align_of::<ClusterParams>(), 4);
     }
-    
+
     #[test]
     fn test_prefix_sum_params_layout() {
         assert_eq!(std::mem::size_of::<PrefixSumParams>(), 16);
         assert_eq!(std::mem::align_of::<PrefixSumParams>(), 4);
     }
-    
+
     #[test]
     fn test_cluster_bounds_layout() {
         // 32 bytes with padding for 16-byte alignment
         assert_eq!(std::mem::size_of::<ClusterBounds>(), 32);
         assert_eq!(std::mem::align_of::<ClusterBounds>(), 4);
     }
-    
+
     #[test]
     fn test_gpu_light_layout() {
         assert_eq!(std::mem::size_of::<GpuLight>(), 32);

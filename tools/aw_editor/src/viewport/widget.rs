@@ -39,8 +39,8 @@ use wgpu;
 use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
 use super::toolbar::ViewportToolbar;
-use astraweave_core::{Entity, World};
 use crate::gizmo::GizmoState;
+use astraweave_core::{Entity, World};
 
 /// 3D viewport widget for egui
 ///
@@ -184,23 +184,29 @@ impl ViewportWidget {
 
         // Request focus on hover or click (enables camera controls)
         if response.hovered() || response.clicked() {
-            println!("🖱️ Viewport: hovered={}, clicked={}", response.hovered(), response.clicked());
+            println!(
+                "🖱️ Viewport: hovered={}, clicked={}",
+                response.hovered(),
+                response.clicked()
+            );
             response.request_focus();
         }
 
         // Update focus state
         self.has_focus = response.has_focus();
-        
+
         // Debug: Log response state
         if response.hovered() {
-            println!("🎯 Viewport hovered, has_focus={}, dragged={}", 
+            println!(
+                "🎯 Viewport hovered, has_focus={}, dragged={}",
                 self.has_focus,
-                response.dragged_by(egui::PointerButton::Primary));
+                response.dragged_by(egui::PointerButton::Primary)
+            );
         }
 
         // Handle input (mouse/keyboard) - always process, but camera only moves if focused
         self.handle_input(&response, ui.ctx(), world)?;
-        
+
         // Request continuous repaint to update viewport every frame
         ui.ctx().request_repaint();
 
@@ -228,7 +234,9 @@ impl ViewportWidget {
             // Render in separate scope to drop MutexGuard early
             {
                 if let Ok(mut renderer) = self.renderer.lock() {
-                    if let Err(e) = renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state)) {
+                    if let Err(e) =
+                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state))
+                    {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
                 }
@@ -242,10 +250,10 @@ impl ViewportWidget {
             // Display texture via egui (CPU readback approach)
             if let Some(handle) = self.egui_texture.as_ref() {
                 let texture_id = handle.id();
-                
+
                 // TODO: Add visual border for focus/hover states
                 // (egui 0.32 API for borders needs verification)
-                
+
                 // Display rendered viewport using egui's texture system
                 ui.painter().image(
                     texture_id,
@@ -324,7 +332,12 @@ impl ViewportWidget {
     /// - Scroll: Zoom camera
     /// - G/R/S: Gizmo mode (translate/rotate/scale)
     /// - Click: Select entity
-    fn handle_input(&mut self, response: &egui::Response, ctx: &egui::Context, world: &World) -> Result<()> {
+    fn handle_input(
+        &mut self,
+        response: &egui::Response,
+        ctx: &egui::Context,
+        world: &World,
+    ) -> Result<()> {
         // Camera controls work when viewport is hovered (not just focused)
         // This allows immediate camera manipulation without clicking first
         let can_control_camera = response.hovered() || self.has_focus;
@@ -332,16 +345,25 @@ impl ViewportWidget {
         // Orbit camera (left mouse drag)
         if can_control_camera && response.dragged_by(egui::PointerButton::Primary) {
             let delta = response.drag_delta();
-            println!("🔄 Orbit: delta=({:.2}, {:.2}), yaw={:.2}, pitch={:.2}", 
-                delta.x, delta.y, self.camera.yaw(), self.camera.pitch());
+            println!(
+                "🔄 Orbit: delta=({:.2}, {:.2}), yaw={:.2}, pitch={:.2}",
+                delta.x,
+                delta.y,
+                self.camera.yaw(),
+                self.camera.pitch()
+            );
             self.camera.orbit(delta.x, delta.y);
         }
 
         // Pan camera (middle mouse drag)
         if can_control_camera && response.dragged_by(egui::PointerButton::Middle) {
             let delta = response.drag_delta();
-            println!("📐 Pan: delta=({:.2}, {:.2}), focal={:?}", 
-                delta.x, delta.y, self.camera.target());
+            println!(
+                "📐 Pan: delta=({:.2}, {:.2}), focal={:?}",
+                delta.x,
+                delta.y,
+                self.camera.target()
+            );
             self.camera.pan(delta.x, delta.y);
         }
 
@@ -357,7 +379,7 @@ impl ViewportWidget {
         // Gizmo hotkeys (G/R/S for translate/rotate/scale, X/Y/Z for axis constraints, Enter/Escape)
         ctx.input(|i| {
             use winit::keyboard::KeyCode;
-            
+
             // Handle gizmo mode keys first
             if i.key_pressed(egui::Key::G) {
                 self.gizmo_state.handle_key(KeyCode::KeyG);
@@ -371,7 +393,7 @@ impl ViewportWidget {
                 self.gizmo_state.handle_key(KeyCode::KeyS);
                 println!("🔧 Gizmo mode: Scale (S)");
             }
-            
+
             // Axis constraints (X/Y/Z)
             if i.key_pressed(egui::Key::X) {
                 self.gizmo_state.handle_key(KeyCode::KeyX);
@@ -385,7 +407,7 @@ impl ViewportWidget {
                 self.gizmo_state.handle_key(KeyCode::KeyZ);
                 println!("🔧 Axis constraint: Z");
             }
-            
+
             // Confirm/cancel gizmo operation
             if i.key_pressed(egui::Key::Enter) {
                 self.gizmo_state.handle_key(KeyCode::Enter);
@@ -395,7 +417,7 @@ impl ViewportWidget {
                 self.gizmo_state.handle_key(KeyCode::Escape);
                 println!("❌ Gizmo: Cancel");
             }
-            
+
             // Frame selected
             if i.key_pressed(egui::Key::F) {
                 println!("🎯 Frame selected (F)");

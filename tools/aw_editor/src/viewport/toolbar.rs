@@ -72,9 +72,21 @@ impl ViewportToolbar {
                             egui::ComboBox::from_id_salt("shading_mode")
                                 .selected_text(format!("{:?}", self.shading_mode))
                                 .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Lit, "Lit");
-                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Unlit, "Unlit");
-                                    ui.selectable_value(&mut self.shading_mode, ShadingMode::Wireframe, "Wireframe");
+                                    ui.selectable_value(
+                                        &mut self.shading_mode,
+                                        ShadingMode::Lit,
+                                        "Lit",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.shading_mode,
+                                        ShadingMode::Unlit,
+                                        "Unlit",
+                                    );
+                                    ui.selectable_value(
+                                        &mut self.shading_mode,
+                                        ShadingMode::Wireframe,
+                                        "Wireframe",
+                                    );
                                 });
 
                             ui.separator();
@@ -87,7 +99,11 @@ impl ViewportToolbar {
                             // Snap settings
                             ui.checkbox(&mut self.snap_enabled, "Snap");
                             if self.snap_enabled {
-                                ui.add(egui::DragValue::new(&mut self.snap_size).speed(0.1).suffix("m"));
+                                ui.add(
+                                    egui::DragValue::new(&mut self.snap_size)
+                                        .speed(0.1)
+                                        .suffix("m"),
+                                );
                             }
 
                             ui.separator();

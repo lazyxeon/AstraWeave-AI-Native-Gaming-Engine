@@ -109,6 +109,7 @@ members = [
   # Week 4 demos
   "examples/phi3_demo",
   "examples/veilweaver_demo",
+  "examples/veilweaver_slice_loader",
   "examples/world_partition_demo",
   "examples/profiling_demo",
   # Phase 8 demos
