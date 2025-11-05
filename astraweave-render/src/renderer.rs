@@ -3210,8 +3210,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // self.sky.render(&mut enc, &self.main_color_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         // Replace with:
-        let sky_color_target = &self.hdr_view;  // Use HDR view as the main color target for sky
-        self.sky.render(&mut enc, sky_color_target, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+        let sky_color_target = &self.hdr_view; // Use HDR view as the main color target for sky
+        self.sky.render(
+            &mut enc,
+            sky_color_target,
+            &self.depth.view,
+            Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
+            &self.queue,
+        )?;
 
         // Ensure bind groups are properly recreated or updated if needed to avoid corruption
         // Add safety check before render pass

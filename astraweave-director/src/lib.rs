@@ -17,6 +17,11 @@ pub use components::*;
 mod systems;
 pub use systems::*;
 
+#[cfg(feature = "veilweaver_slice")]
+mod veilweaver_warden;
+#[cfg(feature = "veilweaver_slice")]
+pub use veilweaver_warden::*;
+
 impl BossDirector {
     pub fn plan(&self, snap: &WorldSnapshot, budget: &DirectorBudget) -> DirectorPlan {
         let mut ops = vec![];

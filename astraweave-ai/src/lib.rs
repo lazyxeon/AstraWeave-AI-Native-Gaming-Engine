@@ -13,6 +13,9 @@ pub mod llm_executor;
 #[cfg(feature = "llm_orchestrator")]
 pub mod ai_arbiter;
 
+#[cfg(feature = "veilweaver_slice")]
+pub mod veilweaver;
+
 pub use core_loop::*;
 pub use ecs_ai_plugin::{build_app_with_ai, AiPlanningPlugin};
 pub use orchestrator::*;
@@ -26,3 +29,6 @@ pub use llm_executor::LlmExecutor;
 
 #[cfg(feature = "llm_orchestrator")]
 pub use ai_arbiter::{AIArbiter, AIControlMode};
+
+#[cfg(feature = "veilweaver_slice")]
+pub use veilweaver::VeilweaverCompanionOrchestrator;

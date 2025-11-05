@@ -1,0 +1,118 @@
+(
+    coord: [102, 0, 0],
+    entities: [
+        (
+            name: Some("echo_grove_floor"),
+            position: [0.0, -0.25, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [22.0, 0.5, 22.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "NavSurface",
+                    data: r#"{"walkable":true,"surface":"grove_floor"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("combat_spawn_volume"),
+            position: [0.0, 1.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "EncounterTrigger",
+                    data: r#"{"trigger_id":"combat_spawn","spawn_table":"grove_wave_a"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("weave_cover_a"),
+            position: [-6.0, 0.5, 3.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "WeaveAnchor",
+                    data: r#"{"anchor_id":"grove_cover_a","type":"barricade","echo_cost":1}"#,
+                ),
+                (
+                    component_type: "CoverAnchor",
+                    data: r#"{"height":1.5,"width":4.0}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("weave_cover_b"),
+            position: [8.0, 0.5, -5.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "WeaveAnchor",
+                    data: r#"{"anchor_id":"grove_cover_b","type":"barricade","echo_cost":1}"#,
+                ),
+                (
+                    component_type: "CoverAnchor",
+                    data: r#"{"height":1.5,"width":4.0}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("combat_complete_trigger"),
+            position: [0.0, 1.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "EncounterComplete",
+                    data: r#"{"trigger_id":"combat_complete","rewards":{"echo_dash":true}}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("grove_light_pillar_a"),
+            position: [-4.0, 2.0, -4.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 4.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "LightHint",
+                    data: r#"{"color":[0.6,0.8,1.0],"intensity":1.2}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("grove_light_pillar_b"),
+            position: [5.0, 2.0, 5.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 4.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "LightHint",
+                    data: r#"{"color":[0.4,0.9,0.7],"intensity":1.0}"#,
+                ),
+            ],
+        ),
+    ],
+    assets: [],
+    metadata: Some((
+        description: Some("Crystal-thread grove combat arena with cover weaving"),
+        tags: ["veilweaver", "loomspire", "combat"],
+        version: 1,
+    )),
+)
+

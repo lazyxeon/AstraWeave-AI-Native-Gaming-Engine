@@ -3,7 +3,7 @@
 //! This module handles async loading and unloading of cells based on camera position.
 //! It uses tokio for async operations and maintains an LRU cache of recently unloaded cells.
 
-use crate::world_partition::{CellState, GridCoord, LRUCache, WorldPartition};
+use crate::world_partition::{CellEntityBlueprint, CellState, GridCoord, LRUCache, WorldPartition};
 use anyhow::Result;
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -192,13 +192,30 @@ impl WorldPartitionManager {
                         let _ = Self::load_asset_data(asset_ref, assets_root).await;
                     }
 
+                    let entity_blueprints: Vec<CellEntityBlueprint> = cell_data
+                        .entities
+                        .iter()
+                        .map(|entity| CellEntityBlueprint {
+                            name: entity.name.clone(),
+                            position: entity.position,
+                            rotation: entity.rotation,
+                            scale: entity.scale,
+                            components: entity.components.clone(),
+                        })
+                        .collect();
+                    let asset_refs = cell_data.assets.clone();
+                    let metadata = cell_data.metadata.clone();
+
                     // Update cell state
                     let mut partition = partition_clone.write().await;
                     if let Some(cell) = partition.get_cell_mut(coord_clone) {
                         cell.state = CellState::Loaded;
+                        cell.entity_blueprints = entity_blueprints;
+                        cell.metadata = metadata;
+                        cell.assets.clear();
                         // Store entity/asset data in cell
                         // Note: Convert cell_data.entities to entity IDs via ECS integration
-                        for asset in cell_data.assets {
+                        for asset in asset_refs {
                             cell.assets.push(crate::world_partition::AssetRef {
                                 path: asset.path,
                                 asset_type: match asset.kind {

@@ -16,7 +16,7 @@ impl EntityPanel {
     pub fn new() -> Self {
         Self {}
     }
-    
+
     /// Show entity panel with real world integration
     ///
     /// # Arguments
@@ -32,9 +32,9 @@ impl EntityPanel {
             if ui.button("➕ Spawn Companion").clicked() {
                 if let Some(world) = world {
                     let entity_count = world.entities().len();
-                    let pos = IVec2 { 
-                        x: rand::random::<i32>() % 30, 
-                        y: rand::random::<i32>() % 30 
+                    let pos = IVec2 {
+                        x: rand::random::<i32>() % 30,
+                        y: rand::random::<i32>() % 30,
                     };
                     let entity = world.spawn(
                         &format!("Companion_{}", entity_count),
@@ -46,13 +46,13 @@ impl EntityPanel {
                     println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
                 }
             }
-            
+
             if ui.button("➕ Spawn Enemy").clicked() {
                 if let Some(world) = world {
                     let entity_count = world.entities().len();
-                    let pos = IVec2 { 
-                        x: rand::random::<i32>() % 30, 
-                        y: rand::random::<i32>() % 30 
+                    let pos = IVec2 {
+                        x: rand::random::<i32>() % 30,
+                        y: rand::random::<i32>() % 30,
                     };
                     let entity = world.spawn(
                         &format!("Enemy_{}", entity_count),
@@ -64,7 +64,7 @@ impl EntityPanel {
                     println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
                 }
             }
-            
+
             if ui.button("🗑️ Clear All").clicked() {
                 if let Some(world) = world {
                     *world = World::new();
@@ -79,9 +79,9 @@ impl EntityPanel {
         if let Some(world) = world {
             let entity_count = world.entities().len();
             ui.label(format!("📊 Total Entities: {}", entity_count));
-            
+
             ui.separator();
-            
+
             // List all entities
             egui::ScrollArea::vertical()
                 .max_height(400.0)
@@ -91,20 +91,22 @@ impl EntityPanel {
                             let team = world.team(entity).unwrap_or(Team { id: 0 });
                             let health = world.health(entity).unwrap_or(Health { hp: 0 });
                             let ammo = world.ammo(entity).unwrap_or(Ammo { rounds: 0 });
-                            
+
                             let team_name = if team.id == 0 { "Companion" } else { "Enemy" };
-                            let team_color = if team.id == 0 { 
-                                egui::Color32::from_rgb(100, 150, 255) 
-                            } else { 
-                                egui::Color32::from_rgb(255, 100, 100) 
+                            let team_color = if team.id == 0 {
+                                egui::Color32::from_rgb(100, 150, 255)
+                            } else {
+                                egui::Color32::from_rgb(255, 100, 100)
                             };
-                            
+
                             ui.group(|ui| {
                                 ui.horizontal(|ui| {
-                                    ui.label(egui::RichText::new(format!("Entity #{}", entity)).strong());
+                                    ui.label(
+                                        egui::RichText::new(format!("Entity #{}", entity)).strong(),
+                                    );
                                     ui.label(egui::RichText::new(team_name).color(team_color));
                                 });
-                                
+
                                 ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
                                 ui.label(format!("❤️  Health: {}", health.hp));
                                 ui.label(format!("🔫 Ammo: {}", ammo.rounds));

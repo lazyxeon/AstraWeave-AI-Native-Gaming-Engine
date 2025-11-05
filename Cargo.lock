@@ -464,10 +464,12 @@ name = "astraweave-ai"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-behavior",
  "astraweave-core",
  "astraweave-ecs",
  "astraweave-llm",
  "astraweave-nav",
+ "astraweave-observability",
  "astraweave-profiling",
  "async-trait",
  "criterion 0.7.0",
@@ -10759,6 +10761,16 @@ dependencies = [
  "tracing-subscriber",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "veilweaver_slice_loader"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-scene",
+ "glam 0.30.8",
+ "tokio",
 ]
 
 [[package]]

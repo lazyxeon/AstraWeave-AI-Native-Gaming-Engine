@@ -1,0 +1,22 @@
+tone = "laconic"
+risk = "high"
+humor = "dry"
+voice = "v02"
+prefs_json = """
+{"stealth_bias":0.8, "burst_timing":0.7, "aggro_risk":0.6}
+"""
+
+[[skills]]
+name = "smoke_timing"
+level = 4
+notes = "always smoke before push"
+
+[[skills]]
+name = "grenade_stack"
+level = 3
+notes = "pairs with suppression"
+
+[[facts]]
+k = "safehouse_cliff"
+v = "sniper's perch in west alcove"
+t = "2025-09-04T12:00:00Z"

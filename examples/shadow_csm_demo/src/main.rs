@@ -1,5 +1,5 @@
 // CSM Visual Validation Demo
-// 
+//
 // Controls:
 //   WASD + Mouse: Camera movement
 //   C: Toggle cascade visualization
@@ -66,7 +66,7 @@ struct LightUniform {
 struct RenderSettings {
     enable_shadows: u32,
     show_cascade_colors: u32,
-    debug_mode: u32,  // 0=normal, 1=UVs, 2=receiver_depth, 3=atlas_depth, 4=raw_sample
+    debug_mode: u32, // 0=normal, 1=UVs, 2=receiver_depth, 3=atlas_depth, 4=raw_sample
     _padding: u32,
 }
 
@@ -269,7 +269,7 @@ struct App {
     // State
     enable_shadows: bool,
     show_cascade_colors: bool,
-    debug_mode: u32,  // NEW: Shadow debug visualization mode
+    debug_mode: u32,     // NEW: Shadow debug visualization mode
     movement: [bool; 6], // W, A, S, D, Space, Shift
     mouse_delta: (f32, f32),
     mouse_pressed: bool,
@@ -289,23 +289,20 @@ impl App {
 
         let surface = instance.create_surface(window.clone())?;
 
-        let adapter = pollster::block_on(instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            }))?;
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }))?;
 
-        let (device, queue) = pollster::block_on(adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                    label: Some("CSM Demo Device"),
-                    memory_hints: Default::default(),
-                    trace: Default::default(),
-                },
-            ))?;
+        let (device, queue) =
+            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                label: Some("CSM Demo Device"),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            }))?;
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -589,7 +586,10 @@ impl App {
             let sensitivity = 0.003;
             self.camera.yaw += self.mouse_delta.0 * sensitivity;
             self.camera.pitch -= self.mouse_delta.1 * sensitivity;
-            self.camera.pitch = self.camera.pitch.clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
+            self.camera.pitch = self
+                .camera
+                .pitch
+                .clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
         }
         self.mouse_delta = (0.0, 0.0);
 
@@ -605,8 +605,11 @@ impl App {
             _padding: 0.0,
         };
 
-        self.queue
-            .write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera_uniform]));
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[camera_uniform]),
+        );
 
         // Update render settings
         let settings_uniform = RenderSettings {
@@ -615,8 +618,11 @@ impl App {
             debug_mode: self.debug_mode,
             _padding: 0,
         };
-        self.queue
-            .write_buffer(&self.settings_buffer, 0, bytemuck::cast_slice(&[settings_uniform]));
+        self.queue.write_buffer(
+            &self.settings_buffer,
+            0,
+            bytemuck::cast_slice(&[settings_uniform]),
+        );
 
         // Update CSM cascades
         let light_direction = Vec3::new(-0.5, -1.0, -0.3).normalize();
@@ -633,33 +639,35 @@ impl App {
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         self.frame_count += 1;
-        
+
         if self.frame_count == 1 {
             println!("🎬 First frame render:");
             println!("  - Shadows enabled: {}", self.enable_shadows);
             println!("  - Cascade viz: {}", self.show_cascade_colors);
             println!("  - Scene index count: {}", self.scene.index_count);
             println!("  - Camera position: {:?}", self.camera.position);
-            println!("  - Shadow atlas: {}x{} (4 cascades)", 
+            println!(
+                "  - Shadow atlas: {}x{} (4 cascades)",
                 astraweave_render::shadow_csm::ATLAS_RESOLUTION,
-                astraweave_render::shadow_csm::ATLAS_RESOLUTION);
-            println!("  - Cascade resolution: {}x{}", 
+                astraweave_render::shadow_csm::ATLAS_RESOLUTION
+            );
+            println!(
+                "  - Cascade resolution: {}x{}",
                 astraweave_render::shadow_csm::CASCADE_RESOLUTION,
-                astraweave_render::shadow_csm::CASCADE_RESOLUTION);
+                astraweave_render::shadow_csm::CASCADE_RESOLUTION
+            );
             println!("");
             println!("🐛 Debug controls:");
             println!("  V = Cycle debug modes (UVs/depth/raw sample)");
             println!("  C = Toggle cascade colors");
             println!("  X = Toggle shadows on/off");
         }
-        
+
         let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor {
-                usage: None,
-                ..Default::default()
-            });
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
+            ..Default::default()
+        });
 
         // Create depth texture
         let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -733,7 +741,8 @@ impl App {
             render_pass.set_bind_group(2, self.csm.bind_group.as_ref().unwrap(), &[]);
             render_pass.set_bind_group(3, &self.settings_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.scene.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(self.scene.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass
+                .set_index_buffer(self.scene.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
             render_pass.draw_indexed(0..self.scene.index_count, 0, 0..1);
         }
 
@@ -1053,25 +1062,31 @@ fn main() -> Result<()> {
                     let win = std::sync::Arc::new(
                         elwt.create_window(
                             Window::default_attributes()
-                                .with_title("CSM Shadow Demo - WASD+Mouse to move, C=Cascades, S=Shadows")
-                                .with_inner_size(winit::dpi::LogicalSize::new(1280, 720))
-                        ).unwrap()
+                                .with_title(
+                                    "CSM Shadow Demo - WASD+Mouse to move, C=Cascades, S=Shadows",
+                                )
+                                .with_inner_size(winit::dpi::LogicalSize::new(1280, 720)),
+                        )
+                        .unwrap(),
                     );
-                    
+
                     // Create app
                     let app = App::new(win.clone()).unwrap();
-                    
+
                     println!("CSM Demo Controls:");
                     println!("  WASD + Mouse: Camera movement");
                     println!("  C: Toggle cascade visualization");
                     println!("  S: Toggle shadows on/off");
-                    
+
                     window = Some(win);
                     app_state = Some(app);
                 }
             }
-            
-            winit::event::Event::WindowEvent { window_id, event: ref win_event } if Some(window_id) == window.as_ref().map(|w| w.id()) => {
+
+            winit::event::Event::WindowEvent {
+                window_id,
+                event: ref win_event,
+            } if Some(window_id) == window.as_ref().map(|w| w.id()) => {
                 if let Some(ref mut app) = app_state {
                     if !app.input(win_event) {
                         match win_event {
@@ -1093,7 +1108,7 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            
+
             winit::event::Event::DeviceEvent {
                 event: DeviceEvent::MouseMotion { delta },
                 ..
@@ -1102,13 +1117,13 @@ fn main() -> Result<()> {
                     app.mouse_motion(delta);
                 }
             }
-            
+
             winit::event::Event::AboutToWait => {
                 if let Some(ref win) = window {
                     win.request_redraw();
                 }
             }
-            
+
             _ => {}
         }
     })?;

@@ -8,6 +8,9 @@ use astraweave_ecs::{App, Plugin};
 pub mod llm_telemetry;
 pub use llm_telemetry::*;
 
+mod companion;
+pub use companion::*;
+
 /// Configuration for observability stack
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ObservabilityConfig {
