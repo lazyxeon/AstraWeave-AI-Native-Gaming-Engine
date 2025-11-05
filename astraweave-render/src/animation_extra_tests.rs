@@ -396,7 +396,7 @@ mod animation_extra_tests {
             },
         ];
 
-        let matrices = compute_joint_matrices(&skeleton, &local_transforms);
+        let matrices = compute_joint_matrices(&skeleton, &local_transforms).expect("Failed to compute joint matrices");
 
         assert_eq!(matrices.len(), 2);
         assert_eq!(matrices[0].w_axis.truncate(), Vec3::new(1.0, 0.0, 0.0));
@@ -444,7 +444,7 @@ mod animation_extra_tests {
             },
         ];
 
-        let matrices = compute_joint_matrices(&skeleton, &local_transforms);
+        let matrices = compute_joint_matrices(&skeleton, &local_transforms).expect("Failed to compute joint matrices");
 
         // Cumulative positions: (1,0,0), (2,0,0), (3,0,0)
         assert_eq!(matrices[0].w_axis.truncate(), Vec3::new(1.0, 0.0, 0.0));
@@ -469,7 +469,7 @@ mod animation_extra_tests {
             ..Default::default()
         }];
 
-        let matrices = compute_joint_matrices(&skeleton, &local_transforms);
+        let matrices = compute_joint_matrices(&skeleton, &local_transforms).expect("Failed to compute joint matrices");
 
         // World = (2,0,0), then multiply by inverse bind (-1,0,0)
         // Result should be (1,0,0)

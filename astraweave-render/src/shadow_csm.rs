@@ -452,7 +452,7 @@ impl CsmRenderer {
     /// ```
     pub fn update_cascades(
         &mut self,
-        camera_pos: Vec3,
+        _camera_pos: Vec3,
         _camera_view: Mat4,
         _camera_proj: Mat4,
         light_dir: Vec3,
@@ -705,7 +705,7 @@ mod tests {
             Vec4::new(0.5, 0.5, 0.5, 0.5), // Bottom-right
         ];
 
-        for (i, offset) in cascades.iter().enumerate() {
+        for (_i, offset) in cascades.iter().enumerate() {
             // All scales should be 0.5 (half atlas)
             assert_eq!(offset.z, 0.5);
             assert_eq!(offset.w, 0.5);

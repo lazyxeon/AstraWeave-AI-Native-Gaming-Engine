@@ -247,7 +247,7 @@ pub fn generate_terrain_preview(
     center: Vec3,
     size: u32,
 ) -> anyhow::Result<Vec<f32>> {
-    let mut generator = WorldGenerator::new(world_config.clone());
+    let generator = WorldGenerator::new(world_config.clone());
     let chunk_id = astraweave_terrain::ChunkId::from_world_pos(center, world_config.chunk_size);
     let chunk = generator.generate_chunk(chunk_id)?;
 
