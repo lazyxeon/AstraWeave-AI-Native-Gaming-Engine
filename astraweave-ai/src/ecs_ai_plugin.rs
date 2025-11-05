@@ -8,6 +8,8 @@ use astraweave_core::{
 use astraweave_ecs as ecs;
 
 use crate::orchestrator::{Orchestrator, RuleOrchestrator};
+#[cfg(feature = "veilweaver_slice")]
+use crate::VeilweaverCompanionOrchestrator;
 
 pub struct AiPlanningPlugin;
 
@@ -69,7 +71,10 @@ fn sys_ai_planning(world: &mut ecs::World) {
         }
     }
 
-    let orch = RuleOrchestrator;
+    #[cfg(feature = "veilweaver_slice")]
+    let orch: Box<dyn Orchestrator> = Box::new(VeilweaverCompanionOrchestrator::new());
+    #[cfg(not(feature = "veilweaver_slice"))]
+    let orch: Box<dyn Orchestrator> = Box::new(RuleOrchestrator);
     let mut updates: Vec<(ecs::Entity, CDesiredPos)> = vec![];
     let mut planned_events: Vec<AiPlannedEvent> = vec![];
     let mut failed_events: Vec<AiPlanningFailedEvent> = vec![];

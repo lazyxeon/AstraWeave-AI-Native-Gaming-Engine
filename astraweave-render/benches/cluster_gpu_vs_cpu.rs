@@ -12,11 +12,11 @@
 // - GPU benchmarks require wgpu device (may vary across GPUs)
 // - CPU benchmarks are deterministic and comparable across runs
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use astraweave_render::clustered::{bin_lights_cpu, ClusterDims, CpuLight};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 #[cfg(feature = "megalights")]
-use astraweave_render::clustered_megalights::{MegaLightsRenderer, GpuLight};
+use astraweave_render::clustered_megalights::{GpuLight, MegaLightsRenderer};
 
 /// Create test scene with N lights in circular pattern
 fn create_test_scene_cpu(light_count: usize) -> Vec<CpuLight> {
@@ -57,14 +57,18 @@ fn create_test_scene_gpu(light_count: usize) -> Vec<GpuLight> {
 
 /// Benchmark CPU light culling (baseline reference)
 fn bench_cpu_light_culling(c: &mut Criterion) {
-    let dims = ClusterDims { x: 16, y: 16, z: 32 }; // 8192 clusters
+    let dims = ClusterDims {
+        x: 16,
+        y: 16,
+        z: 32,
+    }; // 8192 clusters
     let screen = (1920u32, 1080u32);
     let near = 0.1f32;
     let far = 1000.0f32;
     let fov = std::f32::consts::FRAC_PI_4;
 
     let mut group = c.benchmark_group("cpu_light_culling");
-    
+
     // Test scaling: 100, 250, 500, 1000, 2000 lights
     for light_count in [100, 250, 500, 1000, 2000] {
         group.bench_with_input(
@@ -73,20 +77,14 @@ fn bench_cpu_light_culling(c: &mut Criterion) {
             |b, &count| {
                 let lights = create_test_scene_cpu(count);
                 b.iter(|| {
-                    let (_counts, _indices, offsets) = bin_lights_cpu(
-                        black_box(&lights),
-                        dims,
-                        screen,
-                        near,
-                        far,
-                        fov,
-                    );
+                    let (_counts, _indices, offsets) =
+                        bin_lights_cpu(black_box(&lights), dims, screen, near, far, fov);
                     black_box(offsets);
                 });
             },
         );
     }
-    
+
     group.finish();
 }
 
@@ -98,28 +96,27 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
         backends: wgpu::Backends::PRIMARY,
         ..Default::default()
     });
-    
+
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: None,
     }))
     .expect("Failed to find suitable GPU adapter");
-    
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor::default(),
-    ))
-    .expect("Failed to create wgpu device");
-    
+
+    let (device, queue) =
+        pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default()))
+            .expect("Failed to create wgpu device");
+
     // Create MegaLights renderer
     let cluster_dims = (16, 16, 32); // 8192 clusters
     let max_lights = 4096;
-    
+
     let megalights = MegaLightsRenderer::new(&device, cluster_dims, max_lights)
         .expect("Failed to create MegaLightsRenderer");
-    
+
     let mut group = c.benchmark_group("gpu_light_culling");
-    
+
     // Test scaling: 100, 250, 500, 1000, 2000 lights
     for light_count in [100, 250, 500, 1000, 2000] {
         group.bench_with_input(
@@ -127,16 +124,17 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
             &light_count,
             |b, &count| {
                 let _lights = create_test_scene_gpu(count);
-                
+
                 b.iter(|| {
-                    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("MegaLights Benchmark Encoder"),
-                    });
-                    
+                    let mut encoder =
+                        device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("MegaLights Benchmark Encoder"),
+                        });
+
                     // Dispatch GPU compute
                     let result = megalights.dispatch(&mut encoder, black_box(count as u32));
                     black_box(result).expect("GPU dispatch failed");
-                    
+
                     // Submit and wait for GPU
                     queue.submit([encoder.finish()]);
                     device.poll(wgpu::MaintainBase::Wait);
@@ -144,7 +142,7 @@ fn bench_gpu_light_culling(c: &mut Criterion) {
             },
         );
     }
-    
+
     group.finish();
 }
 

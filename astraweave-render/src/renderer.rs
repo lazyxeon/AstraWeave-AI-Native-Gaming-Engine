@@ -3210,8 +3210,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // self.sky.render(&mut enc, &self.main_color_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         // Replace with:
-        let sky_color_target = &self.hdr_view;  // Use HDR view as the main color target for sky
-        self.sky.render(&mut enc, sky_color_target, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
+        let sky_color_target = &self.hdr_view; // Use HDR view as the main color target for sky
+        self.sky.render(
+            &mut enc,
+            sky_color_target,
+            &self.depth.view,
+            Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
+            &self.queue,
+        )?;
 
         // Ensure bind groups are properly recreated or updated if needed to avoid corruption
         // Add safety check before render pass
@@ -4513,9 +4519,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.light_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &self.light_bgl,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: self.light_buf.as_entire_binding() },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureViewArray(&self.shadow_views) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&self.shadow_sampler) },
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.light_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureViewArray(&self.shadow_views),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&self.shadow_sampler),
+                },
             ],
             label: Some("light_bg"),
         });

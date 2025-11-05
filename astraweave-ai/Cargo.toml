@@ -11,6 +11,8 @@ serde_json = { workspace = true }
 astraweave-core = { workspace = true }
 astraweave-ecs = { workspace = true }
 astraweave-nav = { workspace = true }
+astraweave-behavior = { workspace = true, optional = true }
+astraweave-observability = { workspace = true, optional = true }
 rapier3d = { workspace = true }
 glam = { workspace = true }
 async-trait = "0.1"
@@ -27,6 +29,7 @@ llm_orchestrator = ["astraweave-llm", "astraweave-llm/ollama", "dep:tokio", "dep
 ai-goap = []
 ai-bt = []
 profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
+veilweaver_slice = ["dep:astraweave-behavior", "dep:astraweave-observability"]
 
 [dependencies.astraweave-llm]
 workspace = true

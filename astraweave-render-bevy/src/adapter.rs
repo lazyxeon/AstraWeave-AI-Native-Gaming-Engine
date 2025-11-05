@@ -2,13 +2,13 @@
 // Day 2 implementation
 
 //! Adapter layer for extracting render data from AstraWeave ECS
-//! 
+//!
 //! This module provides the translation layer between AstraWeave's custom ECS
 //! and Bevy's rendering requirements. It extracts components (Transform, Mesh,
 //! Material, Light) and converts them to Bevy-compatible structures.
 //!
 //! ## Architecture
-//! 
+//!
 //! ```text
 //! AstraWeave World → RenderAdapter → Bevy Renderer
 //!        ↓
@@ -24,15 +24,15 @@
 //! ```
 //!
 //! ## Usage
-//! 
+//!
 //! ```
 //! use astraweave_render_bevy::{RenderAdapter, BevyRenderer};
 //! use astraweave_render_bevy::adapter::{RenderTransform, RenderMesh, RenderMaterial};
 //! use astraweave_ecs::World;
-//! 
+//!
 //! let mut adapter = RenderAdapter::new();
 //! let mut world = World::new();
-//! 
+//!
 //! // Spawn entities with render components
 //! let entity = world.spawn();
 //! world.insert(entity, RenderTransform::default());
@@ -45,16 +45,16 @@
 //!     metallic: 0.0,
 //!     roughness: 0.5,
 //! });
-//! 
+//!
 //! // Extract data every frame
 //! adapter.extract_all(&world).unwrap();
-//! 
+//!
 //! // Submit to renderer
 //! // adapter.submit_render_data(&mut renderer);
 //! ```
 //!
 //! ## Component Mapping
-//! 
+//!
 //! | AstraWeave Component | Bevy Equivalent | Purpose |
 //! |---------------------|----------------|---------|
 //! | `RenderTransform` | `GlobalTransform` | Position/rotation/scale |
@@ -68,10 +68,13 @@ use anyhow::Result;
 use glam::{Mat4, Quat, Vec3, Vec4};
 use thiserror::Error;
 
-use astraweave_ecs::{Entity, World};
-use crate::render::light::{DirectionalLight as BevyDirectionalLight, PointLight as BevyPointLight, SpotLight as BevySpotLight};
+use crate::render::light::{
+    DirectionalLight as BevyDirectionalLight, PointLight as BevyPointLight,
+    SpotLight as BevySpotLight,
+};
 use crate::render::material::{StandardMaterial, TextureHandle};
 use crate::render::mesh::MeshHandle;
+use astraweave_ecs::{Entity, World};
 
 // ============================================================================
 // AstraWeave Render Components (what users attach to entities)
@@ -106,7 +109,7 @@ impl RenderTransform {
             ..Default::default()
         }
     }
-    
+
     /// Convert to 4x4 matrix
     pub fn to_matrix(&self) -> Mat4 {
         Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.translation)
@@ -244,15 +247,15 @@ pub enum RenderExtractError {
     /// Failed to extract meshes
     #[error("Failed to extract meshes: {0}")]
     MeshExtraction(String),
-    
+
     /// Failed to extract materials
     #[error("Failed to extract materials: {0}")]
     MaterialExtraction(String),
-    
+
     /// Failed to extract lights
     #[error("Failed to extract lights: {0}")]
     LightExtraction(String),
-    
+
     /// Component not found
     #[error("Component not found on entity {0:?}: {1}")]
     ComponentNotFound(Entity, String),
@@ -311,7 +314,7 @@ pub struct ExtractedSpotLight {
 // ============================================================================
 
 /// Adapter for extracting render data from AstraWeave ECS
-/// 
+///
 /// This is the ONLY bridge between AstraWeave and Bevy rendering.
 /// It maintains independence by using component traits and HashMap storage.
 pub struct RenderAdapter {
@@ -320,7 +323,7 @@ pub struct RenderAdapter {
     directional_lights: Vec<ExtractedDirectionalLight>,
     point_lights: Vec<ExtractedPointLight>,
     spot_lights: Vec<ExtractedSpotLight>,
-    
+
     // Statistics (for debugging/profiling)
     stats: ExtractionStats,
 }
@@ -351,42 +354,42 @@ impl RenderAdapter {
             stats: ExtractionStats::default(),
         }
     }
-    
+
     /// Extract all render data from World
-    /// 
+    ///
     /// This is the main entry point called every frame.
     pub fn extract_all(&mut self, world: &World) -> Result<()> {
         let start = std::time::Instant::now();
-        
+
         // Clear previous frame data
         self.mesh_instances.clear();
         self.directional_lights.clear();
         self.point_lights.clear();
         self.spot_lights.clear();
-        
+
         // Extract each component type
         self.extract_meshes(world)?;
         self.extract_directional_lights(world)?;
         self.extract_point_lights(world)?;
         self.extract_spot_lights(world)?;
-        
+
         // Update stats
         self.stats.mesh_instances = self.mesh_instances.len();
         self.stats.directional_lights = self.directional_lights.len();
         self.stats.point_lights = self.point_lights.len();
         self.stats.spot_lights = self.spot_lights.len();
         self.stats.extraction_time_us = start.elapsed().as_micros() as u64;
-        
+
         Ok(())
     }
-    
+
     /// Extract mesh instances (entities with Transform + Mesh + Material)
     fn extract_meshes(&mut self, world: &World) -> Result<()> {
         use astraweave_ecs::Query;
-        
+
         // Query for all entities with RenderMesh
         let query = Query::<RenderMesh>::new(world);
-        
+
         for (entity, mesh) in query {
             // Check for required Transform and Material components
             if let Some(transform) = world.get::<RenderTransform>(entity) {
@@ -394,7 +397,7 @@ impl RenderAdapter {
                     // Convert to Bevy-compatible mesh instance
                     let transform_matrix = transform.to_matrix();
                     let bevy_material = self.convert_material(material);
-                    
+
                     self.mesh_instances.push(MeshInstance {
                         entity,
                         transform: transform_matrix,
@@ -404,16 +407,16 @@ impl RenderAdapter {
                 }
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// Extract directional lights
     fn extract_directional_lights(&mut self, world: &World) -> Result<()> {
         use astraweave_ecs::Query;
-        
+
         let query = Query::<DirectionalLight>::new(world);
-        
+
         for (entity, light) in query {
             let bevy_light = self.convert_directional_light(light);
             self.directional_lights.push(ExtractedDirectionalLight {
@@ -421,16 +424,16 @@ impl RenderAdapter {
                 light: bevy_light,
             });
         }
-        
+
         Ok(())
     }
-    
+
     /// Extract point lights (requires Transform for position)
     fn extract_point_lights(&mut self, world: &World) -> Result<()> {
         use astraweave_ecs::Query;
-        
+
         let query = Query::<PointLight>::new(world);
-        
+
         for (entity, light) in query {
             if let Some(transform) = world.get::<RenderTransform>(entity) {
                 let bevy_light = self.convert_point_light(light);
@@ -441,21 +444,21 @@ impl RenderAdapter {
                 });
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// Extract spot lights (requires Transform for position + rotation)
     fn extract_spot_lights(&mut self, world: &World) -> Result<()> {
         use astraweave_ecs::Query;
-        
+
         let query = Query::<SpotLight>::new(world);
-        
+
         for (entity, light) in query {
             if let Some(transform) = world.get::<RenderTransform>(entity) {
                 // Calculate light direction from rotation
                 let direction = transform.rotation * Vec3::NEG_Y;
-                
+
                 let bevy_light = self.convert_spot_light(light, direction);
                 self.spot_lights.push(ExtractedSpotLight {
                     entity,
@@ -464,14 +467,14 @@ impl RenderAdapter {
                 });
             }
         }
-        
+
         Ok(())
     }
-    
+
     // ========================================================================
     // Conversion Methods (AstraWeave → Bevy)
     // ========================================================================
-    
+
     /// Convert AstraWeave mesh instance to Bevy-compatible format
     #[allow(dead_code)]
     fn convert_mesh_instance(
@@ -488,7 +491,7 @@ impl RenderAdapter {
             material: self.convert_material(material),
         })
     }
-    
+
     /// Convert AstraWeave material to Bevy StandardMaterial
     fn convert_material(&self, mat: &RenderMaterial) -> StandardMaterial {
         StandardMaterial {
@@ -501,7 +504,7 @@ impl RenderAdapter {
             reflectance: 0.5,
         }
     }
-    
+
     /// Convert AstraWeave directional light to Bevy
     #[allow(dead_code)]
     fn convert_directional_light(&self, light: &DirectionalLight) -> BevyDirectionalLight {
@@ -512,7 +515,7 @@ impl RenderAdapter {
             shadows_enabled: light.shadows_enabled,
         }
     }
-    
+
     /// Convert AstraWeave point light to Bevy
     #[allow(dead_code)]
     fn convert_point_light(&self, light: &PointLight) -> BevyPointLight {
@@ -525,7 +528,7 @@ impl RenderAdapter {
             shadows_enabled: light.shadows_enabled,
         }
     }
-    
+
     /// Convert AstraWeave spot light to Bevy
     #[allow(dead_code)]
     fn convert_spot_light(&self, light: &SpotLight, direction: Vec3) -> BevySpotLight {
@@ -540,31 +543,31 @@ impl RenderAdapter {
             shadows_enabled: light.shadows_enabled,
         }
     }
-    
+
     // ========================================================================
     // Public Accessors (for renderer to consume extracted data)
     // ========================================================================
-    
+
     /// Get extracted mesh instances
     pub fn mesh_instances(&self) -> &[MeshInstance] {
         &self.mesh_instances
     }
-    
+
     /// Get extracted directional lights
     pub fn directional_lights(&self) -> &[ExtractedDirectionalLight] {
         &self.directional_lights
     }
-    
+
     /// Get extracted point lights
     pub fn point_lights(&self) -> &[ExtractedPointLight] {
         &self.point_lights
     }
-    
+
     /// Get extracted spot lights
     pub fn spot_lights(&self) -> &[ExtractedSpotLight] {
         &self.spot_lights
     }
-    
+
     /// Get extraction statistics
     pub fn stats(&self) -> &ExtractionStats {
         &self.stats
@@ -584,7 +587,7 @@ impl Default for RenderAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_adapter_creation() {
         let adapter = RenderAdapter::new();
@@ -593,7 +596,7 @@ mod tests {
         assert_eq!(adapter.point_lights().len(), 0);
         assert_eq!(adapter.spot_lights().len(), 0);
     }
-    
+
     #[test]
     fn test_material_conversion() {
         let adapter = RenderAdapter::new();
@@ -603,13 +606,13 @@ mod tests {
             roughness: 0.3,
             ..Default::default()
         };
-        
+
         let bevy_mat = adapter.convert_material(&astraweave_mat);
         assert_eq!(bevy_mat.base_color, Vec4::new(1.0, 0.5, 0.25, 1.0));
         assert_eq!(bevy_mat.metallic, 0.8);
         assert_eq!(bevy_mat.perceptual_roughness, 0.3);
     }
-    
+
     #[test]
     fn test_transform_matrix_conversion() {
         let transform = RenderTransform {
@@ -617,26 +620,25 @@ mod tests {
             rotation: Quat::from_rotation_y(std::f32::consts::FRAC_PI_2),
             scale: Vec3::ONE,
         };
-        
+
         let matrix = transform.to_matrix();
         let expected = Mat4::from_scale_rotation_translation(
             Vec3::ONE,
             Quat::from_rotation_y(std::f32::consts::FRAC_PI_2),
             Vec3::new(1.0, 2.0, 3.0),
         );
-        
+
         assert_eq!(matrix, expected);
     }
-    
+
     #[test]
     fn test_extract_all_empty_world() {
         let mut adapter = RenderAdapter::new();
         let world = World::new();
-        
+
         let result = adapter.extract_all(&world);
         assert!(result.is_ok());
         assert_eq!(adapter.stats().mesh_instances, 0);
         assert_eq!(adapter.stats().directional_lights, 0);
     }
 }
-

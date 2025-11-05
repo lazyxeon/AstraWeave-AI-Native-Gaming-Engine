@@ -10,13 +10,13 @@ use glam::Vec3;
 pub struct DirectionalLight {
     /// Light direction (normalized)
     pub direction: Vec3,
-    
+
     /// Light color (linear RGB)
     pub color: Vec3,
-    
+
     /// Illuminance in lux
     pub illuminance: f32,
-    
+
     /// Cast shadows
     pub shadows_enabled: bool,
 }
@@ -37,19 +37,19 @@ impl Default for DirectionalLight {
 pub struct PointLight {
     /// World position
     pub position: Vec3,
-    
+
     /// Light color (linear RGB)
     pub color: Vec3,
-    
+
     /// Intensity in lumens
     pub intensity: f32,
-    
+
     /// Maximum range
     pub range: f32,
-    
+
     /// Light radius (for soft shadows)
     pub radius: f32,
-    
+
     /// Cast shadows
     pub shadows_enabled: bool,
 }
@@ -72,25 +72,25 @@ impl Default for PointLight {
 pub struct SpotLight {
     /// World position
     pub position: Vec3,
-    
+
     /// Direction (normalized)
     pub direction: Vec3,
-    
+
     /// Light color (linear RGB)
     pub color: Vec3,
-    
+
     /// Intensity in lumens
     pub intensity: f32,
-    
+
     /// Maximum range
     pub range: f32,
-    
+
     /// Inner cone angle (radians)
     pub inner_angle: f32,
-    
+
     /// Outer cone angle (radians)
     pub outer_angle: f32,
-    
+
     /// Cast shadows
     pub shadows_enabled: bool,
 }

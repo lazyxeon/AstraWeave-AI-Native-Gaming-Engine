@@ -1,5 +1,7 @@
 use astraweave_core::*;
 use astraweave_director::BossDirector;
+#[cfg(feature = "veilweaver_slice")]
+use astraweave_director::OathboundWardenDirector;
 
 fn main() -> anyhow::Result<()> {
     let mut w = World::new();
@@ -34,17 +36,36 @@ fn main() -> anyhow::Result<()> {
         objective: Some("defeat_boss".into()),
     };
 
-    let director = BossDirector;
     let mut budget = DirectorBudget {
         traps: 2,
         terrain_edits: 2,
         spawns: 2,
     };
-    let plan = director.plan(&snap, &budget);
 
-    let mut log = |s: String| println!("{}", s);
-    println!("Director plan: {}", serde_json::to_string_pretty(&plan)?);
-    apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+    #[cfg(feature = "veilweaver_slice")]
+    {
+        let mut director = OathboundWardenDirector::new();
+        let directive = director.step(&snap, &budget);
+        println!("Warden phase: {:?}", directive.phase);
+        if !directive.telegraphs.is_empty() {
+            println!("Telegraphs: {:?}", directive.telegraphs);
+        }
+        let mut log = |s: String| println!("{}", s);
+        println!(
+            "Director plan: {}",
+            serde_json::to_string_pretty(&directive.plan)?
+        );
+        apply_director_plan(&mut w, &mut budget, &directive.plan, &mut log);
+    }
+
+    #[cfg(not(feature = "veilweaver_slice"))]
+    {
+        let director = BossDirector;
+        let plan = director.plan(&snap, &budget);
+        let mut log = |s: String| println!("{}", s);
+        println!("Director plan: {}", serde_json::to_string_pretty(&plan)?);
+        apply_director_plan(&mut w, &mut budget, &plan, &mut log);
+    }
 
     println!(
         "Remaining budget: traps={}, terrain_edits={}, spawns={}",

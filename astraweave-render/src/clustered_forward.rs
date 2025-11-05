@@ -80,7 +80,7 @@ pub struct ClusteredForwardRenderer {
     light_buffer: wgpu::Buffer,
     cluster_buffer: wgpu::Buffer,
     light_indices_buffer: wgpu::Buffer,
-    
+
     // MegaLights GPU culling buffers
     #[cfg(feature = "megalights")]
     light_counts_buffer: wgpu::Buffer,
@@ -92,7 +92,7 @@ pub struct ClusteredForwardRenderer {
     params_buffer: wgpu::Buffer,
     #[cfg(feature = "megalights")]
     prefix_sum_params_buffer: wgpu::Buffer,
-    
+
     // MegaLights renderer
     #[cfg(feature = "megalights")]
     megalights: Option<MegaLightsRenderer>,
@@ -206,7 +206,7 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         #[cfg(feature = "megalights")]
         let light_offsets_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("MegaLights Offsets Buffer"),
@@ -214,7 +214,7 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         #[cfg(feature = "megalights")]
         let cluster_bounds_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("MegaLights Cluster Bounds Buffer"),
@@ -222,7 +222,7 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         #[cfg(feature = "megalights")]
         let params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("MegaLights Params Buffer"),
@@ -230,7 +230,7 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         #[cfg(feature = "megalights")]
         let prefix_sum_params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("MegaLights Prefix Sum Params Buffer"),
@@ -238,15 +238,16 @@ impl ClusteredForwardRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         // Initialize MegaLights renderer
         #[cfg(feature = "megalights")]
         let mut megalights = MegaLightsRenderer::new(
             device,
             (config.cluster_x, config.cluster_y, config.cluster_z),
             max_lights,
-        ).ok(); // Use .ok() to convert Result to Option (log errors in production)
-        
+        )
+        .ok(); // Use .ok() to convert Result to Option (log errors in production)
+
         // Update bind groups with buffers
         #[cfg(feature = "megalights")]
         if let Some(ref mut ml) = megalights {
@@ -267,7 +268,7 @@ impl ClusteredForwardRenderer {
             light_buffer,
             cluster_buffer,
             light_indices_buffer,
-            
+
             #[cfg(feature = "megalights")]
             light_counts_buffer,
             #[cfg(feature = "megalights")]
@@ -280,7 +281,7 @@ impl ClusteredForwardRenderer {
             prefix_sum_params_buffer,
             #[cfg(feature = "megalights")]
             megalights,
-            
+
             cluster_bind_group_layout,
             cluster_bind_group,
             lights: Vec::new(),
@@ -317,12 +318,12 @@ impl ClusteredForwardRenderer {
         if !self.lights.is_empty() {
             queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&self.lights));
         }
-        
+
         // CPU path (GPU requires device + encoder which we don't have here)
         // For GPU dispatch, use build_clusters_with_encoder()
         self.build_clusters_cpu(queue, view_matrix, screen_size);
     }
-    
+
     /// Build clusters with GPU dispatch (requires device + encoder for compute shaders)
     #[cfg(feature = "megalights")]
     pub fn build_clusters_with_encoder(
@@ -338,19 +339,22 @@ impl ClusteredForwardRenderer {
         if !self.lights.is_empty() {
             queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&self.lights));
         }
-        
+
         // Try GPU path if MegaLights available
         if self.megalights.is_some() && !self.lights.is_empty() {
-            if self.build_clusters_gpu(device, queue, encoder, view_matrix, screen_size).is_ok() {
+            if self
+                .build_clusters_gpu(device, queue, encoder, view_matrix, screen_size)
+                .is_ok()
+            {
                 return; // GPU path succeeded
             }
             log::warn!("MegaLights GPU dispatch failed, falling back to CPU");
         }
-        
+
         // CPU fallback
         self.build_clusters_cpu(queue, view_matrix, screen_size);
     }
-    
+
     /// CPU light binning (fallback when MegaLights unavailable)
     fn build_clusters_cpu(
         &mut self,
@@ -422,7 +426,7 @@ impl ClusteredForwardRenderer {
             );
         }
     }
-    
+
     /// GPU light binning using MegaLights compute shaders
     #[cfg(feature = "megalights")]
     fn build_clusters_gpu(
@@ -457,25 +461,32 @@ impl ClusteredForwardRenderer {
                 }
             }
         }
-        
+
         // Upload cluster bounds to GPU (for MegaLights shaders)
         // Convert GpuCluster to ClusterBounds format
-        let cluster_bounds: Vec<[f32; 8]> = self.clusters
+        let cluster_bounds: Vec<[f32; 8]> = self
+            .clusters
             .iter()
             .map(|c| {
                 [
-                    c.min_bounds[0], c.min_bounds[1], c.min_bounds[2], 0.0, // min + padding
-                    c.max_bounds[0], c.max_bounds[1], c.max_bounds[2], 0.0, // max + padding
+                    c.min_bounds[0],
+                    c.min_bounds[1],
+                    c.min_bounds[2],
+                    0.0, // min + padding
+                    c.max_bounds[0],
+                    c.max_bounds[1],
+                    c.max_bounds[2],
+                    0.0, // max + padding
                 ]
             })
             .collect();
-        
+
         queue.write_buffer(
             &self.cluster_bounds_buffer,
             0,
             bytemuck::cast_slice(&cluster_bounds),
         );
-        
+
         // Upload params for GPU shaders
         let total_clusters = self.config.cluster_x * self.config.cluster_y * self.config.cluster_z;
         let cluster_params = [
@@ -488,8 +499,12 @@ impl ClusteredForwardRenderer {
             0, // padding
             0, // padding
         ];
-        queue.write_buffer(&self.params_buffer, 0, bytemuck::cast_slice(&cluster_params));
-        
+        queue.write_buffer(
+            &self.params_buffer,
+            0,
+            bytemuck::cast_slice(&cluster_params),
+        );
+
         let prefix_sum_params = [
             total_clusters,
             256, // workgroup_size
@@ -501,15 +516,15 @@ impl ClusteredForwardRenderer {
             0,
             bytemuck::cast_slice(&prefix_sum_params),
         );
-        
+
         // Dispatch MegaLights GPU compute pipeline
         if let Some(ref megalights) = self.megalights {
             megalights.dispatch(encoder, self.lights.len() as u32)?;
         }
-        
+
         // Note: Results are written directly to light_indices_buffer by GPU
         // No need to read back or update CPU-side data structures
-        
+
         Ok(())
     }
 

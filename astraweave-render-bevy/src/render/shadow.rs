@@ -24,16 +24,16 @@ pub const DEPTH_BIAS: f32 = 0.005;
 pub struct CascadeShadowConfig {
     /// Number of cascades (typically 4)
     pub num_cascades: usize,
-    
+
     /// Minimum distance from camera
     pub minimum_distance: f32,
-    
+
     /// Maximum distance from camera
     pub maximum_distance: f32,
-    
+
     /// Overlap proportion between cascades (0.0-1.0)
     pub overlap_proportion: f32,
-    
+
     /// First cascade far bound
     pub first_cascade_far_bound: f32,
 }
@@ -43,9 +43,9 @@ impl Default for CascadeShadowConfig {
         Self {
             num_cascades: CASCADE_COUNT,
             minimum_distance: 0.1,
-            maximum_distance: 12.0,  // Much tighter for 8m camera distance
+            maximum_distance: 12.0, // Much tighter for 8m camera distance
             overlap_proportion: 0.2,
-            first_cascade_far_bound: 1.5,  // First cascade to 1.5m for near objects
+            first_cascade_far_bound: 1.5, // First cascade to 1.5m for near objects
         }
     }
 }
@@ -55,19 +55,19 @@ impl Default for CascadeShadowConfig {
 pub struct ShadowCascade {
     /// Near plane distance (view space)
     pub near: f32,
-    
+
     /// Far plane distance (view space)
     pub far: f32,
-    
+
     /// View matrix (light space)
     pub view_matrix: Mat4,
-    
+
     /// Projection matrix (orthographic)
     pub projection_matrix: Mat4,
-    
+
     /// Combined view-projection matrix
     pub view_proj_matrix: Mat4,
-    
+
     /// Atlas offset (UV coords for texture array)
     pub atlas_offset: Vec4, // (offset_x, offset_y, scale_x, scale_y)
 }
@@ -78,10 +78,10 @@ pub struct ShadowCascade {
 pub struct ShadowCascadeUniform {
     /// View-projection matrix
     pub view_proj: [[f32; 4]; 4],
-    
+
     /// Split distances (near/far for each cascade)
     pub split_distances: [f32; 4],
-    
+
     /// Atlas transform (offset_x, offset_y, scale_x, scale_y)
     pub atlas_transform: [f32; 4],
 }
@@ -100,22 +100,22 @@ impl From<&ShadowCascade> for ShadowCascadeUniform {
 pub struct ShadowRenderer {
     /// Shadow map texture array (4 cascades)
     pub shadow_texture: wgpu::Texture,
-    
+
     /// Shadow map depth view
     pub shadow_view: wgpu::TextureView,
-    
+
     /// Sampler for shadow map (comparison sampler for PCF)
     pub shadow_sampler: wgpu::Sampler,
-    
+
     /// Cascade configuration
     pub config: CascadeShadowConfig,
-    
+
     /// Current cascade data (recomputed each frame)
     pub cascades: [ShadowCascade; CASCADE_COUNT],
-    
+
     /// Uniform buffer for cascade data
     pub cascade_buffer: wgpu::Buffer,
-    
+
     /// Bind group for shadow rendering
     pub bind_group: wgpu::BindGroup,
 }
@@ -138,7 +138,7 @@ impl ShadowRenderer {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
-        
+
         let shadow_view = shadow_texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Shadow Map Array View"),
             format: Some(wgpu::TextureFormat::Depth32Float),
@@ -150,7 +150,7 @@ impl ShadowRenderer {
             array_layer_count: Some(CASCADE_COUNT as u32),
             usage: None,
         });
-        
+
         // Comparison sampler for PCF
         let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("Shadow Sampler"),
@@ -163,7 +163,7 @@ impl ShadowRenderer {
             compare: Some(wgpu::CompareFunction::LessEqual), // PCF comparison
             ..Default::default()
         });
-        
+
         // Create cascade uniform buffer
         let cascade_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Cascade Uniform Buffer"),
@@ -171,7 +171,7 @@ impl ShadowRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-        
+
         // Initialize cascades (will be updated each frame)
         let cascades = [ShadowCascade {
             near: 0.0,
@@ -181,35 +181,31 @@ impl ShadowRenderer {
             view_proj_matrix: Mat4::IDENTITY,
             atlas_offset: Vec4::ZERO,
         }; CASCADE_COUNT];
-        
+
         // Create bind group layout and bind group (placeholder - will be wired in renderer)
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Shadow Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
                 },
-            ],
+                count: None,
+            }],
         });
-        
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Shadow Bind Group"),
             layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: cascade_buffer.as_entire_binding(),
-                },
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: cascade_buffer.as_entire_binding(),
+            }],
         });
-        
+
         Self {
             shadow_texture,
             shadow_view,
@@ -220,7 +216,7 @@ impl ShadowRenderer {
             bind_group,
         }
     }
-    
+
     /// Calculate shadow cascades for current frame
     ///
     /// Uses logarithmic distribution for optimal quality:
@@ -236,18 +232,18 @@ impl ShadowRenderer {
     ) {
         let camera_near = self.config.minimum_distance;
         let camera_far = self.config.maximum_distance;
-        
+
         // Calculate logarithmic split distances
         let mut split_distances = [0.0; CASCADE_COUNT + 1];
         split_distances[0] = camera_near;
         split_distances[CASCADE_COUNT] = camera_far;
-        
+
         for i in 1..CASCADE_COUNT {
             let ratio = i as f32 / CASCADE_COUNT as f32;
             // Logarithmic distribution (better quality near camera)
             split_distances[i] = camera_near * (camera_far / camera_near).powf(ratio);
         }
-        
+
         // Precompute frustum corners for full camera frustum (clip space z in [0, 1])
         let inv_view_proj = (*camera_proj * *camera_view).inverse();
         let mut frustum_corners = [Vec3::ZERO; 8];
@@ -286,19 +282,19 @@ impl ShadowRenderer {
                 cascade_corners[j] = corner_near + ray * near_ratio;
                 cascade_corners[j + 4] = corner_near + ray * far_ratio;
             }
-            
+
             // Calculate centroid and bounds in light space
             let centroid = cascade_corners.iter().sum::<Vec3>() / 8.0;
-            
+
             let light_view = Mat4::look_at_rh(
                 centroid - light_direction * 50.0, // Far enough back
                 centroid,
                 Vec3::Y,
             );
-            
+
             let mut min_bounds = Vec3::splat(f32::MAX);
             let mut max_bounds = Vec3::splat(f32::MIN);
-            
+
             for corner in &cascade_corners {
                 let light_space = light_view.transform_point3(*corner);
                 min_bounds = min_bounds.min(light_space);
@@ -310,13 +306,10 @@ impl ShadowRenderer {
                 let size = max_bounds - min_bounds;
                 println!(
                     "[CSM DEBUG] Cascade {} bounds: min {:?}, max {:?}, size {:?}",
-                    i,
-                    min_bounds,
-                    max_bounds,
-                    size
+                    i, min_bounds, max_bounds, size
                 );
             }
-            
+
             // Orthographic projection (directional light)
             let light_proj = Mat4::orthographic_rh(
                 min_bounds.x,
@@ -326,7 +319,7 @@ impl ShadowRenderer {
                 -max_bounds.z - 10.0, // Extra depth for casters outside frustum
                 -min_bounds.z + 10.0,
             );
-            
+
             self.cascades[i] = ShadowCascade {
                 near,
                 far,
@@ -337,14 +330,11 @@ impl ShadowRenderer {
             };
         }
     }
-    
+
     /// Update cascade uniform buffer (call after calculate_cascades)
     pub fn update_uniforms(&self, queue: &wgpu::Queue) {
-        let uniforms: Vec<ShadowCascadeUniform> = self.cascades
-            .iter()
-            .map(|c| c.into())
-            .collect();
-        
+        let uniforms: Vec<ShadowCascadeUniform> = self.cascades.iter().map(|c| c.into()).collect();
+
         queue.write_buffer(&self.cascade_buffer, 0, bytemuck::cast_slice(&uniforms));
     }
 }

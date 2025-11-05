@@ -9,7 +9,9 @@ use glam::{Mat4, Quat, Vec3};
 use wgpu;
 
 use super::camera::OrbitCamera;
-use crate::gizmo::{AxisConstraint, GizmoMode, GizmoRenderParams, GizmoRenderer as GizmoGeometry, GizmoState};
+use crate::gizmo::{
+    AxisConstraint, GizmoMode, GizmoRenderParams, GizmoRenderer as GizmoGeometry, GizmoState,
+};
 
 /// Gizmo renderer for viewport
 ///
@@ -249,7 +251,11 @@ impl GizmoRendererWgpu {
         let vertex_count = vertices.len().min(self.max_vertices);
 
         // Write vertices to buffer
-        self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices[..vertex_count]));
+        self.queue.write_buffer(
+            &self.vertex_buffer,
+            0,
+            bytemuck::cast_slice(&vertices[..vertex_count]),
+        );
 
         // Render pass
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

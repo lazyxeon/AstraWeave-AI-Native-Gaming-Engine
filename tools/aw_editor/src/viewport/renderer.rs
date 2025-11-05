@@ -26,8 +26,8 @@ use super::entity_renderer::EntityRenderer;
 use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
 use super::skybox_renderer::SkyboxRenderer;
-use astraweave_core::{Entity, World};
 use crate::gizmo::{GizmoMode, GizmoState};
+use astraweave_core::{Entity, World};
 
 /// Viewport rendering coordinator
 ///
@@ -78,9 +78,12 @@ impl ViewportRenderer {
     /// Returns error if sub-renderer creation fails.
     pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Result<Self> {
         let grid_renderer = GridRenderer::new(&device).context("Failed to create grid renderer")?;
-        let skybox_renderer = SkyboxRenderer::new(&device).context("Failed to create skybox renderer")?;
-        let entity_renderer = EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
-        let gizmo_renderer = GizmoRendererWgpu::new(device.clone(), queue.clone(), 10000).context("Failed to create gizmo renderer")?;
+        let skybox_renderer =
+            SkyboxRenderer::new(&device).context("Failed to create skybox renderer")?;
+        let entity_renderer =
+            EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
+        let gizmo_renderer = GizmoRendererWgpu::new(device.clone(), queue.clone(), 10000)
+            .context("Failed to create gizmo renderer")?;
 
         Ok(Self {
             device,
@@ -207,7 +210,15 @@ impl ViewportRenderer {
 
         // Pass 3: Entities
         self.entity_renderer
-            .render(&mut encoder, &target_view, depth_view, camera, world, self.selected_entity, &self.queue)
+            .render(
+                &mut encoder,
+                &target_view,
+                depth_view,
+                camera,
+                world,
+                self.selected_entity,
+                &self.queue,
+            )
             .context("Entity render failed")?;
 
         // Pass 4: Gizmos (if entity selected and gizmo active)
@@ -217,7 +228,7 @@ impl ViewportRenderer {
                 if let Some(pose) = world.pose(selected) {
                     // Convert astraweave_core::IVec2 to glam::IVec2
                     let glam_pos = glam::IVec2::new(pose.pos.x, pose.pos.y);
-                    
+
                     self.gizmo_renderer
                         .render(
                             &mut encoder,

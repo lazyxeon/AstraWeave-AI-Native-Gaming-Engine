@@ -662,7 +662,8 @@ albedo = "dirt_albedo.png"
             atlas: Option<String>,
         }
 
-        let doc: MaterialsDoc = toml::from_str(toml_str).map_err(|e| anyhow::anyhow!("TOML parse error: {}", e))?;
+        let doc: MaterialsDoc =
+            toml::from_str(toml_str).map_err(|e| anyhow::anyhow!("TOML parse error: {}", e))?;
         assert_eq!(doc.biome.name, "test_biome");
         assert_eq!(doc.layer.len(), 2);
         assert_eq!(doc.layer[0].key, "grass");
@@ -684,7 +685,8 @@ stone = 2
         struct ArraysDoc {
             layers: std::collections::HashMap<String, u32>,
         }
-        let arrays: ArraysDoc = toml::from_str(toml_str).map_err(|e| anyhow::anyhow!("TOML parse error: {}", e))?;
+        let arrays: ArraysDoc =
+            toml::from_str(toml_str).map_err(|e| anyhow::anyhow!("TOML parse error: {}", e))?;
         assert_eq!(arrays.layers.get("grass"), Some(&0));
         assert_eq!(arrays.layers.get("dirt"), Some(&1));
         assert_eq!(arrays.layers.get("stone"), Some(&2));
