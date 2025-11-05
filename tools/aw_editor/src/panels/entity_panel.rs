@@ -2,14 +2,12 @@
 
 use super::Panel;
 use astract::prelude::*;
+use astraweave_core::{Ammo, Health, IVec2, Team, World};
 use egui::Ui;
 
 /// Entity panel - inspect and edit entity properties
 ///
-/// Demonstrates Astract hooks:
-/// - use_state for entity selection
-/// - use_memo for filtered lists
-/// - Component composition patterns
+/// Now integrated with real ECS World instead of mock entities.
 pub struct EntityPanel {
     // Panel state managed by hooks
 }
@@ -17,6 +15,106 @@ pub struct EntityPanel {
 impl EntityPanel {
     pub fn new() -> Self {
         Self {}
+    }
+    
+    /// Show entity panel with real world integration
+    ///
+    /// # Arguments
+    ///
+    /// * `ui` - egui UI context
+    /// * `world` - Mutable reference to ECS world (optional)
+    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>) {
+        ui.heading("🎮 Entity Inspector");
+        ui.separator();
+
+        // Entity management buttons
+        ui.horizontal(|ui| {
+            if ui.button("➕ Spawn Companion").clicked() {
+                if let Some(world) = world {
+                    let entity_count = world.entities().len();
+                    let pos = IVec2 { 
+                        x: rand::random::<i32>() % 30, 
+                        y: rand::random::<i32>() % 30 
+                    };
+                    let entity = world.spawn(
+                        &format!("Companion_{}", entity_count),
+                        pos,
+                        Team { id: 0 }, // Team 0 = companion
+                        100,            // HP
+                        30,             // Ammo
+                    );
+                    println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
+                }
+            }
+            
+            if ui.button("➕ Spawn Enemy").clicked() {
+                if let Some(world) = world {
+                    let entity_count = world.entities().len();
+                    let pos = IVec2 { 
+                        x: rand::random::<i32>() % 30, 
+                        y: rand::random::<i32>() % 30 
+                    };
+                    let entity = world.spawn(
+                        &format!("Enemy_{}", entity_count),
+                        pos,
+                        Team { id: 1 }, // Team 1 = enemy
+                        80,             // HP
+                        20,             // Ammo
+                    );
+                    println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
+                }
+            }
+            
+            if ui.button("🗑️ Clear All").clicked() {
+                if let Some(world) = world {
+                    *world = World::new();
+                    println!("🗑️ Cleared all entities");
+                }
+            }
+        });
+
+        ui.add_space(10.0);
+
+        // Display entity count
+        if let Some(world) = world {
+            let entity_count = world.entities().len();
+            ui.label(format!("📊 Total Entities: {}", entity_count));
+            
+            ui.separator();
+            
+            // List all entities
+            egui::ScrollArea::vertical()
+                .max_height(400.0)
+                .show(ui, |ui| {
+                    for entity in world.entities() {
+                        if let Some(pose) = world.pose(entity) {
+                            let team = world.team(entity).unwrap_or(Team { id: 0 });
+                            let health = world.health(entity).unwrap_or(Health { hp: 0 });
+                            let ammo = world.ammo(entity).unwrap_or(Ammo { rounds: 0 });
+                            
+                            let team_name = if team.id == 0 { "Companion" } else { "Enemy" };
+                            let team_color = if team.id == 0 { 
+                                egui::Color32::from_rgb(100, 150, 255) 
+                            } else { 
+                                egui::Color32::from_rgb(255, 100, 100) 
+                            };
+                            
+                            ui.group(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(egui::RichText::new(format!("Entity #{}", entity)).strong());
+                                    ui.label(egui::RichText::new(team_name).color(team_color));
+                                });
+                                
+                                ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
+                                ui.label(format!("❤️  Health: {}", health.hp));
+                                ui.label(format!("🔫 Ammo: {}", ammo.rounds));
+                            });
+                        }
+                    }
+                });
+        } else {
+            ui.label("⚠️  No world initialized");
+        }
     }
 }
 

@@ -22,8 +22,12 @@ use anyhow::{Context, Result};
 use wgpu;
 
 use super::camera::OrbitCamera;
+use super::entity_renderer::EntityRenderer;
+use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
-use astraweave_core::World;
+use super::skybox_renderer::SkyboxRenderer;
+use astraweave_core::{Entity, World};
+use crate::gizmo::{GizmoMode, GizmoState};
 
 /// Viewport rendering coordinator
 ///
@@ -44,6 +48,9 @@ pub struct ViewportRenderer {
 
     /// Sub-renderers
     grid_renderer: GridRenderer,
+    skybox_renderer: SkyboxRenderer,
+    entity_renderer: EntityRenderer,
+    gizmo_renderer: GizmoRendererWgpu,
 
     /// Depth texture (shared across passes)
     depth_texture: Option<wgpu::Texture>,
@@ -53,6 +60,9 @@ pub struct ViewportRenderer {
 
     /// Current viewport size
     size: (u32, u32),
+
+    /// Currently selected entity (for highlighting)
+    selected_entity: Option<Entity>,
 }
 
 impl ViewportRenderer {
@@ -68,14 +78,21 @@ impl ViewportRenderer {
     /// Returns error if sub-renderer creation fails.
     pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Result<Self> {
         let grid_renderer = GridRenderer::new(&device).context("Failed to create grid renderer")?;
+        let skybox_renderer = SkyboxRenderer::new(&device).context("Failed to create skybox renderer")?;
+        let entity_renderer = EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
+        let gizmo_renderer = GizmoRendererWgpu::new(device.clone(), queue.clone(), 10000).context("Failed to create gizmo renderer")?;
 
         Ok(Self {
             device,
             queue,
             grid_renderer,
+            skybox_renderer,
+            entity_renderer,
+            gizmo_renderer,
             depth_texture: None,
             depth_view: None,
             size: (0, 0),
+            selected_entity: None,
         })
     }
 
@@ -138,32 +155,26 @@ impl ViewportRenderer {
         Ok(())
     }
 
-    /// Render complete frame
+    /// Render the 3D scene
     ///
-    /// Executes multi-pass rendering pipeline:
-    /// 1. Clear pass (color + depth)
-    /// 2. Grid pass (floor grid + axes)
-    /// 3. Entity pass (world entities) - TODO
-    /// 4. Gizmo pass (transform handles) - TODO
+    /// Multi-pass rendering pipeline:
+    /// 1. Skybox pass (clears depth and renders background gradient)
+    /// 2. Grid pass (render floor grid)
+    /// 3. Entity pass (render all world entities)
+    /// 4. Gizmo pass (render transform gizmos if entity selected)
     ///
     /// # Arguments
     ///
     /// * `target` - Render target texture
     /// * `camera` - Camera for view-projection
-    /// * `world` - World state (entities, components)
-    ///
-    /// # Errors
-    ///
-    /// Returns error if any render pass fails.
-    ///
-    /// # Performance
-    ///
-    /// Target: <10ms per frame @ 1080p
+    /// * `world` - Entity world state
+    /// * `gizmo_state` - Optional gizmo state (for transform operations)
     pub fn render(
         &mut self,
         target: &wgpu::Texture,
         camera: &OrbitCamera,
         world: &World,
+        gizmo_state: Option<&GizmoState>,
     ) -> Result<()> {
         // Ensure depth buffer matches target size
         let target_size = target.size();
@@ -184,48 +195,43 @@ impl ViewportRenderer {
                 label: Some("Viewport Render Encoder"),
             });
 
-        // Pass 1: Clear
-        {
-            let _clear_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Clear Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &target_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1, // Dark blue-gray background
-                            g: 0.1,
-                            b: 0.15,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0), // Clear to far plane
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-        }
+        // Pass 1: Skybox (clears color/depth and renders gradient background)
+        self.skybox_renderer
+            .render(&mut encoder, &target_view, depth_view, camera, &self.queue)
+            .context("Skybox render failed")?;
 
         // Pass 2: Grid
         self.grid_renderer
             .render(&mut encoder, &target_view, depth_view, camera, &self.queue)
             .context("Grid render failed")?;
 
-        // TODO Phase 1.3: Pass 3: Entities
-        // self.entity_renderer.render(&mut encoder, &target_view, depth_view, camera, world)?;
+        // Pass 3: Entities
+        self.entity_renderer
+            .render(&mut encoder, &target_view, depth_view, camera, world, self.selected_entity, &self.queue)
+            .context("Entity render failed")?;
 
-        // TODO Phase 1.5: Pass 4: Gizmos
-        // if let Some(selected) = selected_entity {
-        //     self.gizmo_renderer.render(&mut encoder, &target_view, depth_view, camera, selected)?;
-        // }
+        // Pass 4: Gizmos (if entity selected and gizmo active)
+        if let (Some(selected), Some(gizmo)) = (self.selected_entity, gizmo_state) {
+            if gizmo.mode != crate::gizmo::GizmoMode::Inactive {
+                // Get entity position from world (old astraweave-core API)
+                if let Some(pose) = world.pose(selected) {
+                    // Convert astraweave_core::IVec2 to glam::IVec2
+                    let glam_pos = glam::IVec2::new(pose.pos.x, pose.pos.y);
+                    
+                    self.gizmo_renderer
+                        .render(
+                            &mut encoder,
+                            &target_view,
+                            depth_view,
+                            camera,
+                            gizmo,
+                            glam_pos,
+                            &self.queue,
+                        )
+                        .context("Gizmo render failed")?;
+                }
+            }
+        }
 
         // Submit all commands
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -281,6 +287,16 @@ impl ViewportRenderer {
     /// Get wgpu queue
     pub fn queue(&self) -> &wgpu::Queue {
         &self.queue
+    }
+
+    /// Set selected entity (for highlighting)
+    pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
+        self.selected_entity = entity;
+    }
+
+    /// Get selected entity
+    pub fn selected_entity(&self) -> Option<Entity> {
+        self.selected_entity
     }
 }
 

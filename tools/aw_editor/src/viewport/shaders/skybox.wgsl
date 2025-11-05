@@ -1,0 +1,73 @@
+// Skybox Shader
+//
+// Procedural gradient skybox with horizon blending.
+// Renders at infinite distance (depth = 1.0).
+
+struct Uniforms {
+    view_proj: mat4x4<f32>,
+    inv_view_proj: mat4x4<f32>,
+    camera_pos: vec3<f32>,
+    sky_top: vec4<f32>,
+    sky_horizon: vec4<f32>,
+    ground_color: vec4<f32>,
+}
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) view_dir: vec3<f32>,
+}
+
+@group(0) @binding(0)
+var<uniform> uniforms: Uniforms;
+
+@vertex
+fn vs_main(@builtin(vertex_index) vertex_index: u32) -> VertexOutput {
+    // Fullscreen triangle (optimized, no vertex buffer needed)
+    var positions = array<vec2<f32>, 6>(
+        vec2<f32>(-1.0, -1.0), // Bottom-left
+        vec2<f32>(1.0, -1.0),  // Bottom-right
+        vec2<f32>(-1.0, 1.0),  // Top-left
+        vec2<f32>(-1.0, 1.0),  // Top-left
+        vec2<f32>(1.0, -1.0),  // Bottom-right
+        vec2<f32>(1.0, 1.0),   // Top-right
+    );
+
+    let ndc_pos = positions[vertex_index];
+
+    // Unproject to world space (at far plane)
+    let far_point = uniforms.inv_view_proj * vec4<f32>(ndc_pos, 1.0, 1.0);
+    let world_pos = far_point.xyz / far_point.w;
+
+    // View direction from camera
+    let view_dir = normalize(world_pos - uniforms.camera_pos);
+
+    var output: VertexOutput;
+    output.clip_position = vec4<f32>(ndc_pos, 1.0, 1.0); // Render at far plane
+    output.view_dir = view_dir;
+    return output;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    // Normalize view direction
+    let dir = normalize(in.view_dir);
+
+    // Vertical gradient (Y = -1 to +1)
+    let t = dir.y;
+
+    // Blend between sky and ground
+    var color: vec4<f32>;
+    if (t > 0.0) {
+        // Sky (above horizon)
+        // Gradient from horizon (t=0) to top (t=1)
+        let sky_t = smoothstep(0.0, 0.5, t);
+        color = mix(uniforms.sky_horizon, uniforms.sky_top, sky_t);
+    } else {
+        // Ground (below horizon)
+        // Fade to dark ground color
+        let ground_t = smoothstep(-0.2, 0.0, t);
+        color = mix(uniforms.ground_color, uniforms.sky_horizon, ground_t);
+    }
+
+    return color;
+}

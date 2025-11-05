@@ -1,6 +1,8 @@
 pub mod camera;
 pub mod clustered;
 pub mod clustered_forward; // Complete clustered forward rendering
+pub mod clustered_megalights; // MegaLights: GPU-accelerated light culling (Phase 1)
+pub mod shadow_csm; // Cascaded Shadow Mapping (Phase 2)
 pub mod depth;
 pub mod environment;
 pub mod gi; // Global Illumination (VXGI)

@@ -111,11 +111,16 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Distance fade
     let fade = 1.0 - smoothstep(uniforms.fade_distance, uniforms.max_distance, distance);
     
-    // Combine grid, major grid, and axes
-    var color = uniforms.grid_color * grid_alpha;
-    color = mix(color, uniforms.major_grid_color, major_alpha);
-    color = mix(color, uniforms.x_axis_color, (1.0 - x_axis_alpha) * uniforms.x_axis_color.a);
-    color = mix(color, uniforms.z_axis_color, (1.0 - z_axis_alpha) * uniforms.z_axis_color.a);
+    // Ground plane base color (dark surface so entities appear to stand on something solid)
+    // Higher alpha (0.6) makes it more visible, darker color (0.12) to not overpower grid
+    let ground_base_color = vec4<f32>(0.12, 0.12, 0.15, 0.6); // Dark blue-gray, more opaque
+    
+    // Combine: Ground base → Grid → Major grid → Axes
+    var color = ground_base_color; // Start with ground plane
+    color = mix(color, uniforms.grid_color, grid_alpha); // Add grid lines
+    color = mix(color, uniforms.major_grid_color, major_alpha); // Add major grid
+    color = mix(color, uniforms.x_axis_color, (1.0 - x_axis_alpha) * uniforms.x_axis_color.a); // X axis
+    color = mix(color, uniforms.z_axis_color, (1.0 - z_axis_alpha) * uniforms.z_axis_color.a); // Z axis
     
     // Apply distance fade
     color.a *= fade;
