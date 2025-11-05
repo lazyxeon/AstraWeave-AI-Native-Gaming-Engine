@@ -273,7 +273,7 @@ impl Default for EditorApp {
             },
             nav_max_step: 0.4,
             nav_max_slope_deg: 60.0,
-            sim_world: None,
+            sim_world: Some(Self::create_default_world()), // Initialize with sample entities
             sim_tick_count: 0,
             material_inspector: MaterialInspector::new(), // NEW - Phase PBR-G Task 2
             // Initialize Astract panels
@@ -291,6 +291,41 @@ impl Default for EditorApp {
 }
 
 impl EditorApp {
+    /// Create a default world with sample entities for viewport testing
+    ///
+    /// Spawns:
+    /// - 10 companions (Team 0, blue) in a line at Y=0
+    /// - 10 enemies (Team 1, red) in a line at Y=20
+    fn create_default_world() -> World {
+        let mut world = World::new();
+        
+        // Spawn 10 companion entities (blue team)
+        for i in 0..10 {
+            let pos = IVec2 { x: i * 3, y: 0 }; // Spread along X axis
+            world.spawn(
+                &format!("Companion_{}", i),
+                pos,
+                Team { id: 0 }, // Team 0 = companion
+                100,            // HP
+                30,             // Ammo
+            );
+        }
+        
+        // Spawn 10 enemy entities (red team)
+        for i in 0..10 {
+            let pos = IVec2 { x: i * 3, y: 20 }; // Spread along X axis, offset in Z
+            world.spawn(
+                &format!("Enemy_{}", i),
+                pos,
+                Team { id: 1 }, // Team 1 = enemy
+                80,             // HP
+                20,             // Ammo
+            );
+        }
+        
+        world
+    }
+
     /// Create editor with CreationContext (for wgpu access)
     ///
     /// This method initializes the 3D viewport, which requires access to
@@ -956,7 +991,7 @@ impl eframe::App for EditorApp {
                         ui.add_space(10.0);
 
                         ui.collapsing("🎮 Entities", |ui| {
-                            self.entity_panel.show(ui);
+                            self.entity_panel.show_with_world(ui, &mut self.sim_world);
                         });
 
                         ui.add_space(10.0);
@@ -1000,17 +1035,18 @@ impl eframe::App for EditorApp {
                 ui.separator();
                 
                 // Render viewport (takes 70% width, full available height)
-                if let Some(world) = &self.sim_world {
-                    if let Err(e) = viewport.ui(ui, world) {
-                        self.console_logs.push(format!("❌ Viewport error: {}", e));
-                        eprintln!("❌ Viewport error: {}", e);
-                    }
+                // Use sim_world if available, otherwise create empty world for first-time rendering
+                let world_to_render = if let Some(ref world) = self.sim_world {
+                    world
                 } else {
-                    // No simulation world - show placeholder
-                    ui.colored_label(
-                        egui::Color32::from_rgb(255, 200, 100),
-                        "⏸️ Click 'Start Simulation' button below to populate world and activate 3D view"
-                    );
+                    // Fallback empty world (only used if sim_world is None for some reason)
+                    static EMPTY_WORLD: std::sync::OnceLock<World> = std::sync::OnceLock::new();
+                    EMPTY_WORLD.get_or_init(World::new)
+                };
+                
+                if let Err(e) = viewport.ui(ui, world_to_render) {
+                    self.console_logs.push(format!("❌ Viewport error: {}", e));
+                    eprintln!("❌ Viewport error: {}", e);
                 }
                 
                 ui.add_space(10.0);

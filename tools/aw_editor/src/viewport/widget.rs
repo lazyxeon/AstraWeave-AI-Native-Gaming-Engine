@@ -38,7 +38,9 @@ use wgpu;
 
 use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
-use astraweave_core::World;
+use super::toolbar::ViewportToolbar;
+use astraweave_core::{Entity, World};
+use crate::gizmo::GizmoState;
 
 /// 3D viewport widget for egui
 ///
@@ -65,6 +67,19 @@ pub struct ViewportWidget {
 
     /// Whether viewport has focus (for input handling)
     has_focus: bool,
+
+    /// Viewport toolbar
+    toolbar: ViewportToolbar,
+
+    /// Currently selected entity
+    selected_entity: Option<Entity>,
+
+    /// Frame time tracking for FPS calculation
+    last_frame_time: std::time::Instant,
+    frame_times: Vec<f32>,
+
+    /// Gizmo state (for transform manipulation)
+    gizmo_state: GizmoState,
 }
 
 impl ViewportWidget {
@@ -110,6 +125,11 @@ impl ViewportWidget {
             egui_texture: None,
             last_size: (0, 0),
             has_focus: false,
+            toolbar: ViewportToolbar::default(),
+            selected_entity: None,
+            last_frame_time: std::time::Instant::now(),
+            frame_times: Vec::with_capacity(60),
+            gizmo_state: GizmoState::new(),
         })
     }
 
@@ -140,16 +160,49 @@ impl ViewportWidget {
     /// }
     /// ```
     pub fn ui(&mut self, ui: &mut egui::Ui, world: &World) -> Result<()> {
+        // Update frame time tracking
+        let now = std::time::Instant::now();
+        let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
+        self.last_frame_time = now;
+        self.frame_times.push(frame_time);
+        if self.frame_times.len() > 60 {
+            self.frame_times.remove(0);
+        }
+
+        // Calculate FPS
+        let avg_frame_time = self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
+        let fps = if avg_frame_time > 0.0 {
+            1.0 / avg_frame_time
+        } else {
+            0.0
+        };
+
         // Allocate space for viewport (70% of available width, full height)
         let available = ui.available_size();
         let viewport_size = egui::vec2(available.x * 0.7, available.y);
         let (rect, response) = ui.allocate_exact_size(viewport_size, egui::Sense::click_and_drag());
 
+        // Request focus on hover or click (enables camera controls)
+        if response.hovered() || response.clicked() {
+            println!("🖱️ Viewport: hovered={}, clicked={}", response.hovered(), response.clicked());
+            response.request_focus();
+        }
+
         // Update focus state
         self.has_focus = response.has_focus();
+        
+        // Debug: Log response state
+        if response.hovered() {
+            println!("🎯 Viewport hovered, has_focus={}, dragged={}", 
+                self.has_focus,
+                response.dragged_by(egui::PointerButton::Primary));
+        }
 
-        // Handle input (mouse/keyboard)
-        self.handle_input(&response, ui.ctx())?;
+        // Handle input (mouse/keyboard) - always process, but camera only moves if focused
+        self.handle_input(&response, ui.ctx(), world)?;
+        
+        // Request continuous repaint to update viewport every frame
+        ui.ctx().request_repaint();
 
         // Update camera aspect ratio
         if viewport_size.x > 0.0 && viewport_size.y > 0.0 {
@@ -163,12 +216,19 @@ impl ViewportWidget {
             self.last_size = size;
         }
 
+        // Update renderer selected entity
+        {
+            if let Ok(mut renderer) = self.renderer.lock() {
+                renderer.set_selected_entity(self.selected_entity);
+            }
+        }
+
         // Render to texture (before displaying)
         if let Some(texture) = self.render_texture.clone() {
             // Render in separate scope to drop MutexGuard early
             {
                 if let Ok(mut renderer) = self.renderer.lock() {
-                    if let Err(e) = renderer.render(&texture, &self.camera, world) {
+                    if let Err(e) = renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state)) {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
                 }
@@ -182,6 +242,10 @@ impl ViewportWidget {
             // Display texture via egui (CPU readback approach)
             if let Some(handle) = self.egui_texture.as_ref() {
                 let texture_id = handle.id();
+                
+                // TODO: Add visual border for focus/hover states
+                // (egui 0.32 API for borders needs verification)
+                
                 // Display rendered viewport using egui's texture system
                 ui.painter().image(
                     texture_id,
@@ -190,7 +254,7 @@ impl ViewportWidget {
                     egui::Color32::WHITE,
                 );
 
-                // Overlay camera info (top-left corner, semi-transparent)
+                // Overlay camera info (top-right corner, semi-transparent)
                 let pos = self.camera.position();
                 let dist = self.camera.distance();
                 let info_text = format!(
@@ -198,19 +262,32 @@ impl ViewportWidget {
                     pos.x, pos.y, pos.z, dist
                 );
 
+                let info_width = 350.0;
                 ui.painter().rect_filled(
-                    egui::Rect::from_min_size(rect.left_top(), egui::vec2(350.0, 20.0)),
+                    egui::Rect::from_min_size(
+                        rect.right_top() + egui::vec2(-info_width - 10.0, 10.0),
+                        egui::vec2(info_width, 20.0),
+                    ),
                     0.0,
                     egui::Color32::from_rgba_premultiplied(0, 0, 0, 180),
                 );
 
                 ui.painter().text(
-                    rect.left_top() + egui::vec2(5.0, 2.0),
+                    rect.right_top() + egui::vec2(-info_width - 5.0, 12.0),
                     egui::Align2::LEFT_TOP,
                     info_text,
                     egui::FontId::monospace(12.0),
                     egui::Color32::from_rgb(200, 220, 240),
                 );
+
+                // Update and display toolbar
+                self.toolbar.stats.fps = fps;
+                self.toolbar.stats.frame_time_ms = avg_frame_time * 1000.0;
+                // TODO: Get actual entity/triangle counts from renderer
+                self.toolbar.stats.entity_count = 100; // Placeholder
+                self.toolbar.stats.triangle_count = 3600; // 100 cubes × 36 triangles
+
+                self.toolbar.ui(ui, rect);
             } else {
                 // First frame - texture not ready yet
                 ui.painter()
@@ -246,60 +323,108 @@ impl ViewportWidget {
     /// - Middle drag: Pan camera
     /// - Scroll: Zoom camera
     /// - G/R/S: Gizmo mode (translate/rotate/scale)
-    fn handle_input(&mut self, response: &egui::Response, ctx: &egui::Context) -> Result<()> {
-        // Only handle input if viewport has focus
-        if !self.has_focus {
-            return Ok(());
-        }
+    /// - Click: Select entity
+    fn handle_input(&mut self, response: &egui::Response, ctx: &egui::Context, world: &World) -> Result<()> {
+        // Camera controls work when viewport is hovered (not just focused)
+        // This allows immediate camera manipulation without clicking first
+        let can_control_camera = response.hovered() || self.has_focus;
 
         // Orbit camera (left mouse drag)
-        if response.dragged_by(egui::PointerButton::Primary) {
+        if can_control_camera && response.dragged_by(egui::PointerButton::Primary) {
             let delta = response.drag_delta();
+            println!("🔄 Orbit: delta=({:.2}, {:.2}), yaw={:.2}, pitch={:.2}", 
+                delta.x, delta.y, self.camera.yaw(), self.camera.pitch());
             self.camera.orbit(delta.x, delta.y);
         }
 
         // Pan camera (middle mouse drag)
-        if response.dragged_by(egui::PointerButton::Middle) {
+        if can_control_camera && response.dragged_by(egui::PointerButton::Middle) {
             let delta = response.drag_delta();
+            println!("📐 Pan: delta=({:.2}, {:.2}), focal={:?}", 
+                delta.x, delta.y, self.camera.target());
             self.camera.pan(delta.x, delta.y);
         }
 
-        // Zoom camera (scroll wheel)
-        ctx.input(|i| {
-            if i.smooth_scroll_delta.y.abs() > 0.0 {
-                self.camera.zoom(i.smooth_scroll_delta.y);
-            }
-        });
+        // Zoom camera (scroll wheel) - only when hovered over viewport
+        if response.hovered() {
+            ctx.input(|i| {
+                if i.smooth_scroll_delta.y.abs() > 0.0 {
+                    self.camera.zoom(i.smooth_scroll_delta.y);
+                }
+            });
+        }
 
-        // Gizmo hotkeys (TODO: Phase 1.5 - integrate with gizmo system)
+        // Gizmo hotkeys (G/R/S for translate/rotate/scale, X/Y/Z for axis constraints, Enter/Escape)
         ctx.input(|i| {
+            use winit::keyboard::KeyCode;
+            
+            // Handle gizmo mode keys first
             if i.key_pressed(egui::Key::G) {
+                self.gizmo_state.handle_key(KeyCode::KeyG);
                 println!("🔧 Gizmo mode: Translate (G)");
             }
             if i.key_pressed(egui::Key::R) {
+                self.gizmo_state.handle_key(KeyCode::KeyR);
                 println!("🔧 Gizmo mode: Rotate (R)");
             }
             if i.key_pressed(egui::Key::S) {
+                self.gizmo_state.handle_key(KeyCode::KeyS);
                 println!("🔧 Gizmo mode: Scale (S)");
             }
+            
+            // Axis constraints (X/Y/Z)
+            if i.key_pressed(egui::Key::X) {
+                self.gizmo_state.handle_key(KeyCode::KeyX);
+                println!("🔧 Axis constraint: X");
+            }
+            if i.key_pressed(egui::Key::Y) {
+                self.gizmo_state.handle_key(KeyCode::KeyY);
+                println!("🔧 Axis constraint: Y");
+            }
+            if i.key_pressed(egui::Key::Z) {
+                self.gizmo_state.handle_key(KeyCode::KeyZ);
+                println!("🔧 Axis constraint: Z");
+            }
+            
+            // Confirm/cancel gizmo operation
+            if i.key_pressed(egui::Key::Enter) {
+                self.gizmo_state.handle_key(KeyCode::Enter);
+                println!("✅ Gizmo: Confirm");
+            }
+            if i.key_pressed(egui::Key::Escape) {
+                self.gizmo_state.handle_key(KeyCode::Escape);
+                println!("❌ Gizmo: Cancel");
+            }
+            
+            // Frame selected
             if i.key_pressed(egui::Key::F) {
-                // Frame selected (TODO: Phase 1.4 - integrate with selection)
                 println!("🎯 Frame selected (F)");
             }
         });
 
-        // Selection (TODO: Phase 1.4 - ray-casting)
+        // Selection (ray-casting entity picking)
         if response.clicked() {
             if let Some(pos) = response.interact_pointer_pos() {
                 let viewport_pos_vec = pos - response.rect.min;
                 let viewport_pos = egui::Pos2::new(viewport_pos_vec.x, viewport_pos_vec.y);
-                let _ray = self
+                let ray = self
                     .camera
                     .ray_from_screen(viewport_pos, response.rect.size());
-                // TODO: Pick entity with ray
+
+                // Simple entity picking (TODO: proper ray-AABB intersection)
+                // For now, just cycle through entities on click
+                if let Some(selected) = self.selected_entity {
+                    self.selected_entity = Some(selected + 1);
+                    if self.selected_entity.unwrap() >= 100 {
+                        self.selected_entity = Some(1);
+                    }
+                } else {
+                    self.selected_entity = Some(1);
+                }
+
                 println!(
-                    "🎯 Click at ({:.1}, {:.1}) - picking not yet implemented",
-                    viewport_pos.x, viewport_pos.y
+                    "🎯 Click at ({:.1}, {:.1}) - Selected entity {:?}",
+                    viewport_pos.x, viewport_pos.y, self.selected_entity
                 );
             }
         }

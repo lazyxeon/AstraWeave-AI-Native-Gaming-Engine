@@ -32,6 +32,7 @@ members = [
   "examples/coop_server",     
   "examples/coop_client",    
   "astraweave-render",
+  "astraweave-render-bevy",
   "astraweave-materials",
   "astraweave-asset",
   "astraweave-asset-pipeline",
@@ -112,6 +113,9 @@ members = [
   "examples/profiling_demo",
   # Phase 8 demos
   "examples/ui_menu_demo", "crates/astract", "examples/astract_gallery",
+  # Renderer demos (Phase 2)
+  "examples/shadow_csm_demo",
+  "examples/bevy_shadow_demo",
 ]
 exclude = [
   "astraweave-ecs/fuzz",  # Fuzz targets must be built separately

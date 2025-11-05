@@ -473,7 +473,7 @@ dependencies = [
  "criterion 0.7.0",
  "futures",
  "futures-executor",
- "glam",
+ "glam 0.30.8",
  "rapier3d",
  "serde",
  "serde_json",
@@ -488,7 +488,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
- "glam",
+ "glam 0.30.8",
  "gltf",
  "hex",
  "image",
@@ -554,7 +554,7 @@ dependencies = [
  "anyhow",
  "astraweave-gameplay",
  "criterion 0.5.1",
- "glam",
+ "glam 0.30.8",
  "hound",
  "rand 0.9.2",
  "rodio",
@@ -626,7 +626,7 @@ dependencies = [
  "astraweave-ai",
  "astraweave-ecs",
  "criterion 0.7.0",
- "glam",
+ "glam 0.30.8",
  "rand 0.9.2",
  "serde",
  "serde_json",
@@ -722,7 +722,7 @@ dependencies = [
  "astraweave-input",
  "astraweave-nav",
  "astraweave-physics",
- "glam",
+ "glam 0.30.8",
  "rand 0.9.2",
  "rapier3d",
  "serde",
@@ -738,7 +738,7 @@ dependencies = [
  "anyhow",
  "criterion 0.7.0",
  "gilrs",
- "glam",
+ "glam 0.30.8",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
@@ -820,7 +820,7 @@ dependencies = [
  "approx",
  "bytemuck",
  "criterion 0.7.0",
- "glam",
+ "glam 0.30.8",
 ]
 
 [[package]]
@@ -852,7 +852,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "criterion 0.5.1",
- "glam",
+ "glam 0.30.8",
 ]
 
 [[package]]
@@ -881,7 +881,7 @@ dependencies = [
  "crc32fast",
  "criterion 0.5.1",
  "futures-util",
- "glam",
+ "glam 0.30.8",
  "lz4_flex",
  "postcard",
  "serde",
@@ -898,7 +898,7 @@ dependencies = [
  "astraweave-audio",
  "astraweave-gameplay",
  "astraweave-physics",
- "glam",
+ "glam 0.30.8",
  "rand 0.9.2",
  "serde",
  "serde_json",
@@ -937,7 +937,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "criterion 0.7.0",
- "glam",
+ "glam 0.30.8",
  "rand 0.9.2",
  "serde",
 ]
@@ -1006,7 +1006,7 @@ dependencies = [
  "astraweave-profiling",
  "bitflags 2.9.4",
  "criterion 0.7.0",
- "glam",
+ "glam 0.30.8",
  "rand 0.9.2",
  "rapier3d",
  "rayon",
@@ -1108,7 +1108,7 @@ dependencies = [
  "egui-wgpu",
  "egui-winit",
  "env_logger",
- "glam",
+ "glam 0.30.8",
  "gltf",
  "half",
  "image",
@@ -1116,7 +1116,7 @@ dependencies = [
  "log",
  "naga 25.0.1",
  "png",
- "pollster",
+ "pollster 0.4.0",
  "rand 0.9.2",
  "serde",
  "serde_json",
@@ -1131,6 +1131,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "astraweave-render-bevy"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ecs",
+ "bytemuck",
+ "encase",
+ "env_logger",
+ "futures-lite",
+ "glam 0.29.3",
+ "hashbrown 0.15.5",
+ "naga 25.0.1",
+ "pollster 0.3.0",
+ "serde",
+ "smallvec 1.15.1",
+ "thiserror 2.0.17",
+ "toml 0.8.23",
+ "tracing",
+ "wgpu",
+]
+
+[[package]]
 name = "astraweave-scene"
 version = "0.1.0"
 dependencies = [
@@ -1138,7 +1160,7 @@ dependencies = [
  "astraweave-asset",
  "astraweave-ecs",
  "astraweave-render",
- "glam",
+ "glam 0.30.8",
  "serde",
  "tokio",
  "wgpu",
@@ -1203,7 +1225,7 @@ dependencies = [
  "anyhow",
  "astraweave-gameplay",
  "criterion 0.7.0",
- "glam",
+ "glam 0.30.8",
  "noise",
  "rand 0.9.2",
  "rayon",
@@ -1224,7 +1246,7 @@ dependencies = [
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
- "glam",
+ "glam 0.30.8",
  "log",
  "serde",
  "serde_json",
@@ -1241,7 +1263,7 @@ dependencies = [
  "approx",
  "astraweave-pcg",
  "criterion 0.7.0",
- "glam",
+ "glam 0.30.8",
  "serde",
  "toml 0.9.8",
 ]
@@ -1546,8 +1568,8 @@ dependencies = [
  "anyhow",
  "astraweave-audio",
  "astraweave-render",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "winit",
 ]
 
@@ -1752,7 +1774,7 @@ dependencies = [
  "egui-wgpu",
  "egui_dock",
  "egui_graphs",
- "glam",
+ "glam 0.30.8",
  "image",
  "notify",
  "petgraph",
@@ -1777,7 +1799,7 @@ dependencies = [
  "bytemuck",
  "image",
  "naga 27.0.3",
- "pollster",
+ "pollster 0.4.0",
  "serde",
  "serde_json",
  "wgpu",
@@ -2009,7 +2031,7 @@ dependencies = [
  "downcast-rs 2.0.2",
  "erased-serde",
  "foldhash 0.2.0",
- "glam",
+ "glam 0.30.8",
  "serde",
  "smallvec 1.15.1",
  "smol_str",
@@ -2031,6 +2053,21 @@ dependencies = [
  "quote",
  "syn 2.0.106",
  "uuid",
+]
+
+[[package]]
+name = "bevy_shadow_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ecs",
+ "astraweave-render-bevy",
+ "bytemuck",
+ "env_logger",
+ "glam 0.29.3",
+ "pollster 0.4.0",
+ "wgpu",
+ "winit",
 ]
 
 [[package]]
@@ -2119,8 +2156,8 @@ dependencies = [
  "astraweave-terrain",
  "bytemuck",
  "clap",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "serde_json",
  "wgpu",
  "winit",
@@ -2656,7 +2693,7 @@ dependencies = [
  "anyhow",
  "astraweave-gameplay",
  "astraweave-physics",
- "glam",
+ "glam 0.30.8",
  "rapier3d",
 ]
 
@@ -2740,6 +2777,15 @@ dependencies = [
  "getrandom 0.2.16",
  "once_cell",
  "tiny-keccak",
+]
+
+[[package]]
+name = "const_panic"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e262cdaac42494e3ae34c43969f9cdeb7da178bdb4b66fa6a1ea2edb4c8ae652"
+dependencies = [
+ "typewit",
 ]
 
 [[package]]
@@ -2909,7 +2955,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-gameplay",
- "glam",
+ "glam 0.30.8",
 ]
 
 [[package]]
@@ -3148,8 +3194,8 @@ dependencies = [
  "anyhow",
  "astraweave-gameplay",
  "astraweave-render",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -3265,9 +3311,9 @@ dependencies = [
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
- "glam",
+ "glam 0.30.8",
  "notify",
- "pollster",
+ "pollster 0.4.0",
  "rand 0.9.2",
  "wgpu",
  "winit",
@@ -3624,7 +3670,7 @@ dependencies = [
  "astraweave-ai",
  "astraweave-core",
  "astraweave-ecs",
- "glam",
+ "glam 0.30.8",
 ]
 
 [[package]]
@@ -3676,7 +3722,7 @@ dependencies = [
  "objc2-foundation 0.2.2",
  "parking_lot 0.12.5",
  "percent-encoding",
- "pollster",
+ "pollster 0.4.0",
  "profiling",
  "raw-window-handle",
  "static_assertions",
@@ -3877,6 +3923,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d248bdd43ce613d87415282f69b9bb99d947d290b10962dd6c56233312c2ad5"
 dependencies = [
  "log",
+]
+
+[[package]]
+name = "encase"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0a05902cf601ed11d564128448097b98ebe3c6574bd7b6a653a3d56d54aa020"
+dependencies = [
+ "const_panic",
+ "encase_derive",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "encase_derive"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "181d475b694e2dd56ae919ce7699d344d1fd259292d590c723a50d1189a2ea85"
+dependencies = [
+ "encase_derive_impl",
+]
+
+[[package]]
+name = "encase_derive_impl"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f97b51c5cc57ef7c5f7a0c57c250251c49ee4c28f819f87ac32f4aceabc36792"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
 ]
 
 [[package]]
@@ -4826,6 +4903,12 @@ dependencies = [
  "log",
  "xml-rs",
 ]
+
+[[package]]
+name = "glam"
+version = "0.29.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8babf46d4c1c9d92deac9f7be466f76dfc4482b6452fc5024b5e8daf6ffeb3ee"
 
 [[package]]
 name = "glam"
@@ -6561,7 +6644,7 @@ dependencies = [
  "anyhow",
  "astraweave-nav",
  "astraweave-physics",
- "glam",
+ "glam 0.30.8",
 ]
 
 [[package]]
@@ -6571,8 +6654,8 @@ dependencies = [
  "anyhow",
  "astraweave-nav",
  "astraweave-render",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -6777,8 +6860,8 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "bytemuck",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -7739,8 +7822,8 @@ dependencies = [
  "anyhow",
  "astraweave-physics",
  "astraweave-render",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -7858,6 +7941,12 @@ dependencies = [
  "rustix 1.1.2",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "pollster"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
 
 [[package]]
 name = "pollster"
@@ -8032,7 +8121,7 @@ dependencies = [
  "astraweave-math",
  "astraweave-physics",
  "astraweave-profiling",
- "glam",
+ "glam 0.30.8",
  "lazy_static",
  "rayon",
  "tracy-client",
@@ -8143,7 +8232,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "astraweave-gameplay",
- "glam",
+ "glam 0.30.8",
  "serde",
  "serde_json",
  "toml 0.9.8",
@@ -9127,6 +9216,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "shadow_csm_demo"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-render",
+ "bytemuck",
+ "env_logger",
+ "glam 0.30.8",
+ "pollster 0.4.0",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "sharded-slab"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9200,8 +9303,8 @@ dependencies = [
  "anyhow",
  "astraweave-asset",
  "astraweave-render",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "winit",
 ]
 
@@ -9684,7 +9787,7 @@ dependencies = [
  "astraweave-render",
  "astraweave-terrain",
  "clap",
- "glam",
+ "glam 0.30.8",
 ]
 
 [[package]]
@@ -10357,6 +10460,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
+name = "typewit"
+version = "1.14.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8c1ae7cc0fdb8b842d65d127cb981574b0d2b249b74d1c7a2986863dc134f71"
+
+[[package]]
 name = "ucd-trie"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10407,8 +10516,8 @@ dependencies = [
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -10421,9 +10530,9 @@ dependencies = [
  "astraweave-audio",
  "astraweave-ui",
  "env_logger",
- "glam",
+ "glam 0.30.8",
  "log",
- "pollster",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -10487,13 +10596,13 @@ dependencies = [
  "astraweave-render",
  "bytemuck",
  "env_logger",
- "glam",
+ "glam 0.30.8",
  "image",
  "log",
  "noise",
  "notify",
  "pathfinding",
- "pollster",
+ "pollster 0.4.0",
  "rapier3d",
  "rodio",
  "serde",
@@ -10684,8 +10793,8 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "bytemuck",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "serde",
  "serde_json",
  "tokio",
@@ -10724,9 +10833,9 @@ dependencies = [
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
- "glam",
+ "glam 0.30.8",
  "image",
- "pollster",
+ "pollster 0.4.0",
  "serde",
  "serde_json",
  "wgpu",
@@ -11005,8 +11114,8 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "astraweave-terrain",
- "glam",
- "pollster",
+ "glam 0.30.8",
+ "pollster 0.4.0",
  "wgpu",
  "winit",
 ]
@@ -11953,7 +12062,7 @@ dependencies = [
  "anyhow",
  "astraweave-ecs",
  "astraweave-scene",
- "glam",
+ "glam 0.30.8",
  "rand 0.9.2",
  "tokio",
 ]

@@ -32,12 +32,21 @@
 //! ```
 
 mod camera;
+mod entity_renderer;
+mod gizmo_renderer;
 mod grid_renderer;
 mod renderer;
+mod skybox_renderer;
+mod toolbar;
 mod widget;
 
 pub use camera::{OrbitCamera, Ray};
+pub use entity_renderer::EntityRenderer;
+pub use gizmo_renderer::GizmoRendererWgpu;
+pub use grid_renderer::GridRenderer;
 pub use renderer::ViewportRenderer;
+pub use skybox_renderer::SkyboxRenderer;
+pub use toolbar::{PerformanceStats, ShadingMode, ViewportToolbar};
 pub use widget::ViewportWidget;
 
 /// Result type for viewport operations
