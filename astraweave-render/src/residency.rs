@@ -63,7 +63,7 @@ impl ResidencyManager {
             let db = self
                 .db
                 .lock()
-                .expect("Database mutex poisoned - cannot recover");
+                .map_err(|e| anyhow::anyhow!("Residency DB lock poisoned: {}", e))?;
             if let Some(meta) = db.get_asset(guid) {
                 let memory_mb = (meta.size_bytes / (1024 * 1024)) as usize + 1;
                 (meta.clone(), memory_mb)
@@ -147,7 +147,7 @@ mod tests {
         // Mock asset
         let guid = "test_guid".to_string();
         {
-            let mut db = db.lock().unwrap();
+            let mut db = db.lock().map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?;
             db.assets.insert(
                 guid.clone(),
                 AssetMetadata {
@@ -173,7 +173,7 @@ mod tests {
         // Load another to trigger eviction
         let guid2 = "test_guid2".to_string();
         {
-            let mut db = db.lock().unwrap();
+            let mut db = db.lock().map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?;
             db.assets.insert(
                 guid2.clone(),
                 AssetMetadata {
