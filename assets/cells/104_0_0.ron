@@ -1,0 +1,152 @@
+(
+    coord: [104, 0, 0],
+    entities: [
+        (
+            name: Some("warden_platform"),
+            position: [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [26.0, 0.5, 26.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "NavSurface",
+                    data: r#"{"walkable":true,"surface":"warden_arena"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("gravity_pylon_a"),
+            position: [15.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [2.0, 6.0, 2.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "ArenaPylon",
+                    data: r#"{"id":"pylon_a"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("gravity_pylon_b"),
+            position: [-13.0, 0.0, 8.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [2.0, 6.0, 2.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "ArenaPylon",
+                    data: r#"{"id":"pylon_b"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("gravity_pylon_c"),
+            position: [-2.0, 0.0, -15.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [2.0, 6.0, 2.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "ArenaPylon",
+                    data: r#"{"id":"pylon_c"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("arena_anchor_a"),
+            position: [10.0, 0.5, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "WeaveAnchor",
+                    data: r#"{"anchor_id":"arena_anchor_a","type":"structural","echo_cost":1}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("arena_anchor_b"),
+            position: [-10.0, 0.5, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "WeaveAnchor",
+                    data: r#"{"anchor_id":"arena_anchor_b","type":"structural","echo_cost":1}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("boss_intro_trigger"),
+            position: [0.0, 0.5, -12.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "EncounterTrigger",
+                    data: r#"{"trigger_id":"boss_intro","script":"oathbound_intro"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("phase_transition_marker"),
+            position: [0.0, 1.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "PhaseTransition",
+                    data: r#"{"trigger_id":"phase_transition","stages":["assessment","fulcrum","directive"]}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("boss_defeat_trigger"),
+            position: [0.0, 0.5, 12.5],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "EncounterComplete",
+                    data: r#"{"trigger_id":"boss_defeat","next_cell":[104,0,1]}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("arena_metrics_anchor"),
+            position: [0.0, 2.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "TelemetryAnchor",
+                    data: r#"{"metrics":["armor_plates_broken","anchors_repaired","adaptive_ability"]}"#,
+                ),
+            ],
+        ),
+    ],
+    assets: [],
+    metadata: Some((
+        description: Some("Oathbound Warden boss arena with adaptive anchors"),
+        tags: ["veilweaver", "loomspire", "boss"],
+        version: 1,
+    )),
+)
+

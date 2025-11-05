@@ -298,7 +298,7 @@ impl EditorApp {
     /// - 10 enemies (Team 1, red) in a line at Y=20
     fn create_default_world() -> World {
         let mut world = World::new();
-        
+
         // Spawn 10 companion entities (blue team)
         for i in 0..10 {
             let pos = IVec2 { x: i * 3, y: 0 }; // Spread along X axis
@@ -310,7 +310,7 @@ impl EditorApp {
                 30,             // Ammo
             );
         }
-        
+
         // Spawn 10 enemy entities (red team)
         for i in 0..10 {
             let pos = IVec2 { x: i * 3, y: 20 }; // Spread along X axis, offset in Z
@@ -322,7 +322,7 @@ impl EditorApp {
                 20,             // Ammo
             );
         }
-        
+
         world
     }
 
@@ -1033,7 +1033,7 @@ impl eframe::App for EditorApp {
                 ui.heading("🎮 3D Viewport");
                 ui.label("Phase 1.1 Complete: Grid rendering active, texture display in progress");
                 ui.separator();
-                
+
                 // Render viewport (takes 70% width, full available height)
                 // Use sim_world if available, otherwise create empty world for first-time rendering
                 let world_to_render = if let Some(ref world) = self.sim_world {
@@ -1043,28 +1043,28 @@ impl eframe::App for EditorApp {
                     static EMPTY_WORLD: std::sync::OnceLock<World> = std::sync::OnceLock::new();
                     EMPTY_WORLD.get_or_init(World::new)
                 };
-                
+
                 if let Err(e) = viewport.ui(ui, world_to_render) {
                     self.console_logs.push(format!("❌ Viewport error: {}", e));
                     eprintln!("❌ Viewport error: {}", e);
                 }
-                
+
                 ui.add_space(10.0);
                 ui.separator();
             }
-            
+
             egui::ScrollArea::vertical().show(ui, |ui| {
                 // Auto-expand Console when simulation is running (so users see feedback)
                 let console_open = self.simulation_playing || !self.console_logs.is_empty();
-                
+
                 ui.collapsing("Scene Hierarchy", |ui| self.show_scene_hierarchy(ui));
                 ui.collapsing("Inspector", |ui| self.show_inspector(ui));
-                
+
                 // Console section with auto-expand when active
                 egui::CollapsingHeader::new("Console")
                     .default_open(console_open)
                     .show(ui, |ui| self.show_console(ui));
-                    
+
                 ui.collapsing("Profiler", |ui| self.show_profiler(ui));
                 ui.collapsing("Behavior Graph Editor", |ui| {
                     self.show_behavior_graph_editor(ui)

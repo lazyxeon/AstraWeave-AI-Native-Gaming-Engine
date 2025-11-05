@@ -88,7 +88,7 @@ impl Default for OrbitCamera {
     fn default() -> Self {
         Self {
             focal_point: Vec3::ZERO,
-            distance: 25.0, // Start further back to see more entities
+            distance: 25.0,                  // Start further back to see more entities
             yaw: std::f32::consts::PI / 4.0, // 45° angle (diagonal view)
             pitch: std::f32::consts::PI / 6.0, // 30° pitch (shallower, see more horizon/sky)
             fov: 60.0,
@@ -98,7 +98,7 @@ impl Default for OrbitCamera {
             min_distance: 1.0,
             max_distance: 200.0, // Allow zooming out further
             min_pitch: -std::f32::consts::PI / 2.0 + 0.01, // Prevent gimbal lock
-            max_pitch: std::f32::consts::PI / 2.0 - 0.01,  // Prevent gimbal lock
+            max_pitch: std::f32::consts::PI / 2.0 - 0.01, // Prevent gimbal lock
         }
     }
 }
@@ -178,15 +178,15 @@ impl OrbitCamera {
     /// O(1), typically <0.01ms
     pub fn zoom(&mut self, delta: f32) {
         const SENSITIVITY: f32 = 0.5; // Move 0.5 units per scroll tick
-        
+
         // Dolly camera: Move focal point toward/away from camera
         // This feels more like "flying through space" than orbit zoom
         let forward = self.forward();
         let move_amount = delta * SENSITIVITY;
-        
+
         // Move focal point along view direction
         self.focal_point += forward * move_amount;
-        
+
         // Also adjust distance slightly to maintain view
         let zoom_factor = 1.0 + delta * 0.05;
         self.distance = (self.distance / zoom_factor).clamp(self.min_distance, self.max_distance);

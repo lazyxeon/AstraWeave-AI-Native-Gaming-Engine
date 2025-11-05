@@ -168,8 +168,8 @@ impl SkyboxRenderer {
             inv_view_proj: inv_view_proj.to_cols_array_2d(),
             camera_pos: camera.position().to_array(),
             _padding: 0.0,
-            sky_top: [0.1, 0.3, 0.8, 1.0],       // Deep blue sky (more saturated)
-            sky_horizon: [0.5, 0.7, 0.95, 1.0],  // Light blue/white horizon
+            sky_top: [0.1, 0.3, 0.8, 1.0], // Deep blue sky (more saturated)
+            sky_horizon: [0.5, 0.7, 0.95, 1.0], // Light blue/white horizon
             ground_color: [0.2, 0.15, 0.1, 1.0], // Brown ground (more obvious)
         };
 

@@ -20,8 +20,8 @@
 use anyhow::{Context, Result};
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
-use wgpu::util::DeviceExt;
 use wgpu;
+use wgpu::util::DeviceExt;
 
 use super::camera::OrbitCamera;
 use astraweave_core::{Entity, World};

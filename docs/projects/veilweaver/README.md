@@ -58,6 +58,9 @@ cargo run --example quest_dialogue_demo
 
 # Run the cutscene/cinematic demo
 cargo run --example cutscene_render_demo
+
+# Validate Loomspire greybox streaming
+cargo run -p veilweaver_slice_loader
 ```
 
 ## 🎯 Development Status

@@ -1,0 +1,114 @@
+(
+    coord: [101, 0, 0],
+    entities: [
+        (
+            name: Some("causeway_segment_a"),
+            position: [0.0, 0.0, -20.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [6.0, 0.5, 12.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "NavSurface",
+                    data: r#"{"walkable":true,"surface":"causeway"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("causeway_segment_b"),
+            position: [0.0, 0.0, -4.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [6.0, 0.5, 12.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "NavSurface",
+                    data: r#"{"walkable":true,"surface":"causeway"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("causeway_gap_placeholder"),
+            position: [0.0, -2.0, -12.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [8.0, 3.0, 6.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "VisualHint",
+                    data: r#"{"hint":"gap","color":[0.2,0.3,0.6]}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("causeway_anchor_a"),
+            position: [-2.5, 0.5, -10.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "WeaveAnchor",
+                    data: r#"{"anchor_id":"causeway_anchor_a","stability":"fragile"}"#,
+                ),
+                (
+                    component_type: "TriggerZone",
+                    data: r#"{"trigger_id":"tut_anchor_hold","shape":"sphere","radius":2.5}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("causeway_anchor_b"),
+            position: [2.5, 0.5, -10.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "WeaveAnchor",
+                    data: r#"{"anchor_id":"causeway_anchor_b","stability":"fragile"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("anchor_success_trigger"),
+            position: [0.0, 0.5, -6.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "TriggerZone",
+                    data: r#"{"trigger_id":"tut_success","shape":"box","extents":[3.0,1.0,4.0]}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("echo_shard_cache"),
+            position: [0.0, 0.6, -4.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "Pickup",
+                    data: r#"{"item":"echo_shard","quantity":2}"#,
+                ),
+            ],
+        ),
+    ],
+    assets: [],
+    metadata: Some((
+        description: Some("Frayed causeway tutorial zone with weaving anchors"),
+        tags: ["veilweaver", "loomspire", "causeway"],
+        version: 1,
+    )),
+)
+

@@ -10,22 +10,22 @@ use glam::Vec4;
 pub struct StandardMaterial {
     /// Base color (RGBA)
     pub base_color: Vec4,
-    
+
     /// Base color texture handle
     pub base_color_texture: Option<TextureHandle>,
-    
+
     /// Normal map texture handle
     pub normal_map_texture: Option<TextureHandle>,
-    
+
     /// Metallic-roughness-ambient occlusion texture handle
     pub metallic_roughness_texture: Option<TextureHandle>,
-    
+
     /// Metallic factor (0.0 = dielectric, 1.0 = conductor)
     pub metallic: f32,
-    
+
     /// Perceptual roughness (0.0 = smooth, 1.0 = rough)
     pub perceptual_roughness: f32,
-    
+
     /// Reflectance (F0 for dielectrics)
     pub reflectance: f32,
 }

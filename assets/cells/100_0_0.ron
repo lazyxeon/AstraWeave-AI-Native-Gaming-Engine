@@ -1,0 +1,82 @@
+(
+    coord: [100, 0, 0],
+    entities: [
+        (
+            name: Some("loom_gate_platform"),
+            position: [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [20.0, 0.5, 20.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "NavSurface",
+                    data: r#"{"walkable":true,"surface":"loom_gate"}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("player_spawn_marker"),
+            position: [0.0, 0.5, -6.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "SpawnPoint",
+                    data: r#"{"id":"player_spawn","facing":[0.0,0.0,1.0]}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("aria_spawn_marker"),
+            position: [-2.5, 0.5, -5.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "SpawnPoint",
+                    data: r#"{"id":"companion_spawn","facing":[0.0,0.0,1.0]}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("tut_start_trigger"),
+            position: [0.0, 0.5, -1.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "TriggerZone",
+                    data: r#"{"trigger_id":"tut_start","shape":"sphere","radius":3.0}"#,
+                ),
+            ],
+        ),
+        (
+            name: Some("loom_gate_vista_marker"),
+            position: [0.0, 1.5, 8.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
+            mesh: None,
+            material: None,
+            components: [
+                (
+                    component_type: "CinematicCue",
+                    data: r#"{"id":"scene_a_pan","duration":4.0}"#,
+                ),
+            ],
+        ),
+    ],
+    assets: [],
+    metadata: Some((
+        description: Some("Veilweaver slice start platform at Loom Gate"),
+        tags: ["veilweaver", "loomspire", "start"],
+        version: 1,
+    )),
+)
+

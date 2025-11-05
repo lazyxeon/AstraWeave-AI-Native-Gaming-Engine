@@ -269,7 +269,10 @@ impl AnimationState {
 // ============================================================================
 
 /// Compute world-space joint matrices from local transforms and skeleton hierarchy
-pub fn compute_joint_matrices(skeleton: &Skeleton, local_transforms: &[Transform]) -> Result<Vec<Mat4>, anyhow::Error> {
+pub fn compute_joint_matrices(
+    skeleton: &Skeleton,
+    local_transforms: &[Transform],
+) -> Result<Vec<Mat4>, anyhow::Error> {
     let mut world_matrices = vec![Mat4::IDENTITY; skeleton.joints.len()];
 
     // Compute world transforms via hierarchical traversal
@@ -282,7 +285,10 @@ pub fn compute_joint_matrices(skeleton: &Skeleton, local_transforms: &[Transform
         visited: &mut std::collections::HashSet<usize>,
     ) -> Result<(), anyhow::Error> {
         if !visited.insert(joint_idx) {
-            return Err(anyhow::anyhow!("Cycle detected in skeleton hierarchy at joint {}", joint_idx));
+            return Err(anyhow::anyhow!(
+                "Cycle detected in skeleton hierarchy at joint {}",
+                joint_idx
+            ));
         }
         let local = local_transforms[joint_idx].to_matrix();
         let world = parent_world * local;
@@ -291,7 +297,14 @@ pub fn compute_joint_matrices(skeleton: &Skeleton, local_transforms: &[Transform
         // Recurse to children
         for (child_idx, child_joint) in skeleton.joints.iter().enumerate() {
             if child_joint.parent_index == Some(joint_idx) {
-                compute_recursive(skeleton, local_transforms, world_matrices, child_idx, world, visited)?;
+                compute_recursive(
+                    skeleton,
+                    local_transforms,
+                    world_matrices,
+                    child_idx,
+                    world,
+                    visited,
+                )?;
             }
         }
         visited.remove(&joint_idx);
@@ -653,7 +666,8 @@ mod tests {
         // Will panic or produce partial results - testing that it doesn't hang
         // Note: This may panic (expected for invalid input), so we wrap in catch_unwind
         use std::panic;
-        let result = panic::catch_unwind(|| compute_joint_matrices(&skeleton, &local_transforms).unwrap());
+        let result =
+            panic::catch_unwind(|| compute_joint_matrices(&skeleton, &local_transforms).unwrap());
 
         // Either panics (expected) or returns some result
         assert!(result.is_err() || result.is_ok());
