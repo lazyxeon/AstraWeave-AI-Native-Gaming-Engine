@@ -21,6 +21,9 @@
 //! - **Space**: Toggle MegaLights demo (spawn 10k lights)
 //! - **ESC**: Exit
 
+mod procedural_textures;
+mod gltf_loader;
+
 use winit::{
     application::ApplicationHandler,
     event::*,
@@ -108,12 +111,24 @@ struct Material {
 
 impl Material {
     fn new(name: &str, polyhaven_id: &str) -> Self {
-        let base = format!("assets/_downloaded/{}", polyhaven_id);
-        Self {
-            name: name.to_string(),
-            albedo_path: format!("{}/{}_albedo.png", base, polyhaven_id),
-            normal_path: format!("{}/{}_normal.png", base, polyhaven_id),
-            mra_path: format!("{}/{}_roughness.png", base, polyhaven_id), // TODO: Pack M+R+AO
+        // Check if this is a procedural texture (ends with _proc)
+        if polyhaven_id.ends_with("_proc") {
+            // For procedural textures, just store the identifier
+            Self {
+                name: name.to_string(),
+                albedo_path: polyhaven_id.to_string(),
+                normal_path: format!("{}_normal", polyhaven_id),
+                mra_path: format!("{}_mra", polyhaven_id),
+            }
+        } else {
+            // For PolyHaven textures, use full paths
+            let base = format!("assets/_downloaded/{}", polyhaven_id);
+            Self {
+                name: name.to_string(),
+                albedo_path: format!("{}/{}_albedo.png", base, polyhaven_id),
+                normal_path: format!("{}/{}_normal.png", base, polyhaven_id),
+                mra_path: format!("{}/{}_roughness.png", base, polyhaven_id),
+            }
         }
     }
 }
@@ -263,21 +278,34 @@ fn create_cube(size: f32) -> (Vec<Vertex>, Vec<u32>) {
 
 /// Helper: Sample terrain height at given x,z position
 fn sample_terrain_height(x: f32, z: f32, island_size: f32) -> f32 {
-    let center_x = 0.0;
-    let center_z = 0.0;
-    let dx = x - center_x;
-    let dz = z - center_z;
-    let dist = (dx * dx + dz * dz).sqrt();
-    let radius = island_size / 2.0;
-    let normalized_dist = dist / radius;
+    // MUST match create_island_terrain() heightmap formula exactly!
+    let half_size = island_size / 2.0;
+    let dist_from_center = ((x / half_size).powi(2) + (z / half_size).powi(2)).sqrt();
     
-    if normalized_dist < 1.0 {
-        let base_height = (1.0 - normalized_dist).powi(2) * 8.0;
-        let detail = (x * 0.1).sin() * (z * 0.1).cos() * 0.5;
-        base_height + detail
+    // Base island shape (raised center)
+    let island_shape = if dist_from_center < 1.0 {
+        (1.0 - dist_from_center).powi(2) * 12.0 // Higher peak (12m)
     } else {
         0.0
-    }
+    };
+    
+    // Multiple hills using different frequencies (SAME as terrain generation)
+    let hill1 = ((x * 0.05).sin() * (z * 0.05).cos() * 8.0).max(0.0);
+    let hill2 = ((x * 0.08 + 10.0).cos() * (z * 0.08 + 5.0).sin() * 6.0).max(0.0);
+    let hill3 = ((x * 0.03).sin() * (z * 0.03).sin() * 5.0).max(0.0);
+    
+    // Medium frequency variation (valleys and ridges)
+    let medium_detail = (x * 0.15).sin() * (z * 0.15).cos() * 2.5;
+    
+    // Fine detail (rocky texture)
+    let fine_detail = ((x * 0.5).sin() * (z * 0.5).cos() * 0.8)
+        + ((x * 0.8 + 3.0).cos() * (z * 0.7 + 2.0).sin() * 0.5);
+    
+    // Combine all layers with distance falloff
+    let falloff = (1.0 - dist_from_center.min(1.0)).powi(1); // Gentler falloff
+    let height = (island_shape + (hill1 + hill2 + hill3) * falloff * 0.5 + medium_detail * falloff + fine_detail * falloff).max(0.0);
+    
+    height
 }
 
 /// Create a tree (cylinder trunk + cone canopy)
@@ -493,7 +521,7 @@ fn create_island_terrain(size: f32, subdivisions: usize) -> (Vec<Vertex>, Vec<u3
     let mut indices = Vec::new();
     let half_size = size / 2.0;
     
-    // Generate heightmap-based terrain
+    // Generate realistic heightmap-based terrain with multiple hills
     for z in 0..=subdivisions {
         for x in 0..=subdivisions {
             let u = x as f32 / subdivisions as f32;
@@ -502,16 +530,31 @@ fn create_island_terrain(size: f32, subdivisions: usize) -> (Vec<Vertex>, Vec<u3
             let world_x = (u - 0.5) * size;
             let world_z = (v - 0.5) * size;
             
-            // Island shape: raised center, beaches at edges
+            // Multiple frequency noise for natural terrain
             let dist_from_center = ((world_x / half_size).powi(2) + (world_z / half_size).powi(2)).sqrt();
-            let height = if dist_from_center < 1.0 {
-                // Center hills (0-8m elevation)
-                let hill_factor = 1.0 - dist_from_center;
-                hill_factor.powi(2) * 8.0 + (world_x * 0.1).sin() * (world_z * 0.1).cos() * 0.5
+            
+            // Base island shape (raised center)
+            let island_shape = if dist_from_center < 1.0 {
+                (1.0 - dist_from_center).powi(2) * 12.0 // Higher peak (12m)
             } else {
-                // Beaches/water (flat at 0m)
                 0.0
             };
+            
+            // Multiple hills using different frequencies
+            let hill1 = ((world_x * 0.05).sin() * (world_z * 0.05).cos() * 8.0).max(0.0);
+            let hill2 = ((world_x * 0.08 + 10.0).cos() * (world_z * 0.08 + 5.0).sin() * 6.0).max(0.0);
+            let hill3 = ((world_x * 0.03).sin() * (world_z * 0.03).sin() * 5.0).max(0.0);
+            
+            // Medium frequency variation (valleys and ridges)
+            let medium_detail = (world_x * 0.15).sin() * (world_z * 0.15).cos() * 2.5;
+            
+            // Fine detail (rocky texture)
+            let fine_detail = ((world_x * 0.5).sin() * (world_z * 0.5).cos() * 0.8)
+                + ((world_x * 0.8 + 3.0).cos() * (world_z * 0.7 + 2.0).sin() * 0.5);
+            
+            // Combine all layers with distance falloff
+            let falloff = (1.0 - dist_from_center.min(1.0)).powi(1); // Gentler falloff
+            let height = (island_shape + (hill1 + hill2 + hill3) * falloff * 0.5 + medium_detail * falloff + fine_detail * falloff).max(0.0);
             
             vertices.push(Vertex {
                 position: [world_x, height, world_z],
@@ -617,6 +660,13 @@ struct ShowcaseApp {
     uniform_bind_group: Option<wgpu::BindGroup>,
     material_bind_groups: Vec<wgpu::BindGroup>,
     depth_texture: Option<wgpu::TextureView>,
+    
+    // Skybox resources
+    skybox_pipeline: Option<wgpu::RenderPipeline>,
+    skybox_cubemap: Option<wgpu::TextureView>,
+    skybox_bind_group: Option<wgpu::BindGroup>,
+    skybox_uniform_buffer: Option<wgpu::Buffer>,
+    skybox_uniform_bind_group: Option<wgpu::BindGroup>,
 }
 
 impl Default for ShowcaseApp {
@@ -655,11 +705,13 @@ impl Default for ShowcaseApp {
             animal_positions: Vec::new(),
             companion_position: Vec3::new(5.0, 0.0, 5.0),
             materials: vec![
-                Material::new("Aerial Rocks", "aerial_rocks"),
-                Material::new("Metal Plate", "metal_plate"),
-                Material::new("Cobblestone", "cobblestone"),
-                Material::new("Wood Floor", "wood_floor"),
-                Material::new("Plastered Wall", "plastered_wall"),
+                Material::new("Aerial Rocks", "aerial_rocks"),      // Terrain
+                Material::new("Metal Plate", "metal_plate"),        // NPCs (temp)
+                Material::new("Cobblestone", "cobblestone"),       // Buildings
+                Material::new("Tree Bark", "tree_bark_proc"),       // Trees (trunk) - NEW PROCEDURAL
+                Material::new("Oak Leaves", "leaves_oak_proc"),     // Trees (canopy) - NEW PROCEDURAL
+                Material::new("Grass", "grass_proc"),               // Terrain variation - NEW PROCEDURAL
+                Material::new("Thatch Roof", "thatch_proc"),        // Building roofs - NEW PROCEDURAL
             ],
             hdris: vec![
                 HDRI::new("Kloppenheim (Day)", "assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr"),
@@ -672,6 +724,11 @@ impl Default for ShowcaseApp {
             uniform_bind_group: None,
             material_bind_groups: Vec::new(),
             depth_texture: None,
+            skybox_pipeline: None,
+            skybox_cubemap: None,
+            skybox_bind_group: None,
+            skybox_uniform_buffer: None,
+            skybox_uniform_bind_group: None,
         }
     }
 }
@@ -721,6 +778,188 @@ impl ShowcaseApp {
         );
         
         Ok(texture)
+    }
+    
+    /// Load texture or generate procedural texture if path ends with "_proc"
+    fn load_or_generate_texture(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        path: &str,
+    ) -> Result<wgpu::Texture, Box<dyn std::error::Error>> {
+        // Check if this is a procedural texture request
+        if path.ends_with("_proc") || path.contains("_proc_") {
+            let rgba = if path.ends_with("_normal") || path.ends_with("_mra") {
+                // Generate normal map for any procedural texture
+                procedural_textures::generate_normal_map(512, 512)
+            } else {
+                // Generate albedo based on base name
+                let base_name = path.replace("_normal", "").replace("_mra", "");
+                match base_name.as_str() {
+                    "tree_bark_proc" => procedural_textures::generate_tree_bark_texture(512, 512),
+                    "leaves_oak_proc" => procedural_textures::generate_leaves_texture(512, 512),
+                    "grass_proc" => procedural_textures::generate_grass_texture(512, 512),
+                    "dirt_proc" => procedural_textures::generate_dirt_texture(512, 512),
+                    "thatch_proc" => procedural_textures::generate_thatch_texture(512, 512),
+                    "adobe_proc" => procedural_textures::generate_adobe_texture(512, 512),
+                    _ => {
+                        eprintln!("⚠️  Unknown procedural texture: {}, using fallback", path);
+                        procedural_textures::generate_dirt_texture(512, 512)
+                    }
+                }
+            };
+            
+            let dimensions = rgba.dimensions();
+            let size = wgpu::Extent3d {
+                width: dimensions.0,
+                height: dimensions.1,
+                depth_or_array_layers: 1,
+            };
+            
+            let texture = device.create_texture(&wgpu::TextureDescriptor {
+                label: Some(path),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+            
+            queue.write_texture(
+                wgpu::ImageCopyTexture {
+                    texture: &texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
+                },
+                &rgba,
+                wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(4 * dimensions.0),
+                    rows_per_image: Some(dimensions.1),
+                },
+                size,
+            );
+            
+            Ok(texture)
+        } else {
+            // Load from file
+            Self::load_texture(device, queue, path)
+        }
+    }
+    
+    /// Load HDRI and convert to cubemap
+    fn load_hdri_cubemap(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        path: &str,
+    ) -> Result<wgpu::Texture, Box<dyn std::error::Error>> {
+        use image::GenericImageView;
+        
+        // Load HDR image
+        let img = image::open(path)?;
+        let rgba_img = img.to_rgba32f();
+        let (width, height) = rgba_img.dimensions();
+        
+        // Create cubemap texture (6 faces, 512x512 each)
+        let cubemap_size = 512u32;
+        let cubemap_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("HDRI Cubemap"),
+            size: wgpu::Extent3d {
+                width: cubemap_size,
+                height: cubemap_size,
+                depth_or_array_layers: 6, // 6 cube faces
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba16Float,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        
+        // Convert equirectangular to cubemap (simplified - sample each face)
+        for face in 0..6 {
+            let mut face_data = vec![0f32; (cubemap_size * cubemap_size * 4) as usize];
+            
+            for y in 0..cubemap_size {
+                for x in 0..cubemap_size {
+                    // Map cubemap texel to 3D direction
+                    let u = (x as f32 + 0.5) / cubemap_size as f32;
+                    let v = (y as f32 + 0.5) / cubemap_size as f32;
+                    
+                    // Convert to [-1, 1] range
+                    let uc = 2.0 * u - 1.0;
+                    let vc = 2.0 * v - 1.0;
+                    
+                    // Get direction vector based on cubemap face
+                    let dir = match face {
+                        0 => Vec3::new(1.0, -vc, -uc),   // +X (right)
+                        1 => Vec3::new(-1.0, -vc, uc),   // -X (left)
+                        2 => Vec3::new(uc, 1.0, vc),     // +Y (top)
+                        3 => Vec3::new(uc, -1.0, -vc),   // -Y (bottom)
+                        4 => Vec3::new(uc, -vc, 1.0),    // +Z (front)
+                        5 => Vec3::new(-uc, -vc, -1.0),  // -Z (back)
+                        _ => Vec3::ZERO,
+                    };
+                    
+                    let dir_norm = dir.normalize();
+                    
+                    // Convert direction to equirectangular UV
+                    let theta = dir_norm.y.asin();
+                    let phi = dir_norm.z.atan2(dir_norm.x);
+                    
+                    let eq_u = (phi / std::f32::consts::TAU + 0.5).clamp(0.0, 1.0);
+                    // FIX: Invert V to correct upside-down HDRI
+                    let eq_v = 1.0 - (theta / std::f32::consts::PI + 0.5).clamp(0.0, 1.0);
+                    
+                    // Sample from equirectangular image
+                    let px = ((eq_u * width as f32) as u32).min(width - 1);
+                    let py = ((eq_v * height as f32) as u32).min(height - 1);
+                    
+                    let pixel = rgba_img.get_pixel(px, py);
+                    let idx = ((y * cubemap_size + x) * 4) as usize;
+                    face_data[idx] = pixel[0];
+                    face_data[idx + 1] = pixel[1];
+                    face_data[idx + 2] = pixel[2];
+                    face_data[idx + 3] = pixel[3];
+                }
+            }
+            
+            // Convert f32 to f16 for Rgba16Float
+            let face_data_f16: Vec<u8> = face_data.chunks(4)
+                .flat_map(|rgba| {
+                    let r = half::f16::from_f32(rgba[0]);
+                    let g = half::f16::from_f32(rgba[1]);
+                    let b = half::f16::from_f32(rgba[2]);
+                    let a = half::f16::from_f32(rgba[3]);
+                    [r, g, b, a].iter().flat_map(|h| h.to_le_bytes()).collect::<Vec<u8>>()
+                })
+                .collect();
+            
+            queue.write_texture(
+                wgpu::ImageCopyTexture {
+                    texture: &cubemap_texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d { x: 0, y: 0, z: face },
+                    aspect: wgpu::TextureAspect::All,
+                },
+                &face_data_f16,
+                wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(cubemap_size * 8), // 4 channels * 2 bytes (f16)
+                    rows_per_image: Some(cubemap_size),
+                },
+                wgpu::Extent3d {
+                    width: cubemap_size,
+                    height: cubemap_size,
+                    depth_or_array_layers: 1,
+                },
+            );
+        }
+        
+        Ok(cubemap_texture)
     }
     
     /// Create render pipeline and resources
@@ -855,8 +1094,8 @@ impl ShowcaseApp {
         for (i, material) in self.materials.iter().enumerate() {
             println!("📦 Loading material {}: {}", i, material.name);
             
-            // Load textures (with fallback for missing files)
-            let albedo_texture = Self::load_texture(device, queue, &material.albedo_path)
+            // Load textures (with procedural generation support)
+            let albedo_texture = Self::load_or_generate_texture(device, queue, &material.albedo_path)
                 .unwrap_or_else(|e| {
                     eprintln!("⚠️  Failed to load albedo {}: {}", material.albedo_path, e);
                     // Create 1x1 magenta fallback
@@ -1049,11 +1288,176 @@ impl ShowcaseApp {
         println!("✅ Render pipeline created with {} materials", self.materials.len());
     }
     
+    /// Create skybox rendering pipeline
+    fn create_skybox_pipeline(&mut self) {
+        let device = self.device.as_ref().unwrap();
+        let queue = self.queue.as_ref().unwrap();
+        let config = self.surface_config.as_ref().unwrap();
+        
+        // Load current HDRI
+        let hdri = &self.hdris[self.current_hdri];
+        println!("🌌 Loading skybox HDRI: {}", hdri.name);
+        
+        let cubemap_texture = match Self::load_hdri_cubemap(device, queue, &hdri.path) {
+            Ok(tex) => tex,
+            Err(e) => {
+                eprintln!("❌ Failed to load HDRI {}: {}", hdri.path, e);
+                return;
+            }
+        };
+        
+        let cubemap_view = cubemap_texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Skybox Cubemap View"),
+            dimension: Some(wgpu::TextureViewDimension::Cube),
+            ..Default::default()
+        });
+        
+        // Create sampler for cubemap
+        let skybox_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Skybox Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+        
+        // Create skybox uniform buffer (view_proj + inv_view_proj)
+        let skybox_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Skybox Uniform Buffer"),
+            size: 128, // 2x mat4x4 = 128 bytes
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        
+        // Create bind group layouts
+        let skybox_uniform_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Skybox Uniform Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+        
+        let skybox_texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Skybox Texture Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::Cube,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+        
+        // Create bind groups
+        let skybox_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Skybox Uniform Bind Group"),
+            layout: &skybox_uniform_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: skybox_uniform_buffer.as_entire_binding(),
+            }],
+        });
+        
+        let skybox_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Skybox Texture Bind Group"),
+            layout: &skybox_texture_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&cubemap_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&skybox_sampler),
+                },
+            ],
+        });
+        
+        // Load shader
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Skybox Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("skybox_shader.wgsl").into()),
+        });
+        
+        // Create pipeline layout
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Skybox Pipeline Layout"),
+            bind_group_layouts: &[&skybox_uniform_layout, &skybox_texture_layout],
+            push_constant_ranges: &[],
+        });
+        
+        // Create pipeline
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Skybox Pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[], // No vertex buffer - generate full-screen triangle in shader
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: None, // No blending for skybox
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None, // No culling for skybox
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: false, // Don't write to depth buffer
+                depth_compare: wgpu::CompareFunction::LessEqual, // Render at far plane
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+        
+        self.skybox_pipeline = Some(pipeline);
+        self.skybox_cubemap = Some(cubemap_view);
+        self.skybox_bind_group = Some(skybox_bind_group);
+        self.skybox_uniform_buffer = Some(skybox_uniform_buffer);
+        self.skybox_uniform_bind_group = Some(skybox_uniform_bind_group);
+        
+        println!("✅ Skybox pipeline created");
+    }
+    
     fn setup_scene(&mut self) {
         let device = self.device.as_ref().unwrap();
         
-        // Create island terrain (200x200m with elevation)
-        let (ground_vertices, ground_indices) = create_island_terrain(200.0, 80);
+        // Create island terrain (150x150m - good balance between spacious and visible)
+        let (ground_vertices, ground_indices) = create_island_terrain(150.0, 80);
         self.ground_index_count = ground_indices.len() as u32;
         
         self.ground_vertex_buffer = Some(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -1068,22 +1472,44 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create tree mesh (single instance with all trees baked in)
-        let (tree_template_vertices, tree_template_indices) = create_tree(3.0, 0.3, 4.0, 2.0);
+        // Create tree mesh - MIXED APPROACH: First tree uses GLB, rest use procedural
+        // This demonstrates both real asset loading and procedural generation
+        let (tree_template_vertices, tree_template_indices) = match gltf_loader::load_gltf("assets/demo_plane.gltf") {
+            Ok(loaded_mesh) => {
+                log::info!("✅ Loaded GLTF model '{}': {} vertices, {} triangles", 
+                    loaded_mesh.name, loaded_mesh.vertices.len(), loaded_mesh.indices.len() / 3);
+                
+                // Convert GltfVertex to Vertex (they're compatible)
+                let vertices: Vec<Vertex> = loaded_mesh.vertices.iter().map(|v| Vertex {
+                    position: v.position,
+                    normal: v.normal,
+                    uv: v.uv,
+                }).collect();
+                
+                (vertices, loaded_mesh.indices)
+            }
+            Err(e) => {
+                log::warn!("⚠️  Failed to load demo_plane.gltf: {}", e);
+                log::info!("Using procedural tree mesh instead");
+                create_tree(8.0, 0.6, 10.0, 4.0)
+            }
+        };
         
-        // Generate all tree instances with positions baked into vertices
+        // Generate tree instances across 150m terrain - spread them out more
         let tree_positions = vec![
-            Vec3::new(-20.0, 0.0, -30.0), Vec3::new(-15.0, 0.0, -25.0), Vec3::new(-10.0, 0.0, -20.0),
-            Vec3::new(15.0, 0.0, -28.0), Vec3::new(20.0, 0.0, -22.0), Vec3::new(-25.0, 0.0, 10.0),
-            Vec3::new(-18.0, 0.0, 15.0), Vec3::new(22.0, 0.0, 12.0), Vec3::new(28.0, 0.0, 18.0),
-            Vec3::new(0.0, 0.0, -15.0), Vec3::new(-5.0, 0.0, -12.0), Vec3::new(5.0, 0.0, -10.0),
+            Vec3::new(-30.0, 0.0, -40.0), Vec3::new(-20.0, 0.0, -35.0), Vec3::new(-10.0, 0.0, -30.0),
+            Vec3::new(25.0, 0.0, -38.0), Vec3::new(35.0, 0.0, -32.0), Vec3::new(-40.0, 0.0, 15.0),
+            Vec3::new(-25.0, 0.0, 20.0), Vec3::new(30.0, 0.0, 18.0), Vec3::new(40.0, 0.0, 25.0),
+            Vec3::new(0.0, 0.0, -25.0), Vec3::new(-8.0, 0.0, -20.0), Vec3::new(8.0, 0.0, -18.0),
+            Vec3::new(-15.0, 0.0, 5.0), Vec3::new(15.0, 0.0, 8.0), Vec3::new(-5.0, 0.0, 30.0),
+            Vec3::new(20.0, 0.0, -10.0), Vec3::new(-35.0, 0.0, -15.0), Vec3::new(10.0, 0.0, 35.0),
         ];
         
         let mut all_tree_vertices = Vec::new();
         let mut all_tree_indices = Vec::new();
         
         for pos in &tree_positions {
-            let terrain_height = sample_terrain_height(pos.x, pos.z, 200.0);
+            let terrain_height = sample_terrain_height(pos.x, pos.z, 150.0); // Updated terrain size
             let base_vertex_index = all_tree_vertices.len() as u32;
             for v in &tree_template_vertices {
                 all_tree_vertices.push(Vertex {
@@ -1111,20 +1537,23 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create building instances (baked positions)
-        let (building_template_vertices, building_template_indices) = create_building(6.0, 4.0, 6.0);
+        // Create building instances (medieval houses: 10m x 8m x 10m)
+        let (building_template_vertices, building_template_indices) = create_building(10.0, 8.0, 10.0);
         
+        // Spread buildings across 150m terrain
         let building_positions = vec![
-            Vec3::new(-30.0, 0.0, 5.0),
-            Vec3::new(25.0, 0.0, -5.0),
-            Vec3::new(0.0, 0.0, 20.0),
+            Vec3::new(-45.0, 0.0, 10.0),
+            Vec3::new(40.0, 0.0, -8.0),
+            Vec3::new(0.0, 0.0, 25.0),
+            Vec3::new(-20.0, 0.0, -20.0),
+            Vec3::new(25.0, 0.0, 15.0),
         ];
         
         let mut all_building_vertices = Vec::new();
         let mut all_building_indices = Vec::new();
         
         for pos in &building_positions {
-            let terrain_height = sample_terrain_height(pos.x, pos.z, 200.0);
+            let terrain_height = sample_terrain_height(pos.x, pos.z, 150.0); // Updated terrain size
             let base_vertex_index = all_building_vertices.len() as u32;
             for v in &building_template_vertices {
                 all_building_vertices.push(Vertex {
@@ -1152,23 +1581,26 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create NPC instances (baked positions)
-        let (npc_template_vertices, npc_template_indices) = create_humanoid(1.8);
+        // Create NPC instances (LARGE 5m humanoids for VISIBILITY from far camera)
+        let (npc_template_vertices, npc_template_indices) = create_humanoid(5.0);
         
+        // Spread NPCs across 150m terrain - VISIBLE positions near buildings
         let npc_positions = vec![
-            Vec3::new(-28.0, 0.0, 8.0),
-            Vec3::new(27.0, 0.0, -3.0),
-            Vec3::new(-2.0, 0.0, 18.0),
-            Vec3::new(5.0, 0.0, -5.0),
-            Vec3::new(-10.0, 0.0, 0.0),
-            Vec3::new(3.0, 0.0, 8.0), // Companion
+            Vec3::new(-42.0, 0.0, 12.0),   // Near building 1
+            Vec3::new(38.0, 0.0, -6.0),    // Near building 2
+            Vec3::new(2.0, 0.0, 23.0),     // Near building 3
+            Vec3::new(-18.0, 0.0, -18.0),  // Near building 4
+            Vec3::new(27.0, 0.0, 17.0),    // Near building 5
+            Vec3::new(0.0, 0.0, 0.0),      // Center (companion)
+            Vec3::new(-10.0, 0.0, 5.0),    // Extra NPC 1
+            Vec3::new(15.0, 0.0, -5.0),    // Extra NPC 2
         ];
         
         let mut all_npc_vertices = Vec::new();
         let mut all_npc_indices = Vec::new();
         
         for pos in &npc_positions {
-            let terrain_height = sample_terrain_height(pos.x, pos.z, 200.0);
+            let terrain_height = sample_terrain_height(pos.x, pos.z, 150.0); // Updated terrain size
             let base_vertex_index = all_npc_vertices.len() as u32;
             for v in &npc_template_vertices {
                 all_npc_vertices.push(Vertex {
@@ -1196,20 +1628,23 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create animal instances (baked positions)
-        let (animal_template_vertices, animal_template_indices) = create_animal(1.0, 0.8);
+        // Create animal instances (1.5m length, 1.2m height - bigger animals)
+        let (animal_template_vertices, animal_template_indices) = create_animal(1.5, 1.2);
         
+        // Spread animals across 150m terrain
         let animal_positions = vec![
-            Vec3::new(-15.0, 0.0, -10.0),
-            Vec3::new(18.0, 0.0, 8.0),
-            Vec3::new(-8.0, 0.0, -5.0),
+            Vec3::new(-25.0, 0.0, -15.0),
+            Vec3::new(30.0, 0.0, 12.0),
+            Vec3::new(-12.0, 0.0, -8.0),
+            Vec3::new(18.0, 0.0, -25.0),
+            Vec3::new(-5.0, 0.0, 20.0),
         ];
         
         let mut all_animal_vertices = Vec::new();
         let mut all_animal_indices = Vec::new();
         
         for pos in &animal_positions {
-            let terrain_height = sample_terrain_height(pos.x, pos.z, 200.0);
+            let terrain_height = sample_terrain_height(pos.x, pos.z, 150.0); // Updated terrain size
             let base_vertex_index = all_animal_vertices.len() as u32;
             for v in &animal_template_vertices {
                 all_animal_vertices.push(Vertex {
@@ -1237,9 +1672,9 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Adjust camera start position for island view
-        self.camera.position = Vec3::new(0.0, 15.0, 40.0); // High overview
-        self.camera.pitch = -0.3; // Looking down slightly
+        // Adjust camera start position for 150m island (good overview)
+        self.camera.position = Vec3::new(0.0, 35.0, 70.0); // Higher and farther for better view
+        self.camera.pitch = -0.45; // Looking down to see island
         
         println!("🏝️  Veilweaver Starter Island loaded:");
         println!("   Terrain: {} vertices, {} indices", ground_vertices.len(), ground_indices.len());
@@ -1254,7 +1689,7 @@ impl ShowcaseApp {
         let dt = self.last_frame.elapsed().as_secs_f32();
         self.last_frame = Instant::now();
         
-        let move_speed = 15.0; // 15 m/s (slightly faster for exploration)
+        let move_speed = 30.0; // 30 m/s (faster for larger 150m terrain)
         let mouse_sensitivity = 0.003;
         let zoom_speed = 2.0;
         
@@ -1336,6 +1771,28 @@ impl ShowcaseApp {
             queue.write_buffer(uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
         }
         
+        // Update skybox uniforms
+        if let Some(skybox_uniform_buffer) = &self.skybox_uniform_buffer {
+            let view_matrix = self.camera.view_matrix();
+            let proj_matrix = self.camera.projection_matrix();
+            let view_proj = proj_matrix * view_matrix;
+            let inv_view_proj = view_proj.inverse();
+            
+            #[repr(C)]
+            #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+            struct SkyboxUniforms {
+                view_proj: [[f32; 4]; 4],
+                inv_view_proj: [[f32; 4]; 4],
+            }
+            
+            let skybox_uniforms = SkyboxUniforms {
+                view_proj: view_proj.to_cols_array_2d(),
+                inv_view_proj: inv_view_proj.to_cols_array_2d(),
+            };
+            
+            queue.write_buffer(skybox_uniform_buffer, 0, bytemuck::bytes_of(&skybox_uniforms));
+        }
+        
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Main Render Pass"),
@@ -1367,6 +1824,18 @@ impl ShowcaseApp {
             });
             
             if let (Some(pipeline), Some(uniform_bg)) = (&self.render_pipeline, &self.uniform_bind_group) {
+                // Render skybox FIRST (fills background)
+                if let (Some(skybox_pipeline), Some(skybox_uniform_bg), Some(skybox_texture_bg)) = 
+                    (&self.skybox_pipeline, &self.skybox_uniform_bind_group, &self.skybox_bind_group) 
+                {
+                    render_pass.set_pipeline(skybox_pipeline);
+                    render_pass.set_bind_group(0, skybox_uniform_bg, &[]);
+                    render_pass.set_bind_group(1, skybox_texture_bg, &[]);
+                    // Draw full-screen triangle (no vertex buffer needed - generated in shader)
+                    render_pass.draw(0..3, 0..1);
+                }
+                
+                // Render scene objects
                 render_pass.set_pipeline(pipeline);
                 render_pass.set_bind_group(0, uniform_bg, &[]);
                 
@@ -1511,6 +1980,9 @@ impl ApplicationHandler for ShowcaseApp {
         
         // Create render pipeline and load textures
         self.create_render_pipeline();
+        
+        // Create skybox pipeline
+        self.create_skybox_pipeline();
     }
     
     fn window_event(
