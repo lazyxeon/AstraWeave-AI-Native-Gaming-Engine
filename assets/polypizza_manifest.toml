@@ -1,0 +1,119 @@
+# Poly Pizza Asset Manifest
+# Free CC0 3D models from https://poly.pizza
+# Direct GLB downloads
+
+[metadata]
+name = "Poly Pizza Free 3D Assets"
+version = "1.0"
+description = "Community-contributed CC0 3D models from Poly Pizza"
+output_dir = "assets/_downloaded/polypizza"
+
+# Pine Tree
+[[assets]]
+handle = "pine_tree"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/pine-tree-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/pine-tree"
+tags = ["tree", "pine", "nature", "vegetation"]
+
+# Oak Tree
+[[assets]]
+handle = "oak_tree"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/oak-tree-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/oak-tree"
+tags = ["tree", "oak", "nature", "vegetation"]
+
+# Medieval House
+[[assets]]
+handle = "medieval_house"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/medieval-house-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/medieval-house"
+tags = ["building", "house", "medieval", "structure"]
+
+# Stone Tower
+[[assets]]
+handle = "stone_tower"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/stone-tower-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/stone-tower"
+tags = ["building", "tower", "medieval", "stone"]
+
+# Cow (Animal)
+[[assets]]
+handle = "cow"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/cow-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/cow"
+tags = ["animal", "cow", "livestock", "farm"]
+
+# Sheep (Animal)
+[[assets]]
+handle = "sheep"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/sheep-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/sheep"
+tags = ["animal", "sheep", "livestock", "farm"]
+
+# Simple Character
+[[assets]]
+handle = "simple_character"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/simple-character-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/simple-character"
+tags = ["character", "humanoid", "npc", "person"]
+
+# Rock 1
+[[assets]]
+handle = "rock_01"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/rock-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/rock"
+tags = ["rock", "stone", "nature", "environment"]
+
+# Grass Patch
+[[assets]]
+handle = "grass_patch"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/grass-patch-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/grass"
+tags = ["grass", "vegetation", "nature", "ground"]
+
+# Wooden Fence
+[[assets]]
+handle = "wooden_fence"
+provider = "polypizza"
+type = "model"
+format = "glb"
+url = "https://cdn.poly.pizza/models/wooden-fence-01.glb"
+license = "CC0-1.0"
+source_url = "https://poly.pizza/m/fence"
+tags = ["fence", "wood", "structure", "boundary"]

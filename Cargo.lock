@@ -10566,6 +10566,8 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "glam 0.30.8",
+ "gltf",
+ "half",
  "image",
  "log",
  "pollster 0.4.0",
