@@ -612,6 +612,10 @@ jobs:
           key: demo-v5
           cache-all-crates: true
 
+      - name: Veilweaver slice smoke test
+        run: |
+          timeout 120s make smoke-veilweaver
+
       - name: Build demo applications
         run: |
           cargo build --release -p hello_companion

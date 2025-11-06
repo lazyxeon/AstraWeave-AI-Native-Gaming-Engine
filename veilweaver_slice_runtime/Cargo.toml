@@ -1,0 +1,18 @@
+[package]
+name = "veilweaver_slice_runtime"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+
+astraweave-core = { path = "../astraweave-core" }
+astraweave-ecs = { path = "../astraweave-ecs" }
+astraweave-ai = { path = "../astraweave-ai", optional = true }
+astraweave-director = { path = "../astraweave-director", optional = true }
+astraweave-scene = { path = "../astraweave-scene" }
+astraweave-gameplay = { path = "../astraweave-gameplay" }

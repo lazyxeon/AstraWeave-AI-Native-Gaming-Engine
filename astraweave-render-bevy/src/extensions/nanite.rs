@@ -69,17 +69,53 @@ impl Frustum {
 
         let planes = [
             // Left plane: row3 + row0
-            Vec4::new(m[0][3] + m[0][0], m[1][3] + m[1][0], m[2][3] + m[2][0], m[3][3] + m[3][0]).normalize(),
+            Vec4::new(
+                m[0][3] + m[0][0],
+                m[1][3] + m[1][0],
+                m[2][3] + m[2][0],
+                m[3][3] + m[3][0],
+            )
+            .normalize(),
             // Right plane: row3 - row0
-            Vec4::new(m[0][3] - m[0][0], m[1][3] - m[1][0], m[2][3] - m[2][0], m[3][3] - m[3][0]).normalize(),
+            Vec4::new(
+                m[0][3] - m[0][0],
+                m[1][3] - m[1][0],
+                m[2][3] - m[2][0],
+                m[3][3] - m[3][0],
+            )
+            .normalize(),
             // Bottom plane: row3 + row1
-            Vec4::new(m[0][3] + m[0][1], m[1][3] + m[1][1], m[2][3] + m[2][1], m[3][3] + m[3][1]).normalize(),
+            Vec4::new(
+                m[0][3] + m[0][1],
+                m[1][3] + m[1][1],
+                m[2][3] + m[2][1],
+                m[3][3] + m[3][1],
+            )
+            .normalize(),
             // Top plane: row3 - row1
-            Vec4::new(m[0][3] - m[0][1], m[1][3] - m[1][1], m[2][3] - m[2][1], m[3][3] - m[3][1]).normalize(),
+            Vec4::new(
+                m[0][3] - m[0][1],
+                m[1][3] - m[1][1],
+                m[2][3] - m[2][1],
+                m[3][3] - m[3][1],
+            )
+            .normalize(),
             // Near plane: row3 + row2
-            Vec4::new(m[0][3] + m[0][2], m[1][3] + m[1][2], m[2][3] + m[2][2], m[3][3] + m[3][2]).normalize(),
+            Vec4::new(
+                m[0][3] + m[0][2],
+                m[1][3] + m[1][2],
+                m[2][3] + m[2][2],
+                m[3][3] + m[3][2],
+            )
+            .normalize(),
             // Far plane: row3 - row2
-            Vec4::new(m[0][3] - m[0][2], m[1][3] - m[1][2], m[2][3] - m[2][2], m[3][3] - m[3][2]).normalize(),
+            Vec4::new(
+                m[0][3] - m[0][2],
+                m[1][3] - m[1][2],
+                m[2][3] - m[2][2],
+                m[3][3] - m[3][2],
+            )
+            .normalize(),
         ];
 
         Self { planes }
@@ -136,7 +172,11 @@ pub struct LODSelector {
 
 impl LODSelector {
     pub fn new(screen_height: f32, fov: f32) -> Self {
-        Self { screen_height, fov, lod_bias: 1.0 }
+        Self {
+            screen_height,
+            fov,
+            lod_bias: 1.0,
+        }
     }
 
     /// Select LOD level based on projected screen size
@@ -217,10 +257,17 @@ pub struct GpuCamera {
 }
 
 impl GpuCamera {
-    pub fn from_matrix(view_proj: Mat4, position: Vec3, screen_width: u32, screen_height: u32) -> Self {
+    pub fn from_matrix(
+        view_proj: Mat4,
+        position: Vec3,
+        screen_width: u32,
+        screen_height: u32,
+    ) -> Self {
         let frustum = Frustum::from_matrix(view_proj);
         let inv_view_proj = view_proj.inverse();
-        let forward = (view_proj * Vec4::new(0.0, 0.0, -1.0, 1.0)).truncate().normalize();
+        let forward = (view_proj * Vec4::new(0.0, 0.0, -1.0, 1.0))
+            .truncate()
+            .normalize();
 
         Self {
             view_proj: view_proj.to_cols_array_2d(),
@@ -271,7 +318,11 @@ impl VisibilityBuffer {
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Nanite Visibility Buffer"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -285,7 +336,11 @@ impl VisibilityBuffer {
 
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Nanite Depth Buffer"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -295,7 +350,14 @@ impl VisibilityBuffer {
         });
         let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        Self { texture, view, depth_texture, depth_view, width, height }
+        Self {
+            texture,
+            view,
+            depth_texture,
+            depth_view,
+            width,
+            height,
+        }
     }
 
     pub fn resize(&mut self, device: &wgpu::Device, width: u32, height: u32) {
@@ -397,7 +459,9 @@ impl NaniteCullingPipeline {
         let visible_count_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Visible Count Buffer"),
             size: std::mem::size_of::<u32>() as u64,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::UNIFORM
+                | wgpu::BufferUsages::COPY_SRC
+                | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
@@ -419,7 +483,11 @@ impl NaniteCullingPipeline {
         let mip_count = (screen_width.max(screen_height) as f32).log2().ceil() as u32;
         let hiz_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Hi-Z Pyramid"),
-            size: wgpu::Extent3d { width: screen_width, height: screen_height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: screen_width,
+                height: screen_height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: mip_count,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -447,7 +515,11 @@ impl NaniteCullingPipeline {
         // Create visibility buffer
         let visibility_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Nanite Visibility Buffer"),
-            size: wgpu::Extent3d { width: screen_width, height: screen_height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: screen_width,
+                height: screen_height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -455,11 +527,16 @@ impl NaniteCullingPipeline {
             usage: wgpu::TextureUsages::STORAGE_BINDING | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
-        let visibility_view = visibility_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let visibility_view =
+            visibility_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("Nanite Depth Buffer"),
-            size: wgpu::Extent3d { width: screen_width, height: screen_height, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: screen_width,
+                height: screen_height,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -473,8 +550,11 @@ impl NaniteCullingPipeline {
         let (hiz_pyramid_pipeline, hiz_bind_group_layout, hiz_bind_groups) =
             Self::create_hiz_pipeline(device, &hiz_views)?;
 
-        let (cluster_cull_pipeline, cluster_cull_bind_group_layout, cluster_cull_hiz_bind_group_layout) =
-            Self::create_cluster_cull_pipeline(device)?;
+        let (
+            cluster_cull_pipeline,
+            cluster_cull_bind_group_layout,
+            cluster_cull_hiz_bind_group_layout,
+        ) = Self::create_cluster_cull_pipeline(device)?;
 
         let (sw_raster_pipeline, sw_raster_bind_group_layout, sw_raster_vis_bind_group_layout) =
             Self::create_sw_raster_pipeline(device)?;
@@ -523,10 +603,16 @@ impl NaniteCullingPipeline {
     fn create_hiz_pipeline(
         device: &wgpu::Device,
         hiz_views: &[wgpu::TextureView],
-    ) -> Result<(wgpu::ComputePipeline, wgpu::BindGroupLayout, Vec<wgpu::BindGroup>)> {
+    ) -> Result<(
+        wgpu::ComputePipeline,
+        wgpu::BindGroupLayout,
+        Vec<wgpu::BindGroup>,
+    )> {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Hi-Z Pyramid Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/nanite_hiz_pyramid.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                include_str!("../../shaders/nanite_hiz_pyramid.wgsl").into(),
+            ),
         });
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -594,10 +680,16 @@ impl NaniteCullingPipeline {
 
     fn create_cluster_cull_pipeline(
         device: &wgpu::Device,
-    ) -> Result<(wgpu::ComputePipeline, wgpu::BindGroupLayout, wgpu::BindGroupLayout)> {
+    ) -> Result<(
+        wgpu::ComputePipeline,
+        wgpu::BindGroupLayout,
+        wgpu::BindGroupLayout,
+    )> {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Cluster Cull Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/nanite_cluster_cull.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                include_str!("../../shaders/nanite_cluster_cull.wgsl").into(),
+            ),
         });
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -646,27 +738,28 @@ impl NaniteCullingPipeline {
             ],
         });
 
-        let hiz_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Cluster Cull Hi-Z Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let hiz_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Cluster Cull Hi-Z Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                        count: None,
+                    },
+                ],
+            });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Cluster Cull Pipeline Layout"),
@@ -688,10 +781,16 @@ impl NaniteCullingPipeline {
 
     fn create_sw_raster_pipeline(
         device: &wgpu::Device,
-    ) -> Result<(wgpu::ComputePipeline, wgpu::BindGroupLayout, wgpu::BindGroupLayout)> {
+    ) -> Result<(
+        wgpu::ComputePipeline,
+        wgpu::BindGroupLayout,
+        wgpu::BindGroupLayout,
+    )> {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Software Raster Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/nanite_sw_raster.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                include_str!("../../shaders/nanite_sw_raster.wgsl").into(),
+            ),
         });
 
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -760,31 +859,32 @@ impl NaniteCullingPipeline {
             ],
         });
 
-        let vis_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("SW Raster Visibility Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::StorageTexture {
-                        access: wgpu::StorageTextureAccess::ReadWrite,
-                        format: wgpu::TextureFormat::R32Uint,
-                        view_dimension: wgpu::TextureViewDimension::D2,
+        let vis_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("SW Raster Visibility Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::StorageTexture {
+                            access: wgpu::StorageTextureAccess::ReadWrite,
+                            format: wgpu::TextureFormat::R32Uint,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::COMPUTE,
-                    ty: wgpu::BindingType::StorageTexture {
-                        access: wgpu::StorageTextureAccess::ReadWrite,
-                        format: wgpu::TextureFormat::R32Float,
-                        view_dimension: wgpu::TextureViewDimension::D2,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::StorageTexture {
+                            access: wgpu::StorageTextureAccess::ReadWrite,
+                            format: wgpu::TextureFormat::R32Float,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
+                ],
+            });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("SW Raster Pipeline Layout"),
@@ -815,154 +915,160 @@ impl NaniteCullingPipeline {
     )> {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Material Resolve Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/nanite_material_resolve.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                include_str!("../../shaders/nanite_material_resolve.wgsl").into(),
+            ),
         });
 
-        let geom_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Material Resolve Geometry Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+        let geom_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Material Resolve Geometry Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
+                ],
+            });
 
-        let vis_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Material Resolve Visibility Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Uint,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+        let vis_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Material Resolve Visibility Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Uint,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-            ],
-        });
+                ],
+            });
 
-        let mat_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Material Resolve Material Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2Array,
-                        multisampled: false,
+        let mat_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Material Resolve Material Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2Array,
-                        multisampled: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2Array,
-                        multisampled: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2Array,
-                        multisampled: false,
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 4,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
 
-        let gi_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Material Resolve GI Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D3,
-                        multisampled: false,
+        let gi_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Material Resolve GI Bind Group Layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D3,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Material Resolve Pipeline Layout"),
@@ -1026,7 +1132,13 @@ impl NaniteCullingPipeline {
             cache: None,
         });
 
-        Ok((pipeline, geom_bind_group_layout, vis_bind_group_layout, mat_bind_group_layout, gi_bind_group_layout))
+        Ok((
+            pipeline,
+            geom_bind_group_layout,
+            vis_bind_group_layout,
+            mat_bind_group_layout,
+            gi_bind_group_layout,
+        ))
     }
 
     /// Execute full Nanite pipeline (Hi-Z → Cull → Raster → Resolve)

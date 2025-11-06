@@ -11,8 +11,9 @@ pub mod items;
 pub mod quests;
 pub mod stats;
 pub mod types;
-pub mod weaving;
 pub mod veilweaver_slice;
+pub mod veilweaver_tutorial;
+pub mod weaving;
 
 pub use biome::*;
 pub use biome_spawn::*;
@@ -27,8 +28,9 @@ pub use items::*;
 pub use quests::*;
 pub use stats::*;
 pub use types::*;
-pub use weaving::*;
 pub use veilweaver_slice::*;
+pub use veilweaver_tutorial::*;
+pub use weaving::*;
 
 pub mod weave_portals;
 pub mod weave_telemetry;

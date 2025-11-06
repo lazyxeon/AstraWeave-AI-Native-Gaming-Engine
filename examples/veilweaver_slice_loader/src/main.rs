@@ -103,7 +103,10 @@ async fn main() -> Result<()> {
         );
     }
 
-    println!("\nDecision Prompts: {}", slice_metadata.decision_prompts.len());
+    println!(
+        "\nDecision Prompts: {}",
+        slice_metadata.decision_prompts.len()
+    );
     for prompt in &slice_metadata.decision_prompts {
         println!(
             "  [{}] id={} options={:?}",

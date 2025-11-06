@@ -141,6 +141,7 @@
 - **AI Systems**: Use astraweave-ai GOAP for base behaviors; integrate Hermes 2 Pro for Aria’s banter and boss adaptive quips (async planning with prerecorded fallbacks if offline).
 - **Cinematics**: Extend `astraweave-cinematics` timeline to support hybrid interactive sequences (Scene B quick control handoff).
 - **Telemetry**: Reuse `examples/veilweaver_demo` telemetry pipeline for performance capture; expose results on post-run panel.
+- **Runtime Harness**: Enable the `veilweaver_slice` feature on `examples/veilweaver_demo` (powered by `veilweaver_slice_runtime`) to boot the slice ECS runtime directly for integration testing.
 - **Weaving Mechanics**: Build atop `astraweave-weaving` crate (ensure deterministic world state changes, budget-limited modifications).
 
 ## Production Roadmap (6-8 Weeks)
