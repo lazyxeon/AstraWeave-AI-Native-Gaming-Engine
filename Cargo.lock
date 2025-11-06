@@ -724,6 +724,7 @@ dependencies = [
  "astraweave-input",
  "astraweave-nav",
  "astraweave-physics",
+ "astraweave-scene",
  "glam 0.30.8",
  "rand 0.9.2",
  "rapier3d",
@@ -731,6 +732,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.17",
  "toml 0.9.8",
+ "tracing",
 ]
 
 [[package]]
@@ -10747,6 +10749,7 @@ dependencies = [
  "astraweave-ai",
  "astraweave-audio",
  "astraweave-behavior",
+ "astraweave-director",
  "astraweave-ecs",
  "astraweave-llm",
  "astraweave-physics",
@@ -10759,6 +10762,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "veilweaver_slice_runtime",
  "wgpu",
  "winit",
 ]
@@ -10771,6 +10775,22 @@ dependencies = [
  "astraweave-scene",
  "glam 0.30.8",
  "tokio",
+]
+
+[[package]]
+name = "veilweaver_slice_runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "astraweave-ai",
+ "astraweave-core",
+ "astraweave-director",
+ "astraweave-ecs",
+ "astraweave-gameplay",
+ "astraweave-scene",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]

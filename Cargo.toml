@@ -110,6 +110,7 @@ members = [
   "examples/phi3_demo",
   "examples/veilweaver_demo",
   "examples/veilweaver_slice_loader",
+  "veilweaver_slice_runtime",
   "examples/world_partition_demo",
   "examples/profiling_demo",
   # Phase 8 demos

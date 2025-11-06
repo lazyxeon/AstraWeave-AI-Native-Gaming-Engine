@@ -19,3 +19,5 @@ astraweave-physics = { path = "../astraweave-physics" }
 astraweave-nav = { path = "../astraweave-nav" }
 astraweave-ecs = { workspace = true }
 astraweave-input = { path = "../astraweave-input" }
+astraweave-scene = { path = "../astraweave-scene" }
+tracing = { workspace = true }

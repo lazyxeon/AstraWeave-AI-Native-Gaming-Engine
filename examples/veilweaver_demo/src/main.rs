@@ -8,6 +8,11 @@ use glam::{Quat, Vec3};
 use std::time::{Duration, Instant};
 use tracing::info;
 
+#[cfg(feature = "veilweaver_slice")]
+use astraweave_gameplay::veilweaver_tutorial::WeaveTutorialState;
+#[cfg(feature = "veilweaver_slice")]
+use veilweaver_slice_runtime::{VeilweaverRuntime, VeilweaverSliceConfig};
+
 mod telemetry_hud;
 use telemetry_hud::{TelemetryHud, TelemetryMetrics};
 
@@ -71,6 +76,11 @@ impl Default for GameState {
 // ==================== MAIN ====================
 
 fn main() -> Result<()> {
+    #[cfg(feature = "veilweaver_slice")]
+    {
+        run_slice_runtime()?;
+        return Ok(());
+    }
     // Initialize tracing
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -239,5 +249,40 @@ fn main() -> Result<()> {
     info!("   Zero crashes: ✅ PASS (demo completed successfully)");
     info!("   Telemetry export: ✅ PASS (JSON file created)");
 
+    Ok(())
+}
+
+#[cfg(feature = "veilweaver_slice")]
+fn run_slice_runtime() -> Result<()> {
+    use astraweave_scene::world_partition::{GridConfig, WorldPartition};
+
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
+    let grid_config = GridConfig {
+        cell_size: 100.0,
+        world_bounds: (-20000.0, 20000.0, -20000.0, 20000.0),
+    };
+    let partition = WorldPartition::new(grid_config);
+    let mut runtime = VeilweaverRuntime::new(
+        VeilweaverSliceConfig {
+            dt: 0.016,
+            initial_cell: Some([100, 0, 0]),
+            camera_start: Some([0.0, 5.0, 0.0]),
+        },
+        partition,
+    )?;
+
+    runtime.add_post_setup_system(|world| {
+        if let Some(state) = world.get_resource::<WeaveTutorialState>() {
+            tracing::info!(anchors = state.anchors.len(), "Tutorial state ready");
+        }
+    });
+
+    tracing::info!("Veilweaver slice runtime initialized");
+    for _ in 0..60 {
+        runtime.run_tick();
+    }
     Ok(())
 }

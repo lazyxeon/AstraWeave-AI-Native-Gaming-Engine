@@ -1,7 +1,7 @@
 # AstraWeave Gaming Engine - Makefile
 # Provides convenient targets for common development tasks
 
-.PHONY: help setup build build-all test clean format lint audit example status check
+.PHONY: help setup build build-all test clean format lint audit example status check smoke-veilweaver
 
 # Default target
 help:
@@ -30,6 +30,7 @@ help:
 	@echo "Utilities:"
 	@echo "  status      - Show project status"
 	@echo "  update      - Update dependencies"
+	@echo "  smoke-veilweaver - Run veilweaver slice loader smoke test"
 	@echo ""
 	@echo "For more options, use: ./scripts/dev.sh help"
 
@@ -120,3 +121,6 @@ quickstart: setup build example
 	@echo "  - Try: make test"
 	@echo "  - Try: make check"
 	@echo "  - Explore examples in the examples/ directory"
+
+smoke-veilweaver:
+	@cargo run -p veilweaver_slice_loader

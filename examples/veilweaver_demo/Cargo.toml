@@ -21,6 +21,7 @@ tracing-subscriber = "0.3"
 # AstraWeave core systems
 astraweave-ecs = { path = "../../astraweave-ecs" }
 astraweave-ai = { path = "../../astraweave-ai" }
+astraweave-director = { path = "../../astraweave-director" }
 astraweave-physics = { path = "../../astraweave-physics" }
 astraweave-render = { path = "../../astraweave-render", features = ["assets", "image"] }
 astraweave-audio = { path = "../../astraweave-audio" }
@@ -32,3 +33,14 @@ astraweave-llm = { path = "../../astraweave-llm", features = ["ollama"] }
 [[bin]]
 name = "veilweaver_demo"
 path = "src/main.rs"
+
+[features]
+veilweaver_slice = [
+    "astraweave-ai/veilweaver_slice",
+    "astraweave-director/veilweaver_slice",
+    "dep:veilweaver_slice_runtime"
+]
+
+[dependencies.veilweaver_slice_runtime]
+path = "../../veilweaver_slice_runtime"
+optional = true

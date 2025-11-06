@@ -79,11 +79,8 @@ impl VeilweaverSliceMetadata {
     pub fn extend_cell(&mut self, cell: &Cell) -> Result<()> {
         self.anchors
             .extend(parse_components(cell, "WeaveAnchor", parse_weave_anchor)?);
-        self.trigger_zones.extend(parse_components(
-            cell,
-            "TriggerZone",
-            parse_trigger_zone,
-        )?);
+        self.trigger_zones
+            .extend(parse_components(cell, "TriggerZone", parse_trigger_zone)?);
         self.decision_prompts.extend(parse_components(
             cell,
             "DecisionPrompt",
@@ -99,11 +96,8 @@ impl VeilweaverSliceMetadata {
             "EncounterComplete",
             parse_encounter_complete,
         )?);
-        self.effect_anchors.extend(parse_components(
-            cell,
-            "EffectAnchor",
-            parse_effect_anchor,
-        )?);
+        self.effect_anchors
+            .extend(parse_components(cell, "EffectAnchor", parse_effect_anchor)?);
         self.spawn_points
             .extend(parse_components(cell, "SpawnPoint", parse_spawn_point)?);
         Ok(())
@@ -219,9 +213,7 @@ fn parse_encounter_complete(
         cell: coord,
         position: view.entity.position,
         trigger_id: data.trigger_id,
-        next_cell: data
-            .next_cell
-            .map(|c| GridCoord::new(c[0], c[1], c[2])),
+        next_cell: data.next_cell.map(|c| GridCoord::new(c[0], c[1], c[2])),
     })
 }
 
@@ -270,4 +262,3 @@ where
         view.component.component_type
     ))
 }
-
