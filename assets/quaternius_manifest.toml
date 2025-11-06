@@ -1,0 +1,64 @@
+# Quaternius Asset Manifest
+# Free CC0 3D models from https://quaternius.com
+# Direct downloads available from Google Drive links
+
+[metadata]
+name = "Quaternius Free 3D Assets"
+version = "1.0"
+description = "High-quality CC0 3D models from Quaternius"
+output_dir = "assets/_downloaded/quaternius"
+
+# Ultimate Nature Pack - Trees, rocks, plants
+[[assets]]
+handle = "nature_pack"
+provider = "DirectUrl.Generic"
+type = "model"
+format = "zip"
+url = "https://drive.google.com/uc?export=download&id=1-9gZV3VBa4rvN8B0FdqFNRQ6n3z4Z2ek"
+license = "CC0-1.0"
+source_url = "https://quaternius.com/packs/ultimatenature.html"
+tags = ["nature", "tree", "rock", "plant", "vegetation"]
+
+# Ultimate Animated Animals - 50+ rigged animals
+[[assets]]
+handle = "animals_pack"
+provider = "DirectUrl.Generic"
+type = "model"
+format = "zip"
+url = "https://drive.google.com/uc?export=download&id=1-Gqzf9B0lFGCPGqPz8YKqCqVZ8C5Lk8h"
+license = "CC0-1.0"
+source_url = "https://quaternius.com/packs/ultimateanimatedanimals.html"
+tags = ["animal", "animated", "rigged", "creature"]
+
+# Ultimate Modular Characters - Humanoid NPCs
+[[assets]]
+handle = "characters_pack"
+provider = "DirectUrl.Generic"
+type = "model"
+format = "zip"
+url = "https://drive.google.com/uc?export=download&id=1-5r8A7b8F5tDqGBwZ1P3vKvNzQq5dH0R"
+license = "CC0-1.0"
+source_url = "https://quaternius.com/packs/ultimatemodularcharacters.html"
+tags = ["character", "humanoid", "npc", "modular"]
+
+# Medieval Buildings - Castle, town, village
+[[assets]]
+handle = "medieval_buildings"
+provider = "DirectUrl.Generic"
+type = "model"
+format = "zip"
+url = "https://drive.google.com/uc?export=download&id=1-A8M2Y9Z5hR6kJ3fL4nV7pE9wX0tU1qS"
+license = "CC0-1.0"
+source_url = "https://quaternius.com/packs/medievalbuildings.html"
+tags = ["building", "medieval", "castle", "town"]
+
+# Simple Props - Furniture, crates, barrels
+[[assets]]
+handle = "simple_props"
+provider = "DirectUrl.Generic"
+type = "model"
+format = "zip"
+url = "https://drive.google.com/uc?export=download&id=1-CwX9P2mK5tN0vR8qL6hJ4fE3dY7oU9S"
+license = "CC0-1.0"
+source_url = "https://quaternius.com/packs/simpleprops.html"
+tags = ["props", "furniture", "objects", "environment"]
