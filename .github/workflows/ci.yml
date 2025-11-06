@@ -496,7 +496,7 @@ jobs:
           cargo tarpaulin --workspace --out Xml ${{ env.EXCLUDED_PACKAGES }} || echo "Coverage completed with warnings"
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: tarpaulin-report.xml
@@ -533,7 +533,7 @@ jobs:
         run: cargo bench -p aw_build
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: criterion-results
           path: target/criterion/**
@@ -636,7 +636,7 @@ jobs:
           kill $SERVER_PID 2>/dev/null || true
 
       - name: Upload demo artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: demo-binaries-${{ github.sha }}
           path: |

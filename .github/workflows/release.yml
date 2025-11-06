@@ -80,7 +80,7 @@ jobs:
             --bin-dir target/release --assets assets --out dist
 
       - name: Upload bundle & manifest
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: bundle-${{ matrix.target }}
           path: |
