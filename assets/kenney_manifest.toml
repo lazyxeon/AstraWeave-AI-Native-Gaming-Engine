@@ -1,0 +1,116 @@
+# Kenney.nl Asset Manifest
+# Kenney.nl provides thousands of free game assets (CC0 license - no attribution required!)
+# All assets are available at: https://kenney.nl/assets
+
+# Output directory for downloaded assets (relative to repo root)
+output_dir = "assets/_downloaded/kenney"
+
+# Cache directory for temp files and lockfile
+cache_dir = ".asset_cache"
+
+# === 3D MODEL PACKS ===
+# Popular Kenney asset packs for game development
+
+# NATURE KIT - Trees, rocks, plants, terrain props
+# https://kenney.nl/assets/nature-kit
+[[assets]]
+handle = "nature_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/nature-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/nature-kit"
+tags = ["vegetation", "tree", "rock", "nature"]
+
+# PLATFORMER KIT - Platforms, blocks, terrain
+# https://kenney.nl/assets/platformer-kit
+[[assets]]
+handle = "platformer_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/platformer-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/platformer-kit"
+tags = ["platform", "terrain", "block"]
+
+# TOWN KIT - Medieval/fantasy buildings
+# https://kenney.nl/assets/town-kit
+[[assets]]
+handle = "town_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/town-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/town-kit"
+tags = ["building", "medieval", "town", "house"]
+
+# CASTLE KIT - Medieval castles, walls, towers
+# https://kenney.nl/assets/castle-kit
+[[assets]]
+handle = "castle_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/castle-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/castle-kit"
+tags = ["building", "medieval", "castle", "tower", "wall"]
+
+# FARM KIT - Animals, crops, farm structures
+# https://kenney.nl/assets/farm-kit
+[[assets]]
+handle = "farm_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/farm-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/farm-kit"
+tags = ["animal", "farm", "livestock", "barn"]
+
+# FURNITURE KIT - Interior furniture and props
+# https://kenney.nl/assets/furniture-kit
+[[assets]]
+handle = "furniture_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/furniture-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/furniture-kit"
+tags = ["furniture", "interior", "prop", "chair", "table"]
+
+# RACING KIT - Vehicles, roads, props
+# https://kenney.nl/assets/racing-kit
+[[assets]]
+handle = "racing_kit"
+provider = "Kenney.nl"
+type = "model"
+format = "zip"
+url = "https://kenney.nl/content/3-3d-assets/racing-kit.zip"
+license = "CC0-1.0"
+source_url = "https://kenney.nl/assets/racing-kit"
+tags = ["vehicle", "car", "road", "race"]
+
+# === USAGE ===
+# 1. Run automated fetch command:
+#    cargo run -p astraweave-assets -- fetch --manifest assets/kenney_manifest.toml
+#
+# 2. Assets will be automatically downloaded and extracted to:
+#    assets/_downloaded/kenney/<handle>/
+#
+# 3. Attribution file auto-generated at:
+#    assets/_downloaded/kenney/ATTRIBUTION.txt
+#
+# 4. All Kenney assets are CC0 (public domain) - no attribution required!
+#    However, attribution is appreciated: "Assets by Kenney.nl (www.kenney.nl)"
+#
+# === ALTERNATIVE ASSET SOURCES ===
+# - Poly Pizza: https://poly.pizza/ (Google Poly archive, CC-BY license)
+# - OpenGameArt.org: https://opengameart.org/ (various licenses, check each asset)
+# - itch.io: https://itch.io/game-assets/free (various licenses, check each asset)
+# - Quaternius: https://quaternius.com/ (CC0 low-poly assets)
+
