@@ -49,7 +49,6 @@ pub use summarizer::*;
 pub use token_counter::*;
 pub use window::*;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

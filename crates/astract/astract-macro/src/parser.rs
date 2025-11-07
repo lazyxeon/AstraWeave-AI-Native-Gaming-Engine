@@ -11,6 +11,7 @@ pub struct RsxElement {
     pub tag: Ident,
     pub attrs: Vec<RsxAttr>,
     pub children: Vec<RsxNode>,
+    #[allow(dead_code)]
     pub self_closing: bool,
 }
 

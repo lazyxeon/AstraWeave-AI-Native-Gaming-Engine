@@ -321,6 +321,7 @@ impl EvaluationSuite {
     }
 
     /// Build a prompt from a scenario
+    #[allow(dead_code)]
     fn build_prompt(&self, scenario: &Scenario) -> String {
         scenario.prompt.clone()
     }

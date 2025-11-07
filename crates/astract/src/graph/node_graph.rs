@@ -223,6 +223,7 @@ pub struct NodeGraph {
     next_id: NodeId,
     pan_offset: Vec2,
     zoom: f32,
+    #[allow(dead_code)]
     dragging_node: Option<NodeId>,
 }
 

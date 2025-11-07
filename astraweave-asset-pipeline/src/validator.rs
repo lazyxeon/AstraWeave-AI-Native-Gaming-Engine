@@ -1,6 +1,5 @@
 //! Asset validation for quality checks and CI integration
 
-use anyhow::{Context, Result};
 use std::path::Path;
 
 /// Asset validation report

@@ -6,7 +6,6 @@
 use crate::memory_types::*;
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Configuration for memory sharing
 #[derive(Debug, Clone, Serialize, Deserialize)]

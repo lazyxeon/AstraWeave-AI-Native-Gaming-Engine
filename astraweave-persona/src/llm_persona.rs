@@ -6,7 +6,6 @@ context-aware prompt generation, and adaptive behavior.
 */
 
 use anyhow::{anyhow, Result};
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -14,7 +13,7 @@ use tokio::sync::RwLock;
 
 // LLM Integration
 use astraweave_context::{ContextConfig, ConversationHistory, Role};
-use astraweave_embeddings::{EmbeddingClient, Memory, MemoryCategory};
+use astraweave_embeddings::EmbeddingClient;
 use astraweave_llm::LlmClient;
 // Prompt types are provided by astraweave_prompts compat layer
 use astraweave_prompts::context::PromptContext as TemplateContext;
@@ -23,7 +22,7 @@ use astraweave_prompts::template::PromptTemplate;
 use astraweave_rag::{MemoryQuery, RagPipeline};
 
 // Base persona from memory crate
-use astraweave_memory::{CompanionProfile, Persona as BasePersona};
+use astraweave_memory::Persona as BasePersona;
 
 /// Enhanced persona with LLM capabilities
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -309,8 +308,8 @@ pub struct MemoryRetrievalSettings {
     /// Minimum similarity threshold
     pub min_similarity: f32,
 
-    /// Memory categories to prioritize
-    pub priority_categories: Vec<MemoryCategory>,
+    /// Memory categories to prioritize (stored as strings since MemoryCategory was removed)
+    pub priority_categories: Vec<String>,
 
     /// Recency bonus for newer memories
     pub recency_bonus: f32,
@@ -321,7 +320,7 @@ impl Default for MemoryRetrievalSettings {
         Self {
             max_memories: 5,
             min_similarity: 0.3,
-            priority_categories: vec![MemoryCategory::Social, MemoryCategory::Dialogue],
+            priority_categories: vec!["Social".to_string(), "Dialogue".to_string()],
             recency_bonus: 0.1,
         }
     }
@@ -459,7 +458,7 @@ impl LlmPersonaManager {
         base_persona: BasePersona,
         llm_client: Arc<dyn LlmClient>,
         rag_pipeline: RagPipeline,
-        embedding_client: Arc<dyn EmbeddingClient>,
+        _embedding_client: Arc<dyn EmbeddingClient>,
     ) -> Result<Self> {
         // Create enhanced persona
         let llm_persona = LlmPersona {
@@ -506,7 +505,7 @@ impl LlmPersonaManager {
 
         // 2. Add user input to conversation history
         {
-            let mut history = self.conversation_history.write().await;
+            let history = self.conversation_history.write().await;
             history.add_message(Role::User, input.to_string()).await?;
         }
 
@@ -526,7 +525,7 @@ impl LlmPersonaManager {
 
         // 6. Add response to conversation history
         {
-            let mut history = self.conversation_history.write().await;
+            let history = self.conversation_history.write().await;
             history
                 .add_message(Role::Assistant, cleaned_response.clone())
                 .await?;
@@ -683,7 +682,7 @@ impl LlmPersonaManager {
     }
 
     /// Update personality state based on interaction
-    async fn update_personality_state(&self, input: &str, response: &str) -> Result<()> {
+    async fn update_personality_state(&self, input: &str, _response: &str) -> Result<()> {
         let mut persona = self.persona.write().await;
 
         // Simple sentiment analysis (could be enhanced with LLM)

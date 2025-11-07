@@ -3,7 +3,7 @@
 //! BC7 provides highest quality block compression for desktop GPUs.
 //! ASTC provides adaptive block compression for mobile GPUs.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use image::RgbaImage;
 
 /// Texture compression statistics

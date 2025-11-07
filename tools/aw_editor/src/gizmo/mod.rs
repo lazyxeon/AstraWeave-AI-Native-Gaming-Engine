@@ -29,5 +29,5 @@ pub use rendering::{GizmoRenderParams, GizmoRenderer};
 pub use rotate::RotateGizmo;
 pub use scale::ScaleGizmo;
 pub use scene_viewport::{CameraController, SceneViewport, Transform};
-pub use state::{AxisConstraint, GizmoMode, GizmoState};
+pub use state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
 pub use translate::TranslateGizmo;

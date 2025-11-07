@@ -33,6 +33,7 @@ use glam::Vec3;
 /// - Align with AVX2 register width (256 bits = 8 floats, but Vec3 = 3 floats)
 /// - Enable compiler auto-vectorization via loop unrolling
 /// - Balance instruction-level parallelism with cache efficiency
+#[allow(dead_code)]
 const BATCH_SIZE: usize = 4;
 
 /// Update positions using SIMD-optimized batched processing.

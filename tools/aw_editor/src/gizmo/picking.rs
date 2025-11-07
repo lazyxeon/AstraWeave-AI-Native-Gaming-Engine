@@ -323,7 +323,7 @@ fn ray_circle_distance(ray: &Ray, center: Vec3, normal: Vec3, radius: f32) -> f3
     let to_intersection = intersection_point - center;
 
     // Project onto circle
-    let distance_from_center = to_intersection.length();
+    let _distance_from_center = to_intersection.length();
     let on_circle = to_intersection.normalize() * radius;
     let circle_point = center + on_circle;
 

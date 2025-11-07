@@ -4,7 +4,7 @@
 Helper functions and utilities for embedding operations.
 */
 
-use crate::{Memory, MemoryCategory, StoredVector};
+use crate::{Memory, MemoryCategory};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

@@ -378,7 +378,7 @@ impl Cell {
 
     pub fn components_of_type<'a>(
         &'a self,
-        component_type: &str,
+        component_type: &'a str,
     ) -> impl Iterator<Item = CellComponentView<'a>> + 'a {
         self.entity_blueprints.iter().flat_map(move |entity| {
             entity.components.iter().filter_map(move |component| {

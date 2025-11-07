@@ -11,10 +11,14 @@
 
 use anyhow::Result;
 #[cfg(feature = "textures")]
+use anyhow::Context;
+#[cfg(feature = "textures")]
 use image::GenericImageView;
 use std::borrow::Cow;
 #[cfg(feature = "textures")]
 use std::collections::HashMap;
+#[cfg(feature = "textures")]
+use std::path::Path;
 
 /// Quality presets for IBL resource sizes
 #[derive(Clone, Copy, Debug)]

@@ -24,6 +24,7 @@ use glam::{Mat4, Vec3, Vec4};
 use wgpu;
 
 /// Shadow map shader source (embedded at compile time)
+#[allow(dead_code)]
 const SHADOW_SHADER: &str = include_str!("../shaders/shadow_csm.wgsl");
 
 // Minimal shadow-only shader (uses group(0) since it's the only bind group)
@@ -150,6 +151,7 @@ pub struct CsmRenderer {
     pub shadow_pipeline: wgpu::RenderPipeline,
     
     /// Shader module
+    #[allow(dead_code)]
     shader_module: wgpu::ShaderModule,
 }
 

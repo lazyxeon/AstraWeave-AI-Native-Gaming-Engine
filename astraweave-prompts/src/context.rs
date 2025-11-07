@@ -2,7 +2,6 @@
 //!
 //! This module provides context and variable management for templates.
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

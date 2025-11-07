@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use astraweave_context::{ContextConfig, ConversationHistory, Role};
-use astraweave_core::{DirectorBudget, DirectorOp, DirectorPlan, IVec2, WorldSnapshot};
+use astraweave_core::{DirectorBudget, DirectorOp, WorldSnapshot};
 use astraweave_llm::LlmClient;
 use astraweave_prompts::library::PromptLibrary;
 use astraweave_prompts::template::PromptTemplate;
@@ -329,7 +329,7 @@ Consider:
         drop(prompt_library);
 
         // Add to conversation history
-        let mut history = self.conversation_history.write().await;
+        let history = self.conversation_history.write().await;
         history.add_message(Role::User, prompt.clone()).await?;
         let full_prompt = history.get_context(2048).await?;
         drop(history);
@@ -349,7 +349,7 @@ Consider:
         let validated_plan = self.validate_plan(&tactic_plan, budget)?;
 
         // Update conversation history
-        let mut history = self.conversation_history.write().await;
+        let history = self.conversation_history.write().await;
         history
             .add_message(Role::Assistant, response.clone())
             .await?;
@@ -447,7 +447,7 @@ Consider:
         drop(encounter_memory);
 
         // Store in RAG for future retrieval
-        let memory_text = format!(
+        let _memory_text = format!(
             "Encounter: {} | Effectiveness: {:.2} | Player Response: {} | Duration: {}s",
             outcome.tactic_used,
             outcome.effectiveness,
@@ -478,7 +478,7 @@ Consider:
         encounter_memory.clear();
         drop(encounter_memory);
 
-        let mut history = self.conversation_history.write().await;
+        let history = self.conversation_history.write().await;
         history.clear();
         drop(history);
 

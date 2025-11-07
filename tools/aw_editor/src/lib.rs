@@ -1,6 +1,8 @@
 // Library exports for aw_editor (enables benchmarks and testing)
 #![allow(dead_code)] // Suppress dead code warnings for benchmark-only exports
 
+pub mod entity_manager;
+
 pub mod gizmo {
     // Export all modules
     pub mod constraints;

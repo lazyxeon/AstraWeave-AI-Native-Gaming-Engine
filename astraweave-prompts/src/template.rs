@@ -16,7 +16,7 @@ pub struct PromptTemplate {
 }
 
 impl PromptTemplate {
-    pub fn new<S: Into<String>>(id: S, template: S) -> Self {
+    pub fn new<S1: Into<String>, S2: Into<String>>(id: S1, template: S2) -> Self {
         let template_s = template.into();
         let processor = TemplateProcessor::new(ProcessorConfig::default());
         let vars = processor.extract_variables(&template_s);
@@ -75,6 +75,7 @@ pub struct TemplateMetadata {
 #[derive(Debug, Clone)]
 pub struct TemplateProcessor {
     /// Processing configuration
+    #[allow(dead_code)]
     config: ProcessorConfig,
 }
 

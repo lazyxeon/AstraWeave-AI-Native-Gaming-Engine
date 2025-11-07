@@ -356,7 +356,7 @@ pub mod integration {
     /// Process director operations for ECS integration
     pub fn process_director_operations(
         execution: &CTacticExecution,
-        current_time_ms: u64,
+        _current_time_ms: u64,
     ) -> Vec<astraweave_core::DirectorOp> {
         if let Some(op) = execution.get_current_operation() {
             vec![op.clone()]

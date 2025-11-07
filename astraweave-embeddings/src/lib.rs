@@ -45,7 +45,6 @@ pub use client::*;
 pub use store::*;
 pub use utils::*;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

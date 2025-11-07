@@ -3,7 +3,7 @@
 //! Provides vertex cache optimization and overdraw reduction for meshes.
 
 use anyhow::{Context, Result};
-use meshopt::{optimize_vertex_cache, VertexDataAdapter};
+use meshopt::optimize_vertex_cache;
 
 /// Mesh optimization statistics
 #[derive(Debug, Clone)]
@@ -175,7 +175,7 @@ fn optimize_vertex_cache_inplace(indices: &mut [u32], _vertex_count: usize) -> R
 /// - Lower is better (more cache hits)
 /// - Optimal: ~0.5 for 32-entry cache
 /// - Unoptimized: 1.5-3.0 typical
-fn calculate_acmr(indices: &[u32], vertex_count: usize) -> f32 {
+fn calculate_acmr(indices: &[u32], _vertex_count: usize) -> f32 {
     if indices.is_empty() {
         return 0.0;
     }

@@ -95,19 +95,19 @@ impl WeaveTutorialState {
                 anchor.stabilized = true;
                 anchor.activation_order = Some(self.anchor_sequence.len());
                 self.anchor_sequence.push(anchor_id.to_string());
-                info!("Anchor stabilized", id = %anchor_id, order = ?anchor.activation_order);
+                info!("Anchor stabilized: id={}, order={:?}", anchor_id, anchor.activation_order);
             }
         }
     }
 
     pub fn register_trigger_activation(&mut self, trigger_id: &str) {
         self.active_triggers.insert(trigger_id.to_string());
-        info!("Trigger activated", id = %trigger_id);
+        info!("Trigger activated: id={}", trigger_id);
     }
 
     pub fn register_trigger_release(&mut self, trigger_id: &str) {
         if self.active_triggers.remove(trigger_id) {
-            info!("Trigger cleared", id = %trigger_id);
+            info!("Trigger cleared: id={}", trigger_id);
         }
     }
 
@@ -117,7 +117,7 @@ impl WeaveTutorialState {
 }
 
 pub fn tutorial_anchor_sync(world: &mut World) {
-    if let Some(mut state) = world.get_resource_mut::<WeaveTutorialState>() {
+    if let Some(state) = world.get_resource_mut::<WeaveTutorialState>() {
         if !state.initialized {
             info!(
                 anchors = state.anchors.len(),
@@ -131,13 +131,18 @@ pub fn tutorial_anchor_sync(world: &mut World) {
 }
 
 pub fn tutorial_trigger_system(world: &mut World) {
-    if let (Some(mut state), Some(mut reader)) = (
+    let events_vec = world
+        .get_resource_mut::<Events<TriggerVolumeEvent>>()
+        .map(|events| {
+            let mut reader = events.reader();
+            reader.drain().collect::<Vec<_>>()
+        });
+    
+    if let (Some(state), Some(events)) = (
         world.get_resource_mut::<WeaveTutorialState>(),
-        world
-            .get_resource_mut::<Events<TriggerVolumeEvent>>()
-            .map(|events| events.reader()),
+        events_vec,
     ) {
-        for ev in reader.drain() {
+        for ev in events {
             if ev.entering {
                 state.register_trigger_activation(&ev.trigger_id);
             } else {
@@ -148,13 +153,18 @@ pub fn tutorial_trigger_system(world: &mut World) {
 }
 
 pub fn tutorial_anchor_events(world: &mut World) {
-    if let (Some(mut state), Some(mut reader)) = (
+    let events_vec = world
+        .get_resource_mut::<Events<AnchorStabilizedEvent>>()
+        .map(|events| {
+            let mut reader = events.reader();
+            reader.drain().collect::<Vec<_>>()
+        });
+    
+    if let (Some(state), Some(events)) = (
         world.get_resource_mut::<WeaveTutorialState>(),
-        world
-            .get_resource_mut::<Events<AnchorStabilizedEvent>>()
-            .map(|events| events.reader()),
+        events_vec,
     ) {
-        for ev in reader.drain() {
+        for ev in events {
             state.mark_anchor_stabilized(&ev.anchor_id);
         }
     }

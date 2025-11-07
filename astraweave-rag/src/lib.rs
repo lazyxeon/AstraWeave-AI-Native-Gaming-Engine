@@ -63,7 +63,6 @@ pub use injection::*;
 pub use pipeline::*;
 pub use retrieval::*;
 
-use anyhow::Result;
 use astraweave_embeddings::{Memory, MemoryCategory};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

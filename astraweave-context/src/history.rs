@@ -5,12 +5,11 @@ Core conversation history management with efficient storage and retrieval.
 */
 
 use crate::{
-    current_timestamp, ContextConfig, ContextMetrics, ContextOperation, Message, OverflowStrategy,
+    ContextConfig, ContextMetrics, Message, OverflowStrategy,
     Role, TokenCounter,
 };
 use anyhow::{anyhow, Result};
 use astraweave_llm::LlmClient;
-use indexmap::IndexMap;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;

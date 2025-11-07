@@ -30,6 +30,7 @@ struct QuestStep {
 }
 
 mod brdf_preview;
+mod entity_manager;
 mod file_watcher;
 mod gizmo;
 mod material_inspector;
@@ -45,10 +46,11 @@ use astraweave_dialogue::DialogueGraph;
 use astraweave_nav::NavMesh;
 use astraweave_quests::Quest;
 use eframe::egui;
+use entity_manager::EntityManager;
 use material_inspector::MaterialInspector;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, ChartsPanel, EntityPanel, GraphPanel, Panel,
-    PerformancePanel, WorldPanel,
+    PerformancePanel, WorldPanel, TransformPanel,
 };
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
@@ -180,6 +182,9 @@ struct EditorApp {
     sim_world: Option<World>,
     sim_tick_count: u64,
     material_inspector: MaterialInspector, // NEW - Phase PBR-G Task 2
+    // Phase 1: Entity management
+    entity_manager: EntityManager,
+    selected_entity: Option<u64>,
     // Astract panels
     world_panel: WorldPanel,
     entity_panel: EntityPanel,
@@ -188,6 +193,7 @@ struct EditorApp {
     advanced_widgets_panel: AdvancedWidgetsPanel,
     graph_panel: GraphPanel,
     animation_panel: AnimationPanel,
+    transform_panel: TransformPanel,
     // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
     viewport: Option<ViewportWidget>,
 }
@@ -276,6 +282,9 @@ impl Default for EditorApp {
             sim_world: Some(Self::create_default_world()), // Initialize with sample entities
             sim_tick_count: 0,
             material_inspector: MaterialInspector::new(), // NEW - Phase PBR-G Task 2
+            // Phase 1: Entity management
+            entity_manager: EntityManager::new(),
+            selected_entity: None,
             // Initialize Astract panels
             world_panel: WorldPanel::new(),
             entity_panel: EntityPanel::new(),
@@ -284,6 +293,7 @@ impl Default for EditorApp {
             advanced_widgets_panel: AdvancedWidgetsPanel::new(),
             graph_panel: GraphPanel::new(),
             animation_panel: AnimationPanel::default(),
+            transform_panel: TransformPanel::new(),
             // Viewport initialized in new() method (requires CreationContext)
             viewport: None,
         }
@@ -291,6 +301,24 @@ impl Default for EditorApp {
 }
 
 impl EditorApp {
+    /// Initialize sample entities for viewport testing
+    fn init_sample_entities(entity_manager: &mut EntityManager) {
+        use glam::{Quat, Vec3};
+        
+        // Create a few test entities
+        let cube1 = entity_manager.create("Cube_1".to_string());
+        entity_manager.update_transform(cube1, Vec3::new(0.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        
+        let cube2 = entity_manager.create("Cube_2".to_string());
+        entity_manager.update_transform(cube2, Vec3::new(3.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        
+        let cube3 = entity_manager.create("Cube_3".to_string());
+        entity_manager.update_transform(cube3, Vec3::new(0.0, 0.0, 3.0), Quat::IDENTITY, Vec3::ONE);
+        
+        let sphere = entity_manager.create("Sphere_1".to_string());
+        entity_manager.update_transform(sphere, Vec3::new(-3.0, 1.0, 0.0), Quat::IDENTITY, Vec3::splat(1.5));
+    }
+
     /// Create a default world with sample entities for viewport testing
     ///
     /// Spawns:
@@ -336,6 +364,9 @@ impl EditorApp {
     /// Returns error if viewport initialization fails (missing wgpu support).
     fn new(cc: &eframe::CreationContext) -> Result<Self> {
         let mut app = Self::default();
+
+        // Initialize sample entities for testing
+        Self::init_sample_entities(&mut app.entity_manager);
 
         // Initialize viewport (requires wgpu render state from CreationContext)
         match ViewportWidget::new(cc) {
@@ -996,6 +1027,39 @@ impl eframe::App for EditorApp {
 
                         ui.add_space(10.0);
 
+                        ui.collapsing("🔧 Transform", |ui| {
+                            // Sync selected entity to transform panel
+                            if let Some(selected_id) = self.selected_entity {
+                                if let Some(entity) = self.entity_manager.get(selected_id) {
+                                    // Update panel with entity transform
+                                    let transform = crate::gizmo::Transform {
+                                        position: entity.position,
+                                        rotation: entity.rotation,
+                                        scale: entity.scale,
+                                    };
+                                    self.transform_panel.set_selected(transform);
+                                }
+                            } else {
+                                self.transform_panel.clear_selection();
+                            }
+                            
+                            self.transform_panel.show(ui);
+                            
+                            // Apply changes back to entity if transform was modified
+                            if let Some(selected_id) = self.selected_entity {
+                                if let Some(new_transform) = self.transform_panel.get_transform() {
+                                    self.entity_manager.update_transform(
+                                        selected_id,
+                                        new_transform.position,
+                                        new_transform.rotation,
+                                        new_transform.scale,
+                                    );
+                                }
+                            }
+                        });
+
+                        ui.add_space(10.0);
+
                         ui.collapsing("📊 Charts", |ui| {
                             self.charts_panel.show(ui);
                         });
@@ -1044,9 +1108,14 @@ impl eframe::App for EditorApp {
                     EMPTY_WORLD.get_or_init(World::new)
                 };
 
-                if let Err(e) = viewport.ui(ui, world_to_render) {
+                if let Err(e) = viewport.ui(ui, world_to_render, &mut self.entity_manager) {
                     self.console_logs.push(format!("❌ Viewport error: {}", e));
                     eprintln!("❌ Viewport error: {}", e);
+                }
+
+                // Sync selected entity from viewport to app state
+                if let Some(selected) = viewport.selected_entity() {
+                    self.selected_entity = Some(selected as u64);
                 }
 
                 ui.add_space(10.0);
