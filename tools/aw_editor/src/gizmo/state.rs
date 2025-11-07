@@ -3,7 +3,7 @@
 //! Manages modal state transitions (Inactive → Translate → Rotate → Scale)
 //! and constraint application (None → X → Y → Z → XY → XZ → YZ).
 
-use glam::{Mat4, Quat, Vec2, Vec3};
+use glam::{Quat, Vec2, Vec3};
 use winit::keyboard::KeyCode;
 
 /// Gizmo operation mode (modal, like Blender).

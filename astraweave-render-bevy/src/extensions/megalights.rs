@@ -41,9 +41,13 @@ pub struct GpuLight {
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ClusterBounds {
+    /// Minimum corner of AABB in world space (xyz)
     pub min_pos: [f32; 3],
+    /// Padding for GPU alignment
     pub _pad1: f32,
+    /// Maximum corner of AABB in world space (xyz)
     pub max_pos: [f32; 3],
+    /// Padding for GPU alignment
     pub _pad2: f32,
 }
 

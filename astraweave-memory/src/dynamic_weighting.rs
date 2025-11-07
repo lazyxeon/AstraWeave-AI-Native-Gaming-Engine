@@ -109,6 +109,7 @@ pub struct AdaptiveWeightManager {
     /// Current node weights
     weights: HashMap<BehaviorNodeType, NodeWeight>,
     /// Pattern detector for analysis
+    #[allow(dead_code)]
     detector: PatternDetector,
     /// Profile builder for player modeling
     builder: ProfileBuilder,
@@ -416,7 +417,7 @@ mod tests {
         }
 
         manager.update_from_profile(&storage).unwrap();
-        let weight_after_update = manager.get_weight(BehaviorNodeType::Combat);
+        let _weight_after_update = manager.get_weight(BehaviorNodeType::Combat);
 
         manager.reset_weights();
         assert_eq!(manager.get_weight(BehaviorNodeType::Combat), 0.8); // Back to base

@@ -5,7 +5,7 @@ Trait-based abstraction for different embedding model backends.
 Supports mock clients for testing, local models via ONNX/Candle, and remote APIs.
 */
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -74,11 +74,11 @@ impl MockEmbeddingClient {
         let _seed = hasher.finish();
 
         // Use the hash as a seed for deterministic random generation
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let mut embedding = Vec::with_capacity(self.dimensions);
         for _ in 0..self.dimensions {
-            embedding.push(rng.gen_range(-1.0..1.0));
+            embedding.push(rng.random_range(-1.0..1.0));
         }
 
         // Normalize to unit vector for cosine similarity
@@ -95,6 +95,7 @@ impl MockEmbeddingClient {
 
 use rand::Rng;
 
+#[allow(unused_imports)]
 #[cfg(feature = "small_rng")]
 use rand::{rngs::SmallRng, SeedableRng};
 

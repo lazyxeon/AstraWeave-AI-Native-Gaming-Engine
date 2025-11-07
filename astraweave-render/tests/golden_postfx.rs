@@ -171,7 +171,7 @@ fn golden_postfx_compose_matches_cpu() {
             gi_bytes[idx + 3] = 255;
         }
     }
-    let layout = wgpu::ImageDataLayout {
+    let layout = wgpu::TexelCopyBufferLayout {
         offset: 0,
         bytes_per_row: Some(w * 4),
         rows_per_image: Some(h),
@@ -337,7 +337,7 @@ fn golden_postfx_compose_matches_cpu() {
         target.as_image_copy(),
         wgpu::ImageCopyBuffer {
             buffer: &buf,
-            layout: wgpu::ImageDataLayout {
+            layout: wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(padded as u32),
                 rows_per_image: Some(h),

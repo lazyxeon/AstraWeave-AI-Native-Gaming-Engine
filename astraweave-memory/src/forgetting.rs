@@ -5,7 +5,7 @@
 
 use crate::memory_types::*;
 use anyhow::Result;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

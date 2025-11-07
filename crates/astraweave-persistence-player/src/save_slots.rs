@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::PlayerProfile;
 
@@ -49,6 +49,7 @@ impl SaveSlotManager {
     }
 
     /// Get thumbnail path
+    #[allow(dead_code)]
     fn thumbnail_path(&self, slot_id: usize) -> PathBuf {
         self.slot_dir(slot_id).join("thumbnail.png")
     }

@@ -149,6 +149,7 @@ impl ForgettingEngine {
     }
 
     /// Check if a memory should be forgotten
+    #[allow(dead_code)]
     fn should_forget(&self, memory: &Memory, strength: &MemoryStrength, current_time: i64) -> bool {
         Self::should_forget_static(&self.config, memory, strength, current_time)
     }

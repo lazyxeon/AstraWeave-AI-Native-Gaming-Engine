@@ -63,7 +63,7 @@ impl GizmoRenderer {
         let cone_height = length * 0.2;
         let shaft_length = length - cone_height;
         let shaft_radius = length * 0.02; // 2% of length
-        let cone_radius = shaft_radius * 2.5;
+        let _cone_radius = shaft_radius * 2.5;
 
         let mut vertices = Vec::new();
 

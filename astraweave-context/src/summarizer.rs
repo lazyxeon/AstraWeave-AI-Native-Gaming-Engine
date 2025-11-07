@@ -320,7 +320,7 @@ impl ConversationSummarizer {
     }
 
     /// Build summary prompt based on strategy
-    fn build_summary_prompt(&self, conversation: &str, messages: &[Message]) -> Result<String> {
+    fn build_summary_prompt(&self, conversation: &str, _messages: &[Message]) -> Result<String> {
         if let Some(ref custom) = self.config.custom_prompt {
             return Ok(format!("{}\n\nConversation:\n{}", custom, conversation));
         }
@@ -620,7 +620,6 @@ fn is_common_word(word: &str) -> bool {
             | "make"
             | "most"
             | "over"
-            | "said"
             | "some"
             | "time"
             | "very"
@@ -631,7 +630,6 @@ fn is_common_word(word: &str) -> bool {
             | "like"
             | "long"
             | "many"
-            | "over"
             | "such"
             | "take"
             | "than"
@@ -650,8 +648,6 @@ fn is_common_word(word: &str) -> bool {
             | "been"
             | "good"
             | "much"
-            | "some"
-            | "time"
             | "work"
             | "life"
             | "only"
@@ -660,7 +656,6 @@ fn is_common_word(word: &str) -> bool {
             | "back"
             | "after"
             | "first"
-            | "well"
             | "year"
             | "where"
     )

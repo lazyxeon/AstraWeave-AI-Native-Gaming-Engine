@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use astraweave_context::ConversationHistory;
@@ -193,9 +193,11 @@ impl Default for QuestGenerationConfig {
 pub struct LlmQuestGenerator {
     llm_client: Arc<dyn LlmClient>,
     rag_pipeline: Arc<RagPipeline>,
+    #[allow(dead_code)]
     conversation_history: Arc<RwLock<ConversationHistory>>,
     prompt_library: Arc<RwLock<PromptLibrary>>,
     config: QuestGenerationConfig,
+    #[allow(dead_code)]
     quest_templates: Arc<RwLock<HashMap<String, QuestTemplate>>>,
 }
 

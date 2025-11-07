@@ -3,9 +3,13 @@
 //! This module handles consolidating and compressing memories to optimize storage and retrieval.
 
 use anyhow::Result;
-use astraweave_embeddings::{Memory, MemoryCategory};
+use astraweave_embeddings::Memory;
 use serde::{Deserialize, Serialize};
+
+#[cfg(test)]
 use std::collections::HashMap;
+#[cfg(test)]
+use astraweave_embeddings::MemoryCategory;
 
 /// Consolidation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

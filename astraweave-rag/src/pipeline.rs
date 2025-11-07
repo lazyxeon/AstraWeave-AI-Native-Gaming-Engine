@@ -9,7 +9,7 @@ use crate::{
     RetrievalMethod, RetrievedMemory,
 };
 use anyhow::{anyhow, Result};
-use astraweave_context::{ConversationHistory, TokenCounter};
+use astraweave_context::TokenCounter;
 use astraweave_embeddings::{EmbeddingClient, Memory, MemoryCategory, SearchResult, VectorStore};
 use astraweave_llm::LlmClient;
 use dashmap::DashMap;
@@ -119,6 +119,7 @@ impl VectorStoreInterface for VectorStoreWrapper {
 struct CachedResult {
     memories: Vec<RetrievedMemory>,
     timestamp: u64,
+    #[allow(dead_code)]
     query_hash: u64,
 }
 
@@ -195,7 +196,7 @@ impl RagPipeline {
         {
             let mut metrics = self.metrics.write();
             metrics.total_memories_stored += 1;
-            let duration = start_time.elapsed().as_millis() as f32;
+            let _duration = start_time.elapsed().as_millis() as f32;
             // Update average processing time if needed
         }
 
@@ -620,7 +621,7 @@ impl RagPipeline {
             crate::OrderingStrategy::Mixed => {
                 // Shuffle for variety
                 use rand::seq::SliceRandom;
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 memories.shuffle(&mut rng);
             }
         }

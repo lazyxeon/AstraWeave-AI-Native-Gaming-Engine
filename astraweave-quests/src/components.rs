@@ -277,7 +277,7 @@ impl CQuestMetrics {
     }
 
     /// Record a quest abandonment
-    pub fn record_quest_abandonment(&mut self, quest: &LlmQuest, reason: String) {
+    pub fn record_quest_abandonment(&mut self, _quest: &LlmQuest, reason: String) {
         self.quests_abandoned += 1;
 
         // Track abandonment reasons (could add more sophisticated tracking)

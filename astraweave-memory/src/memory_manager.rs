@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
-    Memory, MemoryCluster, MemoryContent, MemoryMetadata, MemorySource, MemoryType,
+    Memory, MemoryCluster, MemoryType,
     RetrievalContext,
 };
 

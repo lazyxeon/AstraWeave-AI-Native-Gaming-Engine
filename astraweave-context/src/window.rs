@@ -5,12 +5,10 @@ Advanced context window management with sliding windows, attention mechanisms,
 and multi-agent context sharing.
 */
 
-use crate::{current_timestamp, ContextConfig, Message, Role, TokenCounter};
+use crate::{current_timestamp, Message, Role, TokenCounter};
 use anyhow::Result;
-use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-use std::sync::Arc;
 
 /// A context window for managing conversation context
 pub struct ContextWindow {
@@ -515,7 +513,7 @@ impl MultiAgentContextManager {
 
             if token_count + agent_tokens <= max_tokens {
                 context_parts.push(format!("AGENT CONTEXT:\n{}", agent_context));
-                token_count += agent_tokens;
+                let _ = token_count.saturating_add(agent_tokens);
             }
         }
 

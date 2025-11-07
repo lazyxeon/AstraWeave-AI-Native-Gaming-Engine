@@ -298,6 +298,7 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     material_buf: wgpu::Buffer,
     material_bg: wgpu::BindGroup,
+    #[allow(dead_code)]
     post_pipeline: wgpu::RenderPipeline,
     post_bind_group: wgpu::BindGroup,
     #[allow(dead_code)]
@@ -307,18 +308,24 @@ pub struct Renderer {
     hdr_sampler: wgpu::Sampler,
     // Post-FX auxiliary textures and pipeline
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     hdr_aux_tex: wgpu::Texture,
     #[cfg(feature = "postfx")]
     hdr_aux_view: wgpu::TextureView,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     fx_gi_tex: wgpu::Texture,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     fx_gi_view: wgpu::TextureView,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     fx_ao_tex: wgpu::Texture,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     fx_ao_view: wgpu::TextureView,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     post_fx_bgl: wgpu::BindGroupLayout,
     #[cfg(feature = "postfx")]
     post_fx_bind_group: wgpu::BindGroup,
@@ -334,14 +341,18 @@ pub struct Renderer {
     #[cfg(feature = "postfx")]
     bloom_composite_pipeline: wgpu::RenderPipeline,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     bloom_mip_textures: Vec<wgpu::Texture>,
     #[cfg(feature = "postfx")]
     bloom_mip_views: Vec<wgpu::TextureView>,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     bloom_threshold_buf: wgpu::Buffer,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     bloom_intensity_buf: wgpu::Buffer,
     #[cfg(feature = "postfx")]
+    #[allow(dead_code)]
     bloom_bgl: wgpu::BindGroupLayout,
     #[cfg(feature = "postfx")]
     bloom_bind_groups_down: Vec<wgpu::BindGroup>,

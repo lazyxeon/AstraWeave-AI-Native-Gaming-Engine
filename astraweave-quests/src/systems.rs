@@ -1,17 +1,18 @@
 use anyhow::Result;
-use chrono::Utc;
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
 use crate::components::{
-    CActiveQuest, CQuestGenerator, CQuestJournal, CQuestMetrics, ChoiceRecord, QuestState,
+    CActiveQuest, CQuestGenerator, CQuestJournal, CQuestMetrics, QuestState,
 };
-use crate::llm_quests::{BranchingChoice, LlmQuestGenerator, QuestContext, QuestValidation};
+use crate::llm_quests::{BranchingChoice, LlmQuestGenerator, QuestContext};
 
 /// System for managing LLM-powered quest generation and execution
 pub struct QuestLlmSystem {
     quest_generator: Arc<LlmQuestGenerator>,
+    #[allow(dead_code)]
     generation_interval_ms: u64,
+    #[allow(dead_code)]
     max_concurrent_quests: usize,
 }
 

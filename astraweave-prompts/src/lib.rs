@@ -59,7 +59,6 @@ pub use library::*;
 pub use optimization::*;
 pub use template::*;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -314,20 +313,14 @@ mod tests {
     fn test_template_metadata() {
         let metadata = TemplateMetadata {
             name: "test_template".to_string(),
-            description: "A test template".to_string(),
-            category: TemplateCategory::Dialogue,
-            author: Some("Test Author".to_string()),
             version: "1.0.0".to_string(),
-            created_at: current_timestamp(),
-            updated_at: current_timestamp(),
-            tags: vec!["test".to_string(), "dialogue".to_string()],
-            required_variables: vec!["character_name".to_string()],
-            optional_variables: HashMap::new(),
-            usage_stats: UsageStats::default(),
+            description: "A test template".to_string(),
+            variables: vec!["character_name".to_string()],
         };
 
         assert_eq!(metadata.name, "test_template");
-        assert_eq!(metadata.tags.len(), 2);
+        assert_eq!(metadata.version, "1.0.0");
+        assert_eq!(metadata.variables.len(), 1);
     }
 
     #[test]

@@ -39,7 +39,8 @@ use wgpu;
 use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
 use super::toolbar::ViewportToolbar;
-use crate::gizmo::GizmoState;
+use crate::entity_manager::EntityManager;
+use crate::gizmo::{GizmoState, TransformSnapshot};
 use astraweave_core::{Entity, World};
 
 /// 3D viewport widget for egui
@@ -133,18 +134,13 @@ impl ViewportWidget {
         })
     }
 
-    /// Render viewport UI
-    ///
-    /// Call this from `eframe::App::update()` to display the 3D viewport.
+    /// Render viewport and handle input
     ///
     /// # Arguments
     ///
     /// * `ui` - egui UI context
-    /// * `world` - World state (entities, components)
-    ///
-    /// # Errors
-    ///
-    /// Returns error if rendering fails. Does NOT panic - errors are logged.
+    /// * `world` - Game world (for entity data)
+    /// * `entity_manager` - Entity manager (for transforms and picking)
     ///
     /// # Example
     ///
@@ -152,14 +148,17 @@ impl ViewportWidget {
     /// impl eframe::App for EditorApp {
     ///     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     ///         egui::CentralPanel::default().show(ctx, |ui| {
-    ///             if let Err(e) = self.viewport.ui(ui, &self.world) {
-    ///                 eprintln!("❌ Viewport error: {}", e);
-    ///             }
+    ///             self.viewport.ui(ui, &self.world, &mut self.entity_manager)?;
     ///         });
     ///     }
     /// }
     /// ```
-    pub fn ui(&mut self, ui: &mut egui::Ui, world: &World) -> Result<()> {
+    pub fn ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        world: &World,
+        entity_manager: &mut EntityManager,
+    ) -> Result<()> {
         // Update frame time tracking
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
@@ -205,7 +204,7 @@ impl ViewportWidget {
         }
 
         // Handle input (mouse/keyboard) - always process, but camera only moves if focused
-        self.handle_input(&response, ui.ctx(), world)?;
+        self.handle_input(&response, ui.ctx(), world, entity_manager)?;
 
         // Request continuous repaint to update viewport every frame
         ui.ctx().request_repaint();
@@ -337,8 +336,95 @@ impl ViewportWidget {
         response: &egui::Response,
         ctx: &egui::Context,
         world: &World,
+        entity_manager: &mut EntityManager,
     ) -> Result<()> {
-        // Camera controls work when viewport is hovered (not just focused)
+        use crate::gizmo::{GizmoMode, TranslateGizmo, RotateGizmo, ScaleGizmo};
+        
+        // Update gizmo state with current mouse position
+        if let Some(pos) = response.hover_pos() {
+            let mouse_pos = glam::Vec2::new(pos.x, pos.y);
+            self.gizmo_state.update_mouse(mouse_pos);
+        }
+
+        // Gizmo transform application (if active and dragging)
+        if self.gizmo_state.is_active() && response.dragged_by(egui::PointerButton::Primary) {
+            if let Some(selected_id) = self.selected_entity {
+                if let Some(entity) = entity_manager.get_mut(selected_id as u64) {
+                    let mouse_delta = self.gizmo_state.mouse_delta();
+                    
+                    // Calculate camera distance to entity for scaling
+                    let camera_distance = (self.camera.target() - entity.position).length();
+                    
+                    match self.gizmo_state.mode {
+                        GizmoMode::Translate { constraint } => {
+                            // Calculate translation delta
+                            let translation = TranslateGizmo::calculate_translation(
+                                mouse_delta,
+                                constraint,
+                                camera_distance,
+                                entity.rotation,
+                                self.gizmo_state.local_space,
+                            );
+                            
+                            // Apply to entity
+                            entity.position += translation;
+                            
+                            println!(
+                                "🔧 Translate: delta={:.2?}, new_pos={:.2?}",
+                                translation, entity.position
+                            );
+                        }
+                        GizmoMode::Rotate { constraint } => {
+                            // Calculate rotation delta
+                            let sensitivity = 1.0; // 1 radian per 100 pixels
+                            let snap_enabled = ctx.input(|i| i.modifiers.shift);
+                            
+                            let rotation_delta = RotateGizmo::calculate_rotation(
+                                mouse_delta,
+                                constraint,
+                                sensitivity,
+                                snap_enabled,
+                                entity.rotation,
+                                self.gizmo_state.local_space,
+                            );
+                            
+                            // Apply rotation (compose quaternions)
+                            entity.rotation = rotation_delta * entity.rotation;
+                            
+                            println!(
+                                "🔧 Rotate: delta={:.2?}, new_rot={:.2?}",
+                                rotation_delta, entity.rotation
+                            );
+                        }
+                        GizmoMode::Scale { constraint, uniform } => {
+                            // Calculate scale delta
+                            let sensitivity = 0.01; // 1% scale per pixel
+                            
+                            let scale_delta = ScaleGizmo::calculate_scale(
+                                mouse_delta,
+                                constraint,
+                                uniform,
+                                sensitivity,
+                                entity.rotation,      // Unused by ScaleGizmo
+                                self.gizmo_state.local_space, // Unused by ScaleGizmo
+                            );
+                            
+                            // Apply scale (component-wise multiply)
+                            entity.scale *= scale_delta;
+                            
+                            println!(
+                                "🔧 Scale: delta={:.2?}, new_scale={:.2?}",
+                                scale_delta, entity.scale
+                            );
+                        }
+                        GizmoMode::Inactive => {}
+                    }
+                }
+            }
+            
+            // Gizmo manipulation takes priority - skip camera controls
+            return Ok(());
+        }        // Camera controls work when viewport is hovered (not just focused)
         // This allows immediate camera manipulation without clicking first
         let can_control_camera = response.hovered() || self.has_focus;
 
@@ -374,6 +460,23 @@ impl ViewportWidget {
                     self.camera.zoom(i.smooth_scroll_delta.y);
                 }
             });
+        }
+        
+        // Sync selected entity to gizmo state
+        self.gizmo_state.selected_entity = self.selected_entity;
+        
+        // Capture start transform when beginning a new operation
+        if self.gizmo_state.is_active() && self.gizmo_state.start_transform.is_none() {
+            if let Some(selected_id) = self.selected_entity {
+                if let Some(entity) = entity_manager.get(selected_id as u64) {
+                    self.gizmo_state.start_transform = Some(TransformSnapshot {
+                        position: entity.position,
+                        rotation: entity.rotation,
+                        scale: entity.scale,
+                    });
+                    println!("📸 Captured start transform: {:?}", entity.position);
+                }
+            }
         }
 
         // Gizmo hotkeys (G/R/S for translate/rotate/scale, X/Y/Z for axis constraints, Enter/Escape)
@@ -420,9 +523,50 @@ impl ViewportWidget {
 
             // Frame selected
             if i.key_pressed(egui::Key::F) {
-                println!("🎯 Frame selected (F)");
+                if let Some(selected_id) = self.selected_entity {
+                    if let Some(entity) = entity_manager.get(selected_id as u64) {
+                        // Calculate entity bounding radius from AABB
+                        let (aabb_min, aabb_max) = entity.aabb();
+                        let aabb_size = aabb_max - aabb_min;
+                        let entity_radius = aabb_size.length() / 2.0; // Half diagonal = radius
+                        
+                        // Frame entity in camera view
+                        self.camera.frame_entity(entity.position, entity_radius);
+                        
+                        println!(
+                            "🎯 Frame selected entity {} at {:.2?} (radius={:.2})",
+                            entity.name, entity.position, entity_radius
+                        );
+                    } else {
+                        println!("⚠️  Frame selected: No entity selected");
+                    }
+                } else {
+                    println!("⚠️  Frame selected: No entity selected");
+                }
             }
         });
+        
+        // Handle gizmo confirm/cancel
+        if self.gizmo_state.confirmed {
+            // Transform confirmed - already applied during drag
+            println!("✅ Transform confirmed");
+            self.gizmo_state.confirmed = false;
+        }
+        
+        if self.gizmo_state.cancelled {
+            // Transform cancelled - revert to start_transform
+            if let Some(snapshot) = &self.gizmo_state.start_transform {
+                if let Some(selected_id) = self.selected_entity {
+                    if let Some(entity) = entity_manager.get_mut(selected_id as u64) {
+                        entity.position = snapshot.position;
+                        entity.rotation = snapshot.rotation;
+                        entity.scale = snapshot.scale;
+                        println!("❌ Transform cancelled - reverted to {:?}", snapshot.position);
+                    }
+                }
+            }
+            self.gizmo_state.cancelled = false;
+        }
 
         // Selection (ray-casting entity picking)
         if response.clicked() {
@@ -433,21 +577,36 @@ impl ViewportWidget {
                     .camera
                     .ray_from_screen(viewport_pos, response.rect.size());
 
-                // Simple entity picking (TODO: proper ray-AABB intersection)
-                // For now, just cycle through entities on click
-                if let Some(selected) = self.selected_entity {
-                    self.selected_entity = Some(selected + 1);
-                    if self.selected_entity.unwrap() >= 100 {
-                        self.selected_entity = Some(1);
+                // Proper entity picking via ray-AABB intersection
+                let mut closest_entity: Option<(u64, f32)> = None; // (entity_id, distance)
+
+                for (entity_id, entity) in entity_manager.entities() {
+                    let (aabb_min, aabb_max) = entity.aabb();
+                    
+                    if let Some(distance) = Self::ray_intersects_aabb(
+                        ray.origin,
+                        ray.direction,
+                        aabb_min,
+                        aabb_max,
+                    ) {
+                        // Found intersection - keep closest
+                        if closest_entity.is_none() || distance < closest_entity.unwrap().1 {
+                            closest_entity = Some((*entity_id, distance));
+                        }
                     }
-                } else {
-                    self.selected_entity = Some(1);
                 }
 
-                println!(
-                    "🎯 Click at ({:.1}, {:.1}) - Selected entity {:?}",
-                    viewport_pos.x, viewport_pos.y, self.selected_entity
-                );
+                // Update selection (cast u64 to u32 for Entity type)
+                if let Some((entity_id, distance)) = closest_entity {
+                    self.selected_entity = Some(entity_id as Entity);
+                    println!(
+                        "🎯 Selected entity {} at distance {:.2}",
+                        entity_id, distance
+                    );
+                } else {
+                    self.selected_entity = None;
+                    println!("🎯 Click at ({:.1}, {:.1}) - No entity hit", viewport_pos.x, viewport_pos.y);
+                }
             }
         }
 
@@ -647,6 +806,76 @@ impl ViewportWidget {
     /// Get camera (mutable)
     pub fn camera_mut(&mut self) -> &mut OrbitCamera {
         &mut self.camera
+    }
+
+    /// Ray-AABB intersection test for entity picking
+    ///
+    /// Returns distance to intersection point if ray hits AABB, None otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `ray_origin` - Ray starting point
+    /// * `ray_dir` - Ray direction (normalized)
+    /// * `aabb_min` - AABB minimum corner
+    /// * `aabb_max` - AABB maximum corner
+    fn ray_intersects_aabb(
+        ray_origin: glam::Vec3,
+        ray_dir: glam::Vec3,
+        aabb_min: glam::Vec3,
+        aabb_max: glam::Vec3,
+    ) -> Option<f32> {
+        // Slab method: test ray against each axis pair
+        let mut tmin = f32::NEG_INFINITY;
+        let mut tmax = f32::INFINITY;
+
+        for i in 0..3 {
+            let origin = ray_origin[i];
+            let dir = ray_dir[i];
+            let min = aabb_min[i];
+            let max = aabb_max[i];
+
+            if dir.abs() < 1e-6 {
+                // Ray parallel to slab - check if origin is inside
+                if origin < min || origin > max {
+                    return None;
+                }
+            } else {
+                // Calculate intersection distances
+                let inv_dir = 1.0 / dir;
+                let mut t1 = (min - origin) * inv_dir;
+                let mut t2 = (max - origin) * inv_dir;
+
+                if t1 > t2 {
+                    std::mem::swap(&mut t1, &mut t2);
+                }
+
+                tmin = tmin.max(t1);
+                tmax = tmax.min(t2);
+
+                if tmin > tmax {
+                    return None;
+                }
+            }
+        }
+
+        // Return closest intersection (positive distance only)
+        if tmin >= 0.0 {
+            Some(tmin)
+        } else if tmax >= 0.0 {
+            Some(tmax)
+        } else {
+            None
+        }
+    }
+
+    /// Get the currently selected entity
+    pub fn selected_entity(&self) -> Option<Entity> {
+        self.selected_entity
+    }
+
+    /// Set the currently selected entity
+    pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
+        self.selected_entity = entity;
     }
 }
 

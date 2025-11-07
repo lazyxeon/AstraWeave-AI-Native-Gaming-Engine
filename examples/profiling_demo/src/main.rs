@@ -366,14 +366,14 @@ fn ai_planning_system(world: &mut World) {
         }
     }
 
-    let cache_hit_rate = if planning_count > 0 {
+    let _cache_hit_rate = if planning_count > 0 {
         (cache_hits as f64 / planning_count as f64) * 100.0
     } else {
         0.0
     };
 
     plot!("AI.PlanningOperations", planning_count as f64);
-    plot!("AI.CacheHitRate", cache_hit_rate);
+    plot!("AI.CacheHitRate", _cache_hit_rate);
 
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
@@ -389,7 +389,7 @@ fn movement_system(world: &mut World) {
     // This eliminates the 770µs O(log n) writeback bottleneck
     let query = Query2Mut::<Position, Velocity>::new(world);
 
-    let mut moved_count = 0;
+    let mut _moved_count = 0;
 
     // Direct mutation - no collect, no writeback, O(1) per entity
     for (_entity, pos, vel) in query {
@@ -406,10 +406,10 @@ fn movement_system(world: &mut World) {
             pos.0.y = -pos.0.y.signum() * 64.0;
         }
 
-        moved_count += 1;
+        _moved_count += 1;
     }
 
-    plot!("Movement.Updates", moved_count as f64);
+    plot!("Movement.Updates", _moved_count as f64);
 
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {
@@ -502,8 +502,8 @@ fn rendering_system(world: &mut World) {
     let timer_start = Instant::now();
     span!("rendering");
 
-    let mut draw_calls = 0;
-    let mut vertex_count = 0;
+    let mut _draw_calls = 0;
+    let mut _vertex_count = 0;
 
     // Simulate rendering
     {
@@ -511,14 +511,14 @@ fn rendering_system(world: &mut World) {
 
         let query = Query2::<Renderable, Position>::new(world);
         for (_, renderable, _pos) in query {
-            draw_calls += 1;
+            _draw_calls += 1;
             // Simulate vertex count per mesh
-            vertex_count += if renderable.mesh_id == 1 { 36 } else { 64 };
+            _vertex_count += if renderable.mesh_id == 1 { 36 } else { 64 };
         }
     }
 
-    plot!("Render.DrawCalls", draw_calls as f64);
-    plot!("Render.VertexCount", vertex_count as f64);
+    plot!("Render.DrawCalls", _draw_calls as f64);
+    plot!("Render.VertexCount", _vertex_count as f64);
 
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {

@@ -37,9 +37,7 @@ mod save_slots;
 mod settings;
 
 pub use autosave::*;
-pub use progression::*;
 pub use save_slots::*;
-pub use settings::*;
 
 /// Player profile containing settings, stats, unlocks, and progression
 #[derive(Debug, Clone, Serialize, Deserialize)]

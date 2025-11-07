@@ -8,7 +8,7 @@
 //! - Normal map format validation
 
 use anyhow::{Context, Result};
-use image::{DynamicImage, GenericImageView, ImageFormat};
+use image::{DynamicImage, GenericImageView};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 

@@ -11,10 +11,13 @@ use std::path::PathBuf;
 #[derive(Debug, Clone)]
 pub struct TemplateLibrary {
     /// Library name
+    #[allow(dead_code)]
     name: String,
     /// Template collections
+    #[allow(dead_code)]
     collections: HashMap<String, TemplateCollection>,
     /// Library metadata
+    #[allow(dead_code)]
     metadata: LibraryMetadata,
 }
 
@@ -55,6 +58,7 @@ pub struct TemplateCollection {
     /// Templates in this collection
     templates: HashMap<String, String>,
     /// Collection metadata
+    #[allow(dead_code)]
     metadata: CollectionMetadata,
 }
 
@@ -108,7 +112,7 @@ impl TemplateLibrary {
     }
 
     /// Load library from directory
-    pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+    pub fn load_from_directory(_path: PathBuf) -> Result<Self> {
         // Stub implementation - would actually read from filesystem
         let metadata = LibraryMetadata {
             version: "1.0.0".to_string(),

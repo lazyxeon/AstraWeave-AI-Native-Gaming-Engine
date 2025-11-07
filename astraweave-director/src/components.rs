@@ -182,7 +182,7 @@ pub struct CDirectorMetrics {
 
 impl CDirectorMetrics {
     /// Record a completed tactic
-    pub fn record_tactic(&mut self, outcome: &TacticOutcome, response_time_ms: u64) {
+    pub fn record_tactic(&mut self, outcome: &TacticOutcome, _response_time_ms: u64) {
         self.tactics_executed += 1;
 
         if outcome.effectiveness > 0.6 {

@@ -8,6 +8,7 @@
 //! - **MegaLights**: GPU-accelerated light culling for 100k+ lights (68× speedup)
 //! - **Nanite**: Virtualized geometry for 10M+ polygons @ 60 FPS
 
+/// GPU-accelerated light culling system for massive light counts
 #[cfg(feature = "megalights")]
 pub mod megalights;
 

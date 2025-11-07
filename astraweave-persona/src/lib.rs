@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 // persona types live in the `persona` module of `astraweave_memory`
-use astraweave_memory::persona::{CompanionProfile, Fact, Persona, Skill};
+use astraweave_memory::persona::{CompanionProfile, Fact, Skill};
 use serde::Deserialize;
 use std::io::Read;
 

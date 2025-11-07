@@ -6,7 +6,6 @@
 use crate::memory_types::*;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Configuration for memory retrieval
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -391,7 +390,6 @@ impl RetrievalEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Utc;
 
     #[test]
     fn test_retrieval_engine_creation() {

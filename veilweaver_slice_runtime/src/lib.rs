@@ -111,7 +111,7 @@ fn tutorial_event_emitters(world: &mut World) {
     };
 
     let (trigger_events_data, anchor_events) = {
-        let mut context = match world.get_resource_mut::<TutorialEventContext>() {
+        let context = match world.get_resource_mut::<TutorialEventContext>() {
             Some(ctx) => ctx,
             None => return,
         };
@@ -227,7 +227,7 @@ fn tutorial_event_emitters(world: &mut World) {
     };
 
     if !trigger_events.is_empty() {
-        if let Some(mut events) = world.get_resource_mut::<Events<TriggerVolumeEvent>>() {
+        if let Some(events) = world.get_resource_mut::<Events<TriggerVolumeEvent>>() {
             let mut writer = events.writer();
             for event in trigger_events {
                 writer.send(event);
@@ -236,7 +236,7 @@ fn tutorial_event_emitters(world: &mut World) {
     }
 
     if !anchor_events.is_empty() {
-        if let Some(mut events) = world.get_resource_mut::<Events<AnchorStabilizedEvent>>() {
+        if let Some(events) = world.get_resource_mut::<Events<AnchorStabilizedEvent>>() {
             let mut writer = events.writer();
             for event in anchor_events {
                 writer.send(event);
@@ -298,7 +298,6 @@ fn trigger_contains(trigger: &TriggerZoneSpec, point: [f32; 3]) -> bool {
 
 pub struct VeilweaverRuntime {
     pub app: App,
-    pub legacy_world: LegacyWorld,
     pub partition: WorldPartition,
     pub metadata: VeilweaverSliceMetadata,
 }
@@ -307,12 +306,11 @@ impl VeilweaverRuntime {
     pub fn new(config: VeilweaverSliceConfig, partition: WorldPartition) -> Result<Self> {
         let legacy_world = LegacyWorld::new();
         let dt = config.dt.max(0.0001);
-        let app = ecs_adapter::build_app(legacy_world.clone(), dt);
+        let app = ecs_adapter::build_app(legacy_world, dt);
 
         let metadata = Self::gather_metadata(&partition);
         let mut runtime = Self {
             app,
-            legacy_world,
             partition,
             metadata,
         };
@@ -337,10 +335,7 @@ impl VeilweaverRuntime {
             .collect()
     }
 
-    pub fn add_post_setup_system<F>(&mut self, system: F)
-    where
-        F: Fn(&mut World) + 'static,
-    {
+    pub fn add_post_setup_system(&mut self, system: fn(&mut World)) {
         self.app
             .schedule
             .add_system("veilweaver_post_setup", system);
@@ -366,7 +361,7 @@ impl VeilweaverRuntime {
             self.app.world.insert_resource(self.metadata.clone());
         }
 
-        if let Some(mut context) = self.app.world.get_resource_mut::<TutorialEventContext>() {
+        if let Some(context) = self.app.world.get_resource_mut::<TutorialEventContext>() {
             let mut new_context = TutorialEventContext::from_metadata(&self.metadata);
             for (anchor_id, is_stabilized) in context.anchor_stabilized.iter() {
                 if *is_stabilized {
