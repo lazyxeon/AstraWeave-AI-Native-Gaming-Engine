@@ -92,8 +92,8 @@ impl GridRenderer {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual,
+                depth_write_enabled: false,  // Grid is overlay - don't write depth
+                depth_compare: wgpu::CompareFunction::LessEqual,  // Still test against existing depth
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),

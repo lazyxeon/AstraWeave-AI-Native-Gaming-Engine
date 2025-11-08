@@ -93,10 +93,10 @@ impl Default for OrbitCamera {
             pitch: std::f32::consts::PI / 6.0, // 30° pitch (shallower, see more horizon/sky)
             fov: 60.0,
             aspect: 16.0 / 9.0,
-            near: 0.1,
+            near: 0.01,              // Very close near plane (10cm) to prevent clipping
             far: 1000.0,
-            min_distance: 1.0,
-            max_distance: 200.0, // Allow zooming out further
+            min_distance: 0.1,       // Allow camera to get very close (10cm from focal point)
+            max_distance: 200.0,     // Allow zooming out further
             min_pitch: -std::f32::consts::PI / 2.0 + 0.01, // Prevent gimbal lock
             max_pitch: std::f32::consts::PI / 2.0 - 0.01, // Prevent gimbal lock
         }
@@ -177,18 +177,9 @@ impl OrbitCamera {
     ///
     /// O(1), typically <0.01ms
     pub fn zoom(&mut self, delta: f32) {
-        const SENSITIVITY: f32 = 0.5; // Move 0.5 units per scroll tick
-
-        // Dolly camera: Move focal point toward/away from camera
-        // This feels more like "flying through space" than orbit zoom
-        let forward = self.forward();
-        let move_amount = delta * SENSITIVITY;
-
-        // Move focal point along view direction
-        self.focal_point += forward * move_amount;
-
-        // Also adjust distance slightly to maintain view
-        let zoom_factor = 1.0 + delta * 0.05;
+        // Simple distance-based zoom (no focal point movement)
+        // Smooth incremental zoom: 10% per scroll tick
+        let zoom_factor = 1.0 + (delta * 0.1); // 0.1 = 10% per tick
         self.distance = (self.distance / zoom_factor).clamp(self.min_distance, self.max_distance);
     }
 
@@ -203,6 +194,24 @@ impl OrbitCamera {
     pub fn frame_entity(&mut self, entity_pos: Vec3, entity_radius: f32) {
         self.focal_point = entity_pos;
         self.distance = (entity_radius * 2.5).clamp(self.min_distance, self.max_distance);
+    }
+
+    /// Reset camera to default starting position
+    ///
+    /// Returns the camera to origin (0,0,0) with default distance and angles.
+    /// Useful for recovering from "lost in void" scenarios.
+    ///
+    /// # Default Values
+    ///
+    /// - Focal point: (0, 0, 0)
+    /// - Distance: 25 meters
+    /// - Yaw: 45° (diagonal view)
+    /// - Pitch: 30° (looking slightly down)
+    pub fn reset_to_origin(&mut self) {
+        self.focal_point = Vec3::ZERO;
+        self.distance = 25.0;
+        self.yaw = std::f32::consts::PI / 4.0; // 45°
+        self.pitch = std::f32::consts::PI / 6.0; // 30°
     }
 
     /// Update aspect ratio (call when viewport resizes)
@@ -244,6 +253,31 @@ impl OrbitCamera {
     /// Get pitch angle (radians)
     pub fn pitch(&self) -> f32 {
         self.pitch
+    }
+
+    /// Get focal point (for bookmark save)
+    pub fn focal_point(&self) -> Vec3 {
+        self.focal_point
+    }
+
+    /// Set focal point (for bookmark restore)
+    pub fn set_focal_point(&mut self, focal_point: Vec3) {
+        self.focal_point = focal_point;
+    }
+
+    /// Set distance (for bookmark restore)
+    pub fn set_distance(&mut self, distance: f32) {
+        self.distance = distance.max(self.min_distance);
+    }
+
+    /// Set yaw angle (for bookmark restore)
+    pub fn set_yaw(&mut self, yaw: f32) {
+        self.yaw = yaw;
+    }
+
+    /// Set pitch angle (for bookmark restore)
+    pub fn set_pitch(&mut self, pitch: f32) {
+        self.pitch = pitch.clamp(-89.0_f32.to_radians(), 89.0_f32.to_radians());
     }
 
     /// Get camera forward vector (normalized)

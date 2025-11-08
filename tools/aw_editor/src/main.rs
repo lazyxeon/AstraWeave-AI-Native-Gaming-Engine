@@ -30,6 +30,7 @@ struct QuestStep {
 }
 
 mod brdf_preview;
+mod command; // Phase 2.1 - Undo/Redo system
 mod entity_manager;
 mod file_watcher;
 mod gizmo;
@@ -185,6 +186,8 @@ struct EditorApp {
     // Phase 1: Entity management
     entity_manager: EntityManager,
     selected_entity: Option<u64>,
+    // Phase 2.1: Undo/Redo system
+    undo_stack: command::UndoStack,
     // Astract panels
     world_panel: WorldPanel,
     entity_panel: EntityPanel,
@@ -285,6 +288,8 @@ impl Default for EditorApp {
             // Phase 1: Entity management
             entity_manager: EntityManager::new(),
             selected_entity: None,
+            // Phase 2.1: Undo/Redo system
+            undo_stack: command::UndoStack::new(100), // Store last 100 commands
             // Initialize Astract panels
             world_panel: WorldPanel::new(),
             entity_panel: EntityPanel::new(),
@@ -870,6 +875,37 @@ struct MaterialLiveDoc {
 
 impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        // Phase 2.1: Global hotkeys for undo/redo
+        ctx.input(|i| {
+            // Ctrl+Z: Undo
+            if i.modifiers.ctrl && i.key_pressed(egui::Key::Z) && !i.modifiers.shift {
+                if let Some(world) = self.sim_world.as_mut() {
+                    if let Err(e) = self.undo_stack.undo(world) {
+                        self.console_logs.push(format!("❌ Undo failed: {}", e));
+                    } else if let Some(desc) = self.undo_stack.redo_description() {
+                        // After undo, redo_description points to what was just undone
+                        self.status = format!("⏮️  Undid: {}", desc);
+                        self.console_logs.push(format!("⏮️  Undo: {}", desc));
+                    }
+                }
+            }
+
+            // Ctrl+Y or Ctrl+Shift+Z: Redo
+            if (i.modifiers.ctrl && i.key_pressed(egui::Key::Y))
+                || (i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::Z))
+            {
+                if let Some(world) = self.sim_world.as_mut() {
+                    if let Err(e) = self.undo_stack.redo(world) {
+                        self.console_logs.push(format!("❌ Redo failed: {}", e));
+                    } else if let Some(desc) = self.undo_stack.undo_description() {
+                        // After redo, undo_description points to what was just redone
+                        self.status = format!("⏭️  Redid: {}", desc);
+                        self.console_logs.push(format!("⏭️  Redo: {}", desc));
+                    }
+                }
+            }
+        });
+
         // Update Astract panels
         self.performance_panel.update();
         self.charts_panel.update();
@@ -1100,15 +1136,17 @@ impl eframe::App for EditorApp {
 
                 // Render viewport (takes 70% width, full available height)
                 // Use sim_world if available, otherwise create empty world for first-time rendering
-                let world_to_render = if let Some(ref world) = self.sim_world {
+                let world_to_render = if let Some(ref mut world) = self.sim_world {
                     world
                 } else {
-                    // Fallback empty world (only used if sim_world is None for some reason)
-                    static EMPTY_WORLD: std::sync::OnceLock<World> = std::sync::OnceLock::new();
-                    EMPTY_WORLD.get_or_init(World::new)
+                    // Fallback: Create empty world if needed (rare case)
+                    if self.sim_world.is_none() {
+                        self.sim_world = Some(Self::create_default_world());
+                    }
+                    self.sim_world.as_mut().unwrap()
                 };
 
-                if let Err(e) = viewport.ui(ui, world_to_render, &mut self.entity_manager) {
+                if let Err(e) = viewport.ui(ui, world_to_render, &mut self.entity_manager, &mut self.undo_stack) {
                     self.console_logs.push(format!("❌ Viewport error: {}", e));
                     eprintln!("❌ Viewport error: {}", e);
                 }

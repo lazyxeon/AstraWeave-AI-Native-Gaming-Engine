@@ -273,7 +273,7 @@ impl EntityRenderer {
         depth: &wgpu::TextureView,
         camera: &OrbitCamera,
         world: &World,
-        selected_entity: Option<Entity>,
+        selected_entities: &[Entity],
         queue: &wgpu::Queue,
     ) -> Result<()> {
         // Update camera uniforms
@@ -289,7 +289,7 @@ impl EntityRenderer {
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
         // Collect instances from World
-        let instances = self.collect_instances(world, selected_entity);
+        let instances = self.collect_instances(world, selected_entities);
 
         if instances.is_empty() {
             return Ok(()); // Nothing to render
@@ -337,7 +337,7 @@ impl EntityRenderer {
     ///
     /// Creates Instance data for each entity with a Position component.
     /// Selected entity is highlighted with orange color.
-    fn collect_instances(&self, world: &World, selected_entity: Option<Entity>) -> Vec<Instance> {
+    fn collect_instances(&self, world: &World, selected_entities: &[Entity]) -> Vec<Instance> {
         let mut instances = Vec::new();
 
         // Iterate over all entities (simplified - assumes entities have positions)
@@ -350,13 +350,22 @@ impl EntityRenderer {
             if let Some(pose) = world.pose(entity) {
                 let x = pose.pos.x as f32;
                 let z = pose.pos.y as f32; // Note: IVec2.y maps to Z in 3D
-                let position = Vec3::new(x, 0.5, z);
+                let position = Vec3::new(x, 1.0, z); // Raised to Y=1.0 (1m above grid, was 0.5m)
 
-                // Create model matrix (translation only for now)
-                let model = Mat4::from_translation(position);
+                // Create model matrix with translation, rotation (XYZ Euler), and scale
+                let translation = Mat4::from_translation(position);
+                // Combine all three rotation axes (X = pitch, Y = yaw, Z = roll)
+                let rotation = Mat4::from_euler(
+                    glam::EulerRot::XYZ,
+                    pose.rotation_x,
+                    pose.rotation,
+                    pose.rotation_z
+                );
+                let scale = Mat4::from_scale(Vec3::splat(pose.scale));
+                let model = translation * rotation * scale; // TRS order
 
                 // Color: orange if selected, team-based otherwise
-                let is_selected = Some(entity) == selected_entity;
+                let is_selected = selected_entities.contains(&entity);
                 let color = if is_selected {
                     [1.0, 0.6, 0.2, 1.0] // Orange
                 } else if let Some(team) = world.team(entity) {
