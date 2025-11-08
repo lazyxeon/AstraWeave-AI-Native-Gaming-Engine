@@ -27,13 +27,14 @@ impl TranslateGizmo {
     ) -> Vec3 {
         // Convert screen-space mouse delta to world units
         // Scale by camera distance (objects farther away move more per pixel)
-        let scale_factor = (camera_distance * 0.01).max(0.01); // Clamp to avoid zero/negative
+        // Reduced sensitivity: 0.002 = 500px for 1 unit at 10m distance
+        let scale_factor = (camera_distance * 0.002).max(0.001); // Much lower sensitivity
 
-        // Base world-space translation (XY plane in screen space)
+        // Base world-space translation (X and Z for ground plane)
         let mut world_delta = Vec3::new(
-            mouse_delta.x * scale_factor,
-            -mouse_delta.y * scale_factor, // Flip Y (screen Y is down, world Y is up)
-            0.0,
+            mouse_delta.x * scale_factor,  // Horizontal mouse → world X
+            0.0,                            // No vertical world movement
+            -mouse_delta.y * scale_factor,  // Vertical mouse → world Z (flipped)
         );
 
         // Apply constraint in world space or local space
@@ -94,13 +95,13 @@ impl TranslateGizmo {
     /// Apply constraint in world space.
     fn apply_constraint_world(delta: Vec3, constraint: AxisConstraint) -> Vec3 {
         match constraint {
-            AxisConstraint::None => delta, // Free movement
-            AxisConstraint::X => Vec3::new(delta.x, 0.0, 0.0),
-            AxisConstraint::Y => Vec3::new(0.0, delta.y, 0.0),
-            AxisConstraint::Z => Vec3::new(0.0, 0.0, delta.z),
-            AxisConstraint::XY => Vec3::new(0.0, delta.y, delta.z), // YZ plane (exclude X)
-            AxisConstraint::XZ => Vec3::new(delta.x, 0.0, delta.z), // XZ plane (exclude Y)
-            AxisConstraint::YZ => Vec3::new(delta.x, delta.y, 0.0), // XY plane (exclude Z)
+            AxisConstraint::None => delta, // Free movement on XZ plane
+            AxisConstraint::X => Vec3::new(delta.x, 0.0, 0.0), // Only X axis
+            AxisConstraint::Y => Vec3::ZERO, // Y axis not used for ground plane
+            AxisConstraint::Z => Vec3::new(0.0, 0.0, delta.z), // Only Z axis
+            AxisConstraint::XY => Vec3::new(delta.x, 0.0, 0.0), // XY plane → X only (no Y in ground)
+            AxisConstraint::XZ => Vec3::new(delta.x, 0.0, delta.z), // XZ plane (full ground movement)
+            AxisConstraint::YZ => Vec3::new(0.0, 0.0, delta.z), // YZ plane → Z only (no Y in ground)
         }
     }
 

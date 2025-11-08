@@ -61,8 +61,8 @@ pub struct ViewportRenderer {
     /// Current viewport size
     size: (u32, u32),
 
-    /// Currently selected entity (for highlighting)
-    selected_entity: Option<Entity>,
+    /// Currently selected entities (for highlighting) - supports multi-selection
+    selected_entities: Vec<Entity>,
 }
 
 impl ViewportRenderer {
@@ -95,7 +95,7 @@ impl ViewportRenderer {
             depth_texture: None,
             depth_view: None,
             size: (0, 0),
-            selected_entity: None,
+            selected_entities: Vec::new(),
         })
     }
 
@@ -216,14 +216,22 @@ impl ViewportRenderer {
                 depth_view,
                 camera,
                 world,
-                self.selected_entity,
+                &self.selected_entities,
                 &self.queue,
             )
             .context("Entity render failed")?;
 
         // Pass 4: Gizmos (if entity selected and gizmo active)
-        if let (Some(selected), Some(gizmo)) = (self.selected_entity, gizmo_state) {
+        if let (Some(selected), Some(gizmo)) = (self.selected_entity(), gizmo_state) {
             if gizmo.mode != crate::gizmo::GizmoMode::Inactive {
+                // DEBUG: Log gizmo mode and constraint
+                match &gizmo.mode {
+                    crate::gizmo::GizmoMode::Rotate { constraint } => {
+                        println!("🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}", constraint);
+                    }
+                    _ => {}
+                }
+                
                 // Get entity position from world (old astraweave-core API)
                 if let Some(pose) = world.pose(selected) {
                     // Convert astraweave_core::IVec2 to glam::IVec2
@@ -300,14 +308,27 @@ impl ViewportRenderer {
         &self.queue
     }
 
-    /// Set selected entity (for highlighting)
+    /// Set selected entities (for highlighting) - supports multi-selection
+    pub fn set_selected_entities(&mut self, entities: &[Entity]) {
+        self.selected_entities = entities.to_vec();
+    }
+    
+    /// Set selected entity (for backward compatibility)
     pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
-        self.selected_entity = entity;
+        self.selected_entities.clear();
+        if let Some(e) = entity {
+            self.selected_entities.push(e);
+        }
     }
 
-    /// Get selected entity
+    /// Get selected entity (returns first selected for backward compatibility)
     pub fn selected_entity(&self) -> Option<Entity> {
-        self.selected_entity
+        self.selected_entities.first().copied()
+    }
+    
+    /// Get all selected entities
+    pub fn selected_entities(&self) -> &[Entity] {
+        &self.selected_entities
     }
 }
 

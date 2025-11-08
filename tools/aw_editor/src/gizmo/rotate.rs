@@ -27,9 +27,19 @@ impl RotateGizmo {
         object_rotation: Quat,
         local_space: bool,
     ) -> Quat {
-        // Calculate rotation angle from mouse delta magnitude
-        let delta_magnitude = mouse_delta.length();
-        let mut angle = (delta_magnitude / 100.0) * sensitivity; // 100px = sensitivity radians
+        // For Y-axis rotation (default), use horizontal mouse delta
+        // For X-axis rotation, use vertical mouse delta
+        // This makes rotation feel more intuitive
+        let rotation_delta = match constraint {
+            AxisConstraint::Y | AxisConstraint::None => mouse_delta.x, // Horizontal for Y-axis
+            AxisConstraint::X => mouse_delta.y, // Vertical for X-axis
+            AxisConstraint::Z => mouse_delta.x, // Horizontal for Z-axis
+            _ => mouse_delta.x, // Default to horizontal
+        };
+        
+        // Calculate rotation angle from mouse delta
+        // Reduced sensitivity: 0.005 = 200px for 1 radian (57.3°)
+        let mut angle = rotation_delta * 0.005 * sensitivity;
 
         // Apply snapping if enabled (15° increments = π/12 radians)
         if snap_enabled {
@@ -42,13 +52,9 @@ impl RotateGizmo {
             AxisConstraint::X => Vec3::X,
             AxisConstraint::Y => Vec3::Y,
             AxisConstraint::Z => Vec3::Z,
-            _ => Vec3::ZERO, // Planar constraints not supported for rotation
+            AxisConstraint::None => Vec3::Y, // Default to Y axis (vertical) for free rotation
+            _ => Vec3::Y, // Planar constraints default to Y axis
         };
-
-        // If no valid axis (planar or None), return identity
-        if axis == Vec3::ZERO {
-            return Quat::IDENTITY;
-        }
 
         // Create rotation quaternion
         let rotation = if local_space {

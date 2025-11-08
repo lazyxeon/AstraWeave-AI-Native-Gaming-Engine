@@ -183,6 +183,7 @@ impl GizmoState {
                 constraint: AxisConstraint::None,
             };
             self.reset_operation_state();
+            println!("🔄 Rotate mode started - constraint reset to None");
         }
     }
 
@@ -201,13 +202,19 @@ impl GizmoState {
     pub fn add_constraint(&mut self, axis: AxisConstraint) {
         match &mut self.mode {
             GizmoMode::Translate { constraint } => {
+                let old = *constraint;
                 *constraint = constraint.cycle(axis);
+                println!("🎯 Translate constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Rotate { constraint } => {
+                let old = *constraint;
                 *constraint = constraint.cycle(axis);
+                println!("🎯 Rotate constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Scale { constraint, .. } => {
+                let old = *constraint;
                 *constraint = constraint.cycle(axis);
+                println!("🎯 Scale constraint: {:?} → {:?}", old, *constraint);
             }
             GizmoMode::Inactive => {}
         }
@@ -236,7 +243,17 @@ impl GizmoState {
         match key {
             KeyCode::KeyG => self.start_translate(),
             KeyCode::KeyR => self.start_rotate(),
-            KeyCode::KeyS => self.start_scale(false),
+            KeyCode::KeyS => {
+                // Toggle scale mode on/off
+                if matches!(self.mode, GizmoMode::Scale { .. }) {
+                    // Already in scale mode - exit it
+                    self.mode = GizmoMode::Inactive;
+                    self.numeric_buffer.clear();
+                } else {
+                    // Enter scale mode
+                    self.start_scale(false);
+                }
+            }
             KeyCode::ShiftLeft | KeyCode::ShiftRight => {
                 // Shift+S = uniform scale
                 if matches!(self.mode, GizmoMode::Scale { .. }) {

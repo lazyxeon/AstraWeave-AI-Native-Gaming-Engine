@@ -200,8 +200,10 @@ impl GizmoRenderer {
         let x_highlighted = matches!(params.constraint, AxisConstraint::X)
             || matches!(params.hovered_axis, Some(AxisConstraint::X));
         let x_color = if x_highlighted {
+            println!("🟡 X-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}", params.constraint, COLOR_HIGHLIGHT);
             COLOR_HIGHLIGHT
         } else {
+            println!("🔴 X-axis NORMAL: constraint={:?}, color=RED {:?}", params.constraint, COLOR_X);
             COLOR_X
         };
         geometries.push((
@@ -211,11 +213,14 @@ impl GizmoRenderer {
         ));
 
         // Y-axis circle (Green, XZ plane)
+        // Only highlight if EXPLICITLY constrained to Y (not when None/default)
         let y_highlighted = matches!(params.constraint, AxisConstraint::Y)
             || matches!(params.hovered_axis, Some(AxisConstraint::Y));
         let y_color = if y_highlighted {
+            println!("🟡 Y-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}", params.constraint, COLOR_HIGHLIGHT);
             COLOR_HIGHLIGHT
         } else {
+            println!("🟢 Y-axis NORMAL: constraint={:?}, color=GREEN {:?}", params.constraint, COLOR_Y);
             COLOR_Y
         };
         geometries.push((
@@ -228,8 +233,10 @@ impl GizmoRenderer {
         let z_highlighted = matches!(params.constraint, AxisConstraint::Z)
             || matches!(params.hovered_axis, Some(AxisConstraint::Z));
         let z_color = if z_highlighted {
+            println!("🟡 Z-axis HIGHLIGHTED: constraint={:?}, color=YELLOW {:?}", params.constraint, COLOR_HIGHLIGHT);
             COLOR_HIGHLIGHT
         } else {
+            println!("🔵 Z-axis NORMAL: constraint={:?}, color=BLUE {:?}", params.constraint, COLOR_Z);
             COLOR_Z
         };
         geometries.push((
