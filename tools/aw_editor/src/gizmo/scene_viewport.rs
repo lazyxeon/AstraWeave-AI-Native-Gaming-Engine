@@ -178,6 +178,8 @@ pub struct SceneViewport {
     pub mouse_pos: Vec2,
     /// Previous mouse position (for delta calculation).
     pub prev_mouse_pos: Vec2,
+    /// Snapping configuration.
+    pub snapping_config: super::SnappingConfig,
 }
 
 impl Default for SceneViewport {
@@ -191,6 +193,7 @@ impl Default for SceneViewport {
             is_dragging: false,
             mouse_pos: Vec2::ZERO,
             prev_mouse_pos: Vec2::ZERO,
+            snapping_config: super::SnappingConfig::default(),
         }
     }
 }
@@ -304,10 +307,14 @@ impl SceneViewport {
                         false, // local_space
                     );
                     transform.position += translation;
+                    
+                    if self.snapping_config.grid_enabled {
+                        transform.position = TranslateGizmo::snap_position(transform.position, &self.snapping_config);
+                    }
                 }
             }
             GizmoMode::Rotate { constraint } => {
-                let snap_angle = 15.0; // Default snap angle
+                let snap_angle = self.snapping_config.angle_increment;
                 if let Some(value) = self.gizmo_state.parse_numeric_input() {
                     let rotation = RotateGizmo::calculate_rotation_numeric(
                         value,
@@ -321,7 +328,7 @@ impl SceneViewport {
                         mouse_delta,
                         constraint,
                         snap_angle,
-                        true, // snap_enabled
+                        self.snapping_config.angle_enabled,
                         transform.rotation,
                         false, // local_space
                     );

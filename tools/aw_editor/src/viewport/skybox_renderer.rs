@@ -3,9 +3,10 @@
 //! Renders procedural gradient skybox for atmosphere and depth perception.
 //! Uses cube geometry rendered at infinite distance.
 
-use anyhow::{Context, Result};
+#![allow(dead_code)]
+
+use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use glam::Mat4;
 use wgpu;
 
 use super::camera::OrbitCamera;

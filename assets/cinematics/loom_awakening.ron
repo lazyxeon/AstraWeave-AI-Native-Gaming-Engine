@@ -1,0 +1,64 @@
+// Loom Awakening Cinematic
+// Duration: 30 seconds
+// Purpose: Introduce loomspire anchor visually with 360° orbit
+// Triggers: Z0 start (player enters Loomspire Sanctum)
+// Interruptible: No (critical intro)
+
+Cinematic(
+    id: "loom_awakening",
+    duration: 30.0,
+    interruptible: false,
+    
+    // Camera path: 360° orbit around central anchor
+    // Radius: 7m, Height: 5m, Pitch: 30° (looking down at anchor)
+    camera_path: [
+        CameraKeyframe(
+            time: 0.0,
+            position: (-5.0, 5.0, -5.0),  // Start: Southwest
+            rotation: (30.0, 45.0, 0.0),   // Pitch 30°, Yaw 45° (facing NE)
+            fov: 60.0,
+        ),
+        CameraKeyframe(
+            time: 10.0,
+            position: (5.0, 5.0, -5.0),    // Southeast
+            rotation: (30.0, 135.0, 0.0),  // Pitch 30°, Yaw 135° (facing NW)
+            fov: 60.0,
+        ),
+        CameraKeyframe(
+            time: 20.0,
+            position: (5.0, 5.0, 5.0),     // Northeast
+            rotation: (30.0, 225.0, 0.0),  // Pitch 30°, Yaw 225° (facing SW)
+            fov: 60.0,
+        ),
+        CameraKeyframe(
+            time: 30.0,
+            position: (-5.0, 5.0, 5.0),    // Northwest
+            rotation: (30.0, 315.0, 0.0),  // Pitch 30°, Yaw 315° (facing SE)
+            fov: 60.0,
+        ),
+    ],
+    
+    // Subtitle timing: Display dialogue node at specific times
+    subtitle_timing: [
+        (0.0, "n0"),   // "The threads are restless tonight."
+        (5.0, "n1"),   // "The storms grow wilder each day..."
+    ],
+    
+    // Audio: Ambient loom hum (440 Hz drone, spatial audio)
+    audio: Some(AudioConfig(
+        file: "assets/audio/ambient_loom_hum.ogg",
+        volume: 0.6,
+        spatial: true,
+        loop_audio: true,
+    )),
+    
+    // Post-processing: Subtle glow on anchor
+    post_fx: Some(PostFxConfig(
+        bloom_intensity: 0.3,
+        vignette: 0.2,
+        color_grading: Some("cool_blue"),
+    )),
+    
+    // Anchor focus: Ensure loomspire_central_anchor is visible
+    focus_entity: Some("loomspire_central_anchor"),
+)

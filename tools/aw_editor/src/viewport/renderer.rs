@@ -2,6 +2,8 @@
 //!
 //! Coordinates multi-pass rendering pipeline for 3D viewport.
 //! Renders in order: Grid → Entities → Gizmos → Selection Outline
+
+#![allow(dead_code)]
 //!
 //! # Performance Budget
 //!
@@ -26,7 +28,7 @@ use super::entity_renderer::EntityRenderer;
 use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
 use super::skybox_renderer::SkyboxRenderer;
-use crate::gizmo::{GizmoMode, GizmoState};
+use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
 
 /// Viewport rendering coordinator

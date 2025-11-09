@@ -1,6 +1,8 @@
 //! Entity Renderer
 //!
 //! Renders entities from the World into the 3D viewport.
+
+#![allow(dead_code)]
 //! Supports basic meshes, materials, and transform visualization.
 //!
 //! # Features
@@ -17,7 +19,7 @@
 //! - Instanced draw call: ~5ms
 //! - Total: ~7ms (12% under budget)
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec3};
 use wgpu;

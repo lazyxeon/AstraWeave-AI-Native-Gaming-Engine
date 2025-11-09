@@ -1,0 +1,24 @@
+[package]
+name = "greybox_generator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+glam = "0.29"
+base64 = "0.22"
+bytemuck = { version = "1.14", features = ["derive"] }
+
+[[bin]]
+name = "generate_loomspire"
+path = "src/loomspire.rs"
+
+[[bin]]
+name = "generate_echo_grove"
+path = "src/echo_grove.rs"
+
+[[bin]]
+name = "generate_fractured_cliffs"
+path = "src/fractured_cliffs.rs"

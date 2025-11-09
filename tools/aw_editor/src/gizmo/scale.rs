@@ -1,4 +1,6 @@
-//! Scale gizmo implementation (S key).
+//! Scale gizmo implementation
+
+#![allow(dead_code)]
 //!
 //! Supports:
 //! - Uniform scaling (default) - Scale all axes equally
