@@ -2,19 +2,22 @@
 
 use super::Panel;
 use astract::prelude::*;
-use astraweave_core::{Ammo, Health, IVec2, Team, World};
+use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
+use crate::component_ui::{ComponentEdit, ComponentRegistry, ComponentType};
 use egui::Ui;
 
 /// Entity panel - inspect and edit entity properties
 ///
 /// Now integrated with real ECS World instead of mock entities.
 pub struct EntityPanel {
-    // Panel state managed by hooks
+    component_registry: ComponentRegistry,
 }
 
 impl EntityPanel {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            component_registry: ComponentRegistry::new(),
+        }
     }
 
     /// Show entity panel with real world integration
@@ -23,7 +26,12 @@ impl EntityPanel {
     ///
     /// * `ui` - egui UI context
     /// * `world` - Mutable reference to ECS world (optional)
-    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>) {
+    /// * `selected_entity` - Currently selected entity (optional)
+    ///
+    /// # Returns
+    ///
+    /// Optional ComponentEdit if a component was modified (for undo system)
+    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>, selected_entity: Option<Entity>) -> Option<ComponentEdit> {
         ui.heading("🎮 Entity Inspector");
         ui.separator();
 
@@ -75,6 +83,37 @@ impl EntityPanel {
 
         ui.add_space(10.0);
 
+        let mut component_edit = None;
+
+        if let Some(entity) = selected_entity {
+            if let Some(world) = world {
+                ui.group(|ui| {
+                    ui.heading(format!("✏️ Entity #{}", entity));
+                    ui.separator();
+                    
+                    let components = self.component_registry.get_entity_components(world, entity);
+                    
+                    if components.is_empty() {
+                        ui.label("No components");
+                    } else {
+                        for component_type in components {
+                            if let Some(edit) = component_type.show_ui(world, entity, ui) {
+                                component_edit = Some(edit);
+                            }
+                        }
+                    }
+                });
+            } else {
+                ui.label("⚠️ No world initialized");
+            }
+        } else {
+            ui.label("No entity selected");
+            ui.label("Click an entity in the viewport to inspect it");
+        }
+
+        ui.separator();
+        ui.add_space(10.0);
+
         // Display entity count
         if let Some(world) = world {
             let entity_count = world.entities().len();
@@ -117,6 +156,8 @@ impl EntityPanel {
         } else {
             ui.label("⚠️  No world initialized");
         }
+        
+        component_edit
     }
 }
 

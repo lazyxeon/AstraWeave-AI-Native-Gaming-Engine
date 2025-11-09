@@ -1,12 +1,17 @@
 //! Translation gizmo implementation (G key).
 
-use super::AxisConstraint;
+use super::{AxisConstraint, SnappingConfig};
 use glam::{Mat3, Quat, Vec2, Vec3};
 
 /// Translation gizmo calculator.
 pub struct TranslateGizmo;
 
 impl TranslateGizmo {
+    /// Snap position to grid using snapping configuration.
+    pub fn snap_position(position: Vec3, snapping: &SnappingConfig) -> Vec3 {
+        snapping.snap_position(position)
+    }
+
     /// Calculate translation delta from mouse movement.
     ///
     /// # Arguments

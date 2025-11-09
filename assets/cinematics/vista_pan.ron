@@ -1,0 +1,89 @@
+// Vista Pan Cinematic
+// Duration: 20 seconds
+// Purpose: Vista platform overlook, reveal Z2 anchor and Echo Dash tutorial
+// Triggers: Z2 vista platform arrival (200m path end)
+// Interruptible: Yes (player can skip after 5s)
+
+Cinematic(
+    id: "vista_pan",
+    duration: 20.0,
+    interruptible: true,
+    skip_after: Some(5.0),  // Allow skip after 5 seconds
+    
+    // Camera path: 180° pan from cliff walls, show vista anchor
+    // Position: Vista platform (0, 11, 200), Pitch: -10° (looking down)
+    camera_path: [
+        CameraKeyframe(
+            time: 0.0,
+            position: (0.0, 11.0, 200.0),  // Vista platform center
+            rotation: (-10.0, 90.0, 0.0),  // Pitch -10°, Yaw 90° (facing East cliffs)
+            fov: 75.0,
+        ),
+        CameraKeyframe(
+            time: 5.0,
+            position: (0.0, 11.0, 200.0),
+            rotation: (-10.0, 120.0, 0.0), // Pan toward anchor (SE)
+            fov: 75.0,
+        ),
+        CameraKeyframe(
+            time: 10.0,
+            position: (0.0, 11.0, 200.0),
+            rotation: (-10.0, 180.0, 0.0), // Focus on anchor (South)
+            fov: 65.0,                      // Slight zoom to anchor
+        ),
+        CameraKeyframe(
+            time: 15.0,
+            position: (0.0, 11.0, 200.0),
+            rotation: (-10.0, 240.0, 0.0), // Pan toward West cliffs
+            fov: 75.0,
+        ),
+        CameraKeyframe(
+            time: 20.0,
+            position: (0.0, 11.0, 200.0),
+            rotation: (-10.0, 270.0, 0.0), // End: West cliffs (full 180°)
+            fov: 75.0,
+        ),
+    ],
+    
+    // Subtitle timing: Anchor tutorial dialogue
+    subtitle_timing: [
+        (10.0, "n3a"),  // "Focus on the loom nodes, project the thread..."
+        (16.0, "n5"),   // "Two charges. Use them wisely."
+    ],
+    
+    // Audio: Wind at height + ambient hum from anchor
+    audio: Some(AudioConfig(
+        file: "assets/audio/vista_wind.ogg",
+        volume: 0.7,
+        spatial: false,
+        loop_audio: true,
+    )),
+    
+    // Anchor audio: Hum from vista_tutorial_anchor
+    ambient_audio: Some(AudioConfig(
+        file: "assets/audio/anchor_hum_distant.ogg",
+        volume: 0.4,
+        spatial: true,
+        loop_audio: true,
+        position: (0.0, 11.0, 200.0),  // Anchor position
+    )),
+    
+    // Post-processing: Slight blue tint (anchor glow)
+    post_fx: Some(PostFxConfig(
+        bloom_intensity: 0.4,
+        vignette: 0.15,
+        color_grading: Some("vista_blue"),
+    )),
+    
+    // Anchor focus: Highlight vista_tutorial_anchor during pan
+    focus_entity: Some("vista_tutorial_anchor"),
+    
+    // UI overlay: Show anchor inspection prompt at end
+    ui_events: Some([
+        UiEvent(
+            time: 18.0,
+            event_type: "show_prompt",
+            data: "Press E to Inspect Anchor",
+        ),
+    ]),
+)

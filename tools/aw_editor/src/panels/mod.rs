@@ -20,9 +20,11 @@ pub trait Panel {
 // Panel implementations
 pub mod advanced_widgets_panel;
 pub mod animation;
+pub mod asset_browser;
 pub mod charts_panel;
 pub mod entity_panel;
 pub mod graph_panel;
+pub mod hierarchy_panel;
 pub mod performance_panel;
 pub mod transform_panel;
 pub mod world_panel;
@@ -30,9 +32,11 @@ pub mod world_panel;
 // Re-exports
 pub use advanced_widgets_panel::AdvancedWidgetsPanel;
 pub use animation::AnimationPanel;
+pub use asset_browser::AssetBrowser;
 pub use charts_panel::ChartsPanel;
 pub use entity_panel::EntityPanel;
 pub use graph_panel::GraphPanel;
+pub use hierarchy_panel::HierarchyPanel;
 pub use performance_panel::PerformancePanel;
 pub use transform_panel::TransformPanel;
 pub use world_panel::WorldPanel;

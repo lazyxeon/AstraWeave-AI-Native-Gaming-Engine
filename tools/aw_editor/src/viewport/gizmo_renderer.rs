@@ -3,9 +3,11 @@
 //! Renders translate/rotate/scale gizmos using wgpu line rendering.
 //! Integrates with existing gizmo module for geometry generation.
 
-use anyhow::{Context, Result};
+#![allow(dead_code)]
+
+use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use glam::{Mat4, Quat, Vec3};
+use glam::{Quat, Vec3};
 use wgpu;
 
 use super::camera::OrbitCamera;

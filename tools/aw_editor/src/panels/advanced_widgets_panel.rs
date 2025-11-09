@@ -83,7 +83,7 @@ impl AdvancedWidgetsPanel {
         }
 
         // Scene Hierarchy: Typical game scene structure
-        let world = self
+        let _world = self
             .scene_hierarchy
             .add_node(TreeNode::new(1, "World").with_icon("🌍"));
 

@@ -1,6 +1,8 @@
 //! Grid Renderer
 //!
 //! Renders infinite grid overlay on ground plane using screen-space technique.
+
+#![allow(dead_code)]
 //! No vertex buffers needed - renders fullscreen quad and computes grid in fragment shader.
 //!
 //! # Features
@@ -14,9 +16,8 @@
 //!
 //! ~0.5ms for 1080p (measured on RTX 3070)
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use glam::Mat4;
 use wgpu;
 
 use super::camera::OrbitCamera;

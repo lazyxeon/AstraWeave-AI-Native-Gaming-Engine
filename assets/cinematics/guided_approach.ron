@@ -1,0 +1,77 @@
+// Guided Approach Cinematic
+// Duration: 15 seconds
+// Purpose: Companion guides player from Z0 to Z1 (bridge crossing)
+// Triggers: Z0-Z1 bridge entrance (Z=0-50m transition)
+// Interruptible: Yes (player can skip after 3s)
+
+Cinematic(
+    id: "guided_approach",
+    duration: 15.0,
+    interruptible: true,
+    skip_after: Some(3.0),  // Allow skip after 3 seconds
+    
+    // Camera path: Follow behind player/companion along bridge
+    // Eye height: 1.6m (player perspective), straight walk Z=0-50m
+    camera_path: [
+        CameraKeyframe(
+            time: 0.0,
+            position: (0.0, 1.6, 0.0),     // Start: Loomspire exit
+            rotation: (0.0, 0.0, 0.0),     // Looking straight ahead (north)
+            fov: 70.0,
+        ),
+        CameraKeyframe(
+            time: 5.0,
+            position: (0.0, 1.6, 16.67),   // 1/3 along bridge
+            rotation: (0.0, 0.0, 0.0),
+            fov: 70.0,
+        ),
+        CameraKeyframe(
+            time: 10.0,
+            position: (0.0, 1.6, 33.33),   // 2/3 along bridge
+            rotation: (0.0, 0.0, 0.0),
+            fov: 70.0,
+        ),
+        CameraKeyframe(
+            time: 15.0,
+            position: (0.0, 1.6, 50.0),    // End: Echo Grove entrance
+            rotation: (0.0, 0.0, 0.0),
+            fov: 70.0,
+        ),
+    ],
+    
+    // Subtitle timing: Companion dialogue during walk
+    subtitle_timing: [
+        (0.0, "n3"),   // "First the frayed causeway..."
+        (8.0, "n4"),   // "The bridge holds... for now."
+    ],
+    
+    // Audio: Footsteps + wind ambience
+    audio: Some(AudioConfig(
+        file: "assets/audio/footsteps_stone.ogg",
+        volume: 0.4,
+        spatial: false,
+        loop_audio: true,
+    )),
+    
+    // Ambient audio: Wind on bridge
+    ambient_audio: Some(AudioConfig(
+        file: "assets/audio/wind_bridge.ogg",
+        volume: 0.5,
+        spatial: false,
+        loop_audio: true,
+    )),
+    
+    // Post-processing: Neutral (daytime outdoor)
+    post_fx: Some(PostFxConfig(
+        bloom_intensity: 0.1,
+        vignette: 0.0,
+        color_grading: None,
+    )),
+    
+    // Companion visibility: Ensure companion walks ahead
+    companion_behavior: Some(CompanionBehavior(
+        lead: true,                // Walk ahead of camera
+        offset: (0.0, 0.0, 2.0),  // 2m ahead
+        speed: 3.33,              // m/s (50m in 15s)
+    )),
+)

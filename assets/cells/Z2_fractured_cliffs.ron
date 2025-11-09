@@ -1,0 +1,115 @@
+// Fractured Cliffs Zone Descriptor (Z2)
+// 200m linear narrative path between cliff walls
+// Vista platform at end provides first view of wider Veilweave world
+// Companion NPC teaches fate-weaving lore through environmental storytelling
+
+ZoneDescriptor(
+    // Unique zone identifier (referenced by zone transitions, save data)
+    zone_id: "Z2_fractured_cliffs",
+    
+    // Greybox mesh reference (200m linear path, 20m cliff walls, vista platform)
+    mesh_path: "models/greybox/fractured_cliffs_greybox.gltf",
+    
+    // Player spawn position at path start, facing north along path (Z-positive)
+    spawn_points: [
+        (pos: (0.0, 1.0, -5.0), facing: (0.0, 0.0, 1.0)),
+    ],
+    
+    // Dialogue triggers: 3 lore beats along path
+    // - journey_begin: Path start, companion explains quest urgency
+    // - midpoint_lore: Z=100m, companion reveals anchors backstory
+    // - vista_reveal: Z=200m, first vista of world, tutorial objectives explained
+    triggers: [
+        (
+            name: "journey_begin",
+            bounds: (min: (-3.0, -6.0), max: (3.0, 0.0)),  // 6m × 6m at path start (Z=-5 to Z=1)
+            action: "dialogue.play:journey_awakening",
+        ),
+        (
+            name: "midpoint_lore",
+            bounds: (min: (-3.0, 95.0), max: (3.0, 105.0)),  // 6m × 10m at Z=100m
+            action: "dialogue.play:anchor_lore",
+        ),
+        (
+            name: "vista_reveal",
+            bounds: (min: (-7.0, 195.0), max: (7.0, 205.0)),  // 14m × 10m at vista platform
+            action: "dialogue.play:vista_overview",
+        ),
+        (
+            name: "tutorial_complete",
+            bounds: (min: (-5.0, 200.0), max: (5.0, 210.0)),  // Vista platform exit
+            action: "zone.transition:Z1_echo_grove",
+        ),
+    ],
+    
+    // Narrative anchors: 1 tutorial anchor at vista platform
+    // Player learns to inspect anchor health, stability, and repair mechanics
+    anchors: [
+        (
+            id: "vista_tutorial_anchor",
+            pos: (0.0, 11.0, 200.0),  // Vista platform center (elevated +10m)
+            stability: 0.7,  // 70% stable (tutorial explains decay mechanic)
+            repair_cost: 2,  // Tutorial requires 2 Echoes to stabilize
+        ),
+    ],
+    
+    // Navigation mesh placeholder (generation deferred to Week 2)
+    // Should support 200m linear path walking, companion NPC pathfinding
+    navigation_mesh: "navmeshes/fractured_cliffs_navmesh.ron",
+    
+    // Dialogue node references (defined in assets/dialogue_intro.toml)
+    // - journey_awakening: Companion explains urgency of quest (15s, 3 lines)
+    // - anchor_lore: Companion reveals anchors backstory, decay mechanics (30s, 5 lines)
+    // - vista_overview: Companion points out key landmarks, sets up combat zone (20s, 4 lines)
+    dialogue_nodes: [
+        "journey_awakening",
+        "anchor_lore",
+        "vista_overview",
+    ],
+    
+    // Cinematic triggers: 2 cinematics (guided walk, vista pan)
+    // - guided_approach: 15s companion walk from path start to Z=50m (Week 1 Day 7 implementation)
+    // - vista_pan: 20s camera pan at vista platform showing world overview (Week 1 Day 7)
+    cinematic_triggers: [
+        "guided_approach",
+        "vista_pan",
+    ],
+)
+
+//
+// COORDINATE REFERENCE (Y-up, right-handed, Z=North)
+//
+// Path geometry:
+//   - Start: Z=0m, player spawns at Z=-5m (5m south of path start)
+//   - End: Z=200m, vista platform at (0, 10, 200) elevated +10m
+//   - Width: 8m walkable (X ∈ [-4, 4])
+//   - Cliff walls: X=-5m (left), X=+5m (right), 20m tall
+//
+// Slope section:
+//   - Z=150-200m: 5 steps × 10m depth each
+//   - Rise: 2m per step (10m vertical climb over 50m horizontal = ~11° incline)
+//   - Simplified from 30° spec for greybox phase
+//
+// Dialogue trigger positions:
+//   - journey_begin: Z ∈ [-6, 0], 6m × 6m box at path start
+//   - midpoint_lore: Z ∈ [95, 105], 6m × 10m box at midpoint
+//   - vista_reveal: Z ∈ [195, 205], 14m × 10m box at vista platform
+//
+// Vista platform:
+//   - Dimensions: 15m × 15m square
+//   - Elevation: Y=10m above path level
+//   - Center: (0, 10, 200)
+//   - Tutorial anchor: (0, 11, 200) - 1m above platform surface
+//
+// Narrative pacing:
+//   - 0-50m: Guided approach (companion NPC walk, cinematic "guided_approach")
+//   - 50-100m: Solo walk, midpoint lore dialogue at Z=100m
+//   - 100-150m: Solo walk, ambient environment sounds
+//   - 150-200m: Slope climb (stepped terrain, ~11° incline)
+//   - 200m: Vista platform (cinematic "vista_pan", dialogue "vista_overview")
+//
+// Week 1 Day 7 TODO:
+//   - Script cinematics/guided_approach.ron (15s companion walk, camera follows)
+//   - Script cinematics/vista_pan.ron (20s camera pan showing world overview)
+//   - Integrate dialogue_intro.toml nodes (journey_awakening, anchor_lore, vista_overview)
+//   - Manual walkthrough validation (verify pacing, trigger positions, camera angles)

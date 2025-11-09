@@ -2,6 +2,8 @@
 //!
 //! Custom egui widget that integrates wgpu 3D rendering into editor panels.
 //! Handles input, rendering coordination, and egui integration.
+
+#![allow(dead_code)]
 //!
 //! # Usage
 //!
@@ -439,7 +441,7 @@ impl ViewportWidget {
         entity_manager: &mut EntityManager,
         undo_stack: &mut crate::command::UndoStack, // Phase 2.1: Command integration
     ) -> Result<()> {
-        use crate::gizmo::{GizmoMode, TranslateGizmo, RotateGizmo, ScaleGizmo};
+        use crate::gizmo::GizmoMode;
         
         // Update gizmo state with current mouse position
         if let Some(pos) = response.hover_pos() {
@@ -452,12 +454,7 @@ impl ViewportWidget {
             if let Some(selected_id) = self.selected_entity() {
                 // Get entity's current pose
                 if let Some(pose) = world.pose(selected_id) {
-                    let x = pose.pos.x as f32;
-                    let z = pose.pos.y as f32; // IVec2.y maps to Z
-                    let position = glam::Vec3::new(x, 1.0, z);
-                    
                     let mouse_delta = self.gizmo_state.mouse_delta();
-                    let camera_distance = (self.camera.target() - position).length();
                     
                     match self.gizmo_state.mode {
                         GizmoMode::Translate { constraint: _ } => {
@@ -855,6 +852,33 @@ impl ViewportWidget {
                 println!("❌ Gizmo: Cancel");
             }
 
+            // Undo/Redo (Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z)
+            if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::Z) {
+                if i.modifiers.shift {
+                    // Ctrl+Shift+Z: Redo
+                    if let Err(e) = undo_stack.redo(world) {
+                        eprintln!("❌ Redo failed: {}", e);
+                    } else if let Some(desc) = undo_stack.redo_description() {
+                        println!("⏭️  Redo: {}", desc);
+                    }
+                } else {
+                    // Ctrl+Z: Undo
+                    if let Err(e) = undo_stack.undo(world) {
+                        eprintln!("❌ Undo failed: {}", e);
+                    } else if let Some(desc) = undo_stack.undo_description() {
+                        println!("⏮️  Undo: {}", desc);
+                    }
+                }
+            }
+            if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::Y) {
+                // Ctrl+Y: Redo (alternative to Ctrl+Shift+Z)
+                if let Err(e) = undo_stack.redo(world) {
+                    eprintln!("❌ Redo failed: {}", e);
+                } else if let Some(desc) = undo_stack.redo_description() {
+                    println!("⏭️  Redo: {}", desc);
+                }
+            }
+
             // Copy/Paste/Duplicate/Delete (multi-selection support)
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::C) {
                 // Ctrl+C: Copy selected entities
@@ -990,26 +1014,20 @@ impl ViewportWidget {
                         // Check if we're in move/rotate/scale mode
                         match &self.gizmo_state.mode {
                             GizmoMode::Translate { .. } => {
-                                // Create MoveEntityCommand only if position changed
                                 if old_pos != new_pos {
                                     let cmd = crate::command::MoveEntityCommand::new(
                                         selected_id,
                                         old_pos,
                                         new_pos,
                                     );
-                                    if let Err(e) = undo_stack.execute(cmd, world) {
-                                        eprintln!("❌ Failed to record move: {}", e);
-                                    } else {
-                                        println!("📝 Recorded move: {:?} → {:?}", old_pos, new_pos);
-                                    }
+                                    undo_stack.push_executed(cmd);
+                                    println!("📝 Recorded move: {:?} → {:?}", old_pos, new_pos);
                                 }
                             }
                             GizmoMode::Rotate { .. } => {
-                                // Create RotateEntityCommand
                                 let old_rot = snapshot.rotation.to_euler(glam::EulerRot::XYZ);
                                 let new_rot = (pose.rotation_x, pose.rotation, pose.rotation_z);
 
-                                // Only record if rotation changed (use 0.01 radian tolerance)
                                 let changed = (old_rot.0 - new_rot.0).abs() > 0.01
                                     || (old_rot.1 - new_rot.1).abs() > 0.01
                                     || (old_rot.2 - new_rot.2).abs() > 0.01;
@@ -1017,37 +1035,29 @@ impl ViewportWidget {
                                 if changed {
                                     let cmd = crate::command::RotateEntityCommand::new(
                                         selected_id,
-                                        old_rot, // Tuple (f32, f32, f32)
+                                        old_rot,
                                         new_rot,
                                     );
-                                    if let Err(e) = undo_stack.execute(cmd, world) {
-                                        eprintln!("❌ Failed to record rotation: {}", e);
-                                    } else {
-                                        println!(
-                                            "📝 Recorded rotation: ({:.1}°, {:.1}°, {:.1}°) → ({:.1}°, {:.1}°, {:.1}°)",
-                                            old_rot.0.to_degrees(), old_rot.1.to_degrees(), old_rot.2.to_degrees(),
-                                            new_rot.0.to_degrees(), new_rot.1.to_degrees(), new_rot.2.to_degrees()
-                                        );
-                                    }
+                                    undo_stack.push_executed(cmd);
+                                    println!(
+                                        "📝 Recorded rotation: ({:.1}°, {:.1}°, {:.1}°) → ({:.1}°, {:.1}°, {:.1}°)",
+                                        old_rot.0.to_degrees(), old_rot.1.to_degrees(), old_rot.2.to_degrees(),
+                                        new_rot.0.to_degrees(), new_rot.1.to_degrees(), new_rot.2.to_degrees()
+                                    );
                                 }
                             }
                             GizmoMode::Scale { .. } => {
-                                // Create ScaleEntityCommand
-                                let old_scale = snapshot.scale.x; // Assuming uniform scale
+                                let old_scale = snapshot.scale.x;
                                 let new_scale = pose.scale;
 
-                                // Only record if scale changed (use 0.01 tolerance)
                                 if (old_scale - new_scale).abs() > 0.01 {
                                     let cmd = crate::command::ScaleEntityCommand::new(
                                         selected_id,
                                         old_scale,
                                         new_scale,
                                     );
-                                    if let Err(e) = undo_stack.execute(cmd, world) {
-                                        eprintln!("❌ Failed to record scale: {}", e);
-                                    } else {
-                                        println!("📝 Recorded scale: {:.2} → {:.2}", old_scale, new_scale);
-                                    }
+                                    undo_stack.push_executed(cmd);
+                                    println!("📝 Recorded scale: {:.2} → {:.2}", old_scale, new_scale);
                                 }
                             }
                             _ => {}
@@ -1513,7 +1523,7 @@ impl ViewportWidget {
     }
 
     /// Copy selected entities to clipboard
-    fn copy_selection(&mut self, world: &World) {
+    fn copy_selection(&mut self, _world: &World) {
         // TODO: Implement clipboard storage
         // For now, we'll store copied entities in a Vec<EntitySnapshot>
         // This will be expanded in Phase 2.2 with full serialization
@@ -1521,14 +1531,14 @@ impl ViewportWidget {
     }
 
     /// Paste entities from clipboard
-    fn paste_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+    fn paste_selection(&mut self, _world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         // TODO: Implement paste from clipboard
         // Create new entities with offset position
         println!("📋 Paste: clipboard not yet implemented");
     }
 
     /// Duplicate selected entities (creates copies at offset position)
-    fn duplicate_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+    fn duplicate_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         if self.selected_entities.is_empty() {
             println!("⚠️  duplicate_selection: No entities selected");
             return;
@@ -1596,7 +1606,7 @@ impl ViewportWidget {
     }
 
     /// Delete selected entities
-    fn delete_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+    fn delete_selection(&mut self, _world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         if self.selected_entities.is_empty() {
             return;
         }

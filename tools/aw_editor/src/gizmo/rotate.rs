@@ -1,12 +1,19 @@
-//! Rotation gizmo implementation (R key).
+//! Rotation gizmo implementation
 
-use super::AxisConstraint;
+#![allow(dead_code)]
+
+use super::{AxisConstraint, SnappingConfig};
 use glam::{Quat, Vec2, Vec3};
 
 /// Rotation gizmo calculator.
 pub struct RotateGizmo;
 
 impl RotateGizmo {
+    /// Snap rotation using snapping configuration.
+    pub fn snap_rotation(rotation: Quat, snapping: &SnappingConfig) -> Quat {
+        snapping.snap_rotation(rotation)
+    }
+
     /// Calculate rotation from mouse movement.
     ///
     /// # Arguments

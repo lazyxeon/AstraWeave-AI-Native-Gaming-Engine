@@ -18,6 +18,7 @@ pub struct EditorEntity {
     pub components: HashMap<String, serde_json::Value>,
 }
 
+#[allow(dead_code)]
 impl EditorEntity {
     pub fn new(id: EntityId, name: String) -> Self {
         Self {
@@ -66,6 +67,7 @@ impl Default for EntityManager {
     }
 }
 
+#[allow(dead_code)]
 impl EntityManager {
     pub fn new() -> Self {
         Self {

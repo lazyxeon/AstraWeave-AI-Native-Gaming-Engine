@@ -1,17 +1,43 @@
-//! Weaving System - Emergent Behavior Layer
+//! Weaving System - Emergent Behavior Layer + Anchor System
 //!
 //! The weaving system detects patterns in the world state and proposes
 //! emergent intents that are adjudicated by budget and cooldown constraints.
 //!
 //! Flow: Perception (Patterns) → Reasoning (Intents) → Planning (Adjudication) → Action (Events)
+//!
+//! The anchor system provides loom nodes that players can repair to stabilize reality,
+//! unlock abilities, and deploy tactical structures using Echo currency.
 
 pub mod adjudicator;
+pub mod anchor;
+pub mod audio;
+pub mod combat;
+pub mod echo_currency;
+pub mod enemy;
 pub mod intents;
+pub mod particles;
 pub mod patterns;
+pub mod spawner;
+pub mod systems;
+pub mod ui;
+
+#[cfg(test)]
+mod integration_tests;
 
 pub use adjudicator::{WeaveAdjudicator, WeaveConfig};
+pub use anchor::{Anchor, AnchorVfxState, AbilityType};
+pub use audio::{AnchorAudioState, AnchorAudioSystem, AudioCommand, echo_pickup_audio_command};
+pub use combat::{CombatSystem, CombatEvent, Killer};
+pub use echo_currency::{EchoCurrency, Transaction, TransactionReason};
+pub use enemy::{Enemy, EnemyState, EnemyBehavior, AttackTarget};
 pub use intents::{IntentProposer, WeaveIntent};
+pub use particles::{AnchorParticleEmitter, AnchorParticleSystem, Particle, ParticleType};
 pub use patterns::{Pattern, PatternDetector, PatternStrength};
+pub use spawner::{EnemySpawner, SpawnPoint, SpawnRequest};
+pub use ui::{
+    AnchorInspectionModal, EchoHud, EchoFeedbackFloat,
+    AbilityUnlockNotification, NotificationState, RepairProgressBar,
+};
 
 /// Component for entities that can detect patterns and propose intents
 #[derive(Debug, Clone)]

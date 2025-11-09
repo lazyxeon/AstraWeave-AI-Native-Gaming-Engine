@@ -25,6 +25,7 @@ bytemuck = { version = "1.19", features = ["derive"] }
 petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+ron = "0.8"
 toml = { workspace = true }
 notify = "8"
 anyhow = { workspace = true }

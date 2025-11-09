@@ -100,6 +100,9 @@ impl World {
     pub fn team(&self, e: Entity) -> Option<Team> {
         self.team.get(&e).copied()
     }
+    pub fn team_mut(&mut self, e: Entity) -> Option<&mut Team> {
+        self.team.get_mut(&e)
+    }
     pub fn ammo(&self, e: Entity) -> Option<Ammo> {
         self.ammo.get(&e).copied()
     }

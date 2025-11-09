@@ -1,7 +1,11 @@
 // Library exports for aw_editor (enables benchmarks and testing)
 #![allow(dead_code)] // Suppress dead code warnings for benchmark-only exports
 
+pub mod clipboard;
+pub mod command;
+pub mod component_ui;
 pub mod entity_manager;
+pub mod scene_serialization;
 
 pub mod gizmo {
     // Export all modules

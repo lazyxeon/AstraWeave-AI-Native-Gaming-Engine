@@ -37,8 +37,9 @@
 //! ```
 
 use anyhow::Result;
-use astraweave_core::{Entity, IVec2, World};
+use astraweave_core::{Entity, IVec2, Team, World};
 use std::fmt;
+use crate::clipboard::ClipboardData;
 
 // ============================================================================
 // Command Trait
@@ -152,6 +153,7 @@ impl UndoStack {
     /// # Errors
     ///
     /// Returns `Err` if command execution fails. Failed commands are NOT added to stack.
+    #[allow(dead_code)]
     pub fn execute(&mut self, mut command: Box<dyn EditorCommand>, world: &mut World) -> Result<()> {
         // Execute the command first
         command.execute(world)?;
@@ -252,24 +254,54 @@ impl UndoStack {
     }
 
     /// Clear all commands (use when loading new scene).
+    #[allow(dead_code)]
     pub fn clear(&mut self) {
         self.commands.clear();
         self.cursor = 0;
     }
 
     /// Enable/disable auto-merging of consecutive commands.
+    #[allow(dead_code)]
     pub fn set_auto_merge(&mut self, enabled: bool) {
         self.auto_merge = enabled;
     }
 
     /// Get current command count (for debugging/UI).
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.commands.len()
     }
 
     /// Check if stack is empty.
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.commands.is_empty()
+    }
+
+    /// Add an already-executed command to the undo stack.
+    ///
+    /// Use this when you've already applied a transform (e.g., during gizmo drag)
+    /// and just need to record it for undo/redo without executing again.
+    pub fn push_executed(&mut self, command: Box<dyn EditorCommand>) {
+        self.commands.truncate(self.cursor);
+
+        if self.auto_merge && self.cursor > 0 {
+            if let Some(last_cmd) = self.commands.last_mut() {
+                if last_cmd.try_merge(command.as_ref()) {
+                    println!("🔄 Merged command: {}", command.describe());
+                    return;
+                }
+            }
+        }
+
+        self.commands.push(command);
+        self.cursor += 1;
+
+        if self.commands.len() > self.max_size {
+            let remove_count = self.commands.len() - self.max_size;
+            self.commands.drain(0..remove_count);
+            self.cursor = self.cursor.saturating_sub(remove_count);
+        }
     }
 }
 
@@ -455,6 +487,264 @@ impl EditorCommand for ScaleEntityCommand {
     }
 }
 
+#[derive(Debug)]
+pub struct EditHealthCommand {
+    entity: Entity,
+    old_hp: i32,
+    new_hp: i32,
+}
+
+impl EditHealthCommand {
+    pub fn new(entity: Entity, old_hp: i32, new_hp: i32) -> Box<Self> {
+        Box::new(Self {
+            entity,
+            old_hp,
+            new_hp,
+        })
+    }
+}
+
+impl EditorCommand for EditHealthCommand {
+    #[allow(dead_code)]
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        if let Some(health) = world.health_mut(self.entity) {
+            health.hp = self.new_hp;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Entity {} has no Health component", self.entity))
+        }
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        if let Some(health) = world.health_mut(self.entity) {
+            health.hp = self.old_hp;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Entity {} has no Health component", self.entity))
+        }
+    }
+
+    fn describe(&self) -> String {
+        format!("Edit Health (Entity #{})", self.entity)
+    }
+}
+
+#[derive(Debug)]
+pub struct EditTeamCommand {
+    entity: Entity,
+    old_team: Team,
+    new_team: Team,
+}
+
+impl EditTeamCommand {
+    pub fn new(entity: Entity, old_team: Team, new_team: Team) -> Box<Self> {
+        Box::new(Self {
+            entity,
+            old_team,
+            new_team,
+        })
+    }
+}
+
+impl EditorCommand for EditTeamCommand {
+    #[allow(dead_code)]
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        if let Some(team) = world.team_mut(self.entity) {
+            *team = self.new_team;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Entity {} has no Team component", self.entity))
+        }
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        if let Some(team) = world.team_mut(self.entity) {
+            *team = self.old_team;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Entity {} has no Team component", self.entity))
+        }
+    }
+
+    fn describe(&self) -> String {
+        format!("Edit Team (Entity #{})", self.entity)
+    }
+}
+
+#[derive(Debug)]
+pub struct EditAmmoCommand {
+    entity: Entity,
+    old_rounds: i32,
+    new_rounds: i32,
+}
+
+impl EditAmmoCommand {
+    pub fn new(entity: Entity, old_rounds: i32, new_rounds: i32) -> Box<Self> {
+        Box::new(Self {
+            entity,
+            old_rounds,
+            new_rounds,
+        })
+    }
+}
+
+impl EditorCommand for EditAmmoCommand {
+    #[allow(dead_code)]
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        if let Some(ammo) = world.ammo_mut(self.entity) {
+            ammo.rounds = self.new_rounds;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Entity {} has no Ammo component", self.entity))
+        }
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        if let Some(ammo) = world.ammo_mut(self.entity) {
+            ammo.rounds = self.old_rounds;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("Entity {} has no Ammo component", self.entity))
+        }
+    }
+
+    fn describe(&self) -> String {
+        format!("Edit Ammo (Entity #{})", self.entity)
+    }
+}
+
+#[derive(Debug)]
+pub struct SpawnEntitiesCommand {
+    spawned_entities: Vec<Entity>,
+    clipboard_data: ClipboardData,
+    offset: IVec2,
+}
+
+impl SpawnEntitiesCommand {
+    pub fn new(clipboard_data: ClipboardData, offset: IVec2) -> Box<dyn EditorCommand> {
+        Box::new(Self {
+            spawned_entities: Vec::new(),
+            clipboard_data,
+            offset,
+        })
+    }
+}
+
+impl EditorCommand for SpawnEntitiesCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        self.spawned_entities = self.clipboard_data.spawn_entities(world, self.offset)?;
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        for &entity in &self.spawned_entities {
+            if let Some(pose) = world.pose_mut(entity) {
+                *pose = astraweave_core::Pose {
+                    pos: IVec2 { x: -10000, y: -10000 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 0.0,
+                };
+            }
+        }
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        format!("Paste {} entities", self.clipboard_data.entities.len())
+    }
+}
+
+#[derive(Debug)]
+pub struct DuplicateEntitiesCommand {
+    source_entities: Vec<Entity>,
+    spawned_entities: Vec<Entity>,
+    offset: IVec2,
+}
+
+impl DuplicateEntitiesCommand {
+    pub fn new(source_entities: Vec<Entity>, offset: IVec2) -> Box<dyn EditorCommand> {
+        Box::new(Self {
+            source_entities,
+            spawned_entities: Vec::new(),
+            offset,
+        })
+    }
+}
+
+impl EditorCommand for DuplicateEntitiesCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        let clipboard = ClipboardData::from_entities(world, &self.source_entities);
+        self.spawned_entities = clipboard.spawn_entities(world, self.offset)?;
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        for &entity in &self.spawned_entities {
+            if let Some(pose) = world.pose_mut(entity) {
+                *pose = astraweave_core::Pose {
+                    pos: IVec2 { x: -10000, y: -10000 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 0.0,
+                };
+            }
+        }
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        format!("Duplicate {} entities", self.source_entities.len())
+    }
+}
+
+#[derive(Debug)]
+pub struct DeleteEntitiesCommand {
+    entities: Vec<Entity>,
+    clipboard_data: Option<ClipboardData>,
+}
+
+impl DeleteEntitiesCommand {
+    pub fn new(entities: Vec<Entity>) -> Box<dyn EditorCommand> {
+        Box::new(Self {
+            entities,
+            clipboard_data: None,
+        })
+    }
+}
+
+impl EditorCommand for DeleteEntitiesCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        self.clipboard_data = Some(ClipboardData::from_entities(world, &self.entities));
+        
+        for &entity in &self.entities {
+            if let Some(pose) = world.pose_mut(entity) {
+                *pose = astraweave_core::Pose {
+                    pos: IVec2 { x: -10000, y: -10000 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 0.0,
+                };
+            }
+        }
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        if let Some(clipboard) = &self.clipboard_data {
+            clipboard.spawn_entities(world, IVec2 { x: 0, y: 0 })?;
+        }
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        format!("Delete {} entities", self.entities.len())
+    }
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -532,6 +822,156 @@ mod tests {
         assert_eq!(stack.len(), 1); // All 5 commands merged into 1
 
         // Undo once (should revert all 5 moves)
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(0, 0));
+    }
+
+    #[test]
+    fn test_rotate_command() {
+        let mut world = World::new();
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
+
+        let mut stack = UndoStack::new(10);
+
+        let old_rot = (0.0, 0.0, 0.0);
+        let new_rot = (0.5, 1.0, 1.5);
+
+        stack.execute(
+            RotateEntityCommand::new(entity, old_rot, new_rot),
+            &mut world,
+        ).unwrap();
+
+        let pose = world.pose(entity).unwrap();
+        assert!((pose.rotation_x - 0.5).abs() < 0.01);
+        assert!((pose.rotation - 1.0).abs() < 0.01);
+        assert!((pose.rotation_z - 1.5).abs() < 0.01);
+
+        stack.undo(&mut world).unwrap();
+
+        let pose = world.pose(entity).unwrap();
+        assert!((pose.rotation_x - 0.0).abs() < 0.01);
+        assert!((pose.rotation - 0.0).abs() < 0.01);
+        assert!((pose.rotation_z - 0.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_scale_command() {
+        let mut world = World::new();
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
+
+        let mut stack = UndoStack::new(10);
+
+        stack.execute(
+            ScaleEntityCommand::new(entity, 1.0, 2.5),
+            &mut world,
+        ).unwrap();
+
+        assert!((world.pose(entity).unwrap().scale - 2.5).abs() < 0.01);
+
+        stack.undo(&mut world).unwrap();
+        assert!((world.pose(entity).unwrap().scale - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_edit_health_command() {
+        let mut world = World::new();
+        let entity = world.spawn("Player", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+
+        let mut stack = UndoStack::new(10);
+
+        stack.push_executed(EditHealthCommand::new(entity, 100, 50));
+
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.health(entity).unwrap().hp, 100);
+
+        stack.redo(&mut world).unwrap();
+        assert_eq!(world.health(entity).unwrap().hp, 50);
+    }
+
+    #[test]
+    fn test_edit_team_command() {
+        let mut world = World::new();
+        let entity = world.spawn("Enemy", IVec2::new(0, 0), Team { id: 2 }, 100, 30);
+
+        let mut stack = UndoStack::new(10);
+        let old_team = Team { id: 2 };
+        let new_team = Team { id: 0 };
+
+        stack.push_executed(EditTeamCommand::new(entity, old_team, new_team));
+
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.team(entity).unwrap().id, 2);
+
+        stack.redo(&mut world).unwrap();
+        assert_eq!(world.team(entity).unwrap().id, 0);
+    }
+
+    #[test]
+    fn test_edit_ammo_command() {
+        let mut world = World::new();
+        let entity = world.spawn("Shooter", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+
+        let mut stack = UndoStack::new(10);
+
+        stack.push_executed(EditAmmoCommand::new(entity, 30, 15));
+
+        stack.undo(&mut world).unwrap();
+        assert_eq!(world.ammo(entity).unwrap().rounds, 30);
+
+        stack.redo(&mut world).unwrap();
+        assert_eq!(world.ammo(entity).unwrap().rounds, 15);
+    }
+
+    #[test]
+    fn test_undo_stack_max_size() {
+        let mut world = World::new();
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
+
+        let mut stack = UndoStack::new(5);
+
+        for i in 0..10 {
+            stack.execute(
+                MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut world,
+            ).unwrap();
+        }
+
+        assert_eq!(stack.len(), 5);
+        assert_eq!(stack.cursor, 5);
+    }
+
+    #[test]
+    fn test_undo_stack_descriptions() {
+        let mut world = World::new();
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
+
+        let mut stack = UndoStack::new(10);
+
+        stack.execute(
+            MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
+            &mut world,
+        ).unwrap();
+
+        assert!(stack.undo_description().unwrap().contains("Move Entity"));
+        assert!(stack.redo_description().is_none());
+
+        stack.undo(&mut world).unwrap();
+        assert!(stack.redo_description().unwrap().contains("Move Entity"));
+        assert!(stack.undo_description().is_none());
+    }
+
+    #[test]
+    fn test_push_executed() {
+        let mut world = World::new();
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
+
+        world.pose_mut(entity).unwrap().pos = IVec2::new(5, 5);
+
+        let mut stack = UndoStack::new(10);
+        stack.push_executed(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)));
+
+        assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
+
         stack.undo(&mut world).unwrap();
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(0, 0));
     }

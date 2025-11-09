@@ -118,6 +118,8 @@ members = [
   # Renderer demos (Phase 2)
   "examples/shadow_csm_demo",
   "examples/bevy_shadow_demo",
+  # Greybox generation tools
+  "examples/greybox_generator",
 ]
 exclude = [
   "astraweave-ecs/fuzz",  # Fuzz targets must be built separately
