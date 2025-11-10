@@ -7,14 +7,14 @@ description = "Bevy-based renderer for AstraWeave (Phase 1: Foundation)"
 
 [dependencies]
 # Core rendering (from Bevy)
-wgpu = "25.0"
-naga = "25.0"
+wgpu = "27.0"
+naga = "27.0"
 
 # Math (Bevy uses glam 0.29, we already have it)
-glam = "0.29"
+glam = "0.30"
 
 # GPU data structures (Bevy uses encase)
-encase = "0.10"
+encase = "0.12"
 bytemuck = { version = "1.18", features = ["derive"] }
 
 # Error handling
@@ -23,14 +23,14 @@ thiserror = "2.0"
 
 # Collections
 smallvec = "1.13"
-hashbrown = "0.15"
+hashbrown = "0.16"
 
 # Async (for resource loading)
 futures-lite = "2.3"
 
 # Serialization (for materials)
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.8"
+toml = "0.9"
 
 # Logging
 tracing = "0.1"
@@ -39,7 +39,7 @@ tracing = "0.1"
 astraweave-ecs = { path = "../astraweave-ecs" }
 
 [dev-dependencies]
-pollster = "0.3"
+pollster = "0.4"
 env_logger = "0.11"
 
 [features]

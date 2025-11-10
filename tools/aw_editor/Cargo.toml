@@ -17,7 +17,7 @@ editor-full = ["editor-graphs", "editor-materials", "editor-terrain", "editor-na
 [dependencies]
 eframe = { workspace = true, features = ["wgpu"] }
 egui = { workspace = true }
-egui-wgpu = "0.32.0"
+egui-wgpu = "0.33.0"
 egui_dock = { workspace = true }
 egui_graphs = { workspace = true }
 wgpu = { workspace = true }
@@ -25,7 +25,7 @@ bytemuck = { version = "1.19", features = ["derive"] }
 petgraph = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-ron = "0.8"
+ron = "0.11"
 toml = { workspace = true }
 notify = "8"
 anyhow = { workspace = true }
@@ -36,7 +36,7 @@ walkdir = "2"
 winit = { workspace = true }
 rhai = { workspace = true }
 glam = { workspace = true }
-rand = "0.8"
+rand = "0.9"
 astract = { path = "../../crates/astract" }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs", optional = true }
@@ -50,7 +50,7 @@ astraweave-nav = { path = "../../astraweave-nav" }
 astraweave-observability = { path = "../../astraweave-observability" }
 [dev-dependencies]
 approx = "0.5"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.7", features = ["html_reports"] }
 
 [[bench]]
 name = "gizmo_benchmarks"

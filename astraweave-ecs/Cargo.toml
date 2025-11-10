@@ -19,7 +19,7 @@ profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/ena
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }
 criterion = { workspace = true }
-proptest = "1.5"
+proptest = "1.9"
 test-strategy = "0.4"
 loom = "0.7"  # Concurrency model checker for Phase 4.4
 
