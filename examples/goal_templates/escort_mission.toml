@@ -1,0 +1,52 @@
+# Escort Mission Goal Template
+# High-level goal: Safely escort the player to extraction point
+
+name = "escort_player_to_extraction"
+priority = 10.0
+deadline_seconds = 300.0  # 5 minutes
+decomposition = "sequential"
+max_depth = 3
+
+[desired_state]
+player_at_extraction = true
+player_alive = true
+threats_neutralized = true
+
+[[sub_goals]]
+name = "clear_path_to_extraction"
+priority = 9.0
+decomposition = "sequential"
+
+[sub_goals.desired_state]
+path_clear = true
+
+[[sub_goals.sub_goals]]
+name = "scout_route"
+priority = 8.0
+
+[sub_goals.sub_goals.desired_state]
+route_scanned = true
+enemies_located = true
+
+[[sub_goals.sub_goals]]
+name = "eliminate_threats"
+priority = 9.0
+
+[sub_goals.sub_goals.desired_state]
+threats_in_path = 0
+
+[[sub_goals]]
+name = "stay_close_to_player"
+priority = 8.0
+
+[sub_goals.desired_state]
+distance_to_player = { min = 0, max = 10 }
+
+[[sub_goals]]
+name = "reach_extraction"
+priority = 10.0
+
+[sub_goals.desired_state]
+at_extraction = true
+player_at_extraction = true
+

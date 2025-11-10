@@ -16,6 +16,10 @@ pub mod ai_arbiter;
 #[cfg(feature = "veilweaver_slice")]
 pub mod veilweaver;
 
+// Advanced GOAP module (Phase 1)
+#[cfg(feature = "planner_advanced")]
+pub mod goap;
+
 pub use core_loop::*;
 pub use ecs_ai_plugin::{build_app_with_ai, AiPlanningPlugin};
 pub use orchestrator::*;

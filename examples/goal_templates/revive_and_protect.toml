@@ -1,0 +1,58 @@
+# Revive and Protect Goal Template
+# Rescue a downed ally under fire
+
+name = "revive_and_protect"
+priority = 10.0
+deadline_seconds = 60.0  # 1 minute - urgent!
+decomposition = "sequential"
+max_depth = 2
+
+[desired_state]
+ally_revived = true
+ally_safe = true
+
+[[sub_goals]]
+name = "create_safe_zone"
+priority = 9.5
+decomposition = "any_of"  # Any of these methods work
+
+[sub_goals.desired_state]
+safe_zone_established = true
+
+[[sub_goals.sub_goals]]
+name = "throw_smoke"
+priority = 10.0
+
+[sub_goals.sub_goals.desired_state]
+smoke_deployed = true
+visibility_reduced = true
+
+[[sub_goals.sub_goals]]
+name = "suppress_threats"
+priority = 9.0
+
+[sub_goals.sub_goals.desired_state]
+enemies_suppressed = true
+
+[[sub_goals.sub_goals]]
+name = "eliminate_nearby_threats"
+priority = 8.0
+
+[sub_goals.sub_goals.desired_state]
+nearby_enemies = 0
+
+[[sub_goals]]
+name = "reach_ally"
+priority = 10.0
+
+[sub_goals.desired_state]
+distance_to_ally = { min = 0, max = 2 }
+
+[[sub_goals]]
+name = "perform_revive"
+priority = 10.0
+
+[sub_goals.desired_state]
+ally_health = { min = 1, max = 100 }
+ally_conscious = true
+
