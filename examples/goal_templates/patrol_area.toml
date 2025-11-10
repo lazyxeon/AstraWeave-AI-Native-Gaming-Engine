@@ -1,0 +1,43 @@
+# Patrol Area Goal Template
+# Systematic patrol of an area to detect threats
+
+name = "patrol_area"
+priority = 3.0  # Low priority, background task
+decomposition = "sequential"
+max_depth = 2
+
+[desired_state]
+area_patrolled = true
+threats_reported = true
+
+[[sub_goals]]
+name = "visit_waypoint_1"
+priority = 3.0
+
+[sub_goals.desired_state]
+at_waypoint_1 = true
+waypoint_1_scanned = true
+
+[[sub_goals]]
+name = "visit_waypoint_2"
+priority = 3.0
+
+[sub_goals.desired_state]
+at_waypoint_2 = true
+waypoint_2_scanned = true
+
+[[sub_goals]]
+name = "visit_waypoint_3"
+priority = 3.0
+
+[sub_goals.desired_state]
+at_waypoint_3 = true
+waypoint_3_scanned = true
+
+[[sub_goals]]
+name = "return_to_start"
+priority = 2.0
+
+[sub_goals.desired_state]
+at_patrol_start = true
+

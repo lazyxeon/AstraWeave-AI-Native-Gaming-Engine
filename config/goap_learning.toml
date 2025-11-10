@@ -1,0 +1,104 @@
+# GOAP Learning & Persistence Configuration
+# Phase 3: Learning & Persistence
+
+[learning]
+# Enable/disable learning system
+enabled = true
+
+# Initial success rate assumption for new actions
+initial_success_rate = 0.75
+
+# Bounds for success probability estimates
+min_success_rate = 0.1
+max_success_rate = 0.95
+
+[learning.smoothing]
+# Smoothing method: "ewma" (Exponentially Weighted Moving Average) or "bayesian"
+method = "ewma"
+
+# EWMA smoothing factor (0.0-1.0, higher = more weight on recent data)
+ewma_alpha = 0.2
+
+# Bayesian prior (for method = "bayesian")
+bayesian_prior_successes = 3
+bayesian_prior_failures = 1
+
+[cost_tuning]
+# Global cost multiplier for all actions
+base_cost_multiplier = 1.0
+
+# Risk weight in A* search (higher = more risk-averse)
+risk_weight = 5.0
+
+# Health thresholds for dynamic cost modifiers
+health_critical_threshold = 30
+health_wounded_threshold = 60
+
+# Ammo thresholds for dynamic cost modifiers  
+ammo_critical_threshold = 5
+ammo_low_threshold = 10
+
+# Morale thresholds
+morale_low_threshold = 0.4
+morale_high_threshold = 0.7
+
+[persistence]
+# Enable/disable history persistence
+enabled = true
+
+# Save format: "json" (human-readable) or "bincode" (compact binary)
+format = "json"
+
+# Autosave interval in seconds (0 = manual save only)
+save_interval_seconds = 60
+
+# Data retention period in days
+retention_days = 30
+
+# Maximum entries per action before pruning
+max_entries_per_action = 1000
+
+# Total entries threshold that triggers pruning
+prune_threshold = 10000
+
+# File path for persisted history (relative to game directory)
+file_path = "saves/goap_history.json"
+
+[telemetry]
+# Enable/disable telemetry collection
+enabled = true
+
+# Ring buffer size for in-memory events
+max_events = 1000
+
+# Export telemetry to file
+export_enabled = false
+export_path = "telemetry/goap_events.json"
+export_interval_seconds = 300
+
+[planner]
+# Maximum A* iterations before giving up
+max_iterations = 10000
+
+# Maximum plan length (number of actions)
+max_plan_length = 20
+
+# Enable multi-goal planning
+multi_goal_enabled = true
+
+# Maximum number of concurrent goals
+max_concurrent_goals = 3
+
+[debug]
+# Enable verbose logging
+verbose = false
+
+# Log all planning decisions
+log_planning = false
+
+# Log execution outcomes
+log_execution = true
+
+# Log learning updates
+log_learning = true
+

@@ -1,0 +1,58 @@
+# Example Goal Library
+# Collection of common tactical goals for quick reference
+
+[[goals]]
+name = "stay_alive"
+priority = 10.0
+
+[goals.desired_state]
+health = { min = 50, max = 100 }
+in_cover = true
+
+[[goals]]
+name = "engage_enemy"
+priority = 7.0
+
+[goals.desired_state]
+enemy_damaged = true
+ammo = { min = 1, max = 100 }
+
+[[goals]]
+name = "retreat_to_safety"
+priority = 9.0
+
+[goals.desired_state]
+distance_from_danger = { min = 20, max = 100 }
+in_cover = true
+
+[[goals]]
+name = "resupply"
+priority = 5.0
+
+[goals.desired_state]
+ammo = { min = 25, max = 100 }
+health_items = { min = 1, max = 5 }
+
+[[goals]]
+name = "support_team"
+priority = 6.0
+decomposition = "parallel"
+
+[goals.desired_state]
+team_alive = true
+enemies_suppressed = true
+
+[[goals.sub_goals]]
+name = "cover_fire"
+priority = 7.0
+
+[goals.sub_goals.desired_state]
+providing_cover = true
+
+[[goals.sub_goals]]
+name = "flank_enemy"
+priority = 6.0
+
+[goals.sub_goals.desired_state]
+flanking_position_reached = true
+

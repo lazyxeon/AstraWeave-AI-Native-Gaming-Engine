@@ -1,0 +1,76 @@
+# Assault Position Goal Template
+# Coordinate an assault on an enemy-held position
+
+name = "assault_enemy_position"
+priority = 9.0
+deadline_seconds = 240.0  # 4 minutes
+decomposition = "sequential"
+max_depth = 3
+
+[desired_state]
+position_captured = true
+enemies_defeated = true
+
+[[sub_goals]]
+name = "reconnaissance"
+priority = 7.0
+
+[sub_goals.desired_state]
+enemy_positions_known = true
+weaknesses_identified = true
+
+[[sub_goals]]
+name = "prepare_assault"
+priority = 8.0
+decomposition = "parallel"
+
+[sub_goals.desired_state]
+ammo_loaded = true
+grenades_ready = true
+team_coordinated = true
+
+[[sub_goals.sub_goals]]
+name = "reload_weapons"
+priority = 9.0
+
+[sub_goals.sub_goals.desired_state]
+ammo = { min = 25, max = 100 }
+
+[[sub_goals.sub_goals]]
+name = "check_equipment"
+priority = 7.0
+
+[sub_goals.sub_goals.desired_state]
+equipment_ready = true
+
+[[sub_goals]]
+name = "execute_assault"
+priority = 10.0
+decomposition = "sequential"
+
+[sub_goals.desired_state]
+in_combat = false
+position_captured = true
+
+[[sub_goals.sub_goals]]
+name = "suppress_defenders"
+priority = 9.0
+
+[sub_goals.sub_goals.desired_state]
+enemies_suppressed = true
+
+[[sub_goals.sub_goals]]
+name = "advance_to_position"
+priority = 10.0
+
+[sub_goals.sub_goals.desired_state]
+at_target_position = true
+
+[[sub_goals.sub_goals]]
+name = "secure_position"
+priority = 9.0
+
+[sub_goals.sub_goals.desired_state]
+position_secured = true
+remaining_enemies = 0
+

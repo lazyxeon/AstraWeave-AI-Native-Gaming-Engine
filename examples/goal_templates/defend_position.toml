@@ -1,0 +1,36 @@
+# Defend Position Goal Template
+# Hold a strategic position against incoming enemies
+
+name = "defend_position"
+priority = 8.0
+deadline_seconds = 180.0  # 3 minutes
+decomposition = "parallel"
+max_depth = 2
+
+[desired_state]
+position_held = true
+enemy_count = { min = 0, max = 2 }  # Allow up to 2 enemies
+fortified = true
+
+[[sub_goals]]
+name = "take_cover"
+priority = 7.0
+
+[sub_goals.desired_state]
+in_cover = true
+cover_quality = { min = 70, max = 100 }
+
+[[sub_goals]]
+name = "suppress_enemies"
+priority = 8.0
+
+[sub_goals.desired_state]
+enemies_suppressed = true
+
+[[sub_goals]]
+name = "call_reinforcements"
+priority = 5.0
+
+[sub_goals.desired_state]
+reinforcements_called = true
+
