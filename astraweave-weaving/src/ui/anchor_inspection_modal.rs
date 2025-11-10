@@ -3,7 +3,7 @@
 // This module provides an egui-based modal window for inspecting anchor status
 // and initiating repairs. Triggered by E key when player is in proximity.
 
-use crate::{Anchor, AnchorVfxState, AbilityType, EchoCurrency};
+use crate::{Anchor, AnchorVfxState, AbilityType};
 
 /// Inspection modal state
 #[derive(Debug, Clone)]

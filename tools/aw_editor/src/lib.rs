@@ -6,6 +6,12 @@ pub mod command;
 pub mod component_ui;
 pub mod entity_manager;
 pub mod scene_serialization;
+pub mod ui;
+
+pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
+pub use command::{EditorCommand, UndoStack, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand};
+pub use scene_serialization::{SceneData, EntityData};
+pub use ui::StatusBar;
 
 pub mod gizmo {
     // Export all modules
@@ -16,6 +22,7 @@ pub mod gizmo {
     pub mod rotate;
     pub mod scale;
     pub mod scene_viewport;
+    pub mod snapping;
     pub mod state;
     pub mod translate;
 
@@ -27,6 +34,7 @@ pub mod gizmo {
     pub use rotate::RotateGizmo;
     pub use scale::ScaleGizmo;
     pub use scene_viewport::{CameraController, SceneViewport, Transform};
+    pub use snapping::SnappingConfig;
     pub use state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
     pub use translate::TranslateGizmo;
 }
