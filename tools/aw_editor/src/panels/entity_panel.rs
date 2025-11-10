@@ -3,7 +3,7 @@
 use super::Panel;
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
-use crate::component_ui::{ComponentEdit, ComponentRegistry, ComponentType};
+use crate::component_ui::{ComponentEdit, ComponentRegistry};
 use egui::Ui;
 
 /// Entity panel - inspect and edit entity properties

@@ -38,7 +38,9 @@ mod file_watcher;
 mod gizmo;
 mod material_inspector;
 mod panels;
+mod recent_files; // Phase 3 - Recent files tracking
 mod scene_serialization; // Phase 2.2 - Scene Save/Load
+mod ui; // Phase 3 - UI components (StatusBar, etc.)
 mod viewport; // Phase 1.1 - 3D Viewport
               // mod voxel_tools;  // Temporarily disabled - missing astraweave-terrain dependency
 
@@ -50,8 +52,12 @@ use astraweave_dialogue::DialogueGraph;
 use astraweave_nav::NavMesh;
 use astraweave_quests::Quest;
 use eframe::egui;
-use entity_manager::EntityManager;
+use entity_manager::{EntityManager, SelectionSet};
+use gizmo::state::GizmoMode;
+use gizmo::snapping::SnappingConfig;
 use material_inspector::MaterialInspector;
+use recent_files::RecentFilesManager;
+use ui::StatusBar;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, ChartsPanel, EntityPanel, GraphPanel,
     HierarchyPanel, Panel, PerformancePanel, TransformPanel, WorldPanel,
@@ -209,6 +215,13 @@ struct EditorApp {
     hierarchy_panel: HierarchyPanel,
     // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
     viewport: Option<ViewportWidget>,
+    // Phase 3.5: StatusBar tracking
+    current_gizmo_mode: GizmoMode,
+    selection_set: SelectionSet,
+    snapping_config: SnappingConfig,
+    last_frame_time: std::time::Instant,
+    current_fps: f32,
+    recent_files: RecentFilesManager,
 }
 
 impl Default for EditorApp {
@@ -318,6 +331,13 @@ impl Default for EditorApp {
             hierarchy_panel: HierarchyPanel::new(),
             // Viewport initialized in new() method (requires CreationContext)
             viewport: None,
+            // Phase 3.5: StatusBar state
+            current_gizmo_mode: GizmoMode::Inactive,
+            selection_set: SelectionSet::new(),
+            snapping_config: SnappingConfig::default(),
+            last_frame_time: std::time::Instant::now(),
+            current_fps: 60.0,
+            recent_files: RecentFilesManager::load(),
         }
     }
 }
@@ -892,6 +912,11 @@ struct MaterialLiveDoc {
 
 impl eframe::App for EditorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let now = std::time::Instant::now();
+        let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
+        self.last_frame_time = now;
+        self.current_fps = if frame_time > 0.0 { 1.0 / frame_time } else { 60.0 };
+        
         // Phase 2.1 & 2.2: Global hotkeys for undo/redo and scene save/load
         ctx.input(|i| {
             // Ctrl+Z: Undo
@@ -934,6 +959,7 @@ impl eframe::App for EditorApp {
                     match scene_serialization::save_scene(world, &path) {
                         Ok(()) => {
                             self.current_scene_path = Some(path.clone());
+                            self.recent_files.add_file(path.clone());
                             self.status = format!("💾 Saved scene to {:?}", path);
                             self.console_logs.push(format!("✅ Scene saved: {:?}", path));
                             self.last_autosave = std::time::Instant::now();
@@ -955,6 +981,7 @@ impl eframe::App for EditorApp {
                     Ok(world) => {
                         self.sim_world = Some(world);
                         self.current_scene_path = Some(path.clone());
+                        self.recent_files.add_file(path.clone());
                         self.status = format!("📂 Loaded scene from {:?}", path);
                         self.console_logs.push(format!("✅ Scene loaded: {:?}", path));
                         self.undo_stack.clear();
@@ -1184,6 +1211,7 @@ impl eframe::App for EditorApp {
                         match scene_serialization::save_scene(world, &path) {
                             Ok(()) => {
                                 self.current_scene_path = Some(path.clone());
+                                self.recent_files.add_file(path.clone());
                                 self.status = format!("💾 Saved scene to {:?}", path);
                                 self.console_logs.push(format!("✅ Scene saved: {:?}", path));
                                 self.last_autosave = std::time::Instant::now();
@@ -1204,6 +1232,7 @@ impl eframe::App for EditorApp {
                         Ok(world) => {
                             self.sim_world = Some(world);
                             self.current_scene_path = Some(path.clone());
+                            self.recent_files.add_file(path.clone());
                             self.status = format!("📂 Loaded scene from {:?}", path);
                             self.console_logs.push(format!("✅ Scene loaded: {:?}", path));
                             self.undo_stack.clear();
@@ -1214,6 +1243,45 @@ impl eframe::App for EditorApp {
                         }
                     }
                 }
+                
+                ui.menu_button("📚 Recent Files", |ui| {
+                    let recent_files = self.recent_files.get_files().to_vec();
+                    
+                    if recent_files.is_empty() {
+                        ui.label("No recent files");
+                    } else {
+                        for path in recent_files {
+                            let file_name = path.file_name()
+                                .and_then(|n| n.to_str())
+                                .unwrap_or("Unknown");
+                            
+                            if ui.button(file_name).clicked() {
+                                match scene_serialization::load_scene(&path) {
+                                    Ok(world) => {
+                                        self.sim_world = Some(world);
+                                        self.current_scene_path = Some(path.clone());
+                                        self.recent_files.add_file(path.clone());
+                                        self.status = format!("📂 Loaded scene from {:?}", path);
+                                        self.console_logs.push(format!("✅ Scene loaded: {:?}", path));
+                                        self.undo_stack.clear();
+                                        ui.close();
+                                    }
+                                    Err(e) => {
+                                        self.status = format!("❌ Scene load failed: {}", e);
+                                        self.console_logs.push(format!("❌ Failed to load scene: {}", e));
+                                    }
+                                }
+                            }
+                        }
+                        
+                        ui.separator();
+                        
+                        if ui.button("🗑️ Clear Recent Files").clicked() {
+                            self.recent_files.clear();
+                            ui.close();
+                        }
+                    }
+                });
                 
                 ui.separator();
                 ui.checkbox(&mut self.simulation_playing, "Play Simulation");
@@ -1288,6 +1356,15 @@ impl eframe::App for EditorApp {
                             }
                         });
 
+                        let all_selected = self.hierarchy_panel.get_all_selected();
+                        self.selection_set.clear();
+                        for &entity_id in &all_selected {
+                            self.selection_set.add(entity_id as u64, false);
+                        }
+                        if let Some(primary) = all_selected.last() {
+                            self.selection_set.primary = Some(*primary as u64);
+                        }
+
                         ui.add_space(10.0);
 
                         ui.collapsing("🎮 Entities", |ui| {
@@ -1308,7 +1385,7 @@ impl eframe::App for EditorApp {
                                     }
                                 };
                                 
-                                if let Some(world) = &mut self.sim_world {
+                                if let Some(_world) = &mut self.sim_world {
                                     self.undo_stack.push_executed(cmd);
                                 }
                             }
@@ -1380,6 +1457,20 @@ impl eframe::App for EditorApp {
                 self.performance_panel.show(ui);
             });
 
+        // BOTTOM PANEL - StatusBar (Phase 3.5)
+        egui::TopBottomPanel::bottom("status_bar")
+            .min_height(24.0)
+            .show(ctx, |ui| {
+                StatusBar::show(
+                    ui,
+                    &self.current_gizmo_mode,
+                    &self.selection_set,
+                    &self.undo_stack,
+                    &self.snapping_config,
+                    self.current_fps,
+                );
+            });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
             if let Some(viewport) = &mut self.viewport {
@@ -1389,10 +1480,10 @@ impl eframe::App for EditorApp {
                 ui.horizontal(|ui| {
                     ui.label("⚡ Snapping:");
                     
-                    ui.checkbox(&mut viewport.scene_viewport.snapping_config.grid_enabled, "Grid");
+                    ui.checkbox(&mut self.snapping_config.grid_enabled, "Grid");
                     
                     ui.label("Size:");
-                    let mut grid_size_idx = match viewport.scene_viewport.snapping_config.grid_size {
+                    let mut grid_size_idx = match self.snapping_config.grid_size {
                         s if (s - 0.5).abs() < 0.01 => 0,
                         s if (s - 1.0).abs() < 0.01 => 1,
                         s if (s - 2.0).abs() < 0.01 => 2,
@@ -1407,7 +1498,7 @@ impl eframe::App for EditorApp {
                             2 => "2.0".to_string(),
                             _ => "1.0".to_string(),
                         })).changed() {
-                        viewport.scene_viewport.snapping_config.grid_size = match grid_size_idx {
+                        self.snapping_config.grid_size = match grid_size_idx {
                             0 => 0.5,
                             1 => 1.0,
                             2 => 2.0,
@@ -1416,8 +1507,8 @@ impl eframe::App for EditorApp {
                     }
                     
                     ui.separator();
-                    ui.checkbox(&mut viewport.scene_viewport.snapping_config.angle_enabled, "Angle");
-                    ui.label(format!("{}°", viewport.scene_viewport.snapping_config.angle_increment));
+                    ui.checkbox(&mut self.snapping_config.angle_enabled, "Angle");
+                    ui.label(format!("{}°", self.snapping_config.angle_increment));
                 });
                 
                 ui.separator();

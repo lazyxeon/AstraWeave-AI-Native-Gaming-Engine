@@ -8,16 +8,22 @@
 //! The anchor system provides loom nodes that players can repair to stabilize reality,
 //! unlock abilities, and deploy tactical structures using Echo currency.
 
+pub mod abilities;
 pub mod adjudicator;
 pub mod anchor;
 pub mod audio;
 pub mod combat;
 pub mod echo_currency;
 pub mod enemy;
+pub mod enemy_types;
 pub mod intents;
+pub mod level;
 pub mod particles;
 pub mod patterns;
+pub mod quest;
+pub mod quest_types;
 pub mod spawner;
+pub mod starter_quests;
 pub mod systems;
 pub mod ui;
 
@@ -31,12 +37,15 @@ pub use combat::{CombatSystem, CombatEvent, Killer};
 pub use echo_currency::{EchoCurrency, Transaction, TransactionReason};
 pub use enemy::{Enemy, EnemyState, EnemyBehavior, AttackTarget};
 pub use intents::{IntentProposer, WeaveIntent};
+pub use level::{VeilweaverLevel, Player, Camera, LevelStats};
 pub use particles::{AnchorParticleEmitter, AnchorParticleSystem, Particle, ParticleType};
 pub use patterns::{Pattern, PatternDetector, PatternStrength};
+pub use quest::{Quest, QuestState, ObjectiveType, QuestReward, QuestManager};
 pub use spawner::{EnemySpawner, SpawnPoint, SpawnRequest};
+pub use starter_quests::{quest_stabilize_anchors, quest_clear_corruption, quest_restore_beacon, all_starter_quests};
 pub use ui::{
     AnchorInspectionModal, EchoHud, EchoFeedbackFloat,
-    AbilityUnlockNotification, NotificationState, RepairProgressBar,
+    AbilityUnlockNotification, NotificationState, QuestPanel, RepairProgressBar,
 };
 
 /// Component for entities that can detect patterns and propose intents
