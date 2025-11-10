@@ -3,7 +3,7 @@
 // This module provides CPU-side particle spawning and update logic for Anchor VFX.
 // Integrates with anchor_vfx.wgsl shader and Anchor.vfx_state enum.
 
-use glam::{Vec2, Vec3};
+use glam::Vec3;
 use std::collections::VecDeque;
 
 /// Maximum particles per anchor (performance limit)

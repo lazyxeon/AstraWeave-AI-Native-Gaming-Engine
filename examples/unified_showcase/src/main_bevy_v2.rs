@@ -24,6 +24,10 @@
 mod procedural_textures;
 mod gltf_loader;
 
+use glam::{Mat4, Vec2, Vec3};
+use std::sync::Arc;
+use std::time::Instant;
+use wgpu::util::DeviceExt;
 use winit::{
     application::ApplicationHandler,
     event::*,
@@ -170,6 +174,7 @@ impl Vertex {
 }
 
 /// Create subdivided ground plane (100x100m with 10x10 UV tiling for detail)
+#[allow(dead_code)]
 fn create_ground_plane(size: f32, subdivisions: u32) -> (Vec<Vertex>, Vec<u32>) {
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
@@ -657,31 +662,39 @@ struct ShowcaseApp {
     ground_index_buffer: Option<wgpu::Buffer>,
     ground_index_count: u32,
 
+    #[allow(dead_code)]
     cube_vertex_buffer: Option<wgpu::Buffer>,
+    #[allow(dead_code)]
     cube_index_buffer: Option<wgpu::Buffer>,
+    #[allow(dead_code)]
     cube_index_count: u32,
 
     // Island scene objects
     tree_vertex_buffer: Option<wgpu::Buffer>,
     tree_index_buffer: Option<wgpu::Buffer>,
     tree_index_count: u32,
+    #[allow(dead_code)]
     tree_positions: Vec<(Vec3, u32)>, // (position, material_index)
 
     building_vertex_buffer: Option<wgpu::Buffer>,
     building_index_buffer: Option<wgpu::Buffer>,
     building_index_count: u32,
+    #[allow(dead_code)]
     building_positions: Vec<(Vec3, u32)>,
 
     npc_vertex_buffer: Option<wgpu::Buffer>,
     npc_index_buffer: Option<wgpu::Buffer>,
     npc_index_count: u32,
+    #[allow(dead_code)]
     npc_positions: Vec<(Vec3, u32)>,
 
     animal_vertex_buffer: Option<wgpu::Buffer>,
     animal_index_buffer: Option<wgpu::Buffer>,
     animal_index_count: u32,
+    #[allow(dead_code)]
     animal_positions: Vec<(Vec3, u32)>,
 
+    #[allow(dead_code)]
     companion_position: Vec3,
 
     // Materials & HDRIs
@@ -740,13 +753,48 @@ impl Default for ShowcaseApp {
             animal_positions: Vec::new(),
             companion_position: Vec3::new(5.0, 0.0, 5.0),
             materials: vec![
-                Material::new("Aerial Rocks", "aerial_rocks"),      // Terrain
-                Material::new("Metal Plate", "metal_plate"),        // NPCs (temp)
-                Material::new("Cobblestone", "cobblestone"),       // Buildings
-                Material::new("Tree Bark", "tree_bark_proc"),       // Trees (trunk) - NEW PROCEDURAL
-                Material::new("Oak Leaves", "leaves_oak_proc"),     // Trees (canopy) - NEW PROCEDURAL
-                Material::new("Grass", "grass_proc"),               // Terrain variation - NEW PROCEDURAL
-                Material::new("Thatch Roof", "thatch_proc"),        // Building roofs - NEW PROCEDURAL
+                Material {
+                    name: "Grass".to_string(),
+                    albedo_path: "assets/textures/texture-a.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
+                Material {
+                    name: "Dirt".to_string(),
+                    albedo_path: "assets/textures/texture-b.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
+                Material {
+                    name: "Stone".to_string(),
+                    albedo_path: "assets/textures/cobblestone.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
+                Material {
+                    name: "Wood".to_string(),
+                    albedo_path: "assets/textures/planks.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
+                Material {
+                    name: "Leaves".to_string(),
+                    albedo_path: "assets/textures/tree.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
+                Material {
+                    name: "Roof".to_string(),
+                    albedo_path: "assets/textures/roof.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
+                Material {
+                    name: "Building".to_string(),
+                    albedo_path: "assets/textures/cobblestoneAlternative.png".to_string(),
+                    normal_path: "assets/default_n.png".to_string(),
+                    mra_path: "assets/default_mra.png".to_string(),
+                },
             ],
             hdris: vec![
                 HDRI::new(
@@ -806,14 +854,14 @@ impl ShowcaseApp {
         });
 
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &rgba,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * dimensions.0),
                 rows_per_image: Some(dimensions.1),
@@ -871,14 +919,14 @@ impl ShowcaseApp {
             });
             
             queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
                 &rgba,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(4 * dimensions.0),
                     rows_per_image: Some(dimensions.1),
@@ -899,6 +947,7 @@ impl ShowcaseApp {
         queue: &wgpu::Queue,
         path: &str,
     ) -> Result<wgpu::Texture, Box<dyn std::error::Error>> {
+        #[allow(unused_imports)]
         use image::GenericImageView;
         
         // Load HDR image
@@ -983,14 +1032,14 @@ impl ShowcaseApp {
                 .collect();
             
             queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &cubemap_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d { x: 0, y: 0, z: face },
                     aspect: wgpu::TextureAspect::All,
                 },
                 &face_data_f16,
-                wgpu::ImageDataLayout {
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(cubemap_size * 8), // 4 channels * 2 bytes (f16)
                     rows_per_image: Some(cubemap_size),
@@ -1158,14 +1207,14 @@ impl ShowcaseApp {
                         view_formats: &[],
                     });
                     queue.write_texture(
-                        wgpu::ImageCopyTexture {
+                        wgpu::TexelCopyTextureInfo {
                             texture: &texture,
                             mip_level: 0,
                             origin: wgpu::Origin3d::ZERO,
                             aspect: wgpu::TextureAspect::All,
                         },
                         &fallback_data,
-                        wgpu::ImageDataLayout {
+                        wgpu::TexelCopyBufferLayout {
                             offset: 0,
                             bytes_per_row: Some(4),
                             rows_per_image: Some(1),
@@ -1198,14 +1247,14 @@ impl ShowcaseApp {
                         view_formats: &[],
                     });
                     queue.write_texture(
-                        wgpu::ImageCopyTexture {
+                        wgpu::TexelCopyTextureInfo {
                             texture: &texture,
                             mip_level: 0,
                             origin: wgpu::Origin3d::ZERO,
                             aspect: wgpu::TextureAspect::All,
                         },
                         &fallback_data,
-                        wgpu::ImageDataLayout {
+                        wgpu::TexelCopyBufferLayout {
                             offset: 0,
                             bytes_per_row: Some(4),
                             rows_per_image: Some(1),
@@ -1238,14 +1287,14 @@ impl ShowcaseApp {
                         view_formats: &[],
                     });
                     queue.write_texture(
-                        wgpu::ImageCopyTexture {
+                        wgpu::TexelCopyTextureInfo {
                             texture: &texture,
                             mip_level: 0,
                             origin: wgpu::Origin3d::ZERO,
                             aspect: wgpu::TextureAspect::All,
                         },
                         &fallback_data,
-                        wgpu::ImageDataLayout {
+                        wgpu::TexelCopyBufferLayout {
                             offset: 0,
                             bytes_per_row: Some(4),
                             rows_per_image: Some(1),
@@ -1539,26 +1588,43 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create tree mesh - MIXED APPROACH: First tree uses GLB, rest use procedural
-        // This demonstrates both real asset loading and procedural generation
-        let (tree_template_vertices, tree_template_indices) = match gltf_loader::load_gltf("assets/demo_plane.gltf") {
-            Ok(loaded_mesh) => {
-                log::info!("✅ Loaded GLTF model '{}': {} vertices, {} triangles", 
-                    loaded_mesh.name, loaded_mesh.vertices.len(), loaded_mesh.indices.len() / 3);
-                
-                // Convert GltfVertex to Vertex (they're compatible)
-                let vertices: Vec<Vertex> = loaded_mesh.vertices.iter().map(|v| Vertex {
-                    position: v.position,
-                    normal: v.normal,
-                    uv: v.uv,
-                }).collect();
-                
-                (vertices, loaded_mesh.indices)
+        // Load real Kenney tree models
+        let tree_paths = vec![
+            "assets/models/tree_default.glb",
+            "assets/models/tree_oak.glb",
+            "assets/models/tree_simple.glb",
+            "assets/models/tree_detailed.glb",
+        ];
+        
+        let (tree_template_vertices, tree_template_indices) = {
+            let mut loaded = false;
+            let mut vertices = Vec::new();
+            let mut indices = Vec::new();
+            
+            for path in &tree_paths {
+                match gltf_loader::load_gltf(path) {
+                    Ok(loaded_mesh) => {
+                        println!("✅ Loaded tree model '{}': {} vertices, {} triangles", 
+                            loaded_mesh.name, loaded_mesh.vertices.len(), loaded_mesh.indices.len() / 3);
+                        
+                        vertices = loaded_mesh.vertices.iter().map(|v| Vertex {
+                            position: v.position,
+                            normal: v.normal,
+                            uv: v.uv,
+                        }).collect();
+                        indices = loaded_mesh.indices;
+                        loaded = true;
+                        break;
+                    }
+                    Err(_) => continue,
+                }
             }
-            Err(e) => {
-                log::warn!("⚠️  Failed to load demo_plane.gltf: {}", e);
-                log::info!("Using procedural tree mesh instead");
-                create_tree(8.0, 0.6, 10.0, 4.0)
+            
+            if !loaded {
+                println!("⚠️  No tree models found, using procedural");
+                (create_tree(8.0, 0.6, 10.0, 4.0).0, create_tree(8.0, 0.6, 10.0, 4.0).1)
+            } else {
+                (vertices, indices)
             }
         };
         
@@ -1608,8 +1674,45 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create building instances (medieval houses: 10m x 8m x 10m)
-        let (building_template_vertices, building_template_indices) = create_building(10.0, 8.0, 10.0);
+        // Load real Kenney building models
+        let building_paths = vec![
+            "assets/models/roof.glb",
+            "assets/models/wall.glb",
+            "assets/models/floor.glb",
+            "assets/models/tower.glb",
+        ];
+        
+        let (building_template_vertices, building_template_indices) = {
+            let mut loaded = false;
+            let mut vertices = Vec::new();
+            let mut indices = Vec::new();
+            
+            for path in &building_paths {
+                match gltf_loader::load_gltf(path) {
+                    Ok(loaded_mesh) => {
+                        println!("✅ Loaded building model '{}': {} vertices", 
+                            loaded_mesh.name, loaded_mesh.vertices.len());
+                        
+                        vertices = loaded_mesh.vertices.iter().map(|v| Vertex {
+                            position: v.position,
+                            normal: v.normal,
+                            uv: v.uv,
+                        }).collect();
+                        indices = loaded_mesh.indices;
+                        loaded = true;
+                        break;
+                    }
+                    Err(_) => continue,
+                }
+            }
+            
+            if !loaded {
+                println!("⚠️  No building models found, using procedural");
+                create_building(10.0, 8.0, 10.0)
+            } else {
+                (vertices, indices)
+            }
+        };
         
         // Spread buildings across 150m terrain
         let building_positions = vec![
@@ -1656,8 +1759,44 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create NPC instances (LARGE 5m humanoids for VISIBILITY from far camera)
-        let (npc_template_vertices, npc_template_indices) = create_humanoid(5.0);
+        // Load real Kenney character models for NPCs
+        let npc_paths = vec![
+            "assets/models/character-a.glb",
+            "assets/models/character-b.glb",
+            "assets/models/character-c.glb",
+        ];
+        
+        let (npc_template_vertices, npc_template_indices) = {
+            let mut loaded = false;
+            let mut vertices = Vec::new();
+            let mut indices = Vec::new();
+            
+            for path in &npc_paths {
+                match gltf_loader::load_gltf(path) {
+                    Ok(loaded_mesh) => {
+                        println!("✅ Loaded NPC model '{}': {} vertices", 
+                            loaded_mesh.name, loaded_mesh.vertices.len());
+                        
+                        vertices = loaded_mesh.vertices.iter().map(|v| Vertex {
+                            position: v.position,
+                            normal: v.normal,
+                            uv: v.uv,
+                        }).collect();
+                        indices = loaded_mesh.indices;
+                        loaded = true;
+                        break;
+                    }
+                    Err(_) => continue,
+                }
+            }
+            
+            if !loaded {
+                println!("⚠️  No NPC models found, using procedural");
+                create_humanoid(5.0)
+            } else {
+                (vertices, indices)
+            }
+        };
         
         // Spread NPCs across 150m terrain - VISIBLE positions near buildings
         let npc_positions = vec![
@@ -1707,8 +1846,44 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Create animal instances (1.5m length, 1.2m height - bigger animals)
-        let (animal_template_vertices, animal_template_indices) = create_animal(1.5, 1.2);
+        // Load real Kenney animal/rock models (using rocks as placeholders)
+        let animal_paths = vec![
+            "assets/models/rock_largeA.glb",
+            "assets/models/rock_largeB.glb",
+            "assets/models/plant_bush.glb",
+        ];
+        
+        let (animal_template_vertices, animal_template_indices) = {
+            let mut loaded = false;
+            let mut vertices = Vec::new();
+            let mut indices = Vec::new();
+            
+            for path in &animal_paths {
+                match gltf_loader::load_gltf(path) {
+                    Ok(loaded_mesh) => {
+                        println!("✅ Loaded animal model '{}': {} vertices", 
+                            loaded_mesh.name, loaded_mesh.vertices.len());
+                        
+                        vertices = loaded_mesh.vertices.iter().map(|v| Vertex {
+                            position: v.position,
+                            normal: v.normal,
+                            uv: v.uv,
+                        }).collect();
+                        indices = loaded_mesh.indices;
+                        loaded = true;
+                        break;
+                    }
+                    Err(_) => continue,
+                }
+            }
+            
+            if !loaded {
+                println!("⚠️  No animal models found, using procedural");
+                create_animal(1.5, 1.2)
+            } else {
+                (vertices, indices)
+            }
+        };
         
         // Spread animals across 150m terrain
         let animal_positions = vec![

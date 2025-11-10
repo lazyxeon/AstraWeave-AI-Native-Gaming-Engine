@@ -1,0 +1,23 @@
+[package]
+name = "advanced_content_demo"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "advanced_content_demo"
+path = "src/main.rs"
+
+[[bin]]
+name = "advanced_content_demo_ui"
+path = "src/main_ui_enhanced.rs"
+
+[dependencies]
+astraweave-weaving = { path = "../../astraweave-weaving" }
+glam = { workspace = true }
+rand = { workspace = true }
+
+[dev-dependencies]
+# UI visualization (optional for UI overlay demo)
+# Uncomment to enable UI overlay mode:
+# eframe = { workspace = true }
+# egui = { workspace = true }

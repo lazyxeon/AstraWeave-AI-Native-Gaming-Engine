@@ -103,6 +103,7 @@ pub fn load_gltf(path: impl AsRef<Path>) -> Result<LoadedMesh> {
 }
 
 /// Load multiple meshes from a GLTF file
+#[allow(dead_code)]
 pub fn load_gltf_all_meshes(path: impl AsRef<Path>) -> Result<Vec<LoadedMesh>> {
     let path = path.as_ref();
     let (document, buffers, _images) = gltf::import(path)

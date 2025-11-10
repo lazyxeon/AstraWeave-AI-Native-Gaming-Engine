@@ -1,8 +1,9 @@
-use egui::{ScrollArea, Ui};
+use egui::{ScrollArea, Ui, TextureHandle, ColorImage, ImageData};
 use std::path::{Path, PathBuf};
 use std::fs;
+use std::collections::HashMap;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssetType {
     Model,
     Texture,
@@ -98,6 +99,12 @@ impl AssetEntry {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ViewMode {
+    List,
+    Grid,
+}
+
 pub struct AssetBrowser {
     root_path: PathBuf,
     current_path: PathBuf,
@@ -106,6 +113,10 @@ pub struct AssetBrowser {
     show_hidden: bool,
     filter_type: Option<AssetType>,
     search_query: String,
+    view_mode: ViewMode,
+    thumbnail_cache: HashMap<PathBuf, TextureHandle>,
+    thumbnail_size: f32,
+    dragged_asset: Option<PathBuf>,
 }
 
 impl AssetBrowser {
@@ -118,6 +129,10 @@ impl AssetBrowser {
             show_hidden: false,
             filter_type: None,
             search_query: String::new(),
+            view_mode: ViewMode::List,
+            thumbnail_cache: HashMap::new(),
+            thumbnail_size: 64.0,
+            dragged_asset: None,
         };
         browser.scan_current_directory();
         browser
@@ -186,6 +201,32 @@ impl AssetBrowser {
         self.selected_asset.as_deref()
     }
 
+    fn load_thumbnail(&mut self, ctx: &egui::Context, path: &Path) -> Option<TextureHandle> {
+        if let Some(texture) = self.thumbnail_cache.get(path) {
+            return Some(texture.clone());
+        }
+
+        if AssetType::from_path(path) != AssetType::Texture {
+            return None;
+        }
+
+        let image_data = image::open(path).ok()?;
+        let rgba = image_data.to_rgba8();
+        let size = [rgba.width() as usize, rgba.height() as usize];
+        let pixels = rgba.into_raw();
+        
+        let color_image = ColorImage::from_rgba_unmultiplied(size, &pixels);
+        
+        let texture = ctx.load_texture(
+            path.display().to_string(),
+            ImageData::Color(std::sync::Arc::new(color_image)),
+            egui::TextureOptions::LINEAR
+        );
+        
+        self.thumbnail_cache.insert(path.to_path_buf(), texture.clone());
+        Some(texture)
+    }
+
     pub fn show(&mut self, ui: &mut Ui) {
         ui.heading("📦 Asset Browser");
         ui.separator();
@@ -204,6 +245,15 @@ impl AssetBrowser {
             ui.label("🔍");
             if ui.text_edit_singleline(&mut self.search_query).changed() {
                 self.scan_current_directory();
+            }
+
+            ui.separator();
+
+            if ui.selectable_label(self.view_mode == ViewMode::List, "📄 List").clicked() {
+                self.view_mode = ViewMode::List;
+            }
+            if ui.selectable_label(self.view_mode == ViewMode::Grid, "🔲 Grid").clicked() {
+                self.view_mode = ViewMode::Grid;
             }
         });
 
@@ -254,54 +304,165 @@ impl AssetBrowser {
 
         let mut path_to_navigate = None;
         
-        ScrollArea::vertical()
-            .auto_shrink([false, false])
-            .show(ui, |ui| {
-                ui.style_mut().spacing.item_spacing.y = 2.0;
+        match self.view_mode {
+            ViewMode::List => {
+                ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        ui.style_mut().spacing.item_spacing.y = 2.0;
 
-                for entry in &self.entries {
-                    let is_selected = self.selected_asset.as_ref() == Some(&entry.path);
+                        for entry in &self.entries {
+                            let is_selected = self.selected_asset.as_ref() == Some(&entry.path);
 
-                    let response = ui.selectable_label(
-                        is_selected,
-                        format!(
-                            "{} {} {}",
-                            entry.asset_type.icon(),
-                            entry.name,
-                            entry.format_size()
-                        ),
-                    );
+                            let response = ui.selectable_label(
+                                is_selected,
+                                format!(
+                                    "{} {} {}",
+                                    entry.asset_type.icon(),
+                                    entry.name,
+                                    entry.format_size()
+                                ),
+                            );
 
-                    if response.clicked() {
-                        if entry.asset_type == AssetType::Directory {
-                            path_to_navigate = Some(entry.path.clone());
-                        } else {
-                            self.selected_asset = Some(entry.path.clone());
+                            if response.clicked() {
+                                if entry.asset_type == AssetType::Directory {
+                                    path_to_navigate = Some(entry.path.clone());
+                                } else {
+                                    self.selected_asset = Some(entry.path.clone());
+                                }
+                            }
+
+                            if response.double_clicked() {
+                                if entry.asset_type == AssetType::Directory {
+                                    path_to_navigate = Some(entry.path.clone());
+                                }
+                            }
+
+                            if response.hovered() {
+                                response.on_hover_text(entry.path.display().to_string());
+                            }
                         }
-                    }
 
-                    if response.double_clicked() {
-                        if entry.asset_type == AssetType::Directory {
-                            path_to_navigate = Some(entry.path.clone());
+                        if self.entries.is_empty() {
+                            ui.colored_label(
+                                egui::Color32::GRAY,
+                                if self.search_query.is_empty() {
+                                    "Empty directory"
+                                } else {
+                                    "No matching assets"
+                                }
+                            );
                         }
-                    }
+                    });
+            }
+            ViewMode::Grid => {
+                ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .show(ui, |ui| {
+                        let item_spacing = 8.0;
+                        let thumbnail_size = self.thumbnail_size;
+                        let available_width = ui.available_width();
+                        let items_per_row = ((available_width + item_spacing) / (thumbnail_size + item_spacing)).floor().max(1.0) as usize;
 
-                    if response.hovered() {
-                        response.on_hover_text(entry.path.display().to_string());
-                    }
-                }
+                        ui.style_mut().spacing.item_spacing = egui::vec2(item_spacing, item_spacing);
 
-                if self.entries.is_empty() {
-                    ui.colored_label(
-                        egui::Color32::GRAY,
-                        if self.search_query.is_empty() {
-                            "Empty directory"
-                        } else {
-                            "No matching assets"
+                        for row_start in (0..self.entries.len()).step_by(items_per_row) {
+                            ui.horizontal(|ui| {
+                                for i in row_start..(row_start + items_per_row).min(self.entries.len()) {
+                                    let entry = &self.entries[i];
+                                    let is_selected = self.selected_asset.as_ref() == Some(&entry.path);
+                                    let entry_path = entry.path.clone();
+                                    let entry_name = entry.name.clone();
+                                    let entry_asset_type = entry.asset_type;
+
+                                    let ctx = ui.ctx().clone();
+                                    let thumbnail = if entry_asset_type == AssetType::Texture {
+                                        self.load_thumbnail(&ctx, &entry_path)
+                                    } else {
+                                        None
+                                    };
+
+                                    ui.vertical(|ui| {
+                                        ui.set_width(thumbnail_size);
+
+                                        let (rect, response) = ui.allocate_exact_size(
+                                            egui::vec2(thumbnail_size, thumbnail_size),
+                                            egui::Sense::click()
+                                        );
+
+                                        if ui.is_rect_visible(rect) {
+                                            let bg_color = if is_selected {
+                                                egui::Color32::from_rgb(60, 120, 180)
+                                            } else if response.hovered() {
+                                                egui::Color32::from_rgb(50, 50, 55)
+                                            } else {
+                                                egui::Color32::from_rgb(35, 35, 40)
+                                            };
+
+                                            ui.painter().rect_filled(rect, 4.0, bg_color);
+
+                                            if let Some(texture) = thumbnail {
+                                                ui.painter().image(
+                                                    texture.id(),
+                                                    rect.shrink(4.0),
+                                                    egui::Rect::from_min_max(
+                                                        egui::pos2(0.0, 0.0),
+                                                        egui::pos2(1.0, 1.0)
+                                                    ),
+                                                    egui::Color32::WHITE
+                                                );
+                                            } else {
+                                                let icon_pos = rect.center();
+                                                ui.painter().text(
+                                                    icon_pos,
+                                                    egui::Align2::CENTER_CENTER,
+                                                    entry_asset_type.icon(),
+                                                    egui::FontId::proportional(32.0),
+                                                    entry_asset_type.color()
+                                                );
+                                            }
+                                        }
+
+                                        if response.clicked() {
+                                            if entry_asset_type == AssetType::Directory {
+                                                path_to_navigate = Some(entry_path.clone());
+                                            } else {
+                                                self.selected_asset = Some(entry_path.clone());
+                                            }
+                                        }
+
+                                        if response.double_clicked() {
+                                            if entry_asset_type == AssetType::Directory {
+                                                path_to_navigate = Some(entry_path.clone());
+                                            }
+                                        }
+
+                                        if response.hovered() {
+                                            response.on_hover_text(entry_path.display().to_string());
+                                        }
+
+                                        ui.add(
+                                            egui::Label::new(&entry_name)
+                                                .wrap_mode(egui::TextWrapMode::Truncate)
+                                        );
+                                    });
+                                }
+                            });
                         }
-                    );
-                }
-            });
+
+                        if self.entries.is_empty() {
+                            ui.colored_label(
+                                egui::Color32::GRAY,
+                                if self.search_query.is_empty() {
+                                    "Empty directory"
+                                } else {
+                                    "No matching assets"
+                                }
+                            );
+                        }
+                    });
+            }
+        }
         
         if let Some(path) = path_to_navigate {
             self.navigate_to(path);

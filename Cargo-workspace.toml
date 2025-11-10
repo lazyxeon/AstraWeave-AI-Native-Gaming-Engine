@@ -45,6 +45,7 @@ members = [
   "astraweave-input",
   "astraweave-ui",
   "examples/ui_controls_demo",
+  "examples/veilweaver_quest_demo",
 ]
 
 # Define default members for core operations

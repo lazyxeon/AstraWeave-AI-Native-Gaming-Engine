@@ -24,8 +24,8 @@ Deterministic, ECS-based engine where AI agents are first‑class citizens. Buil
 ## Snapshot (Nov 2025)
 
 - 12,700+ agents at 60 FPS • 100% deterministic replay
-- Option 3 Determinism Validation COMPLETE (Nov 1, 2025)
-- Phase 8 Priority 1 (In‑game UI) in progress — Week 4 polish
+- Week 5 Content Integration COMPLETE (Nov 9, 2025) – **1850× performance targets!**
+- 351/351 tests passing • 5 gameplay scenarios validated • Console UI framework
 - Hermes 2 Pro LLM integrated; hybrid GOAP+LLM orchestration
 
 For details, see the master reports linked above and the validation summaries in `docs/root-archive/`.

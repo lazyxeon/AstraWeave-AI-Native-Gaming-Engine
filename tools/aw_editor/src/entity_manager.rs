@@ -1,6 +1,6 @@
 use glam::{Quat, Vec3};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 /// Unique identifier for entities in the editor
 pub type EntityId = u64;
@@ -159,6 +159,113 @@ impl EntityManager {
     }
 }
 
+/// Multi-selection state for the editor
+/// 
+/// Supports Ctrl+click (toggle), Shift+click (range), and maintains a primary selection
+#[derive(Debug, Clone, Default)]
+pub struct SelectionSet {
+    /// All selected entity IDs
+    pub entities: HashSet<EntityId>,
+    
+    /// Primary selection (last selected entity, used for gizmo placement)
+    pub primary: Option<EntityId>,
+}
+
+impl SelectionSet {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Add entity to selection
+    /// 
+    /// # Arguments
+    /// 
+    /// * `entity` - Entity ID to add
+    /// * `is_primary` - Whether this becomes the primary selection
+    pub fn add(&mut self, entity: EntityId, is_primary: bool) {
+        self.entities.insert(entity);
+        if is_primary {
+            self.primary = Some(entity);
+        }
+    }
+
+    /// Remove entity from selection
+    pub fn remove(&mut self, entity: EntityId) {
+        self.entities.remove(&entity);
+        
+        if self.primary == Some(entity) {
+            self.primary = self.entities.iter().next().copied();
+        }
+    }
+
+    /// Toggle entity selection (add if not selected, remove if selected)
+    pub fn toggle(&mut self, entity: EntityId) {
+        if self.entities.contains(&entity) {
+            self.remove(entity);
+        } else {
+            self.add(entity, true);
+        }
+    }
+
+    /// Clear all selections
+    pub fn clear(&mut self) {
+        self.entities.clear();
+        self.primary = None;
+    }
+
+    /// Select only this entity (clear others)
+    pub fn select_only(&mut self, entity: EntityId) {
+        self.clear();
+        self.add(entity, true);
+    }
+
+    /// Check if entity is selected
+    pub fn is_selected(&self, entity: EntityId) -> bool {
+        self.entities.contains(&entity)
+    }
+
+    /// Get selected entity count
+    pub fn count(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Check if selection is empty
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Get all selected entity IDs as a Vec
+    pub fn to_vec(&self) -> Vec<EntityId> {
+        self.entities.iter().copied().collect()
+    }
+
+    /// Range selection between two entities (for Shift+click in hierarchy)
+    /// 
+    /// # Arguments
+    /// 
+    /// * `from` - Start entity ID
+    /// * `to` - End entity ID
+    /// * `all_ids` - Ordered list of all entity IDs (from hierarchy)
+    pub fn select_range(&mut self, from: EntityId, to: EntityId, all_ids: &[EntityId]) {
+        if let (Some(from_idx), Some(to_idx)) = (
+            all_ids.iter().position(|&id| id == from),
+            all_ids.iter().position(|&id| id == to),
+        ) {
+            let (start, end) = if from_idx < to_idx {
+                (from_idx, to_idx)
+            } else {
+                (to_idx, from_idx)
+            };
+
+            for &id in &all_ids[start..=end] {
+                self.entities.insert(id);
+            }
+
+            self.primary = Some(to);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -197,5 +304,121 @@ mod tests {
         let (min, max) = entity.aabb();
         assert_eq!(min, Vec3::new(-1.0, -1.0, -1.0));
         assert_eq!(max, Vec3::new(1.0, 1.0, 1.0));
+    }
+
+    #[test]
+    fn test_selection_single() {
+        let mut selection = SelectionSet::new();
+        assert!(selection.is_empty());
+        assert_eq!(selection.count(), 0);
+
+        selection.add(1, true);
+        assert!(!selection.is_empty());
+        assert_eq!(selection.count(), 1);
+        assert!(selection.is_selected(1));
+        assert_eq!(selection.primary, Some(1));
+    }
+
+    #[test]
+    fn test_selection_multiple() {
+        let mut selection = SelectionSet::new();
+        
+        selection.add(1, true);
+        selection.add(2, false);
+        selection.add(3, false);
+        
+        assert_eq!(selection.count(), 3);
+        assert!(selection.is_selected(1));
+        assert!(selection.is_selected(2));
+        assert!(selection.is_selected(3));
+        assert_eq!(selection.primary, Some(1));
+    }
+
+    #[test]
+    fn test_selection_toggle() {
+        let mut selection = SelectionSet::new();
+        
+        selection.toggle(1);
+        assert!(selection.is_selected(1));
+        
+        selection.toggle(1);
+        assert!(!selection.is_selected(1));
+        assert!(selection.is_empty());
+    }
+
+    #[test]
+    fn test_selection_remove() {
+        let mut selection = SelectionSet::new();
+        selection.add(1, true);
+        selection.add(2, false);
+        selection.add(3, false);
+        
+        selection.remove(2);
+        assert_eq!(selection.count(), 2);
+        assert!(!selection.is_selected(2));
+        assert_eq!(selection.primary, Some(1));
+        
+        selection.remove(1);
+        assert_eq!(selection.count(), 1);
+        assert!(selection.primary.is_some());
+    }
+
+    #[test]
+    fn test_selection_clear() {
+        let mut selection = SelectionSet::new();
+        selection.add(1, true);
+        selection.add(2, false);
+        
+        selection.clear();
+        assert!(selection.is_empty());
+        assert_eq!(selection.count(), 0);
+        assert!(selection.primary.is_none());
+    }
+
+    #[test]
+    fn test_selection_select_only() {
+        let mut selection = SelectionSet::new();
+        selection.add(1, true);
+        selection.add(2, false);
+        
+        selection.select_only(3);
+        assert_eq!(selection.count(), 1);
+        assert!(selection.is_selected(3));
+        assert!(!selection.is_selected(1));
+        assert!(!selection.is_selected(2));
+        assert_eq!(selection.primary, Some(3));
+    }
+
+    #[test]
+    fn test_selection_range() {
+        let mut selection = SelectionSet::new();
+        let all_ids = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+        
+        selection.select_range(3, 7, &all_ids);
+        
+        assert_eq!(selection.count(), 5);
+        assert!(selection.is_selected(3));
+        assert!(selection.is_selected(4));
+        assert!(selection.is_selected(5));
+        assert!(selection.is_selected(6));
+        assert!(selection.is_selected(7));
+        assert!(!selection.is_selected(2));
+        assert!(!selection.is_selected(8));
+        assert_eq!(selection.primary, Some(7));
+    }
+
+    #[test]
+    fn test_selection_range_reverse() {
+        let mut selection = SelectionSet::new();
+        let all_ids = vec![1, 2, 3, 4, 5];
+        
+        selection.select_range(5, 2, &all_ids);
+        
+        assert_eq!(selection.count(), 4);
+        assert!(selection.is_selected(2));
+        assert!(selection.is_selected(3));
+        assert!(selection.is_selected(4));
+        assert!(selection.is_selected(5));
+        assert_eq!(selection.primary, Some(2));
     }
 }

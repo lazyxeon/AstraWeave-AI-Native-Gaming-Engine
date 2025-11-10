@@ -273,7 +273,7 @@ impl HierarchyPanel {
                 }
             });
             
-            let mut painter = ui.painter_at(rect);
+            let painter = ui.painter_at(rect);
             
             if is_selected {
                 painter.rect_filled(
