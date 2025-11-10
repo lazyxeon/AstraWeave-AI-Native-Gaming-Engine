@@ -6,7 +6,7 @@
 use glam::Vec3;
 use std::collections::HashMap;
 
-use crate::{Enemy, Anchor, AnchorVfxState};
+use crate::{Anchor, AnchorVfxState};
 
 /// Enemy spawner managing waves and spawn points.
 #[derive(Debug)]
@@ -63,6 +63,8 @@ pub struct SpawnRequest {
     pub spawn_point_id: usize,
     /// Wave number this spawn belongs to
     pub wave: u32,
+    /// Enemy archetype to spawn (from enemy_types.rs)
+    pub archetype: crate::enemy_types::EnemyArchetype,
 }
 
 impl EnemySpawner {
@@ -249,12 +251,16 @@ impl EnemySpawner {
             // Generate position (immutable borrow of self)
             let position = self.generate_spawn_position(spawn_position, spawn_radius);
             
+            // Determine archetype based on wave number
+            let archetype = self.determine_archetype();
+            
             requests.push(SpawnRequest {
                 position,
                 patrol_radius: spawn_radius,
                 anchor_id: spawn_anchor_id,
                 spawn_point_id,
                 wave: self.current_wave,
+                archetype,
             });
             
             // Set cooldown (mutable borrow)
@@ -300,7 +306,7 @@ impl EnemySpawner {
 
     /// Returns IDs of active spawn points (prioritizing broken anchors).
     fn get_active_spawn_points(&self, anchors: &[(usize, &Anchor)]) -> Vec<usize> {
-        let mut broken_anchor_ids: Vec<usize> = anchors.iter()
+        let broken_anchor_ids: Vec<usize> = anchors.iter()
             .filter(|(_, anchor)| {
                 anchor.vfx_state() == AnchorVfxState::Broken ||
                 anchor.vfx_state() == AnchorVfxState::Critical
@@ -345,6 +351,60 @@ impl EnemySpawner {
             0.0,
             angle.sin() * distance,
         )
+    }
+
+    /// Determines enemy archetype based on wave number and difficulty.
+    /// 
+    /// Wave 1-2: Standard enemies only
+    /// Wave 3-5: Standard + Riftstalkers (fast flankers)
+    /// Wave 6-9: Standard + Riftstalkers + Sentinels (tanky AOE)
+    /// Wave 10+: All types including VoidBoss (25% chance on wave 10, 15, 20...)
+    fn determine_archetype(&self) -> crate::enemy_types::EnemyArchetype {
+        use rand::Rng;
+        let mut rng = rand::rng();
+        
+        // Boss waves (every 5 waves starting at wave 10)
+        if self.current_wave >= 10 && self.current_wave % 5 == 0 {
+            let boss_chance = rng.random_range(0.0..1.0);
+            if boss_chance < 0.25 {
+                return crate::enemy_types::EnemyArchetype::VoidBoss;
+            }
+        }
+        
+        // Wave progression
+        match self.current_wave {
+            1..=2 => crate::enemy_types::EnemyArchetype::Standard,
+            3..=5 => {
+                // 70% Standard, 30% Riftstalker
+                if rng.random_range(0.0..1.0) < 0.3 {
+                    crate::enemy_types::EnemyArchetype::Riftstalker
+                } else {
+                    crate::enemy_types::EnemyArchetype::Standard
+                }
+            }
+            6..=9 => {
+                // 50% Standard, 30% Riftstalker, 20% Sentinel
+                let roll = rng.random_range(0.0..1.0);
+                if roll < 0.2 {
+                    crate::enemy_types::EnemyArchetype::Sentinel
+                } else if roll < 0.5 {
+                    crate::enemy_types::EnemyArchetype::Riftstalker
+                } else {
+                    crate::enemy_types::EnemyArchetype::Standard
+                }
+            }
+            _ => {
+                // Wave 10+: 40% Standard, 35% Riftstalker, 25% Sentinel
+                let roll = rng.random_range(0.0..1.0);
+                if roll < 0.25 {
+                    crate::enemy_types::EnemyArchetype::Sentinel
+                } else if roll < 0.60 {
+                    crate::enemy_types::EnemyArchetype::Riftstalker
+                } else {
+                    crate::enemy_types::EnemyArchetype::Standard
+                }
+            }
+        }
     }
 
     /// Manually triggers a wave spawn (for testing).

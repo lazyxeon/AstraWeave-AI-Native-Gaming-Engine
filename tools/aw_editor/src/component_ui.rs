@@ -1,4 +1,4 @@
-use astraweave_core::{Ammo, Entity, Health, IVec2, Pose, Team, World};
+use astraweave_core::{Ammo, Entity, Health, Pose, Team, World};
 use egui::Ui;
 
 #[derive(Clone, Copy, Debug)]
@@ -53,7 +53,7 @@ impl InspectorUI for Pose {
             
             ui.horizontal(|ui| {
                 ui.label("Scale:");
-                changed |= ui.add(egui::DragValue::new(&mut self.scale).speed(0.01).clamp_range(0.01..=100.0)).changed();
+                changed |= ui.add(egui::DragValue::new(&mut self.scale).speed(0.01).range(0.01..=100.0)).changed();
             });
         });
         
@@ -72,7 +72,7 @@ impl InspectorUI for Health {
         ui.collapsing(label, |ui| {
             ui.horizontal(|ui| {
                 ui.label("HP:");
-                changed |= ui.add(egui::DragValue::new(&mut self.hp).speed(1.0).clamp_range(0..=1000)).changed();
+                changed |= ui.add(egui::DragValue::new(&mut self.hp).speed(1.0).range(0..=1000)).changed();
                 
                 let health_pct = (self.hp as f32 / 100.0).clamp(0.0, 1.0);
                 let health_color = if health_pct > 0.6 {
@@ -108,7 +108,7 @@ impl InspectorUI for Team {
             ui.horizontal(|ui| {
                 ui.label("Team ID:");
                 let mut id_i32 = self.id as i32;
-                if ui.add(egui::DragValue::new(&mut id_i32).speed(1.0).clamp_range(0..=255)).changed() {
+                if ui.add(egui::DragValue::new(&mut id_i32).speed(1.0).range(0..=255)).changed() {
                     self.id = id_i32 as u8;
                     changed = true;
                 }
@@ -138,7 +138,7 @@ impl InspectorUI for Ammo {
         ui.collapsing(label, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Rounds:");
-                changed |= ui.add(egui::DragValue::new(&mut self.rounds).speed(1.0).clamp_range(0..=1000)).changed();
+                changed |= ui.add(egui::DragValue::new(&mut self.rounds).speed(1.0).range(0..=1000)).changed();
             });
         });
         
