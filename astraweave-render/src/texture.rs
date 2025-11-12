@@ -291,6 +291,218 @@ impl Texture {
             sampler,
         })
     }
+
+    /// Load a texture asynchronously from a file path
+    ///
+    /// This method performs I/O and image decoding off the main thread,
+    /// only touching the GPU on the final upload step.
+    ///
+    /// # Arguments
+    /// * `device` - WGPU device
+    /// * `queue` - WGPU queue
+    /// * `path` - Path to texture file
+    /// * `usage` - Texture usage (Albedo, Normal, etc.)
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use astraweave_render::texture::{Texture, TextureUsage};
+    /// # async fn example(device: &wgpu::Device, queue: &wgpu::Queue) -> anyhow::Result<()> {
+    /// let texture = Texture::load_texture_async(
+    ///     device,
+    ///     queue,
+    ///     "assets/albedo.png",
+    ///     TextureUsage::Albedo
+    /// ).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "textures")]
+    pub async fn load_texture_async(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        path: &str,
+        usage: TextureUsage,
+    ) -> Result<Self> {
+        use std::path::Path;
+        
+        // Phase 1: Async file I/O (off main thread)
+        let path_buf = Path::new(path).to_path_buf();
+        let bytes = tokio::fs::read(&path_buf)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to read texture file {}: {}", path, e))?;
+
+        // Phase 2: Async image decoding (on thread pool)
+        let label = path.to_string();
+        let img = tokio::task::spawn_blocking(move || {
+            image::load_from_memory(&bytes)
+                .map_err(|e| anyhow::anyhow!("Failed to decode image: {}", e))
+        })
+        .await
+        .map_err(|e| anyhow::anyhow!("Image decode task panicked: {}", e))??;
+
+        // Phase 3: Synchronous GPU upload (main thread)
+        let rgba = img.to_rgba8();
+        let (width, height) = img.dimensions();
+
+        let mip_levels = if usage.needs_mipmaps() {
+            calculate_mip_levels(width, height)
+        } else {
+            1
+        };
+
+        log::debug!(
+            "Async loaded texture '{}': {}x{} pixels, {} as {}, {} mip levels",
+            label,
+            width,
+            height,
+            usage.description(),
+            if usage.format() == wgpu::TextureFormat::Rgba8UnormSrgb {
+                "sRGB"
+            } else {
+                "Linear"
+            },
+            mip_levels
+        );
+
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&label),
+            size,
+            mip_level_count: mip_levels,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: usage.format(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        // Upload base mip level
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            size,
+        );
+
+        // Generate and upload mipmaps
+        if mip_levels > 1 {
+            generate_and_upload_mipmaps(device, queue, &texture, &img, mip_levels)?;
+        }
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: if mip_levels > 1 {
+                wgpu::FilterMode::Linear
+            } else {
+                wgpu::FilterMode::Nearest
+            },
+            ..Default::default()
+        });
+
+        Ok(Self {
+            texture,
+            view,
+            sampler,
+        })
+    }
+
+    /// Load a texture from already-decoded image data with specific usage
+    ///
+    /// This is useful when you have image data from another source (e.g., procedural generation).
+    #[cfg(feature = "textures")]
+    pub fn from_image_with_usage(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        img: &DynamicImage,
+        usage: TextureUsage,
+        label: Option<&str>,
+    ) -> Result<Self> {
+        let rgba = img.to_rgba8();
+        let (width, height) = img.dimensions();
+
+        let mip_levels = if usage.needs_mipmaps() {
+            calculate_mip_levels(width, height)
+        } else {
+            1
+        };
+
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label,
+            size,
+            mip_level_count: mip_levels,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: usage.format(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            size,
+        );
+
+        if mip_levels > 1 {
+            generate_and_upload_mipmaps(device, queue, &texture, img, mip_levels)?;
+        }
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: if mip_levels > 1 {
+                wgpu::FilterMode::Linear
+            } else {
+                wgpu::FilterMode::Nearest
+            },
+            ..Default::default()
+        });
+
+        Ok(Self {
+            texture,
+            view,
+            sampler,
+        })
+    }
 }
 
 /// Calculate the number of mip levels for a texture

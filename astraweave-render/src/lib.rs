@@ -30,6 +30,7 @@ pub mod mesh_gltf; // glTF loader
 #[cfg(any(feature = "obj-assets", feature = "assets"))]
 pub mod mesh_obj;
 pub mod residency;
+pub mod texture_streaming; // Texture streaming with LRU cache and priority-based loading
 pub mod terrain_material; // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
 
 #[cfg(feature = "skinning-gpu")]
@@ -97,6 +98,7 @@ pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
 #[cfg(feature = "bloom")]
 pub use post::{BloomConfig, BloomPipeline};
 pub use residency::ResidencyManager;
+pub use texture_streaming::{TextureStreamingManager, TextureStreamingStats};
 pub use terrain_material::{
     TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
 };

@@ -4,6 +4,8 @@
 
 use anyhow::{Context, Result};
 use meshopt::optimize_vertex_cache;
+use meshopt::optimize_overdraw_in_place;
+use meshopt::VertexDataAdapter;
 
 /// Mesh optimization statistics
 #[derive(Debug, Clone)]
@@ -124,7 +126,11 @@ pub fn optimize_mesh(mut mesh: Mesh) -> Result<(Mesh, MeshOptimizationStats)> {
     optimize_vertex_cache_inplace(&mut mesh.indices, vertex_count)
         .context("Vertex cache optimization failed")?;
 
-    // Calculate final metrics (overdraw optimization removed due to API changes)
+    // Optimize overdraw with meshopt (after vertex cache optimization)
+    optimize_overdraw_inplace(&mut mesh.indices, &mesh.positions, vertex_count)
+        .context("Overdraw optimization failed")?;
+
+    // Calculate final metrics
     let acmr_after = calculate_acmr(&mesh.indices, vertex_count);
     let overdraw_after = estimate_overdraw(&mesh);
 
@@ -213,6 +219,39 @@ fn estimate_overdraw(_mesh: &Mesh) -> f32 {
 
     // This is a placeholder - real overdraw measurement requires rasterization
     1.5
+}
+
+/// Optimize overdraw using meshopt
+///
+/// Must be called AFTER vertex cache optimization.
+/// threshold: allows slight degradation of vertex cache efficiency to reduce overdraw
+/// (1.05 = up to 5% degradation)
+fn optimize_overdraw_inplace(
+    indices: &mut [u32],
+    positions: &[f32],
+    _vertex_count: usize,
+) -> Result<()> {
+    // Create VertexDataAdapter for meshopt
+    // positions are tightly packed f32 xyz, so stride is 3 * sizeof(f32) = 12 bytes
+    let vertex_stride = std::mem::size_of::<f32>() * 3;
+    let position_offset = 0; // positions start at byte 0
+    
+    // Convert positions to bytes for VertexDataAdapter
+    let positions_bytes: &[u8] = unsafe {
+        std::slice::from_raw_parts(
+            positions.as_ptr() as *const u8,
+            positions.len() * std::mem::size_of::<f32>(),
+        )
+    };
+
+    let vertices = VertexDataAdapter::new(positions_bytes, vertex_stride, position_offset)
+        .context("Failed to create vertex data adapter")?;
+
+    // threshold of 1.05 allows up to 5% vertex cache degradation to improve overdraw
+    let threshold = 1.05;
+    optimize_overdraw_in_place(indices, &vertices, threshold);
+
+    Ok(())
 }
 
 #[cfg(test)]
