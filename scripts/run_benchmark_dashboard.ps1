@@ -76,17 +76,64 @@ if ($SkipBench) {
     Write-Step "Skipping benchmark run (using existing data)" "SKIP"
 }
 else {
-    Write-Step "Running core benchmarks (this may take 5-10 minutes)..." "RUNNING"
+    Write-Step "Running comprehensive benchmarks across all systems (this may take 15-25 minutes)..." "RUNNING"
     Write-Host ""
     
+    # COMPREHENSIVE BENCHMARK SUITE - Covering all 20+ crates with benchmarks
+    # Organized by system for clarity
+    
     $benchPackages = @(
-        "astraweave-ecs",
-        "astraweave-ai",
-        "astraweave-physics",
-        "astraweave-math",
-        "astraweave-terrain",
-        "astraweave-input"
+        # === CORE ENGINE ===
+        "astraweave-ecs",              # ECS archetype system, entity spawn/despawn, query performance
+        "astraweave-core",             # Core data structures, world management
+        "astraweave-stress-test",      # High-load scenarios, network/persistence/ECS stress
+        
+        # === AI SYSTEMS ===
+        "astraweave-ai",               # AI orchestrator, core loop, planning (5 benchmarks)
+        "astraweave-behavior",         # Behavior trees, GOAP, utility AI
+        "astraweave-context",          # Context management for AI decisions
+        "astraweave-memory",           # AI memory systems
+        "astraweave-llm",              # LLM integration (3 benchmarks)
+        "astraweave-llm-eval",         # LLM evaluation metrics
+        "astraweave-prompts",          # Prompt engineering systems
+        "astraweave-persona",          # NPC personality simulation
+        "astraweave-rag",              # RAG (Retrieval-Augmented Generation)
+        
+        # === PHYSICS & NAVIGATION ===
+        "astraweave-physics",          # Rapier3D wrapper, collision, character controller (4 benchmarks)
+        "astraweave-nav",              # Navmesh, pathfinding (crates/astraweave-nav)
+        
+        # === RENDERING ===
+        "astraweave-render",           # wgpu rendering, mesh optimization (2 benchmarks)
+        
+        # === MATH & PERFORMANCE ===
+        "astraweave-math",             # SIMD vector/matrix ops (4 benchmarks)
+        
+        # === WORLD & CONTENT ===
+        "astraweave-terrain",          # Terrain generation, voxel/polygon hybrid
+        "astraweave-pcg",              # Procedural content generation
+        "astraweave-weaving",          # Fate-weaving system (2 benchmarks)
+        
+        # === PERSISTENCE & NETWORKING ===
+        "astraweave-persistence-ecs",  # Save/load systems (2 benchmarks)
+        "astraweave-net-ecs",          # Networking with ECS integration
+        "aw-save",                     # Save system (persistence/aw-save)
+        
+        # === INPUT & AUDIO ===
+        "astraweave-input",            # Input binding system
+        "astraweave-audio",            # Spatial audio
+        
+        # === UI & TOOLS ===
+        "astraweave-ui",               # UI systems
+        "astraweave-sdk",              # SDK C ABI exports
+        "astract",                     # Gizmo/widget system (crates/astract)
+        "aw_editor",                   # Editor gizmo performance (tools/aw_editor)
+        "aw_build"                     # Build system hash performance
     )
+    
+    Write-Step "Running benchmarks for $($benchPackages.Count) packages..." "INFO"
+    Write-Host "  Packages: $($benchPackages -join ', ')" -ForegroundColor DarkGray
+    Write-Host ""
     
     $benchArgs = @("bench", "--no-fail-fast")
     foreach ($pkg in $benchPackages) {
@@ -95,11 +142,18 @@ else {
     }
     
     try {
-        & cargo @benchArgs 2>&1 | Out-Null
-        Write-Step "Benchmarks completed successfully" "SUCCESS"
+        Write-Host "Executing: cargo $($benchArgs -join ' ')" -ForegroundColor DarkGray
+        Write-Host ""
+        & cargo @benchArgs
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Step "Benchmarks completed successfully" "SUCCESS"
+        } else {
+            Write-Step "Some benchmarks failed (exit code $LASTEXITCODE), but continuing with available data..." "ERROR"
+        }
     }
     catch {
-        Write-Step "Benchmark run failed, but continuing with existing data..." "ERROR"
+        Write-Step "Benchmark run encountered errors: $_ (continuing with existing data...)" "ERROR"
     }
 }
 
@@ -203,24 +257,40 @@ Write-Step "Dashboard data prepared" "SUCCESS"
 # Step 5: Start HTTP server
 Write-Step "Starting HTTP server on port $Port..." "RUNNING"
 
-$serverJob = Start-Job -ScriptBlock {
-    param($Dir, $Port)
-    Set-Location $Dir
-    python -m http.server $Port
-} -ArgumentList (Resolve-Path $dashboardDir).Path, $Port
+# Use Start-Process instead of Start-Job for better reliability
+$dashboardPath = (Resolve-Path $dashboardDir).Path
+$serverProcess = Start-Process -FilePath "python" -ArgumentList "-m", "http.server", $Port -WorkingDirectory $dashboardPath -WindowStyle Minimized -PassThru
 
-Start-Sleep -Seconds 2
+# Wait a bit longer and check multiple times for server to start
+$maxAttempts = 10
+$attempt = 0
+$serverStarted = $false
 
-# Verify server started
-try {
-    $response = Invoke-WebRequest -Uri "http://localhost:$Port" -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop
-    Write-Step "HTTP server started successfully" "SUCCESS"
-}
-catch {
-    Write-Step "Failed to verify HTTP server: $_" "ERROR"
-    Stop-Job $serverJob
-    Remove-Job $serverJob
-    exit 1
+while ($attempt -lt $maxAttempts -and -not $serverStarted) {
+    $attempt++
+    Start-Sleep -Seconds 1
+    
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:$Port" -TimeoutSec 2 -UseBasicParsing -ErrorAction Stop
+        $serverStarted = $true
+        Write-Step "HTTP server started successfully (attempt $attempt/$maxAttempts)" "SUCCESS"
+    }
+    catch {
+        if ($attempt -eq $maxAttempts) {
+            Write-Step "Failed to verify HTTP server after $maxAttempts attempts: $_" "ERROR"
+            Write-Step "Server process may still be starting. Check manually at http://localhost:$Port" "ERROR"
+            
+            # Try to get more details
+            if ($serverProcess -and -not $serverProcess.HasExited) {
+                Write-Host "Server process is running (PID: $($serverProcess.Id))" -ForegroundColor Yellow
+                Write-Host "Try accessing http://localhost:$Port manually in your browser" -ForegroundColor Yellow
+            }
+            else {
+                Write-Host "Server process exited unexpectedly" -ForegroundColor Red
+                exit 1
+            }
+        }
+    }
 }
 
 # Step 6: Open browser
@@ -254,8 +324,8 @@ try {
     while ($true) {
         Start-Sleep -Seconds 1
         
-        # Check if job is still running
-        if ((Get-Job -Id $serverJob.Id).State -ne "Running") {
+        # Check if process is still running
+        if ($serverProcess.HasExited) {
             Write-Step "Server stopped unexpectedly" "ERROR"
             break
         }
@@ -264,7 +334,8 @@ try {
 finally {
     Write-Host ""
     Write-Step "Shutting down server..." "RUNNING"
-    Stop-Job $serverJob -ErrorAction SilentlyContinue
-    Remove-Job $serverJob -ErrorAction SilentlyContinue
+    if ($serverProcess -and -not $serverProcess.HasExited) {
+        Stop-Process -Id $serverProcess.Id -Force -ErrorAction SilentlyContinue
+    }
     Write-Step "Server stopped" "SUCCESS"
 }

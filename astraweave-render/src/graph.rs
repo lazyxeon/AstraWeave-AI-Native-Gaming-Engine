@@ -146,10 +146,10 @@ impl ResourceTable {
         match self
             .map
             .get(&key_str)
-            .expect("BUG: texture should exist after insert")
+            .ok_or_else(|| anyhow::anyhow!("BUG: texture '{}' should exist after insert", key_str))?
         {
             Resource::Texture(t) => Ok(t),
-            _ => unreachable!("BUG: inserted texture but got different resource type"),
+            _ => anyhow::bail!("BUG: resource '{}' inserted as texture but retrieved as different type", key_str),
         }
     }
 }

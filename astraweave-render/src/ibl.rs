@@ -101,9 +101,12 @@ pub struct IblManager {
     irr_pipeline: wgpu::RenderPipeline,
     spec_pipeline: wgpu::RenderPipeline,
     brdf_pipeline: wgpu::RenderPipeline,
-    // Equirectangular conversion
+    // Equirectangular conversion (used in load_hdr_and_convert)
+    #[allow(dead_code)]
     eqr_bgl: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     eqr_face_bgl: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
     eqr_pipeline: wgpu::RenderPipeline,
     // Cache decoded HDR equirectangular images by path to avoid repeated IO/decoding
     #[cfg(feature = "textures")]
@@ -1358,7 +1361,7 @@ mod tests {
                 assert_eq!(last_capture_time, 0.0);
                 assert_eq!(recapture_interval, 60.0);
             }
-            _ => panic!("Wrong sky mode"),
+            _ => unreachable!("SkyMode should be Procedural variant"),
         }
 
         // Test HdrPath mode
@@ -1371,7 +1374,7 @@ mod tests {
                 assert_eq!(biome, "grassland");
                 assert_eq!(path, "assets/env.hdr");
             }
-            _ => panic!("Wrong sky mode"),
+            _ => unreachable!("SkyMode should be HdrPath variant"),
         }
     }
 

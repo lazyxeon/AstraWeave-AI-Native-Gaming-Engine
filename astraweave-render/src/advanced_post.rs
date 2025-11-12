@@ -1,7 +1,7 @@
 // Advanced Post-Processing Effects
 // TAA, Motion Blur, Depth of Field, Color Grading
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use glam::Mat4;
 use wgpu;
 
@@ -103,36 +103,53 @@ impl Default for ColorGradingConfig {
 
 /// Advanced post-processing system
 pub struct AdvancedPostFx {
-    // TAA resources
+    // TAA resources (reserved for future full implementation)
+    #[allow(dead_code)]
     taa_history_texture: wgpu::Texture,
+    #[allow(dead_code)]
     taa_history_view: wgpu::TextureView,
     taa_pipeline: wgpu::RenderPipeline,
     taa_bind_group: wgpu::BindGroup,
     taa_config: TaaConfig,
     
-    // Motion blur resources
+    // Motion blur resources (reserved for future full implementation)
+    #[allow(dead_code)]
     velocity_texture: wgpu::Texture,
+    #[allow(dead_code)]
     velocity_view: wgpu::TextureView,
+    #[allow(dead_code)]
     motion_blur_pipeline: wgpu::RenderPipeline,
+    #[allow(dead_code)]
     motion_blur_bind_group: Option<wgpu::BindGroup>,
+    #[allow(dead_code)]
     motion_blur_config: MotionBlurConfig,
     
-    // DOF resources
+    // DOF resources (reserved for future full implementation)
+    #[allow(dead_code)]
     dof_pipeline: wgpu::RenderPipeline,
+    #[allow(dead_code)]
     dof_bind_group: Option<wgpu::BindGroup>,
+    #[allow(dead_code)]
     dof_config: DofConfig,
     
-    // Color grading resources
+    // Color grading resources (reserved for future full implementation)
+    #[allow(dead_code)]
     color_grading_pipeline: wgpu::RenderPipeline,
+    #[allow(dead_code)]
     color_grading_buffer: wgpu::Buffer,
+    #[allow(dead_code)]
     color_grading_bind_group: Option<wgpu::BindGroup>,
+    #[allow(dead_code)]
     color_grading_config: ColorGradingConfig,
     
-    // Common resources
+    // Common resources (used in new())
+    #[allow(dead_code)]
     sampler: wgpu::Sampler,
+    #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
     
-    // Previous frame data
+    // Previous frame data (reserved for future full implementation)
+    #[allow(dead_code)]
     prev_view_proj: Mat4,
     frame_count: u32,
 }
@@ -406,7 +423,7 @@ impl AdvancedPostFx {
     pub fn apply_taa(
         &mut self,
         encoder: &mut wgpu::CommandEncoder,
-        input_view: &wgpu::TextureView,
+        _input_view: &wgpu::TextureView,
         output_view: &wgpu::TextureView,
     ) {
         if !self.taa_config.enabled {

@@ -74,8 +74,10 @@ function Parse-CriterionEstimates {
 function Get-FriendlyName {
     param([string]$BenchmarkName)
     
-    # Friendly name mapping for common benchmarks
+    # Comprehensive friendly name mapping for common benchmarks
+    # Organized by system for maintainability
     $friendlyNames = @{
+        # === MATH/SIMD ===
         'vec3_dot/scalar' = 'Vector Dot Product (Scalar)'
         'vec3_dot/simd' = 'Vector Dot Product (SIMD)'
         'vec3_cross/scalar' = 'Vector Cross Product (Scalar)'
@@ -84,15 +86,91 @@ function Get-FriendlyName {
         'vec3_normalize/simd' = 'Vector Normalize (SIMD)'
         'mat4_mul/scalar' = 'Matrix Multiplication (Scalar)'
         'mat4_mul/simd' = 'Matrix Multiplication (SIMD)'
+        'simd_movement' = 'SIMD Movement Batch Processing'
+        'quat_multiply' = 'Quaternion Multiplication'
+        'transform_points' = 'Transform Points (Batch)'
+        
+        # === RENDERING ===
         'culling_performance/with_backface_culling' = 'Rendering with Back-Face Culling'
         'culling_performance/without_backface_culling' = 'Rendering without Back-Face Culling'
         'rendering_frame_time' = 'Frame Time Baseline'
         'shader_compilation' = 'Shader Compilation Time'
         'texture_operations' = 'Texture Operations'
+        'mesh_optimization' = 'Mesh Optimization Pipeline'
+        'vertex_compression' = 'Vertex Compression (Octahedral Normals)'
+        'lod_generation' = 'LOD Generation (Quadric Error)'
+        'instancing' = 'GPU Instancing (Batch Draw)'
+        'cluster_culling_gpu' = 'GPU Cluster Culling'
+        'cluster_culling_cpu' = 'CPU Cluster Culling'
+        
+        # === ECS CORE ===
+        'world_creation' = 'ECS World Creation'
+        'entity_spawn' = 'Entity Spawn (Single)'
+        'entity_spawn_batch' = 'Entity Spawn (Batch)'
+        'system_execution' = 'System Execution Pipeline'
+        'archetype_move' = 'Archetype Component Migration'
+        'query_iteration' = 'Component Query Iteration'
+        'event_dispatch' = 'Event System Dispatch'
+        'ecs_performance' = 'ECS Stress Test (High Load)'
+        
+        # === AI SYSTEMS ===
+        'ai_core_loop' = 'AI Core Loop (Perception→Reasoning→Planning→Action)'
+        'goap_planning' = 'GOAP Planning (Goal-Oriented)'
+        'behavior_tree' = 'Behavior Tree Execution'
+        'utility_ai' = 'Utility AI Decision Making'
+        'llm_prompt_generation' = 'LLM Prompt Generation'
+        'llm_response_parsing' = 'LLM Response Parsing'
+        'llm_tool_extraction' = 'LLM Tool Extraction'
+        'context_building' = 'AI Context Building'
+        'memory_recall' = 'AI Memory Recall'
+        'persona_simulation' = 'NPC Persona Simulation'
+        'rag_retrieval' = 'RAG Document Retrieval'
+        'rag_embedding' = 'RAG Embedding Generation'
+        
+        # === PHYSICS ===
+        'raycast' = 'Physics Raycast'
+        'character_controller' = 'Character Controller Movement'
+        'rigid_body' = 'Rigid Body Physics Step'
+        'collision_detection' = 'Collision Detection (Broad Phase)'
+        'spatial_hash' = 'Spatial Hash Grid Partitioning'
+        
+        # === NAVIGATION ===
+        'navmesh_pathfinding' = 'Navmesh A* Pathfinding'
+        'navmesh_generation' = 'Navmesh Generation'
+        'portal_graph' = 'Portal Graph Navigation'
+        
+        # === TERRAIN & WORLD ===
+        'terrain_generation' = 'Terrain Generation (Chunk)'
+        'voxel_meshing' = 'Voxel Meshing (Marching Cubes)'
+        'pcg_dungeon' = 'PCG Dungeon Generation'
+        'pcg_encounter' = 'PCG Encounter Generation'
+        
+        # === GAMEPLAY ===
         'enemy_spawner/determine_archetype' = 'Enemy Archetype Determination'
         'player_abilities' = 'Player Ability System'
+        'player_ability_activation' = 'Player Ability Activation'
         'quest_objectives' = 'Quest Objective Tracking'
         'integrated_systems' = 'Integrated System Performance'
+        'weaving' = 'Fate-Weaving System'
+        
+        # === PERSISTENCE & NETWORKING ===
+        'save_serialization' = 'Save File Serialization (ECS)'
+        'save_deserialization' = 'Save File Deserialization (ECS)'
+        'network_replication' = 'Network Entity Replication'
+        'network_prediction' = 'Network Client-Side Prediction'
+        'persistence_stress' = 'Persistence Stress Test'
+        
+        # === INPUT & AUDIO ===
+        'input_binding' = 'Input Binding Creation'
+        'input_polling' = 'Input State Polling'
+        'audio_mixing' = 'Audio Mixing (Multi-Bus)'
+        'spatial_audio' = 'Spatial Audio Positioning'
+        
+        # === UI & TOOLS ===
+        'ui_rendering' = 'UI Rendering (egui)'
+        'gizmo_rendering' = 'Editor Gizmo Rendering'
+        'widget_interaction' = 'Widget Interaction Handling'
+        'hash_perf' = 'Build Hash Performance'
     }
     
     # Check for exact match

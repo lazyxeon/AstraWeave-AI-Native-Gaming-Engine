@@ -1,7 +1,7 @@
 // Deferred Rendering Pipeline
 // Implements G-buffer generation and light accumulation passes
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use wgpu;
 
 /// G-buffer texture format configuration
@@ -167,7 +167,7 @@ impl GBuffer {
     }
 
     /// Get color attachment descriptors for G-buffer pass
-    pub fn color_attachments(&self) -> [Option<wgpu::RenderPassColorAttachment>; 4] {
+    pub fn color_attachments(&self) -> [Option<wgpu::RenderPassColorAttachment<'_>>; 4] {
         [
             Some(wgpu::RenderPassColorAttachment {
                 view: &self.albedo_view,
@@ -205,7 +205,7 @@ impl GBuffer {
     }
 
     /// Get depth attachment descriptor
-    pub fn depth_attachment(&self) -> wgpu::RenderPassDepthStencilAttachment {
+    pub fn depth_attachment(&self) -> wgpu::RenderPassDepthStencilAttachment<'_> {
         wgpu::RenderPassDepthStencilAttachment {
             view: &self.depth_view,
             depth_ops: Some(wgpu::Operations {
@@ -228,7 +228,8 @@ pub struct DeferredRenderer {
     /// Light accumulation bind group
     light_bind_group: wgpu::BindGroup,
     
-    /// Bind group layout
+    /// Bind group layout (used in new())
+    #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
 }
 

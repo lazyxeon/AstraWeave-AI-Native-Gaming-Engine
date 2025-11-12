@@ -594,9 +594,12 @@ pub fn validate_array_layout(layout: &ArrayLayout) -> Result<()> {
 }
 
 // Small helper to normalize PathBuf joins (remove .. etc.)
+// Note: Reserved for future use in path normalization
+#[allow(dead_code)]
 trait NormalizePath {
     fn normalize(self) -> PathBuf;
 }
+#[allow(dead_code)]
 impl NormalizePath for PathBuf {
     fn normalize(self) -> PathBuf {
         std::path::Path::new(".")

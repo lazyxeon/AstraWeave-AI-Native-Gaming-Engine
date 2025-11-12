@@ -2,10 +2,10 @@
 // Reads history.jsonl and renders interactive d3.js charts
 
 // Try multiple data source paths for flexibility
-// When hosted on GH Pages, data will usually be at '/benchmark-data/history.jsonl'
+// When running locally via http.server, use relative path first
 const DATA_SOURCES = [
+    'benchmark-data/history.jsonl',              // LOCAL: relative path (http.server from tools/benchmark-dashboard/)
     '/benchmark-data/history.jsonl',             // gh-pages hosted path
-    'benchmark-data/history.jsonl',              // relative path when testing under gh-pages root
     '../../target/benchmark-data/history.jsonl', // Local dev (from criterion benchmarks)
     '../../docs/benchmark_data/benchmark_history.jsonl',  // Production fallback
 ];
@@ -16,6 +16,13 @@ const COLOR_SCHEME = {
     physics: '#43e97b',
     terrain: '#fa709a',
     input: '#f093fb',
+    rendering: '#feca57',
+    math: '#ff6b6b',
+    networking: '#48dbfb',
+    persistence: '#ff9ff3',
+    audio: '#54a0ff',
+    ui: '#5f27cd',
+    tools: '#00d2d3',
     default: '#a0a0a0'
 };
 
@@ -35,34 +42,49 @@ async function tryLoadFromSource(source) {
     }
     
     const text = await response.text();
-    const lines = text.split('\n').filter(line => line.trim() !== '' && !line.startsWith('#'));
+    const lines = text.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0 && !line.startsWith('#') && line.startsWith('{'));
     
     if (lines.length === 0) {
+        console.warn(`No valid JSONL entries found in ${source}`);
         return null;
     }
     
+    console.log(`Found ${lines.length} valid JSONL entries in ${source}`);
     return lines;
 }
 
 // Parse JSONL file (one JSON object per line)
 async function loadBenchmarkData() {
+    console.log('=== AstraWeave Benchmark Dashboard - Loading Data ===');
+    console.log('Current location:', window.location.href);
+    console.log('Data sources to try:', DATA_SOURCES);
+    
     try {
         let lines = null;
         let sourceUsed = null;
+        const errors = [];
         
         // Try each data source in order
         for (const source of DATA_SOURCES) {
-            console.log(`Trying to load from: ${source}`);
-            lines = await tryLoadFromSource(source);
-            if (lines) {
-                sourceUsed = source;
-                console.log(`Successfully loaded from: ${source}`);
-                break;
+            console.log(`[${DATA_SOURCES.indexOf(source) + 1}/${DATA_SOURCES.length}] Trying: ${source}`);
+            try {
+                lines = await tryLoadFromSource(source);
+                if (lines && lines.length > 0) {
+                    sourceUsed = source;
+                    console.log(`✅ SUCCESS: Loaded ${lines.length} entries from ${source}`);
+                    break;
+                }
+            } catch (err) {
+                console.warn(`❌ Failed to load from ${source}:`, err.message);
+                errors.push(`${source}: ${err.message}`);
             }
         }
         
         if (!lines || lines.length === 0) {
-            throw new Error(`No benchmark data found. Tried sources:\n${DATA_SOURCES.join('\n')}`);
+            const errorMsg = `No benchmark data found.\n\nTried ${DATA_SOURCES.length} sources:\n${errors.join('\n')}\n\nMake sure to run:\n  .\\scripts\\export_benchmark_jsonl.ps1`;
+            throw new Error(errorMsg);
         }
         
         benchmarkData = lines.map(line => {
@@ -102,7 +124,6 @@ function updateFilters() {
         option.value = bench.name;
         option.textContent = bench.display;
         benchmarkSelect.appendChild(option);
-    });
     });
     
     // Set event listeners
@@ -148,11 +169,71 @@ function applyFilters() {
 
 // Detect system from crate name
 function detectSystem(crate) {
-    if (crate.includes('core') || crate.includes('ecs') || crate.includes('stress')) return 'ecs';
-    if (crate.includes('ai') || crate.includes('behavior')) return 'ai';
-    if (crate.includes('physics')) return 'physics';
-    if (crate.includes('terrain')) return 'terrain';
-    if (crate.includes('input')) return 'input';
+    const crateLower = crate.toLowerCase();
+    
+    // ECS & Core
+    if (crateLower.includes('core') || crateLower.includes('ecs') || crateLower.includes('stress')) 
+        return 'ecs';
+    
+    // AI & Intelligence
+    if (crateLower.includes('ai') || crateLower.includes('behavior') || crateLower.includes('llm') || 
+        crateLower.includes('context') || crateLower.includes('memory') || crateLower.includes('persona') || 
+        crateLower.includes('rag') || crateLower.includes('prompts')) 
+        return 'ai';
+    
+    // Physics
+    if (crateLower.includes('physics')) 
+        return 'physics';
+    
+    // Navigation (separate from physics)
+    if (crateLower.includes('nav')) 
+        return 'physics';  // Group with physics for simplicity
+    
+    // Terrain & World Generation
+    if (crateLower.includes('terrain') || crateLower.includes('pcg') || crateLower.includes('weaving')) 
+        return 'terrain';
+    
+    // Rendering
+    if (crateLower.includes('render') || crateLower.includes('culling') || crateLower.includes('shader') || 
+        crateLower.includes('texture') || crateLower.includes('mesh') || crateLower.includes('cluster')) 
+        return 'rendering';
+    
+    // Math & SIMD
+    if (crateLower.includes('math') || crateLower.includes('vec') || crateLower.includes('mat') || 
+        crateLower.includes('simd') || crateLower.includes('quat')) 
+        return 'math';
+    
+    // Networking
+    if (crateLower.includes('net') || crateLower.includes('network')) 
+        return 'networking';
+    
+    // Persistence
+    if (crateLower.includes('persistence') || crateLower.includes('save')) 
+        return 'persistence';
+    
+    // Input
+    if (crateLower.includes('input')) 
+        return 'input';
+    
+    // Audio
+    if (crateLower.includes('audio')) 
+        return 'audio';
+    
+    // UI
+    if (crateLower.includes('ui') || crateLower.includes('gizmo') || crateLower.includes('widget') || 
+        crateLower.includes('astract')) 
+        return 'ui';
+    
+    // Tools & SDK
+    if (crateLower.includes('sdk') || crateLower.includes('editor') || crateLower.includes('build') || 
+        crateLower.includes('hash')) 
+        return 'tools';
+    
+    // Gameplay systems
+    if (crateLower.includes('enemy') || crateLower.includes('player') || crateLower.includes('quest') || 
+        crateLower.includes('integrated')) 
+        return 'ecs';  // Group gameplay with ECS
+    
     return 'other';
 }
 
