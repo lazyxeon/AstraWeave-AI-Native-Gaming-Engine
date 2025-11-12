@@ -4,7 +4,7 @@ use notify;
 use notify::Watcher;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -1641,16 +1641,77 @@ fn compute_file_hash(path: &Path) -> Result<String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-// Hot-reload watcher
+// Hot-reload watcher with debouncing and event queue
 #[allow(dead_code)]
 pub struct AssetWatcher {
     db: Arc<Mutex<AssetDatabase>>,
     watcher: notify::RecommendedWatcher,
+    hot_reload_manager: HotReloadManager,
+}
+
+/// Manages hot-reload events with debouncing and deduplication
+struct HotReloadManager {
+    pending_reloads: HashMap<String, std::time::Instant>, // GUID -> last event time
+    debounce_ms: u64,
+    reload_queue: VecDeque<String>, // Ordered queue of unique GUIDs to reload
+}
+
+impl HotReloadManager {
+    fn new(debounce_ms: u64) -> Self {
+        Self {
+            pending_reloads: HashMap::new(),
+            debounce_ms,
+            reload_queue: VecDeque::new(),
+        }
+    }
+
+    /// Add an event, applying debouncing and deduplication
+    fn add_event(&mut self, guid: String) {
+        let now = std::time::Instant::now();
+        
+        // Check if we have a recent event for this GUID
+        if let Some(&last_time) = self.pending_reloads.get(&guid) {
+            let elapsed = now.duration_since(last_time).as_millis() as u64;
+            if elapsed < self.debounce_ms {
+                // Too soon, update timestamp and return
+                self.pending_reloads.insert(guid, now);
+                return;
+            }
+        }
+        
+        // Update timestamp
+        self.pending_reloads.insert(guid.clone(), now);
+        
+        // Add to queue if not already present
+        if !self.reload_queue.contains(&guid) {
+            self.reload_queue.push_back(guid);
+        }
+    }
+
+    /// Process the next reload from the queue
+    fn process_next(&mut self) -> Option<String> {
+        self.reload_queue.pop_front()
+    }
+
+    /// Get pending reload count
+    fn pending_count(&self) -> usize {
+        self.reload_queue.len()
+    }
 }
 
 impl AssetWatcher {
+    /// Create a new asset watcher with default debounce (100ms)
     pub fn new(db: Arc<Mutex<AssetDatabase>>) -> Result<Self> {
+        Self::with_debounce(db, 100)
+    }
+
+    /// Create a new asset watcher with custom debounce time
+    pub fn with_debounce(db: Arc<Mutex<AssetDatabase>>, debounce_ms: u64) -> Result<Self> {
+        use std::sync::mpsc::{channel, Sender};
+        
+        let (tx, rx): (Sender<String>, _) = channel();
         let db_clone = db.clone();
+        
         let watcher = notify::recommended_watcher(
             move |res: Result<notify::Event, notify::Error>| match res {
                 Ok(event) => {
@@ -1661,9 +1722,10 @@ impl AssetWatcher {
                             | notify::EventKind::Remove(_)
                     ) {
                         for path in &event.paths {
-                            if let Ok(mut db) = db_clone.lock() {
+                            if let Ok(db) = db_clone.lock() {
                                 if let Some(guid) = db.get_guid_by_path(path).cloned() {
-                                    db.invalidate_asset(&guid).ok();
+                                    // Send GUID to processing thread via channel
+                                    let _ = tx.send(guid);
                                 }
                             }
                         }
@@ -1673,13 +1735,49 @@ impl AssetWatcher {
             },
         )?;
 
-        Ok(Self { db, watcher })
+        let mut hot_reload_manager = HotReloadManager::new(debounce_ms);
+        let db_process = db.clone();
+        
+        // Spawn background thread to process reload events
+        std::thread::spawn(move || {
+            while let Ok(guid) = rx.recv() {
+                hot_reload_manager.add_event(guid);
+                
+                // Process pending reloads
+                while let Some(guid_to_reload) = hot_reload_manager.process_next() {
+                    if let Ok(mut db) = db_process.lock() {
+                        if let Err(e) = db.invalidate_asset(&guid_to_reload) {
+                            eprintln!("Failed to invalidate asset {}: {:?}", guid_to_reload, e);
+                        }
+                    }
+                }
+            }
+        });
+
+        Ok(Self {
+            db,
+            watcher,
+            hot_reload_manager: HotReloadManager::new(debounce_ms),
+        })
     }
 
     pub fn watch_directory(&mut self, path: &Path) -> Result<()> {
         self.watcher.watch(path, notify::RecursiveMode::Recursive)?;
         Ok(())
     }
+
+    /// Get statistics about pending hot-reloads
+    pub fn get_stats(&self) -> HotReloadStats {
+        HotReloadStats {
+            pending_count: self.hot_reload_manager.pending_count(),
+        }
+    }
+}
+
+/// Hot-reload statistics
+#[derive(Debug, Clone)]
+pub struct HotReloadStats {
+    pub pending_count: usize,
 }
 
 // Import pipelines
