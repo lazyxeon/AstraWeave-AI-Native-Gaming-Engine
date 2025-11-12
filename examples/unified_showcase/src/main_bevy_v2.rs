@@ -1685,54 +1685,33 @@ impl ShowcaseApp {
         let terrain_grass_texture = texture_loader::load_texture_with_usage(
             device,
             queue,
-            "assets/textures/grass.ktx2",
+            "assets/textures/texture-d.png",  // FIX: Correct grass albedo path
             texture_loader::TextureUsage::Albedo
-        ).or_else(|_| {
-            println!("⚠️  grass.ktx2 not found, trying PNG...");
-            texture_loader::load_texture_with_usage(
-                device,
-                queue,
-                "assets/grass.ktx2",
-                texture_loader::TextureUsage::Albedo
-            )
-        }).unwrap_or_else(|_| {
-            println!("⚠️  No grass texture found, using fallback");
+        ).unwrap_or_else(|e| {
+            println!("⚠️  Failed to load grass texture: {}", e);
+            println!("⚠️  Using fallback");
             texture_loader::generate_fallback_texture(device, queue, [0.2, 0.6, 0.2, 1.0])
         });
 
         let terrain_dirt_texture = texture_loader::load_texture_with_usage(
             device,
             queue,
-            "assets/textures/dirt.ktx2",
+            "assets/textures/texture-f.png",  // FIX: Correct dirt albedo path
             texture_loader::TextureUsage::Albedo
-        ).or_else(|_| {
-            println!("⚠️  dirt.ktx2 not found, trying PNG...");
-            texture_loader::load_texture_with_usage(
-                device,
-                queue,
-                "assets/dirt.ktx2",
-                texture_loader::TextureUsage::Albedo
-            )
-        }).unwrap_or_else(|_| {
-            println!("⚠️  No dirt texture found, using fallback");
+        ).unwrap_or_else(|e| {
+            println!("⚠️  Failed to load dirt texture: {}", e);
+            println!("⚠️  Using fallback");
             texture_loader::generate_fallback_texture(device, queue, [0.5, 0.3, 0.2, 1.0])
         });
 
         let terrain_stone_texture = texture_loader::load_texture_with_usage(
             device,
             queue,
-            "assets/textures/stone.ktx2",
+            "assets/textures/cobblestone.png",  // FIX: Correct stone albedo path
             texture_loader::TextureUsage::Albedo
-        ).or_else(|_| {
-            println!("⚠️  stone.ktx2 not found, trying PNG...");
-            texture_loader::load_texture_with_usage(
-                device,
-                queue,
-                "assets/stone.ktx2",
-                texture_loader::TextureUsage::Albedo
-            )
-        }).unwrap_or_else(|_| {
-            println!("⚠️  No stone texture found, using fallback");
+        ).unwrap_or_else(|e| {
+            println!("⚠️  Failed to load stone texture: {}", e);
+            println!("⚠️  Using fallback");
             texture_loader::generate_fallback_texture(device, queue, [0.6, 0.6, 0.6, 1.0])
         });
 

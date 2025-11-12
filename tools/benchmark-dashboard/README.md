@@ -25,6 +25,31 @@ Interactive performance telemetry dashboard for the AstraWeave AI-native game en
 - **Threshold Validation**: Built-in checks against `benchmark_thresholds.json`
 - **Historical Context**: 30-day data retention for trend analysis
 
+### Static Graph Generation
+
+The CI also pre-generates static PNG graphs for quick previews and backup:
+
+- `scripts/generate_benchmark_graphs.py` uses `pandas` + `matplotlib` to output:
+       - `top_series_time.png` — time-series plot for the top N benchmarks (by latest value)
+       - `distribution_latest.png` — histogram of latest snapshot values across benchmarks
+       - `heatmap.png` — heatmap overview (benchmarks vs time)
+
+These files are copied to `gh-pages/graphs` and published along with the dashboard to provide static fallbacks and previews.
+
+### Regeneration
+
+To regenerate graphs locally run:
+
+```bash
+# Generate PNG graphs from JSONL history file
+python3 scripts/generate_benchmark_graphs.py --input target/benchmark-data/history.jsonl --out-dir gh-pages/graphs
+```
+
+Make sure to pip install the dependencies first:
+```bash
+python3 -m pip install pandas matplotlib seaborn
+```
+
 ---
 
 ## Quick Start
