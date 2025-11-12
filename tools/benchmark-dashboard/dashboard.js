@@ -2,9 +2,12 @@
 // Reads history.jsonl and renders interactive d3.js charts
 
 // Try multiple data source paths for flexibility
+// When hosted on GH Pages, data will usually be at '/benchmark-data/history.jsonl'
 const DATA_SOURCES = [
-    '../../target/benchmark-data/history.jsonl',  // Local dev (from criterion benchmarks)
-    '../../docs/benchmark_data/benchmark_history.jsonl',  // Production (from gh-pages)
+    '/benchmark-data/history.jsonl',             // gh-pages hosted path
+    'benchmark-data/history.jsonl',              // relative path when testing under gh-pages root
+    '../../target/benchmark-data/history.jsonl', // Local dev (from criterion benchmarks)
+    '../../docs/benchmark_data/benchmark_history.jsonl',  // Production fallback
 ];
 
 const COLOR_SCHEME = {
@@ -160,6 +163,7 @@ function renderDashboard() {
     try {
         applyFilters();
         renderStatCards();
+        renderBenchTable();
         renderChart();
         updateGeneratedTime();
     } catch (error) {
@@ -423,6 +427,185 @@ function renderChart() {
     
     // Render legend
     renderLegend(chartSeries);
+
+    // Also render histogram of latest snapshot values for visible series
+    renderHistogram(chartSeries);
+    renderSparklines(chartSeries);
+}
+
+// Render histogram for latest snapshot values across the selected series
+function renderHistogram(series) {
+    const div = document.getElementById('histogram');
+    div.innerHTML = '';
+    if (series.length === 0) {
+        div.innerHTML = '<div class="loading">No data to display</div>';
+        return;
+    }
+
+    const latestVals = series.map(s => {
+        const last = s.values[s.values.length - 1];
+        return { name: s.name, value: last.value, color: s.color };
+    });
+
+    // Dimensions
+    const margin = { top: 10, right: 12, bottom: 30, left: 60 };
+    const width = div.clientWidth - margin.left - margin.right;
+    const height = 160 - margin.top - margin.bottom;
+
+    const svg = d3.select(div)
+        .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scaleLinear()
+        .domain([0, d3.max(latestVals, d => d.value) * 1.05])
+        .range([0, width]);
+
+    const bins = d3.bin().thresholds(20).value(d => d.value)(latestVals);
+
+    const y = d3.scaleLinear()
+        .range([height, 0])
+        .domain([0, d3.max(bins, d => d.length)]);
+
+    svg.selectAll('rect')
+        .data(bins)
+        .enter()
+        .append('rect')
+        .attr('x', d => x(d.x0))
+        .attr('y', d => y(d.length))
+        .attr('width', d => Math.max(1, x(d.x1) - x(d.x0) - 1))
+        .attr('height', d => height - y(d.length))
+        .attr('fill', '#4facfe')
+        .attr('opacity', 0.8);
+
+    svg.append('g')
+        .attr('transform', `translate(0, ${height})`)
+        .call(d3.axisBottom(x).ticks(6).tickFormat(d => formatNumber(d)));
+
+    svg.append('g')
+        .call(d3.axisLeft(y).ticks(4));
+
+    svg.append('text')
+        .attr('x', width / 2)
+        .attr('y', height + margin.bottom - 8)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#a0a0a0')
+        .text('Time (ns)');
+}
+
+// Render sparklines for each series (small multiples)
+function renderSparklines(series) {
+    const container = document.getElementById('sparklines');
+    container.innerHTML = '';
+    if (series.length === 0) return;
+
+    // We limit the sparkline grid to top N series by size for visual clarity
+    const topSeries = series.slice(0, 64);
+
+    topSeries.forEach(s => {
+        const box = document.createElement('div');
+        box.style.background = 'rgba(255,255,255,0.03)';
+        box.style.borderRadius = '6px';
+        box.style.padding = '8px';
+        box.style.minHeight = '64px';
+        box.style.display = 'flex';
+        box.style.flexDirection = 'column';
+        box.style.justifyContent = 'center';
+
+        const label = document.createElement('div');
+        label.style.color = '#a0a0a0';
+        label.style.fontSize = '12px';
+        label.textContent = s.name;
+        box.appendChild(label);
+
+        const spark = document.createElement('div');
+        box.appendChild(spark);
+
+        // Create small svg sparkline
+        const svg = d3.select(spark)
+            .append('svg')
+            .attr('width', '100%')
+            .attr('height', 48)
+            .append('g')
+            .attr('transform', `translate(0,0)`);
+
+        const w = spark.clientWidth || 200;
+        const h = 48;
+
+        const x = d3.scaleTime()
+            .domain(d3.extent(s.values, d => d.timestamp))
+            .range([0, w]);
+
+        const y = d3.scaleLinear()
+            .domain([d3.min(s.values, d => d.value), d3.max(s.values, d => d.value)])
+            .range([h - 4, 4]);
+
+        const line = d3.line()
+            .x(d => x(d.timestamp))
+            .y(d => y(d.value))
+            .curve(d3.curveBasis);
+
+        svg.append('path')
+            .datum(s.values)
+            .attr('d', line)
+            .attr('stroke', s.color)
+            .attr('stroke-width', 1.5)
+            .attr('fill', 'none');
+
+        container.appendChild(box);
+    });
+}
+
+// Render a table of all benchmarks with latest value and % change
+function renderBenchTable() {
+    const container = document.getElementById('benchmark-table');
+    container.innerHTML = '';
+
+    // Group and get latest + change
+    const groups = d3.group(filteredData, d => d.benchmark_name);
+    const rows = [];
+    groups.forEach((values, name) => {
+        values.sort((a,b) => a.timestamp - b.timestamp);
+        const latest = values[values.length - 1];
+        const oldest = values[0];
+        const change = ((latest.value - oldest.value) / oldest.value) * 100;
+        rows.push({ name, latest, change });
+    });
+
+    rows.sort((a,b) => b.latest.value - a.latest.value);
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    container.appendChild(table);
+
+    const head = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    ['Benchmark', 'Latest', 'Change'].forEach(h => {
+        const th = document.createElement('th');
+        th.style.textAlign = 'left';
+        th.style.padding = '6px 10px';
+        th.style.color = '#a0a0a0';
+        th.textContent = h;
+        headRow.appendChild(th);
+    });
+    head.appendChild(headRow);
+    table.appendChild(head);
+
+    const body = document.createElement('tbody');
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.style.borderTop = '1px solid rgba(255,255,255,0.03)';
+        const tdName = document.createElement('td'); tdName.style.padding = '6px 10px'; tdName.textContent = r.name;
+        const tdLatest = document.createElement('td'); tdLatest.style.padding = '6px 10px'; tdLatest.textContent = `${formatNumber(r.latest.value)} ${r.latest.unit}`;
+        const tdChange = document.createElement('td'); tdChange.style.padding = '6px 10px'; tdChange.style.color = r.change > 0 ? '#ff6b6b' : '#43e97b'; tdChange.textContent = `${r.change.toFixed(1)}%`;
+        tr.appendChild(tdName); tr.appendChild(tdLatest); tr.appendChild(tdChange);
+        body.appendChild(tr);
+    });
+
+    table.appendChild(body);
 }
 
 // Render legend for chart series
@@ -455,6 +638,22 @@ function renderLegend(series) {
 function updateGeneratedTime() {
     const timeSpan = document.getElementById('generated-time');
     timeSpan.textContent = new Date().toLocaleString();
+
+    // Show static images if available
+    ['top-series', 'distribution', 'heatmap'].forEach(id => {
+        const img = document.getElementById('static-' + id);
+        if (!img) return;
+        // Try to check image by making a request; use cached src
+        fetch(img.src, { method: 'HEAD' }).then(resp => {
+            if (resp.ok) {
+                img.style.display = 'inline-block';
+            } else {
+                img.style.display = 'none';
+            }
+        }).catch(() => {
+            img.style.display = 'none';
+        });
+    });
 }
 
 // Show error message

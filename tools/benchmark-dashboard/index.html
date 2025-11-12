@@ -310,6 +310,27 @@
             <div class="legend" id="legend"></div>
         </div>
         
+        <div class="chart-container">
+            <div class="chart-title">Latest Snapshot Distribution</div>
+            <div id="histogram"></div>
+            <div style="margin-top: 12px; text-align: center; color: #a0a0a0;">Or view static graph:</div>
+            <div style="display:flex; gap: 12px; justify-content:center; margin-top: 8px;">
+                <img id="static-top-series" src="graphs/top_series_time.png" alt="Top series" style="height: 140px; border-radius: 6px; display:none; border: 1px solid rgba(255,255,255,0.04);"/>
+                <img id="static-distribution" src="graphs/distribution_latest.png" alt="Distribution" style="height: 140px; border-radius: 6px; display:none; border: 1px solid rgba(255,255,255,0.04);"/>
+                <img id="static-heatmap" src="graphs/heatmap.png" alt="Heatmap" style="height: 140px; border-radius: 6px; display:none; border: 1px solid rgba(255,255,255,0.04);"/>
+            </div>
+            <div style="height: 20px;"></div>
+            <div class="chart-title">Small Multiples (Sparklines)</div>
+            <div id="sparklines" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); grid-gap: 12px;"></div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Benchmark List</div>
+            <div id="benchmark-table" style="overflow:auto; max-height: 360px; padding-right: 8px;">
+                <!-- Table is rendered by dashboard.js -->
+            </div>
+        </div>
+        
         <footer>
             AstraWeave AI-Native Game Engine | Generated: <span id="generated-time"></span>
         </footer>

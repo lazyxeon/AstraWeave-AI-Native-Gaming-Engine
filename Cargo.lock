@@ -1127,6 +1127,7 @@ dependencies = [
  "egui-winit",
  "env_logger",
  "glam 0.30.8",
+ "glob",
  "gltf",
  "half",
  "image",
