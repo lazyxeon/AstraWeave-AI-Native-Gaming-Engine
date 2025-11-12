@@ -42,7 +42,9 @@ def plot_top_series(df, out_dir, top_n=8):
     plt.figure(figsize=(12, 6))
     for name in top_names:
         s = df[df['benchmark_name'] == name].sort_values('timestamp')
-        plt.plot(pd.to_datetime(s['timestamp']), s['value'], label=name)
+        # Use display_name if available, otherwise benchmark_name
+        display_name = s['display_name'].iloc[0] if 'display_name' in s.columns and not pd.isna(s['display_name'].iloc[0]) else name
+        plt.plot(pd.to_datetime(s['timestamp']), s['value'], label=display_name)
 
     plt.legend()
     plt.title('Top Benchmarks Time Series')
@@ -65,6 +67,15 @@ def plot_distribution(df, out_dir):
 def plot_heatmap(df, out_dir, max_benchmarks=30, max_columns=48):
     # Build pivot: rows = benchmark_name, columns = timestamp
     df_sorted = df.sort_values('timestamp')
+    
+    # Create display name mapping
+    display_map = {}
+    if 'display_name' in df_sorted.columns:
+        for _, row in df_sorted.groupby('benchmark_name').first().iterrows():
+            display_map[row['benchmark_name']] = row.get('display_name', row['benchmark_name']) if not pd.isna(row.get('display_name')) else row['benchmark_name']
+    else:
+        display_map = {name: name for name in df_sorted['benchmark_name'].unique()}
+    
     # Pivot to have timestamps as columns, values as cells
     pivot = df_sorted.pivot_table(index='benchmark_name', columns='timestamp', values='value')
     # Limit to top max_benchmarks by median value
@@ -73,6 +84,9 @@ def plot_heatmap(df, out_dir, max_benchmarks=30, max_columns=48):
     pivot = pivot.drop(columns=['median_val'])
     # Reduce columns to most recent max_columns
     pivot = pivot.iloc[:, -max_columns:]
+    
+    # Replace index with display names
+    pivot.index = [display_map.get(name, name) for name in pivot.index]
 
     plt.figure(figsize=(12, 8))
     sns.heatmap(pivot.fillna(0), cmap='viridis', cbar_kws={'label': 'Time (ns)'})
