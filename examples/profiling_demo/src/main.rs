@@ -440,7 +440,7 @@ fn physics_system(world: &mut World) {
             let entity_map: std::collections::HashMap<u64, (usize, Vec3)> = entities_data
                 .iter()
                 .enumerate()
-                .map(|(i, (e, pos))| (e.id(), (i, *pos)))
+                .map(|(i, (e, pos))| (e.id() as u64, (i, *pos)))
                 .collect();
 
             // Build spatial hash grid (use entity ID as u32)
@@ -459,7 +459,7 @@ fn physics_system(world: &mut World) {
 
                 for &candidate_id in &candidates {
                     // O(1) lookup instead of O(n) find!
-                    if let Some(&(j, candidate_pos)) = entity_map.get(&candidate_id) {
+                    if let Some(&(j, candidate_pos)) = entity_map.get(&(candidate_id as u64)) {
                         // Only check each pair once (i < j)
                         if i < j {
                             collision_checks += 1;
