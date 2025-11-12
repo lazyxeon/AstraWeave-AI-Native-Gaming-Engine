@@ -1,8 +1,52 @@
 use anyhow::Result;
 #[cfg(feature = "textures")]
-use image::GenericImageView;
+use image::{DynamicImage, GenericImageView};
 #[cfg(feature = "textures")]
 use std::path::Path;
+
+/// Defines how a texture should be interpreted for correct color space handling
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextureUsage {
+    /// Color/albedo textures - stored in sRGB, GPU converts to linear
+    Albedo,
+    /// Normal maps - stored in linear space, no gamma correction
+    Normal,
+    /// Metallic/Roughness/AO packed texture - linear space
+    MRA,
+    /// Emissive/glow textures - sRGB space
+    Emissive,
+    /// Height/displacement maps - linear space
+    Height,
+}
+
+impl TextureUsage {
+    /// Returns the correct wgpu texture format for this usage
+    pub fn format(&self) -> wgpu::TextureFormat {
+        match self {
+            Self::Albedo | Self::Emissive => wgpu::TextureFormat::Rgba8UnormSrgb,
+            Self::Normal | Self::MRA | Self::Height => wgpu::TextureFormat::Rgba8Unorm,
+        }
+    }
+
+    /// Returns whether this texture type should have mipmaps generated
+    pub fn needs_mipmaps(&self) -> bool {
+        match self {
+            Self::Albedo | Self::Emissive | Self::MRA => true,
+            Self::Normal | Self::Height => false, // Normal maps can have artifacts with mip blending
+        }
+    }
+
+    /// Returns a human-readable description of this usage
+    pub fn description(&self) -> &'static str {
+        match self {
+            Self::Albedo => "Albedo (sRGB color)",
+            Self::Normal => "Normal Map (linear RGB)",
+            Self::MRA => "Metallic/Roughness/AO (linear)",
+            Self::Emissive => "Emissive (sRGB color)",
+            Self::Height => "Height/Displacement (linear)",
+        }
+    }
+}
 
 /// A loaded texture with its GPU resources
 pub struct Texture {
@@ -79,7 +123,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8Unorm, // Normal maps are linear, not sRGB
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
@@ -117,6 +161,17 @@ impl Texture {
     /// Load a texture from a file (requires "textures" feature)
     #[cfg(feature = "textures")]
     pub fn from_file(device: &wgpu::Device, queue: &wgpu::Queue, path: &Path) -> Result<Self> {
+        Self::from_file_with_usage(device, queue, path, TextureUsage::Albedo)
+    }
+
+    /// Load a texture from a file with specific usage (requires "textures" feature)
+    #[cfg(feature = "textures")]
+    pub fn from_file_with_usage(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        path: &Path,
+        usage: TextureUsage,
+    ) -> Result<Self> {
         println!("Loading texture from: {}", path.display());
 
         if !path.exists() {
@@ -127,10 +182,11 @@ impl Texture {
         }
 
         let bytes = std::fs::read(path)?;
-        Self::from_bytes(device, queue, &bytes, &path.to_string_lossy())
+        Self::from_bytes_with_usage(device, queue, &bytes, &path.to_string_lossy(), usage)
     }
 
     /// Load a texture from byte data (requires "textures" feature)
+    /// Uses Albedo (sRGB) format by default
     #[cfg(feature = "textures")]
     pub fn from_bytes(
         device: &wgpu::Device,
@@ -138,32 +194,61 @@ impl Texture {
         bytes: &[u8],
         label: &str,
     ) -> Result<Self> {
+        Self::from_bytes_with_usage(device, queue, bytes, label, TextureUsage::Albedo)
+    }
+
+    /// Load a texture from byte data with specific usage (requires "textures" feature)
+    #[cfg(feature = "textures")]
+    pub fn from_bytes_with_usage(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        bytes: &[u8],
+        label: &str,
+        usage: TextureUsage,
+    ) -> Result<Self> {
         let img = image::load_from_memory(bytes)?;
         let rgba = img.to_rgba8();
-        let dimensions = img.dimensions();
+        let (width, height) = img.dimensions();
+
+        // Calculate mip levels
+        let mip_levels = if usage.needs_mipmaps() {
+            calculate_mip_levels(width, height)
+        } else {
+            1
+        };
 
         println!(
-            "Loaded texture '{}': {}x{} pixels",
-            label, dimensions.0, dimensions.1
+            "Loaded texture '{}': {}x{} pixels, {} as {}, {} mip levels",
+            label,
+            width,
+            height,
+            usage.description(),
+            if usage.format() == wgpu::TextureFormat::Rgba8UnormSrgb {
+                "sRGB"
+            } else {
+                "Linear"
+            },
+            mip_levels
         );
 
         let size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
+            width,
+            height,
             depth_or_array_layers: 1,
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: Some(label),
             size,
-            mip_level_count: 1,
+            mip_level_count: mip_levels,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: usage.format(),
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
 
+        // Upload base mip level (level 0)
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &texture,
@@ -174,11 +259,16 @@ impl Texture {
             &rgba,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * dimensions.0),
-                rows_per_image: Some(dimensions.1),
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
             },
             size,
         );
+
+        // Generate and upload mipmaps
+        if mip_levels > 1 {
+            generate_and_upload_mipmaps(device, queue, &texture, &img, mip_levels)?;
+        }
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -187,7 +277,11 @@ impl Texture {
             address_mode_w: wgpu::AddressMode::Repeat,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: if mip_levels > 1 {
+                wgpu::FilterMode::Linear
+            } else {
+                wgpu::FilterMode::Nearest
+            },
             ..Default::default()
         });
 
@@ -197,6 +291,64 @@ impl Texture {
             sampler,
         })
     }
+}
+
+/// Calculate the number of mip levels for a texture
+#[cfg(feature = "textures")]
+fn calculate_mip_levels(width: u32, height: u32) -> u32 {
+    let max_dimension = width.max(height) as f32;
+    (max_dimension.log2().floor() as u32 + 1).max(1)
+}
+
+/// Generate mipmaps using CPU downsampling and upload to GPU
+#[cfg(feature = "textures")]
+fn generate_and_upload_mipmaps(
+    _device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    texture: &wgpu::Texture,
+    base_image: &DynamicImage,
+    mip_levels: u32,
+) -> Result<()> {
+    let mut current_image = base_image.clone();
+    let (base_width, base_height) = base_image.dimensions();
+
+    for level in 1..mip_levels {
+        // Calculate mip dimensions
+        let mip_width = (base_width >> level).max(1);
+        let mip_height = (base_height >> level).max(1);
+
+        // Downsample using high-quality filter
+        current_image = current_image.resize(
+            mip_width,
+            mip_height,
+            image::imageops::FilterType::Lanczos3,
+        );
+
+        let rgba_mip = current_image.to_rgba8();
+
+        // Upload mip level
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture,
+                mip_level: level,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &rgba_mip,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * mip_width),
+                rows_per_image: Some(mip_height),
+            },
+            wgpu::Extent3d {
+                width: mip_width,
+                height: mip_height,
+                depth_or_array_layers: 1,
+            },
+        );
+    }
+
+    Ok(())
 }
 
 /// Validate that texture files exist and can be loaded
@@ -301,7 +453,7 @@ mod tests {
             assert_eq!(texture.texture.size().height, 1);
             assert_eq!(
                 texture.texture.format(),
-                wgpu::TextureFormat::Rgba8UnormSrgb
+                wgpu::TextureFormat::Rgba8Unorm // Normal maps use linear format
             );
         });
     }

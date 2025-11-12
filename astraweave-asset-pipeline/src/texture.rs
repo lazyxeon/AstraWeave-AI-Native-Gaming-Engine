@@ -95,11 +95,37 @@ pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
 
 /// Simplified BC7 compression (placeholder for real implementation)
 ///
-/// This is a simplified implementation for demonstration.
-/// Production version should use:
-/// - `intel-tex` crate (high quality, requires native build)
-/// - `basis-universal` crate (portable, good quality)
-/// - Custom SIMD implementation (best performance)
+/// **IMPORTANT**: This is a simplified implementation for demonstration purposes.
+/// Production-quality BC7 compression requires one of:
+///
+/// ## Option A: intel-tex crate (Highest Quality)
+/// ```toml
+/// [dependencies]
+/// intel-tex = "0.2"
+/// ```
+/// Provides Intel's ISPC texture compressor with excellent quality and performance.
+/// Requires native build tools (ISPC compiler).
+///
+/// ## Option B: basis-universal crate (Portable)
+/// ```toml
+/// [dependencies]
+/// basis-universal = "0.3"
+/// ```
+/// Cross-platform BC7/ASTC encoder with good quality.
+/// Supports transcoding to multiple GPU formats.
+///
+/// ## Option C: Custom SIMD Implementation
+/// For maximum performance, implement BC7 mode selection with SIMD:
+/// - Use mode 6 for opaque textures (7-bit RGB + 8-bit alpha)
+/// - Use mode 5 for smooth gradients (7-bit RGB, 8-bit alpha)
+/// - Calculate optimal endpoints using PCA or least squares
+/// - Use SSE/AVX for block processing
+///
+/// ## Current Implementation Limitations
+/// - Only uses simplified mode 6 encoding
+/// - Endpoint selection is basic (min/max only)
+/// - No cluster-based refinement
+/// - Quality is lower than production encoders
 #[cfg(feature = "bc7")]
 fn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {
     let (width, height) = rgba.dimensions();
@@ -232,6 +258,26 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
 /// - Quality: Adaptive (trade size vs quality)
 /// - GPU support: iOS, Android, Vulkan, GL ES 3.2+
 ///
+/// ## Implementation Status
+/// **ASTC compression requires external library integration:**
+///
+/// ### Option A: basis-universal (Recommended)
+/// ```toml
+/// [dependencies]
+/// basis-universal = "0.3"
+/// ```
+/// Provides ASTC encoding with good quality and cross-platform support.
+///
+/// ### Option B: astc-encoder
+/// Use Khronos astc-encoder via FFI bindings.
+/// Highest quality but requires native library.
+///
+/// ### Integration Steps:
+/// 1. Add basis-universal dependency to Cargo.toml
+/// 2. Replace this function with proper ASTC encoder calls
+/// 3. Handle different block sizes (4x4, 6x6, 8x8)
+/// 4. Add quality level selection (fast, normal, thorough)
+///
 /// ## Example
 /// ```no_run
 /// use astraweave_asset_pipeline::texture::{compress_astc, AstcBlockSize};
@@ -248,27 +294,21 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
 /// ```
 #[cfg(feature = "astc")]
 pub fn compress_astc(rgba: &RgbaImage, block_size: AstcBlockSize) -> Result<Vec<u8>> {
-    use basis_universal::*;
-
-    let start = std::time::Instant::now();
     let (width, height) = rgba.dimensions();
-
-    // ASTC encoding via basis-universal
-    // (This is a placeholder - real implementation needs basis-universal ASTC encoder)
-    let compressed = vec![0u8; (width * height / (block_size.pixels() as u32)) as usize * 16];
-
-    let elapsed = start.elapsed().as_millis() as u64;
-    tracing::info!(
-        "ASTC compressed {}×{} ({:?}) in {}ms ({} → {} bytes)",
+    
+    anyhow::bail!(
+        "ASTC compression not yet implemented. Texture size: {}x{}, block size: {:?}\n\
+        \n\
+        To enable ASTC compression:\n\
+        1. Add 'basis-universal = \"0.3\"' to Cargo.toml\n\
+        2. Implement ASTC encoder integration in this function\n\
+        3. See function documentation for integration guide\n\
+        \n\
+        Alternative: Use external tools like 'astcenc' CLI for offline compression.",
         width,
         height,
-        block_size,
-        elapsed,
-        rgba.len(),
-        compressed.len()
+        block_size
     );
-
-    Ok(compressed)
 }
 
 #[cfg(not(feature = "astc"))]
