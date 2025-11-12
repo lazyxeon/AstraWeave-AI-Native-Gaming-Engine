@@ -17,6 +17,8 @@ Deterministic, ECS-based engine where AI agents are first‑class citizens. Buil
 
 📚 Docs: <a href="docs/">/docs</a> • 📈 Benchmarks: <a href="docs/current/MASTER_BENCHMARK_REPORT.md">Master</a> • 🗺️ Roadmap: <a href="docs/current/MASTER_ROADMAP.md">Master</a> • 🧪 Coverage: <a href="docs/current/MASTER_COVERAGE_REPORT.md">Master</a>
 
+**📊 [Interactive Benchmark Dashboard](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/)** • Local: `.\scripts\run_benchmark_dashboard.ps1`
+
 </div>
 
 ---
@@ -114,6 +116,33 @@ More setup tips: `docs/supplemental-docs/DEVELOPMENT_SETUP.md`.
 - **AI-Native Capacity**: 12,700+ agents @ 60 FPS with full AI orchestration
 
 Complete methodology, per-crate metrics, and historical runs: `docs/current/MASTER_BENCHMARK_REPORT.md` and `docs/root-archive/BASELINE_METRICS.md`.
+
+---
+
+## 📊 Benchmark Dashboard
+
+**One-command launch**: View interactive performance charts, time series, and historical data.
+
+```powershell
+# Run benchmarks, export data, generate graphs, and open dashboard
+.\scripts\run_benchmark_dashboard.ps1
+
+# Or skip running benchmarks (use existing data)
+.\scripts\run_benchmark_dashboard.ps1 -SkipBench
+```
+
+**Or double-click**: `Launch-Benchmark-Dashboard.bat` in the repository root.
+
+**Live Dashboard**: [https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/](https://lazyxeon.github.io/AstraWeave-AI-Native-Gaming-Engine/) (updated nightly via CI)
+
+The dashboard displays:
+- 📈 Interactive time series charts (D3.js)
+- 📊 Distribution histograms and sparklines
+- 📉 Benchmark regression detection
+- 🗂️ Sortable performance tables with percent changes
+- 🖼️ Static PNG graphs for reports
+
+See `tools/benchmark-dashboard/QUICK_START.md` for troubleshooting and configuration.
 
 ---
 

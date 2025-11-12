@@ -140,11 +140,14 @@ fn compute_lighting(
     // Ambient (from VXGI - simplified)
     let ambient = albedo * 0.2 * ao;
     
-    // TODO: Sample VXGI radiance texture for full GI
-    // let vxgi_uv = world_pos_to_voxel_uv(world_pos);
-    // let indirect = textureSample(vxgi_radiance, vxgi_sampler, vxgi_uv).rgb;
+    // Sample VXGI radiance for indirect lighting
+    let voxel_size = 0.25; // 25cm voxels (should match voxelization settings)
+    let voxel_world_pos = world_pos / voxel_size;
+    let voxel_coords = vec3<f32>(voxel_world_pos);
+    let gi_radiance = textureSampleLevel(vxgi_radiance, vxgi_sampler, voxel_coords, 0.0);
+    let indirect_lighting = gi_radiance.rgb * ao;
     
-    return diffuse + ambient;
+    return diffuse + ambient + indirect_lighting;
 }
 
 struct VertexOutput {

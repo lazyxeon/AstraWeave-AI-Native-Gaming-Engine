@@ -1,9 +1,16 @@
 // Enhanced shader for unified_showcase with improved PBR lighting, normal mapping, and texture blending
 // Includes Phase PBR-E advanced materials support
 
-// Import PBR-E advanced material functions
-// TODO: Uncomment when wgsl module system is properly configured
-// #import "pbr_advanced.wgsl"
+// WGSL Module System Note:
+// Native WGSL imports are not yet supported by wgpu as of 0.19.
+// For shader composition, use one of these approaches:
+// 1. Rust-side concatenation: Combine shader strings before creating ShaderModule
+// 2. Include files via include_str!() macro at compile time
+// 3. Runtime shader preprocessing with custom #include directive parser
+//
+// Example Rust-side composition:
+//   let pbr_lib = include_str!("pbr_advanced.wgsl");
+//   let shader_src = format!("{}\n{}", pbr_lib, include_str!("enhanced_shader.wgsl"));
 
 struct Camera { view_proj: mat4x4<f32> };
 struct TimeUniform { time: f32, _padding: vec3<f32> };
