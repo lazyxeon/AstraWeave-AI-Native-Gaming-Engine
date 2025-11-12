@@ -61,6 +61,7 @@ pub use types::{Instance, Material, SkinnedVertex};
 
 pub mod effects; // NEW
 pub mod overlay; // NEW (for cutscene fades/letterbox later)
+pub mod transparency; // Transparency depth sorting and render pass
 
 pub use culling::{
     batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId,
@@ -68,6 +69,7 @@ pub use culling::{
 };
 pub use culling_node::CullingNode;
 pub use effects::{WeatherFx, WeatherKind};
+pub use transparency::{BlendMode, TransparencyManager, TransparentInstance, create_blend_state};
 pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
 pub use material::{
     ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,

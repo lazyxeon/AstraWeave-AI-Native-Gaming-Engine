@@ -463,10 +463,44 @@ fn sample_material_extended(
     material_id: u32,
     uv: vec2<f32>,
     materials: ptr<storage, array<MaterialGpuExtended>>,
-    textures: texture_2d_array<f32>,
+    albedo_tex: texture_2d_array<f32>,
+    normal_tex: texture_2d_array<f32>,
+    orm_tex: texture_2d_array<f32>,
+    clearcoat_normal_tex: texture_2d_array<f32>,
+    thickness_tex: texture_2d_array<f32>,
     sampler_linear: sampler
 ) -> MaterialGpuExtended {
-    // TODO: Implement material array lookup and texture sampling
-    // Returns populated MaterialGpuExtended with sampled textures
-    return (*materials)[material_id];
+    // Lookup base material definition
+    var material = (*materials)[material_id];
+    
+    // Sample base PBR textures
+    let albedo_layer = i32(material.albedo_index);
+    let normal_layer = i32(material.normal_index);
+    let orm_layer = i32(material.orm_index);
+    
+    let albedo_sample = textureSample(albedo_tex, sampler_linear, uv, albedo_layer);
+    let normal_sample = textureSample(normal_tex, sampler_linear, uv, normal_layer);
+    let orm_sample = textureSample(orm_tex, sampler_linear, uv, orm_layer);
+    
+    // Apply texture values to material factors
+    material.base_color_factor *= albedo_sample;
+    material.metallic_factor *= orm_sample.b; // Blue channel = metallic
+    material.roughness_factor *= orm_sample.g; // Green channel = roughness
+    material.occlusion_strength *= orm_sample.r; // Red channel = occlusion
+    
+    // Sample extended textures if features are enabled
+    if (has_feature(material, MATERIAL_FLAG_CLEARCOAT)) {
+        let clearcoat_normal_layer = i32(material.clearcoat_normal_index);
+        let clearcoat_normal_sample = textureSample(clearcoat_normal_tex, sampler_linear, uv, clearcoat_normal_layer);
+        // Store sampled clearcoat normal (would be used in lighting calculation)
+    }
+    
+    if (has_feature(material, MATERIAL_FLAG_SUBSURFACE) || has_feature(material, MATERIAL_FLAG_TRANSMISSION)) {
+        let thickness_layer = i32(material.thickness_index);
+        let thickness_sample = textureSample(thickness_tex, sampler_linear, uv, thickness_layer);
+        // Modulate transmission/subsurface based on thickness
+        material.transmission_factor *= thickness_sample.r;
+    }
+    
+    return material;
 }

@@ -89,16 +89,20 @@ async function loadBenchmarkData() {
 function updateFilters() {
     const benchmarkSelect = document.getElementById('benchmark-select');
     
-    // Get unique benchmark names
-    const uniqueBenchmarks = [...new Set(benchmarkData.map(d => d.benchmark_name))].sort();
+    // Get unique benchmark names with their display names
+    const uniqueBenchmarks = [...new Set(benchmarkData.map(d => ({
+        name: d.benchmark_name,
+        display: d.display_name || d.benchmark_name
+    })))].sort((a, b) => a.display.localeCompare(b.display));
     
     benchmarkSelect.innerHTML = '<option value="all">All Benchmarks</option>';
     
-    uniqueBenchmarks.forEach(name => {
+    uniqueBenchmarks.forEach(bench => {
         const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
+        option.value = bench.name;
+        option.textContent = bench.display;
         benchmarkSelect.appendChild(option);
+    });
     });
     
     // Set event listeners
@@ -413,7 +417,7 @@ function renderChart() {
                     .style('top', (event.pageY - 28) + 'px')
                     .classed('visible', true)
                     .html(`
-                        <strong>${closestPoint.benchmark_name}</strong><br/>
+                        <strong>${closestPoint.display_name || closestPoint.benchmark_name}</strong><br/>
                         Value: ${formatNumber(closestPoint.value)} ${closestPoint.unit}<br/>
                         Date: ${d3.timeFormat('%Y-%m-%d %H:%M')(closestPoint.timestamp)}<br/>
                         Branch: ${closestPoint.git_branch}<br/>

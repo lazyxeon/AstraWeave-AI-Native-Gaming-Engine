@@ -71,6 +71,48 @@ function Parse-CriterionEstimates {
     }
 }
 
+function Get-FriendlyName {
+    param([string]$BenchmarkName)
+    
+    # Friendly name mapping for common benchmarks
+    $friendlyNames = @{
+        'vec3_dot/scalar' = 'Vector Dot Product (Scalar)'
+        'vec3_dot/simd' = 'Vector Dot Product (SIMD)'
+        'vec3_cross/scalar' = 'Vector Cross Product (Scalar)'
+        'vec3_cross/simd' = 'Vector Cross Product (SIMD)'
+        'vec3_normalize/scalar' = 'Vector Normalize (Scalar)'
+        'vec3_normalize/simd' = 'Vector Normalize (SIMD)'
+        'mat4_mul/scalar' = 'Matrix Multiplication (Scalar)'
+        'mat4_mul/simd' = 'Matrix Multiplication (SIMD)'
+        'culling_performance/with_backface_culling' = 'Rendering with Back-Face Culling'
+        'culling_performance/without_backface_culling' = 'Rendering without Back-Face Culling'
+        'rendering_frame_time' = 'Frame Time Baseline'
+        'shader_compilation' = 'Shader Compilation Time'
+        'texture_operations' = 'Texture Operations'
+        'enemy_spawner/determine_archetype' = 'Enemy Archetype Determination'
+        'player_abilities' = 'Player Ability System'
+        'quest_objectives' = 'Quest Objective Tracking'
+        'integrated_systems' = 'Integrated System Performance'
+    }
+    
+    # Check for exact match
+    if ($friendlyNames.ContainsKey($BenchmarkName)) {
+        return $friendlyNames[$BenchmarkName]
+    }
+    
+    # Check for partial match (for parameterized benchmarks)
+    foreach ($key in $friendlyNames.Keys) {
+        if ($BenchmarkName -like "$key*") {
+            $param = $BenchmarkName -replace "^$key/", ""
+            return "$($friendlyNames[$key]) ($param)"
+        }
+    }
+    
+    # Fallback: convert underscores to spaces and title case
+    $readable = $BenchmarkName -replace '_', ' ' -replace '/', ' - '
+    return (Get-Culture).TextInfo.ToTitleCase($readable.ToLower())
+}
+
 function Export-BenchmarkResults {
     param([string]$BenchmarkRoot, [string]$OutputPath)
     
@@ -93,15 +135,19 @@ function Export-BenchmarkResults {
     $git = Get-GitMetadata
     $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     
-    # Find all benchmark results (Criterion stores in <benchmark>/base/estimates.json)
-    $benchmarkDirs = Get-ChildItem -Path $BenchmarkRoot -Recurse -Filter "estimates.json" -File
+    # Find all benchmark results (Criterion stores in */base/estimates.json)
+    $benchmarkDirs = Get-ChildItem -Path $BenchmarkRoot -Recurse -Filter "estimates.json" -File |
+                     Where-Object { $_.DirectoryName -match '[/\\]base$' }
     
     $exportCount = 0
     $entries = @()
     
     foreach ($estimatesFile in $benchmarkDirs) {
         # Parse path to extract benchmark name
-        # Example: target/criterion/astraweave-core/ecs_benchmarks/world_creation/base/estimates.json
+        # Examples:
+        #   target/criterion/culling_performance/with_backface_culling/base/estimates.json
+        #   target/criterion/enemy_spawner/determine_archetype/1/base/estimates.json
+        #   target/criterion/vec3_dot/scalar/base/estimates.json
         $fullPath = $estimatesFile.FullName
         
         # Extract the benchmark path between criterion/ and /base/estimates.json
@@ -109,25 +155,39 @@ function Export-BenchmarkResults {
             $benchmarkPath = $matches[1]
             $pathParts = $benchmarkPath -split '[/\\]'
             
-            if ($pathParts.Count -lt 2) {
+            if ($pathParts.Count -lt 1) {
                 if ($Verbose) { Write-Log "Skipping invalid path: $benchmarkPath" "WARN" }
                 continue
             }
             
-            # Extract crate and benchmark name
-            # For paths like: astraweave-core/ecs_benchmarks/world_creation
-            $crate = $pathParts[0]
-            $benchGroup = $pathParts[1]
+            # Handle different path structures:
+            # 1. <group>/<variant>/base (2 parts) - e.g., vec3_dot/scalar
+            # 2. <group>/<subgroup>/<variant>/base (3 parts) - e.g., enemy_spawner/determine_archetype/1
+            # 3. <crate>/<group>/<variant>/base (3+ parts) - e.g., astraweave-math/vec3_dot/scalar
             
-            # Remaining parts form the benchmark name
-            if ($pathParts.Count -gt 2) {
-                $benchName = $pathParts[2..($pathParts.Count - 1)] -join '/'
+            $group = $pathParts[0]
+            
+            if ($pathParts.Count -eq 1) {
+                # Single-level benchmark
+                $benchName = $group
+                $fullName = $group
+                $crate = $group
+            } elseif ($pathParts.Count -eq 2) {
+                # Two-level: group/variant
+                $variant = $pathParts[1]
+                $benchName = $variant
+                $fullName = "${group}/${variant}"
+                $crate = $group
             } else {
-                $benchName = "default"
+                # Three+ levels: could be crate/group/variant or group/subgroup/variant
+                # Use all parts as the full name
+                $benchName = $pathParts[-1]  # Last part is the specific variant/parameter
+                $fullName = $pathParts -join '/'
+                $crate = $pathParts[0]
             }
             
-            # Full benchmark identifier (matches threshold JSON format)
-            $fullName = "${crate}::${benchGroup}/${benchName}"
+            # Generate friendly display name
+            $displayName = Get-FriendlyName -BenchmarkName $fullName
         } else {
             if ($Verbose) { Write-Log "Skipping non-matching path: $fullPath" "WARN" }
             continue
@@ -144,6 +204,7 @@ function Export-BenchmarkResults {
         $entry = @{
             timestamp = $timestamp
             benchmark_name = $fullName
+            display_name = $displayName
             value = $stats.mean_ns
             stddev = $stats.stddev_ns
             unit = $stats.unit
@@ -151,7 +212,7 @@ function Export-BenchmarkResults {
             git_branch = $git.branch
             git_dirty = $git.dirty
             crate = $crate
-            group = $benchGroup
+            group = $group
             name = $benchName
         } | ConvertTo-Json -Compress
         
@@ -159,7 +220,7 @@ function Export-BenchmarkResults {
         $exportCount++
         
         if ($Verbose) {
-            Write-Log "Exported: $fullName = $($stats.mean_ns) ns"
+            Write-Log "Exported: $displayName = $($stats.mean_ns) ns"
         }
     }
     
