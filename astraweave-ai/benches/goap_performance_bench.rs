@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use astraweave_ai::goap::*;
+use astraweave_behavior::goap::*;
 use std::collections::BTreeMap;
 
 #[cfg(feature = "planner_advanced")]
