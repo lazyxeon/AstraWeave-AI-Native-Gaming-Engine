@@ -14,7 +14,7 @@
 //! - RNG operations: <100 ns per operation
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
-use glam::IVec2;
+use glam::{ivec2, IVec2};
 use std::hint::black_box as std_black_box;
 
 use astraweave_pcg::{EncounterConstraints, EncounterGenerator, LayoutGenerator, Room, SeedRng};
@@ -108,7 +108,7 @@ fn bench_room_generation(c: &mut Criterion) {
 
     // Benchmark: Generate 5 rooms (small dungeon)
     group.bench_function("generate_5_rooms", |b| {
-        let gen = LayoutGenerator::new(IVec2::new(100, 100));
+        let gen = LayoutGenerator::new(ivec2(100, 100));
 
         b.iter(|| {
             let mut rng_clone = SeedRng::new(42, "test");
@@ -119,7 +119,7 @@ fn bench_room_generation(c: &mut Criterion) {
 
     // Benchmark: Generate 10 rooms
     group.bench_function("generate_10_rooms", |b| {
-        let gen = LayoutGenerator::new(IVec2::new(100, 100));
+        let gen = LayoutGenerator::new(ivec2(100, 100));
 
         b.iter(|| {
             let mut rng = SeedRng::new(42, "test");
@@ -130,7 +130,7 @@ fn bench_room_generation(c: &mut Criterion) {
 
     // Benchmark: Generate 20 rooms (medium dungeon)
     group.bench_function("generate_20_rooms", |b| {
-        let gen = LayoutGenerator::new(IVec2::new(150, 150));
+        let gen = LayoutGenerator::new(ivec2(150, 150));
 
         b.iter(|| {
             let mut rng = SeedRng::new(42, "test");
@@ -141,7 +141,7 @@ fn bench_room_generation(c: &mut Criterion) {
 
     // Benchmark: Generate 50 rooms (large dungeon)
     group.bench_function("generate_50_rooms", |b| {
-        let gen = LayoutGenerator::new(IVec2::new(200, 200));
+        let gen = LayoutGenerator::new(ivec2(200, 200));
 
         b.iter(|| {
             let mut rng = SeedRng::new(42, "test");
@@ -152,7 +152,7 @@ fn bench_room_generation(c: &mut Criterion) {
 
     // Benchmark: Generate 100 rooms (stress test)
     group.bench_function("generate_100_rooms", |b| {
-        let gen = LayoutGenerator::new(IVec2::new(300, 300));
+        let gen = LayoutGenerator::new(ivec2(300, 300));
 
         b.iter(|| {
             let mut rng = SeedRng::new(42, "test");
@@ -164,11 +164,11 @@ fn bench_room_generation(c: &mut Criterion) {
     // Benchmark: Room overlap check
     group.bench_function("room_overlap_check", |b| {
         let room1 = Room {
-            bounds: (IVec2::new(0, 0), IVec2::new(10, 10)),
+            bounds: (ivec2(0, 0), ivec2(10, 10)),
             connections: Vec::new(),
         };
         let room2 = Room {
-            bounds: (IVec2::new(5, 5), IVec2::new(15, 15)),
+            bounds: (ivec2(5, 5), ivec2(15, 15)),
             connections: Vec::new(),
         };
 
@@ -181,7 +181,7 @@ fn bench_room_generation(c: &mut Criterion) {
     // Benchmark: Room center calculation
     group.bench_function("room_center", |b| {
         let room = Room {
-            bounds: (IVec2::new(10, 20), IVec2::new(30, 40)),
+            bounds: (ivec2(10, 20), ivec2(30, 40)),
             connections: Vec::new(),
         };
 
@@ -216,7 +216,7 @@ fn bench_encounter_generation(c: &mut Criterion) {
     // Benchmark: Generate 50 encounters
     group.bench_function("generate_50_encounters", |b| {
         let constraints = EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(200, 200)),
+            bounds: (IVec2::ZERO, ivec2(200, 200)),
             min_spacing: 10.0,
             difficulty_range: (1.0, 5.0),
         };
@@ -232,7 +232,7 @@ fn bench_encounter_generation(c: &mut Criterion) {
     // Benchmark: Generate 100 encounters (stress test)
     group.bench_function("generate_100_encounters", |b| {
         let constraints = EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(300, 300)),
+            bounds: (IVec2::ZERO, ivec2(300, 300)),
             min_spacing: 8.0,
             difficulty_range: (1.0, 10.0),
         };
@@ -248,7 +248,7 @@ fn bench_encounter_generation(c: &mut Criterion) {
     // Benchmark: Generate 200 encounters (large level)
     group.bench_function("generate_200_encounters", |b| {
         let constraints = EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(500, 500)),
+            bounds: (IVec2::ZERO, ivec2(500, 500)),
             min_spacing: 5.0,
             difficulty_range: (1.0, 10.0),
         };
@@ -264,7 +264,7 @@ fn bench_encounter_generation(c: &mut Criterion) {
     // Benchmark: Spacing constraint check (100 existing encounters)
     group.bench_function("spacing_check_100", |b| {
         let constraints = EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(200, 200)),
+            bounds: (IVec2::ZERO, ivec2(200, 200)),
             min_spacing: 10.0,
             difficulty_range: (1.0, 5.0),
         };
@@ -274,7 +274,7 @@ fn bench_encounter_generation(c: &mut Criterion) {
         let positions: Vec<IVec2> = encounters.iter().map(|e| e.position).collect();
 
         b.iter(|| {
-            let new_pos = IVec2::new(50, 50);
+            let new_pos = ivec2(50, 50);
             let valid = positions.iter().all(|&p| {
                 let dist = (new_pos - p).as_vec2().length();
                 dist >= 10.0
@@ -295,7 +295,7 @@ fn bench_full_dungeon(c: &mut Criterion) {
 
     // Benchmark: Small dungeon (5 rooms + 10 encounters)
     group.bench_function("small_dungeon_5r_10e", |b| {
-        let layout_gen = LayoutGenerator::new(IVec2::new(100, 100));
+        let layout_gen = LayoutGenerator::new(ivec2(100, 100));
         let encounter_gen = EncounterGenerator::new(EncounterConstraints::default());
 
         b.iter(|| {
@@ -312,9 +312,9 @@ fn bench_full_dungeon(c: &mut Criterion) {
 
     // Benchmark: Medium dungeon (20 rooms + 50 encounters)
     group.bench_function("medium_dungeon_20r_50e", |b| {
-        let layout_gen = LayoutGenerator::new(IVec2::new(150, 150));
+        let layout_gen = LayoutGenerator::new(ivec2(150, 150));
         let encounter_gen = EncounterGenerator::new(EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(150, 150)),
+            bounds: (IVec2::ZERO, ivec2(150, 150)),
             min_spacing: 8.0,
             difficulty_range: (1.0, 5.0),
         });
@@ -333,9 +333,9 @@ fn bench_full_dungeon(c: &mut Criterion) {
 
     // Benchmark: Large dungeon (50 rooms + 150 encounters)
     group.bench_function("large_dungeon_50r_150e", |b| {
-        let layout_gen = LayoutGenerator::new(IVec2::new(250, 250));
+        let layout_gen = LayoutGenerator::new(ivec2(250, 250));
         let encounter_gen = EncounterGenerator::new(EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(250, 250)),
+            bounds: (IVec2::ZERO, ivec2(250, 250)),
             min_spacing: 6.0,
             difficulty_range: (1.0, 10.0),
         });
@@ -354,9 +354,9 @@ fn bench_full_dungeon(c: &mut Criterion) {
 
     // Benchmark: Huge dungeon (100 rooms + 300 encounters)
     group.bench_function("huge_dungeon_100r_300e", |b| {
-        let layout_gen = LayoutGenerator::new(IVec2::new(400, 400));
+        let layout_gen = LayoutGenerator::new(ivec2(400, 400));
         let encounter_gen = EncounterGenerator::new(EncounterConstraints {
-            bounds: (IVec2::ZERO, IVec2::new(400, 400)),
+            bounds: (IVec2::ZERO, ivec2(400, 400)),
             min_spacing: 5.0,
             difficulty_range: (1.0, 10.0),
         });
@@ -385,7 +385,7 @@ fn bench_scaling(c: &mut Criterion) {
 
     // Room generation scaling
     for room_count in [1, 5, 10, 20, 50, 100].iter() {
-        let grid_size = IVec2::new(room_count * 30, room_count * 30);
+        let grid_size = ivec2(room_count * 30, room_count * 30);
 
         group.throughput(Throughput::Elements(*room_count as u64));
         group.bench_with_input(
@@ -405,7 +405,7 @@ fn bench_scaling(c: &mut Criterion) {
 
     // Encounter generation scaling
     for encounter_count in [10, 25, 50, 100, 200, 500].iter() {
-        let grid_size = IVec2::new(encounter_count * 10, encounter_count * 10);
+        let grid_size = ivec2(encounter_count * 10, encounter_count * 10);
 
         group.throughput(Throughput::Elements(*encounter_count as u64));
         group.bench_with_input(
@@ -443,3 +443,4 @@ criterion_group!(
     bench_scaling,
 );
 criterion_main!(benches);
+

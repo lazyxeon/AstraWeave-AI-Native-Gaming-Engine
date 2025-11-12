@@ -17,7 +17,8 @@ astraweave-materials = { package = "astraweave-materials", path = "../../astrawe
 image = "0.25"
 
 [dev-dependencies]
-naga = "27.0"
+# Use naga version compatible with wgpu 25.0.2
+naga = "25.0"
 
 [lib]
 name = "aw_headless"
