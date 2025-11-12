@@ -11,6 +11,7 @@ pub enum AssetType {
     Material,
     Audio,
     Config,
+    Prefab,
     Directory,
     Unknown,
 }
@@ -21,6 +22,12 @@ impl AssetType {
             return AssetType::Directory;
         }
 
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+        
+        if file_name.ends_with(".prefab.ron") {
+            return AssetType::Prefab;
+        }
+        
         match path.extension().and_then(|e| e.to_str()) {
             Some("glb") | Some("gltf") | Some("obj") | Some("fbx") => AssetType::Model,
             Some("png") | Some("jpg") | Some("jpeg") | Some("ktx2") | Some("dds") => AssetType::Texture,
@@ -39,6 +46,7 @@ impl AssetType {
             AssetType::Material => "💎",
             AssetType::Audio => "🔊",
             AssetType::Config => "⚙️",
+            AssetType::Prefab => "💾",
             AssetType::Directory => "📁",
             AssetType::Unknown => "📄",
         }
@@ -52,6 +60,7 @@ impl AssetType {
             AssetType::Material => egui::Color32::from_rgb(200, 100, 255),
             AssetType::Audio => egui::Color32::from_rgb(255, 255, 100),
             AssetType::Config => egui::Color32::from_rgb(200, 200, 200),
+            AssetType::Prefab => egui::Color32::from_rgb(150, 200, 255),
             AssetType::Directory => egui::Color32::from_rgb(255, 200, 100),
             AssetType::Unknown => egui::Color32::from_rgb(150, 150, 150),
         }
@@ -116,7 +125,7 @@ pub struct AssetBrowser {
     view_mode: ViewMode,
     thumbnail_cache: HashMap<PathBuf, TextureHandle>,
     thumbnail_size: f32,
-    dragged_asset: Option<PathBuf>,
+    dragged_prefab: Option<PathBuf>,
 }
 
 impl AssetBrowser {
@@ -132,10 +141,14 @@ impl AssetBrowser {
             view_mode: ViewMode::List,
             thumbnail_cache: HashMap::new(),
             thumbnail_size: 64.0,
-            dragged_asset: None,
+            dragged_prefab: None,
         };
         browser.scan_current_directory();
         browser
+    }
+
+    pub fn take_dragged_prefab(&mut self) -> Option<PathBuf> {
+        self.dragged_prefab.take()
     }
 
     fn scan_current_directory(&mut self) {
@@ -339,7 +352,13 @@ impl AssetBrowser {
                             }
 
                             if response.hovered() {
-                                response.on_hover_text(entry.path.display().to_string());
+                                response.clone().on_hover_text(entry.path.display().to_string());
+                            }
+
+                            if entry.asset_type == AssetType::Prefab {
+                                if response.drag_started() {
+                                    self.dragged_prefab = Some(entry.path.clone());
+                                }
                             }
                         }
 
@@ -438,7 +457,13 @@ impl AssetBrowser {
                                         }
 
                                         if response.hovered() {
-                                            response.on_hover_text(entry_path.display().to_string());
+                                            response.clone().on_hover_text(entry_path.display().to_string());
+                                        }
+
+                                        if entry_asset_type == AssetType::Prefab {
+                                            if response.drag_started() {
+                                                self.dragged_prefab = Some(entry_path.clone());
+                                            }
                                         }
 
                                         ui.add(

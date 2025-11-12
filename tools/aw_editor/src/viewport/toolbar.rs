@@ -30,6 +30,12 @@ pub struct ViewportToolbar {
     /// Grid snap size (meters)
     pub snap_size: f32,
 
+    /// Angle snap enabled
+    pub angle_snap_enabled: bool,
+
+    /// Angle snap increment (degrees)
+    pub angle_snap_degrees: f32,
+
     /// Show performance stats
     pub show_stats: bool,
 
@@ -44,6 +50,8 @@ impl Default for ViewportToolbar {
             show_grid: true,
             snap_enabled: false,
             snap_size: 1.0,
+            angle_snap_enabled: true,
+            angle_snap_degrees: 15.0,
             show_stats: true,
             stats: PerformanceStats::default(),
         }
@@ -67,48 +75,46 @@ impl ViewportToolbar {
                     .inner_margin(8.0)
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            // Shading mode selector
-                            ui.label("Shading:");
-                            egui::ComboBox::from_id_salt("shading_mode")
-                                .selected_text(format!("{:?}", self.shading_mode))
-                                .show_ui(ui, |ui| {
-                                    ui.selectable_value(
-                                        &mut self.shading_mode,
-                                        ShadingMode::Lit,
-                                        "Lit",
-                                    );
-                                    ui.selectable_value(
-                                        &mut self.shading_mode,
-                                        ShadingMode::Unlit,
-                                        "Unlit",
-                                    );
-                                    ui.selectable_value(
-                                        &mut self.shading_mode,
-                                        ShadingMode::Wireframe,
-                                        "Wireframe",
-                                    );
-                                });
-
-                            ui.separator();
-
-                            // Grid toggle
                             ui.checkbox(&mut self.show_grid, "Grid");
 
                             ui.separator();
 
-                            // Snap settings
-                            ui.checkbox(&mut self.snap_enabled, "Snap");
+                            ui.checkbox(&mut self.snap_enabled, "Grid Snap");
                             if self.snap_enabled {
+                                if ui.small_button("0.5").on_hover_text("Grid size: 0.5 units").clicked() {
+                                    self.snap_size = 0.5;
+                                }
+                                if ui.small_button("1.0").on_hover_text("Grid size: 1.0 units").clicked() {
+                                    self.snap_size = 1.0;
+                                }
+                                if ui.small_button("2.0").on_hover_text("Grid size: 2.0 units").clicked() {
+                                    self.snap_size = 2.0;
+                                }
                                 ui.add(
                                     egui::DragValue::new(&mut self.snap_size)
                                         .speed(0.1)
-                                        .suffix("m"),
+                                        .range(0.1..=10.0)
+                                        .suffix("m")
                                 );
                             }
 
                             ui.separator();
 
-                            // Performance stats toggle
+                            ui.checkbox(&mut self.angle_snap_enabled, "Angle Snap");
+                            if self.angle_snap_enabled {
+                                if ui.small_button("15°").on_hover_text("Angle snap: 15 degrees").clicked() {
+                                    self.angle_snap_degrees = 15.0;
+                                }
+                                if ui.small_button("45°").on_hover_text("Angle snap: 45 degrees").clicked() {
+                                    self.angle_snap_degrees = 45.0;
+                                }
+                                if ui.small_button("90°").on_hover_text("Angle snap: 90 degrees").clicked() {
+                                    self.angle_snap_degrees = 90.0;
+                                }
+                            }
+
+                            ui.separator();
+
                             ui.checkbox(&mut self.show_stats, "Stats");
                         });
                     });

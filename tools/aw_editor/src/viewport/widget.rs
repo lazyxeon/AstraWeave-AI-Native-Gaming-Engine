@@ -396,6 +396,10 @@ impl ViewportWidget {
                 self.toolbar.stats.entity_count = 100; // Placeholder
                 self.toolbar.stats.triangle_count = 3600; // 100 cubes × 36 triangles
 
+                // Sync toolbar snap settings to viewport
+                self.grid_snap_size = self.toolbar.snap_size;
+                self.angle_snap_increment = self.toolbar.angle_snap_degrees.to_radians();
+
                 self.toolbar.ui(ui, rect);
             } else {
                 // First frame - texture not ready yet
@@ -1501,6 +1505,11 @@ impl ViewportWidget {
     /// Remove an entity from the selection
     pub fn remove_from_selection(&mut self, entity: Entity) {
         self.selected_entities.retain(|&e| e != entity);
+    }
+
+    /// Get reference to the viewport toolbar
+    pub fn toolbar(&self) -> &super::toolbar::ViewportToolbar {
+        &self.toolbar
     }
 
     /// Toggle entity selection

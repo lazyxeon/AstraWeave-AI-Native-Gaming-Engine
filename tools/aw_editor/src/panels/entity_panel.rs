@@ -31,7 +31,7 @@ impl EntityPanel {
     /// # Returns
     ///
     /// Optional ComponentEdit if a component was modified (for undo system)
-    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>, selected_entity: Option<Entity>) -> Option<ComponentEdit> {
+    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>, selected_entity: Option<Entity>, prefab_instance: Option<&crate::prefab::PrefabInstance>) -> Option<ComponentEdit> {
         ui.heading("🎮 Entity Inspector");
         ui.separator();
 
@@ -89,6 +89,22 @@ impl EntityPanel {
             if let Some(world) = world {
                 ui.group(|ui| {
                     ui.heading(format!("✏️ Entity #{}", entity));
+                    
+                    if let Some(instance) = prefab_instance {
+                        ui.separator();
+                        ui.horizontal(|ui| {
+                            ui.label("💾 Prefab Instance:");
+                            ui.monospace(instance.source.file_name().unwrap_or_default().to_string_lossy().as_ref());
+                        });
+                        
+                        if instance.has_overrides(entity) {
+                            ui.colored_label(
+                                egui::Color32::from_rgb(100, 150, 255),
+                                "⚠️ Modified components (blue text indicates overrides)"
+                            );
+                        }
+                    }
+                    
                     ui.separator();
                     
                     let components = self.component_registry.get_entity_components(world, entity);

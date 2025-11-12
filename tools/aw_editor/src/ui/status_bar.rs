@@ -1,5 +1,6 @@
 use crate::entity_manager::SelectionSet;
 use crate::command::UndoStack;
+use crate::editor_mode::EditorMode;
 use crate::gizmo::state::GizmoMode;
 use crate::gizmo::snapping::SnappingConfig;
 use egui::{Ui, Layout, Align};
@@ -7,6 +8,7 @@ use egui::{Ui, Layout, Align};
 /// Status bar component for the bottom of the editor
 /// 
 /// Shows:
+/// - Editor mode (Edit/Play/Paused)
 /// - Current gizmo mode (Translate/Rotate/Scale)
 /// - Selection count
 /// - Undo/redo state
@@ -18,6 +20,7 @@ impl StatusBar {
     /// Render the status bar
     pub fn show(
         ui: &mut Ui,
+        editor_mode: &EditorMode,
         gizmo_mode: &GizmoMode,
         selection: &SelectionSet,
         undo_stack: &UndoStack,
@@ -25,6 +28,9 @@ impl StatusBar {
         fps: f32,
     ) {
         ui.horizontal(|ui| {
+            Self::show_editor_mode(ui, editor_mode);
+            ui.separator();
+            
             Self::show_gizmo_mode(ui, gizmo_mode);
             ui.separator();
             
@@ -40,6 +46,21 @@ impl StatusBar {
                 Self::show_snap_settings(ui, snap_config);
             });
         });
+    }
+    
+    fn show_editor_mode(ui: &mut Ui, mode: &EditorMode) {
+        let status_label = egui::RichText::new(mode.status_text())
+            .color(mode.status_color())
+            .strong();
+        
+        let hotkey_text = match mode {
+            EditorMode::Edit => "Press F5 to Play",
+            EditorMode::Play => "F6 to Pause, F7 to Stop",
+            EditorMode::Paused => "F5 to Resume, F7 to Stop",
+        };
+        
+        ui.label(status_label)
+            .on_hover_text(hotkey_text);
     }
     
     fn show_gizmo_mode(ui: &mut Ui, mode: &GizmoMode) {

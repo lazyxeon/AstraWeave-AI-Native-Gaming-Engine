@@ -33,11 +33,13 @@ mod brdf_preview;
 mod clipboard; // Phase 3.4 - Copy/Paste/Duplicate
 mod command; // Phase 2.1 - Undo/Redo system
 mod component_ui; // Phase 2.3 - Component-based inspector
+mod editor_mode; // Phase 4.2 - Play-in-Editor
 mod entity_manager;
 mod file_watcher;
 mod gizmo;
 mod material_inspector;
 mod panels;
+mod prefab; // Phase 4.1 - Prefab System
 mod recent_files; // Phase 3 - Recent files tracking
 mod scene_serialization; // Phase 2.2 - Scene Save/Load
 mod ui; // Phase 3 - UI components (StatusBar, etc.)
@@ -52,11 +54,14 @@ use astraweave_dialogue::DialogueGraph;
 use astraweave_nav::NavMesh;
 use astraweave_quests::Quest;
 use eframe::egui;
+use editor_mode::EditorMode;
 use entity_manager::{EntityManager, SelectionSet};
 use gizmo::state::GizmoMode;
 use gizmo::snapping::SnappingConfig;
 use material_inspector::MaterialInspector;
+use prefab::PrefabManager;
 use recent_files::RecentFilesManager;
+use scene_serialization::SceneData;
 use ui::StatusBar;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, ChartsPanel, EntityPanel, GraphPanel,
@@ -222,6 +227,11 @@ struct EditorApp {
     last_frame_time: std::time::Instant,
     current_fps: f32,
     recent_files: RecentFilesManager,
+    // Phase 4.1: Prefab System
+    prefab_manager: PrefabManager,
+    // Phase 4.2: Play-in-Editor
+    editor_mode: EditorMode,
+    world_snapshot: Option<SceneData>,
 }
 
 impl Default for EditorApp {
@@ -338,6 +348,11 @@ impl Default for EditorApp {
             last_frame_time: std::time::Instant::now(),
             current_fps: 60.0,
             recent_files: RecentFilesManager::load(),
+            // Phase 4.1: Prefab System
+            prefab_manager: PrefabManager::new("prefabs"),
+            // Phase 4.2: Play-in-Editor
+            editor_mode: EditorMode::default(),
+            world_snapshot: None,
         }
     }
 }
@@ -1052,26 +1067,74 @@ impl eframe::App for EditorApp {
                 }
             }
 
+            // F5: Play
+            if i.key_pressed(egui::Key::F5) {
+                if self.editor_mode.is_editing() {
+                    if let Some(world) = &self.sim_world {
+                        self.world_snapshot = Some(SceneData::from_world(world));
+                        self.editor_mode = EditorMode::Play;
+                        self.simulation_playing = true;
+                        self.status = "▶️ Playing".into();
+                        self.console_logs.push("▶️ Entered Play mode (F6 to pause, F7 to stop)".into());
+                    }
+                }
+            }
+            
+            // F6: Pause/Unpause
+            if i.key_pressed(egui::Key::F6) {
+                if self.editor_mode.is_playing() {
+                    self.editor_mode = EditorMode::Paused;
+                    self.simulation_playing = false;
+                    self.status = "⏸️ Paused".into();
+                    self.console_logs.push("⏸️ Paused (F5 to resume, F7 to stop)".into());
+                } else if self.editor_mode.is_paused() {
+                    self.editor_mode = EditorMode::Play;
+                    self.simulation_playing = true;
+                    self.status = "▶️ Playing".into();
+                    self.console_logs.push("▶️ Resumed playing".into());
+                }
+            }
+            
+            // F7: Stop (restore snapshot)
+            if i.key_pressed(egui::Key::F7) {
+                if !self.editor_mode.is_editing() {
+                    if let Some(snapshot) = self.world_snapshot.take() {
+                        self.sim_world = Some(snapshot.to_world());
+                        self.editor_mode = EditorMode::Edit;
+                        self.simulation_playing = false;
+                        self.status = "⏹️ Stopped (world restored)".into();
+                        self.console_logs.push("⏹️ Stopped play mode (world restored to snapshot)".into());
+                    } else {
+                        self.editor_mode = EditorMode::Edit;
+                        self.simulation_playing = false;
+                        self.status = "⏹️ Stopped".into();
+                        self.console_logs.push("⏹️ Stopped play mode".into());
+                    }
+                }
+            }
+
             // Delete: Delete selected entities
             if i.key_pressed(egui::Key::Delete) {
-                if let Some(world) = &mut self.sim_world {
-                    let selected = self.hierarchy_panel.get_all_selected();
-                    if !selected.is_empty() {
-                        let cmd = command::DeleteEntitiesCommand::new(selected.clone());
-                        match self.undo_stack.execute(cmd, world) {
-                            Ok(()) => {
-                                self.hierarchy_panel.set_selected(None);
-                                self.selected_entity = None;
-                                self.status = format!("🗑️  Deleted {} entities", selected.len());
-                                self.console_logs.push(format!("✅ Deleted {} entities", selected.len()));
+                if self.editor_mode.can_edit() {
+                    if let Some(world) = &mut self.sim_world {
+                        let selected = self.hierarchy_panel.get_all_selected();
+                        if !selected.is_empty() {
+                            let cmd = command::DeleteEntitiesCommand::new(selected.clone());
+                            match self.undo_stack.execute(cmd, world) {
+                                Ok(()) => {
+                                    self.hierarchy_panel.set_selected(None);
+                                    self.selected_entity = None;
+                                    self.status = format!("🗑️  Deleted {} entities", selected.len());
+                                    self.console_logs.push(format!("✅ Deleted {} entities", selected.len()));
+                                }
+                                Err(e) => {
+                                    self.status = format!("❌ Delete failed: {}", e);
+                                    self.console_logs.push(format!("❌ Delete failed: {}", e));
+                                }
                             }
-                            Err(e) => {
-                                self.status = format!("❌ Delete failed: {}", e);
-                                self.console_logs.push(format!("❌ Delete failed: {}", e));
-                            }
+                        } else {
+                            self.console_logs.push("⚠️  No entities selected to delete".into());
                         }
-                    } else {
-                        self.console_logs.push("⚠️  No entities selected to delete".into());
                     }
                 }
             }
@@ -1284,22 +1347,66 @@ impl eframe::App for EditorApp {
                 });
                 
                 ui.separator();
-                ui.checkbox(&mut self.simulation_playing, "Play Simulation");
-                if self.simulation_playing {
-                    // Show live simulation status with entity count and tick info
-                    if let Some(world) = &self.sim_world {
-                        ui.label(format!(
-                            "✅ Simulating: {} entities, tick {}, time {:.1}s",
-                            world.entities().len(),
-                            self.sim_tick_count,
-                            world.t
-                        ));
-                    } else {
-                        ui.label("⏳ Initializing simulation...");
+                
+                // Phase 4: Play-in-Editor controls
+                ui.horizontal(|ui| {
+                    ui.label("Play:");
+                    
+                    let play_enabled = self.editor_mode.is_editing() || self.editor_mode.is_paused();
+                    if ui.add_enabled(play_enabled, egui::Button::new("▶️ Play (F5)")).clicked() {
+                        if let Some(world) = &self.sim_world {
+                            if self.editor_mode.is_editing() {
+                                self.world_snapshot = Some(SceneData::from_world(world));
+                            }
+                            self.editor_mode = EditorMode::Play;
+                            self.simulation_playing = true;
+                            self.status = "▶️ Playing".into();
+                            self.console_logs.push("▶️ Entered Play mode".into());
+                        }
                     }
-                } else {
-                    ui.label("⏸️ Simulation stopped");
-                }
+                    
+                    let pause_enabled = !self.editor_mode.is_editing();
+                    if ui.add_enabled(pause_enabled, egui::Button::new("⏸️ Pause (F6)")).clicked() {
+                        if self.editor_mode.is_playing() {
+                            self.editor_mode = EditorMode::Paused;
+                            self.simulation_playing = false;
+                            self.status = "⏸️ Paused".into();
+                            self.console_logs.push("⏸️ Paused".into());
+                        }
+                    }
+                    
+                    let stop_enabled = !self.editor_mode.is_editing();
+                    if ui.add_enabled(stop_enabled, egui::Button::new("⏹️ Stop (F7)")).clicked() {
+                        if let Some(snapshot) = self.world_snapshot.take() {
+                            self.sim_world = Some(snapshot.to_world());
+                            self.status = "⏹️ Stopped (world restored)".into();
+                            self.console_logs.push("⏹️ Stopped (world restored)".into());
+                        } else {
+                            self.status = "⏹️ Stopped".into();
+                        }
+                        self.editor_mode = EditorMode::Edit;
+                        self.simulation_playing = false;
+                    }
+                    
+                    ui.separator();
+                    
+                    // Status indicator with color
+                    let status_label = egui::RichText::new(self.editor_mode.status_text())
+                        .color(self.editor_mode.status_color());
+                    ui.label(status_label);
+                    
+                    // Show simulation info when playing
+                    if self.editor_mode.is_playing() {
+                        if let Some(world) = &self.sim_world {
+                            ui.label(format!(
+                                "| {} entities, tick {}, {:.1}s",
+                                world.entities().len(),
+                                self.sim_tick_count,
+                                world.t
+                            ));
+                        }
+                    }
+                });
                 if ui.button("Diff Assets").clicked() {
                     match std::process::Command::new("git")
                         .args(&["diff", "assets"])
@@ -1457,12 +1564,13 @@ impl eframe::App for EditorApp {
                 self.performance_panel.show(ui);
             });
 
-        // BOTTOM PANEL - StatusBar (Phase 3.5)
+        // BOTTOM PANEL - StatusBar (Phase 3.5 & 4)
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
             .show(ctx, |ui| {
                 StatusBar::show(
                     ui,
+                    &self.editor_mode,
                     &self.current_gizmo_mode,
                     &self.selection_set,
                     &self.undo_stack,
@@ -1474,8 +1582,24 @@ impl eframe::App for EditorApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
             if let Some(viewport) = &mut self.viewport {
-                ui.heading("🎮 3D Viewport");
-                ui.label("Phase 1.1 Complete: Grid rendering active, texture display in progress");
+                // Phase 4: Visual indicator for play mode
+                let viewport_frame = if !self.editor_mode.is_editing() {
+                    let border_color = if self.editor_mode.is_playing() {
+                        egui::Color32::from_rgb(100, 200, 100)
+                    } else {
+                        egui::Color32::from_rgb(255, 180, 50)
+                    };
+                    
+                    egui::Frame::NONE
+                        .stroke(egui::Stroke::new(3.0, border_color))
+                        .inner_margin(4.0)
+                } else {
+                    egui::Frame::NONE
+                };
+                
+                viewport_frame.show(ui, |ui| {
+                    ui.heading("🎮 3D Viewport");
+                    ui.label("Phase 1.1 Complete: Grid rendering active, texture display in progress");
                 
                 ui.horizontal(|ui| {
                     ui.label("⚡ Snapping:");
@@ -1530,12 +1654,20 @@ impl eframe::App for EditorApp {
                     eprintln!("❌ Viewport error: {}", e);
                 }
 
-                // Sync selected entity from viewport to app state
-                if let Some(selected) = viewport.selected_entity() {
-                    self.selected_entity = Some(selected as u64);
-                }
+                    // Sync selected entity from viewport to app state
+                    if let Some(selected) = viewport.selected_entity() {
+                        self.selected_entity = Some(selected as u64);
+                    }
+                    
+                    // Sync snapping settings from viewport toolbar to EditorApp
+                    self.snapping_config.grid_enabled = viewport.toolbar().snap_enabled;
+                    self.snapping_config.grid_size = viewport.toolbar().snap_size;
+                    self.snapping_config.angle_enabled = viewport.toolbar().angle_snap_enabled;
+                    self.snapping_config.angle_increment = viewport.toolbar().angle_snap_degrees;
 
-                ui.add_space(10.0);
+                    ui.add_space(10.0);
+                });
+                
                 ui.separator();
             }
 

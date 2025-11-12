@@ -17,7 +17,7 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 half = "2.4"
 log = "0.4"
 env_logger = "0.11"
-gltf = { version = "1.4", features = ["utils"] }
+gltf = { version = "1.4", features = ["utils", "KHR_materials_unlit"] }
 
 # NEW: Bevy renderer with all extensions
 astraweave-render-bevy = { path = "../../astraweave-render-bevy", features = ["csm", "materials", "ibl", "megalights"] }
@@ -27,4 +27,4 @@ default = []
 
 [[bin]]
 name = "unified_showcase"
-path = "src/main_bevy_v2.rs"  # NEW: Use Bevy renderer version
+path = "src/main_clean.rs"  # CLEAN IMPLEMENTATION: Proper texture handling
