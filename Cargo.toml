@@ -1,4 +1,4 @@
-[workspace]
+﻿[workspace]
 members = [
   "astraweave-ecs",
   "astraweave-ai",

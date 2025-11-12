@@ -67,3 +67,8 @@ glob = "0.3"
 name = "mesh_optimization"
 harness = false
 required-features = ["textures"]
+
+[[bench]]
+name = "rendering_performance"
+harness = false
+required-features = ["textures"]

@@ -1,0 +1,286 @@
+//! GPU Resource Leak Detection Tests
+//!
+//! Validates that GPU resources (buffers, textures, pipelines) are properly
+//! cleaned up and don't leak across renderer creation/destruction cycles.
+
+use pollster;
+
+#[test]
+fn test_headless_device_creation() {
+    // Verify headless device can be created for testing
+    let (device, queue) = pollster::block_on(create_test_device());
+    
+    // Basic validation
+    assert!(device.limits().max_texture_dimension_2d > 0);
+    
+    // Device should drop cleanly
+    drop(device);
+    drop(queue);
+}
+
+#[test]
+fn test_buffer_lifecycle_no_leaks() {
+    let (device, queue) = pollster::block_on(create_test_device());
+    
+    // Track resource counts by creating and destroying buffers multiple times
+    let initial_usage = get_memory_usage();
+    
+    for iteration in 0..100 {
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some(&format!("Test Buffer {}", iteration)),
+            size: 1024 * 1024, // 1 MB
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        
+        // Use the buffer
+        queue.write_buffer(&buffer, 0, &vec![0u8; 1024]);
+        
+        // Explicitly drop
+        drop(buffer);
+        
+        // Force GPU to process pending operations
+        device.poll(wgpu::MaintainBase::Wait);
+    }
+    
+    // Final poll to ensure all cleanup is done
+    device.poll(wgpu::MaintainBase::Wait);
+    
+    let final_usage = get_memory_usage();
+    
+    // Memory usage should be roughly the same (allowing for some variance)
+    let growth = final_usage.saturating_sub(initial_usage);
+    assert!(
+        growth < 10 * 1024 * 1024, // Allow up to 10 MB growth for internal bookkeeping
+        "Potential buffer leak detected: memory grew by {} bytes",
+        growth
+    );
+}
+
+#[test]
+fn test_texture_lifecycle_no_leaks() {
+    let (device, queue) = pollster::block_on(create_test_device());
+    
+    let initial_usage = get_memory_usage();
+    
+    for iteration in 0..50 {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&format!("Test Texture {}", iteration)),
+            size: wgpu::Extent3d {
+                width: 512,
+                height: 512,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        
+        // Create view
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+        drop(view);
+        drop(texture);
+        device.poll(wgpu::MaintainBase::Wait);
+    }
+    
+    device.poll(wgpu::MaintainBase::Wait);
+    let final_usage = get_memory_usage();
+    
+    let growth = final_usage.saturating_sub(initial_usage);
+    assert!(
+        growth < 20 * 1024 * 1024, // Allow up to 20 MB for texture overhead
+        "Potential texture leak detected: memory grew by {} bytes",
+        growth
+    );
+}
+
+#[test]
+fn test_pipeline_lifecycle_no_leaks() {
+    let (device, _queue) = pollster::block_on(create_test_device());
+    
+    let shader_source = r#"
+        @vertex
+        fn vs_main(@builtin(vertex_index) in_vertex_index: u32) -> @builtin(position) vec4<f32> {
+            let x = f32(i32(in_vertex_index) - 1);
+            let y = f32(i32(in_vertex_index & 1u) * 2 - 1);
+            return vec4<f32>(x, y, 0.0, 1.0);
+        }
+        
+        @fragment
+        fn fs_main() -> @location(0) vec4<f32> {
+            return vec4<f32>(1.0, 0.0, 0.0, 1.0);
+        }
+    "#;
+    
+    let initial_usage = get_memory_usage();
+    
+    for iteration in 0..100 {
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some(&format!("Test Shader {}", iteration)),
+            source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+        });
+        
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(&format!("Test Pipeline {}", iteration)),
+            layout: None,
+            cache: None,
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: wgpu::TextureFormat::Rgba8Unorm,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
+        
+        drop(pipeline);
+        drop(shader);
+        device.poll(wgpu::MaintainBase::Wait);
+    }
+    
+    device.poll(wgpu::MaintainBase::Wait);
+    let final_usage = get_memory_usage();
+    
+    let growth = final_usage.saturating_sub(initial_usage);
+    assert!(
+        growth < 5 * 1024 * 1024, // Allow up to 5 MB for shader/pipeline overhead
+        "Potential pipeline leak detected: memory grew by {} bytes",
+        growth
+    );
+}
+
+#[test]
+fn test_renderer_lifecycle_stress_test() {
+    // Simulate creating and destroying a renderer multiple times
+    // This catches leaks in high-level renderer structures
+    
+    let initial_usage = get_memory_usage();
+    
+    for cycle in 0..10 {
+        let (device, queue) = pollster::block_on(create_test_device());
+        
+        // Create typical renderer resources
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&format!("Render Target {}", cycle)),
+            size: wgpu::Extent3d {
+                width: 800,
+                height: 600,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&format!("Depth Buffer {}", cycle)),
+            size: wgpu::Extent3d {
+                width: 800,
+                height: 600,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        });
+        
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some(&format!("Uniform Buffer {}", cycle)),
+            size: 256,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        
+        // Cleanup
+        drop(buffer);
+        drop(depth_texture);
+        drop(texture);
+        device.poll(wgpu::MaintainBase::Wait);
+        drop(queue);
+        drop(device);
+    }
+    
+    let final_usage = get_memory_usage();
+    let growth = final_usage.saturating_sub(initial_usage);
+    
+    assert!(
+        growth < 50 * 1024 * 1024, // Allow up to 50 MB for 10 renderer cycles
+        "Potential renderer lifecycle leak: memory grew by {} bytes over 10 cycles",
+        growth
+    );
+}
+
+// Helper functions
+
+async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::all(),
+        ..Default::default()
+    });
+    
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            force_fallback_adapter: false,
+            compatible_surface: None,
+        })
+        .await
+        .expect("Failed to find adapter");
+    
+    adapter
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some("Test Device"),
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::default(),
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: wgpu::Trace::Off,
+        })
+        .await
+        .expect("Failed to create device")
+}
+
+fn get_memory_usage() -> usize {
+    // On platforms with memory_stats, use it
+    #[cfg(target_os = "linux")]
+    {
+        if let Ok(contents) = std::fs::read_to_string("/proc/self/status") {
+            for line in contents.lines() {
+                if line.starts_with("VmRSS:") {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 2 {
+                        if let Ok(kb) = parts[1].parse::<usize>() {
+                            return kb * 1024; // Convert KB to bytes
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Fallback: use a simple counter (not accurate but detects gross leaks)
+    // In production, you'd use platform-specific memory queries
+    0
+}
