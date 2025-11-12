@@ -45,6 +45,88 @@ fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
     t * t * (3.0 - 2.0 * t)
 }
 
+/// Calculate number of mip levels for a texture size
+fn calculate_mip_levels(size: u32) -> u32 {
+    (size as f32).log2().floor() as u32 + 1
+}
+
+/// Generate a mipmap chain by downsampling base image
+fn generate_mipmap_chain(base_image: &[u8], width: u32, height: u32) -> Vec<Vec<u8>> {
+    let mut mipmaps = vec![base_image.to_vec()];
+    let mut current_width = width;
+    let mut current_height = height;
+    
+    while current_width > 1 || current_height > 1 {
+        let next_width = (current_width / 2).max(1);
+        let next_height = (current_height / 2).max(1);
+        
+        let downsampled = downsample_image(
+            &mipmaps.last().unwrap(),
+            current_width,
+            current_height,
+            next_width,
+            next_height,
+        );
+        
+        mipmaps.push(downsampled);
+        current_width = next_width;
+        current_height = next_height;
+    }
+    
+    mipmaps
+}
+
+/// Downsample an image using 2x2 box filter (bilinear)
+fn downsample_image(
+    src: &[u8],
+    src_w: u32,
+    src_h: u32,
+    dst_w: u32,
+    dst_h: u32,
+) -> Vec<u8> {
+    let mut dst = vec![0u8; (dst_w * dst_h * 4) as usize];
+    
+    for y in 0..dst_h {
+        for x in 0..dst_w {
+            let src_x = x * 2;
+            let src_y = y * 2;
+            
+            // Average 2x2 block
+            let mut r = 0u32;
+            let mut g = 0u32;
+            let mut b = 0u32;
+            let mut a = 0u32;
+            let mut count = 0u32;
+            
+            for dy in 0..2 {
+                for dx in 0..2 {
+                    let sx = (src_x + dx).min(src_w - 1);
+                    let sy = (src_y + dy).min(src_h - 1);
+                    let idx = ((sy * src_w + sx) * 4) as usize;
+                    
+                    if idx + 3 < src.len() {
+                        r += src[idx] as u32;
+                        g += src[idx + 1] as u32;
+                        b += src[idx + 2] as u32;
+                        a += src[idx + 3] as u32;
+                        count += 1;
+                    }
+                }
+            }
+            
+            let dst_idx = ((y * dst_w + x) * 4) as usize;
+            if count > 0 {
+                dst[dst_idx] = (r / count) as u8;
+                dst[dst_idx + 1] = (g / count) as u8;
+                dst[dst_idx + 2] = (b / count) as u8;
+                dst[dst_idx + 3] = (a / count) as u8;
+            }
+        }
+    }
+    
+    dst
+}
+
 /// Default material blend for non-terrain objects (zero blending = use atlas, not terrain)
 const DEFAULT_MATERIAL_BLEND: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
 
@@ -1455,9 +1537,101 @@ impl ShowcaseApp {
         println!("✅ Single atlas bind group created (7 materials → 1 bind group)");
         println!("   Bind group switching: 7→1 (85.7% reduction)");
 
+        // Helper function to create terrain material texture arrays with fallbacks
+        let create_terrain_material_array = |device: &wgpu::Device,
+                                              queue: &wgpu::Queue,
+                                              usage: texture_loader::TextureUsage,
+                                              fallback_colors: &[[f32; 4]; 3],
+                                              label: &str| -> (wgpu::Texture, wgpu::TextureView) {
+            // Try to load terrain textures, use fallbacks if missing
+            let textures: Vec<wgpu::Texture> = fallback_colors
+                .iter()
+                .enumerate()
+                .map(|(idx, color)| {
+                    // For now, create fallback textures with material-specific properties
+                    // In future, replace with actual texture loading
+                    let (width, height) = (64, 64);
+                    let format = usage.format();
+                    
+                    // Calculate mip levels for 64x64 texture (should be 7: 64→32→16→8→4→2→1)
+                    let mip_count = calculate_mip_levels(width);
+                    
+                    let data: Vec<u8> = match usage {
+                        texture_loader::TextureUsage::Normal => {
+                            // Flat normal pointing up (RGB: 128, 128, 255)
+                            vec![128, 128, 255, 255].repeat((width * height) as usize)
+                        }
+                        texture_loader::TextureUsage::MRA => {
+                            // Material-specific roughness: grass=0.8, dirt=0.9, stone=0.3
+                            let roughness = (color[1] * 255.0) as u8;
+                            vec![0, roughness, 255, 255].repeat((width * height) as usize)
+                        }
+                        _ => {
+                            let color_u8 = [
+                                (color[0] * 255.0) as u8,
+                                (color[1] * 255.0) as u8,
+                                (color[2] * 255.0) as u8,
+                                (color[3] * 255.0) as u8,
+                            ];
+                            vec![color_u8[0], color_u8[1], color_u8[2], color_u8[3]]
+                                .repeat((width * height) as usize)
+                        }
+                    };
+                    
+                    let texture = device.create_texture(&wgpu::TextureDescriptor {
+                        label: Some(&format!("{} Layer {}", label, idx)),
+                        size: wgpu::Extent3d {
+                            width,
+                            height,
+                            depth_or_array_layers: 1,
+                        },
+                        mip_level_count: mip_count,  // FIX: Was 1, now supports mipmaps
+                        sample_count: 1,
+                        dimension: wgpu::TextureDimension::D2,
+                        format,
+                        usage: wgpu::TextureUsages::TEXTURE_BINDING
+                            | wgpu::TextureUsages::COPY_DST
+                            | wgpu::TextureUsages::COPY_SRC,
+                        view_formats: &[],
+                    });
+                    
+                    // Generate mipmap chain
+                    let mipmaps = generate_mipmap_chain(&data, width, height);
+                    
+                    // Upload all mip levels
+                    for (mip_level, mip_data) in mipmaps.iter().enumerate() {
+                        let mip_size = width >> mip_level;
+                        
+                        queue.write_texture(
+                            wgpu::TexelCopyTextureInfo {
+                                texture: &texture,
+                                mip_level: mip_level as u32,
+                                origin: wgpu::Origin3d::ZERO,
+                                aspect: wgpu::TextureAspect::All,
+                            },
+                            mip_data,
+                            wgpu::TexelCopyBufferLayout {
+                                offset: 0,
+                                bytes_per_row: Some(4 * mip_size),
+                                rows_per_image: Some(mip_size),
+                            },
+                            wgpu::Extent3d {
+                                width: mip_size,
+                                height: mip_size,
+                                depth_or_array_layers: 1,
+                            },
+                        );
+                    }
+                    
+                    texture
+                })
+                .collect();
+            
+            texture_loader::create_texture_array(device, queue, &textures, label)
+        };
 
         // Create terrain bind group layout (group 2) for multi-material terrain
-        // PHASE 3.1: Texture array (4 bindings → 2 bindings)
+        // PHASE 3.1: Texture array (2 bindings → 4 bindings for Task 2.3)
         let terrain_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 label: Some("Terrain Bind Group Layout"),
@@ -1478,6 +1652,28 @@ impl ShowcaseApp {
                         binding: 1,
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    // TASK 2.3: Terrain normal texture array
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    // TASK 2.3: Terrain roughness texture array
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
                         count: None,
                     },
                 ],
@@ -1551,6 +1747,38 @@ impl ShowcaseApp {
 
         println!("✅ Terrain texture array created");
 
+        // TASK 2.3: Create terrain normal texture array
+        println!("📦 Creating terrain normal array (3 layers)...");
+        let normal_fallback_colors = [
+            [0.5, 0.5, 1.0, 1.0], // Grass: flat normal
+            [0.5, 0.5, 1.0, 1.0], // Dirt: flat normal
+            [0.5, 0.5, 1.0, 1.0], // Stone: flat normal
+        ];
+        let (terrain_normal_array, terrain_normal_view) = create_terrain_material_array(
+            device,
+            queue,
+            texture_loader::TextureUsage::Normal,
+            &normal_fallback_colors,
+            "Terrain Normal Array",
+        );
+        println!("✅ Terrain normal array created");
+
+        // TASK 2.3: Create terrain roughness texture array
+        println!("📦 Creating terrain roughness array (3 layers)...");
+        let roughness_fallback_colors = [
+            [0.0, 0.8, 1.0, 1.0], // Grass: high roughness (0.8)
+            [0.0, 0.9, 1.0, 1.0], // Dirt: very rough (0.9)
+            [0.0, 0.3, 1.0, 1.0], // Stone: smooth (0.3)
+        ];
+        let (terrain_roughness_array, terrain_roughness_view) = create_terrain_material_array(
+            device,
+            queue,
+            texture_loader::TextureUsage::MRA,
+            &roughness_fallback_colors,
+            "Terrain Roughness Array",
+        );
+        println!("✅ Terrain roughness array created");
+
         // Create terrain bind group with texture array
         let terrain_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Terrain Bind Group"),
@@ -1563,6 +1791,16 @@ impl ShowcaseApp {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&terrain_sampler),  // FIX: Use terrain sampler with Repeat mode
+                },
+                // TASK 2.3: Add terrain normal array
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&terrain_normal_view),
+                },
+                // TASK 2.3: Add terrain roughness array
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&terrain_roughness_view),
                 },
             ],
         });

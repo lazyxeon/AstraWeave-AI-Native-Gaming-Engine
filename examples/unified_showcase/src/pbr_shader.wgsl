@@ -32,6 +32,13 @@ var terrain_albedo_array: texture_2d_array<f32>;
 @group(2) @binding(1)
 var terrain_sampler: sampler;
 
+// TASK 2.3: Terrain normal and roughness arrays
+@group(2) @binding(2)
+var terrain_normal_array: texture_2d_array<f32>;
+
+@group(2) @binding(3)
+var terrain_roughness_array: texture_2d_array<f32>;
+
 // Atlas region data for material atlas UV remapping (group 3)
 struct AtlasRegion {
     uv_offset: vec2<f32>,  // UV offset in atlas (e.g., 0.0, 0.25, 0.5, 0.75)
@@ -167,18 +174,46 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     
     var albedo: vec3<f32>;
     var uv_for_sampling: vec2<f32>;
+    var normal_sample: vec3<f32>;
+    var roughness: f32;
+    var metallic: f32;
+    var ao: f32;
     
     if is_terrain {
         // Terrain: Blend multiple materials from texture array
         // Layer 0 = grass, Layer 1 = dirt, Layer 2 = stone
-        let grass_color = textureSample(terrain_albedo_array, terrain_sampler, in.uv * 10.0, 0).rgb;
-        let dirt_color = textureSample(terrain_albedo_array, terrain_sampler, in.uv * 10.0, 1).rgb;
-        let stone_color = textureSample(terrain_albedo_array, terrain_sampler, in.uv * 10.0, 2).rgb;
+        let terrain_uv = in.uv * 10.0;
+        
+        let grass_color = textureSample(terrain_albedo_array, terrain_sampler, terrain_uv, 0).rgb;
+        let dirt_color = textureSample(terrain_albedo_array, terrain_sampler, terrain_uv, 1).rgb;
+        let stone_color = textureSample(terrain_albedo_array, terrain_sampler, terrain_uv, 2).rgb;
         
         // Weighted blend based on material_blend weights
         albedo = grass_color * in.material_blend.x 
                + dirt_color * in.material_blend.y 
                + stone_color * in.material_blend.z;
+        
+        // TASK 2.3: Sample terrain-specific normals
+        let grass_normal = textureSample(terrain_normal_array, terrain_sampler, terrain_uv, 0).rgb;
+        let dirt_normal = textureSample(terrain_normal_array, terrain_sampler, terrain_uv, 1).rgb;
+        let stone_normal = textureSample(terrain_normal_array, terrain_sampler, terrain_uv, 2).rgb;
+        
+        normal_sample = grass_normal * in.material_blend.x
+                      + dirt_normal * in.material_blend.y
+                      + stone_normal * in.material_blend.z;
+        
+        // TASK 2.3: Sample terrain-specific roughness (MRA packing)
+        let grass_mra = textureSample(terrain_roughness_array, terrain_sampler, terrain_uv, 0);
+        let dirt_mra = textureSample(terrain_roughness_array, terrain_sampler, terrain_uv, 1);
+        let stone_mra = textureSample(terrain_roughness_array, terrain_sampler, terrain_uv, 2);
+        
+        let blended_mra = grass_mra * in.material_blend.x
+                        + dirt_mra * in.material_blend.y
+                        + stone_mra * in.material_blend.z;
+        
+        metallic = blended_mra.r;
+        roughness = blended_mra.g;
+        ao = blended_mra.b;
         
         // Terrain uses original UVs for normal/roughness
         uv_for_sampling = in.uv;
@@ -187,19 +222,18 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         let atlas_uv = remap_atlas_uv(in.uv, in.material_id);
         albedo = textureSample(albedo_texture, texture_sampler, atlas_uv).rgb;
         
+        // Sample normal and roughness from atlas
+        normal_sample = textureSample(normal_texture, texture_sampler, atlas_uv).rgb;
+        
+        // FIX: MRA packing (Metallic-Roughness-AO)
+        let mra_sample = textureSample(roughness_texture, texture_sampler, atlas_uv);
+        metallic = mra_sample.r;
+        roughness = mra_sample.g;
+        ao = mra_sample.b;
+        
         // Use remapped UVs for all texture sampling
         uv_for_sampling = atlas_uv;
     }
-    
-    // Sample normal and roughness (use remapped UVs for atlas materials, original for terrain)
-    let normal_sample = textureSample(normal_texture, texture_sampler, uv_for_sampling).rgb;
-    
-    // FIX: MRA packing (Metallic-Roughness-AO)
-    // R = Metallic, G = Roughness, B = Ambient Occlusion
-    let mra_sample = textureSample(roughness_texture, texture_sampler, uv_for_sampling);
-    let metallic = mra_sample.r;   // Red channel = Metallic
-    let roughness = mra_sample.g;  // Green channel = Roughness (FIXED from .r)
-    let ao = mra_sample.b;         // Blue channel = Ambient Occlusion
     
     // Apply normal map
     let normal = apply_normal_map(in.world_normal, in.world_tangent, normal_sample);
