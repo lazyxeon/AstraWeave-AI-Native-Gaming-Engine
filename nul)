@@ -1,0 +1,11 @@
+At line:1 char:53
++ $PSDefaultParameterValues['*:Encoding'] = 'utf8'; if exist .github\wo ...
++                                                     ~
+Missing '(' after 'if' in if statement.
+At line:1 char:177
++ ... l .github\workflows\*.yaml else (echo No .github/workflows directory)
++                                                                          ~
+Missing closing ')' in expression.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingOpenParenthesisInIfStatement
+ 

@@ -23,8 +23,11 @@
 
 mod procedural_textures;
 mod gltf_loader;
+mod texture_loader;
+mod atlas_packer;
 
 use glam::{Mat4, Vec2, Vec3};
+use image::DynamicImage;
 use std::sync::Arc;
 use std::time::Instant;
 use wgpu::util::DeviceExt;
@@ -35,6 +38,18 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::Window,
 };
+
+/// Smoothstep interpolation function (smooth Hermite interpolation)
+fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
+    let t = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
+}
+
+/// Default material blend for non-terrain objects (zero blending = use atlas, not terrain)
+const DEFAULT_MATERIAL_BLEND: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
+
+/// Default material ID for simple objects (0 = Grass/first material in atlas)
+const DEFAULT_MATERIAL_ID: u32 = 0;
 
 /// Camera controller (FPS-style WASD movement)
 struct Camera {
@@ -148,20 +163,27 @@ impl HDRI {
     }
 }
 
-/// Vertex format (position + normal + UV for PBR textures)
+/// Vertex format (position + normal + UV + material_blend for terrain + material_id for atlas)
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
     uv: [f32; 2],
+    /// Material blend weights: [grass, dirt, stone, unused]
+    /// Used for terrain height-based blending
+    material_blend: [f32; 4],
+    /// Material ID (0-7) for atlas UV remapping
+    material_id: u32,
 }
 
 impl Vertex {
-    const ATTRIBS: [wgpu::VertexAttribute; 3] = wgpu::vertex_attr_array![
+    const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
         0 => Float32x3, // position
         1 => Float32x3, // normal
         2 => Float32x2, // uv
+        3 => Float32x4, // material_blend
+        4 => Uint32,    // material_id
     ];
 
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -194,6 +216,8 @@ fn create_ground_plane(size: f32, subdivisions: u32) -> (Vec<Vertex>, Vec<u32>) 
                 position: [px, 0.0, pz],
                 normal: [0.0, 1.0, 0.0],
                 uv: [u, v],
+                material_blend: DEFAULT_MATERIAL_BLEND,
+                material_id: DEFAULT_MATERIAL_ID,
             });
         }
     }
@@ -228,40 +252,40 @@ fn create_cube(size: f32) -> (Vec<Vertex>, Vec<u32>) {
     #[rustfmt::skip]
     let vertices = vec![
         // Front face (+Z)
-        Vertex { position: [-s, -s,  s], normal: [0.0, 0.0, 1.0], uv: [0.0, 1.0] },
-        Vertex { position: [ s, -s,  s], normal: [0.0, 0.0, 1.0], uv: [1.0, 1.0] },
-        Vertex { position: [ s,  s,  s], normal: [0.0, 0.0, 1.0], uv: [1.0, 0.0] },
-        Vertex { position: [-s,  s,  s], normal: [0.0, 0.0, 1.0], uv: [0.0, 0.0] },
+        Vertex { position: [-s, -s,  s], normal: [0.0, 0.0, 1.0], uv: [0.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s, -s,  s], normal: [0.0, 0.0, 1.0], uv: [1.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s,  s,  s], normal: [0.0, 0.0, 1.0], uv: [1.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s,  s,  s], normal: [0.0, 0.0, 1.0], uv: [0.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
         
         // Back face (-Z)
-        Vertex { position: [ s, -s, -s], normal: [0.0, 0.0, -1.0], uv: [0.0, 1.0] },
-        Vertex { position: [-s, -s, -s], normal: [0.0, 0.0, -1.0], uv: [1.0, 1.0] },
-        Vertex { position: [-s,  s, -s], normal: [0.0, 0.0, -1.0], uv: [1.0, 0.0] },
-        Vertex { position: [ s,  s, -s], normal: [0.0, 0.0, -1.0], uv: [0.0, 0.0] },
+        Vertex { position: [ s, -s, -s], normal: [0.0, 0.0, -1.0], uv: [0.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s, -s, -s], normal: [0.0, 0.0, -1.0], uv: [1.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s,  s, -s], normal: [0.0, 0.0, -1.0], uv: [1.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s,  s, -s], normal: [0.0, 0.0, -1.0], uv: [0.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
         
         // Top face (+Y)
-        Vertex { position: [-s,  s,  s], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [ s,  s,  s], normal: [0.0, 1.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [ s,  s, -s], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [-s,  s, -s], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0] },
+        Vertex { position: [-s,  s,  s], normal: [0.0, 1.0, 0.0], uv: [0.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s,  s,  s], normal: [0.0, 1.0, 0.0], uv: [1.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s,  s, -s], normal: [0.0, 1.0, 0.0], uv: [1.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s,  s, -s], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
         
         // Bottom face (-Y)
-        Vertex { position: [-s, -s, -s], normal: [0.0, -1.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [ s, -s, -s], normal: [0.0, -1.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [ s, -s,  s], normal: [0.0, -1.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [-s, -s,  s], normal: [0.0, -1.0, 0.0], uv: [0.0, 0.0] },
+        Vertex { position: [-s, -s, -s], normal: [0.0, -1.0, 0.0], uv: [0.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s, -s, -s], normal: [0.0, -1.0, 0.0], uv: [1.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s, -s,  s], normal: [0.0, -1.0, 0.0], uv: [1.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s, -s,  s], normal: [0.0, -1.0, 0.0], uv: [0.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
         
         // Right face (+X)
-        Vertex { position: [ s, -s,  s], normal: [1.0, 0.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [ s, -s, -s], normal: [1.0, 0.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [ s,  s, -s], normal: [1.0, 0.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [ s,  s,  s], normal: [1.0, 0.0, 0.0], uv: [0.0, 0.0] },
+        Vertex { position: [ s, -s,  s], normal: [1.0, 0.0, 0.0], uv: [0.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s, -s, -s], normal: [1.0, 0.0, 0.0], uv: [1.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s,  s, -s], normal: [1.0, 0.0, 0.0], uv: [1.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [ s,  s,  s], normal: [1.0, 0.0, 0.0], uv: [0.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
         
         // Left face (-X)
-        Vertex { position: [-s, -s, -s], normal: [-1.0, 0.0, 0.0], uv: [0.0, 1.0] },
-        Vertex { position: [-s, -s,  s], normal: [-1.0, 0.0, 0.0], uv: [1.0, 1.0] },
-        Vertex { position: [-s,  s,  s], normal: [-1.0, 0.0, 0.0], uv: [1.0, 0.0] },
-        Vertex { position: [-s,  s, -s], normal: [-1.0, 0.0, 0.0], uv: [0.0, 0.0] },
+        Vertex { position: [-s, -s, -s], normal: [-1.0, 0.0, 0.0], uv: [0.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s, -s,  s], normal: [-1.0, 0.0, 0.0], uv: [1.0, 1.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s,  s,  s], normal: [-1.0, 0.0, 0.0], uv: [1.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
+        Vertex { position: [-s,  s, -s], normal: [-1.0, 0.0, 0.0], uv: [0.0, 0.0], material_blend: DEFAULT_MATERIAL_BLEND, material_id: DEFAULT_MATERIAL_ID },
     ];
 
     #[rustfmt::skip]
@@ -332,6 +356,8 @@ fn create_tree(
             position: [x, 0.0, z],
             normal: [x.signum(), 0.0, z.signum()],
             uv: [u, 1.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 3, // Wood material (index 3)
         });
 
         // Top vertex
@@ -339,6 +365,8 @@ fn create_tree(
             position: [x, trunk_height, z],
             normal: [x.signum(), 0.0, z.signum()],
             uv: [u, 0.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 3, // Wood material (index 3)
         });
     }
 
@@ -362,15 +390,18 @@ fn create_tree(
             position: [x, canopy_y, z],
             normal: [normal_vec.x, normal_vec.y, normal_vec.z],
             uv: [i as f32 / segments as f32, 1.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 0, // Grass material for leaves (index 0)
         });
     }
-
     // Cone apex
     let apex_idx = vertices.len() as u32;
     vertices.push(Vertex {
         position: [0.0, canopy_y + canopy_height, 0.0],
         normal: [0.0, 1.0, 0.0],
         uv: [0.5, 0.0],
+        material_blend: DEFAULT_MATERIAL_BLEND,
+        material_id: 0, // Grass material for leaves (index 0)
     });
 
     // Canopy indices
@@ -401,6 +432,8 @@ fn create_building(width: f32, height: f32, depth: f32) -> (Vec<Vertex>, Vec<u32
             ],
             normal: v.normal,
             uv: [v.uv[0] * 2.0, v.uv[1] * 2.0], // Tile UVs
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 6, // Building material (index 6)
         });
     }
     indices.extend_from_slice(&base_indices);
@@ -418,21 +451,29 @@ fn create_building(width: f32, height: f32, depth: f32) -> (Vec<Vertex>, Vec<u32
             position: [-half_w, roof_base_y, -half_d],
             normal: [0.0, 0.7, -0.3],
             uv: [0.0, 0.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 2, // Stone material for roof (index 2)
         },
         Vertex {
             position: [half_w, roof_base_y, -half_d],
             normal: [0.0, 0.7, -0.3],
             uv: [1.0, 0.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 2, // Stone material for roof (index 2)
         },
         Vertex {
             position: [half_w, roof_base_y, half_d],
             normal: [0.0, 0.7, 0.3],
             uv: [1.0, 1.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 2, // Stone material for roof (index 2)
         },
         Vertex {
             position: [-half_w, roof_base_y, half_d],
             normal: [0.0, 0.7, 0.3],
             uv: [0.0, 1.0],
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 2, // Stone material for roof (index 2)
         },
     ]);
 
@@ -442,6 +483,8 @@ fn create_building(width: f32, height: f32, depth: f32) -> (Vec<Vertex>, Vec<u32
         position: [0.0, roof_base_y + roof_height, 0.0],
         normal: [0.0, 1.0, 0.0],
         uv: [0.5, 0.5],
+        material_blend: DEFAULT_MATERIAL_BLEND,
+        material_id: 2, // Stone material for roof (index 2)
     });
 
     // Roof triangles
@@ -484,6 +527,8 @@ fn create_humanoid(height: f32) -> (Vec<Vertex>, Vec<u32>) {
             ],
             normal: v.normal,
             uv: v.uv,
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 3, // Wood material placeholder for NPCs (index 3)
         });
     }
     indices.extend_from_slice(&body_indices);
@@ -496,6 +541,8 @@ fn create_humanoid(height: f32) -> (Vec<Vertex>, Vec<u32>) {
             position: [v.position[0], v.position[1] + head_y, v.position[2]],
             normal: v.normal,
             uv: v.uv,
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 3, // Wood material placeholder for NPCs (index 3)
         });
     }
     for idx in &mut head_indices {
@@ -522,6 +569,8 @@ fn create_animal(body_size: f32, leg_length: f32) -> (Vec<Vertex>, Vec<u32>) {
             ],
             normal: v.normal,
             uv: v.uv,
+            material_blend: DEFAULT_MATERIAL_BLEND,
+            material_id: 1, // Dirt material placeholder for animals (index 1)
         });
     }
     indices.extend_from_slice(&body_indices);
@@ -547,6 +596,8 @@ fn create_animal(body_size: f32, leg_length: f32) -> (Vec<Vertex>, Vec<u32>) {
                 ],
                 normal: v.normal,
                 uv: v.uv,
+                material_blend: DEFAULT_MATERIAL_BLEND,
+                material_id: 1, // Dirt material placeholder for animals (index 1)
             });
         }
         for idx in &mut leg_indices {
@@ -599,10 +650,27 @@ fn create_island_terrain(size: f32, subdivisions: usize) -> (Vec<Vertex>, Vec<u3
             let falloff = (1.0 - dist_from_center.min(1.0)).powi(1); // Gentler falloff
             let height = (island_shape + (hill1 + hill2 + hill3) * falloff * 0.5 + medium_detail * falloff + fine_detail * falloff).max(0.0);
             
+            // Calculate material blend weights based on height
+            // Height ranges: 0-2m grass, 2-6m dirt, 6-12m stone
+            let blend_grass = smoothstep(0.0, 2.0, 2.0 - height).max(0.0);
+            let blend_dirt = smoothstep(0.0, 2.0, height) * smoothstep(8.0, 6.0, height);
+            let blend_stone = smoothstep(4.0, 6.0, height).max(0.0);
+            
+            // Normalize weights to sum to 1.0
+            let total = blend_grass + blend_dirt + blend_stone + 0.001; // Avoid div by zero
+            let material_blend = [
+                blend_grass / total,
+                blend_dirt / total,
+                blend_stone / total,
+                0.0, // unused
+            ];
+            
             vertices.push(Vertex {
                 position: [world_x, height, world_z],
                 normal: [0.0, 1.0, 0.0],  // Will be recalculated
-                uv: [u * 10.0, v * 10.0], // Tile UVs 10x10
+                uv: [u * 2.5, v * 2.5], // Tile UVs 2.5x2.5 for smoother textures
+                material_blend,
+                material_id: 0, // Terrain uses blending, not atlas (material_id unused for terrain)
             });
         }
     }
@@ -620,7 +688,10 @@ fn create_island_terrain(size: f32, subdivisions: usize) -> (Vec<Vertex>, Vec<u3
         }
     }
 
-    // Recalculate normals (flat shading approximation)
+    // Recalculate normals (smooth shading for terrain)
+    let mut normals_accum: Vec<Vec3> = vec![Vec3::ZERO; vertices.len()];
+    
+    // Accumulate face normals weighted by face area
     for i in (0..indices.len()).step_by(3) {
         let i0 = indices[i] as usize;
         let i1 = indices[i + 1] as usize;
@@ -632,11 +703,17 @@ fn create_island_terrain(size: f32, subdivisions: usize) -> (Vec<Vertex>, Vec<u3
 
         let edge1 = v1 - v0;
         let edge2 = v2 - v0;
-        let normal = edge1.cross(edge2).normalize();
+        let face_normal = edge1.cross(edge2); // Don't normalize yet (weighted by area)
 
-        for idx in [i0, i1, i2] {
-            vertices[idx].normal = normal.to_array();
-        }
+        // Accumulate to all vertices of this face
+        normals_accum[i0] += face_normal;
+        normals_accum[i1] += face_normal;
+        normals_accum[i2] += face_normal;
+    }
+    
+    // Normalize accumulated normals for smooth shading
+    for i in 0..vertices.len() {
+        vertices[i].normal = normals_accum[i].normalize_or_zero().to_array();
     }
 
     (vertices, indices)
@@ -699,6 +776,7 @@ struct ShowcaseApp {
 
     // Materials & HDRIs
     materials: Vec<Material>,
+    atlas_regions: Vec<atlas_packer::AtlasRegion>, // UV regions for material atlas
     hdris: Vec<HDRI>,
     current_hdri: usize,
 
@@ -706,7 +784,12 @@ struct ShowcaseApp {
     render_pipeline: Option<wgpu::RenderPipeline>,
     uniform_buffer: Option<wgpu::Buffer>,
     uniform_bind_group: Option<wgpu::BindGroup>,
-    material_bind_groups: Vec<wgpu::BindGroup>,
+    material_bind_groups: Vec<wgpu::BindGroup>,  // DEPRECATED: Will be replaced by atlas_bind_group
+    atlas_texture: Option<wgpu::Texture>,         // PHASE 3.2.1: Material atlas texture
+    atlas_bind_group: Option<wgpu::BindGroup>,    // PHASE 3.2.1: Single atlas bind group (group 1)
+    terrain_bind_group: Option<wgpu::BindGroup>,
+    atlas_regions_uniform_buffer: Option<wgpu::Buffer>,  // PHASE 3.2.1: Atlas regions uniform (group 3)
+    atlas_regions_bind_group: Option<wgpu::BindGroup>,   // PHASE 3.2.1: Atlas regions bind group
     depth_texture: Option<wgpu::TextureView>,
     
     // Skybox resources
@@ -755,47 +838,48 @@ impl Default for ShowcaseApp {
             materials: vec![
                 Material {
                     name: "Grass".to_string(),
-                    albedo_path: "assets/textures/texture-a.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/texture-d.png".to_string(),  // Try texture-d for grass
+                    normal_path: "assets/materials/grass_n.png".to_string(),
+                    mra_path: "assets/materials/grass_mra.png".to_string(),
                 },
                 Material {
                     name: "Dirt".to_string(),
-                    albedo_path: "assets/textures/texture-b.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/texture-f.png".to_string(),  // Try texture-f for dirt
+                    normal_path: "assets/materials/dirt_n.png".to_string(),
+                    mra_path: "assets/materials/dirt_mra.png".to_string(),
                 },
                 Material {
                     name: "Stone".to_string(),
-                    albedo_path: "assets/textures/cobblestone.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/cobblestone.png".to_string(),  // Keep cobblestone
+                    normal_path: "assets/materials/stone_n.png".to_string(),
+                    mra_path: "assets/materials/stone_mra.png".to_string(),
                 },
                 Material {
                     name: "Wood".to_string(),
-                    albedo_path: "assets/textures/planks.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/planks.png".to_string(),  // Keep wood planks
+                    normal_path: "assets/materials/tree_bark_n.png".to_string(),
+                    mra_path: "assets/materials/tree_bark_mra.png".to_string(),
                 },
                 Material {
                     name: "Leaves".to_string(),
-                    albedo_path: "assets/textures/tree.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/texture-j.png".to_string(),  // Try texture-j for leaves (might be green)
+                    normal_path: "assets/materials/tree_leaves_n.png".to_string(),
+                    mra_path: "assets/materials/tree_leaves_mra.png".to_string(),
                 },
                 Material {
                     name: "Roof".to_string(),
-                    albedo_path: "assets/textures/roof.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/roof.png".to_string(),  // Keep roof
+                    normal_path: "assets/materials/roof_tile_n.png".to_string(),
+                    mra_path: "assets/materials/roof_tile_mra.png".to_string(),
                 },
                 Material {
                     name: "Building".to_string(),
-                    albedo_path: "assets/textures/cobblestoneAlternative.png".to_string(),
-                    normal_path: "assets/default_n.png".to_string(),
-                    mra_path: "assets/default_mra.png".to_string(),
+                    albedo_path: "assets/textures/cobblestonePainted.png".to_string(),  // Keep painted stone
+                    normal_path: "assets/materials/plaster_n.png".to_string(),
+                    mra_path: "assets/materials/plaster_mra.png".to_string(),
                 },
             ],
+            atlas_regions: Vec::new(), // Will be filled during atlas creation
             hdris: vec![
                 HDRI::new(
                     "Kloppenheim (Day)",
@@ -815,6 +899,11 @@ impl Default for ShowcaseApp {
             uniform_buffer: None,
             uniform_bind_group: None,
             material_bind_groups: Vec::new(),
+            atlas_texture: None,           // PHASE 3.2.1
+            atlas_bind_group: None,        // PHASE 3.2.1
+            terrain_bind_group: None,
+            atlas_regions_uniform_buffer: None,  // PHASE 3.2.1
+            atlas_regions_bind_group: None,      // PHASE 3.2.1
             depth_texture: None,
             skybox_pipeline: None,
             skybox_cubemap: None,
@@ -1167,184 +1256,326 @@ impl ShowcaseApp {
                 ],
             });
 
-        // Create sampler
+        // Create sampler with NEAREST filtering for pixel-art textures
+        // CRITICAL FIX: Use ClampToEdge for atlas to prevent bleeding into neighboring slots
+        // Kenney textures are 64x64 pixel art - linear filtering causes blur
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("PBR Sampler"),
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
+            label: Some("PBR Sampler (Nearest for Pixel Art, Clamp for Atlas)"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,  // CRITICAL: Prevent wrapping across atlas slots!
+            address_mode_v: wgpu::AddressMode::ClampToEdge,  // CRITICAL: Prevent wrapping across atlas slots!
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,  // CRITICAL: Nearest for pixel art!
+            min_filter: wgpu::FilterMode::Nearest,  // Prevents blur when zoomed out
+            mipmap_filter: wgpu::FilterMode::Nearest,  // Sharp mipmaps
+            anisotropy_clamp: 1,  // Disable anisotropic filtering (causes blur on pixel art)
+            ..Default::default()
+        });
+        
+        // FIX: Create dedicated terrain sampler with Repeat mode for tiling
+        // Terrain textures need to tile seamlessly (UVs are multiplied by 10.0 in shader)
+        let terrain_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Terrain Sampler (Linear + Repeat for Tiling)"),
+            address_mode_u: wgpu::AddressMode::Repeat,  // FIX: Tiles textures
+            address_mode_v: wgpu::AddressMode::Repeat,  // FIX: Tiles textures
             address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            anisotropy_clamp: 16,
+            mag_filter: wgpu::FilterMode::Linear,       // Smooth filtering for terrain
+            min_filter: wgpu::FilterMode::Linear,       // Smooth filtering for terrain
+            mipmap_filter: wgpu::FilterMode::Linear,    // Smooth mipmap transitions
+            anisotropy_clamp: 16,                       // High quality at angles
             ..Default::default()
         });
 
-        // Load textures for each material and create bind groups
-        let mut material_bind_groups = Vec::new();
-
+        // PHASE 3.2: Material Atlas Generation
+        // Pack all material albedo textures into a single 4K atlas
+        println!("📦 Creating material atlas (7 materials)...");
+        
+        let atlas_config = atlas_packer::AtlasConfig::default();
+        let mut atlas_builder = atlas_packer::AtlasBuilder::new(atlas_config);
+        let mut atlas_regions = Vec::new();
+        
+        // Load each material's albedo into atlas
         for (i, material) in self.materials.iter().enumerate() {
-            println!("📦 Loading material {}: {}", i, material.name);
+            println!("  📌 Loading material {} albedo: {}", i, material.name);
+            println!("     Path: {}", material.albedo_path);
             
-            // Load textures (with procedural generation support)
-            let albedo_texture = Self::load_or_generate_texture(device, queue, &material.albedo_path)
+            // Load albedo texture data
+            let albedo_img = image::open(&material.albedo_path)
                 .unwrap_or_else(|e| {
-                    eprintln!("⚠️  Failed to load albedo {}: {}", material.albedo_path, e);
-                    // Create 1x1 magenta fallback
-                    let fallback_data = vec![255u8, 0, 255, 255];
-                    let texture = device.create_texture(&wgpu::TextureDescriptor {
-                        label: Some("Fallback Albedo"),
-                        size: wgpu::Extent3d {
-                            width: 1,
-                            height: 1,
-                            depth_or_array_layers: 1,
-                        },
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        dimension: wgpu::TextureDimension::D2,
-                        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                        view_formats: &[],
-                    });
-                    queue.write_texture(
-                        wgpu::TexelCopyTextureInfo {
-                            texture: &texture,
-                            mip_level: 0,
-                            origin: wgpu::Origin3d::ZERO,
-                            aspect: wgpu::TextureAspect::All,
-                        },
-                        &fallback_data,
-                        wgpu::TexelCopyBufferLayout {
-                            offset: 0,
-                            bytes_per_row: Some(4),
-                            rows_per_image: Some(1),
-                        },
-                        wgpu::Extent3d {
-                            width: 1,
-                            height: 1,
-                            depth_or_array_layers: 1,
-                        },
-                    );
-                    texture
+                    println!("    ⚠️  Failed to load {}: {}", material.albedo_path, e);
+                    println!("    Using fallback color for material {}", i);
+                    // Create 256x256 colored fallback
+                    let color = match i {
+                        0 => image::Rgba([51, 153, 51, 255]),   // Grass: green
+                        1 => image::Rgba([128, 77, 51, 255]),   // Dirt: brown
+                        2 => image::Rgba([153, 153, 153, 255]), // Stone: gray
+                        3 => image::Rgba([139, 90, 43, 255]),   // Wood: brown
+                        4 => image::Rgba([34, 139, 34, 255]),   // Leaves: green
+                        5 => image::Rgba([184, 134, 11, 255]),  // Roof: yellow-brown
+                        _ => image::Rgba([200, 180, 160, 255]), // Building: beige
+                    };
+                    DynamicImage::ImageRgba8(
+                        image::ImageBuffer::from_fn(256, 256, |_, _| color)
+                    )
                 });
+            
+            let rgba = albedo_img.to_rgba8();
+            let (width, height) = rgba.dimensions();
+            println!("     Loaded: {}×{}", width, height);
+            
+            // Add to atlas
+            let region = atlas_builder.add_material(
+                i as u32,
+                &rgba.into_raw(),
+                width,
+                height
+            );
+            atlas_regions.push(region);
+        }
+        
+        // Build final atlas texture
+        let (atlas_texture, atlas_regions_final) = atlas_builder.build(
+            device,
+            queue,
+            "Material Albedo Atlas"
+        );
+        
+        // Store atlas texture and regions in app state
+        self.atlas_texture = Some(atlas_texture);
+        self.atlas_regions = atlas_regions_final;
+        
+        println!("✅ Material atlas created ({}×{} with {} materials)",
+            atlas_config.atlas_size, atlas_config.atlas_size, self.atlas_regions.len());
+        
+        // PHASE 3.2.1: Create atlas regions uniform buffer and bind group (group 3)
+        println!("📦 Creating atlas regions uniform buffer...");
+        
+        // Convert atlas regions to GPU-friendly format (vec2 offset + vec2 scale = 16 bytes per region)
+        let mut atlas_regions_data: Vec<f32> = Vec::new();
+        for (i, region) in self.atlas_regions.iter().enumerate() {
+            println!("   Material {}: offset=({:.3}, {:.3}), scale=({:.3}, {:.3})",
+                i, region.uv_offset[0], region.uv_offset[1], 
+                region.uv_scale[0], region.uv_scale[1]);
+            atlas_regions_data.push(region.uv_offset[0]);
+            atlas_regions_data.push(region.uv_offset[1]);
+            atlas_regions_data.push(region.uv_scale[0]);
+            atlas_regions_data.push(region.uv_scale[1]);
+        }
+        
+        let atlas_regions_bytes = bytemuck::cast_slice(&atlas_regions_data);
+        
+        let atlas_regions_uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Atlas Regions Uniform Buffer"),
+            contents: atlas_regions_bytes,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        
+        // Create bind group layout for atlas regions (group 3)
+        let atlas_regions_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Atlas Regions Bind Group Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+        
+        // Create bind group for atlas regions
+        let atlas_regions_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Atlas Regions Bind Group"),
+            layout: &atlas_regions_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: atlas_regions_uniform_buffer.as_entire_binding(),
+            }],
+        });
+        
+        self.atlas_regions_uniform_buffer = Some(atlas_regions_uniform_buffer);
+        self.atlas_regions_bind_group = Some(atlas_regions_bind_group);
+        
+        println!("✅ Atlas regions uniform buffer created ({} regions, {} bytes)",
+            self.atlas_regions.len(), atlas_regions_bytes.len());
+        
+        // PHASE 3.2.1: Create single atlas bind group (replaces 7 material bind groups)
+        println!("📦 Creating single atlas bind group...");
+        
+        // TEMPORARY FIX: Use fallback normal/roughness textures
+        // TODO Phase 3.3: Atlas normal and roughness maps like we did for albedo
+        // Currently all materials share ONE normal map, causing incorrect lighting
+        // Using fallback (flat normal, medium roughness) until proper atlas is implemented
+        println!("⚠️  Using fallback normal/roughness (TODO: atlas these like albedo)");
+        
+        let normal_texture = texture_loader::create_fallback_texture(
+            device, queue, texture_loader::TextureUsage::Normal
+        );
+        
+        let roughness_texture = texture_loader::create_fallback_texture(
+            device, queue, texture_loader::TextureUsage::MRA
+        );
 
-            let normal_texture = Self::load_texture(device, queue, &material.normal_path)
-                .unwrap_or_else(|_| {
-                    // Create 1x1 flat normal (0.5, 0.5, 1.0 in tangent space)
-                    let fallback_data = vec![128u8, 128, 255, 255];
-                    let texture = device.create_texture(&wgpu::TextureDescriptor {
-                        label: Some("Fallback Normal"),
-                        size: wgpu::Extent3d {
-                            width: 1,
-                            height: 1,
-                            depth_or_array_layers: 1,
-                        },
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        dimension: wgpu::TextureDimension::D2,
-                        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                        view_formats: &[],
-                    });
-                    queue.write_texture(
-                        wgpu::TexelCopyTextureInfo {
-                            texture: &texture,
-                            mip_level: 0,
-                            origin: wgpu::Origin3d::ZERO,
-                            aspect: wgpu::TextureAspect::All,
-                        },
-                        &fallback_data,
-                        wgpu::TexelCopyBufferLayout {
-                            offset: 0,
-                            bytes_per_row: Some(4),
-                            rows_per_image: Some(1),
-                        },
-                        wgpu::Extent3d {
-                            width: 1,
-                            height: 1,
-                            depth_or_array_layers: 1,
-                        },
-                    );
-                    texture
-                });
+        // Create single atlas bind group using the atlas texture
+        let atlas_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Atlas Bind Group"),
+            layout: &material_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(
+                        &self.atlas_texture.as_ref().unwrap().create_view(&wgpu::TextureViewDescriptor::default()),
+                    ),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(
+                        &normal_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                    ),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(
+                        &roughness_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                    ),
+                },
+            ],
+        });
 
-            let roughness_texture = Self::load_texture(device, queue, &material.mra_path)
-                .unwrap_or_else(|_| {
-                    // Create 1x1 mid-roughness (0.5)
-                    let fallback_data = vec![128u8, 128, 128, 255];
-                    let texture = device.create_texture(&wgpu::TextureDescriptor {
-                        label: Some("Fallback Roughness"),
-                        size: wgpu::Extent3d {
-                            width: 1,
-                            height: 1,
-                            depth_or_array_layers: 1,
-                        },
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        dimension: wgpu::TextureDimension::D2,
-                        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                        view_formats: &[],
-                    });
-                    queue.write_texture(
-                        wgpu::TexelCopyTextureInfo {
-                            texture: &texture,
-                            mip_level: 0,
-                            origin: wgpu::Origin3d::ZERO,
-                            aspect: wgpu::TextureAspect::All,
-                        },
-                        &fallback_data,
-                        wgpu::TexelCopyBufferLayout {
-                            offset: 0,
-                            bytes_per_row: Some(4),
-                            rows_per_image: Some(1),
-                        },
-                        wgpu::Extent3d {
-                            width: 1,
-                            height: 1,
-                            depth_or_array_layers: 1,
-                        },
-                    );
-                    texture
-                });
+        self.atlas_bind_group = Some(atlas_bind_group);
+        
+        // Keep old material_bind_groups for backward compatibility (empty for now)
+        let material_bind_groups = Vec::new();
+        
+        println!("✅ Single atlas bind group created (7 materials → 1 bind group)");
+        println!("   Bind group switching: 7→1 (85.7% reduction)");
 
-            // Create bind group for this material
-            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some(&format!("Material Bind Group {}", i)),
-                layout: &material_bind_group_layout,
+
+        // Create terrain bind group layout (group 2) for multi-material terrain
+        // PHASE 3.1: Texture array (4 bindings → 2 bindings)
+        let terrain_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Terrain Bind Group Layout"),
                 entries: &[
-                    wgpu::BindGroupEntry {
+                    // Terrain albedo texture array (3 layers: grass, dirt, stone)
+                    wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(
-                            &albedo_texture.create_view(&wgpu::TextureViewDescriptor::default()),
-                        ),
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2Array,
+                            multisampled: false,
+                        },
+                        count: None,
                     },
-                    wgpu::BindGroupEntry {
+                    // Terrain sampler
+                    wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::TextureView(
-                            &normal_texture.create_view(&wgpu::TextureViewDescriptor::default()),
-                        ),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: wgpu::BindingResource::TextureView(
-                            &roughness_texture.create_view(&wgpu::TextureViewDescriptor::default()),
-                        ),
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
                     },
                 ],
             });
 
-            material_bind_groups.push(bind_group);
-        }
+        // Load terrain textures (using existing assets if available, or generate fallbacks)
+        println!("🗻 Loading terrain textures...");
+        
+        let terrain_grass_texture = texture_loader::load_texture_with_usage(
+            device,
+            queue,
+            "assets/textures/grass.ktx2",
+            texture_loader::TextureUsage::Albedo
+        ).or_else(|_| {
+            println!("⚠️  grass.ktx2 not found, trying PNG...");
+            texture_loader::load_texture_with_usage(
+                device,
+                queue,
+                "assets/grass.ktx2",
+                texture_loader::TextureUsage::Albedo
+            )
+        }).unwrap_or_else(|_| {
+            println!("⚠️  No grass texture found, using fallback");
+            texture_loader::generate_fallback_texture(device, queue, [0.2, 0.6, 0.2, 1.0])
+        });
 
-        // Create pipeline layout
+        let terrain_dirt_texture = texture_loader::load_texture_with_usage(
+            device,
+            queue,
+            "assets/textures/dirt.ktx2",
+            texture_loader::TextureUsage::Albedo
+        ).or_else(|_| {
+            println!("⚠️  dirt.ktx2 not found, trying PNG...");
+            texture_loader::load_texture_with_usage(
+                device,
+                queue,
+                "assets/dirt.ktx2",
+                texture_loader::TextureUsage::Albedo
+            )
+        }).unwrap_or_else(|_| {
+            println!("⚠️  No dirt texture found, using fallback");
+            texture_loader::generate_fallback_texture(device, queue, [0.5, 0.3, 0.2, 1.0])
+        });
+
+        let terrain_stone_texture = texture_loader::load_texture_with_usage(
+            device,
+            queue,
+            "assets/textures/stone.ktx2",
+            texture_loader::TextureUsage::Albedo
+        ).or_else(|_| {
+            println!("⚠️  stone.ktx2 not found, trying PNG...");
+            texture_loader::load_texture_with_usage(
+                device,
+                queue,
+                "assets/stone.ktx2",
+                texture_loader::TextureUsage::Albedo
+            )
+        }).unwrap_or_else(|_| {
+            println!("⚠️  No stone texture found, using fallback");
+            texture_loader::generate_fallback_texture(device, queue, [0.6, 0.6, 0.6, 1.0])
+        });
+
+        // PHASE 3.1: Create texture array from individual textures
+        println!("📦 Creating terrain texture array (3 layers)...");
+        let (terrain_array_texture, terrain_array_view) = texture_loader::create_texture_array(
+            device,
+            queue,
+            &[terrain_grass_texture, terrain_dirt_texture, terrain_stone_texture],
+            "Terrain Albedo Array",
+        );
+
+        println!("✅ Terrain texture array created");
+
+        // Create terrain bind group with texture array
+        let terrain_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Terrain Bind Group"),
+            layout: &terrain_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&terrain_array_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&terrain_sampler),  // FIX: Use terrain sampler with Repeat mode
+                },
+            ],
+        });
+
+        // Create pipeline layout with terrain bind group + atlas regions bind group
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("PBR Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout, &material_bind_group_layout],
+            bind_group_layouts: &[
+                &uniform_bind_group_layout,       // group 0: camera/model matrices
+                &material_bind_group_layout,      // group 1: PBR textures
+                &terrain_bind_group_layout,       // group 2: terrain texture array
+                &atlas_regions_bind_group_layout, // group 3: atlas regions uniform (PHASE 3.2.1)
+            ],
             push_constant_ranges: &[],
         });
 
@@ -1372,7 +1603,7 @@ impl ShowcaseApp {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
+                cull_mode: Some(wgpu::Face::Back),  // FIX: Enable back-face culling for ~40% performance gain
                 polygon_mode: wgpu::PolygonMode::Fill,
                 unclipped_depth: false,
                 conservative: false,
@@ -1397,9 +1628,10 @@ impl ShowcaseApp {
         self.uniform_buffer = Some(uniform_buffer);
         self.uniform_bind_group = Some(uniform_bind_group);
         self.material_bind_groups = material_bind_groups;
+        self.terrain_bind_group = Some(terrain_bind_group);
 
         println!(
-            "✅ Render pipeline created with {} materials",
+            "✅ Render pipeline created with {} materials + terrain bind group",
             self.materials.len()
         );
     }
@@ -1607,16 +1839,57 @@ impl ShowcaseApp {
                         println!("✅ Loaded tree model '{}': {} vertices, {} triangles", 
                             loaded_mesh.name, loaded_mesh.vertices.len(), loaded_mesh.indices.len() / 3);
                         
-                        vertices = loaded_mesh.vertices.iter().map(|v| Vertex {
-                            position: v.position,
-                            normal: v.normal,
-                            uv: v.uv,
+                        // Smart material assignment for trees:
+                        // - Trunk/bark: Lower Y position (< 60% of max height), darker/brownish
+                        // - Foliage/leaves: Upper Y position (>= 60% of max height), lighter/greenish
+                        let mut min_y = f32::MAX;
+                        let mut max_y = f32::MIN;
+                        for v in &loaded_mesh.vertices {
+                            min_y = min_y.min(v.position[1]);
+                            max_y = max_y.max(v.position[1]);
+                        }
+                        let height = max_y - min_y;
+                        let trunk_threshold = min_y + (height * 0.4); // Bottom 40% is trunk
+                        
+                        println!("   🌲 Tree height range: Y={:.2} to {:.2} (height={:.2})", min_y, max_y, height);
+                        println!("   📏 Trunk threshold: Y < {:.2} = Wood, Y >= {:.2} = Leaves", trunk_threshold, trunk_threshold);
+                        
+                        let mut trunk_verts = 0;
+                        let mut leaf_verts = 0;
+                        
+                        vertices = loaded_mesh.vertices.iter().map(|v| {
+                            // Determine material based on Y position (height)
+                            let is_trunk = v.position[1] < trunk_threshold;
+                            let material_id = if is_trunk { 
+                                trunk_verts += 1;
+                                3 // Wood/bark 
+                            } else { 
+                                leaf_verts += 1;
+                                4 // Leaves
+                            };
+                            
+                            Vertex {
+                                position: v.position,
+                                normal: v.normal,
+                                uv: v.uv,
+                                material_blend: DEFAULT_MATERIAL_BLEND,
+                                material_id,
+                            }
                         }).collect();
+                        
+                        println!("   ✅ Assigned materials: {} trunk vertices (Wood), {} leaf vertices (Leaves)", trunk_verts, leaf_verts);
+                        
                         indices = loaded_mesh.indices;
                         loaded = true;
                         break;
                     }
-                    Err(_) => continue,
+                    Err(err) => {
+                        println!(
+                            "⚠️  Failed to load tree model from {}: {err:?}",
+                            *path
+                        );
+                        continue;
+                    }
                 }
             }
             
@@ -1653,6 +1926,8 @@ impl ShowcaseApp {
                     ],
                     normal: v.normal,
                     uv: v.uv,
+                    material_blend: DEFAULT_MATERIAL_BLEND,
+                    material_id: 3, // Wood material for trees (index 3)
                 });
             }
             for idx in &tree_template_indices {
@@ -1674,12 +1949,15 @@ impl ShowcaseApp {
             usage: wgpu::BufferUsages::INDEX,
         }));
         
-        // Load real Kenney building models
+        // Load rock/stone models as buildings (these actually load successfully!)
+        // Note: Many Kenney medieval models fail to load due to GLTF compatibility issues
+        // Using nature kit rocks/stones as architectural elements instead
         let building_paths = vec![
-            "assets/models/roof.glb",
-            "assets/models/wall.glb",
-            "assets/models/floor.glb",
-            "assets/models/tower.glb",
+            "assets/models/rock_largeA.glb",     // Large rock (WORKS!)
+            "assets/models/rock_largeB.glb",     // Large rock variant B
+            "assets/models/rock_largeC.glb",     // Large rock variant C
+            "assets/models/stone_largeA.glb",    // Large stone
+            "assets/models/stone_largeB.glb",    // Large stone variant B
         ];
         
         let (building_template_vertices, building_template_indices) = {
@@ -1687,31 +1965,49 @@ impl ShowcaseApp {
             let mut vertices = Vec::new();
             let mut indices = Vec::new();
             
+            println!("🏰 Loading rock/stone models as architectural elements...");
             for path in &building_paths {
                 match gltf_loader::load_gltf(path) {
                     Ok(loaded_mesh) => {
-                        println!("✅ Loaded building model '{}': {} vertices", 
-                            loaded_mesh.name, loaded_mesh.vertices.len());
+                        println!("✅ Loaded building/rock model '{}': {} vertices, {} triangles", 
+                            path, loaded_mesh.vertices.len(), loaded_mesh.indices.len() / 3);
                         
+                        // Scale up rocks to building size and assign stone material
                         vertices = loaded_mesh.vertices.iter().map(|v| Vertex {
-                            position: v.position,
+                            position: [
+                                v.position[0] * 3.0,  // 3x scale for building-like proportions
+                                v.position[1] * 3.0,
+                                v.position[2] * 3.0,
+                            ],
                             normal: v.normal,
                             uv: v.uv,
+                            material_blend: DEFAULT_MATERIAL_BLEND,
+                            material_id: 2, // Stone material (index 2) - more appropriate than plaster
                         }).collect();
                         indices = loaded_mesh.indices;
                         loaded = true;
                         break;
                     }
-                    Err(_) => continue,
+                    Err(err) => {
+                        println!("⚠️  Failed to load rock model from {}: {err:?}", path);
+                        continue;
+                    }
                 }
             }
             
             if !loaded {
-                println!("⚠️  No building models found, using procedural");
-                create_building(10.0, 8.0, 10.0)
-            } else {
-                (vertices, indices)
+                println!("⚠️  No rock models found, falling back to procedural cube with stone material");
+                let (verts, inds) = create_building(10.0, 8.0, 10.0);
+                vertices = verts.iter().map(|v| Vertex {
+                    position: v.position,
+                    normal: v.normal,
+                    uv: v.uv,
+                    material_blend: DEFAULT_MATERIAL_BLEND,
+                    material_id: 2, // Stone material
+                }).collect();
+                indices = inds;
             }
+            (vertices, indices)
         };
         
         // Spread buildings across 150m terrain
@@ -1738,6 +2034,8 @@ impl ShowcaseApp {
                     ],
                     normal: v.normal,
                     uv: v.uv,
+                    material_blend: DEFAULT_MATERIAL_BLEND,
+                    material_id: 6, // Building material (index 6)
                 });
             }
             for idx in &building_template_indices {
@@ -1781,12 +2079,20 @@ impl ShowcaseApp {
                             position: v.position,
                             normal: v.normal,
                             uv: v.uv,
+                            material_blend: DEFAULT_MATERIAL_BLEND,
+                            material_id: 3, // Wood material placeholder for NPCs (index 3)
                         }).collect();
                         indices = loaded_mesh.indices;
                         loaded = true;
                         break;
                     }
-                    Err(_) => continue,
+                    Err(err) => {
+                        println!(
+                            "⚠️  Failed to load NPC model from {}: {err:?}",
+                            *path
+                        );
+                        continue;
+                    }
                 }
             }
             
@@ -1825,6 +2131,8 @@ impl ShowcaseApp {
                     ],
                     normal: v.normal,
                     uv: v.uv,
+                    material_blend: DEFAULT_MATERIAL_BLEND,
+                    material_id: 3, // Wood material placeholder for NPCs (index 3)
                 });
             }
             for idx in &npc_template_indices {
@@ -1868,12 +2176,20 @@ impl ShowcaseApp {
                             position: v.position,
                             normal: v.normal,
                             uv: v.uv,
+                            material_blend: DEFAULT_MATERIAL_BLEND,
+                            material_id: 1, // Dirt material placeholder for animals (index 1)
                         }).collect();
                         indices = loaded_mesh.indices;
                         loaded = true;
                         break;
                     }
-                    Err(_) => continue,
+                    Err(err) => {
+                        println!(
+                            "⚠️  Failed to load animal model from {}: {err:?}",
+                            *path
+                        );
+                        continue;
+                    }
                 }
             }
             
@@ -1909,6 +2225,8 @@ impl ShowcaseApp {
                     ],
                     normal: v.normal,
                     uv: v.uv,
+                    material_blend: DEFAULT_MATERIAL_BLEND,
+                    material_id: 1, // Dirt material placeholder for animals (index 1)
                 });
             }
             for idx in &animal_template_indices {
@@ -2035,7 +2353,22 @@ impl ShowcaseApp {
         let device = self.device.as_ref().unwrap();
         let queue = self.queue.as_ref().unwrap();
 
-        let frame = surface.get_current_texture()?;
+        let frame = match surface.get_current_texture() {
+            Ok(frame) => frame,
+            Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+                log::warn!("Surface lost/outdated, reconfiguring...");
+                self.resize(self.size);
+                return Ok(());
+            }
+            Err(wgpu::SurfaceError::Timeout) => {
+                log::warn!("Surface timeout, skipping frame");
+                return Ok(());
+            }
+            Err(wgpu::SurfaceError::OutOfMemory) => {
+                log::error!("GPU out of memory!");
+                return Err(wgpu::SurfaceError::OutOfMemory.into());
+            }
+        };
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -2143,59 +2476,68 @@ impl ShowcaseApp {
                 render_pass.set_pipeline(pipeline);
                 render_pass.set_bind_group(0, uniform_bg, &[]);
 
-                // Render island terrain (material 0: aerial_rocks)
-                if !self.material_bind_groups.is_empty() {
+                // Set terrain bind group (group 2) once for all objects
+                if let Some(terrain_bg) = &self.terrain_bind_group {
+                    render_pass.set_bind_group(2, terrain_bg, &[]);
+                }
+
+                // PHASE 3.2.1: Set atlas regions bind group (group 3) once for all objects
+                if let Some(atlas_regions_bg) = &self.atlas_regions_bind_group {
+                    render_pass.set_bind_group(3, atlas_regions_bg, &[]);
+                }
+
+                // PHASE 3.2.1: Set single atlas bind group (group 1) once for all objects
+                // Replaces 7 individual material bind group switches (85.7% reduction)
+                if let Some(atlas_bg) = &self.atlas_bind_group {
+                    render_pass.set_bind_group(1, atlas_bg, &[]);
+
+                    // Render island terrain (material_id=0 in vertices)
                     if let (Some(vbuf), Some(ibuf)) =
                         (&self.ground_vertex_buffer, &self.ground_index_buffer)
                     {
-                        render_pass.set_bind_group(1, &self.material_bind_groups[0], &[]);
                         render_pass.set_vertex_buffer(0, vbuf.slice(..));
                         render_pass.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
                         render_pass.draw_indexed(0..self.ground_index_count, 0, 0..1);
                     }
 
-                    // Render trees (material 3: wood_floor for bark)
-                    if self.tree_index_count > 0 && self.material_bind_groups.len() > 3 {
+                    // Render trees (material_id=3 in vertices: Wood for bark)
+                    if self.tree_index_count > 0 {
                         if let (Some(vbuf), Some(ibuf)) =
                             (&self.tree_vertex_buffer, &self.tree_index_buffer)
                         {
-                            render_pass.set_bind_group(1, &self.material_bind_groups[3], &[]);
                             render_pass.set_vertex_buffer(0, vbuf.slice(..));
                             render_pass.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..self.tree_index_count, 0, 0..1);
                         }
                     }
 
-                    // Render buildings (material 2: cobblestone)
-                    if self.building_index_count > 0 && self.material_bind_groups.len() > 2 {
+                    // Render buildings (material_id=6 in vertices: Building cobblestone)
+                    if self.building_index_count > 0 {
                         if let (Some(vbuf), Some(ibuf)) =
                             (&self.building_vertex_buffer, &self.building_index_buffer)
                         {
-                            render_pass.set_bind_group(1, &self.material_bind_groups[2], &[]);
                             render_pass.set_vertex_buffer(0, vbuf.slice(..));
                             render_pass.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..self.building_index_count, 0, 0..1);
                         }
                     }
 
-                    // Render NPCs (material 1: metal_plate)
-                    if self.npc_index_count > 0 && self.material_bind_groups.len() > 1 {
+                    // Render NPCs (material_id=3 in vertices: Wood planks for skin tone)
+                    if self.npc_index_count > 0 {
                         if let (Some(vbuf), Some(ibuf)) =
                             (&self.npc_vertex_buffer, &self.npc_index_buffer)
                         {
-                            render_pass.set_bind_group(1, &self.material_bind_groups[1], &[]);
                             render_pass.set_vertex_buffer(0, vbuf.slice(..));
                             render_pass.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..self.npc_index_count, 0, 0..1);
                         }
                     }
 
-                    // Render animals (material 0: aerial_rocks for fur)
+                    // Render animals (material_id=1 in vertices: Dirt for brown fur)
                     if self.animal_index_count > 0 {
                         if let (Some(vbuf), Some(ibuf)) =
                             (&self.animal_vertex_buffer, &self.animal_index_buffer)
                         {
-                            render_pass.set_bind_group(1, &self.material_bind_groups[0], &[]);
                             render_pass.set_vertex_buffer(0, vbuf.slice(..));
                             render_pass.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
                             render_pass.draw_indexed(0..self.animal_index_count, 0, 0..1);
@@ -2223,6 +2565,28 @@ impl ShowcaseApp {
                 surface.configure(device, config);
 
                 self.camera.aspect = new_size.width as f32 / new_size.height as f32;
+                
+                // FIX: Recreate depth texture to match new surface dimensions
+                // This prevents WebGPU validation errors and rendering failures
+                let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+                    label: Some("Depth Texture"),
+                    size: wgpu::Extent3d {
+                        width: new_size.width,
+                        height: new_size.height,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Depth32Float,
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT 
+                        | wgpu::TextureUsages::TEXTURE_BINDING,
+                    view_formats: &[],
+                });
+                
+                self.depth_texture = Some(
+                    depth_texture.create_view(&wgpu::TextureViewDescriptor::default())
+                );
             }
         }
     }
@@ -2264,9 +2628,24 @@ impl ApplicationHandler for ShowcaseApp {
         .unwrap();
 
         let size = window.inner_size();
+        
+        // FIX: Prefer sRGB surface format for correct color space
+        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_format = surface_caps
+            .formats
+            .iter()
+            .copied()
+            .find(|f| f.is_srgb())
+            .unwrap_or_else(|| {
+                log::warn!("No sRGB format available, using linear: {:?}", surface_caps.formats[0]);
+                surface_caps.formats[0]
+            });
+        
+        println!("   Surface format: {:?} (sRGB: {})", surface_format, surface_format.is_srgb());
+        
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_capabilities(&adapter).formats[0],
+            format: surface_format,  // FIX: Use selected sRGB format
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::Fifo,

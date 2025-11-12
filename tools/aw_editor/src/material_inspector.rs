@@ -538,6 +538,8 @@ impl MaterialInspector {
                         }
                     }
                 }
+                ReloadEvent::Prefab(_) => {}
+                ReloadEvent::Model(_) => {}
             }
         }
     }

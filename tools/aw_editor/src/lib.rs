@@ -4,12 +4,16 @@
 pub mod clipboard;
 pub mod command;
 pub mod component_ui;
+pub mod editor_mode;
 pub mod entity_manager;
+pub mod prefab;
 pub mod scene_serialization;
 pub mod ui;
 
+pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
 pub use command::{EditorCommand, UndoStack, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand};
+pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
 pub use scene_serialization::{SceneData, EntityData};
 pub use ui::StatusBar;
 

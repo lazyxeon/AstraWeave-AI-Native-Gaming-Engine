@@ -9,6 +9,13 @@ pub struct HierarchyNode {
     pub children: Vec<Entity>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum HierarchyAction {
+    CreatePrefab(Entity),
+    DeleteEntity(Entity),
+    DuplicateEntity(Entity),
+}
+
 pub struct HierarchyPanel {
     hierarchy: HashMap<Entity, HierarchyNode>,
     root_entities: Vec<Entity>,
@@ -22,6 +29,8 @@ pub struct HierarchyPanel {
     
     context_menu_entity: Option<Entity>,
     empty_node_counter: u32,
+    
+    pending_actions: Vec<HierarchyAction>,
 }
 
 impl HierarchyPanel {
@@ -36,7 +45,12 @@ impl HierarchyPanel {
             rename_buffer: String::new(),
             context_menu_entity: None,
             empty_node_counter: 0,
+            pending_actions: Vec::new(),
         }
+    }
+    
+    pub fn take_pending_actions(&mut self) -> Vec<HierarchyAction> {
+        std::mem::take(&mut self.pending_actions)
     }
     
     pub fn sync_with_world(&mut self, world: &World) {
@@ -258,10 +272,19 @@ impl HierarchyPanel {
                 }
                 
                 if ui.button("📋 Duplicate").clicked() {
+                    self.pending_actions.push(HierarchyAction::DuplicateEntity(entity));
                     ui.close();
                 }
                 
                 if ui.button("🗑️ Delete").clicked() {
+                    self.pending_actions.push(HierarchyAction::DeleteEntity(entity));
+                    ui.close();
+                }
+                
+                ui.separator();
+                
+                if ui.button("💾 Create Prefab").clicked() {
+                    self.pending_actions.push(HierarchyAction::CreatePrefab(entity));
                     ui.close();
                 }
                 

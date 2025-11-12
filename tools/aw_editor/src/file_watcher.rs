@@ -1,10 +1,12 @@
-//! File Watcher Module - Phase PBR-G Task 3
+//! File Watcher Module - Phase PBR-G Task 3 + Phase 4.3
 //!
-//! Provides automatic hot-reload capabilities for material files and textures.
+//! Provides automatic hot-reload capabilities for materials, textures, prefabs, and models.
 //!
 //! # Features
 //! - Watches `assets/materials/**/*.toml` for material definition changes
 //! - Watches texture files (`*.png`, `*.ktx2`, `*.dds`) referenced by materials
+//! - Watches `prefabs/**/*.prefab.ron` for prefab definition changes
+//! - Watches `assets/models/**/*.{glb,gltf}` for 3D model changes
 //! - Debouncing (500ms) to avoid duplicate events from editor saves
 //! - Thread-safe communication via channels (mpsc)
 //! - Graceful error handling (continues watching even if some events fail)
@@ -23,11 +25,17 @@
 //! // In MaterialInspector::new()
 //! let watcher = FileWatcher::new("assets/materials")?;
 //!
-//! // In MaterialInspector::show() or update()
+//! // In EditorApp::default()
+//! let prefab_watcher = FileWatcher::new("prefabs").ok();
+//! let model_watcher = FileWatcher::new("assets/models").ok();
+//!
+//! // In update loop
 //! while let Ok(event) = self.file_watcher.try_recv() {
 //!     match event {
 //!         ReloadEvent::Material(path) => self.reload_material(&path),
 //!         ReloadEvent::Texture(path) => self.reload_texture(&path),
+//!         ReloadEvent::Prefab(path) => self.reload_prefab(&path),
+//!         ReloadEvent::Model(path) => self.reload_model(&path),
 //!     }
 //! }
 //! ```
@@ -47,6 +55,10 @@ pub enum ReloadEvent {
     Material(PathBuf),
     /// A texture file changed (albedo/normal/ORM)
     Texture(PathBuf),
+    /// A prefab file changed
+    Prefab(PathBuf),
+    /// A model file changed (.glb, .gltf)
+    Model(PathBuf),
 }
 
 /// File watcher state with debouncing
@@ -133,7 +145,14 @@ impl FileWatcher {
 
         // Add each path to debounce buffer
         for path in event.paths {
-            if let Some(ext) = path.extension() {
+            let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            
+            if file_name.ends_with(".prefab.ron") {
+                let mut state = debounce_state.lock().unwrap();
+                state
+                    .buffer
+                    .insert(path.clone(), ReloadEvent::Prefab(path));
+            } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy().to_lowercase();
 
                 // Material TOML files
@@ -152,6 +171,13 @@ impl FileWatcher {
                     state
                         .buffer
                         .insert(path.clone(), ReloadEvent::Texture(path));
+                }
+                // Model files
+                else if matches!(ext_str.as_str(), "glb" | "gltf") {
+                    let mut state = debounce_state.lock().unwrap();
+                    state
+                        .buffer
+                        .insert(path.clone(), ReloadEvent::Model(path));
                 }
             }
         }
