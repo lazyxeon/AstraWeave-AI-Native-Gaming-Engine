@@ -62,6 +62,11 @@ pub use types::{Instance, Material, SkinnedVertex};
 pub mod effects; // NEW
 pub mod overlay; // NEW (for cutscene fades/letterbox later)
 pub mod transparency; // Transparency depth sorting and render pass
+pub mod msaa; // MSAA anti-aliasing resources
+pub mod gpu_particles; // GPU compute-based particle system
+pub mod decals; // Screen-space decal system
+pub mod deferred; // Deferred rendering pipeline
+pub mod advanced_post; // Advanced post-processing (TAA, motion blur, DOF, color grading)
 
 pub use culling::{
     batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId,
@@ -70,6 +75,13 @@ pub use culling::{
 pub use culling_node::CullingNode;
 pub use effects::{WeatherFx, WeatherKind};
 pub use transparency::{BlendMode, TransparencyManager, TransparentInstance, create_blend_state};
+pub use msaa::{MsaaMode, MsaaRenderTarget, create_msaa_depth_texture};
+pub use gpu_particles::{GpuParticleSystem, GpuParticle, EmitterParams};
+pub use decals::{DecalSystem, Decal, DecalAtlas, DecalBlendMode, GpuDecal, DECAL_SHADER};
+pub use deferred::{DeferredRenderer, GBuffer, GBufferFormats};
+pub use advanced_post::{
+    AdvancedPostFx, TaaConfig, MotionBlurConfig, DofConfig, ColorGradingConfig,
+};
 pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
 pub use material::{
     ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,

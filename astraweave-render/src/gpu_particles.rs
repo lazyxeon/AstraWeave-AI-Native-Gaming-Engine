@@ -1,8 +1,7 @@
 // GPU Compute-Based Particle System
 // High-performance particle simulation using compute shaders
 
-use anyhow::{Context, Result};
-use glam::{Vec3, Vec4};
+use anyhow::Result;
 use wgpu;
 
 /// GPU particle structure (32 bytes, 16-byte aligned)
@@ -59,10 +58,12 @@ pub struct GpuParticleSystem {
     /// Compute pipeline for particle update
     update_pipeline: wgpu::ComputePipeline,
     
-    /// Compute pipeline for particle emission
+    /// Compute pipeline for particle emission (reserved for future use)
+    #[allow(dead_code)]
     emit_pipeline: wgpu::ComputePipeline,
     
-    /// Bind group layout
+    /// Bind group layout (used in new())
+    #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
     
     /// Bind groups (ping-pong)

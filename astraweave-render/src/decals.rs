@@ -1,7 +1,7 @@
 // Screen-Space Decal System
 // Implements deferred decal rendering with projection matrices and atlas management
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use glam::{Mat4, Quat, Vec3};
 use wgpu;
 

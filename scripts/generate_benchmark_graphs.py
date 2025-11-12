@@ -71,8 +71,11 @@ def plot_heatmap(df, out_dir, max_benchmarks=30, max_columns=48):
     # Create display name mapping
     display_map = {}
     if 'display_name' in df_sorted.columns:
-        for _, row in df_sorted.groupby('benchmark_name').first().iterrows():
-            display_map[row['benchmark_name']] = row.get('display_name', row['benchmark_name']) if not pd.isna(row.get('display_name')) else row['benchmark_name']
+        # Group by benchmark_name and get first row for each group
+        for bench_name, group in df_sorted.groupby('benchmark_name'):
+            first_row = group.iloc[0]
+            display_name = first_row.get('display_name', bench_name)
+            display_map[bench_name] = display_name if not pd.isna(display_name) else bench_name
     else:
         display_map = {name: name for name in df_sorted['benchmark_name'].unique()}
     

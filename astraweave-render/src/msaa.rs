@@ -3,7 +3,7 @@
 // Provides configurable MSAA support for render pipelines with automatic
 // MSAA texture management and resolve operations.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use wgpu;
 
 /// MSAA sample count configuration
