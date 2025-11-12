@@ -920,43 +920,43 @@ impl Default for ShowcaseApp {
             materials: vec![
                 Material {
                     name: "Grass".to_string(),
-                    albedo_path: "assets/textures/texture-d.png".to_string(),  // Try texture-d for grass
-                    normal_path: "assets/materials/grass_n.png".to_string(),
-                    mra_path: "assets/materials/grass_mra.png".to_string(),
+                    albedo_path: "assets/textures/texture-d.png".to_string(),
+                    normal_path: "assets/grass_n.png".to_string(),  // FIX: Correct path
+                    mra_path: "assets/grass_mra.png".to_string(),    // FIX: Correct path
                 },
                 Material {
                     name: "Dirt".to_string(),
-                    albedo_path: "assets/textures/texture-f.png".to_string(),  // Try texture-f for dirt
-                    normal_path: "assets/materials/dirt_n.png".to_string(),
-                    mra_path: "assets/materials/dirt_mra.png".to_string(),
+                    albedo_path: "assets/textures/texture-f.png".to_string(),
+                    normal_path: "assets/dirt_n.png".to_string(),    // FIX: Correct path
+                    mra_path: "assets/dirt_mra.png".to_string(),     // FIX: Correct path
                 },
                 Material {
                     name: "Stone".to_string(),
-                    albedo_path: "assets/textures/cobblestone.png".to_string(),  // Keep cobblestone
-                    normal_path: "assets/materials/stone_n.png".to_string(),
-                    mra_path: "assets/materials/stone_mra.png".to_string(),
+                    albedo_path: "assets/textures/cobblestone.png".to_string(),
+                    normal_path: "assets/stone_n.png".to_string(),   // FIX: Correct path
+                    mra_path: "assets/stone_mra.png".to_string(),    // FIX: Correct path
                 },
                 Material {
                     name: "Wood".to_string(),
-                    albedo_path: "assets/textures/planks.png".to_string(),  // Keep wood planks
+                    albedo_path: "assets/textures/planks.png".to_string(),
                     normal_path: "assets/materials/tree_bark_n.png".to_string(),
                     mra_path: "assets/materials/tree_bark_mra.png".to_string(),
                 },
                 Material {
                     name: "Leaves".to_string(),
-                    albedo_path: "assets/textures/texture-j.png".to_string(),  // Try texture-j for leaves (might be green)
+                    albedo_path: "assets/textures/texture-j.png".to_string(),
                     normal_path: "assets/materials/tree_leaves_n.png".to_string(),
                     mra_path: "assets/materials/tree_leaves_mra.png".to_string(),
                 },
                 Material {
                     name: "Roof".to_string(),
-                    albedo_path: "assets/textures/roof.png".to_string(),  // Keep roof
+                    albedo_path: "assets/textures/roof.png".to_string(),
                     normal_path: "assets/materials/roof_tile_n.png".to_string(),
                     mra_path: "assets/materials/roof_tile_mra.png".to_string(),
                 },
                 Material {
                     name: "Building".to_string(),
-                    albedo_path: "assets/textures/cobblestonePainted.png".to_string(),  // Keep painted stone
+                    albedo_path: "assets/textures/cobblestonePainted.png".to_string(),
                     normal_path: "assets/materials/plaster_n.png".to_string(),
                     mra_path: "assets/materials/plaster_mra.png".to_string(),
                 },

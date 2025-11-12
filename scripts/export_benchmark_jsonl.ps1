@@ -180,6 +180,21 @@ function Export-BenchmarkResults {
     return $exportCount
 }
 
+function Write-Metadata {
+    param([string]$HistoryFile, [string]$OutputDir)
+    if (-not (Test-Path $HistoryFile)) { return }
+    $lines = Get-Content $HistoryFile | Where-Object { $_ -ne '' }
+    $total = $lines.Count
+
+    $dates = $lines | ForEach-Object { ($_ | ConvertFrom-Json).timestamp } | Sort-Object
+    $oldest = $dates | Select-Object -First 1
+    $newest = $dates | Select-Object -Last 1
+
+    $meta = @{ generated_at = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); total_snapshots = $total; oldest = $oldest; newest = $newest }
+    $meta | ConvertTo-Json -Compress | Set-Content -Path (Join-Path $OutputDir 'metadata.json') -Encoding utf8
+    Write-Log "Wrote metadata to $OutputDir/metadata.json" "SUCCESS"
+}
+
 function Rotate-OldEntries {
     param([string]$HistoryFile, [int]$MaxAgeDays)
     
@@ -248,6 +263,10 @@ if ($count -gt 0) {
     
     $fileSize = (Get-Item $OutputFile).Length
     Write-Log "History file size: $([math]::Round($fileSize / 1KB, 2)) KB" "SUCCESS"
+
+    # Write small metadata JSON to the output directory for dashboard summaries
+    $outputDir = Split-Path $OutputFile -Parent
+    Write-Metadata -HistoryFile $OutputFile -OutputDir $outputDir
     
     Write-Log ""
     Write-Log "Next steps:"
