@@ -62,6 +62,17 @@ jobs:
       - name: Export Benchmark JSONL
         run: |
           pwsh -File scripts/export_benchmark_jsonl.ps1 -Verbose
+
+      - name: Install Python dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip
+          python3 -m pip install --upgrade pip
+          python3 -m pip install pandas matplotlib seaborn
+
+      - name: Generate static benchmark graphs
+        run: |
+          python3 scripts/generate_benchmark_graphs.py --input target/benchmark-data/history.jsonl --out-dir gh-pages/graphs || true
       
       - name: Check for Regressions
         id: regression-check
@@ -74,11 +85,19 @@ jobs:
           mkdir -p gh-pages
           cp tools/benchmark-dashboard/index.html gh-pages/
           cp tools/benchmark-dashboard/dashboard.js gh-pages/
+          mkdir -p gh-pages/graphs
+          if [ -d gh-pages/graphs ]; then
+            echo 'Copying generated graphs to GH Pages folder' && ls -la gh-pages/graphs || true
+          fi
           
           # Copy benchmark data
           mkdir -p gh-pages/benchmark-data
           if [ -f target/benchmark-data/history.jsonl ]; then
             cp target/benchmark-data/history.jsonl gh-pages/benchmark-data/
+          fi
+          # Copy static graphs if present
+          if [ -d gh-pages/graphs ]; then
+            cp -r gh-pages/graphs gh-pages/
           fi
           
           # Create README for gh-pages
