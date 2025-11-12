@@ -5,6 +5,7 @@ edition = "2021"
 license.workspace = true
 publish = false
 default-run = "unified_showcase"
+autobins = false
 
 [dependencies]
 anyhow = { workspace = true }

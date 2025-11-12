@@ -73,6 +73,12 @@ jobs:
       - name: Generate static benchmark graphs
         run: |
           python3 scripts/generate_benchmark_graphs.py --input target/benchmark-data/history.jsonl --out-dir gh-pages/graphs || true
+
+      - name: Export GH-Pages history to JSONL (backup to docs)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          bash scripts/export_benchmark_history.sh || true
       
       - name: Check for Regressions
         id: regression-check
@@ -98,6 +104,19 @@ jobs:
           # Copy static graphs if present
           if [ -d gh-pages/graphs ]; then
             cp -r gh-pages/graphs gh-pages/
+          fi
+
+      - name: Verify static graphs present
+        run: |
+          if [ -d gh-pages/graphs ]; then
+            COUNT=$(ls gh-pages/graphs | wc -l)
+            if [ "$COUNT" -gt 0 ]; then
+              echo "Found $COUNT graph(s) to be deployed";
+            else
+              echo "Warning: No graphs were generated";
+            fi
+          else
+            echo "Warning: gh-pages/graphs directory not found";
           fi
           
           # Create README for gh-pages
@@ -192,6 +211,10 @@ jobs:
           if [ -f target/benchmark-data/history.jsonl ]; then
             ENTRY_COUNT=$(wc -l < target/benchmark-data/history.jsonl)
             echo "**Benchmark Entries**: $ENTRY_COUNT" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -d gh-pages/graphs ]; then
+            GRAPH_COUNT=$(ls gh-pages/graphs | wc -l)
+            echo "**Static Graphs Generated**: $GRAPH_COUNT" >> $GITHUB_STEP_SUMMARY
           fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
