@@ -93,7 +93,19 @@ async function loadBenchmarkData() {
             return entry;
         });
         
-        console.log(`Loaded ${benchmarkData.length} benchmark entries from ${sourceUsed}`);
+        console.log(`Loaded ${benchmarkData.length} benchmark entries (raw) from ${sourceUsed}`);
+        
+        // Deduplicate entries (same benchmark + timestamp = duplicate)
+        const dedupeMap = new Map();
+        benchmarkData.forEach(entry => {
+            const key = `${entry.benchmark_name}_${entry.timestamp.getTime()}`;
+            if (!dedupeMap.has(key)) {
+                dedupeMap.set(key, entry);
+            }
+        });
+        
+        benchmarkData = Array.from(dedupeMap.values());
+        console.log(`After deduplication: ${benchmarkData.length} unique entries`);
         
         // Sort by timestamp (oldest first for charting)
         benchmarkData.sort((a, b) => a.timestamp - b.timestamp);
@@ -111,11 +123,18 @@ async function loadBenchmarkData() {
 function updateFilters() {
     const benchmarkSelect = document.getElementById('benchmark-select');
     
-    // Get unique benchmark names with their display names
-    const uniqueBenchmarks = [...new Set(benchmarkData.map(d => ({
-        name: d.benchmark_name,
-        display: d.display_name || d.benchmark_name
-    })))].sort((a, b) => a.display.localeCompare(b.display));
+    // Get unique benchmark names with their display names using Map for proper deduplication
+    const benchmarkMap = new Map();
+    benchmarkData.forEach(d => {
+        if (!benchmarkMap.has(d.benchmark_name)) {
+            benchmarkMap.set(d.benchmark_name, d.display_name || d.benchmark_name);
+        }
+    });
+    
+    // Convert to array and sort by display name
+    const uniqueBenchmarks = Array.from(benchmarkMap.entries())
+        .map(([name, display]) => ({ name, display }))
+        .sort((a, b) => a.display.localeCompare(b.display));
     
     benchmarkSelect.innerHTML = '<option value="all">All Benchmarks</option>';
     

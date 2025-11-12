@@ -269,15 +269,15 @@ fn write_texture_with_mipmaps(
         mip_data_vec.push(mip_data);
     }
 
-    // Build KTX2 file manually since the API is unclear
-    // For now, write a simpler format that can be loaded later
-    // TODO: Use proper KTX2 builder API when available or use libktx-rs
+    // Build custom .awtex2 file format (not KTX2)
+    // Note: This is a custom AstraWeave texture format, not standard KTX2
+    // For standard KTX2, use libktx-rs or ktx2 crate
+    // Extension should be .awtex2 to avoid confusion with real KTX2 files
 
-    // Temporary solution: write raw data with a simple header
     let mut output_data = Vec::new();
 
-    // Write a simple custom format header (to be replaced with proper KTX2)
-    output_data.extend_from_slice(b"AW_TEX2\0"); // Magic number
+    // Write custom format header
+    output_data.extend_from_slice(b"AWTEX2\0\0"); // Magic number (8 bytes aligned)
     output_data.extend_from_slice(&(vk_format as u32).to_le_bytes());
     output_data.extend_from_slice(&base_width.to_le_bytes());
     output_data.extend_from_slice(&base_height.to_le_bytes());
@@ -293,7 +293,7 @@ fn write_texture_with_mipmaps(
         .with_context(|| format!("Failed to write texture file: {}", output_path.display()))?;
 
     println!(
-        "[tex2] Written {} with {} mips, format={}, colorspace={:?}",
+        "[awtex2] Written {} with {} mips, format={}, colorspace={:?} (custom AstraWeave format, not KTX2)",
         output_path.display(),
         mipmaps.len(),
         vk_format,

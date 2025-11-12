@@ -209,6 +209,19 @@ function Export-BenchmarkResults {
         Write-Log "Created output directory: $outputDir"
     }
     
+    # Load existing entries to avoid duplicates
+    $existingEntries = @{}
+    if (Test-Path $OutputPath) {
+        Get-Content $OutputPath | ForEach-Object {
+            try {
+                $entry = $_ | ConvertFrom-Json
+                $key = "$($entry.timestamp)_$($entry.benchmark_name)"
+                $existingEntries[$key] = $true
+            } catch { }
+        }
+        Write-Log "Loaded $($existingEntries.Count) existing entries for deduplication"
+    }
+    
     # Get git metadata
     $git = Get-GitMetadata
     $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
@@ -217,7 +230,10 @@ function Export-BenchmarkResults {
     $benchmarkDirs = Get-ChildItem -Path $BenchmarkRoot -Recurse -Filter "estimates.json" -File |
                      Where-Object { $_.DirectoryName -match '[/\\]base$' }
     
+    Write-Log "Found $($benchmarkDirs.Count) benchmark result directories"
+    
     $exportCount = 0
+    $skippedCount = 0
     $entries = @()
     
     foreach ($estimatesFile in $benchmarkDirs) {
@@ -278,6 +294,16 @@ function Export-BenchmarkResults {
             continue
         }
         
+        # Check for duplicate entry
+        $entryKey = "${timestamp}_${fullName}"
+        if ($existingEntries.ContainsKey($entryKey)) {
+            if ($Verbose) {
+                Write-Log "Skipping duplicate: $displayName" "WARN"
+            }
+            $skippedCount++
+            continue
+        }
+        
         # Create JSONL entry
         $entry = @{
             timestamp = $timestamp
@@ -296,22 +322,31 @@ function Export-BenchmarkResults {
         
         $entries += $entry
         $exportCount++
+        $existingEntries[$entryKey] = $true
         
         if ($Verbose) {
             Write-Log "Exported: $displayName = $($stats.mean_ns) ns"
         }
     }
     
-    if ($exportCount -eq 0) {
+    if ($exportCount -eq 0 -and $skippedCount -eq 0) {
         Write-Log "No benchmark results found in $BenchmarkRoot" "WARN"
         Write-Log "Run 'cargo bench' to generate data" "WARN"
         return 0
     }
     
-    # Append to history file (JSONL = one JSON object per line)
-    $entries | Out-File -FilePath $OutputPath -Append -Encoding utf8
+    if ($skippedCount -gt 0) {
+        Write-Log "Skipped $skippedCount duplicate entries (already in history)" "SUCCESS"
+    }
     
-    Write-Log "Exported $exportCount benchmark results to $OutputPath" "SUCCESS"
+    # Append to history file (JSONL = one JSON object per line)
+    if ($entries.Count -gt 0) {
+        $entries | Out-File -FilePath $OutputPath -Append -Encoding utf8
+        Write-Log "Exported $exportCount new benchmark results to $OutputPath" "SUCCESS"
+    }
+    else {
+        Write-Log "No new benchmarks to export (all $skippedCount entries were duplicates)" "SUCCESS"
+    }
     
     # Rotate old entries (keep last N days)
     Rotate-OldEntries -HistoryFile $OutputPath -MaxAgeDays $MaxAgeDays

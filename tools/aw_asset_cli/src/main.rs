@@ -302,6 +302,27 @@ fn process_texture(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf
         out.clone()
     };
     // Prefer toktx; fallback basisu; fallback copy
+    // Check for compression tools and fail hard if missing
+    let has_toktx = which("toktx").is_ok();
+    let has_basisu = which("basisu").is_ok();
+    
+    if !has_toktx && !has_basisu {
+        return Err(anyhow!(
+            "No texture compression tools found in PATH.\n\
+            \n\
+            Install one of:\n\
+            1. toktx (Khronos KTX-Software)\n\
+               - Download: https://github.com/KhronosGroup/KTX-Software/releases\n\
+               - Provides: KTX2 creation with UASTC/BC7/ASTC compression\n\
+            \n\
+            2. basisu (Basis Universal)\n\
+               - Download: https://github.com/BinomialLLC/basis_universal/releases\n\
+               - Provides: .basis compression (transcodes to multiple formats)\n\
+            \n\
+            After installation, ensure the tool is in your system PATH."
+        ));
+    }
+    
     if let Ok(toktx) = which("toktx") {
         // BasisU UASTC KTX2 with Zstd
         let status = Command::new(toktx)
