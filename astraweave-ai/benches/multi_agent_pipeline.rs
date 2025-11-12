@@ -17,6 +17,7 @@
 
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
 use astraweave_core::{
+use glam::ivec2;
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
 };
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -32,7 +33,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
     let enemies: Vec<EnemyState> = (0..enemy_count)
         .map(|i| EnemyState {
             id: (agent_id * 1000 + i) as u32,
-            pos: IVec2::new(50 + (i as i32) * 5, 50 + (i as i32) * 5),
+            pos: glam::ivec2(50 + (i as i32) * 5, 50 + (i as i32) * 5),
             hp: 80,
             cover: "none".to_string(),
             last_seen: 0.0,
@@ -49,7 +50,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
         },
         player: PlayerState {
             hp: 100,
-            pos: IVec2::new(0, 0),
+            pos: glam::ivec2(0, 0),
             stance: "stand".into(),
             orders: vec!["attack".to_string()],
         },
@@ -64,7 +65,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
 fn perception_phase(agent_count: usize, enemies_per_agent: usize) -> Vec<WorldSnapshot> {
     (0..agent_count)
         .map(|i| {
-            let agent_pos = IVec2::new((i as i32) * 10, (i as i32) * 10);
+            let agent_pos = glam::ivec2((i as i32) * 10, (i as i32) * 10);
             create_agent_snapshot(i, agent_pos, enemies_per_agent)
         })
         .collect()

@@ -6,7 +6,7 @@ use astraweave_core::{IVec2, WorldSnapshot, PlayerState, CompanionState, EnemySt
 use std::collections::BTreeMap;
 
 #[cfg(feature = "planner_advanced")]
-use astraweave_ai::goap::*;
+use astraweave_behavior::goap::*;
 
 #[cfg(feature = "planner_advanced")]
 fn create_test_snapshot(enemy_count: usize, distance: i32) -> WorldSnapshot {

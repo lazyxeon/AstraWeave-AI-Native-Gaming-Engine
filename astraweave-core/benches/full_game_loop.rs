@@ -155,14 +155,7 @@ fn bench_frame_scaling(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(
-    benches,
-    bench_single_frame,
-    bench_multi_frame,
-    bench_frame_scaling
-);
-
-criterion_main!(benches);
+// Merged with second criterion_group below (avoiding duplicate benches name)
 
 // ============================================================================
 // Helper Functions
@@ -465,6 +458,9 @@ fn bench_rendering_prep(c: &mut Criterion) {
 
 criterion_group!(
     benches,
+    bench_single_frame,
+    bench_multi_frame,
+    bench_frame_scaling,
     bench_full_game_loop,
     bench_perception_stage,
     bench_planning_stage,
