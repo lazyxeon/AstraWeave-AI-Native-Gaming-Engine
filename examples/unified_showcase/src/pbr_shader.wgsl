@@ -246,3 +246,37 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     
     return vec4<f32>(final_color, 1.0);
 }
+
+// PHASE 4.3: Transparent fragment shader with alpha cutoff (for foliage/glass)
+@fragment
+fn fs_main_transparent(in: VertexOutput) -> @location(0) vec4<f32> {
+    // Standard object: Use material atlas with remapped UVs
+    let atlas_uv = remap_atlas_uv(in.uv, in.material_id);
+    let albedo_sample = textureSample(albedo_texture, texture_sampler, atlas_uv);
+    
+    // Alpha test: discard fragments with alpha < 0.5
+    if albedo_sample.a < 0.5 {
+        discard;
+    }
+    
+    let albedo = albedo_sample.rgb;
+    
+    // Sample normal and roughness from atlas
+    let normal_sample = textureSample(normal_texture, texture_sampler, atlas_uv).rgb;
+    
+    // FIX: MRA packing (Metallic-Roughness-AO)
+    let mra_sample = textureSample(roughness_texture, texture_sampler, atlas_uv);
+    let roughness = mra_sample.g;
+    
+    // Apply normal map
+    let normal = apply_normal_map(in.world_normal, in.world_tangent, normal_sample);
+    
+    // Calculate lighting
+    let view_dir = normalize(uniforms.camera_pos - in.world_position);
+    let light_dir = normalize(vec3<f32>(0.3, 0.8, 0.4)); // Directional light
+    
+    let final_color = simple_pbr(albedo, normal, roughness, view_dir, light_dir);
+    
+    return vec4<f32>(final_color, albedo_sample.a);
+}
+

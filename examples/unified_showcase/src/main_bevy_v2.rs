@@ -864,10 +864,13 @@ struct ShowcaseApp {
 
     // Rendering resources
     render_pipeline: Option<wgpu::RenderPipeline>,
+    transparent_pipeline: Option<wgpu::RenderPipeline>,  // PHASE 4.3: Alpha-tested pipeline for foliage
     uniform_buffer: Option<wgpu::Buffer>,
     uniform_bind_group: Option<wgpu::BindGroup>,
     material_bind_groups: Vec<wgpu::BindGroup>,  // DEPRECATED: Will be replaced by atlas_bind_group
     atlas_texture: Option<wgpu::Texture>,         // PHASE 3.2.1: Material atlas texture
+    atlas_normal_texture: Option<wgpu::Texture>,  // PHASE 4.1: Normal map atlas
+    atlas_mra_texture: Option<wgpu::Texture>,     // PHASE 4.1: MRA (Metallic-Roughness-AO) atlas
     atlas_bind_group: Option<wgpu::BindGroup>,    // PHASE 3.2.1: Single atlas bind group (group 1)
     terrain_bind_group: Option<wgpu::BindGroup>,
     atlas_regions_uniform_buffer: Option<wgpu::Buffer>,  // PHASE 3.2.1: Atlas regions uniform (group 3)
@@ -978,10 +981,13 @@ impl Default for ShowcaseApp {
             ],
             current_hdri: 0,
             render_pipeline: None,
+            transparent_pipeline: None,  // PHASE 4.3
             uniform_buffer: None,
             uniform_bind_group: None,
             material_bind_groups: Vec::new(),
             atlas_texture: None,           // PHASE 3.2.1
+            atlas_normal_texture: None,    // PHASE 4.1
+            atlas_mra_texture: None,       // PHASE 4.1
             atlas_bind_group: None,        // PHASE 3.2.1
             terrain_bind_group: None,
             atlas_regions_uniform_buffer: None,  // PHASE 3.2.1
@@ -1482,24 +1488,84 @@ impl ShowcaseApp {
         println!("✅ Atlas regions uniform buffer created ({} regions, {} bytes)",
             self.atlas_regions.len(), atlas_regions_bytes.len());
         
-        // PHASE 3.2.1: Create single atlas bind group (replaces 7 material bind groups)
-        println!("📦 Creating single atlas bind group...");
+        // PHASE 4.1: Create normal map atlas (same as albedo)
+        println!("📦 Creating normal map atlas (7 materials)...");
         
-        // TEMPORARY FIX: Use fallback normal/roughness textures
-        // TODO Phase 3.3: Atlas normal and roughness maps like we did for albedo
-        // Currently all materials share ONE normal map, causing incorrect lighting
-        // Using fallback (flat normal, medium roughness) until proper atlas is implemented
-        println!("⚠️  Using fallback normal/roughness (TODO: atlas these like albedo)");
+        let mut normal_atlas_builder = atlas_packer::AtlasBuilder::new(atlas_config);
         
-        let normal_texture = texture_loader::create_fallback_texture(
-            device, queue, texture_loader::TextureUsage::Normal
+        for (i, material) in self.materials.iter().enumerate() {
+            println!("  📌 Loading material {} normal: {}", i, material.name);
+            println!("     Path: {}", material.normal_path);
+            
+            let normal_img = image::open(&material.normal_path)
+                .unwrap_or_else(|e| {
+                    println!("    ⚠️  Failed to load {}: {}", material.normal_path, e);
+                    println!("    Using fallback flat normal for material {}", i);
+                    // Create 256x256 flat normal map (128, 128, 255 = pointing up in tangent space)
+                    DynamicImage::ImageRgba8(
+                        image::ImageBuffer::from_fn(256, 256, |_, _| image::Rgba([128, 128, 255, 255]))
+                    )
+                });
+            
+            let rgba = normal_img.to_rgba8();
+            let (width, height) = rgba.dimensions();
+            println!("     Loaded: {}×{}", width, height);
+            
+            normal_atlas_builder.add_material(i as u32, &rgba.into_raw(), width, height);
+        }
+        
+        let (normal_atlas_texture, _) = normal_atlas_builder.build(
+            device,
+            queue,
+            "Material Normal Atlas"
         );
         
-        let roughness_texture = texture_loader::create_fallback_texture(
-            device, queue, texture_loader::TextureUsage::MRA
+        self.atlas_normal_texture = Some(normal_atlas_texture);
+        println!("✅ Normal map atlas created ({}×{})", atlas_config.atlas_size, atlas_config.atlas_size);
+        
+        // PHASE 4.1: Create MRA atlas (Metallic-Roughness-AO)
+        println!("📦 Creating MRA atlas (7 materials)...");
+        
+        let mut mra_atlas_builder = atlas_packer::AtlasBuilder::new(atlas_config);
+        
+        for (i, material) in self.materials.iter().enumerate() {
+            println!("  📌 Loading material {} MRA: {}", i, material.name);
+            println!("     Path: {}", material.mra_path);
+            
+            let mra_img = image::open(&material.mra_path)
+                .unwrap_or_else(|e| {
+                    println!("    ⚠️  Failed to load {}: {}", material.mra_path, e);
+                    println!("    Using fallback MRA for material {}", i);
+                    // Create 256x256 MRA: default to non-metallic (0), medium roughness (128), full AO (255)
+                    DynamicImage::ImageRgba8(
+                        image::ImageBuffer::from_fn(256, 256, |_, _| image::Rgba([0, 128, 255, 255]))
+                    )
+                });
+            
+            let rgba = mra_img.to_rgba8();
+            let (width, height) = rgba.dimensions();
+            println!("     Loaded: {}×{}", width, height);
+            
+            mra_atlas_builder.add_material(i as u32, &rgba.into_raw(), width, height);
+        }
+        
+        let (mra_atlas_texture, _) = mra_atlas_builder.build(
+            device,
+            queue,
+            "Material MRA Atlas"
         );
+        
+        self.atlas_mra_texture = Some(mra_atlas_texture);
+        println!("✅ MRA atlas created ({}×{})", atlas_config.atlas_size, atlas_config.atlas_size);
+        
+        // PHASE 4.1: Create single atlas bind group with all three atlases
+        println!("📦 Creating single atlas bind group with albedo/normal/MRA atlases...");
 
-        // Create single atlas bind group using the atlas texture
+
+        // PHASE 4.1: Create single atlas bind group with all three atlases
+        println!("📦 Creating single atlas bind group with albedo/normal/MRA atlases...");
+
+        // Create single atlas bind group using the atlas textures (albedo, normal, MRA)
         let atlas_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Atlas Bind Group"),
             layout: &material_bind_group_layout,
@@ -1517,13 +1583,13 @@ impl ShowcaseApp {
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(
-                        &normal_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                        &self.atlas_normal_texture.as_ref().unwrap().create_view(&wgpu::TextureViewDescriptor::default()),
                     ),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(
-                        &roughness_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                        &self.atlas_mra_texture.as_ref().unwrap().create_view(&wgpu::TextureViewDescriptor::default()),
                     ),
                 },
             ],
@@ -1534,8 +1600,10 @@ impl ShowcaseApp {
         // Keep old material_bind_groups for backward compatibility (empty for now)
         let material_bind_groups = Vec::new();
         
-        println!("✅ Single atlas bind group created (7 materials → 1 bind group)");
+        println!("✅ Single atlas bind group created with albedo/normal/MRA atlases");
+        println!("   Materials: 7 → Atlas regions: {} → Bind groups: 1", self.atlas_regions.len());
         println!("   Bind group switching: 7→1 (85.7% reduction)");
+        println!("   Texture slots: albedo atlas + normal atlas + MRA atlas = 3 textures for all 7 materials");
 
         // Helper function to create terrain material texture arrays with fallbacks
         let create_terrain_material_array = |device: &wgpu::Device,
@@ -1842,6 +1910,57 @@ impl ShowcaseApp {
         });
 
         self.render_pipeline = Some(render_pipeline);
+        
+        // PHASE 4.3: Create transparent pipeline for foliage/glass (alpha-tested)
+        println!("📦 Creating transparent pipeline (alpha-tested)...");
+        
+        let transparent_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Transparent Pipeline (Alpha-Tested)"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[Vertex::desc()],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main_transparent"),  // Uses alpha cutoff shader variant
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),  // Enable alpha blending
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,  // Disable culling for transparent geometry (render both sides)
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: false,  // Don't write depth for transparent objects
+                depth_compare: wgpu::CompareFunction::Less,  // But still depth test
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: true,  // Better alpha-tested edges
+            },
+            multiview: None,
+            cache: None,
+        });
+        
+        self.transparent_pipeline = Some(transparent_pipeline);
+        println!("✅ Transparent pipeline created (alpha cutoff = 0.5)");
+        
         self.uniform_buffer = Some(uniform_buffer);
         self.uniform_bind_group = Some(uniform_bind_group);
         self.material_bind_groups = material_bind_groups;
@@ -2016,6 +2135,87 @@ impl ShowcaseApp {
         self.skybox_uniform_bind_group = Some(skybox_uniform_bind_group);
         
         println!("✅ Skybox pipeline created");
+    }
+    
+    // PHASE 4.2: Rebuild skybox cubemap when HDRI changes (F1-F3 keys)
+    fn rebuild_skybox_cubemap(&mut self) {
+        let device = self.device.as_ref().unwrap();
+        let queue = self.queue.as_ref().unwrap();
+        
+        // Load current HDRI
+        let hdri = &self.hdris[self.current_hdri];
+        println!("🔄 Rebuilding skybox cubemap with HDRI: {}", hdri.name);
+        
+        let cubemap_texture = match Self::load_hdri_cubemap(device, queue, &hdri.path) {
+            Ok(tex) => tex,
+            Err(e) => {
+                eprintln!("❌ Failed to load HDRI {}: {}", hdri.path, e);
+                return;
+            }
+        };
+        
+        let cubemap_view = cubemap_texture.create_view(&wgpu::TextureViewDescriptor {
+            label: Some("Skybox Cubemap View"),
+            dimension: Some(wgpu::TextureViewDimension::Cube),
+            ..Default::default()
+        });
+        
+        // Create sampler for cubemap
+        let skybox_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Skybox Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+        
+        // Get existing bind group layout from pipeline
+        // We need to recreate the bind group with new cubemap texture
+        let skybox_texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Skybox Texture Layout (Rebuild)"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::Cube,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+        
+        // Create new bind group with updated cubemap
+        let skybox_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Skybox Texture Bind Group (Rebuild)"),
+            layout: &skybox_texture_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&cubemap_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&skybox_sampler),
+                },
+            ],
+        });
+        
+        // Update stored resources
+        self.skybox_cubemap = Some(cubemap_view);
+        self.skybox_bind_group = Some(skybox_bind_group);
+        
+        println!("✅ Skybox cubemap rebuilt successfully");
     }
     
     fn setup_scene(&mut self) {
@@ -2926,18 +3126,21 @@ impl ApplicationHandler for ShowcaseApp {
                         KeyCode::KeyQ => self.input.q = pressed,
                         KeyCode::KeyE => self.input.e = pressed,
 
-                        // HDRI switching
+                        // HDRI switching (PHASE 4.2: Now rebuilds skybox cubemap)
                         KeyCode::F1 if pressed => {
                             self.current_hdri = 0;
                             println!("🌅 Switched to HDRI: {}", self.hdris[0].name);
+                            self.rebuild_skybox_cubemap();
                         }
                         KeyCode::F2 if pressed => {
                             self.current_hdri = 1;
                             println!("🌅 Switched to HDRI: {}", self.hdris[1].name);
+                            self.rebuild_skybox_cubemap();
                         }
                         KeyCode::F3 if pressed => {
                             self.current_hdri = 2;
                             println!("🌅 Switched to HDRI: {}", self.hdris[2].name);
+                            self.rebuild_skybox_cubemap();
                         }
 
                         // TODO: Space key for MegaLights demo
