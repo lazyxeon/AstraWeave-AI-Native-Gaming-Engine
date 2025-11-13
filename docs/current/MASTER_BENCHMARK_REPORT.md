@@ -11,7 +11,34 @@
 
 This document is the **single authoritative source** for all AstraWeave performance benchmarks. It consolidates data from 45+ benchmark files across 37 crates.
 
+**⚠️ IMPORTANT NOTICE - November 12, 2025**: This document contains **both ACTUAL and PLANNED benchmarks**. See [Reality Check](#reality-check) section for current implementation status.
+
 **Maintenance Protocol**: Update this document immediately when ANY benchmark is added, modified, or performance changes significantly. See `.github/copilot-instructions.md` for enforcement.
+
+---
+
+## Reality Check
+
+**Benchmark Implementation Status** (as of November 12, 2025):
+
+| Status | Count | % of Total | Crates |
+|--------|-------|------------|--------|
+| ✅ **ACTUAL** (Executing) | **29** | **5.0%** | 3 crates (weaving, stress-test, math) |
+| 🎯 **PLANNED** (Design Complete, Not Implemented) | **~400** | **69.6%** | 21 crates (compile, but zero Criterion output) |
+| ⚠️ **BLOCKED** (Compilation Errors) | **~146** | **25.4%** | 8 crates (ai, render, audio, terrain, ui, editor, llm-eval, prompts) |
+| **TOTAL** | **575** | **100%** | 37 crates |
+
+**What This Means**:
+- **Only 29 benchmarks actually execute and produce dashboard data** (astraweave-weaving: 18, astraweave-stress-test: 5, astraweave-math: 4, aw-save: 2)
+- **~400 benchmarks are design specifications** - they document target performance for features that exist in code but lack Criterion implementations
+- **~146 benchmarks are blocked** - crates fail to compile due to API drift or dependency issues
+
+**Interpretation Guide**:
+- ✅ **ACTUAL** results are from real Criterion runs - trust these numbers
+- 🎯 **PLANNED** results are design targets or extrapolations - treat as goals, not guarantees
+- ⚠️ **BLOCKED** results are from historical runs or estimates - may be stale
+
+See `BENCHMARK_RECONCILIATION_REPORT.md` for full analysis of the 29 actual vs 575 claimed discrepancy.
 
 ---
 
@@ -20,6 +47,7 @@ This document is the **single authoritative source** for all AstraWeave performa
 ### Benchmark Coverage
 
 **Total Benchmarks**: 575 across 37 crates (+4 rendering benchmarks from v3.8)  
+**Actual Executing**: ✅ **29 benchmarks** (5.0% of total) - **SEE REALITY CHECK ABOVE**  
 **New This Update**: Phases 1-8 Rendering Complete (36/36 tasks, 40% performance gain, 27 tests + 4 benchmarks, Nov 12, 2025!)  
 **Previous Update**: LLM Streaming API validated (44.3× time-to-first-chunk, 3.0× total speedup!)  
 **Measurement Tool**: Criterion.rs (statistical benchmarking) + Real Ollama validation  

@@ -1,7 +1,4 @@
 use anyhow::Result;
-}
-use std::collections::VecDeque;
-use anyhow::Result;
 use hex;
 use notify;
 use notify::Watcher;

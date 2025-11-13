@@ -16,8 +16,13 @@
 //! 3. Large scale (1000 entities) - 60 FPS target
 //! 4. Stress test (5000 entities) - capacity measurement
 
-use astraweave_core::{IVec2, Team, World};
+use astraweave_core::{
+    ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, Pose, Team, World,
+    WorldSnapshot,
+};
+use astraweave_ai::{Orchestrator, RuleOrchestrator};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::collections::BTreeMap;
 use std::hint::black_box;
 
 // ============================================================================
@@ -214,6 +219,10 @@ fn perception_stage(world: &World, ai_agents: &[u32]) -> Vec<WorldSnapshot> {
         .map(|&agent_id| {
             let agent_pose = world.pose(agent_id).unwrap_or(Pose {
                 pos: IVec2 { x: 0, y: 0 },
+                rotation: 0.0,
+                rotation_x: 0.0,
+                rotation_z: 0.0,
+                scale: 1.0,
             });
             let agent_ammo = world.ammo(agent_id).map(|a| a.rounds).unwrap_or(0);
             let agent_health = world.health(agent_id).map(|h| h.hp).unwrap_or(100);
@@ -270,12 +279,7 @@ fn perception_stage(world: &World, ai_agents: &[u32]) -> Vec<WorldSnapshot> {
 fn planning_stage(snapshots: &[WorldSnapshot], orchestrator: &RuleOrchestrator) -> Vec<PlanIntent> {
     snapshots
         .iter()
-        .map(|snap| {
-            orchestrator.plan(snap).unwrap_or_else(|_| PlanIntent {
-                plan_id: "fallback".to_string(),
-                steps: vec![ActionStep::Wait { duration: 0.1 }],
-            })
-        })
+        .map(|snap| orchestrator.propose_plan(snap))
         .collect()
 }
 
@@ -297,7 +301,9 @@ fn physics_stage(world: &mut World, ai_agents: &[u32], plans: &[PlanIntent]) {
                 }
                 ActionStep::TakeCover { position } => {
                     if let Some(pose) = world.pose_mut(agent_id) {
-                        pose.pos = *position;
+                        if let Some(pos) = position {
+                            pose.pos = *pos;
+                        }
                     }
                 }
                 _ => {}
@@ -360,18 +366,17 @@ fn bench_full_game_loop(c: &mut Criterion) {
     ];
 
     for (entity_count, ai_count, name) in scenarios {
-        let (mut world, ai_agents) = create_benchmark_world(entity_count, ai_count);
-        let orchestrator = RuleOrchestrator::new();
-
-        group.bench_with_input(
-            BenchmarkId::from_parameter(name),
-            &(&mut world, &ai_agents, &orchestrator),
-            |b, (world, ai_agents, orch)| {
-                b.iter(|| {
-                    full_game_loop(black_box(*world), black_box(*ai_agents), black_box(*orch))
-                })
-            },
-        );
+        group.bench_function(name, |b| {
+            b.iter_with_setup(
+                || {
+                    let (world, ai_agents) = create_benchmark_world(entity_count, ai_count);
+                    (world, ai_agents, RuleOrchestrator)
+                },
+                |(mut world, ai_agents, orchestrator)| {
+                    black_box(full_game_loop(&mut world, &ai_agents, &orchestrator))
+                },
+            )
+        });
     }
 
     group.finish();
@@ -406,7 +411,7 @@ fn bench_planning_stage(c: &mut Criterion) {
 
     let (world, ai_agents) = create_benchmark_world(1000, 100);
     let snapshots = perception_stage(&world, &ai_agents);
-    let orchestrator = RuleOrchestrator::new();
+    let orchestrator = RuleOrchestrator;
 
     group.bench_function("100_agents", |b| {
         b.iter(|| planning_stage(black_box(&snapshots), black_box(&orchestrator)))
@@ -420,7 +425,7 @@ fn bench_physics_stage(c: &mut Criterion) {
 
     let (mut world, ai_agents) = create_benchmark_world(1000, 100);
     let snapshots = perception_stage(&world, &ai_agents);
-    let orchestrator = RuleOrchestrator::new();
+    let orchestrator = RuleOrchestrator;
     let plans = planning_stage(&snapshots, &orchestrator);
 
     group.bench_function("100_agents", |b| {

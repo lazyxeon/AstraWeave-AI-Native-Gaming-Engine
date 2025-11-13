@@ -270,7 +270,15 @@ criterion_group!(
 );
 
 #[cfg(not(feature = "planner_advanced"))]
-criterion_group!(benches);
+fn bench_feature_disabled(c: &mut criterion::Criterion) {
+    c.bench_function("goap_feature_disabled", |b| b.iter(|| {
+        // Placeholder when planner_advanced feature is not enabled
+        std::hint::black_box(0)
+    }));
+}
+
+#[cfg(not(feature = "planner_advanced"))]
+criterion_group!(benches, bench_feature_disabled);
 
 criterion_main!(benches);
 

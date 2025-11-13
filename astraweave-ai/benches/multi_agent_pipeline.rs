@@ -17,7 +17,6 @@
 
 use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
 use astraweave_core::{
-use glam::ivec2;
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
 };
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -33,7 +32,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
     let enemies: Vec<EnemyState> = (0..enemy_count)
         .map(|i| EnemyState {
             id: (agent_id * 1000 + i) as u32,
-            pos: glam::ivec2(50 + (i as i32) * 5, 50 + (i as i32) * 5),
+            pos: IVec2 { x: 50 + (i as i32) * 5, y: 50 + (i as i32) * 5 },
             hp: 80,
             cover: "none".to_string(),
             last_seen: 0.0,
@@ -50,7 +49,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
         },
         player: PlayerState {
             hp: 100,
-            pos: glam::ivec2(0, 0),
+            pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec!["attack".to_string()],
         },
@@ -65,7 +64,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
 fn perception_phase(agent_count: usize, enemies_per_agent: usize) -> Vec<WorldSnapshot> {
     (0..agent_count)
         .map(|i| {
-            let agent_pos = glam::ivec2((i as i32) * 10, (i as i32) * 10);
+            let agent_pos = IVec2 { x: (i as i32) * 10, y: (i as i32) * 10 };
             create_agent_snapshot(i, agent_pos, enemies_per_agent)
         })
         .collect()
@@ -73,14 +72,17 @@ fn perception_phase(agent_count: usize, enemies_per_agent: usize) -> Vec<WorldSn
 
 /// Simulate planning phase for N agents
 fn planning_phase(snapshots: &[WorldSnapshot]) -> Vec<PlanIntent> {
-    let mut controller = CAiController::new(PlannerMode::Rule);
+    let controller = CAiController {
+        mode: PlannerMode::Rule,
+        policy: None,
+    };
 
     snapshots
         .iter()
         .map(|snap| {
-            dispatch_planner(&mut controller, snap, None).unwrap_or_else(|_| PlanIntent {
+            dispatch_planner(&controller, snap).unwrap_or_else(|_| PlanIntent {
                 plan_id: "fallback".to_string(),
-                steps: vec![ActionStep::Wait],
+                steps: vec![ActionStep::Wait { duration: 0.1 }],
             })
         })
         .collect()
@@ -94,8 +96,8 @@ fn validation_phase(plans: &[PlanIntent]) -> usize {
 /// Simulate ECS feedback phase (update world state)
 fn feedback_phase(plans: &[PlanIntent], snapshots: &mut [WorldSnapshot]) {
     for (plan, snapshot) in plans.iter().zip(snapshots.iter_mut()) {
-        if let Some(ActionStep::MoveTo { target }) = plan.steps.first() {
-            snapshot.me.pos = *target;
+        if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.first() {
+            snapshot.me.pos = IVec2 { x: *x, y: *y };
         }
     }
 }
