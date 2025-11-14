@@ -1,8 +1,16 @@
 // Benchmark comparing Advanced GOAP vs Rule-based Orchestrator
 // Phase 1: Baseline Performance Metrics
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use astraweave_core::{IVec2, WorldSnapshot, PlayerState, CompanionState, EnemyState};
+use criterion::{criterion_group, criterion_main};
+
+#[cfg(feature = "planner_advanced")]
+use std::hint::black_box;
+
+#[cfg(feature = "planner_advanced")]
+use criterion::{BenchmarkId, Criterion};
+#[cfg(feature = "planner_advanced")]
+use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
+#[cfg(feature = "planner_advanced")]
 use std::collections::BTreeMap;
 
 #[cfg(feature = "planner_advanced")]

@@ -1,10 +1,15 @@
 //! Security and Sandboxing for AstraWeave
 //!
 //! This crate provides security features including:
+//! - Path traversal protection and file validation
+//! - Secure deserialization with size limits
 //! - LLM prompt sanitization and sandboxing
 //! - Script execution sandboxing with Rhai
 //! - Input validation and anti-cheat measures
 //! - Telemetry and monitoring systems
+
+pub mod path;
+pub mod deserialization;
 
 use anyhow::Result;
 use astraweave_ecs::{App, Plugin, World};

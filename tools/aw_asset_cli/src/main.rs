@@ -1,12 +1,11 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
+use asset_signing::KeyStore;
 use astraweave_asset::{AssetDatabase, AssetKind};
 use base64;
 use base64::Engine;
 use clap::{Parser, Subcommand};
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use ring::rand::SystemRandom;
-use ring::signature::Ed25519KeyPair;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -150,6 +149,10 @@ struct Manifest {
 struct SignedManifest {
     entries: Vec<ManifestEntry>,
     signature: String, // base64 encoded Ed25519 signature
+    #[serde(skip_serializing_if = "Option::is_none")]
+    public_key: Option<String>, // PEM-encoded public key for verification
+    #[serde(skip_serializing_if = "Option::is_none")]
+    signed_at: Option<String>, // RFC3339 timestamp
 }
 
 fn cook_pipeline(cfg_path: &str) -> Result<()> {
@@ -473,16 +476,27 @@ fn validate_assets(manifest: &[ManifestEntry], db: &AssetDatabase) -> Result<()>
 }
 
 fn sign_manifest(manifest: &[ManifestEntry]) -> Result<SignedManifest> {
-    let rng = SystemRandom::new();
-    let pkcs8_bytes = Ed25519KeyPair::generate_pkcs8(&rng)
-        .map_err(|_| anyhow::anyhow!("Failed to generate key"))?;
-    let key_pair = Ed25519KeyPair::from_pkcs8(pkcs8_bytes.as_ref())
-        .map_err(|_| anyhow::anyhow!("Invalid key"))?;
+    // Load or generate persistent signing key from OS keyring
+    let keystore = KeyStore::load_or_generate("developer_signing_key")
+        .map_err(|e| anyhow::anyhow!("Failed to access signing key: {}", e))?;
+
+    // Serialize manifest entries for signing (canonical JSON)
     let manifest_json = serde_json::to_string(manifest)?;
-    let signature = key_pair.sign(manifest_json.as_bytes());
+
+    // Sign the manifest
+    let signature = keystore.sign(&manifest_json);
+
+    // Export public key alongside manifest for verification
+    let public_key_pem = format!(
+        "-----BEGIN PUBLIC KEY-----\n{}\n-----END PUBLIC KEY-----",
+        base64::engine::general_purpose::STANDARD.encode(keystore.verifying_key().as_bytes())
+    );
+
     Ok(SignedManifest {
         entries: manifest.to_vec(),
-        signature: base64::engine::general_purpose::STANDARD.encode(signature.as_ref()),
+        signature,
+        public_key: Some(public_key_pem),
+        signed_at: Some(chrono::Utc::now().to_rfc3339()),
     })
 }
 

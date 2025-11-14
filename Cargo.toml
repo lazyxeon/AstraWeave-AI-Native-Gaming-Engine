@@ -102,6 +102,7 @@ members = [
   "astraweave-security",
   "astraweave-observability",
   "astraweave-profiling",
+  "astraweave-secrets",
   "examples/ecs_ai_demo",
   "examples/ecs_ai_showcase",
   # Phase 3 demos

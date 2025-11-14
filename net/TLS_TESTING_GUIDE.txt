@@ -1,0 +1,103 @@
+# TLS WebSocket Server - Testing Guide
+
+## Quick Start
+
+### 1. Generate Development Certificates
+
+First, generate self-signed certificates for development:
+
+```bash
+cd net/certs/dev
+
+# On Linux/macOS/WSL:
+bash generate_dev_cert.sh
+
+# On Windows (with OpenSSL installed):
+powershell -ExecutionPolicy Bypass -File generate_dev_cert.ps1
+```
+
+If OpenSSL is not installed, see `net/certs/dev/README.txt` for installation instructions.
+
+### 2. Build the Server
+
+```bash
+cargo build --release -p aw-net-server
+```
+
+### 3. Run the Server
+
+**With TLS (default):**
+```bash
+cargo run --release -p aw-net-server
+```
+
+**With custom certificate paths:**
+```bash
+cargo run --release -p aw-net-server -- --tls-cert path/to/cert.pem --tls-key path/to/key.pem
+```
+
+**Without TLS (for testing):**
+```bash
+cargo run --release -p aw-net-server -- --disable-tls
+```
+
+### 4. Test the Client
+
+**Connect with TLS (wss://):**
+```bash
+# Will try wss://127.0.0.1:8788 by default
+# NOTE: Will fail with self-signed certs, use ws:// for dev testing
+cargo run --release -p aw-net-client
+```
+
+**Connect without TLS (ws://):**
+```bash
+AW_WS_URL=ws://127.0.0.1:8788 cargo run --release -p aw-net-client
+```
+
+## Command-Line Options
+
+### Server Options
+
+- `--tls-cert <path>` - Path to TLS certificate (default: net/certs/dev/dev-cert.pem)
+- `--tls-key <path>` - Path to TLS private key (default: net/certs/dev/dev-key.pem)
+- `--disable-tls` - Run without TLS encryption (plain ws://)
+
+### Client Options
+
+Use environment variables:
+- `AW_WS_URL` - WebSocket URL (default: wss://127.0.0.1:8788)
+- `AW_REGION` - Server region (default: us-east)
+
+## Testing with OpenSSL
+
+Verify TLS handshake:
+
+```bash
+openssl s_client -connect 127.0.0.1:8788 -showcerts
+```
+
+## Development Notes
+
+1. **Self-signed certificates**: The native-tls library will reject self-signed certificates by default. For development:
+   - Option A: Use `--disable-tls` on server and `ws://` URL on client
+   - Option B: Implement custom certificate verification (advanced)
+   - Option C: Use proper certificates from Let's Encrypt or similar
+
+2. **Production deployment**: Replace self-signed certificates with certificates from a trusted CA.
+
+3. **Port forwarding**: If running on a remote server, ensure port 8788 is accessible.
+
+## Troubleshooting
+
+### "Failed to load TLS certificates"
+- Run the certificate generation script in `net/certs/dev/`
+- Or use `--disable-tls` to run without encryption
+
+### Client connection fails with TLS error
+- Self-signed certificates are rejected by default
+- Use `AW_WS_URL=ws://127.0.0.1:8788` to connect without TLS
+- Or run server with `--disable-tls`
+
+### OpenSSL not found
+- See `net/certs/dev/README.txt` for installation instructions

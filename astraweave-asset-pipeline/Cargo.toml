@@ -21,7 +21,7 @@ basis-universal = { version = "0.3", optional = true }
 meshopt = "0.6"
 
 # Byte manipulation
-bytemuck = "1.14"
+bytemuck = "1.18"
 
 # Image loading
 image = "0.25"

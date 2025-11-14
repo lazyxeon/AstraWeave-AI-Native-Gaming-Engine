@@ -9,10 +9,15 @@ use tracing::{info, warn};
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let url = std::env::var("AW_WS_URL").unwrap_or_else(|_| "ws://127.0.0.1:8788".into());
+    // Default to wss:// for secure connection, fallback to ws:// if specified
+    let url = std::env::var("AW_WS_URL").unwrap_or_else(|_| "wss://127.0.0.1:8788".into());
     let region = std::env::var("AW_REGION").unwrap_or_else(|_| "us-east".into());
 
-    let (mut ws, _resp) = tokio_tungstenite::connect_async(&url).await?;
+    // Connect with native-tls (supports both ws:// and wss://)
+    // For development with self-signed certs, you may need to disable certificate validation
+    let (mut ws, _resp) = tokio_tungstenite::connect_async(&url).await.map_err(|e| {
+        anyhow::anyhow!("Connection failed: {}. If using self-signed certs, this is expected. Use ws:// or set AW_WS_URL=ws://127.0.0.1:8788", e)
+    })?;
     info!("connected to {url}");
 
     send(

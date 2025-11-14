@@ -1,4 +1,5 @@
 use anyhow::Result;
+use astraweave_security::path::safe_under;
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::path::Path;
@@ -70,7 +71,14 @@ fn build_demo(name: &str) -> Result<()> {
 }
 
 fn package_demos(output: &str) -> Result<()> {
-    fs::create_dir_all(output)?;
+    // Security: Validate output path is within current directory
+    let base = std::env::current_dir()?;
+    let output_path = Path::new(output);
+    
+    let safe_output = safe_under(&base, output_path)
+        .map_err(|e| anyhow::anyhow!("Invalid output path: {}", e))?;
+    
+    fs::create_dir_all(&safe_output)?;
 
     // Copy built binaries
     let target_dir = Path::new("target/release");
@@ -79,24 +87,26 @@ fn package_demos(output: &str) -> Result<()> {
         let path = entry.path();
         if path.is_file() && path.extension().is_none() {
             // Assume binary
-            let dest = Path::new(output).join(path.file_name().unwrap());
+            let dest = safe_output.join(path.file_name().unwrap());
             fs::copy(&path, &dest)?;
         }
     }
 
     // Copy assets
-    copy_dir("assets", &format!("{}/assets", output))?;
+    let assets_dest = safe_output.join("assets");
+    copy_dir("assets", &assets_dest)?;
 
-    println!("Packaged demos to: {}", output);
+    println!("Packaged demos to: {}", safe_output.display());
     Ok(())
 }
 
-fn copy_dir(src: &str, dst: &str) -> Result<()> {
+fn copy_dir(src: &str, dst: &Path) -> Result<()> {
     fs::create_dir_all(dst)?;
     for entry in WalkDir::new(src) {
         let entry = entry?;
         let src_path = entry.path();
-        let dst_path = Path::new(dst).join(src_path.strip_prefix(src)?);
+        let relative = src_path.strip_prefix(src)?;
+        let dst_path = dst.join(relative);
 
         if entry.file_type().is_dir() {
             fs::create_dir_all(&dst_path)?;

@@ -7,3 +7,4 @@ edition = "2021"
 anyhow = "1"
 image = { version = "0.25", default-features = false, features = ["png", "rayon", "jpeg"] }
 clap = { version = "4", features = ["derive"] }
+astraweave-security = { path = "../../astraweave-security" }

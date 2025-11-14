@@ -1,4 +1,5 @@
 use anyhow::Result;
+use astraweave_security::path::safe_under;
 use clap::Parser;
 use image::{ImageBuffer, Rgba};
 use std::{fs, path::PathBuf};
@@ -24,7 +25,13 @@ struct Args {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let out = args.out.unwrap_or_else(|| PathBuf::from("assets"));
+    let requested_out = args.out.unwrap_or_else(|| PathBuf::from("assets"));
+    
+    // Security: Validate output path is within allowed base directory
+    let base = PathBuf::from(".");
+    let out = safe_under(&base, &requested_out)
+        .map_err(|e| anyhow::anyhow!("Invalid output path: {}", e))?;
+    
     fs::create_dir_all(&out)?;
     println!(
         "Writing textures to {} (force={})",

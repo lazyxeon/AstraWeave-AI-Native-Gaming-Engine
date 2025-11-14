@@ -23,9 +23,11 @@ astraweave-asset = { path = "../../astraweave-asset" }
 tokio = { version = "1", features = ["full"] }
 notify = "8"
 flate2 = "1"  # for compression
-ring = "0.17"  # for signing
 base64 = "0.22"
+chrono = "0.4"
+asset_signing = { path = "../asset_signing" }
 ktx2 = "0.4"  # for KTX2 texture container format
+# ktx2-rw = "0.2"  # for writing true KTX2 files (requires cmake, temporarily disabled)
 
 # Optional: libktx-rs for production-grade BC compression
 # Requires native libKTX library (see README for setup)

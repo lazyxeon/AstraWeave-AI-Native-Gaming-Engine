@@ -1,6 +1,6 @@
-use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
+use std::{collections::HashMap, fs::File, io::BufReader, net::SocketAddr, path::Path, sync::Arc, time::Duration};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use axum::{routing::get, Router};
 use futures::{SinkExt, StreamExt};
 use parking_lot::Mutex;
@@ -8,6 +8,8 @@ use tokio::{net::TcpListener, time::Instant};
 use tokio_tungstenite::{
     accept_hdr_async, tungstenite::handshake::server::Request, tungstenite::protocol::Message,
 };
+use tokio_rustls::{TlsAcceptor, rustls::ServerConfig};
+use rustls_pemfile::{certs, private_key};
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -54,11 +56,73 @@ struct AppState {
     codec: Codec,
 }
 
+// TLS certificate loading functions
+fn load_certs(path: &Path) -> Result<Vec<rustls::pki_types::CertificateDer<'static>>> {
+    let file = File::open(path)
+        .map_err(|e| anyhow!("Failed to open certificate file {}: {}", path.display(), e))?;
+    let mut reader = BufReader::new(file);
+    certs(&mut reader)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| anyhow!("Failed to parse certificates: {}", e))
+}
+
+fn load_private_key(path: &Path) -> Result<rustls::pki_types::PrivateKeyDer<'static>> {
+    let file = File::open(path)
+        .map_err(|e| anyhow!("Failed to open private key file {}: {}", path.display(), e))?;
+    let mut reader = BufReader::new(file);
+    private_key(&mut reader)
+        .map_err(|e| anyhow!("Failed to parse private key: {}", e))?
+        .ok_or_else(|| anyhow!("No private key found in {}", path.display()))
+}
+
+fn create_tls_acceptor(cert_path: &Path, key_path: &Path) -> Result<TlsAcceptor> {
+    let certs = load_certs(cert_path)?;
+    let key = load_private_key(key_path)?;
+    
+    let config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)
+        .map_err(|e| anyhow!("Invalid TLS configuration: {}", e))?;
+    
+    Ok(TlsAcceptor::from(Arc::new(config)))
+}
+
+
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
         .init();
+
+    // Parse command-line arguments for TLS configuration
+    let args: Vec<String> = std::env::args().collect();
+    let mut tls_enabled = true;
+    let mut cert_path = "net/certs/dev/dev-cert.pem".to_string();
+    let mut key_path = "net/certs/dev/dev-key.pem".to_string();
+    
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--disable-tls" => {
+                tls_enabled = false;
+                info!("TLS disabled via command line");
+            }
+            "--tls-cert" => {
+                if i + 1 < args.len() {
+                    cert_path = args[i + 1].clone();
+                    i += 1;
+                }
+            }
+            "--tls-key" => {
+                if i + 1 < args.len() {
+                    key_path = args[i + 1].clone();
+                    i += 1;
+                }
+            }
+            _ => {}
+        }
+        i += 1;
+    }
 
     let db = sled::open("aw_net_server_db")?;
     let state = AppState {
@@ -89,30 +153,258 @@ async fn main() -> Result<()> {
 
     // WS server
     let ws_addr: SocketAddr = "0.0.0.0:8788".parse().unwrap();
-    info!("WS listening on ws://{}", ws_addr);
-
+    
     let listener = TcpListener::bind(ws_addr).await?;
-    loop {
-        let (stream, _addr) = listener.accept().await?;
-        let app = state.clone();
-        tokio::spawn(async move {
-            let peer = match accept_hdr_async(stream, |_req: &Request, resp| {
-                // You can inspect headers for auth/cookies here
-                Ok(resp)
-            })
-            .await
-            {
-                Ok(ws) => ws,
-                Err(e) => {
-                    warn!("ws handshake failed: {e}");
-                    return;
-                }
-            };
-            if let Err(e) = handle_socket(app, peer).await {
-                warn!("ws session error: {e:?}");
+    
+    if tls_enabled {
+        // TLS mode
+        let tls_acceptor = match create_tls_acceptor(Path::new(&cert_path), Path::new(&key_path)) {
+            Ok(acceptor) => acceptor,
+            Err(e) => {
+                warn!("Failed to load TLS certificates: {}", e);
+                warn!("Run certificate generation script: net/certs/dev/generate_dev_cert.sh");
+                warn!("Or use --disable-tls flag to run without TLS");
+                return Err(e);
             }
-        });
+        };
+        info!("WSS (TLS) listening on wss://{}", ws_addr);
+        info!("Using cert: {}, key: {}", cert_path, key_path);
+        
+        loop {
+            let (stream, _addr) = listener.accept().await?;
+            let app = state.clone();
+            let acceptor = tls_acceptor.clone();
+            
+            tokio::spawn(async move {
+                let tls_stream = match acceptor.accept(stream).await {
+                    Ok(s) => s,
+                    Err(e) => {
+                        warn!("TLS handshake failed: {}", e);
+                        return;
+                    }
+                };
+                
+                let peer = match accept_hdr_async(tls_stream, |_req: &Request, resp| {
+                    Ok(resp)
+                })
+                .await
+                {
+                    Ok(ws) => ws,
+                    Err(e) => {
+                        warn!("ws handshake failed: {e}");
+                        return;
+                    }
+                };
+                if let Err(e) = handle_socket_tls(app, peer).await {
+                    warn!("ws session error: {e:?}");
+                }
+            });
+        }
+    } else {
+        // Plain TCP mode (no TLS)
+        info!("WS listening on ws:// {} (TLS DISABLED)", ws_addr);
+        
+        loop {
+            let (stream, _addr) = listener.accept().await?;
+            let app = state.clone();
+            tokio::spawn(async move {
+                let peer = match accept_hdr_async(stream, |_req: &Request, resp| {
+                    Ok(resp)
+                })
+                .await
+                {
+                    Ok(ws) => ws,
+                    Err(e) => {
+                        warn!("ws handshake failed: {e}");
+                        return;
+                    }
+                };
+                if let Err(e) = handle_socket(app, peer).await {
+                    warn!("ws session error: {e:?}");
+                }
+            });
+        }
     }
+}
+
+async fn handle_socket_tls(
+    app: AppState,
+    mut ws: tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+) -> Result<()> {
+    // Handshake
+    let hello = recv_tls::<ClientToServer>(&app, &mut ws).await?;
+    match hello {
+        ClientToServer::Hello { protocol } if protocol == PROTOCOL_VERSION => {
+            send_tls(&app, &mut ws, &ServerToClient::HelloAck { protocol }).await?;
+        }
+        ClientToServer::Hello { protocol } => {
+            send_tls(
+                &app,
+                &mut ws,
+                &ServerToClient::ProtocolError {
+                    msg: format!("protocol mismatch: client={protocol}, server={PROTOCOL_VERSION}"),
+                },
+            )
+            .await?;
+            return Ok(());
+        }
+        _ => {
+            send_tls(
+                &app,
+                &mut ws,
+                &ServerToClient::ProtocolError {
+                    msg: "expected Hello".into(),
+                },
+            )
+            .await?;
+            return Ok(());
+        }
+    }
+
+    // Matchmaking or direct join
+    let mut room_id: Option<RoomId> = None;
+    let player_id = uuid::Uuid::new_v4().to_string();
+    let mut session_hint = [0u8; 8];
+    let mut tick_hz = 30u32;
+
+    if let Ok(msg) = recv_tls::<ClientToServer>(&app, &mut ws).await {
+        match msg {
+            ClientToServer::FindOrCreate {
+                region, game_mode, ..
+            } => {
+                let mut rooms = app.rooms.lock();
+                if let Some((rid, _)) = rooms.iter().find(|(_, r)| {
+                    r.region == region && r.game_mode == game_mode && r.players.len() < 4
+                }) {
+                    room_id = Some(rid.clone());
+                } else {
+                    let rid = new_room_id();
+                    let key = SessionKey::random();
+                    let r = Room {
+                        id: rid.clone(),
+                        region,
+                        game_mode,
+                        session_key: key.clone(),
+                        tick_hz,
+                        players: HashMap::new(),
+                        tick: 0,
+                        snap_id: 0,
+                    };
+                    rooms.insert(rid.clone(), r);
+                    room_id = Some(rid.clone());
+                }
+            }
+            ClientToServer::JoinRoom {
+                room_id: rid,
+                display_name: _,
+            } => {
+                room_id = Some(rid);
+            }
+            _other => {
+                warn!("unexpected message before join: {_other:?}");
+            }
+        }
+    }
+
+    let rid = match room_id {
+        Some(x) => x,
+        None => {
+            send_tls(
+                &app,
+                &mut ws,
+                &ServerToClient::ProtocolError {
+                    msg: "no room selected".into(),
+                },
+            )
+            .await?;
+            return Ok(());
+        }
+    };
+
+    // allocate player into room
+    {
+        let mut rooms = app.rooms.lock();
+        let room = rooms.get_mut(&rid).expect("room exists");
+        session_hint.copy_from_slice(&room.session_key.0[0..8]);
+        room.players.insert(
+            player_id.clone(),
+            Player {
+                id: player_id.clone(),
+                display: "player".into(),
+                last_input_seq: 0,
+                last_seen: tokio::time::Instant::now(),
+                tokens: 30.0, // token bucket
+            },
+        );
+        tick_hz = room.tick_hz;
+    }
+
+    send_tls(
+        &app,
+        &mut ws,
+        &ServerToClient::MatchResult {
+            room_id: rid.clone(),
+            session_key_hint: session_hint,
+        },
+    )
+    .await?;
+    send_tls(
+        &app,
+        &mut ws,
+        &ServerToClient::JoinAccepted {
+            room_id: rid.clone(),
+            player_id: player_id.clone(),
+            session_key_hint: session_hint,
+            tick_hz,
+        },
+    )
+    .await?;
+
+    // Per-connection game loop
+    let tick_dt = Duration::from_millis((1000 / tick_hz.max(1)) as u64);
+    let mut _last_snap = 0u32;
+
+    loop {
+        tokio::select! {
+            biased;
+
+            // Receive client messages
+            msg = ws.next() => {
+                match msg {
+                    Some(Ok(Message::Binary(bytes))) => {
+                        if let Ok(m) = aw_net_proto::decode_msg::<ClientToServer>(app.codec, &bytes) {
+                            if let Err(e) = on_client_msg_tls(&app, &rid, &player_id, &mut ws, m).await {
+                                warn!("client msg error: {e:?}");
+                            }
+                        }
+                    }
+                    Some(Ok(Message::Ping(p))) => { let _ = ws.send(Message::Pong(p)).await; }
+                    Some(Ok(_)) => {}
+                    Some(Err(e)) => { warn!("ws recv: {e}"); break; }
+                    None => break,
+                }
+            }
+
+            // Send authoritative snapshot periodically
+            _ = tokio::time::sleep(tick_dt) => {
+                let (snap, sid) = build_snapshot(&app, &rid);
+                _last_snap = sid;
+                send_tls(&app, &mut ws, &snap).await?;
+            }
+        }
+    }
+
+    // Cleanup
+    {
+        let mut rooms = app.rooms.lock();
+        if let Some(room) = rooms.get_mut(&rid) {
+            room.players.remove(&player_id);
+            if room.players.is_empty() {
+                rooms.remove(&rid);
+            }
+        }
+    }
+    Ok(())
 }
 
 async fn handle_socket(
@@ -406,4 +698,85 @@ async fn recv<T: for<'de> serde::Deserialize<'de>>(
         }
         _ => Err(anyhow::anyhow!("unexpected ws message")),
     }
+}
+
+// TLS versions of helper functions
+async fn send_tls(
+    app: &AppState,
+    ws: &mut tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+    msg: &ServerToClient,
+) -> Result<()> {
+    let bytes = aw_net_proto::encode_msg(app.codec, msg);
+    ws.send(Message::Binary(bytes.into())).await?;
+    Ok(())
+}
+
+async fn recv_tls<T: for<'de> serde::Deserialize<'de>>(
+    app: &AppState,
+    ws: &mut tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+) -> Result<T> {
+    let msg = ws
+        .next()
+        .await
+        .ok_or_else(|| anyhow::anyhow!("ws closed"))??;
+    match msg {
+        Message::Binary(b) => {
+            let t = aw_net_proto::decode_msg::<T>(app.codec, &b)?;
+            Ok(t)
+        }
+        _ => Err(anyhow::anyhow!("unexpected ws message")),
+    }
+}
+
+async fn on_client_msg_tls(
+    app: &AppState,
+    rid: &str,
+    pid: &str,
+    ws: &mut tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+    msg: ClientToServer,
+) -> Result<()> {
+    match msg {
+        ClientToServer::InputFrame {
+            seq,
+            input_blob,
+            sig,
+            ..
+        } => {
+            // basic rate limit
+            let mut kick = false;
+            {
+                let mut rooms = app.rooms.lock();
+                if let Some(room) = rooms.get_mut(rid) {
+                    if let Some(p) = room.players.get_mut(pid) {
+                        p.tokens += 8.0; // refill
+                        if p.tokens > 60.0 {
+                            p.tokens = 60.0;
+                        }
+                        p.tokens -= 1.0;
+                        if p.tokens < 0.0 {
+                            kick = true;
+                        } else {
+                            p.last_input_seq = seq;
+                            p.last_seen = tokio::time::Instant::now();
+                        }
+                        // lightweight tamper check: verify sig with session hint
+                        let mut hint = [0u8; 8];
+                        hint.copy_from_slice(&room.session_key.0[0..8]);
+                        if sig != aw_net_proto::sign16(&input_blob, &hint) {
+                            warn!("tamper-evident signature mismatch for pid={pid}");
+                        }
+                    }
+                }
+            }
+            if kick {
+                send_tls(app, ws, &ServerToClient::RateLimited).await?;
+            }
+        }
+        ClientToServer::Ping { nano } => {
+            send_tls(app, ws, &ServerToClient::Pong { nano }).await?;
+        }
+        ClientToServer::Ack { .. } => { /* optional: track delivery / deltas */ }
+        _ => { /* ignore other in-session messages */ }
+    }
+    Ok(())
 }

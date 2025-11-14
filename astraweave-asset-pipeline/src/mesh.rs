@@ -3,6 +3,7 @@
 //! Provides vertex cache optimization and overdraw reduction for meshes.
 
 use anyhow::{Context, Result};
+use bytemuck::cast_slice;
 use meshopt::optimize_vertex_cache;
 use meshopt::optimize_overdraw_in_place;
 use meshopt::VertexDataAdapter;
@@ -237,12 +238,7 @@ fn optimize_overdraw_inplace(
     let position_offset = 0; // positions start at byte 0
     
     // Convert positions to bytes for VertexDataAdapter
-    let positions_bytes: &[u8] = unsafe {
-        std::slice::from_raw_parts(
-            positions.as_ptr() as *const u8,
-            positions.len() * std::mem::size_of::<f32>(),
-        )
-    };
+    let positions_bytes: &[u8] = cast_slice(positions);
 
     let vertices = VertexDataAdapter::new(positions_bytes, vertex_stride, position_offset)
         .context("Failed to create vertex data adapter")?;

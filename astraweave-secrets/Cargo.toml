@@ -1,0 +1,22 @@
+[package]
+name = "astraweave-secrets"
+version = "0.1.0"
+edition = "2021"
+license.workspace = true
+
+[[bin]]
+name = "aw_secrets"
+path = "src/bin/aw_secrets.rs"
+
+[dependencies]
+keyring = "3.6"
+anyhow = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+zeroize = "1.8"
+base64 = "0.22"
+clap = { version = "4", features = ["derive"] }
+rpassword = "7.3"  # For hidden password input
+once_cell = "1.20"
+
+[dev-dependencies]
+tempfile = "3.13"
