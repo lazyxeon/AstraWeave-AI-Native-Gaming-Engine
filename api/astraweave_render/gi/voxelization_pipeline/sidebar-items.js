@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["VoxelMaterial","VoxelVertex","VoxelizationConfig","VoxelizationMesh","VoxelizationPipeline","VoxelizationStats"]};

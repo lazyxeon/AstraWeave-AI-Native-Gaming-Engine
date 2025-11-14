@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `WGSL_CLUSTER_BIN` constant in crate `astraweave_render`."><title>WGSL_CLUSTER_BIN in astraweave_render::clustered - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="astraweave_render" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc constant"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../astraweave_render/index.html">astraweave_<wbr>render</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"><h2><a href="index.html">In astraweave_<wbr>render::<wbr>clustered</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">astraweave_render</a>::<wbr><a href="index.html">clustered</a></div><h1>Constant <span class="constant">WGSL_CLUSTER_BIN</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/astraweave_render/clustered.rs.html#152-212">Source</a> </span></div><pre class="rust item-decl"><code>pub const WGSL_CLUSTER_BIN: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.89.0/std/primitive.str.html">str</a> = r#&quot;
+struct Light { pos_radius: vec4&lt;f32&gt; };
+struct Params { screen: vec2&lt;u32&gt;, clusters: vec3&lt;u32&gt;, near: f32, far: f32, fov_y: f32 };
+@group(0) @binding(0) var&lt;storage, read&gt; lights: array&lt;Light&gt;;
+@group(0) @binding(1) var&lt;uniform&gt; params: Params;
+// Offsets: length = clusters+1 (exclusive scan). Counts: length = clusters. Indices: variable length
+@group(0) @binding(2) var&lt;storage, read&gt; offsets: array&lt;u32&gt;;
+@group(0) @binding(3) var&lt;storage, read_write&gt; counts: array&lt;atomic&lt;u32&gt;&gt;;
+@group(0) @binding(4) var&lt;storage, read_write&gt; indices: array&lt;u32&gt;;
+
+fn cluster_index(ix: u32, iy: u32, iz: u32, dims: vec3&lt;u32&gt;) -&gt; u32 {
+    return ix + iy * dims.x + iz * (dims.x * dims.y);
+}
+
+@compute @workgroup_size(1,1,1)
+fn cs_main(@builtin(global_invocation_id) gid: vec3&lt;u32&gt;) {
+    // One invocation per light
+    let li = gid.x;
+    if (li &gt;= arrayLength(&amp;lights)) { return; }
+    let L = lights[li].pos_radius;
+    let pos = L.xyz;
+    let radius = L.w;
+    let width = f32(params.screen.x);
+    let height = f32(params.screen.y);
+    let aspect = width / max(height, 1.0);
+    let fy = 1.0 / tan(0.5 * params.fov_y);
+    let fx = fy / aspect;
+    let z = max(pos.z, params.near + 1e-4);
+    if (z - radius &gt; params.far) { return; }
+    let ndc_x = (pos.x / z) * fx;
+    let ndc_y = (pos.y / z) * fy;
+    let px = (ndc_x * 0.5 + 0.5) * width;
+    let py = (ndc_y * 0.5 + 0.5) * height;
+    let rpx_x = (radius / z) * fx * (width * 0.5);
+    let rpx_y = (radius / z) * fy * (height * 0.5);
+    let tile_w = max(1.0, width / f32(params.clusters.x));
+    let tile_h = max(1.0, height / f32(params.clusters.y));
+    let min_px = floor(px - rpx_x);
+    let max_px = ceil(px + rpx_x);
+    let min_py = floor(py - rpx_y);
+    let max_py = ceil(py + rpx_y);
+    let ix0 = u32(clamp(min_px / tile_w, 0.0, f32(params.clusters.x - 1u)));
+    let ix1 = u32(clamp(max_px / tile_w, 0.0, f32(params.clusters.x - 1u)));
+    let iy0 = u32(clamp(min_py / tile_h, 0.0, f32(params.clusters.y - 1u)));
+    let iy1 = u32(clamp(max_py / tile_h, 0.0, f32(params.clusters.y - 1u)));
+    let zmin = max(z - radius, params.near);
+    let zmax = min(z + radius, params.far);
+    if (zmin &gt;= zmax) { return; }
+    let iz0 = u32(clamp(floor(((zmin - params.near) / (params.far - params.near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
+    let iz1 = u32(clamp(floor(((zmax - params.near) / (params.far - params.near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
+    for (var iz: u32 = iz0; iz &lt;= iz1; iz = iz + 1u) {
+        for (var iy: u32 = iy0; iy &lt;= iy1; iy = iy + 1u) {
+            for (var ix: u32 = ix0; ix &lt;= ix1; ix = ix + 1u) {
+                let ci = cluster_index(ix, iy, iz, params.clusters);
+                let write_idx = offsets[ci] + atomicAdd(&amp;counts[ci], 1u);
+                indices[write_idx] = li;
+            }
+        }
+    }
+}
+&quot;#;</code></pre></section></div></main></body></html>

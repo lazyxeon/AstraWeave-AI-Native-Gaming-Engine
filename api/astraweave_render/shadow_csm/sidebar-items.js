@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ATLAS_RESOLUTION","CASCADE_COUNT","CASCADE_RESOLUTION","DEPTH_BIAS"],"struct":["CsmRenderer","GpuShadowCascade","ShadowCascade"]};

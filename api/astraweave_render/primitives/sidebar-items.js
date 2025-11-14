@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["cube","plane","sphere"]};

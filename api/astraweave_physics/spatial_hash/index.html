@@ -1,0 +1,52 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Spatial Hash Grid for Broad-Phase Collision Detection"><title>astraweave_physics::spatial_hash - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="astraweave_physics" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../astraweave_physics/index.html">astraweave_<wbr>physics</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module spatial_<wbr>hash</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#spatial-hash-grid-for-broad-phase-collision-detection" title="Spatial Hash Grid for Broad-Phase Collision Detection">Spatial Hash Grid for Broad-Phase Collision Detection</a><ul><li><a href="#performance" title="Performance">Performance</a></li><li><a href="#usage" title="Usage">Usage</a></li><li><a href="#cell-size-selection" title="Cell Size Selection">Cell Size Selection</a></li></ul></li></ul><h3><a href="#structs">Module Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate astraweave_<wbr>physics</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">astraweave_physics</a></div><h1>Module <span>spatial_hash</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/astraweave_physics/spatial_hash.rs.html#1-445">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="spatial-hash-grid-for-broad-phase-collision-detection"><a class="doc-anchor" href="#spatial-hash-grid-for-broad-phase-collision-detection">§</a>Spatial Hash Grid for Broad-Phase Collision Detection</h2>
+<p>Implements a grid-based spatial partitioning system to reduce collision detection
+from O(n²) to O(n log n) by only testing objects in nearby grid cells.</p>
+<h3 id="performance"><a class="doc-anchor" href="#performance">§</a>Performance</h3>
+<p><strong>Baseline (Naive O(n²))</strong>:</p>
+<ul>
+<li>1000 entities: ~500,000 collision pairs to test</li>
+<li>Frame time: 548.5 µs (17.71% of frame)</li>
+</ul>
+<p><strong>With Spatial Hashing</strong>:</p>
+<ul>
+<li>1000 entities: ~5,000-10,000 collision pairs (99% reduction)</li>
+<li>Expected frame time: 250-330 µs (8-10% of frame)</li>
+<li><strong>Improvement</strong>: -40-55% collision detection time</li>
+</ul>
+<h3 id="usage"><a class="doc-anchor" href="#usage">§</a>Usage</h3>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>astraweave_physics::SpatialHash;
+
+<span class="comment">// Create grid with 10-unit cells (adjust based on object sizes)
+</span><span class="kw">let </span><span class="kw-2">mut </span>grid = SpatialHash::new(<span class="number">10.0</span>);
+
+<span class="comment">// Insert objects
+</span><span class="kw">for </span>(id, aabb) <span class="kw">in </span>objects {
+    grid.insert(id, aabb);
+}
+
+<span class="comment">// Query potential collisions for an object
+</span><span class="kw">let </span>candidates = grid.query(aabb);
+
+<span class="comment">// Only test narrow-phase collision against candidates (not all objects)
+</span><span class="kw">for </span>candidate_id <span class="kw">in </span>candidates {
+    <span class="kw">if </span>detailed_collision_test(aabb, candidate_aabb) {
+        <span class="comment">// Handle collision
+    </span>}
+}
+
+<span class="comment">// Clear grid before next frame
+</span>grid.clear();</code></pre></div>
+<h3 id="cell-size-selection"><a class="doc-anchor" href="#cell-size-selection">§</a>Cell Size Selection</h3>
+<p><strong>Rule of Thumb</strong>: Cell size should be ~2× the average object size</p>
+<ul>
+<li>Too small: Objects span multiple cells, redundant queries</li>
+<li>Too large: Too many objects per cell, approaches O(n²)</li>
+<li>Optimal: Each object touches 1-4 cells</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<ul>
+<li>Character radius: 1 unit → Cell size: 2-4 units</li>
+<li>Small objects (0.5 radius) → Cell size: 1-2 units</li>
+<li>Large objects (5 radius) → Cell size: 10-20 units</li>
+</ul>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.AABB.html" title="struct astraweave_physics::spatial_hash::AABB">AABB</a></dt><dd>Axis-Aligned Bounding Box for collision detection</dd><dt><a class="struct" href="struct.SpatialHash.html" title="struct astraweave_physics::spatial_hash::SpatialHash">Spatial<wbr>Hash</a></dt><dd>Spatial hash grid for broad-phase collision detection</dd><dt><a class="struct" href="struct.SpatialHashStats.html" title="struct astraweave_physics::spatial_hash::SpatialHashStats">Spatial<wbr>Hash<wbr>Stats</a></dt><dd>Spatial hash statistics for debugging/profiling</dd></dl></section></div></main></body></html>

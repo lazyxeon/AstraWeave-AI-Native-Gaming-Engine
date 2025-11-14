@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_JOINTS"],"enum":["ChannelData","Interpolation"],"fn":["compute_joint_matrices","skin_vertex_cpu"],"struct":["AnimationChannel","AnimationClip","AnimationState","Joint","JointMatrixGPU","JointPalette","Skeleton","Transform"]};

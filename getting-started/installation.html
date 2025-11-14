@@ -1,0 +1,499 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Installation Guide - AstraWeave: AI-Native Game Engine Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Comprehensive documentation for AstraWeave, the first AI-native game engine">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">AstraWeave: AI-Native Game Engine Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine/edit/main/docs/src/src/getting-started/installation.md" title="Suggest an edit" aria-label="Suggest an edit" rel="edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h1>
+<p>This guide covers detailed installation instructions for AstraWeave on different platforms, including all dependencies and troubleshooting common issues.</p>
+<h2 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h2>
+<h3 id="minimum-requirements"><a class="header" href="#minimum-requirements">Minimum Requirements</a></h3>
+<ul>
+<li><strong>CPU</strong>: x64 processor with SSE2 support</li>
+<li><strong>Memory</strong>: 4GB RAM (8GB+ recommended for AI models)</li>
+<li><strong>GPU</strong>: Vulkan 1.0 compatible graphics card</li>
+<li><strong>Storage</strong>: 2GB free space (more for AI models)</li>
+<li><strong>Rust</strong>: 1.89.0+ (managed via rust-toolchain.toml)</li>
+</ul>
+<h3 id="recommended-requirements"><a class="header" href="#recommended-requirements">Recommended Requirements</a></h3>
+<ul>
+<li><strong>CPU</strong>: Multi-core x64 processor (4+ cores)</li>
+<li><strong>Memory</strong>: 16GB+ RAM for development and multiple AI models</li>
+<li><strong>GPU</strong>: Modern Vulkan 1.2+ compatible GPU with 2GB+ VRAM</li>
+<li><strong>Storage</strong>: SSD with 10GB+ free space</li>
+</ul>
+<h2 id="platform-specific-installation"><a class="header" href="#platform-specific-installation">Platform-Specific Installation</a></h2>
+<h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
+<h4 id="ubuntudebian"><a class="header" href="#ubuntudebian">Ubuntu/Debian</a></h4>
+<pre><code class="language-bash"># Update package lists
+sudo apt-get update
+
+# Install build essentials
+sudo apt-get install -y build-essential pkg-config cmake ninja-build
+
+# Install graphics dependencies
+sudo apt-get install -y libx11-dev libxi-dev libxcursor-dev libxrandr-dev \
+  libxinerama-dev libxkbcommon-dev libxkbcommon-x11-dev libx11-xcb-dev \
+  libxcb1-dev libxcb-randr0-dev libxcb-xfixes0-dev libxcb-shape0-dev \
+  libxcb-xkb-dev
+
+# Install rendering dependencies
+sudo apt-get install -y libgl1-mesa-dev libegl1-mesa-dev wayland-protocols \
+  libwayland-dev mesa-vulkan-drivers vulkan-tools
+
+# Install audio dependencies  
+sudo apt-get install -y libasound2-dev libpulse-dev
+
+# Install additional system dependencies
+sudo apt-get install -y libudev-dev
+</code></pre>
+<h4 id="arch-linux"><a class="header" href="#arch-linux">Arch Linux</a></h4>
+<pre><code class="language-bash"># Install base development tools
+sudo pacman -S base-devel cmake ninja
+
+# Install graphics and audio
+sudo pacman -S vulkan-devel mesa alsa-lib libpulse wayland wayland-protocols
+
+# Install X11 dependencies
+sudo pacman -S libx11 libxcb libxrandr libxinerama libxcursor libxi
+</code></pre>
+<h4 id="fedorarhel"><a class="header" href="#fedorarhel">Fedora/RHEL</a></h4>
+<pre><code class="language-bash"># Install development tools
+sudo dnf groupinstall "Development Tools"
+sudo dnf install cmake ninja-build pkg-config
+
+# Install graphics dependencies
+sudo dnf install libX11-devel libXi-devel libXcursor-devel libXrandr-devel \
+  libXinerama-devel libxkbcommon-devel libxkbcommon-x11-devel
+
+# Install Vulkan and Mesa
+sudo dnf install vulkan-devel mesa-dri-drivers
+
+# Install audio
+sudo dnf install alsa-lib-devel pulseaudio-libs-devel
+</code></pre>
+<h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
+<h4 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h4>
+<p>First, install Xcode Command Line Tools:</p>
+<pre><code class="language-bash">xcode-select --install
+</code></pre>
+<h4 id="using-homebrew-recommended"><a class="header" href="#using-homebrew-recommended">Using Homebrew (Recommended)</a></h4>
+<pre><code class="language-bash"># Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install dependencies
+brew install cmake ninja pkg-config
+
+# For Intel Macs, ensure MoltenVK is installed
+brew install molten-vk
+</code></pre>
+<h4 id="manual-installation"><a class="header" href="#manual-installation">Manual Installation</a></h4>
+<ul>
+<li>Download and install Xcode from the App Store</li>
+<li>Install CMake from <a href="https://cmake.org/download/">cmake.org</a></li>
+<li>Ensure MoltenVK is available for Vulkan support</li>
+</ul>
+<h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
+<h4 id="using-visual-studio-recommended"><a class="header" href="#using-visual-studio-recommended">Using Visual Studio (Recommended)</a></h4>
+<ol>
+<li>Install Visual Studio 2019 or later with C++ build tools</li>
+<li>Install Git for Windows</li>
+<li>Install CMake (either standalone or via Visual Studio Installer)</li>
+</ol>
+<h4 id="using-msys2mingw"><a class="header" href="#using-msys2mingw">Using MSYS2/MinGW</a></h4>
+<pre><code class="language-bash"># Install MSYS2 from https://www.msys2.org/
+# Then in MSYS2 terminal:
+pacman -S mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja
+pacman -S mingw-w64-x86_64-vulkan-devel
+</code></pre>
+<h2 id="rust-installation"><a class="header" href="#rust-installation">Rust Installation</a></h2>
+<p>AstraWeave uses a specific Rust version defined in <code>rust-toolchain.toml</code>. The installation process will automatically use the correct version.</p>
+<h3 id="install-rust"><a class="header" href="#install-rust">Install Rust</a></h3>
+<pre><code class="language-bash"># Install rustup (Rust installer)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Follow the prompts, then restart your terminal or run:
+source ~/.cargo/env
+
+# Verify installation
+rustc --version
+cargo --version
+</code></pre>
+<h3 id="rust-components"><a class="header" href="#rust-components">Rust Components</a></h3>
+<p>The following components will be installed automatically when needed:</p>
+<ul>
+<li><code>cargo</code> - Package manager and build tool</li>
+<li><code>clippy</code> - Linter for catching common mistakes</li>
+<li><code>rustfmt</code> - Code formatter</li>
+<li><code>rust-analyzer</code> - Language server for IDE support</li>
+</ul>
+<h2 id="clone-and-build"><a class="header" href="#clone-and-build">Clone and Build</a></h2>
+<h3 id="1-clone-the-repository"><a class="header" href="#1-clone-the-repository">1. Clone the Repository</a></h3>
+<pre><code class="language-bash">git clone https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine.git
+cd AstraWeave-AI-Native-Gaming-Engine
+</code></pre>
+<h3 id="2-verify-rust-toolchain"><a class="header" href="#2-verify-rust-toolchain">2. Verify Rust Toolchain</a></h3>
+<p>The correct Rust version will be installed automatically:</p>
+<pre><code class="language-bash"># This will show the version from rust-toolchain.toml
+rustc --version
+</code></pre>
+<h3 id="3-build-core-components"><a class="header" href="#3-build-core-components">3. Build Core Components</a></h3>
+<p>Start with the stable, working components:</p>
+<pre><code class="language-bash">cargo build -p astraweave-core -p astraweave-ai -p astraweave-physics \
+            -p astraweave-nav -p astraweave-render -p hello_companion
+</code></pre>
+<h3 id="4-run-tests"><a class="header" href="#4-run-tests">4. Run Tests</a></h3>
+<p>Verify the installation with tests:</p>
+<pre><code class="language-bash">cargo test -p astraweave-input
+</code></pre>
+<h3 id="5-run-example"><a class="header" href="#5-run-example">5. Run Example</a></h3>
+<p>Test the installation:</p>
+<pre><code class="language-bash">cargo run -p hello_companion --release
+</code></pre>
+<h2 id="verification"><a class="header" href="#verification">Verification</a></h2>
+<h3 id="check-gpu-support"><a class="header" href="#check-gpu-support">Check GPU Support</a></h3>
+<pre><code class="language-bash"># Linux: Check Vulkan
+vulkaninfo | grep "deviceName"
+
+# macOS: Check Metal
+system_profiler SPDisplaysDataType
+
+# Windows: Use dxdiag or GPU-Z
+</code></pre>
+<h3 id="check-audio"><a class="header" href="#check-audio">Check Audio</a></h3>
+<pre><code class="language-bash"># Linux: Test audio devices
+aplay -l
+
+# macOS: Check audio
+system_profiler SPAudioDataType  
+
+# Windows: Check audio devices in Device Manager
+</code></pre>
+<h2 id="development-environment-setup"><a class="header" href="#development-environment-setup">Development Environment Setup</a></h2>
+<h3 id="ide-recommendations"><a class="header" href="#ide-recommendations">IDE Recommendations</a></h3>
+<h4 id="vs-code-recommended"><a class="header" href="#vs-code-recommended">VS Code (Recommended)</a></h4>
+<p>Install these extensions:</p>
+<ul>
+<li><code>rust-analyzer</code> - Rust language support</li>
+<li><code>CodeLLDB</code> - Debugging support</li>
+<li><code>Even Better TOML</code> - TOML file support</li>
+<li><code>Error Lens</code> - Inline error display</li>
+</ul>
+<h4 id="other-ides"><a class="header" href="#other-ides">Other IDEs</a></h4>
+<ul>
+<li><strong>CLion</strong>: Has good Rust support with the Rust plugin</li>
+<li><strong>Vim/Neovim</strong>: Use with rust-analyzer LSP</li>
+<li><strong>Emacs</strong>: Use with rust-analyzer and rustic-mode</li>
+</ul>
+<h3 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h3>
+<h4 id="release-builds"><a class="header" href="#release-builds">Release Builds</a></h4>
+<p>For better performance during development:</p>
+<pre><code class="language-bash"># Always use release mode for examples
+cargo run -p hello_companion --release
+
+# Build in release mode
+cargo build --release
+</code></pre>
+<h4 id="parallel-compilation"><a class="header" href="#parallel-compilation">Parallel Compilation</a></h4>
+<p>Speed up builds by using multiple CPU cores:</p>
+<pre><code class="language-bash"># Set in ~/.cargo/config.toml
+[build]
+jobs = 4  # or number of CPU cores
+</code></pre>
+<h4 id="target-directory"><a class="header" href="#target-directory">Target Directory</a></h4>
+<p>Use a shared target directory to reduce disk usage:</p>
+<pre><code class="language-bash"># Set CARGO_TARGET_DIR environment variable
+export CARGO_TARGET_DIR=/path/to/shared/target
+</code></pre>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="common-build-errors"><a class="header" href="#common-build-errors">Common Build Errors</a></h3>
+<h4 id="linker-not-found"><a class="header" href="#linker-not-found">"linker not found"</a></h4>
+<ul>
+<li><strong>Linux</strong>: Install <code>build-essential</code> or <code>gcc</code></li>
+<li><strong>macOS</strong>: Install Xcode Command Line Tools</li>
+<li><strong>Windows</strong>: Install Visual Studio with C++ tools</li>
+</ul>
+<h4 id="vulkan-errors"><a class="header" href="#vulkan-errors">Vulkan errors</a></h4>
+<ul>
+<li><strong>Linux</strong>: Install <code>mesa-vulkan-drivers</code> and <code>vulkan-tools</code></li>
+<li><strong>macOS</strong>: Ensure MoltenVK is installed</li>
+<li><strong>Windows</strong>: Update graphics drivers</li>
+</ul>
+<h4 id="audio-errors"><a class="header" href="#audio-errors">Audio errors</a></h4>
+<ul>
+<li><strong>Linux</strong>: Install <code>libasound2-dev</code> and <code>libpulse-dev</code></li>
+<li><strong>macOS</strong>: Usually works out of the box</li>
+<li><strong>Windows</strong>: Ensure Windows Audio service is running</li>
+</ul>
+<h3 id="performance-issues"><a class="header" href="#performance-issues">Performance Issues</a></h3>
+<h4 id="slow-compilation"><a class="header" href="#slow-compilation">Slow Compilation</a></h4>
+<ul>
+<li>Use <code>cargo build --release</code> for better runtime performance</li>
+<li>Consider using <code>sccache</code> to cache compilation results</li>
+<li>Increase parallel build jobs in Cargo config</li>
+</ul>
+<h4 id="runtime-performance"><a class="header" href="#runtime-performance">Runtime Performance</a></h4>
+<ul>
+<li>Always use <code>--release</code> flag for examples and demos</li>
+<li>Ensure GPU drivers are up to date</li>
+<li>Check system has adequate RAM (4GB minimum)</li>
+</ul>
+<h3 id="platform-specific-issues"><a class="header" href="#platform-specific-issues">Platform-Specific Issues</a></h3>
+<h4 id="linux-wayland-vs-x11"><a class="header" href="#linux-wayland-vs-x11">Linux Wayland vs X11</a></h4>
+<p>AstraWeave supports both Wayland and X11:</p>
+<pre><code class="language-bash"># Force X11 if needed
+export WAYLAND_DISPLAY=""
+
+# Force Wayland if needed  
+export DISPLAY=""
+</code></pre>
+<h4 id="macos-code-signing"><a class="header" href="#macos-code-signing">macOS Code Signing</a></h4>
+<p>For distribution on macOS, you may need to sign binaries:</p>
+<pre><code class="language-bash">codesign --force --deep --sign - target/release/hello_companion
+</code></pre>
+<h4 id="windows-antivirus"><a class="header" href="#windows-antivirus">Windows Antivirus</a></h4>
+<p>Some antivirus software may flag Rust binaries. Add exclusions for:</p>
+<ul>
+<li>The project directory</li>
+<li><code>~/.cargo</code> directory</li>
+<li><code>target/</code> build directory</li>
+</ul>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<p>With AstraWeave installed:</p>
+<ol>
+<li>Run through the <a href="./quick-start.html">Quick Start Guide</a></li>
+<li>Explore <a href="../examples/index.html">Working Examples</a></li>
+<li>Read about <a href="../architecture/overview.html">Architecture</a></li>
+<li>Build <a href="../game-dev/first-game.html">Your First Game</a></li>
+</ol>
+<p>For ongoing development, see the <a href="../dev/contributing.html">Contributing Guide</a> and <a href="../dev/building.html">Building from Source</a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../getting-started/quick-start.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../getting-started/first-companion.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../getting-started/quick-start.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../getting-started/first-companion.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CULLING_SHADER"],"fn":["batch_visible_instances","build_indirect_commands_cpu","cpu_frustum_cull"],"struct":["BatchId","CullingPipeline","CullingResources","DrawBatch","DrawIndirectCommand","FrustumPlanes","InstanceAABB"]};

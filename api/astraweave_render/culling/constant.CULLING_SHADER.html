@@ -1,0 +1,90 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Compute shader source for frustum culling"><title>CULLING_SHADER in astraweave_render::culling - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-84e720fa.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="astraweave_render" data-themes="" data-resource-suffix="" data-rustdoc-version="1.89.0 (29483883e 2025-08-04)" data-channel="1.89.0" data-search-js="search-92309212.js" data-settings-js="settings-5514c975.js" ><script src="../../static.files/storage-4e99c027.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../static.files/main-fd3af306.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-32bb7600.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc constant"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../astraweave_render/index.html">astraweave_<wbr>render</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><div id="rustdoc-modnav"><h2><a href="index.html">In astraweave_<wbr>render::<wbr>culling</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">astraweave_render</a>::<wbr><a href="index.html">culling</a></div><h1>Constant <span class="constant">CULLING_SHADER</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/astraweave_render/culling.rs.html#288-376">Source</a> </span></div><pre class="rust item-decl"><code>pub const CULLING_SHADER: &amp;<a class="primitive" href="https://doc.rust-lang.org/1.89.0/std/primitive.str.html">str</a> = r#&quot;
+// Per-instance AABB data (std140 layout: vec3 is 16-byte aligned)
+struct InstanceAABB {
+    center: vec3&lt;f32&gt;,      // offset 0, size 12, align 16
+    _pad0: u32,             // offset 12
+    extent: vec3&lt;f32&gt;,      // offset 16, size 12, align 16
+    instance_index: u32,    // offset 28
+}
+// Total size: 32 bytes
+
+// Frustum planes (6 planes)
+struct FrustumPlanes {
+    planes: array&lt;vec4&lt;f32&gt;, 6&gt;,
+}
+
+// Input/output bindings
+@group(0) @binding(0) var&lt;storage, read&gt; instance_aabbs: array&lt;InstanceAABB&gt;;
+@group(0) @binding(1) var&lt;uniform&gt; frustum: FrustumPlanes;
+@group(0) @binding(2) var&lt;storage, read_write&gt; visible_instances: array&lt;u32&gt;;
+@group(0) @binding(3) var&lt;storage, read_write&gt; visible_count: atomic&lt;u32&gt;;
+
+// Test if AABB is visible against frustum
+fn is_aabb_visible(center: vec3&lt;f32&gt;, extent: vec3&lt;f32&gt;, frustum: FrustumPlanes) -&gt; bool {
+    // Test AABB against all 6 frustum planes (manually unrolled - WGSL requires constant indices)
+    // Plane 0 (left)
+    var plane = frustum.planes[0];
+    var normal = plane.xyz;
+    var d = plane.w;
+    var dist = dot(center, normal) + d;
+    var radius = abs(extent.x) * abs(normal.x) + abs(extent.y) * abs(normal.y) + abs(extent.z) * abs(normal.z);
+    if (dist &lt; -radius) { return false; }
+    
+    // Plane 1 (right)
+    plane = frustum.planes[1];
+    normal = plane.xyz;
+    d = plane.w;
+    dist = dot(center, normal) + d;
+    radius = abs(extent.x) * abs(normal.x) + abs(extent.y) * abs(normal.y) + abs(extent.z) * abs(normal.z);
+    if (dist &lt; -radius) { return false; }
+    
+    // Plane 2 (bottom)
+    plane = frustum.planes[2];
+    normal = plane.xyz;
+    d = plane.w;
+    dist = dot(center, normal) + d;
+    radius = abs(extent.x) * abs(normal.x) + abs(extent.y) * abs(normal.y) + abs(extent.z) * abs(normal.z);
+    if (dist &lt; -radius) { return false; }
+    
+    // Plane 3 (top)
+    plane = frustum.planes[3];
+    normal = plane.xyz;
+    d = plane.w;
+    dist = dot(center, normal) + d;
+    radius = abs(extent.x) * abs(normal.x) + abs(extent.y) * abs(normal.y) + abs(extent.z) * abs(normal.z);
+    if (dist &lt; -radius) { return false; }
+    
+    // Plane 4 (near)
+    plane = frustum.planes[4];
+    normal = plane.xyz;
+    d = plane.w;
+    dist = dot(center, normal) + d;
+    radius = abs(extent.x) * abs(normal.x) + abs(extent.y) * abs(normal.y) + abs(extent.z) * abs(normal.z);
+    if (dist &lt; -radius) { return false; }
+    
+    // Plane 5 (far)
+    plane = frustum.planes[5];
+    normal = plane.xyz;
+    d = plane.w;
+    dist = dot(center, normal) + d;
+    radius = abs(extent.x) * abs(normal.x) + abs(extent.y) * abs(normal.y) + abs(extent.z) * abs(normal.z);
+    if (dist &lt; -radius) { return false; }
+    
+    return true;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3&lt;u32&gt;) {
+    let idx = gid.x;
+    if (idx &gt;= arrayLength(&amp;instance_aabbs)) { 
+        return; 
+    }
+    
+    let aabb = instance_aabbs[idx];
+    if (is_aabb_visible(aabb.center, aabb.extent, frustum)) {
+        let slot = atomicAdd(&amp;visible_count, 1u);
+        visible_instances[slot] = aabb.instance_index;
+    }
+}
+&quot;#;</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Compute shader source for frustum culling</p>
+</div></details></section></div></main></body></html>

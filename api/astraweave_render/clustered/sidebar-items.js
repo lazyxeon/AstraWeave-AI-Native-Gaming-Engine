@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["WGSL_CLUSTER_BIN"],"fn":["bin_lights_cpu"],"struct":["ClusterDims","CpuLight"]};
