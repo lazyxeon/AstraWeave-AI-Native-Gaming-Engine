@@ -13,3 +13,7 @@ futures-util = { workspace = true }
 tungstenite = { workspace = true }
 tokio-tungstenite = { workspace = true }
 astraweave-core = { path = "../astraweave-core" }
+rand = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
