@@ -1,16 +1,15 @@
 // Week 3 Day 6: AI Performance Benchmarks
-// Validates AI planning performance against Phase 7 targets
+// Validates AI planning performance against Phase 7 targets using up-to-date APIs
 
 use astraweave_ai::{
-    orchestrator::{GOAPOrchestrator, Orchestrator, RuleOrchestrator, UtilityOrchestrator},
-    tool_sandbox::{validate_action_plan, PerceptionConfig},
+    orchestrator::{GoapOrchestrator, Orchestrator, RuleOrchestrator, UtilityOrchestrator},
+    tool_sandbox::{validate_tool_action, ToolVerb, ValidationContext},
 };
 use astraweave_core::{
-    glam::IVec2,
-    schema::{CompanionState, EnemyState, PlayerState, Poi, WorldSnapshot},
+    CompanionState, EnemyState, IVec2, PlayerState, Poi, WorldSnapshot,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::collections::BTreeMap;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::{collections::BTreeMap, hint::black_box};
 
 // =============================================================================
 // Helper: Create Minimal Snapshot
@@ -19,25 +18,37 @@ use std::collections::BTreeMap;
 fn create_minimal_snapshot(num_enemies: usize, num_pois: usize) -> WorldSnapshot {
     let enemies = (0..num_enemies)
         .map(|i| EnemyState {
-            pos: IVec2::new((i * 10) as i32, 0),
+            id: i as u32,
+            pos: IVec2 {
+                x: (i as i32) * 10,
+                y: 0,
+            },
             hp: 50,
+            cover: "none".to_string(),
+            last_seen: 0.0,
         })
         .collect();
 
     let pois = (0..num_pois)
         .map(|i| Poi {
-            pos: IVec2::new((i * 15) as i32, 5),
+            k: format!("poi_{i}"),
+            pos: IVec2 {
+                x: (i as i32) * 15,
+                y: 5,
+            },
         })
         .collect();
 
     WorldSnapshot {
         t: 1.0,
         player: PlayerState {
-            pos: IVec2::new(0, 0),
+            pos: IVec2 { x: 0, y: 0 },
             hp: 100,
+            stance: "stand".to_string(),
+            orders: vec![],
         },
         me: CompanionState {
-            pos: IVec2::new(1, 1),
+            pos: IVec2 { x: 1, y: 1 },
             ammo: 30,
             morale: 0.8,
             cooldowns: BTreeMap::new(),
@@ -57,38 +68,55 @@ fn create_complex_snapshot() -> WorldSnapshot {
     WorldSnapshot {
         t: 5.0,
         player: PlayerState {
-            pos: IVec2::new(10, 10),
+            pos: IVec2 { x: 10, y: 10 },
             hp: 75,
+            stance: "crouch".to_string(),
+            orders: vec!["hold_position".to_string()],
         },
         me: CompanionState {
-            pos: IVec2::new(12, 12),
+            pos: IVec2 { x: 12, y: 12 },
             ammo: 15,
             morale: 0.6,
             cooldowns,
         },
         enemies: vec![
             EnemyState {
-                pos: IVec2::new(20, 20),
+                id: 1,
+                pos: IVec2 { x: 20, y: 20 },
                 hp: 60,
+                cover: "low".to_string(),
+                last_seen: 0.5,
             },
             EnemyState {
-                pos: IVec2::new(25, 18),
+                id: 2,
+                pos: IVec2 { x: 25, y: 18 },
                 hp: 40,
+                cover: "none".to_string(),
+                last_seen: 0.7,
             },
             EnemyState {
-                pos: IVec2::new(30, 22),
+                id: 3,
+                pos: IVec2 { x: 30, y: 22 },
                 hp: 80,
+                cover: "high".to_string(),
+                last_seen: 0.1,
             },
         ],
         pois: vec![
             Poi {
-                pos: IVec2::new(15, 15),
+                k: "poi_alpha".to_string(),
+                pos: IVec2 { x: 15, y: 15 },
             },
             Poi {
-                pos: IVec2::new(18, 20),
+                k: "poi_beta".to_string(),
+                pos: IVec2 { x: 18, y: 20 },
             },
         ],
-        obstacles: vec![IVec2::new(16, 16), IVec2::new(17, 16), IVec2::new(18, 16)],
+        obstacles: vec![
+            IVec2 { x: 16, y: 16 },
+            IVec2 { x: 17, y: 16 },
+            IVec2 { x: 18, y: 16 },
+        ],
         objective: Some("Defend the checkpoint".to_string()),
     }
 }
@@ -98,35 +126,30 @@ fn create_complex_snapshot() -> WorldSnapshot {
 // =============================================================================
 
 fn bench_goap_planning_latency(c: &mut Criterion) {
+    let orchestrator = GoapOrchestrator;
     let mut group = c.benchmark_group("GOAP Planning");
 
-    // Simple scenario (1 enemy)
     let simple_snap = create_minimal_snapshot(1, 0);
     group.bench_function("1 enemy (simple)", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let snap = black_box(&simple_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
-    // Moderate scenario (3 enemies, 2 POIs)
     let moderate_snap = create_minimal_snapshot(3, 2);
     group.bench_function("3 enemies + 2 POIs (moderate)", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let snap = black_box(&moderate_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
-    // Complex scenario (10 enemies, 5 POIs)
     let complex_snap = create_minimal_snapshot(10, 5);
     group.bench_function("10 enemies + 5 POIs (complex)", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let snap = black_box(&complex_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
@@ -138,23 +161,22 @@ fn bench_goap_planning_latency(c: &mut Criterion) {
 // =============================================================================
 
 fn bench_rule_based_planning(c: &mut Criterion) {
+    let orchestrator = RuleOrchestrator;
     let mut group = c.benchmark_group("Rule-Based Planning");
 
     let simple_snap = create_minimal_snapshot(1, 0);
     group.bench_function("1 enemy", |b| {
-        let orchestrator = RuleOrchestrator;
         b.iter(|| {
             let snap = black_box(&simple_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
     let moderate_snap = create_minimal_snapshot(3, 2);
     group.bench_function("3 enemies", |b| {
-        let orchestrator = RuleOrchestrator;
         b.iter(|| {
             let snap = black_box(&moderate_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
@@ -166,23 +188,22 @@ fn bench_rule_based_planning(c: &mut Criterion) {
 // =============================================================================
 
 fn bench_utility_planning(c: &mut Criterion) {
+    let orchestrator = UtilityOrchestrator;
     let mut group = c.benchmark_group("Utility AI Planning");
 
     let simple_snap = create_minimal_snapshot(1, 0);
     group.bench_function("1 enemy", |b| {
-        let orchestrator = UtilityOrchestrator;
         b.iter(|| {
             let snap = black_box(&simple_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
     let complex_snap = create_complex_snapshot();
     group.bench_function("complex scenario", |b| {
-        let orchestrator = UtilityOrchestrator;
         b.iter(|| {
             let snap = black_box(&complex_snap);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
@@ -195,47 +216,19 @@ fn bench_utility_planning(c: &mut Criterion) {
 
 fn bench_tool_validation(c: &mut Criterion) {
     let mut group = c.benchmark_group("Tool Validation");
-
     let snap = create_complex_snapshot();
-    let config = PerceptionConfig { los_max: 50 };
-
-    // Create a simple MoveTo plan
-    let mut plan_args = BTreeMap::new();
-    plan_args.insert("pos".to_string(), "20,20".to_string());
-
-    let plan = astraweave_core::schema::PlanIntent {
-        plan_id: "test_plan".to_string(),
-        steps: vec![astraweave_core::schema::ActionStep {
-            verb: "MoveTo".to_string(),
-            args: plan_args,
-        }],
-    };
+    let context: ValidationContext<'static> = ValidationContext::new();
+    let target = IVec2 { x: 20, y: 20 };
 
     group.bench_function("validate MoveTo", |b| {
         b.iter(|| {
-            let s = black_box(&snap);
-            let p = black_box(&plan);
-            validate_action_plan(s, p, &config)
+            let _ = validate_tool_action(0, ToolVerb::MoveTo, &snap, &context, Some(target));
         })
     });
 
-    // Create a CoverFire plan
-    let mut cover_args = BTreeMap::new();
-    cover_args.insert("target".to_string(), "20,20".to_string());
-
-    let cover_plan = astraweave_core::schema::PlanIntent {
-        plan_id: "cover_plan".to_string(),
-        steps: vec![astraweave_core::schema::ActionStep {
-            verb: "CoverFire".to_string(),
-            args: cover_args,
-        }],
-    };
-
     group.bench_function("validate CoverFire", |b| {
         b.iter(|| {
-            let s = black_box(&snap);
-            let p = black_box(&cover_plan);
-            validate_action_plan(s, p, &config)
+            let _ = validate_tool_action(0, ToolVerb::CoverFire, &snap, &context, Some(target));
         })
     });
 
@@ -247,20 +240,19 @@ fn bench_tool_validation(c: &mut Criterion) {
 // =============================================================================
 
 fn bench_multi_agent_throughput(c: &mut Criterion) {
+    let orchestrator = GoapOrchestrator;
     let mut group = c.benchmark_group("Multi-Agent Throughput");
 
-    for agent_count in [10, 50, 100, 500].iter() {
+    for agent_count in [10_u32, 50, 100, 500].iter() {
         group.bench_with_input(
             BenchmarkId::from_parameter(agent_count),
             agent_count,
             |b, &count| {
-                let orchestrator = GOAPOrchestrator;
                 let snap = create_minimal_snapshot(1, 0);
-
                 b.iter(|| {
                     for _ in 0..count {
                         let s = black_box(&snap);
-                        orchestrator.next_action(s);
+                        black_box(orchestrator.propose_plan(s));
                     }
                 })
             },
@@ -309,37 +301,32 @@ fn bench_snapshot_cloning(c: &mut Criterion) {
 // =============================================================================
 
 fn bench_planning_conditions(c: &mut Criterion) {
+    let orchestrator = GoapOrchestrator;
     let mut group = c.benchmark_group("Planning Conditions");
 
-    // No enemies (idle planning)
     let no_enemies = create_minimal_snapshot(0, 2);
     group.bench_function("no enemies (idle)", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let snap = black_box(&no_enemies);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
-    // Low ammo
     let mut low_ammo = create_minimal_snapshot(3, 0);
     low_ammo.me.ammo = 2;
     group.bench_function("low ammo (3 enemies)", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let snap = black_box(&low_ammo);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
-    // Low morale
     let mut low_morale = create_minimal_snapshot(5, 0);
     low_morale.me.morale = 0.2;
     group.bench_function("low morale (5 enemies)", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let snap = black_box(&low_morale);
-            orchestrator.next_action(snap)
+            black_box(orchestrator.propose_plan(snap))
         })
     });
 
@@ -351,30 +338,30 @@ fn bench_planning_conditions(c: &mut Criterion) {
 // =============================================================================
 
 fn bench_orchestrator_comparison(c: &mut Criterion) {
+    let goap = GoapOrchestrator;
+    let rule = RuleOrchestrator;
+    let utility = UtilityOrchestrator;
     let mut group = c.benchmark_group("Orchestrator Comparison");
     let snap = create_complex_snapshot();
 
     group.bench_function("Rule-based", |b| {
-        let orchestrator = RuleOrchestrator;
         b.iter(|| {
             let s = black_box(&snap);
-            orchestrator.next_action(s)
+            black_box(rule.propose_plan(s))
         })
     });
 
     group.bench_function("GOAP", |b| {
-        let orchestrator = GOAPOrchestrator;
         b.iter(|| {
             let s = black_box(&snap);
-            orchestrator.next_action(s)
+            black_box(goap.propose_plan(s))
         })
     });
 
     group.bench_function("Utility", |b| {
-        let orchestrator = UtilityOrchestrator;
         b.iter(|| {
             let s = black_box(&snap);
-            orchestrator.next_action(s)
+            black_box(utility.propose_plan(s))
         })
     });
 

@@ -2,8 +2,9 @@
 
 use astraweave_ai::{GoapOrchestrator, Orchestrator};
 use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use std::collections::BTreeMap;
+use std::hint::black_box;
 
 fn create_test_snapshot(enemy_dist: i32) -> WorldSnapshot {
     WorldSnapshot {

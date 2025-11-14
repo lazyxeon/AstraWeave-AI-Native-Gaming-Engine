@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use astraweave_core::{Entity, IVec2, World};
+use astraweave_security::path::{safe_under, validate_extension};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -112,28 +113,56 @@ impl SceneData {
     }
 
     pub fn save_to_file(&self, path: &Path) -> Result<()> {
+        // Security: Validate path is within content directory and has correct extension
+        let base = std::env::current_dir().context("Failed to get current directory")?;
+        let content_base = base.join("content");
+        
+        // Create content directory if it doesn't exist
+        fs::create_dir_all(&content_base)
+            .context("Failed to create content directory")?;
+        
+        // Validate path is within content directory
+        let safe_path = safe_under(&content_base, path)
+            .map_err(|e| anyhow::anyhow!("Invalid scene path: {}", e))?;
+        
+        // Validate extension
+        validate_extension(&safe_path, &["ron", "json", "toml"])
+            .map_err(|e| anyhow::anyhow!("Invalid scene file extension: {}", e))?;
+        
         let ron_string = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
             .context("Failed to serialize scene to RON")?;
 
-        if let Some(parent) = path.parent() {
+        if let Some(parent) = safe_path.parent() {
             fs::create_dir_all(parent)
                 .context(format!("Failed to create directory: {:?}", parent))?;
         }
 
-        fs::write(path, ron_string).context(format!("Failed to write scene to {:?}", path))?;
+        fs::write(&safe_path, ron_string).context(format!("Failed to write scene to {:?}", safe_path))?;
 
-        println!("💾 Saved scene to {:?}", path);
+        println!("💾 Saved scene to {:?}", safe_path);
         Ok(())
     }
 
     pub fn load_from_file(path: &Path) -> Result<Self> {
-        let contents = fs::read_to_string(path)
-            .context(format!("Failed to read scene from {:?}", path))?;
+        // Security: Validate path is within content directory and has correct extension
+        let base = std::env::current_dir().context("Failed to get current directory")?;
+        let content_base = base.join("content");
+        
+        // Validate path is within content directory
+        let safe_path = safe_under(&content_base, path)
+            .map_err(|e| anyhow::anyhow!("Invalid scene path: {}", e))?;
+        
+        // Validate extension
+        validate_extension(&safe_path, &["ron", "json", "toml"])
+            .map_err(|e| anyhow::anyhow!("Invalid scene file extension: {}", e))?;
+        
+        let contents = fs::read_to_string(&safe_path)
+            .context(format!("Failed to read scene from {:?}", safe_path))?;
 
         let scene: SceneData = ron::from_str(&contents)
-            .context(format!("Failed to deserialize scene from {:?}", path))?;
+            .context(format!("Failed to deserialize scene from {:?}", safe_path))?;
 
-        println!("📂 Loaded scene from {:?}", path);
+        println!("📂 Loaded scene from {:?}", safe_path);
         Ok(scene)
     }
 }

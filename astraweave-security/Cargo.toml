@@ -8,6 +8,8 @@ edition = "2021"
 anyhow = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+toml = { workspace = true }
+ron = "0.8"
 tokio = { workspace = true }
 sha2 = { workspace = true }
 ed25519-dalek = { workspace = true }
@@ -18,3 +20,6 @@ astraweave-ecs = { workspace = true }
 astraweave-core = { workspace = true }
 astraweave-ai = { workspace = true }
 astraweave-llm = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

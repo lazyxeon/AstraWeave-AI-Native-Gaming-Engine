@@ -1,0 +1,13 @@
+{
+  "source_path": "assets\\materials\\grass.png",
+  "output_path": "test_output\\grass.ktx2",
+  "color_space": "srgb",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 13,
+  "dimensions": [
+    4096,
+    4096
+  ],
+  "sha256": "a18ca3c7cf10eb0f0725ae9ccbbfde48df353cf7568353c4e03553c1e7acc97a"
+}

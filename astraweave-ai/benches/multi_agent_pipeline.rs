@@ -19,8 +19,9 @@ use astraweave_ai::core_loop::{dispatch_planner, CAiController, PlannerMode};
 use astraweave_core::{
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::BTreeMap;
+use std::hint::black_box;
 use std::time::Instant;
 
 // ============================================================================

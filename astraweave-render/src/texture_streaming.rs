@@ -133,54 +133,61 @@ impl TextureStreamingManager {
     where
         F: FnMut(&AssetId) -> Option<(u32, u32, usize)>,
     {
-        let request = self.load_queue.pop()?;
-        
-        // Skip if already loaded (might have been loaded while in queue)
-        if self.loaded_textures.contains_key(&request.id) {
-            return self.process_next_load(texture_data);
-        }
-
-        // Load texture data
-        let (width, height, memory_bytes) = texture_data(&request.id)?;
-
-        // Evict LRU textures until we have space
-        while self.current_memory_bytes + memory_bytes > self.max_memory_bytes {
-            if !self.evict_lru() {
-                // No more textures to evict and still not enough space
-                warn!(
-                    "Cannot load texture {} ({}MB): not enough memory",
-                    request.id,
-                    memory_bytes / (1024 * 1024)
-                );
-                return None;
+        // Iterative loop to process requests without recursion
+        while let Some(request) = self.load_queue.pop() {
+            // Skip if already loaded (might have been loaded while in queue)
+            if self.loaded_textures.contains_key(&request.id) {
+                continue;
             }
-        }
 
-        // Create texture handle (placeholder)
-        let handle = TextureHandle {
-            id: request.id.clone(),
-            width,
-            height,
-            mip_levels: calculate_mip_levels(width, height),
-            memory_bytes,
-        };
+            // Load texture data
+            let (width, height, memory_bytes) = match texture_data(&request.id) {
+                Some(data) => data,
+                None => continue,
+            };
 
-        // Add to cache
-        self.loaded_textures.insert(request.id.clone(), handle);
-        self.lru_queue.push_back(request.id.clone());
-        self.current_memory_bytes += memory_bytes;
+            // Evict LRU textures until we have space
+            while self.current_memory_bytes + memory_bytes > self.max_memory_bytes {
+                if !self.evict_lru() {
+                    // No more textures to evict and still not enough space
+                    warn!(
+                        "Cannot load texture {} ({}MB): not enough memory",
+                        request.id,
+                        memory_bytes / (1024 * 1024)
+                    );
+                    return None;
+                }
+            }
 
-        debug!(
-            "Loaded texture {} ({}x{}, {} mips, {:.2}MB) - {:.1}% memory used",
-            request.id,
-            width,
-            height,
-            calculate_mip_levels(width, height),
-            memory_bytes as f32 / (1024.0 * 1024.0),
+            // Create texture handle (placeholder)
+            let handle = TextureHandle {
+                id: request.id.clone(),
+                width,
+                height,
+                mip_levels: calculate_mip_levels(width, height),
+                memory_bytes,
+            };
+
+            // Add to cache
+            self.loaded_textures.insert(request.id.clone(), handle);
+            self.lru_queue.push_back(request.id.clone());
+            self.current_memory_bytes += memory_bytes;
+
+            debug!(
+                "Loaded texture {} ({}x{}, {} mips, {:.2}MB) - {:.1}% memory used",
+                request.id,
+                width,
+                height,
+                calculate_mip_levels(width, height),
+                memory_bytes as f32 / (1024.0 * 1024.0),
             (self.current_memory_bytes as f32 / self.max_memory_bytes as f32) * 100.0
         );
 
-        Some(request.id)
+            return Some(request.id);
+        }
+        
+        // Queue is empty or all requests were skipped
+        None
     }
 
     /// Evict the least recently used texture

@@ -1,0 +1,13 @@
+{
+  "source_path": "assets/materials/cloth_mra.png",
+  "output_path": "assets/materials/baked\\cloth_mra.ktx2",
+  "color_space": "linear",
+  "normal_y_convention": null,
+  "compression": "Bc7",
+  "mip_levels": 3,
+  "dimensions": [
+    4,
+    4
+  ],
+  "sha256": "b4dd4e40114006a845b0d4dd09d6dcca8971cdb74063a3e172b0853bdec93c6b"
+}

@@ -12,7 +12,9 @@
 //! - Mode transitions are minimal overhead
 //! - Non-blocking polling adds <10 µs overhead
 
+#[cfg(feature = "llm_orchestrator")]
 use criterion::{criterion_group, criterion_main, Criterion};
+#[cfg(feature = "llm_orchestrator")]
 use std::hint::black_box;
 
 #[cfg(feature = "llm_orchestrator")]

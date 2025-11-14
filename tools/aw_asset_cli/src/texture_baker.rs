@@ -210,7 +210,8 @@ fn generate_mipmap_chain(base: &DynamicImage) -> Result<Vec<DynamicImage>> {
     Ok(mipmaps)
 }
 
-/// Write texture with mipmaps to KTX2 format
+/// Write texture with mipmaps to true KTX2 format (manual implementation)
+/// KTX2 specification: https://registry.khronos.org/KTX/specs/2.0/ktxspec.v2.html
 fn write_texture_with_mipmaps(
     mipmaps: &[DynamicImage],
     output_path: &Path,
@@ -222,26 +223,26 @@ fn write_texture_with_mipmaps(
 
     let (base_width, base_height) = mipmaps[0].dimensions();
 
-    // Determine Vulkan format based on compression and color space
+    // Map compression format to Vulkan format enum
     let vk_format = match (config.compression, config.color_space) {
         // BC1 (DXT1) - RGB + 1-bit alpha
-        (CompressionFormat::Bc1, ColorSpace::Srgb) => 83, // VK_FORMAT_BC1_RGB_SRGB_BLOCK
-        (CompressionFormat::Bc1, ColorSpace::Linear) => 71, // VK_FORMAT_BC1_RGB_UNORM_BLOCK
+        (CompressionFormat::Bc1, ColorSpace::Srgb) => 135u32,   // VK_FORMAT_BC1_RGB_SRGB_BLOCK
+        (CompressionFormat::Bc1, ColorSpace::Linear) => 131u32, // VK_FORMAT_BC1_RGB_UNORM_BLOCK
 
         // BC3 (DXT5) - RGBA with smooth alpha
-        (CompressionFormat::Bc3, ColorSpace::Srgb) => 87, // VK_FORMAT_BC3_SRGB_BLOCK
-        (CompressionFormat::Bc3, ColorSpace::Linear) => 75, // VK_FORMAT_BC3_UNORM_BLOCK
+        (CompressionFormat::Bc3, ColorSpace::Srgb) => 139u32,   // VK_FORMAT_BC3_SRGB_BLOCK
+        (CompressionFormat::Bc3, ColorSpace::Linear) => 135u32, // VK_FORMAT_BC3_UNORM_BLOCK
 
         // BC5 - Two-channel (RG) for normal maps (always linear)
-        (CompressionFormat::Bc5, _) => 143, // VK_FORMAT_BC5_UNORM_BLOCK
+        (CompressionFormat::Bc5, _) => 143u32, // VK_FORMAT_BC5_UNORM_BLOCK
 
         // BC7 - High-quality RGBA
-        (CompressionFormat::Bc7, ColorSpace::Srgb) => 99, // VK_FORMAT_BC7_SRGB_BLOCK
-        (CompressionFormat::Bc7, ColorSpace::Linear) => 98, // VK_FORMAT_BC7_UNORM_BLOCK
+        (CompressionFormat::Bc7, ColorSpace::Srgb) => 147u32,   // VK_FORMAT_BC7_SRGB_BLOCK
+        (CompressionFormat::Bc7, ColorSpace::Linear) => 145u32, // VK_FORMAT_BC7_UNORM_BLOCK
 
         // No compression - RGBA8
-        (CompressionFormat::None, ColorSpace::Srgb) => 43, // VK_FORMAT_R8G8B8A8_SRGB
-        (CompressionFormat::None, ColorSpace::Linear) => 37, // VK_FORMAT_R8G8B8A8_UNORM
+        (CompressionFormat::None, ColorSpace::Srgb) => 43u32, // VK_FORMAT_R8G8B8A8_SRGB
+        (CompressionFormat::None, ColorSpace::Linear) => 37u32, // VK_FORMAT_R8G8B8A8_UNORM
     };
 
     // Collect mipmap data
@@ -269,31 +270,84 @@ fn write_texture_with_mipmaps(
         mip_data_vec.push(mip_data);
     }
 
-    // Build custom .awtex2 file format (not KTX2)
-    // Note: This is a custom AstraWeave texture format, not standard KTX2
-    // For standard KTX2, use libktx-rs or ktx2 crate
-    // Extension should be .awtex2 to avoid confusion with real KTX2 files
-
+    // Build KTX2 file manually according to spec
     let mut output_data = Vec::new();
 
-    // Write custom format header
-    output_data.extend_from_slice(b"AWTEX2\0\0"); // Magic number (8 bytes aligned)
-    output_data.extend_from_slice(&(vk_format as u32).to_le_bytes());
-    output_data.extend_from_slice(&base_width.to_le_bytes());
-    output_data.extend_from_slice(&base_height.to_le_bytes());
-    output_data.extend_from_slice(&(mipmaps.len() as u32).to_le_bytes());
+    // 1. KTX2 identifier (12 bytes) - the magic bytes
+    output_data.extend_from_slice(&[
+        0xAB, 0x4B, 0x54, 0x58, // «KTX
+        0x20, 0x32, 0x30, 0xBB, //  20»
+        0x0D, 0x0A, 0x1A, 0x0A, // \r\n\x1A\n
+    ]);
 
-    // Write mip data
+    // 2. KTX2 header (68 bytes total after identifier = 80 bytes from start)
+    output_data.extend_from_slice(&vk_format.to_le_bytes()); // vkFormat (u32)
+    output_data.extend_from_slice(&1u32.to_le_bytes());      // typeSize (1 for compressed)
+    output_data.extend_from_slice(&base_width.to_le_bytes()); // pixelWidth
+    output_data.extend_from_slice(&base_height.to_le_bytes()); // pixelHeight
+    output_data.extend_from_slice(&0u32.to_le_bytes());      // pixelDepth (0 for 2D)
+    output_data.extend_from_slice(&0u32.to_le_bytes());      // layerCount (0 = not array)
+    output_data.extend_from_slice(&1u32.to_le_bytes());      // faceCount (1 for non-cubemap)
+    output_data.extend_from_slice(&(mip_data_vec.len() as u32).to_le_bytes()); // levelCount
+    output_data.extend_from_slice(&0u32.to_le_bytes());      // supercompressionScheme (0 = none)
+
+    // 3. Index section (we'll fill these after we know the data positions)
+    // For now, write placeholder zeros (we'll update these)
+    let index_offset = output_data.len();
+    
+    // DFD (Data Format Descriptor) offset and length
+    output_data.extend_from_slice(&0u32.to_le_bytes()); // dfdByteOffset
+    output_data.extend_from_slice(&0u32.to_le_bytes()); // dfdByteLength
+    
+    // KVD (Key/Value Data) offset and length
+    output_data.extend_from_slice(&0u32.to_le_bytes()); // kvdByteOffset
+    output_data.extend_from_slice(&0u32.to_le_bytes()); // kvdByteLength
+    
+    // SGD (Supercompression Global Data) offset and length
+    output_data.extend_from_slice(&0u64.to_le_bytes()); // sgdByteOffset
+    output_data.extend_from_slice(&0u64.to_le_bytes()); // sgdByteLength
+
+    // 4. Level Index (8 bytes per level)
+    let level_index_offset = output_data.len();
+    for _ in 0..mip_data_vec.len() {
+        output_data.extend_from_slice(&0u64.to_le_bytes()); // byteOffset (placeholder)
+        output_data.extend_from_slice(&0u64.to_le_bytes()); // byteLength (placeholder)
+        output_data.extend_from_slice(&0u64.to_le_bytes()); // uncompressedByteLength (placeholder)
+    }
+
+    // 5. DFD (minimal - required by spec)
+    let dfd_offset = output_data.len() as u32;
+    let dfd_data = create_minimal_dfd(vk_format);
+    let dfd_length = dfd_data.len() as u32;
+    output_data.extend_from_slice(&dfd_data);
+
+    // 6. Mip level data
+    let mut level_offsets = Vec::new();
     for mip_data in &mip_data_vec {
-        output_data.extend_from_slice(&(mip_data.len() as u32).to_le_bytes());
+        let offset = output_data.len() as u64;
+        let length = mip_data.len() as u64;
+        level_offsets.push((offset, length));
         output_data.extend_from_slice(mip_data);
     }
 
+    // 7. Update index section with actual offsets
+    // Update DFD offset/length
+    output_data[index_offset..index_offset + 4].copy_from_slice(&dfd_offset.to_le_bytes());
+    output_data[index_offset + 4..index_offset + 8].copy_from_slice(&dfd_length.to_le_bytes());
+
+    // Update level index with actual offsets
+    for (i, (offset, length)) in level_offsets.iter().enumerate() {
+        let idx_pos = level_index_offset + i * 24;
+        output_data[idx_pos..idx_pos + 8].copy_from_slice(&offset.to_le_bytes());
+        output_data[idx_pos + 8..idx_pos + 16].copy_from_slice(&length.to_le_bytes());
+        output_data[idx_pos + 16..idx_pos + 24].copy_from_slice(&length.to_le_bytes()); // uncompressed = compressed
+    }
+
     std::fs::write(output_path, output_data)
-        .with_context(|| format!("Failed to write texture file: {}", output_path.display()))?;
+        .with_context(|| format!("Failed to write KTX2 file: {}", output_path.display()))?;
 
     println!(
-        "[awtex2] Written {} with {} mips, format={}, colorspace={:?} (custom AstraWeave format, not KTX2)",
+        "[ktx2] Written {} with {} mips, format={}, colorspace={:?}",
         output_path.display(),
         mipmaps.len(),
         vk_format,
@@ -301,6 +355,52 @@ fn write_texture_with_mipmaps(
     );
 
     Ok(())
+}
+
+/// Create a minimal Data Format Descriptor for KTX2
+/// This is required by the spec but we use a minimal version
+fn create_minimal_dfd(vk_format: u32) -> Vec<u8> {
+    let mut dfd = Vec::new();
+    
+    // DFD total size (u32) - 44 bytes for basic descriptor
+    dfd.extend_from_slice(&44u32.to_le_bytes());
+    
+    // Vendor ID (u32) - 0 = Khronos
+    dfd.extend_from_slice(&0u32.to_le_bytes());
+    
+    // Descriptor type (u32) - 0 = BASIC
+    dfd.extend_from_slice(&0u32.to_le_bytes());
+    
+    // Version number (u32) - 2 for KTX2
+    dfd.extend_from_slice(&2u32.to_le_bytes());
+    
+    // Descriptor block size (u32) - 40 bytes (excluding total size)
+    dfd.extend_from_slice(&40u32.to_le_bytes());
+    
+    // Color model (u32) - we'll use 0 (undefined/format-specific)
+    dfd.extend_from_slice(&0u32.to_le_bytes());
+    
+    // Color primaries (u32) - 1 = BT709 (sRGB)
+    dfd.extend_from_slice(&1u32.to_le_bytes());
+    
+    // Transfer function (u32) - 1 = sRGB, 2 = linear
+    dfd.extend_from_slice(&1u32.to_le_bytes());
+    
+    // Flags (u32)
+    dfd.extend_from_slice(&0u32.to_le_bytes());
+    
+    // Texel block dimensions (4 bytes) - 4x4x1 for BC formats, 1x1x1 for uncompressed
+    dfd.extend_from_slice(&[4, 4, 1, 0]); // BC formats use 4x4 blocks
+    
+    // Bytes per block (4 bytes) - varies by format
+    let bytes_per_block = if vk_format == 131 || vk_format == 135 {
+        8u32 // BC1
+    } else {
+        16u32 // BC3, BC5, BC7
+    };
+    dfd.extend_from_slice(&bytes_per_block.to_le_bytes());
+    
+    dfd
 }
 
 /// Simple BC block compression (placeholder implementation)

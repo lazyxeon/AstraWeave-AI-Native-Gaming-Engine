@@ -6,8 +6,9 @@
 //! - Texture size limits and power-of-two constraints
 //! - Color-space correctness (sRGB vs linear)
 //! - Normal map format validation
+//! - Manifest signature verification (Task 1.2)
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use image::{DynamicImage, GenericImageView};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -158,38 +159,69 @@ pub fn validate_texture(path: &Path, config: &TextureValidationConfig) -> Result
 }
 
 /// Validate KTX2 texture file for mipmap presence
+/// Supports both true KTX2 and legacy AWTEX2 formats during migration
 pub fn validate_ktx2_mipmaps(path: &Path) -> Result<ValidationResult> {
     let mut result = ValidationResult::new(path.display().to_string());
 
-    // Read KTX2 header (first 80 bytes contain key info)
-    let data = std::fs::read(path).context("Failed to read KTX2 file")?;
+    // Read file header
+    let data = std::fs::read(path).context("Failed to read texture file")?;
 
-    if data.len() < 80 {
-        result.error("File too small to be valid KTX2");
+    if data.len() < 12 {
+        result.error("File too small to be valid texture file");
         return Ok(result);
     }
 
-    // Check KTX2 identifier (first 12 bytes)
+    // Check magic bytes to determine format
     let identifier = &data[0..12];
     let ktx2_id = &[
         0xAB, 0x4B, 0x54, 0x58, 0x20, 0x32, 0x30, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A,
     ];
+    let awtex2_id = b"AWTEX2\0\0";
 
-    if identifier != ktx2_id {
-        result.error("Not a valid KTX2 file (invalid identifier)");
-        return Ok(result);
-    }
+    if identifier == ktx2_id {
+        // True KTX2 file
+        result.info("Format: True KTX2 (standard)");
+        
+        if data.len() < 80 {
+            result.error("KTX2 file too small (< 80 bytes)");
+            return Ok(result);
+        }
 
-    // Read level count (offset 20, 4 bytes, little-endian)
-    let level_count = u32::from_le_bytes([data[20], data[21], data[22], data[23]]);
-    result.info(format!("Mip levels: {}", level_count));
+        // Read level count from true KTX2 header
+        // KTX2 header: vkFormat(12), typeSize(16), width(20), height(24),
+        //              depth(28), layerCount(32), faceCount(36), levelCount(40)
+        let level_count = u32::from_le_bytes([data[40], data[41], data[42], data[43]]);
+        result.info(format!("Mip levels: {}", level_count));
 
-    if level_count == 1 {
-        result.warning("No mipmaps present (level count = 1)");
-    } else if level_count == 0 {
-        result.error("Invalid mip level count (0)");
+        if level_count == 1 {
+            result.warning("No mipmaps present (level count = 1)");
+        } else if level_count == 0 {
+            result.error("Invalid mip level count (0)");
+        } else {
+            result.info(format!("Has {} mip levels (full chain)", level_count));
+        }
+    } else if &identifier[0..8] == awtex2_id {
+        // Legacy AWTEX2 file (temporary during migration)
+        result.warning("Format: Legacy AWTEX2 (should migrate to true KTX2)");
+        
+        if data.len() < 28 {
+            result.error("AWTEX2 file too small (< 28 bytes)");
+            return Ok(result);
+        }
+
+        // Read mip count from AWTEX2 header (offset 24)
+        let level_count = u32::from_le_bytes([data[24], data[25], data[26], data[27]]);
+        result.info(format!("Mip levels: {}", level_count));
+
+        if level_count == 1 {
+            result.warning("No mipmaps present (level count = 1)");
+        } else if level_count == 0 {
+            result.error("Invalid mip level count (0)");
+        } else {
+            result.info(format!("Has {} mip levels (full chain)", level_count));
+        }
     } else {
-        result.info(format!("Has {} mip levels (full chain)", level_count));
+        result.error("Unknown texture format (not KTX2 or AWTEX2)");
     }
 
     Ok(result)
@@ -552,6 +584,92 @@ fn validate_terrain_layer(
             }
         }
     }
+}
+
+/// Verify manifest signature (Task 1.2: Persistent Asset Signing Keys)
+///
+/// # Arguments
+/// * `manifest_path` - Path to signed manifest JSON file
+///
+/// # Returns
+/// ValidationResult indicating signature verification status
+pub fn verify_manifest_signature(manifest_path: &Path) -> Result<ValidationResult> {
+    use asset_signing::{KeyStore, VerifyKey};
+    use base64::engine::general_purpose::STANDARD as BASE64;
+    use base64::Engine;
+
+    let mut result = ValidationResult::new(manifest_path.display().to_string());
+
+    // Read manifest file
+    let manifest_content = std::fs::read_to_string(manifest_path)
+        .context("Failed to read manifest file")?;
+
+    // Parse manifest JSON
+    let manifest_value: serde_json::Value = serde_json::from_str(&manifest_content)
+        .context("Failed to parse manifest JSON")?;
+
+    // Extract signature
+    let signature = manifest_value
+        .get("signature")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| anyhow::anyhow!("Missing 'signature' field in manifest"))?;
+
+    // Extract public key
+    let public_key_pem = manifest_value
+        .get("public_key")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| anyhow::anyhow!("Missing 'public_key' field in manifest"))?;
+
+    // Extract entries for canonical JSON
+    let entries = manifest_value
+        .get("entries")
+        .ok_or_else(|| anyhow::anyhow!("Missing 'entries' field in manifest"))?;
+
+    // Parse public key from PEM format
+    let key_data: String = public_key_pem
+        .lines()
+        .filter(|line| !line.starts_with("-----"))
+        .collect::<Vec<_>>()
+        .join("");
+
+    let key_bytes = BASE64
+        .decode(key_data.trim())
+        .context("Failed to decode public key")?;
+
+    if key_bytes.len() != 32 {
+        result.error(format!(
+            "Invalid public key length: {} (expected 32)",
+            key_bytes.len()
+        ));
+        return Ok(result);
+    }
+
+    let mut key_array = [0u8; 32];
+    key_array.copy_from_slice(&key_bytes);
+
+    let verifying_key = VerifyKey::from_bytes(&key_array)
+        .map_err(|e| anyhow!("Invalid Ed25519 public key: {}", e))?;
+
+    // Reconstruct canonical JSON (entries array only, for signature verification)
+    let entries_json = serde_json::to_string(&entries)?;
+
+    // Verify signature
+    match KeyStore::verify(&verifying_key, &entries_json, signature) {
+        Ok(true) => {
+            result.info("Signature verification: PASSED".to_string());
+            if let Some(signed_at) = manifest_value.get("signed_at").and_then(|v| v.as_str()) {
+                result.info(format!("Signed at: {}", signed_at));
+            }
+        }
+        Ok(false) => {
+            result.error("Signature verification: FAILED - manifest has been tampered with");
+        }
+        Err(e) => {
+            result.error(format!("Signature verification error: {}", e));
+        }
+    }
+
+    Ok(result)
 }
 
 #[cfg(test)]

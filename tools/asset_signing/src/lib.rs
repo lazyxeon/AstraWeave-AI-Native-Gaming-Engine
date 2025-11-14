@@ -2,6 +2,11 @@
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey, SECRET_KEY_LENGTH};
 use sha2::{Digest, Sha256};
 
+pub mod keystore;
+pub use keystore::KeyStore;
+// Re-export VerifyingKey for validators.rs to use
+pub use ed25519_dalek::VerifyingKey as VerifyKey;
+
 fn hash_file(path: &str) -> Result<[u8; 32], String> {
     let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
     let mut hasher = Sha256::new();

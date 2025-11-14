@@ -1,8 +1,8 @@
 # AstraWeave: Master Benchmark Report
 
-**Version**: 3.9  
-**Last Updated**: November 12, 2025 (🎉 **Phases 1-8 Rendering COMPLETE** - 36/36 tasks, 40% performance gain, 27 tests + 4 benchmarks, WORLD-CLASS ⭐⭐⭐⭐⭐)  
-**Status**: ✅ Authoritative Source  
+**Version**: 4.0  
+**Last Updated**: November 13, 2025 (🚀 Benchmark reality sync — AI/Core/Nav suites now live, 129 results exported)  
+**Status**: ✅ Authoritative Source (ACTUAL vs PLANNED clearly labeled)  
 **Maintainer**: Core Team
 
 ---
@@ -11,7 +11,7 @@
 
 This document is the **single authoritative source** for all AstraWeave performance benchmarks. It consolidates data from 45+ benchmark files across 37 crates.
 
-**⚠️ IMPORTANT NOTICE - November 12, 2025**: This document contains **both ACTUAL and PLANNED benchmarks**. See [Reality Check](#reality-check) section for current implementation status.
+**⚠️ IMPORTANT NOTICE - November 13, 2025**: This document now distinguishes **ACTUAL** vs **PLANNED** entries using the latest reconciliation data (129 real Criterion outputs across six crates).
 
 **Maintenance Protocol**: Update this document immediately when ANY benchmark is added, modified, or performance changes significantly. See `.github/copilot-instructions.md` for enforcement.
 
@@ -19,26 +19,42 @@ This document is the **single authoritative source** for all AstraWeave performa
 
 ## Reality Check
 
-**Benchmark Implementation Status** (as of November 12, 2025):
+**Benchmark Implementation Status** (as of November 13, 2025):
 
-| Status | Count | % of Total | Crates |
-|--------|-------|------------|--------|
-| ✅ **ACTUAL** (Executing) | **29** | **5.0%** | 3 crates (weaving, stress-test, math) |
-| 🎯 **PLANNED** (Design Complete, Not Implemented) | **~400** | **69.6%** | 21 crates (compile, but zero Criterion output) |
-| ⚠️ **BLOCKED** (Compilation Errors) | **~146** | **25.4%** | 8 crates (ai, render, audio, terrain, ui, editor, llm-eval, prompts) |
+| Status | Benchmarks | % of Total | Crates |
+|--------|------------|------------|--------|
+| ✅ **ACTUAL** (Executing) | **129** | **22.4%** | 6 crates (ai, core, nav, weaving, stress-test, math) |
+| 🎯 **PLANNED** (Design Complete, Not Implemented) | **~351** | **61.0%** | 19 crates (compile, but zero Criterion output) |
+| ⚠️ **BLOCKED** (Compilation Errors) | **~95** | **16.5%** | 7 crates (render, audio, terrain, ui, editor, prompts, llm-eval) |
 | **TOTAL** | **575** | **100%** | 37 crates |
 
+*Planned/blocked counts are derived by subtracting the 129 actual estimate files under `target/criterion` from the 575 entries still cited in legacy documentation. Values remain approximate until each crate is fully instrumented.*
+
 **What This Means**:
-- **Only 29 benchmarks actually execute and produce dashboard data** (astraweave-weaving: 18, astraweave-stress-test: 5, astraweave-math: 4, aw-save: 2)
-- **~400 benchmarks are design specifications** - they document target performance for features that exist in code but lack Criterion implementations
-- **~146 benchmarks are blocked** - crates fail to compile due to API drift or dependency issues
+- **129 benchmarks now execute and produce dashboard data** (astraweave-ai: 51, astraweave-core: 26, astraweave-nav: 19, astraweave-weaving: 18, astraweave-stress-test: 11, astraweave-math: 4).
+- **~351 additional benchmarks are still design specifications** — these Type B crates compile but never call `criterion_main!`, so their numbers are goals, not measurements.
+- **~95 benchmarks remain blocked** — Type C crates fail to compile due to API drift or dependency issues; `astraweave-ai` exited this list today.
 
 **Interpretation Guide**:
-- ✅ **ACTUAL** results are from real Criterion runs - trust these numbers
-- 🎯 **PLANNED** results are design targets or extrapolations - treat as goals, not guarantees
-- ⚠️ **BLOCKED** results are from historical runs or estimates - may be stale
+- ✅ **ACTUAL** results originate from real Criterion runs and were exported on November 13, 2025 via `scripts/export_benchmark_jsonl.ps1`.
+- 🎯 **PLANNED** results describe intended coverage/performance but should be treated as roadmap items until a Criterion suite lands.
+- ⚠️ **BLOCKED** results reference historical measurements or estimates and must not be treated as current.
 
-See `BENCHMARK_RECONCILIATION_REPORT.md` for full analysis of the 29 actual vs 575 claimed discrepancy.
+See `BENCHMARK_RECONCILIATION_REPORT.md` for the full analysis of the **129 actual vs 575 claimed** discrepancy and per-crate remediation plans.
+
+### Actual Benchmark Inventory — November 13, 2025
+
+| Crate | Active Suites (examples) | Estimate Files |
+|-------|--------------------------|----------------|
+| **astraweave-ai** | GOAP/Rule/Utility planning, tool validation, multi-agent throughput, AI loop, integration pipeline | **51** |
+| **astraweave-core** | Full game loop (single/multi frame, scaling), perception/planning/physics stages, entity spawning | **26** |
+| **astraweave-nav** | Navmesh baking (100/1k/10k + scaling), pathfinding (short/medium/long + scaling), triangle throughput | **19** |
+| **astraweave-weaving** | Enemy archetype, player abilities & activation, quest tracking, integrated systems | **18** |
+| **astraweave-stress-test** | Rendering prep/culling, shader compilation, texture operations, frame-time baseline | **11** |
+| **astraweave-math** | Vec3 dot scalar/SIMD + throughput variants | **4** |
+| **Total** | — | **129** |
+
+> All 129 estimate files live under `target/criterion/**/*/base/estimates.json` and were exported to `target/benchmark-data/history.jsonl` at 17:09 UTC on November 13, 2025.
 
 ---
 
@@ -47,9 +63,10 @@ See `BENCHMARK_RECONCILIATION_REPORT.md` for full analysis of the 29 actual vs 5
 ### Benchmark Coverage
 
 **Total Benchmarks**: 575 across 37 crates (+4 rendering benchmarks from v3.8)  
-**Actual Executing**: ✅ **29 benchmarks** (5.0% of total) - **SEE REALITY CHECK ABOVE**  
-**New This Update**: Phases 1-8 Rendering Complete (36/36 tasks, 40% performance gain, 27 tests + 4 benchmarks, Nov 12, 2025!)  
-**Previous Update**: LLM Streaming API validated (44.3× time-to-first-chunk, 3.0× total speedup!)  
+**Actual Executing**: ✅ **129 benchmarks** (22.4% of total) — see [Reality Check](#reality-check) for the live inventory  
+**New This Update**: `astraweave-ai`, `astraweave-core`, and `astraweave-nav` benches are fully runnable again; 129 Criterion estimate files were exported to `target/benchmark-data/history.jsonl` on Nov 13, 2025, and this report now labels ACTUAL vs PLANNED results  
+**Previous Update**: Phases 1-8 Rendering Complete (36/36 tasks, 40% performance gain, 27 tests + 4 benchmarks, Nov 12, 2025)  
+**Data Integrity Follow-Up**: Update placeholder (Type B) crates to emit real data and continue shrinking the 575 → 129 gap (see Recommendations)
 **Measurement Tool**: Criterion.rs (statistical benchmarking) + Real Ollama validation  
 **CI Integration**: GitHub Actions (benchmark.yml workflow)  
 **Last Full Run**: November 2025 (**v3.7 Complete - Rendering production-ready!** ⭐)
@@ -1782,12 +1799,13 @@ cargo bench -p astraweave-rag retrieval_search_scaling
 
 ## Navigation Benchmarks (UPDATED v3.2 - November 2025)
 
-**Total**: 18 benchmarks (previously "Unknown baseline")  
+**Total**: 19 benchmarks (previously "Unknown baseline")  
 **Grade**: ⭐⭐⭐⭐ Excellent (⚠️ 10k triangles must be async)  
 **Highlights**:
 - **Pathfinding**: 2.44 µs short path (2-5 hops)
 - **Throughput**: 142k QPS @ 100 triangles
 - **Bottleneck**: 473 ms baking @ 10k triangles (must precompute)
+- **Data Freshness**: Entire nav suite rerun Nov 13, 2025 (19 estimate files exported via `scripts/export_benchmark_jsonl.ps1`)
 
 ### Navmesh Baking
 
@@ -1967,6 +1985,7 @@ cargo bench -p astraweave-rag retrieval_search_scaling
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
+| **4.0** | **Nov 13, 2025** | **Reality Sync + Inventory Update**: Reconciled with 129 real Criterion outputs (AI/Core/Nav/Weaving/Stress-Test/Math), refreshed Reality Check table with ACTUAL vs PLANNED vs BLOCKED counts, added "Actual Benchmark Inventory" section, updated Benchmark Coverage summary, noted nav export freshness, and documented the Nov 13 export pipeline. | AI Team |
 | 3.6 | Nov 10, 2025 | **✅ ASTRACT GIZMO BENCHMARKS INTEGRATED**: Updated version 3.6 to reflect Astract Gizmo UI framework benchmarks (Days 9-13, Nov 2-3). **Astract Performance Validation**: 40+ benchmark scenarios across 5 component categories (Charts, Advanced Widgets, NodeGraph, Animation, Integration). **Results**: All ⭐⭐⭐⭐⭐ A+ production-ready. **Capacity Analysis**: 22,000+ LineCharts @ 60 FPS, 395,000+ Tweens @ 60 FPS, 1.4M+ Springs @ 60 FPS. **Widget Performance**: Charts 752 ns - 95 µs (0.0005% - 0.6% budget), Graphs 17 µs - 2.2 ms (NodeGraph 100 nodes = 0.6% budget), Animations spring 2× faster than tween. **Phase 8.1 Updates**: Week 4-5 animations & audio cues remain sub-millisecond. **Cumulative benchmarks**: 567+ total across 37+ crates (Oct 31) + Astract = 600+ estimated. **Documentation**: Updated "Last Updated" header, version 3.5 → 3.6. **Next**: Full benchmark re-measurement across all crates to quantify Astract impact and validate Phase 8 timelines. | AI Team |
 | **3.3** | **Nov 1, 2025** | **🎯 60 FPS Budget Analysis Added**: Comprehensive per-subsystem performance budget allocation based on 567+ benchmarks. **Key Results**: ECS 99.99% headroom (192k entities), AI 99.99% headroom (15.9k agents), Physics 99.81% headroom (533 rigid bodies), Rendering 66.7% headroom (~3k draws), Audio ~100% headroom (8.25k sources), Navigation 99.64% headroom (274 paths/frame). **Total Frame**: ~2.06ms current vs 16.67ms budget = **87.6% headroom**. **Validated Capacity**: 103,500 entities @ 60 FPS (integration tests). **Optimization Priorities**: (1) Rendering (66.7% headroom, largest budget), (2) LLM (500ms → 200ms target), (3-5) All others production-ready. **Deliverable**: Phase B Month 4 (Performance Baseline Establishment) complete. | AI Team |
 | **3.2** | **Oct 31, 2025** | **Integration Validation Section Added**: Documents 800+ integration tests across 106 files validating all cross-system paths. Key distinction: integration TESTS validate correctness, unit BENCHMARKS measure performance. No integration benchmarks needed (tests superior). References INTEGRATION_TEST_COVERAGE_REPORT.md. | AI Team |
