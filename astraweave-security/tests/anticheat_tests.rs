@@ -56,7 +56,10 @@ struct InputValidator {
 
 impl InputValidator {
     fn new(min_value: i32, max_value: i32) -> Self {
-        Self { min_value, max_value }
+        Self {
+            min_value,
+            max_value,
+        }
     }
 
     fn validate(&self, value: i32) -> bool {
@@ -96,7 +99,10 @@ fn test_normal_movement_speed_accepted() {
     let detector = SpeedHackDetector::new(10.0);
     let speed = 9.5;
 
-    assert!(!detector.detect(speed), "Normal speed should not be flagged");
+    assert!(
+        !detector.detect(speed),
+        "Normal speed should not be flagged"
+    );
 }
 
 #[test]
@@ -254,7 +260,10 @@ fn test_input_within_range_valid() {
     let validator = InputValidator::new(0, 100);
     let input = 50;
 
-    assert!(validator.validate(input), "Input within range should be valid");
+    assert!(
+        validator.validate(input),
+        "Input within range should be valid"
+    );
 }
 
 #[test]
@@ -464,10 +473,7 @@ fn test_multiple_cheat_flags_compound() {
         player_id: "multi_cheater".to_string(),
         trust_score: 1.0,
         last_validation: 0,
-        anomaly_flags: vec![
-            "rapid_input".to_string(),
-            "impossible_movement".to_string(),
-        ],
+        anomaly_flags: vec!["rapid_input".to_string(), "impossible_movement".to_string()],
     };
 
     let result = validate_player_input(&anti_cheat);
@@ -489,7 +495,10 @@ fn test_clean_player_full_trust() {
 
     let result = validate_player_input(&anti_cheat);
 
-    assert_eq!(result.trust_score, 1.0, "Clean player should have full trust");
+    assert_eq!(
+        result.trust_score, 1.0,
+        "Clean player should have full trust"
+    );
     assert!(result.is_valid, "Clean player should be valid");
 }
 

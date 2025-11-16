@@ -6,7 +6,9 @@
 use astraweave_core::ecs_components::*;
 use astraweave_core::IVec2;
 use astraweave_ecs::{Query, World};
-use astraweave_persistence_ecs::{calculate_world_hash, deserialize_ecs_world, serialize_ecs_world};
+use astraweave_persistence_ecs::{
+    calculate_world_hash, deserialize_ecs_world, serialize_ecs_world,
+};
 
 // ========== Large World Tests ==========
 
@@ -17,7 +19,15 @@ fn test_save_10000_entities() {
 
     for i in 0..10_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: (i * 2) as i32 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: (i * 2) as i32,
+                },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
 
         // Add variety
@@ -34,7 +44,11 @@ fn test_save_10000_entities() {
     let duration = start.elapsed();
 
     println!("Serialized 10,000 entities in {:?}", duration);
-    println!("Blob size: {} bytes ({:.2} MB)", blob.len(), blob.len() as f64 / (1024.0 * 1024.0));
+    println!(
+        "Blob size: {} bytes ({:.2} MB)",
+        blob.len(),
+        blob.len() as f64 / (1024.0 * 1024.0)
+    );
 
     // Verify blob size is reasonable
     assert!(
@@ -56,8 +70,21 @@ fn test_load_10000_entities_under_5_seconds() {
 
     for i in 0..10_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 } });
-        world.insert(e, CHealth { hp: 50 + (i % 100) as i32 });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32,
+                },
+            },
+        );
+        world.insert(
+            e,
+            CHealth {
+                hp: 50 + (i % 100) as i32,
+            },
+        );
         world.insert(e, CTeam { id: (i % 8) as u8 });
     }
 
@@ -101,7 +128,15 @@ fn test_save_100000_components() {
     // Create ~20,000 entities with 5 components each = 100,000 components
     for i in 0..20_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32,
+                },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
         world.insert(e, CTeam { id: (i % 4) as u8 });
         world.insert(e, CAmmo { rounds: 30 });
@@ -113,7 +148,11 @@ fn test_save_100000_components() {
     let serialize_duration = start.elapsed();
 
     println!("Serialized 100,000 components in {:?}", serialize_duration);
-    println!("Blob size: {} bytes ({:.2} MB)", blob.len(), blob.len() as f64 / (1024.0 * 1024.0));
+    println!(
+        "Blob size: {} bytes ({:.2} MB)",
+        blob.len(),
+        blob.len() as f64 / (1024.0 * 1024.0)
+    );
 
     // Deserialize
     let start = std::time::Instant::now();
@@ -121,7 +160,10 @@ fn test_save_100000_components() {
     deserialize_ecs_world(&blob, &mut world2).expect("deserialize failed");
     let deserialize_duration = start.elapsed();
 
-    println!("Deserialized 100,000 components in {:?}", deserialize_duration);
+    println!(
+        "Deserialized 100,000 components in {:?}",
+        deserialize_duration
+    );
 
     // Verify
     let mut entity_count = 0;
@@ -153,7 +195,15 @@ fn test_memory_usage_reasonable() {
 
     for i in 0..50_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32,
+                },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
     }
 
@@ -187,7 +237,15 @@ fn test_large_world_hash_performance() {
 
     for i in 0..50_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32,
+                },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
         world.insert(e, CTeam { id: (i % 4) as u8 });
         world.insert(e, CAmmo { rounds: 30 });
@@ -227,8 +285,21 @@ fn test_roundtrip_50000_entities() {
 
     for i in 0..50_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: (i % 1000) as i32 } });
-        world.insert(e, CHealth { hp: 50 + (i % 100) as i32 });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: (i % 1000) as i32,
+                },
+            },
+        );
+        world.insert(
+            e,
+            CHealth {
+                hp: 50 + (i % 100) as i32,
+            },
+        );
 
         if i % 5 == 0 {
             world.insert(e, CTeam { id: (i % 10) as u8 });
@@ -268,7 +339,15 @@ fn test_blob_size_scaling() {
 
         for i in 0..entity_count {
             let e = world.spawn();
-            world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 } });
+            world.insert(
+                e,
+                CPos {
+                    pos: IVec2 {
+                        x: i as i32,
+                        y: i as i32,
+                    },
+                },
+            );
             world.insert(e, CHealth { hp: 100 });
             world.insert(e, CTeam { id: 1 });
         }
@@ -310,7 +389,15 @@ fn test_serialize_deserialize_throughput() {
 
     for i in 0..entity_count {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32,
+                },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
         world.insert(e, CTeam { id: 1 });
     }
@@ -320,8 +407,7 @@ fn test_serialize_deserialize_throughput() {
     let blob = serialize_ecs_world(&world).expect("serialize failed");
     let serialize_duration = start.elapsed();
 
-    let serialize_throughput =
-        entity_count as f64 / serialize_duration.as_secs_f64();
+    let serialize_throughput = entity_count as f64 / serialize_duration.as_secs_f64();
 
     println!(
         "Serialize throughput: {:.0} entities/sec",
@@ -334,8 +420,7 @@ fn test_serialize_deserialize_throughput() {
     deserialize_ecs_world(&blob, &mut world2).expect("deserialize failed");
     let deserialize_duration = start.elapsed();
 
-    let deserialize_throughput =
-        entity_count as f64 / deserialize_duration.as_secs_f64();
+    let deserialize_throughput = entity_count as f64 / deserialize_duration.as_secs_f64();
 
     println!(
         "Deserialize throughput: {:.0} entities/sec",

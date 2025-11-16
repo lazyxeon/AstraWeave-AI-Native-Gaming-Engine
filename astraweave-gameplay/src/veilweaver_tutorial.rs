@@ -95,7 +95,10 @@ impl WeaveTutorialState {
                 anchor.stabilized = true;
                 anchor.activation_order = Some(self.anchor_sequence.len());
                 self.anchor_sequence.push(anchor_id.to_string());
-                info!("Anchor stabilized: id={}, order={:?}", anchor_id, anchor.activation_order);
+                info!(
+                    "Anchor stabilized: id={}, order={:?}",
+                    anchor_id, anchor.activation_order
+                );
             }
         }
     }
@@ -137,11 +140,10 @@ pub fn tutorial_trigger_system(world: &mut World) {
             let mut reader = events.reader();
             reader.drain().collect::<Vec<_>>()
         });
-    
-    if let (Some(state), Some(events)) = (
-        world.get_resource_mut::<WeaveTutorialState>(),
-        events_vec,
-    ) {
+
+    if let (Some(state), Some(events)) =
+        (world.get_resource_mut::<WeaveTutorialState>(), events_vec)
+    {
         for ev in events {
             if ev.entering {
                 state.register_trigger_activation(&ev.trigger_id);
@@ -159,11 +161,10 @@ pub fn tutorial_anchor_events(world: &mut World) {
             let mut reader = events.reader();
             reader.drain().collect::<Vec<_>>()
         });
-    
-    if let (Some(state), Some(events)) = (
-        world.get_resource_mut::<WeaveTutorialState>(),
-        events_vec,
-    ) {
+
+    if let (Some(state), Some(events)) =
+        (world.get_resource_mut::<WeaveTutorialState>(), events_vec)
+    {
         for ev in events {
             state.mark_anchor_stabilized(&ev.anchor_id);
         }

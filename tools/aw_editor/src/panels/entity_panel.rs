@@ -1,9 +1,10 @@
 // tools/aw_editor/src/panels/entity_panel.rs - Entity inspector using Astract
 
 use super::Panel;
+use crate::component_ui::{ComponentEdit, ComponentRegistry};
+use crate::scene_state::EditorSceneState;
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
-use crate::component_ui::{ComponentEdit, ComponentRegistry};
 use egui::Ui;
 
 /// Entity panel - inspect and edit entity properties
@@ -31,14 +32,21 @@ impl EntityPanel {
     /// # Returns
     ///
     /// Optional ComponentEdit if a component was modified (for undo system)
-    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>, selected_entity: Option<Entity>, prefab_instance: Option<&crate::prefab::PrefabInstance>) -> Option<ComponentEdit> {
+    pub fn show_with_world(
+        &mut self,
+        ui: &mut Ui,
+        scene_state: &mut Option<EditorSceneState>,
+        selected_entity: Option<Entity>,
+        prefab_instance: Option<&crate::prefab::PrefabInstance>,
+    ) -> Option<ComponentEdit> {
         ui.heading("🎮 Entity Inspector");
         ui.separator();
 
         // Entity management buttons
         ui.horizontal(|ui| {
             if ui.button("➕ Spawn Companion").clicked() {
-                if let Some(world) = world {
+                if let Some(state) = scene_state {
+                    let world = state.world_mut();
                     let entity_count = world.entities().len();
                     let pos = IVec2 {
                         x: rand::random::<i32>() % 30,
@@ -56,7 +64,8 @@ impl EntityPanel {
             }
 
             if ui.button("➕ Spawn Enemy").clicked() {
-                if let Some(world) = world {
+                if let Some(state) = scene_state {
+                    let world = state.world_mut();
                     let entity_count = world.entities().len();
                     let pos = IVec2 {
                         x: rand::random::<i32>() % 30,
@@ -74,8 +83,8 @@ impl EntityPanel {
             }
 
             if ui.button("🗑️ Clear All").clicked() {
-                if let Some(world) = world {
-                    *world = World::new();
+                if let Some(state) = scene_state {
+                    *state = EditorSceneState::new(World::new());
                     println!("🗑️ Cleared all entities");
                 }
             }
@@ -86,29 +95,37 @@ impl EntityPanel {
         let mut component_edit = None;
 
         if let Some(entity) = selected_entity {
-            if let Some(world) = world {
+            if let Some(state) = scene_state {
+                let world = state.world_mut();
                 ui.group(|ui| {
                     ui.heading(format!("✏️ Entity #{}", entity));
-                    
+
                     if let Some(instance) = prefab_instance {
                         ui.separator();
                         ui.horizontal(|ui| {
                             ui.label("💾 Prefab Instance:");
-                            ui.monospace(instance.source.file_name().unwrap_or_default().to_string_lossy().as_ref());
+                            ui.monospace(
+                                instance
+                                    .source
+                                    .file_name()
+                                    .unwrap_or_default()
+                                    .to_string_lossy()
+                                    .as_ref(),
+                            );
                         });
-                        
+
                         if instance.has_overrides(entity) {
                             ui.colored_label(
                                 egui::Color32::from_rgb(100, 150, 255),
-                                "⚠️ Modified components (blue text indicates overrides)"
+                                "⚠️ Modified components (blue text indicates overrides)",
                             );
                         }
                     }
-                    
+
                     ui.separator();
-                    
+
                     let components = self.component_registry.get_entity_components(world, entity);
-                    
+
                     if components.is_empty() {
                         ui.label("No components");
                     } else {
@@ -131,7 +148,8 @@ impl EntityPanel {
         ui.add_space(10.0);
 
         // Display entity count
-        if let Some(world) = world {
+        if let Some(state) = scene_state {
+            let world = state.world();
             let entity_count = world.entities().len();
             ui.label(format!("📊 Total Entities: {}", entity_count));
 
@@ -172,7 +190,7 @@ impl EntityPanel {
         } else {
             ui.label("⚠️  No world initialized");
         }
-        
+
         component_edit
     }
 }

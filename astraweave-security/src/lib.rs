@@ -8,8 +8,8 @@
 //! - Input validation and anti-cheat measures
 //! - Telemetry and monitoring systems
 
-pub mod path;
 pub mod deserialization;
+pub mod path;
 
 use anyhow::Result;
 use astraweave_ecs::{App, Plugin, World};

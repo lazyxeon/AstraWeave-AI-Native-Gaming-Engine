@@ -8,10 +8,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::{
-    Memory, MemoryCluster, MemoryType,
-    RetrievalContext,
-};
+use crate::{Memory, MemoryCluster, MemoryType, RetrievalContext};
 
 /// Simple memory manager for basic memory operations
 #[derive(Debug)]

@@ -7,9 +7,9 @@ use astraweave_embeddings::Memory;
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
-use std::collections::HashMap;
-#[cfg(test)]
 use astraweave_embeddings::MemoryCategory;
+#[cfg(test)]
+use std::collections::HashMap;
 
 /// Consolidation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

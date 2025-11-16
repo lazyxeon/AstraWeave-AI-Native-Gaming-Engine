@@ -21,12 +21,22 @@ fn test_save_load_roundtrip_basic() {
     let mut world = World::new();
 
     let e1 = world.spawn();
-    world.insert(e1, CPos { pos: IVec2 { x: 10, y: 20 } });
+    world.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 10, y: 20 },
+        },
+    );
     world.insert(e1, CHealth { hp: 100 });
     world.insert(e1, CTeam { id: 1 });
 
     let e2 = world.spawn();
-    world.insert(e2, CPos { pos: IVec2 { x: 30, y: 40 } });
+    world.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 30, y: 40 },
+        },
+    );
     world.insert(e2, CHealth { hp: 50 });
     world.insert(e2, CAmmo { rounds: 120 });
 
@@ -58,10 +68,7 @@ fn test_save_load_roundtrip_basic() {
         let mut q = Query::<CHealth>::new(&world2);
         while let Some((_, health)) = q.next() {
             health_count += 1;
-            assert!(
-                health.hp == 100 || health.hp == 50,
-                "health value mismatch"
-            );
+            assert!(health.hp == 100 || health.hp == 50, "health value mismatch");
         }
     }
     {
@@ -91,7 +98,12 @@ fn test_save_load_roundtrip_all_components() {
     let mut world = World::new();
 
     let entity = world.spawn();
-    world.insert(entity, CPos { pos: IVec2 { x: 5, y: 10 } });
+    world.insert(
+        entity,
+        CPos {
+            pos: IVec2 { x: 5, y: 10 },
+        },
+    );
     world.insert(entity, CHealth { hp: 75 });
     world.insert(entity, CTeam { id: 2 });
     world.insert(entity, CAmmo { rounds: 30 });
@@ -147,15 +159,30 @@ fn test_save_load_entity_ids_preserved_semantically() {
     let mut world = World::new();
 
     let e1 = world.spawn();
-    world.insert(e1, CPos { pos: IVec2 { x: 1, y: 1 } });
+    world.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 1, y: 1 },
+        },
+    );
     world.insert(e1, CHealth { hp: 100 });
 
     let e2 = world.spawn();
-    world.insert(e2, CPos { pos: IVec2 { x: 2, y: 2 } });
+    world.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 2, y: 2 },
+        },
+    );
     world.insert(e2, CHealth { hp: 90 });
 
     let e3 = world.spawn();
-    world.insert(e3, CPos { pos: IVec2 { x: 3, y: 3 } });
+    world.insert(
+        e3,
+        CPos {
+            pos: IVec2 { x: 3, y: 3 },
+        },
+    );
     world.insert(e3, CHealth { hp: 80 });
 
     // Serialize and deserialize
@@ -209,8 +236,21 @@ fn test_large_world_1000_entities() {
 
     for i in 0..1000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 * 2 } });
-        world.insert(e, CHealth { hp: 50 + (i % 100) as i32 });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32 * 2,
+                },
+            },
+        );
+        world.insert(
+            e,
+            CHealth {
+                hp: 50 + (i % 100) as i32,
+            },
+        );
         world.insert(e, CTeam { id: (i % 4) as u8 });
     }
 
@@ -220,7 +260,11 @@ fn test_large_world_1000_entities() {
     let serialize_duration = start.elapsed();
 
     println!("Serialized 1,000 entities in {:?}", serialize_duration);
-    println!("Blob size: {} bytes ({:.2} KB)", blob.len(), blob.len() as f64 / 1024.0);
+    println!(
+        "Blob size: {} bytes ({:.2} KB)",
+        blob.len(),
+        blob.len() as f64 / 1024.0
+    );
 
     // Verify blob size is reasonable (target: <100KB for 1,000 entities)
     assert!(blob.len() < 100_000, "blob size should be under 100KB");
@@ -244,8 +288,14 @@ fn test_large_world_1000_entities() {
     assert_eq!(count, 1000, "should have 1,000 entities after deserialize");
 
     // Verify performance targets (5ms per 1,000 entities)
-    assert!(serialize_duration.as_millis() < 10, "serialize should be fast");
-    assert!(deserialize_duration.as_millis() < 10, "deserialize should be fast");
+    assert!(
+        serialize_duration.as_millis() < 10,
+        "serialize should be fast"
+    );
+    assert!(
+        deserialize_duration.as_millis() < 10,
+        "deserialize should be fast"
+    );
 }
 
 #[test]
@@ -255,7 +305,15 @@ fn test_large_world_10000_entities() {
 
     for i in 0..10_000 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i as i32, y: i as i32 * 2 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 {
+                    x: i as i32,
+                    y: i as i32 * 2,
+                },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
 
         // Add some variety
@@ -273,7 +331,11 @@ fn test_large_world_10000_entities() {
     let serialize_duration = start.elapsed();
 
     println!("Serialized 10,000 entities in {:?}", serialize_duration);
-    println!("Blob size: {} bytes ({:.2} KB)", blob.len(), blob.len() as f64 / 1024.0);
+    println!(
+        "Blob size: {} bytes ({:.2} KB)",
+        blob.len(),
+        blob.len() as f64 / 1024.0
+    );
 
     // Verify blob size is reasonable (target: <1MB for 10,000 entities)
     assert!(blob.len() < 1_000_000, "blob size should be under 1MB");
@@ -294,10 +356,16 @@ fn test_large_world_10000_entities() {
             count += 1;
         }
     }
-    assert_eq!(count, 10_000, "should have 10,000 entities after deserialize");
+    assert_eq!(
+        count, 10_000,
+        "should have 10,000 entities after deserialize"
+    );
 
     // Verify load time < 5 seconds
-    assert!(deserialize_duration.as_secs() < 5, "load should be under 5 seconds");
+    assert!(
+        deserialize_duration.as_secs() < 5,
+        "load should be under 5 seconds"
+    );
 }
 
 #[test]
@@ -314,7 +382,12 @@ fn test_persistence_manager_save_load_integration() {
     // Create test world
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: 42, y: 84 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: 42, y: 84 },
+        },
+    );
     world.insert(e, CHealth { hp: 150 });
 
     // Serialize world
@@ -355,7 +428,12 @@ fn test_partial_world_saving() {
     // Player entities (with CTeam { id: 0 })
     for i in 0..10 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 { x: i, y: i },
+            },
+        );
         world.insert(e, CHealth { hp: 100 });
         world.insert(e, CTeam { id: 0 });
     }
@@ -363,7 +441,12 @@ fn test_partial_world_saving() {
     // Enemy entities (with CTeam { id: 1 })
     for i in 10..20 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 { x: i, y: i },
+            },
+        );
         world.insert(e, CHealth { hp: 50 });
         world.insert(e, CTeam { id: 1 });
     }
@@ -433,7 +516,12 @@ fn test_multiple_save_slots() {
                 },
             },
         );
-        world.insert(e, CHealth { hp: 100 + slot as i32 * 10 });
+        world.insert(
+            e,
+            CHealth {
+                hp: 100 + slot as i32 * 10,
+            },
+        );
 
         let blob = serialize_ecs_world(&world).expect("serialize failed");
         let hash = calculate_world_hash(&world);
@@ -466,14 +554,24 @@ fn test_world_hash_changes_on_modification() {
     let mut world = World::new();
 
     let e1 = world.spawn();
-    world.insert(e1, CPos { pos: IVec2 { x: 10, y: 20 } });
+    world.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 10, y: 20 },
+        },
+    );
     world.insert(e1, CHealth { hp: 100 });
 
     let hash1 = calculate_world_hash(&world);
 
     // Modify world
     let e2 = world.spawn();
-    world.insert(e2, CPos { pos: IVec2 { x: 30, y: 40 } });
+    world.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 30, y: 40 },
+        },
+    );
 
     let hash2 = calculate_world_hash(&world);
 
@@ -494,7 +592,12 @@ fn test_world_hash_deterministic() {
 
     for i in 0..100 {
         let e = world.spawn();
-        world.insert(e, CPos { pos: IVec2 { x: i, y: i * 2 } });
+        world.insert(
+            e,
+            CPos {
+                pos: IVec2 { x: i, y: i * 2 },
+            },
+        );
         world.insert(e, CHealth { hp: 50 + i });
     }
 

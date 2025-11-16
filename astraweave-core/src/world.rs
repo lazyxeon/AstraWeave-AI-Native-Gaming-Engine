@@ -24,10 +24,10 @@ pub struct Cooldowns {
 #[derive(Clone, Copy, Debug)]
 pub struct Pose {
     pub pos: IVec2,
-    pub rotation: f32,     // Rotation in radians around Y axis (primary, for compatibility)
-    pub rotation_x: f32,   // Pitch (rotation around X axis)
-    pub rotation_z: f32,   // Roll (rotation around Z axis)
-    pub scale: f32,        // Uniform scale factor
+    pub rotation: f32, // Rotation in radians around Y axis (primary, for compatibility)
+    pub rotation_x: f32, // Pitch (rotation around X axis)
+    pub rotation_z: f32, // Roll (rotation around Z axis)
+    pub scale: f32,    // Uniform scale factor
 }
 
 #[derive(Default)]
@@ -55,13 +55,16 @@ impl World {
     pub fn spawn(&mut self, name: &str, pos: IVec2, team: Team, hp: i32, ammo: i32) -> Entity {
         let id = self.next_id;
         self.next_id += 1;
-        self.poses.insert(id, Pose { 
-            pos,
-            rotation: 0.0,
-            rotation_x: 0.0,
-            rotation_z: 0.0,
-            scale: 1.0,
-        });
+        self.poses.insert(
+            id,
+            Pose {
+                pos,
+                rotation: 0.0,
+                rotation_x: 0.0,
+                rotation_z: 0.0,
+                scale: 1.0,
+            },
+        );
         self.health.insert(id, Health { hp });
         self.team.insert(id, team);
         self.ammo.insert(id, Ammo { rounds: ammo });

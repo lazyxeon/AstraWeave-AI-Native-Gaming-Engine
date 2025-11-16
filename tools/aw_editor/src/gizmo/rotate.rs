@@ -39,11 +39,11 @@ impl RotateGizmo {
         // This makes rotation feel more intuitive
         let rotation_delta = match constraint {
             AxisConstraint::Y | AxisConstraint::None => mouse_delta.x, // Horizontal for Y-axis
-            AxisConstraint::X => mouse_delta.y, // Vertical for X-axis
-            AxisConstraint::Z => mouse_delta.x, // Horizontal for Z-axis
-            _ => mouse_delta.x, // Default to horizontal
+            AxisConstraint::X => mouse_delta.y,                        // Vertical for X-axis
+            AxisConstraint::Z => mouse_delta.x,                        // Horizontal for Z-axis
+            _ => mouse_delta.x,                                        // Default to horizontal
         };
-        
+
         // Calculate rotation angle from mouse delta
         // Reduced sensitivity: 0.005 = 200px for 1 radian (57.3°)
         let mut angle = rotation_delta * 0.005 * sensitivity;
@@ -60,7 +60,7 @@ impl RotateGizmo {
             AxisConstraint::Y => Vec3::Y,
             AxisConstraint::Z => Vec3::Z,
             AxisConstraint::None => Vec3::Y, // Default to Y axis (vertical) for free rotation
-            _ => Vec3::Y, // Planar constraints default to Y axis
+            _ => Vec3::Y,                    // Planar constraints default to Y axis
         };
 
         // Create rotation quaternion

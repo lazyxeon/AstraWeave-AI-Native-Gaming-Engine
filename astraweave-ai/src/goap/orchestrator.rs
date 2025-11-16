@@ -1,10 +1,10 @@
 // GOAPOrchestrator - Integration with AstraWeave AI system
 // Implements the Orchestrator trait to provide GOAP planning
 
-use astraweave_core::{ActionStep, MovementSpeed, PlanIntent, WorldSnapshot};
-use super::{AdvancedGOAP, Goal, WorldState, StateValue};
-use super::adapter::SnapshotAdapter;
 use super::actions::register_all_actions;
+use super::adapter::SnapshotAdapter;
+use super::{AdvancedGOAP, Goal, StateValue, WorldState};
+use astraweave_core::{ActionStep, MovementSpeed, PlanIntent, WorldSnapshot};
 use std::collections::BTreeMap;
 
 /// GOAP-powered orchestrator for AstraWeave
@@ -16,10 +16,10 @@ pub struct GOAPOrchestrator {
 impl GOAPOrchestrator {
     pub fn new() -> Self {
         let mut planner = AdvancedGOAP::new();
-        
+
         // Register comprehensive action library from Phase 2
         register_all_actions(&mut planner);
-        
+
         Self { planner }
     }
 
@@ -38,12 +38,18 @@ impl GOAPOrchestrator {
                     if let Some(enemy) = snap.enemies.first() {
                         let target_x = snap.me.pos.x + (enemy.pos.x - snap.me.pos.x).signum() * 2;
                         let target_y = snap.me.pos.y + (enemy.pos.y - snap.me.pos.y).signum() * 2;
-                        steps.push(ActionStep::MoveTo { x: target_x, y: target_y, speed: None });
+                        steps.push(ActionStep::MoveTo {
+                            x: target_x,
+                            y: target_y,
+                            speed: None,
+                        });
                     }
                 }
                 "attack" => {
                     if let Some(enemy) = snap.enemies.first() {
-                        steps.push(ActionStep::Attack { target_id: enemy.id });
+                        steps.push(ActionStep::Attack {
+                            target_id: enemy.id,
+                        });
                     }
                 }
                 "cover_fire" => {
@@ -62,7 +68,11 @@ impl GOAPOrchestrator {
                     if let Some(enemy) = snap.enemies.first() {
                         let retreat_x = snap.me.pos.x - (enemy.pos.x - snap.me.pos.x).signum() * 3;
                         let retreat_y = snap.me.pos.y - (enemy.pos.y - snap.me.pos.y).signum() * 3;
-                        steps.push(ActionStep::MoveTo { x: retreat_x, y: retreat_y, speed: None });
+                        steps.push(ActionStep::MoveTo {
+                            x: retreat_x,
+                            y: retreat_y,
+                            speed: None,
+                        });
                     }
                 }
                 "heal" => {
@@ -84,7 +94,11 @@ impl GOAPOrchestrator {
                     if let Some(enemy) = snap.enemies.first() {
                         let retreat_x = snap.me.pos.x - (enemy.pos.x - snap.me.pos.x).signum() * 5;
                         let retreat_y = snap.me.pos.y - (enemy.pos.y - snap.me.pos.y).signum() * 5;
-                        steps.push(ActionStep::MoveTo { x: retreat_x, y: retreat_y, speed: Some(MovementSpeed::Sprint) });
+                        steps.push(ActionStep::MoveTo {
+                            x: retreat_x,
+                            y: retreat_y,
+                            speed: Some(MovementSpeed::Sprint),
+                        });
                     }
                 }
                 "revive" => {
@@ -106,7 +120,7 @@ impl GOAPOrchestrator {
     /// Generate a plan using GOAP
     pub fn propose_plan(&mut self, snap: &WorldSnapshot) -> PlanIntent {
         let plan_id = format!("goap-plan-{}", (snap.t * 1000.0) as i64);
-        
+
         // Convert snapshot to GOAP state
         let state = Self::snapshot_to_state(snap);
 
@@ -159,8 +173,8 @@ impl Default for GOAPOrchestrator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::BTreeMap;
     use astraweave_core::IVec2;
+    use std::collections::BTreeMap;
 
     fn make_test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
@@ -225,4 +239,3 @@ mod tests {
         assert!(!intent.plan_id.is_empty());
     }
 }
-

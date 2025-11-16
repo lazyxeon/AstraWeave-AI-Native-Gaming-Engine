@@ -22,6 +22,49 @@ use wgpu;
 
 use super::camera::OrbitCamera;
 
+/// Runtime configuration for the visual grid overlay.
+#[derive(Debug, Clone, Copy)]
+pub struct GridRenderSettings {
+    /// Whether the grid should be rendered this frame.
+    pub enabled: bool,
+    /// Grid spacing in meters (minor lines).
+    pub spacing: f32,
+    /// How many minor lines between each major line (default 10).
+    pub major_line_multiple: f32,
+}
+
+impl Default for GridRenderSettings {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            spacing: 1.0,
+            major_line_multiple: 10.0,
+        }
+    }
+}
+
+impl GridRenderSettings {
+    /// Returns a sanitized copy with sensible defaults (no zero/negative spacing).
+    pub fn sanitized(self) -> Self {
+        let spacing = if self.spacing <= 0.0 {
+            1.0
+        } else {
+            self.spacing
+        };
+        let major_line_multiple = if self.major_line_multiple <= 0.0 {
+            10.0
+        } else {
+            self.major_line_multiple
+        };
+
+        Self {
+            enabled: self.enabled,
+            spacing,
+            major_line_multiple,
+        }
+    }
+}
+
 /// Grid renderer using screen-space technique
 pub struct GridRenderer {
     /// Render pipeline
@@ -93,8 +136,8 @@ impl GridRenderer {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: false,  // Grid is overlay - don't write depth
-                depth_compare: wgpu::CompareFunction::LessEqual,  // Still test against existing depth
+                depth_write_enabled: false, // Grid is overlay - don't write depth
+                depth_compare: wgpu::CompareFunction::LessEqual, // Still test against existing depth
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -162,7 +205,13 @@ impl GridRenderer {
         depth: &wgpu::TextureView,
         camera: &OrbitCamera,
         queue: &wgpu::Queue,
+        settings: GridRenderSettings,
     ) -> Result<()> {
+        let settings = settings.sanitized();
+        if !settings.enabled {
+            return Ok(());
+        }
+
         // Update uniforms
         let view_proj = camera.view_projection_matrix();
         let inv_view_proj = view_proj.inverse();
@@ -176,8 +225,8 @@ impl GridRenderer {
                 camera.position().z,
             ],
             _padding1: 0.0,
-            grid_size: 1.0,                         // 1 meter grid
-            major_grid_every: 10.0,                 // Major grid every 10 lines
+            grid_size: settings.spacing,
+            major_grid_every: settings.major_line_multiple,
             fade_distance: 50.0,                    // Start fading at 50m
             max_distance: 100.0,                    // Completely fade by 100m
             grid_color: [0.3, 0.3, 0.3, 0.3],       // Light gray, semi-transparent
@@ -266,6 +315,18 @@ struct GridUniforms {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn grid_settings_sanitizes_spacing() {
+        let input = GridRenderSettings {
+            enabled: true,
+            spacing: 0.0,
+            major_line_multiple: -4.0,
+        };
+        let sanitized = input.sanitized();
+        assert!(sanitized.spacing > 0.0);
+        assert!(sanitized.major_line_multiple > 0.0);
+    }
 
     #[test]
     fn test_grid_uniforms_size() {

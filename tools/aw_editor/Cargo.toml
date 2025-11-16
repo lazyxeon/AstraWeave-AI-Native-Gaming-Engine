@@ -38,6 +38,7 @@ rhai = { workspace = true }
 glam = { workspace = true }
 rand = "0.8"
 astract = { path = "../../crates/astract" }
+tracing = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs", optional = true }
 astraweave-render = { path = "../../astraweave-render", optional = true }
@@ -59,5 +60,5 @@ harness = false
 path = "benches/gizmo_benchmarks_simple.rs"
 
 [lib]
-name = "aw_editor_lib"
+name = "aw_editor"
 path = "src/lib.rs"

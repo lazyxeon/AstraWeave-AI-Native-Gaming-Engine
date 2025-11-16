@@ -29,10 +29,7 @@ pub struct CombatSystem {
 #[derive(Debug, Clone, PartialEq)]
 pub enum CombatEvent {
     /// Player took damage
-    PlayerDamaged {
-        amount: f32,
-        source_position: Vec3,
-    },
+    PlayerDamaged { amount: f32, source_position: Vec3 },
     /// Enemy took damage
     EnemyDamaged {
         enemy_id: usize,
@@ -46,9 +43,7 @@ pub enum CombatEvent {
         killer: Killer,
     },
     /// Player was killed
-    PlayerKilled {
-        killer_position: Vec3,
-    },
+    PlayerKilled { killer_position: Vec3 },
 }
 
 /// Who killed an enemy.
@@ -146,9 +141,9 @@ impl CombatSystem {
     ) -> Option<CombatEvent> {
         let damage = self.player_attack_damage;
         let was_critical = false; // TODO: Critical hit system in future
-        
+
         let was_killed = enemy.take_damage(damage);
-        
+
         if was_killed {
             let event = CombatEvent::EnemyKilled {
                 enemy_id,
@@ -202,16 +197,16 @@ impl CombatSystem {
         enemies: Vec<(usize, &mut Enemy, Vec3)>,
     ) -> Vec<CombatEvent> {
         let mut events = Vec::new();
-        
+
         for (enemy_id, enemy, enemy_position) in enemies {
             let distance = position.distance(enemy_position);
-            
+
             if distance <= self.echo_dash_radius {
                 let damage = self.echo_dash_damage;
                 let was_critical = false;
-                
+
                 let was_killed = enemy.take_damage(damage);
-                
+
                 if was_killed {
                     let event = CombatEvent::EnemyKilled {
                         enemy_id,
@@ -231,7 +226,7 @@ impl CombatSystem {
                 }
             }
         }
-        
+
         events
     }
 
@@ -257,18 +252,14 @@ impl CombatSystem {
     /// assert!(event.is_some());
     /// assert_eq!(combat.player_health(), 90.0); // 100 - 10 damage
     /// ```
-    pub fn enemy_attack(
-        &mut self,
-        enemy: &mut Enemy,
-        enemy_position: Vec3,
-    ) -> Option<CombatEvent> {
+    pub fn enemy_attack(&mut self, enemy: &mut Enemy, enemy_position: Vec3) -> Option<CombatEvent> {
         if !enemy.can_attack() {
             return None;
         }
-        
+
         let damage = enemy.attack();
         self.player_health = (self.player_health - damage).max(0.0);
-        
+
         if self.player_health <= 0.0 {
             let event = CombatEvent::PlayerKilled {
                 killer_position: enemy_position,
@@ -306,7 +297,7 @@ impl CombatSystem {
     /// `true` if player was killed, `false` otherwise
     pub fn damage_player(&mut self, amount: f32) -> bool {
         self.player_health = (self.player_health - amount).max(0.0);
-        
+
         if self.player_health <= 0.0 {
             let event = CombatEvent::PlayerKilled {
                 killer_position: Vec3::ZERO, // Environmental
@@ -386,18 +377,23 @@ mod tests {
     fn test_player_attack() {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         let event = combat.player_attack(0, &mut enemy, Vec3::ZERO);
         assert!(event.is_some());
-        
-        if let Some(CombatEvent::EnemyDamaged { enemy_id, amount, was_critical }) = event {
+
+        if let Some(CombatEvent::EnemyDamaged {
+            enemy_id,
+            amount,
+            was_critical,
+        }) = event
+        {
             assert_eq!(enemy_id, 0);
             assert_eq!(amount, 20.0);
             assert!(!was_critical);
         } else {
             panic!("Expected EnemyDamaged event");
         }
-        
+
         assert_eq!(enemy.health, 80.0);
     }
 
@@ -406,18 +402,23 @@ mod tests {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         enemy.take_damage(95.0); // Leave 5 HP
-        
+
         let event = combat.player_attack(0, &mut enemy, Vec3::new(5.0, 0.0, 3.0));
         assert!(event.is_some());
-        
-        if let Some(CombatEvent::EnemyKilled { enemy_id, position, killer }) = event {
+
+        if let Some(CombatEvent::EnemyKilled {
+            enemy_id,
+            position,
+            killer,
+        }) = event
+        {
             assert_eq!(enemy_id, 0);
             assert_eq!(position, Vec3::new(5.0, 0.0, 3.0));
             assert_eq!(killer, Killer::Player);
         } else {
             panic!("Expected EnemyKilled event");
         }
-        
+
         assert_eq!(enemy.health, 0.0);
         assert!(enemy.is_dead());
     }
@@ -428,16 +429,16 @@ mod tests {
         let mut enemy1 = Enemy::new(Vec3::ZERO, 5.0);
         let mut enemy2 = Enemy::new(Vec3::ZERO, 5.0);
         let mut enemy3 = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         let enemies = vec![
-            (0, &mut enemy1, Vec3::new(1.0, 0.0, 0.0)),   // In range
-            (1, &mut enemy2, Vec3::new(2.5, 0.0, 0.0)),   // In range
-            (2, &mut enemy3, Vec3::new(5.0, 0.0, 0.0)),   // Out of range
+            (0, &mut enemy1, Vec3::new(1.0, 0.0, 0.0)), // In range
+            (1, &mut enemy2, Vec3::new(2.5, 0.0, 0.0)), // In range
+            (2, &mut enemy3, Vec3::new(5.0, 0.0, 0.0)), // Out of range
         ];
-        
+
         let events = combat.echo_dash_attack(Vec3::ZERO, enemies);
         assert_eq!(events.len(), 2); // Only 2 enemies hit
-        
+
         assert_eq!(enemy1.health, 50.0); // 100 - 50
         assert_eq!(enemy2.health, 50.0); // 100 - 50
         assert_eq!(enemy3.health, 100.0); // Not hit
@@ -448,17 +449,17 @@ mod tests {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         enemy.take_damage(60.0); // Leave 40 HP
-        
+
         let enemies = vec![(0, &mut enemy, Vec3::new(1.0, 0.0, 0.0))];
         let events = combat.echo_dash_attack(Vec3::ZERO, enemies);
-        
+
         assert_eq!(events.len(), 1);
         if let CombatEvent::EnemyKilled { killer, .. } = &events[0] {
             assert_eq!(*killer, Killer::EchoDash);
         } else {
             panic!("Expected EnemyKilled event");
         }
-        
+
         assert!(enemy.is_dead());
     }
 
@@ -466,17 +467,21 @@ mod tests {
     fn test_enemy_attack() {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         let event = combat.enemy_attack(&mut enemy, Vec3::new(2.0, 0.0, 1.0));
         assert!(event.is_some());
-        
-        if let Some(CombatEvent::PlayerDamaged { amount, source_position }) = event {
+
+        if let Some(CombatEvent::PlayerDamaged {
+            amount,
+            source_position,
+        }) = event
+        {
             assert_eq!(amount, 10.0);
             assert_eq!(source_position, Vec3::new(2.0, 0.0, 1.0));
         } else {
             panic!("Expected PlayerDamaged event");
         }
-        
+
         assert_eq!(combat.player_health(), 90.0);
         assert!(combat.is_player_alive());
     }
@@ -485,15 +490,15 @@ mod tests {
     fn test_enemy_attack_cooldown() {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         // First attack succeeds
         let event1 = combat.enemy_attack(&mut enemy, Vec3::ZERO);
         assert!(event1.is_some());
-        
+
         // Second attack fails (cooldown)
         let event2 = combat.enemy_attack(&mut enemy, Vec3::ZERO);
         assert!(event2.is_none());
-        
+
         assert_eq!(combat.player_health(), 90.0); // Only 1 attack landed
     }
 
@@ -501,16 +506,16 @@ mod tests {
     fn test_enemy_attack_kill_player() {
         let mut combat = CombatSystem::new();
         combat.damage_player(95.0); // Leave 5 HP
-        
+
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         let event = combat.enemy_attack(&mut enemy, Vec3::new(3.0, 0.0, 2.0));
-        
+
         if let Some(CombatEvent::PlayerKilled { killer_position }) = event {
             assert_eq!(killer_position, Vec3::new(3.0, 0.0, 2.0));
         } else {
             panic!("Expected PlayerKilled event");
         }
-        
+
         assert_eq!(combat.player_health(), 0.0);
         assert!(!combat.is_player_alive());
     }
@@ -520,10 +525,10 @@ mod tests {
         let mut combat = CombatSystem::new();
         combat.damage_player(60.0);
         assert_eq!(combat.player_health(), 40.0);
-        
+
         combat.heal_player(30.0);
         assert_eq!(combat.player_health(), 70.0);
-        
+
         // Can't overheal
         combat.heal_player(50.0);
         assert_eq!(combat.player_health(), 100.0);
@@ -532,11 +537,11 @@ mod tests {
     #[test]
     fn test_damage_player() {
         let mut combat = CombatSystem::new();
-        
+
         let killed = combat.damage_player(30.0);
         assert!(!killed);
         assert_eq!(combat.player_health(), 70.0);
-        
+
         let killed = combat.damage_player(80.0);
         assert!(killed);
         assert_eq!(combat.player_health(), 0.0);
@@ -546,10 +551,10 @@ mod tests {
     fn test_player_health_percentage() {
         let mut combat = CombatSystem::new();
         assert_eq!(combat.player_health_percentage(), 1.0);
-        
+
         combat.damage_player(50.0);
         assert_eq!(combat.player_health_percentage(), 0.5);
-        
+
         combat.damage_player(50.0);
         assert_eq!(combat.player_health_percentage(), 0.0);
     }
@@ -558,15 +563,15 @@ mod tests {
     fn test_event_polling() {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         // Generate events
         combat.player_attack(0, &mut enemy, Vec3::ZERO);
         combat.player_attack(0, &mut enemy, Vec3::ZERO);
-        
+
         // Poll events
         let events = combat.poll_events();
         assert_eq!(events.len(), 2);
-        
+
         // Events consumed
         let events = combat.poll_events();
         assert_eq!(events.len(), 0);
@@ -576,20 +581,20 @@ mod tests {
     fn test_event_peeking() {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         combat.player_attack(0, &mut enemy, Vec3::ZERO);
-        
+
         // Peek doesn't consume
         let events1 = combat.peek_events();
         assert_eq!(events1.len(), 1);
-        
+
         let events2 = combat.peek_events();
         assert_eq!(events2.len(), 1);
-        
+
         // Poll does consume
         let events3 = combat.poll_events();
         assert_eq!(events3.len(), 1);
-        
+
         let events4 = combat.peek_events();
         assert_eq!(events4.len(), 0);
     }
@@ -598,10 +603,10 @@ mod tests {
     fn test_clear_events() {
         let mut combat = CombatSystem::new();
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-        
+
         combat.player_attack(0, &mut enemy, Vec3::ZERO);
         assert_eq!(combat.peek_events().len(), 1);
-        
+
         combat.clear_events();
         assert_eq!(combat.peek_events().len(), 0);
     }

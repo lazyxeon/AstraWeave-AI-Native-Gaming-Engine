@@ -6,15 +6,22 @@ pub mod command;
 pub mod component_ui;
 pub mod editor_mode;
 pub mod entity_manager;
+pub mod headless;
+pub mod interaction;
 pub mod prefab;
 pub mod scene_serialization;
+pub mod scene_state;
+pub mod telemetry;
 pub mod ui;
 
+pub use command::{
+    EditorCommand, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack,
+};
 pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
-pub use command::{EditorCommand, UndoStack, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand};
 pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
-pub use scene_serialization::{SceneData, EntityData};
+pub use scene_serialization::{EntityData, SceneData};
+pub use scene_state::{EditorSceneState, TransformableScene};
 pub use ui::StatusBar;
 
 pub mod gizmo {

@@ -36,10 +36,10 @@
 //! undo_stack.redo(&mut world)?;
 //! ```
 
+use crate::clipboard::ClipboardData;
 use anyhow::Result;
 use astraweave_core::{Entity, IVec2, Team, World};
 use std::fmt;
-use crate::clipboard::ClipboardData;
 
 // ============================================================================
 // Command Trait
@@ -154,7 +154,11 @@ impl UndoStack {
     ///
     /// Returns `Err` if command execution fails. Failed commands are NOT added to stack.
     #[allow(dead_code)]
-    pub fn execute(&mut self, mut command: Box<dyn EditorCommand>, world: &mut World) -> Result<()> {
+    pub fn execute(
+        &mut self,
+        mut command: Box<dyn EditorCommand>,
+        world: &mut World,
+    ) -> Result<()> {
         // Execute the command first
         command.execute(world)?;
 
@@ -198,7 +202,7 @@ impl UndoStack {
 
         self.cursor -= 1;
         let cmd = &mut self.commands[self.cursor];
-        
+
         println!("⏮️  Undo: {}", cmd.describe());
         cmd.undo(world)?;
 
@@ -216,10 +220,10 @@ impl UndoStack {
         }
 
         let cmd = &mut self.commands[self.cursor];
-        
+
         println!("⏭️  Redo: {}", cmd.describe());
         cmd.execute(world)?;
-        
+
         self.cursor += 1;
 
         Ok(())
@@ -352,7 +356,8 @@ impl EditorCommand for MoveEntityCommand {
 
     fn try_merge(&mut self, other: &dyn EditorCommand) -> bool {
         // Try to downcast to MoveEntityCommand
-        if let Some(other_move) = (other as &dyn std::any::Any).downcast_ref::<MoveEntityCommand>() {
+        if let Some(other_move) = (other as &dyn std::any::Any).downcast_ref::<MoveEntityCommand>()
+        {
             // Only merge if same entity
             if self.entity_id == other_move.entity_id {
                 // Update new position but keep old position (chain multiple moves)
@@ -422,7 +427,8 @@ impl EditorCommand for RotateEntityCommand {
     }
 
     fn try_merge(&mut self, other: &dyn EditorCommand) -> bool {
-        if let Some(other_rot) = (other as &dyn std::any::Any).downcast_ref::<RotateEntityCommand>() {
+        if let Some(other_rot) = (other as &dyn std::any::Any).downcast_ref::<RotateEntityCommand>()
+        {
             if self.entity_id == other_rot.entity_id {
                 // Update new rotation but keep old rotation
                 self.new_rotation_x = other_rot.new_rotation_x;
@@ -477,7 +483,9 @@ impl EditorCommand for ScaleEntityCommand {
     }
 
     fn try_merge(&mut self, other: &dyn EditorCommand) -> bool {
-        if let Some(other_scale) = (other as &dyn std::any::Any).downcast_ref::<ScaleEntityCommand>() {
+        if let Some(other_scale) =
+            (other as &dyn std::any::Any).downcast_ref::<ScaleEntityCommand>()
+        {
             if self.entity_id == other_scale.entity_id {
                 self.new_scale = other_scale.new_scale;
                 return true;
@@ -511,7 +519,10 @@ impl EditorCommand for EditHealthCommand {
             health.hp = self.new_hp;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Entity {} has no Health component", self.entity))
+            Err(anyhow::anyhow!(
+                "Entity {} has no Health component",
+                self.entity
+            ))
         }
     }
 
@@ -520,7 +531,10 @@ impl EditorCommand for EditHealthCommand {
             health.hp = self.old_hp;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Entity {} has no Health component", self.entity))
+            Err(anyhow::anyhow!(
+                "Entity {} has no Health component",
+                self.entity
+            ))
         }
     }
 
@@ -553,7 +567,10 @@ impl EditorCommand for EditTeamCommand {
             *team = self.new_team;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Entity {} has no Team component", self.entity))
+            Err(anyhow::anyhow!(
+                "Entity {} has no Team component",
+                self.entity
+            ))
         }
     }
 
@@ -562,7 +579,10 @@ impl EditorCommand for EditTeamCommand {
             *team = self.old_team;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Entity {} has no Team component", self.entity))
+            Err(anyhow::anyhow!(
+                "Entity {} has no Team component",
+                self.entity
+            ))
         }
     }
 
@@ -595,7 +615,10 @@ impl EditorCommand for EditAmmoCommand {
             ammo.rounds = self.new_rounds;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Entity {} has no Ammo component", self.entity))
+            Err(anyhow::anyhow!(
+                "Entity {} has no Ammo component",
+                self.entity
+            ))
         }
     }
 
@@ -604,7 +627,10 @@ impl EditorCommand for EditAmmoCommand {
             ammo.rounds = self.old_rounds;
             Ok(())
         } else {
-            Err(anyhow::anyhow!("Entity {} has no Ammo component", self.entity))
+            Err(anyhow::anyhow!(
+                "Entity {} has no Ammo component",
+                self.entity
+            ))
         }
     }
 
@@ -640,7 +666,10 @@ impl EditorCommand for SpawnEntitiesCommand {
         for &entity in &self.spawned_entities {
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 { x: -10000, y: -10000 },
+                    pos: IVec2 {
+                        x: -10000,
+                        y: -10000,
+                    },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
@@ -684,7 +713,10 @@ impl EditorCommand for DuplicateEntitiesCommand {
         for &entity in &self.spawned_entities {
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 { x: -10000, y: -10000 },
+                    pos: IVec2 {
+                        x: -10000,
+                        y: -10000,
+                    },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
@@ -718,11 +750,14 @@ impl DeleteEntitiesCommand {
 impl EditorCommand for DeleteEntitiesCommand {
     fn execute(&mut self, world: &mut World) -> Result<()> {
         self.clipboard_data = Some(ClipboardData::from_entities(world, &self.entities));
-        
+
         for &entity in &self.entities {
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 { x: -10000, y: -10000 },
+                    pos: IVec2 {
+                        x: -10000,
+                        y: -10000,
+                    },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
@@ -789,15 +824,30 @@ mod tests {
         let mut stack = UndoStack::new(10);
 
         // Execute two commands
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)), &mut world).unwrap();
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(10, 10)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
+                &mut world,
+            )
+            .unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(10, 10)),
+                &mut world,
+            )
+            .unwrap();
 
         // Undo once
         stack.undo(&mut world).unwrap();
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
 
         // Execute new command (should discard redo history)
-        stack.execute(MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(20, 20)), &mut world).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(20, 20)),
+                &mut world,
+            )
+            .unwrap();
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(20, 20));
         assert!(!stack.can_redo()); // Redo history discarded
     }
@@ -812,10 +862,12 @@ mod tests {
 
         // Execute 5 consecutive moves (should merge into 1)
         for i in 1..=5 {
-            stack.execute(
-                MoveEntityCommand::new(entity, IVec2::new(i - 1, i - 1), IVec2::new(i, i)),
-                &mut world,
-            ).unwrap();
+            stack
+                .execute(
+                    MoveEntityCommand::new(entity, IVec2::new(i - 1, i - 1), IVec2::new(i, i)),
+                    &mut world,
+                )
+                .unwrap();
         }
 
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
@@ -836,10 +888,12 @@ mod tests {
         let old_rot = (0.0, 0.0, 0.0);
         let new_rot = (0.5, 1.0, 1.5);
 
-        stack.execute(
-            RotateEntityCommand::new(entity, old_rot, new_rot),
-            &mut world,
-        ).unwrap();
+        stack
+            .execute(
+                RotateEntityCommand::new(entity, old_rot, new_rot),
+                &mut world,
+            )
+            .unwrap();
 
         let pose = world.pose(entity).unwrap();
         assert!((pose.rotation_x - 0.5).abs() < 0.01);
@@ -861,10 +915,9 @@ mod tests {
 
         let mut stack = UndoStack::new(10);
 
-        stack.execute(
-            ScaleEntityCommand::new(entity, 1.0, 2.5),
-            &mut world,
-        ).unwrap();
+        stack
+            .execute(ScaleEntityCommand::new(entity, 1.0, 2.5), &mut world)
+            .unwrap();
 
         assert!((world.pose(entity).unwrap().scale - 2.5).abs() < 0.01);
 
@@ -930,10 +983,12 @@ mod tests {
         let mut stack = UndoStack::new(5);
 
         for i in 0..10 {
-            stack.execute(
-                MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-                &mut world,
-            ).unwrap();
+            stack
+                .execute(
+                    MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                    &mut world,
+                )
+                .unwrap();
         }
 
         assert_eq!(stack.len(), 5);
@@ -947,10 +1002,12 @@ mod tests {
 
         let mut stack = UndoStack::new(10);
 
-        stack.execute(
-            MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
-            &mut world,
-        ).unwrap();
+        stack
+            .execute(
+                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
+                &mut world,
+            )
+            .unwrap();
 
         assert!(stack.undo_description().unwrap().contains("Move Entity"));
         assert!(stack.redo_description().is_none());
@@ -968,7 +1025,11 @@ mod tests {
         world.pose_mut(entity).unwrap().pos = IVec2::new(5, 5);
 
         let mut stack = UndoStack::new(10);
-        stack.push_executed(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)));
+        stack.push_executed(MoveEntityCommand::new(
+            entity,
+            IVec2::new(0, 0),
+            IVec2::new(5, 5),
+        ));
 
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
 

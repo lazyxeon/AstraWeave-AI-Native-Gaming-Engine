@@ -19,17 +19,17 @@ pub enum HierarchyAction {
 pub struct HierarchyPanel {
     hierarchy: HashMap<Entity, HierarchyNode>,
     root_entities: Vec<Entity>,
-    
+
     selected_entities: HashSet<Entity>,
     last_clicked: Option<Entity>,
-    
+
     drag_source: Option<Entity>,
     rename_entity: Option<Entity>,
     rename_buffer: String,
-    
+
     context_menu_entity: Option<Entity>,
     empty_node_counter: u32,
-    
+
     pending_actions: Vec<HierarchyAction>,
 }
 
@@ -48,33 +48,37 @@ impl HierarchyPanel {
             pending_actions: Vec::new(),
         }
     }
-    
+
     pub fn take_pending_actions(&mut self) -> Vec<HierarchyAction> {
         std::mem::take(&mut self.pending_actions)
     }
-    
+
     pub fn sync_with_world(&mut self, world: &World) {
         let world_entities: HashSet<Entity> = world.entities().into_iter().collect();
-        
+
         self.hierarchy.retain(|e, _| world_entities.contains(e));
         self.root_entities.retain(|e| world_entities.contains(e));
-        self.selected_entities.retain(|e| world_entities.contains(e));
-        
+        self.selected_entities
+            .retain(|e| world_entities.contains(e));
+
         for entity in world.entities() {
             if !self.hierarchy.contains_key(&entity) {
-                self.hierarchy.insert(entity, HierarchyNode {
+                self.hierarchy.insert(
                     entity,
-                    children: Vec::new(),
-                });
+                    HierarchyNode {
+                        entity,
+                        children: Vec::new(),
+                    },
+                );
                 self.root_entities.push(entity);
             }
         }
     }
-    
+
     pub fn get_selected(&self) -> Option<Entity> {
         self.selected_entities.iter().next().copied()
     }
-    
+
     pub fn set_selected(&mut self, entity: Option<Entity>) {
         self.selected_entities.clear();
         if let Some(e) = entity {
@@ -82,41 +86,41 @@ impl HierarchyPanel {
             self.last_clicked = Some(e);
         }
     }
-    
+
     pub fn get_all_selected(&self) -> Vec<Entity> {
         self.selected_entities.iter().copied().collect()
     }
-    
+
     fn add_child_to_parent(&mut self, child: Entity, parent: Entity) {
         if child == parent {
             return;
         }
-        
+
         if self.is_ancestor_of(child, parent) {
             return;
         }
-        
+
         self.remove_from_parent(child);
-        
+
         if let Some(parent_node) = self.hierarchy.get_mut(&parent) {
             if !parent_node.children.contains(&child) {
                 parent_node.children.push(child);
             }
         }
-        
+
         self.root_entities.retain(|&e| e != child);
     }
-    
+
     fn remove_from_parent(&mut self, child: Entity) {
         for node in self.hierarchy.values_mut() {
             node.children.retain(|&e| e != child);
         }
-        
+
         if !self.root_entities.contains(&child) {
             self.root_entities.push(child);
         }
     }
-    
+
     fn is_ancestor_of(&self, potential_ancestor: Entity, descendant: Entity) -> bool {
         if let Some(node) = self.hierarchy.get(&potential_ancestor) {
             for &child in &node.children {
@@ -127,7 +131,7 @@ impl HierarchyPanel {
         }
         false
     }
-    
+
     fn get_parent(&self, entity: Entity) -> Option<Entity> {
         for (parent, node) in &self.hierarchy {
             if node.children.contains(&entity) {
@@ -136,13 +140,13 @@ impl HierarchyPanel {
         }
         None
     }
-    
+
     pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut World) -> Option<Entity> {
         let mut selected_changed = None;
-        
+
         ui.heading("🌲 Hierarchy");
         ui.separator();
-        
+
         ui.horizontal(|ui| {
             if ui.button("➕ Empty").clicked() {
                 self.empty_node_counter += 1;
@@ -154,26 +158,29 @@ impl HierarchyPanel {
                     0,
                     0,
                 );
-                self.hierarchy.insert(entity, HierarchyNode {
+                self.hierarchy.insert(
                     entity,
-                    children: Vec::new(),
-                });
+                    HierarchyNode {
+                        entity,
+                        children: Vec::new(),
+                    },
+                );
                 self.root_entities.push(entity);
             }
-            
+
             if ui.button("🔄 Refresh").clicked() {
                 self.sync_with_world(world);
             }
         });
-        
+
         ui.add_space(5.0);
-        
+
         if !self.selected_entities.is_empty() {
             ui.label(format!("Selected: {}", self.selected_entities.len()));
         }
-        
+
         ui.separator();
-        
+
         egui::ScrollArea::vertical()
             .auto_shrink([false, false])
             .show(ui, |ui| {
@@ -184,10 +191,10 @@ impl HierarchyPanel {
                     }
                 }
             });
-        
+
         selected_changed
     }
-    
+
     fn show_entity_tree(
         &mut self,
         ui: &mut Ui,
@@ -196,29 +203,29 @@ impl HierarchyPanel {
         depth: usize,
     ) -> Option<Entity> {
         let mut selected_changed = None;
-        
+
         let name = world.name(entity).unwrap_or("Unknown");
         let is_selected = self.selected_entities.contains(&entity);
-        
+
         let children = if let Some(node) = self.hierarchy.get(&entity) {
             node.children.clone()
         } else {
             Vec::new()
         };
         let has_children = !children.is_empty();
-        
+
         let indent = depth as f32 * 16.0;
-        
+
         ui.horizontal(|ui| {
             ui.add_space(indent);
-            
+
             let (id, rect) = ui.allocate_space(egui::vec2(ui.available_width(), 20.0));
             let response = ui.interact(rect, id, egui::Sense::click_and_drag());
-            
+
             if response.drag_started() {
                 self.drag_source = Some(entity);
             }
-            
+
             if response.drag_stopped() {
                 if let Some(source) = self.drag_source.take() {
                     if source != entity {
@@ -226,10 +233,10 @@ impl HierarchyPanel {
                     }
                 }
             }
-            
+
             if response.clicked() {
                 let modifiers = ui.input(|i| i.modifiers);
-                
+
                 if modifiers.ctrl {
                     if self.selected_entities.contains(&entity) {
                         self.selected_entities.remove(&entity);
@@ -240,9 +247,10 @@ impl HierarchyPanel {
                 } else if modifiers.shift {
                     if let Some(last) = self.last_clicked {
                         let all_entities = self.get_all_entities_in_tree();
-                        if let (Some(start_idx), Some(end_idx)) = 
-                            (all_entities.iter().position(|&e| e == last),
-                             all_entities.iter().position(|&e| e == entity)) {
+                        if let (Some(start_idx), Some(end_idx)) = (
+                            all_entities.iter().position(|&e| e == last),
+                            all_entities.iter().position(|&e| e == entity),
+                        ) {
                             let (min_idx, max_idx) = if start_idx < end_idx {
                                 (start_idx, end_idx)
                             } else {
@@ -261,43 +269,46 @@ impl HierarchyPanel {
                     selected_changed = Some(entity);
                 }
             }
-            
+
             response.context_menu(|ui| {
                 self.context_menu_entity = Some(entity);
-                
+
                 if ui.button("📝 Rename").clicked() {
                     self.rename_entity = Some(entity);
                     self.rename_buffer = name.to_string();
                     ui.close();
                 }
-                
+
                 if ui.button("📋 Duplicate").clicked() {
-                    self.pending_actions.push(HierarchyAction::DuplicateEntity(entity));
+                    self.pending_actions
+                        .push(HierarchyAction::DuplicateEntity(entity));
                     ui.close();
                 }
-                
+
                 if ui.button("🗑️ Delete").clicked() {
-                    self.pending_actions.push(HierarchyAction::DeleteEntity(entity));
+                    self.pending_actions
+                        .push(HierarchyAction::DeleteEntity(entity));
                     ui.close();
                 }
-                
+
                 ui.separator();
-                
+
                 if ui.button("💾 Create Prefab").clicked() {
-                    self.pending_actions.push(HierarchyAction::CreatePrefab(entity));
+                    self.pending_actions
+                        .push(HierarchyAction::CreatePrefab(entity));
                     ui.close();
                 }
-                
+
                 ui.separator();
-                
+
                 if ui.button("📤 Unparent").clicked() {
                     self.remove_from_parent(entity);
                     ui.close();
                 }
             });
-            
+
             let painter = ui.painter_at(rect);
-            
+
             if is_selected {
                 painter.rect_filled(
                     rect,
@@ -311,7 +322,7 @@ impl HierarchyPanel {
                     egui::Color32::from_rgb(255, 255, 255).linear_multiply(0.1),
                 );
             }
-            
+
             if self.drag_source.is_some() && response.hovered() {
                 painter.rect_stroke(
                     rect,
@@ -320,14 +331,19 @@ impl HierarchyPanel {
                     egui::StrokeKind::Outside,
                 );
             }
-            
-            let text_pos = rect.min + egui::vec2(
-                if has_children { 20.0 } else { 10.0 },
-                rect.height() * 0.5 - 7.0,
-            );
-            
+
+            let text_pos = rect.min
+                + egui::vec2(
+                    if has_children { 20.0 } else { 10.0 },
+                    rect.height() * 0.5 - 7.0,
+                );
+
             if has_children {
-                let arrow = if ui.memory(|mem| mem.data.get_temp::<bool>(egui::Id::new(format!("collapse_{}", entity))).unwrap_or(false)) {
+                let arrow = if ui.memory(|mem| {
+                    mem.data
+                        .get_temp::<bool>(egui::Id::new(format!("collapse_{}", entity)))
+                        .unwrap_or(false)
+                }) {
                     "▼"
                 } else {
                     "▶"
@@ -339,25 +355,37 @@ impl HierarchyPanel {
                     egui::FontId::default(),
                     egui::Color32::WHITE,
                 );
-                
-                let arrow_rect = egui::Rect::from_min_size(
-                    rect.min,
-                    egui::vec2(15.0, rect.height()),
-                );
-                if ui.interact(arrow_rect, egui::Id::new(format!("arrow_{}", entity)), egui::Sense::click()).clicked() {
-                    let current = ui.memory(|mem| mem.data.get_temp::<bool>(egui::Id::new(format!("collapse_{}", entity))).unwrap_or(false));
-                    ui.memory_mut(|mem| mem.data.insert_temp(egui::Id::new(format!("collapse_{}", entity)), !current));
+
+                let arrow_rect =
+                    egui::Rect::from_min_size(rect.min, egui::vec2(15.0, rect.height()));
+                if ui
+                    .interact(
+                        arrow_rect,
+                        egui::Id::new(format!("arrow_{}", entity)),
+                        egui::Sense::click(),
+                    )
+                    .clicked()
+                {
+                    let current = ui.memory(|mem| {
+                        mem.data
+                            .get_temp::<bool>(egui::Id::new(format!("collapse_{}", entity)))
+                            .unwrap_or(false)
+                    });
+                    ui.memory_mut(|mem| {
+                        mem.data
+                            .insert_temp(egui::Id::new(format!("collapse_{}", entity)), !current)
+                    });
                 }
             }
-            
+
             if Some(entity) == self.rename_entity {
-                let text_edit = egui::TextEdit::singleline(&mut self.rename_buffer)
-                    .desired_width(150.0);
+                let text_edit =
+                    egui::TextEdit::singleline(&mut self.rename_buffer).desired_width(150.0);
                 let text_response = ui.put(
                     egui::Rect::from_min_size(text_pos, egui::vec2(150.0, 16.0)),
                     text_edit,
                 );
-                
+
                 if text_response.lost_focus() || ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                     self.rename_entity = None;
                 }
@@ -375,21 +403,26 @@ impl HierarchyPanel {
                 );
             }
         });
-        
+
         if has_children {
-            let is_expanded = ui.memory(|mem| mem.data.get_temp::<bool>(egui::Id::new(format!("collapse_{}", entity))).unwrap_or(false));
+            let is_expanded = ui.memory(|mem| {
+                mem.data
+                    .get_temp::<bool>(egui::Id::new(format!("collapse_{}", entity)))
+                    .unwrap_or(false)
+            });
             if is_expanded {
                 for child in children {
-                    if let Some(new_selection) = self.show_entity_tree(ui, world, child, depth + 1) {
+                    if let Some(new_selection) = self.show_entity_tree(ui, world, child, depth + 1)
+                    {
                         selected_changed = Some(new_selection);
                     }
                 }
             }
         }
-        
+
         selected_changed
     }
-    
+
     fn get_all_entities_in_tree(&self) -> Vec<Entity> {
         let mut result = Vec::new();
         for &entity in &self.root_entities {
@@ -397,7 +430,7 @@ impl HierarchyPanel {
         }
         result
     }
-    
+
     fn collect_entities_recursive(&self, entity: Entity, result: &mut Vec<Entity>) {
         result.push(entity);
         if let Some(node) = self.hierarchy.get(&entity) {
@@ -418,7 +451,7 @@ impl Panel for HierarchyPanel {
     fn name(&self) -> &str {
         "Hierarchy"
     }
-    
+
     fn show(&mut self, ui: &mut Ui) {
         ui.heading("🌲 Hierarchy");
         ui.label("Hierarchy panel requires world integration");
@@ -428,80 +461,140 @@ impl Panel for HierarchyPanel {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_hierarchy_panel_new() {
         let panel = HierarchyPanel::new();
         assert_eq!(panel.root_entities.len(), 0);
         assert_eq!(panel.selected_entities.len(), 0);
     }
-    
+
     #[test]
     fn test_add_child_to_parent() {
         let mut panel = HierarchyPanel::new();
-        
-        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: Vec::new() });
-        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: Vec::new() });
+
+        panel.hierarchy.insert(
+            1,
+            HierarchyNode {
+                entity: 1,
+                children: Vec::new(),
+            },
+        );
+        panel.hierarchy.insert(
+            2,
+            HierarchyNode {
+                entity: 2,
+                children: Vec::new(),
+            },
+        );
         panel.root_entities = vec![1, 2];
-        
+
         panel.add_child_to_parent(2, 1);
-        
+
         assert_eq!(panel.hierarchy.get(&1).unwrap().children, vec![2]);
         assert!(!panel.root_entities.contains(&2));
         assert_eq!(panel.root_entities, vec![1]);
     }
-    
+
     #[test]
     fn test_prevent_circular_parenting() {
         let mut panel = HierarchyPanel::new();
-        
-        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: vec![2] });
-        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: vec![3] });
-        panel.hierarchy.insert(3, HierarchyNode { entity: 3, children: Vec::new() });
-        
+
+        panel.hierarchy.insert(
+            1,
+            HierarchyNode {
+                entity: 1,
+                children: vec![2],
+            },
+        );
+        panel.hierarchy.insert(
+            2,
+            HierarchyNode {
+                entity: 2,
+                children: vec![3],
+            },
+        );
+        panel.hierarchy.insert(
+            3,
+            HierarchyNode {
+                entity: 3,
+                children: Vec::new(),
+            },
+        );
+
         panel.add_child_to_parent(1, 3);
-        
+
         assert!(!panel.hierarchy.get(&3).unwrap().children.contains(&1));
     }
-    
+
     #[test]
     fn test_remove_from_parent() {
         let mut panel = HierarchyPanel::new();
-        
-        panel.hierarchy.insert(1, HierarchyNode { entity: 1, children: vec![2] });
-        panel.hierarchy.insert(2, HierarchyNode { entity: 2, children: Vec::new() });
+
+        panel.hierarchy.insert(
+            1,
+            HierarchyNode {
+                entity: 1,
+                children: vec![2],
+            },
+        );
+        panel.hierarchy.insert(
+            2,
+            HierarchyNode {
+                entity: 2,
+                children: Vec::new(),
+            },
+        );
         panel.root_entities = vec![1];
-        
+
         panel.remove_from_parent(2);
-        
+
         assert_eq!(panel.hierarchy.get(&1).unwrap().children.len(), 0);
         assert!(panel.root_entities.contains(&2));
     }
-    
+
     #[test]
     fn test_multi_selection() {
         let mut panel = HierarchyPanel::new();
-        
+
         panel.selected_entities.insert(1);
         panel.selected_entities.insert(2);
         panel.selected_entities.insert(3);
-        
+
         assert_eq!(panel.get_all_selected().len(), 3);
     }
-    
+
     #[test]
     fn test_sync_with_world_removes_deleted_entities() {
         let mut panel = HierarchyPanel::new();
         let mut world = World::new();
-        
-        let e1 = world.spawn("Entity1", astraweave_core::IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 10);
-        
-        panel.hierarchy.insert(e1, HierarchyNode { entity: e1, children: Vec::new() });
-        panel.hierarchy.insert(999, HierarchyNode { entity: 999, children: Vec::new() });
+
+        let e1 = world.spawn(
+            "Entity1",
+            astraweave_core::IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            10,
+        );
+
+        panel.hierarchy.insert(
+            e1,
+            HierarchyNode {
+                entity: e1,
+                children: Vec::new(),
+            },
+        );
+        panel.hierarchy.insert(
+            999,
+            HierarchyNode {
+                entity: 999,
+                children: Vec::new(),
+            },
+        );
         panel.root_entities = vec![e1, 999];
-        
+
         panel.sync_with_world(&world);
-        
+
         assert!(panel.hierarchy.contains_key(&e1));
         assert!(!panel.hierarchy.contains_key(&999));
         assert!(!panel.root_entities.contains(&999));

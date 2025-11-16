@@ -195,7 +195,13 @@ pub struct BossObjective {
 }
 
 impl BossObjective {
-    pub fn new(name: &str, health: f32, position: Vec3, arena_center: Vec3, arena_radius: f32) -> Self {
+    pub fn new(
+        name: &str,
+        health: f32,
+        position: Vec3,
+        arena_center: Vec3,
+        arena_radius: f32,
+    ) -> Self {
         Self {
             boss_name: name.to_string(),
             boss_health: health,
@@ -212,7 +218,7 @@ impl BossObjective {
     /// Update boss state
     pub fn update(&mut self, delta_time: f32) {
         self.time_since_special += delta_time;
-        
+
         // Update phase based on health
         let health_percentage = self.boss_health / self.boss_max_health;
         self.current_phase = if health_percentage > 0.66 {
@@ -297,7 +303,10 @@ pub struct CollectObjective {
 
 impl CollectObjective {
     pub fn new(item_name: &str, positions: Vec<Vec3>, radius: f32) -> Self {
-        let items = positions.iter().map(|&pos| CollectItem::new(item_name, pos)).collect();
+        let items = positions
+            .iter()
+            .map(|&pos| CollectItem::new(item_name, pos))
+            .collect();
         let required_count = positions.len();
         Self {
             items,
@@ -335,7 +344,8 @@ impl CollectObjective {
 
     /// Get uncollected item positions (for UI hints)
     pub fn uncollected_positions(&self) -> Vec<Vec3> {
-        self.items.iter()
+        self.items
+            .iter()
             .filter(|item| !item.collected)
             .map(|item| item.position)
             .collect()
@@ -353,7 +363,7 @@ mod tests {
         let start = Vec3::new(0.0, 0.0, 0.0);
         let dest = Vec3::new(10.0, 0.0, 0.0);
         let npc = EscortNPC::new("Villager", start, dest, 100.0);
-        
+
         assert_eq!(npc.name, "Villager");
         assert_eq!(npc.health, 100.0);
         assert_eq!(npc.max_health, 100.0);
@@ -367,12 +377,12 @@ mod tests {
         let start = Vec3::new(0.0, 0.0, 0.0);
         let dest = Vec3::new(10.0, 0.0, 0.0);
         let mut npc = EscortNPC::new("Villager", start, dest, 100.0);
-        
+
         // Move for 1 second (should move 2 units at speed 2.0)
         npc.update(1.0);
         assert_eq!(npc.position.x, 2.0);
         assert!(!npc.reached_destination);
-        
+
         // Move for 4 more seconds (total 10 units)
         for _ in 0..4 {
             npc.update(1.0);
@@ -384,14 +394,14 @@ mod tests {
     fn test_escort_npc_damage() {
         let npc_pos = Vec3::ZERO;
         let mut npc = EscortNPC::new("Villager", npc_pos, Vec3::X * 10.0, 100.0);
-        
+
         assert!(npc.is_alive());
         assert_eq!(npc.health_percentage(), 1.0);
-        
+
         npc.take_damage(30.0);
         assert_eq!(npc.health, 70.0);
         assert_eq!(npc.health_percentage(), 0.7);
-        
+
         npc.take_damage(80.0); // Overkill
         assert_eq!(npc.health, 0.0);
         assert!(!npc.is_alive());
@@ -401,10 +411,10 @@ mod tests {
     fn test_escort_npc_health_percentage() {
         let npc_pos = Vec3::ZERO;
         let mut npc = EscortNPC::new("Villager", npc_pos, Vec3::X * 10.0, 200.0);
-        
+
         npc.take_damage(50.0);
         assert_eq!(npc.health_percentage(), 0.75);
-        
+
         npc.take_damage(100.0);
         assert_eq!(npc.health_percentage(), 0.25);
     }
@@ -414,7 +424,7 @@ mod tests {
     #[test]
     fn test_defend_creation() {
         let defend = DefendObjective::new("Anchor", Vec3::ZERO, 5.0, 100.0, 60.0, 3);
-        
+
         assert_eq!(defend.location_name, "Anchor");
         assert_eq!(defend.protect_position, Vec3::ZERO);
         assert_eq!(defend.protect_radius, 5.0);
@@ -427,10 +437,10 @@ mod tests {
     #[test]
     fn test_defend_timer() {
         let mut defend = DefendObjective::new("Anchor", Vec3::ZERO, 5.0, 100.0, 60.0, 3);
-        
+
         defend.update(15.0);
         assert_eq!(defend.elapsed_seconds, 15.0);
-        
+
         defend.update(45.0);
         assert_eq!(defend.elapsed_seconds, 60.0);
     }
@@ -438,18 +448,18 @@ mod tests {
     #[test]
     fn test_defend_waves() {
         let mut defend = DefendObjective::new("Anchor", Vec3::ZERO, 5.0, 100.0, 60.0, 3);
-        
+
         assert!(!defend.is_complete());
-        
+
         defend.complete_wave();
         assert_eq!(defend.waves_survived, 1);
         assert!(!defend.is_complete()); // Not enough waves
-        
+
         defend.complete_wave();
         defend.complete_wave();
         assert_eq!(defend.waves_survived, 3);
         assert!(!defend.is_complete()); // Not enough time
-        
+
         defend.update(60.0);
         assert!(defend.is_complete()); // Both waves and time
     }
@@ -457,12 +467,12 @@ mod tests {
     #[test]
     fn test_defend_failure() {
         let mut defend = DefendObjective::new("Anchor", Vec3::ZERO, 5.0, 100.0, 60.0, 3);
-        
+
         assert!(!defend.is_failed());
-        
+
         defend.take_damage(50.0);
         assert!(!defend.is_failed());
-        
+
         defend.take_damage(60.0); // Destroy target
         assert!(defend.is_failed());
     }
@@ -470,16 +480,16 @@ mod tests {
     #[test]
     fn test_defend_progress() {
         let mut defend = DefendObjective::new("Anchor", Vec3::ZERO, 5.0, 100.0, 60.0, 3);
-        
+
         // Initial progress 0%
         assert_eq!(defend.progress(), 0.0);
-        
+
         // Complete 1 wave (33.3%) + 30s time (50%) = 41.65%
         defend.complete_wave();
         defend.update(30.0);
         let progress = defend.progress();
         assert!((progress - 0.4165).abs() < 0.01);
-        
+
         // Complete all waves + full time = 100%
         defend.complete_wave();
         defend.complete_wave();
@@ -492,7 +502,7 @@ mod tests {
     #[test]
     fn test_time_trial_creation() {
         let timer = TimeTrialObjective::new(120.0, 90.0);
-        
+
         assert_eq!(timer.time_limit_seconds, 120.0);
         assert_eq!(timer.bonus_time_threshold, 90.0);
         assert_eq!(timer.elapsed_seconds, 0.0);
@@ -501,14 +511,14 @@ mod tests {
     #[test]
     fn test_time_trial_expiration() {
         let mut timer = TimeTrialObjective::new(60.0, 45.0);
-        
+
         assert!(!timer.is_expired());
         assert!(timer.is_bonus_time());
-        
+
         timer.update(50.0);
         assert!(!timer.is_expired());
         assert!(!timer.is_bonus_time()); // Past bonus threshold
-        
+
         timer.update(15.0); // Total 65s > 60s limit
         assert!(timer.is_expired());
     }
@@ -516,12 +526,12 @@ mod tests {
     #[test]
     fn test_time_trial_remaining_time() {
         let mut timer = TimeTrialObjective::new(100.0, 70.0);
-        
+
         assert_eq!(timer.remaining_time(), 100.0);
-        
+
         timer.update(30.0);
         assert_eq!(timer.remaining_time(), 70.0);
-        
+
         timer.update(80.0); // Expired
         assert_eq!(timer.remaining_time(), 0.0);
     }
@@ -529,12 +539,12 @@ mod tests {
     #[test]
     fn test_time_trial_progress() {
         let mut timer = TimeTrialObjective::new(100.0, 70.0);
-        
+
         assert_eq!(timer.progress(), 1.0); // Full time remaining
-        
+
         timer.update(50.0);
         assert_eq!(timer.progress(), 0.5); // Half time remaining
-        
+
         timer.update(50.0);
         assert_eq!(timer.progress(), 0.0); // No time remaining
     }
@@ -544,7 +554,7 @@ mod tests {
     #[test]
     fn test_boss_creation() {
         let boss = BossObjective::new("Void Lord", 500.0, Vec3::ZERO, Vec3::ZERO, 20.0);
-        
+
         assert_eq!(boss.boss_name, "Void Lord");
         assert_eq!(boss.boss_health, 500.0);
         assert_eq!(boss.boss_max_health, 500.0);
@@ -554,17 +564,17 @@ mod tests {
     #[test]
     fn test_boss_phases() {
         let mut boss = BossObjective::new("Void Lord", 300.0, Vec3::ZERO, Vec3::ZERO, 20.0);
-        
+
         assert_eq!(boss.current_phase, BossPhase::Phase1);
-        
+
         boss.take_damage(100.0); // 200/300 = 66.7%
         boss.update(0.0);
         assert_eq!(boss.current_phase, BossPhase::Phase1);
-        
+
         boss.take_damage(50.0); // 150/300 = 50%
         boss.update(0.0);
         assert_eq!(boss.current_phase, BossPhase::Phase2);
-        
+
         boss.take_damage(100.0); // 50/300 = 16.7%
         boss.update(0.0);
         assert_eq!(boss.current_phase, BossPhase::Phase3);
@@ -573,9 +583,9 @@ mod tests {
     #[test]
     fn test_boss_defeat() {
         let mut boss = BossObjective::new("Void Lord", 100.0, Vec3::ZERO, Vec3::ZERO, 20.0);
-        
+
         assert!(!boss.is_defeated());
-        
+
         boss.take_damage(100.0);
         assert!(boss.is_defeated());
         assert_eq!(boss.boss_health, 0.0);
@@ -584,15 +594,15 @@ mod tests {
     #[test]
     fn test_boss_special_attack() {
         let mut boss = BossObjective::new("Void Lord", 500.0, Vec3::ZERO, Vec3::ZERO, 20.0);
-        
+
         assert!(!boss.can_use_special());
-        
+
         boss.update(10.0);
         assert!(boss.can_use_special());
-        
+
         boss.use_special();
         assert!(!boss.can_use_special()); // Cooldown reset
-        
+
         boss.update(10.0);
         assert!(boss.can_use_special()); // Ready again
     }
@@ -600,13 +610,13 @@ mod tests {
     #[test]
     fn test_boss_attack_multiplier() {
         let mut boss = BossObjective::new("Void Lord", 300.0, Vec3::ZERO, Vec3::ZERO, 20.0);
-        
+
         assert_eq!(boss.attack_multiplier(), 1.0); // Phase 1
-        
+
         boss.take_damage(120.0); // Phase 2 (60%)
         boss.update(0.0);
         assert_eq!(boss.attack_multiplier(), 1.5);
-        
+
         boss.take_damage(120.0); // Phase 3 (20%)
         boss.update(0.0);
         assert_eq!(boss.attack_multiplier(), 2.0);
@@ -622,7 +632,7 @@ mod tests {
             Vec3::new(-10.0, 0.0, 0.0),
         ];
         let collect = CollectObjective::new("Echo Shard", positions, 2.0);
-        
+
         assert_eq!(collect.items.len(), 3);
         assert_eq!(collect.required_count, 3);
         assert_eq!(collect.collection_radius, 2.0);
@@ -631,21 +641,18 @@ mod tests {
 
     #[test]
     fn test_collect_items() {
-        let positions = vec![
-            Vec3::new(10.0, 0.0, 0.0),
-            Vec3::new(20.0, 0.0, 0.0),
-        ];
+        let positions = vec![Vec3::new(10.0, 0.0, 0.0), Vec3::new(20.0, 0.0, 0.0)];
         let mut collect = CollectObjective::new("Echo Shard", positions, 2.0);
-        
+
         // Player at first item
         let count = collect.try_collect(Vec3::new(10.0, 0.0, 0.0));
         assert_eq!(count, 1);
         assert_eq!(collect.collected_count(), 1);
-        
+
         // Player between items (too far from second)
         let count = collect.try_collect(Vec3::new(15.0, 0.0, 0.0));
         assert_eq!(count, 0);
-        
+
         // Player at second item
         let count = collect.try_collect(Vec3::new(20.0, 0.0, 0.0));
         assert_eq!(count, 1);
@@ -657,15 +664,15 @@ mod tests {
     fn test_collect_progress() {
         let positions = vec![Vec3::ZERO, Vec3::X * 10.0, Vec3::Z * 10.0];
         let mut collect = CollectObjective::new("Echo Shard", positions, 2.0);
-        
+
         assert_eq!(collect.progress(), 0.0);
-        
+
         collect.try_collect(Vec3::ZERO);
         assert!((collect.progress() - 0.333).abs() < 0.01);
-        
+
         collect.try_collect(Vec3::X * 10.0);
         assert!((collect.progress() - 0.666).abs() < 0.01);
-        
+
         collect.try_collect(Vec3::Z * 10.0);
         assert_eq!(collect.progress(), 1.0);
     }
@@ -674,10 +681,10 @@ mod tests {
     fn test_collect_uncollected_positions() {
         let positions = vec![Vec3::ZERO, Vec3::X * 10.0, Vec3::Z * 10.0];
         let mut collect = CollectObjective::new("Echo Shard", positions, 2.0);
-        
+
         let uncollected = collect.uncollected_positions();
         assert_eq!(uncollected.len(), 3);
-        
+
         collect.try_collect(Vec3::ZERO);
         let uncollected = collect.uncollected_positions();
         assert_eq!(uncollected.len(), 2);
@@ -693,7 +700,7 @@ mod tests {
             Vec3::new(11.0, 0.0, 0.0),
         ];
         let mut collect = CollectObjective::new("Echo Shard", positions, 2.0);
-        
+
         // Player near all 3 items (radius 2.0 covers all)
         let count = collect.try_collect(Vec3::new(10.5, 0.0, 0.0));
         assert_eq!(count, 3);

@@ -324,7 +324,7 @@ impl Texture {
         usage: TextureUsage,
     ) -> Result<Self> {
         use std::path::Path;
-        
+
         // Phase 1: Async file I/O (off main thread)
         let path_buf = Path::new(path).to_path_buf();
         let bytes = tokio::fs::read(&path_buf)
@@ -530,11 +530,8 @@ fn generate_and_upload_mipmaps(
         let mip_height = (base_height >> level).max(1);
 
         // Downsample using high-quality filter
-        current_image = current_image.resize(
-            mip_width,
-            mip_height,
-            image::imageops::FilterType::Lanczos3,
-        );
+        current_image =
+            current_image.resize(mip_width, mip_height, image::imageops::FilterType::Lanczos3);
 
         let rgba_mip = current_image.to_rgba8();
 
