@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Statistics for a specific action's execution history
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,7 +133,8 @@ impl ActionHistory {
 
     /// Prune actions with very low execution counts (noise reduction)
     pub fn prune_noise(&mut self, min_executions: u32) {
-        self.stats.retain(|_, stats| stats.executions >= min_executions);
+        self.stats
+            .retain(|_, stats| stats.executions >= min_executions);
     }
 
     /// Merge another history into this one
@@ -169,7 +170,11 @@ impl ActionHistory {
         let mut actions: Vec<_> = self.stats.iter().collect();
         actions.sort_by(|a, b| b.1.executions.cmp(&a.1.executions));
 
-        let keep_names: Vec<_> = actions.iter().take(keep_top_n).map(|(k, _)| k.to_string()).collect();
+        let keep_names: Vec<_> = actions
+            .iter()
+            .take(keep_top_n)
+            .map(|(k, _)| k.to_string())
+            .collect();
         self.stats.retain(|k, _| keep_names.contains(k));
     }
 }
@@ -295,4 +300,3 @@ mod tests {
         assert!(stats.reliability_score() > 0.85);
     }
 }
-

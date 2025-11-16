@@ -141,7 +141,11 @@ fn replay_determinism() {
             actor_id: c1,
             intent: PlanIntent {
                 plan_id: "mv".into(),
-                steps: vec![ActionStep::MoveTo { x: 4, y: 2, speed: None }],
+                steps: vec![ActionStep::MoveTo {
+                    x: 4,
+                    y: 2,
+                    speed: None,
+                }],
             },
             world_hash: 0,
         },
@@ -151,7 +155,11 @@ fn replay_determinism() {
             actor_id: p1,
             intent: PlanIntent {
                 plan_id: "mv".into(),
-                steps: vec![ActionStep::MoveTo { x: 3, y: 2, speed: None }],
+                steps: vec![ActionStep::MoveTo {
+                    x: 3,
+                    y: 2,
+                    speed: None,
+                }],
             },
             world_hash: 0,
         },

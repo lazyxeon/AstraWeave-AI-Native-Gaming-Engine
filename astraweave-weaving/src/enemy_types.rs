@@ -30,7 +30,7 @@ pub struct Riftstalker {
     pub move_speed: f32,
     pub attack_cooldown: f32,
     pub time_since_attack: f32,
-    pub flanking_angle: f32, // Angle offset for circling player
+    pub flanking_angle: f32,  // Angle offset for circling player
     pub flanking_radius: f32, // Distance to maintain from player
 }
 
@@ -76,8 +76,8 @@ impl Riftstalker {
 
     /// Check if can attack
     pub fn can_attack(&self, player_pos: Vec3) -> bool {
-        self.time_since_attack >= self.attack_cooldown 
-            && self.position.distance(player_pos) <= 2.0 // Melee range
+        self.time_since_attack >= self.attack_cooldown && self.position.distance(player_pos) <= 2.0
+        // Melee range
     }
 
     /// Execute attack
@@ -170,7 +170,8 @@ impl Sentinel {
         self.time_since_attack = 0.0;
 
         // Find all entities within AOE radius
-        entities.iter()
+        entities
+            .iter()
             .enumerate()
             .filter(|(_, (pos, _))| self.position.distance(*pos) <= self.aoe_radius)
             .map(|(idx, _)| (idx, self.damage))
@@ -359,7 +360,7 @@ mod tests {
     #[test]
     fn test_riftstalker_creation() {
         let riftstalker = Riftstalker::new(Vec3::ZERO);
-        
+
         assert_eq!(riftstalker.health, 60.0);
         assert_eq!(riftstalker.max_health, 60.0);
         assert_eq!(riftstalker.damage, 20.0);
@@ -371,13 +372,13 @@ mod tests {
     fn test_riftstalker_movement() {
         let mut riftstalker = Riftstalker::new(Vec3::ZERO);
         let player_pos = Vec3::new(10.0, 0.0, 0.0);
-        
+
         let initial_angle = riftstalker.flanking_angle;
         riftstalker.update(player_pos, 1.0);
-        
+
         // Angle should increase (circling)
         assert!(riftstalker.flanking_angle > initial_angle);
-        
+
         // Position should change (moving toward flanking position)
         assert_ne!(riftstalker.position, Vec3::ZERO);
     }
@@ -386,14 +387,14 @@ mod tests {
     fn test_riftstalker_attack() {
         let mut riftstalker = Riftstalker::new(Vec3::ZERO);
         let player_pos = Vec3::new(1.0, 0.0, 0.0);
-        
+
         // Not ready to attack initially
         assert!(!riftstalker.can_attack(player_pos));
-        
+
         // Manually advance cooldown (test cooldown logic without movement complications)
         riftstalker.time_since_attack = 1.5;
         assert!(riftstalker.can_attack(player_pos));
-        
+
         // Attack
         let damage = riftstalker.attack();
         assert_eq!(damage, 20.0);
@@ -405,28 +406,34 @@ mod tests {
         let mut riftstalker = Riftstalker::new(Vec3::new(0.0, 0.0, -5.0)); // Behind player
         let player_pos = Vec3::ZERO;
         let player_forward = Vec3::new(0.0, 0.0, 1.0); // Facing +Z
-        
+
         // Riftstalker is behind player
         assert!(riftstalker.is_flanking(player_pos, player_forward));
-        assert_eq!(riftstalker.flank_multiplier(player_pos, player_forward), 1.5);
-        
+        assert_eq!(
+            riftstalker.flank_multiplier(player_pos, player_forward),
+            1.5
+        );
+
         // Move Riftstalker in front of player
         riftstalker.position = Vec3::new(0.0, 0.0, 5.0);
         assert!(!riftstalker.is_flanking(player_pos, player_forward));
-        assert_eq!(riftstalker.flank_multiplier(player_pos, player_forward), 1.0);
+        assert_eq!(
+            riftstalker.flank_multiplier(player_pos, player_forward),
+            1.0
+        );
     }
 
     #[test]
     fn test_riftstalker_damage() {
         let mut riftstalker = Riftstalker::new(Vec3::ZERO);
-        
+
         assert!(riftstalker.is_alive());
         assert_eq!(riftstalker.health_percentage(), 1.0);
-        
+
         riftstalker.take_damage(30.0);
         assert_eq!(riftstalker.health, 30.0);
         assert_eq!(riftstalker.health_percentage(), 0.5);
-        
+
         riftstalker.take_damage(40.0); // Overkill
         assert_eq!(riftstalker.health, 0.0);
         assert!(!riftstalker.is_alive());
@@ -437,7 +444,7 @@ mod tests {
     #[test]
     fn test_sentinel_creation() {
         let sentinel = Sentinel::new(Vec3::ZERO);
-        
+
         assert_eq!(sentinel.health, 200.0);
         assert_eq!(sentinel.max_health, 200.0);
         assert_eq!(sentinel.damage, 25.0);
@@ -449,11 +456,11 @@ mod tests {
     #[test]
     fn test_sentinel_armor() {
         let mut sentinel = Sentinel::new(Vec3::ZERO);
-        
+
         // 100 damage - 30% armor = 70 effective damage
         sentinel.take_damage(100.0);
         assert_eq!(sentinel.health, 130.0);
-        
+
         // Effective health accounting for armor
         let effective = sentinel.effective_health();
         assert!((effective - 185.7).abs() < 0.1); // 130 / 0.7 ≈ 185.7
@@ -462,21 +469,21 @@ mod tests {
     #[test]
     fn test_sentinel_aoe_attack() {
         let mut sentinel = Sentinel::new(Vec3::ZERO);
-        
+
         // Entities at various distances
         let entities = vec![
-            (Vec3::new(3.0, 0.0, 0.0), "player"),    // Within 6.0 radius
-            (Vec3::new(5.0, 0.0, 0.0), "anchor"),    // Within 6.0 radius
-            (Vec3::new(10.0, 0.0, 0.0), "enemy"),    // Outside 6.0 radius
+            (Vec3::new(3.0, 0.0, 0.0), "player"), // Within 6.0 radius
+            (Vec3::new(5.0, 0.0, 0.0), "anchor"), // Within 6.0 radius
+            (Vec3::new(10.0, 0.0, 0.0), "enemy"), // Outside 6.0 radius
         ];
-        
+
         // Wait for cooldown
         sentinel.update(Vec3::ZERO, 3.0);
         assert!(sentinel.can_attack());
-        
+
         // Execute AOE attack
         let hits = sentinel.attack_aoe(&entities);
-        
+
         // Should hit first 2 entities, not the third
         assert_eq!(hits.len(), 2);
         assert_eq!(hits[0].0, 0); // First entity
@@ -488,9 +495,9 @@ mod tests {
     fn test_sentinel_movement() {
         let mut sentinel = Sentinel::new(Vec3::ZERO);
         let player_pos = Vec3::new(10.0, 0.0, 0.0);
-        
+
         sentinel.update(player_pos, 1.0);
-        
+
         // Should move toward player at speed 1.5
         assert!(sentinel.position.x > 0.0);
         assert!(sentinel.position.x <= 1.5);
@@ -499,14 +506,14 @@ mod tests {
     #[test]
     fn test_sentinel_health() {
         let mut sentinel = Sentinel::new(Vec3::ZERO);
-        
+
         assert!(sentinel.is_alive());
         assert_eq!(sentinel.health_percentage(), 1.0);
-        
+
         sentinel.take_damage(100.0); // 70 effective damage
         assert_eq!(sentinel.health, 130.0);
         assert_eq!(sentinel.health_percentage(), 0.65);
-        
+
         sentinel.take_damage(300.0); // Overkill (210 effective damage)
         assert_eq!(sentinel.health, 0.0);
         assert!(!sentinel.is_alive());
@@ -517,7 +524,7 @@ mod tests {
     #[test]
     fn test_void_boss_creation() {
         let boss = VoidBoss::new(Vec3::ZERO);
-        
+
         assert_eq!(boss.health, 500.0);
         assert_eq!(boss.max_health, 500.0);
         assert_eq!(boss.damage, 40.0);
@@ -528,14 +535,14 @@ mod tests {
     #[test]
     fn test_void_boss_phases() {
         let mut boss = VoidBoss::new(Vec3::ZERO);
-        
+
         assert_eq!(boss.current_phase, VoidBossPhase::Phase1);
-        
+
         // Phase 2 transition (66% health = 330 HP)
         boss.take_damage(170.0); // 500 - 170 = 330
         boss.update(0.0);
         assert_eq!(boss.current_phase, VoidBossPhase::Phase2);
-        
+
         // Phase 3 transition (33% health = 165 HP)
         boss.take_damage(165.0); // 330 - 165 = 165
         boss.update(0.0);
@@ -546,13 +553,13 @@ mod tests {
     #[test]
     fn test_void_boss_attacks() {
         let mut boss = VoidBoss::new(Vec3::ZERO);
-        
+
         // Normal attack
         boss.update(2.0);
         assert!(boss.can_attack());
         let damage = boss.attack();
         assert_eq!(damage, 40.0);
-        
+
         // Special attack
         boss.update(8.0);
         assert!(boss.can_use_special());
@@ -563,15 +570,15 @@ mod tests {
     #[test]
     fn test_void_boss_phase_specials() {
         let mut boss = VoidBoss::new(Vec3::ZERO);
-        
+
         // Phase 1: Void Pulse
         assert_eq!(boss.get_special_attack(), BossSpecialAttack::VoidPulse);
-        
+
         // Phase 2: Summon Adds
         boss.take_damage(200.0); // Enter Phase 2
         boss.update(0.0);
         assert_eq!(boss.get_special_attack(), BossSpecialAttack::SummonAdds);
-        
+
         // Phase 3: Teleport Strike
         boss.take_damage(200.0); // Enter Phase 3
         boss.update(0.0);
@@ -581,12 +588,12 @@ mod tests {
     #[test]
     fn test_void_boss_enrage() {
         let mut boss = VoidBoss::new(Vec3::ZERO);
-        
+
         // Normal damage
         boss.update(2.0);
         let damage = boss.attack();
         assert_eq!(damage, 40.0);
-        
+
         // Enraged damage (Phase 3)
         boss.take_damage(350.0); // Enter Phase 3
         boss.update(0.0);
@@ -600,9 +607,9 @@ mod tests {
         let mut boss = VoidBoss::new(Vec3::ZERO);
         let player_pos = Vec3::new(10.0, 0.0, 0.0);
         let player_forward = Vec3::new(1.0, 0.0, 0.0);
-        
+
         boss.teleport_behind(player_pos, player_forward);
-        
+
         // Boss should be 5 units behind player
         let expected_pos = Vec3::new(5.0, 0.0, 0.0);
         assert_eq!(boss.position, expected_pos);
@@ -612,19 +619,19 @@ mod tests {
     fn test_void_boss_movement() {
         let mut boss = VoidBoss::new(Vec3::ZERO);
         let player_pos = Vec3::new(10.0, 0.0, 0.0);
-        
+
         // Phase 1 movement (normal speed 2.5)
         boss.update_movement(player_pos, 1.0);
         assert!(boss.position.x > 0.0);
         let phase1_dist = boss.position.x;
-        
+
         // Phase 2 movement (slower 2.0)
         boss.position = Vec3::ZERO;
         boss.take_damage(200.0);
         boss.update(0.0);
         boss.update_movement(player_pos, 1.0);
         assert!(boss.position.x < phase1_dist);
-        
+
         // Phase 3 movement (faster 3.25)
         boss.position = Vec3::ZERO;
         boss.take_damage(200.0);
@@ -636,10 +643,10 @@ mod tests {
     #[test]
     fn test_void_boss_defeat() {
         let mut boss = VoidBoss::new(Vec3::ZERO);
-        
+
         assert!(boss.is_alive());
         assert!(!boss.is_defeated());
-        
+
         boss.take_damage(500.0);
         assert!(!boss.is_alive());
         assert!(boss.is_defeated());

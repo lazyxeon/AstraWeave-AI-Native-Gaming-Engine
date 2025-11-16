@@ -4,10 +4,7 @@
 Core conversation history management with efficient storage and retrieval.
 */
 
-use crate::{
-    ContextConfig, ContextMetrics, Message, OverflowStrategy,
-    Role, TokenCounter,
-};
+use crate::{ContextConfig, ContextMetrics, Message, OverflowStrategy, Role, TokenCounter};
 use anyhow::{anyhow, Result};
 use astraweave_llm::LlmClient;
 use parking_lot::RwLock;

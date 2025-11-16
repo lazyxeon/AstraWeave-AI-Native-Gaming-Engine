@@ -4,8 +4,8 @@
 
 use glam::Vec3;
 use log::{debug, warn};
-use std::collections::{HashMap, VecDeque, BinaryHeap};
 use std::cmp::Ordering;
+use std::collections::{BinaryHeap, HashMap, VecDeque};
 
 /// Unique identifier for textures in the asset system
 pub type AssetId = String;
@@ -48,7 +48,10 @@ impl Ord for LoadRequest {
         match self.priority.cmp(&other.priority) {
             Ordering::Equal => {
                 // Reverse distance comparison (closer is higher priority)
-                other.distance.partial_cmp(&self.distance).unwrap_or(Ordering::Equal)
+                other
+                    .distance
+                    .partial_cmp(&self.distance)
+                    .unwrap_or(Ordering::Equal)
             }
             other => other,
         }
@@ -180,12 +183,12 @@ impl TextureStreamingManager {
                 height,
                 calculate_mip_levels(width, height),
                 memory_bytes as f32 / (1024.0 * 1024.0),
-            (self.current_memory_bytes as f32 / self.max_memory_bytes as f32) * 100.0
-        );
+                (self.current_memory_bytes as f32 / self.max_memory_bytes as f32) * 100.0
+            );
 
             return Some(request.id);
         }
-        
+
         // Queue is empty or all requests were skipped
         None
     }
@@ -198,7 +201,9 @@ impl TextureStreamingManager {
     pub fn evict_lru(&mut self) -> bool {
         if let Some(id) = self.lru_queue.pop_front() {
             if let Some(handle) = self.loaded_textures.remove(&id) {
-                self.current_memory_bytes = self.current_memory_bytes.saturating_sub(handle.memory_bytes);
+                self.current_memory_bytes = self
+                    .current_memory_bytes
+                    .saturating_sub(handle.memory_bytes);
                 debug!(
                     "Evicted texture {} ({:.2}MB)",
                     id,
@@ -237,7 +242,8 @@ impl TextureStreamingManager {
             pending_count: self.load_queue.len(),
             memory_used_bytes: self.current_memory_bytes,
             memory_budget_bytes: self.max_memory_bytes,
-            memory_used_percent: (self.current_memory_bytes as f32 / self.max_memory_bytes as f32) * 100.0,
+            memory_used_percent: (self.current_memory_bytes as f32 / self.max_memory_bytes as f32)
+                * 100.0,
         }
     }
 

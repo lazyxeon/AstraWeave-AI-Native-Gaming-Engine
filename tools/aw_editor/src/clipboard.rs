@@ -70,11 +70,7 @@ impl ClipboardData {
         serde_json::from_str(json).context("Failed to deserialize clipboard data")
     }
 
-    pub fn spawn_entities(
-        &self,
-        world: &mut World,
-        offset: IVec2,
-    ) -> Result<Vec<Entity>> {
+    pub fn spawn_entities(&self, world: &mut World, offset: IVec2) -> Result<Vec<Entity>> {
         let mut spawned = Vec::new();
 
         for entity_data in &self.entities {
@@ -118,8 +114,20 @@ mod tests {
     #[test]
     fn test_clipboard_from_entities() {
         let mut world = World::new();
-        let e1 = world.spawn("Entity1", IVec2 { x: 5, y: 10 }, astraweave_core::Team { id: 0 }, 100, 30);
-        let e2 = world.spawn("Entity2", IVec2 { x: 15, y: 20 }, astraweave_core::Team { id: 1 }, 80, 20);
+        let e1 = world.spawn(
+            "Entity1",
+            IVec2 { x: 5, y: 10 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let e2 = world.spawn(
+            "Entity2",
+            IVec2 { x: 15, y: 20 },
+            astraweave_core::Team { id: 1 },
+            80,
+            20,
+        );
 
         let clipboard = ClipboardData::from_entities(&world, &[e1, e2]);
 
@@ -131,7 +139,13 @@ mod tests {
     #[test]
     fn test_clipboard_json_serialization() {
         let mut world = World::new();
-        let e1 = world.spawn("TestEntity", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
+        let e1 = world.spawn(
+            "TestEntity",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
 
         let clipboard = ClipboardData::from_entities(&world, &[e1]);
         let json = clipboard.to_json().unwrap();
@@ -146,14 +160,22 @@ mod tests {
     #[test]
     fn test_spawn_entities_with_offset() {
         let mut world = World::new();
-        let e1 = world.spawn("Original", IVec2 { x: 10, y: 10 }, astraweave_core::Team { id: 0 }, 100, 30);
+        let e1 = world.spawn(
+            "Original",
+            IVec2 { x: 10, y: 10 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
 
         let clipboard = ClipboardData::from_entities(&world, &[e1]);
-        
-        let spawned = clipboard.spawn_entities(&mut world, IVec2 { x: 5, y: 5 }).unwrap();
-        
+
+        let spawned = clipboard
+            .spawn_entities(&mut world, IVec2 { x: 5, y: 5 })
+            .unwrap();
+
         assert_eq!(spawned.len(), 1);
-        
+
         let new_pos = world.pose(spawned[0]).unwrap().pos;
         assert_eq!(new_pos.x, 15);
         assert_eq!(new_pos.y, 15);
@@ -162,11 +184,25 @@ mod tests {
     #[test]
     fn test_multiple_entities_spawn() {
         let mut world = World::new();
-        let e1 = world.spawn("E1", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
-        let e2 = world.spawn("E2", IVec2 { x: 5, y: 5 }, astraweave_core::Team { id: 1 }, 50, 15);
+        let e1 = world.spawn(
+            "E1",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let e2 = world.spawn(
+            "E2",
+            IVec2 { x: 5, y: 5 },
+            astraweave_core::Team { id: 1 },
+            50,
+            15,
+        );
 
         let clipboard = ClipboardData::from_entities(&world, &[e1, e2]);
-        let spawned = clipboard.spawn_entities(&mut world, IVec2 { x: 10, y: 10 }).unwrap();
+        let spawned = clipboard
+            .spawn_entities(&mut world, IVec2 { x: 10, y: 10 })
+            .unwrap();
 
         assert_eq!(spawned.len(), 2);
         assert_eq!(world.entities().len(), 4);
@@ -175,7 +211,13 @@ mod tests {
     #[test]
     fn test_preserve_all_properties() {
         let mut world = World::new();
-        let entity = world.spawn("CompleteEntity", IVec2 { x: 5, y: 10 }, astraweave_core::Team { id: 2 }, 75, 25);
+        let entity = world.spawn(
+            "CompleteEntity",
+            IVec2 { x: 5, y: 10 },
+            astraweave_core::Team { id: 2 },
+            75,
+            25,
+        );
 
         if let Some(pose) = world.pose_mut(entity) {
             pose.rotation = 1.57;

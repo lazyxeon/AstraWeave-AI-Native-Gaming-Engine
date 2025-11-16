@@ -3,7 +3,7 @@ use glam::{Mat4, Quat, Vec2, Vec3};
 use winit::keyboard::KeyCode;
 
 // Import from the library
-use aw_editor_lib::gizmo::{
+use aw_editor::gizmo::{
     picking::{GizmoPicker, Ray},
     rendering::GizmoRenderer,
     rotate::RotateGizmo,

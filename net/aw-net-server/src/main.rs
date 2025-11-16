@@ -1,15 +1,18 @@
-use std::{collections::HashMap, fs::File, io::BufReader, net::SocketAddr, path::Path, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap, fs::File, io::BufReader, net::SocketAddr, path::Path, sync::Arc,
+    time::Duration,
+};
 
 use anyhow::{anyhow, Result};
 use axum::{routing::get, Router};
 use futures::{SinkExt, StreamExt};
 use parking_lot::Mutex;
+use rustls_pemfile::{certs, private_key};
 use tokio::{net::TcpListener, time::Instant};
+use tokio_rustls::{rustls::ServerConfig, TlsAcceptor};
 use tokio_tungstenite::{
     accept_hdr_async, tungstenite::handshake::server::Request, tungstenite::protocol::Message,
 };
-use tokio_rustls::{TlsAcceptor, rustls::ServerConfig};
-use rustls_pemfile::{certs, private_key};
 use tracing::{info, warn};
 use tracing_subscriber::EnvFilter;
 
@@ -78,15 +81,14 @@ fn load_private_key(path: &Path) -> Result<rustls::pki_types::PrivateKeyDer<'sta
 fn create_tls_acceptor(cert_path: &Path, key_path: &Path) -> Result<TlsAcceptor> {
     let certs = load_certs(cert_path)?;
     let key = load_private_key(key_path)?;
-    
+
     let config = ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(certs, key)
         .map_err(|e| anyhow!("Invalid TLS configuration: {}", e))?;
-    
+
     Ok(TlsAcceptor::from(Arc::new(config)))
 }
-
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -99,7 +101,7 @@ async fn main() -> Result<()> {
     let mut tls_enabled = true;
     let mut cert_path = "net/certs/dev/dev-cert.pem".to_string();
     let mut key_path = "net/certs/dev/dev-key.pem".to_string();
-    
+
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -153,9 +155,9 @@ async fn main() -> Result<()> {
 
     // WS server
     let ws_addr: SocketAddr = "0.0.0.0:8788".parse().unwrap();
-    
+
     let listener = TcpListener::bind(ws_addr).await?;
-    
+
     if tls_enabled {
         // TLS mode
         let tls_acceptor = match create_tls_acceptor(Path::new(&cert_path), Path::new(&key_path)) {
@@ -169,12 +171,12 @@ async fn main() -> Result<()> {
         };
         info!("WSS (TLS) listening on wss://{}", ws_addr);
         info!("Using cert: {}, key: {}", cert_path, key_path);
-        
+
         loop {
             let (stream, _addr) = listener.accept().await?;
             let app = state.clone();
             let acceptor = tls_acceptor.clone();
-            
+
             tokio::spawn(async move {
                 let tls_stream = match acceptor.accept(stream).await {
                     Ok(s) => s,
@@ -183,11 +185,8 @@ async fn main() -> Result<()> {
                         return;
                     }
                 };
-                
-                let peer = match accept_hdr_async(tls_stream, |_req: &Request, resp| {
-                    Ok(resp)
-                })
-                .await
+
+                let peer = match accept_hdr_async(tls_stream, |_req: &Request, resp| Ok(resp)).await
                 {
                     Ok(ws) => ws,
                     Err(e) => {
@@ -203,16 +202,12 @@ async fn main() -> Result<()> {
     } else {
         // Plain TCP mode (no TLS)
         info!("WS listening on ws:// {} (TLS DISABLED)", ws_addr);
-        
+
         loop {
             let (stream, _addr) = listener.accept().await?;
             let app = state.clone();
             tokio::spawn(async move {
-                let peer = match accept_hdr_async(stream, |_req: &Request, resp| {
-                    Ok(resp)
-                })
-                .await
-                {
+                let peer = match accept_hdr_async(stream, |_req: &Request, resp| Ok(resp)).await {
                     Ok(ws) => ws,
                     Err(e) => {
                         warn!("ws handshake failed: {e}");
@@ -229,7 +224,9 @@ async fn main() -> Result<()> {
 
 async fn handle_socket_tls(
     app: AppState,
-    mut ws: tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+    mut ws: tokio_tungstenite::WebSocketStream<
+        tokio_rustls::server::TlsStream<tokio::net::TcpStream>,
+    >,
 ) -> Result<()> {
     // Handshake
     let hello = recv_tls::<ClientToServer>(&app, &mut ws).await?;
@@ -703,7 +700,9 @@ async fn recv<T: for<'de> serde::Deserialize<'de>>(
 // TLS versions of helper functions
 async fn send_tls(
     app: &AppState,
-    ws: &mut tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+    ws: &mut tokio_tungstenite::WebSocketStream<
+        tokio_rustls::server::TlsStream<tokio::net::TcpStream>,
+    >,
     msg: &ServerToClient,
 ) -> Result<()> {
     let bytes = aw_net_proto::encode_msg(app.codec, msg);
@@ -713,7 +712,9 @@ async fn send_tls(
 
 async fn recv_tls<T: for<'de> serde::Deserialize<'de>>(
     app: &AppState,
-    ws: &mut tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+    ws: &mut tokio_tungstenite::WebSocketStream<
+        tokio_rustls::server::TlsStream<tokio::net::TcpStream>,
+    >,
 ) -> Result<T> {
     let msg = ws
         .next()
@@ -732,7 +733,9 @@ async fn on_client_msg_tls(
     app: &AppState,
     rid: &str,
     pid: &str,
-    ws: &mut tokio_tungstenite::WebSocketStream<tokio_rustls::server::TlsStream<tokio::net::TcpStream>>,
+    ws: &mut tokio_tungstenite::WebSocketStream<
+        tokio_rustls::server::TlsStream<tokio::net::TcpStream>,
+    >,
     msg: ClientToServer,
 ) -> Result<()> {
     match msg {

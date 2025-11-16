@@ -129,27 +129,27 @@ pub struct CsmRenderer {
     pub atlas_view: wgpu::TextureView,
     /// Shadow sampler (comparison sampler for PCF)
     pub shadow_sampler: wgpu::Sampler,
-    
+
     /// Cascade data (CPU-side, updated per frame)
     pub cascades: [ShadowCascade; CASCADE_COUNT],
-    
+
     /// Cascade buffer (GPU-side, uploaded each frame)
     pub cascade_buffer: wgpu::Buffer,
-    
+
     /// Bind group for shadow sampling (used in main render pass)
     pub bind_group: Option<wgpu::BindGroup>,
     pub bind_group_layout: wgpu::BindGroupLayout,
-    
+
     // Shadow-specific bind group (just cascades buffer, for depth pass)
     shadow_bind_group: Option<wgpu::BindGroup>,
     shadow_bind_group_layout: wgpu::BindGroupLayout,
-    
+
     /// Render pass depth attachments (one per cascade)
     cascade_views: [wgpu::TextureView; CASCADE_COUNT],
-    
+
     /// Shadow rendering pipeline (depth-only pass)
     pub shadow_pipeline: wgpu::RenderPipeline,
-    
+
     /// Shader module
     #[allow(dead_code)]
     shader_module: wgpu::ShaderModule,
@@ -304,10 +304,10 @@ impl CsmRenderer {
         });
 
         // Create shadow-only bind group layout (just cascades buffer for depth pass)
-        let shadow_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Shadow Depth Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
+        let shadow_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Shadow Depth Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
@@ -316,9 +316,8 @@ impl CsmRenderer {
                         min_binding_size: None,
                     },
                     count: None,
-                },
-            ],
-        });
+                }],
+            });
 
         // Initialize cascades with default values (will be updated in update_cascades)
         let cascades = [
@@ -363,11 +362,12 @@ impl CsmRenderer {
         });
 
         // Create shadow render pipeline (depth-only pass)
-        let shadow_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Shadow Pipeline Layout"),
-            bind_group_layouts: &[&shadow_bind_group_layout], // group(0): just cascades buffer
-            push_constant_ranges: &[],
-        });
+        let shadow_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Shadow Pipeline Layout"),
+                bind_group_layouts: &[&shadow_bind_group_layout], // group(0): just cascades buffer
+                push_constant_ranges: &[],
+            });
 
         let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Shadow Render Pipeline"),
@@ -470,13 +470,13 @@ impl CsmRenderer {
         for i in 1..CASCADE_COUNT {
             let i_f = i as f32;
             let n_f = CASCADE_COUNT as f32;
-            
+
             // Logarithmic split
             let log_split = near * (far / near).powf(i_f / n_f);
-            
+
             // Uniform split
             let uniform_split = near + (far - near) * (i_f / n_f);
-            
+
             // Blend
             split_distances[i] = lambda * log_split + (1.0 - lambda) * uniform_split;
         }
@@ -491,7 +491,7 @@ impl CsmRenderer {
             let light_distance = 50.0; // How far back to place the light
             let scene_center = Vec3::ZERO; // Look at origin
             let light_pos = scene_center - (light_dir.normalize() * light_distance);
-            
+
             // Choose up vector perpendicular to light direction
             // If light is mostly vertical (|light_dir.y| > 0.9), use X as up
             // Otherwise use Y as up (standard)
@@ -500,30 +500,33 @@ impl CsmRenderer {
             } else {
                 Vec3::Y
             };
-            
+
             cascade.view_matrix = Mat4::look_at_rh(light_pos, scene_center, up);
 
             // FIXED: Use large enough orthographic bounds to cover entire test scene
             // Scene bounds: Ground is 20×20 at origin, cubes at ±5, ±15, ±25
             // Need at least -30 to +30 to capture everything
             let ortho_size = 35.0; // Large enough for test scene (can optimize per-cascade later)
-            
+
             // DEBUG: Print ortho_size on first call
             if i == 0 {
-                static FIRST_UPDATE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
+                static FIRST_UPDATE: std::sync::atomic::AtomicBool =
+                    std::sync::atomic::AtomicBool::new(true);
                 if FIRST_UPDATE.swap(false, std::sync::atomic::Ordering::Relaxed) {
-                    println!("🔍 Light frustum: ortho_size = {}, covers [{}, {}] in X and Z", 
-                        ortho_size, -ortho_size, ortho_size);
+                    println!(
+                        "🔍 Light frustum: ortho_size = {}, covers [{}, {}] in X and Z",
+                        ortho_size, -ortho_size, ortho_size
+                    );
                 }
             }
-            
+
             cascade.proj_matrix = Mat4::orthographic_rh(
                 -ortho_size,
                 ortho_size,
                 -ortho_size,
                 ortho_size,
-                0.1,     // Near (light space)
-                100.0,   // Far (light space)
+                0.1,   // Near (light space)
+                100.0, // Far (light space)
             );
 
             cascade.view_proj_matrix = cascade.proj_matrix * cascade.view_matrix;
@@ -535,18 +538,11 @@ impl CsmRenderer {
     /// Call this after `update_cascades()` and before rendering.
     pub fn upload_to_gpu(&mut self, queue: &wgpu::Queue, device: &wgpu::Device) {
         // Convert to GPU format
-        let gpu_cascades: Vec<GpuShadowCascade> = self
-            .cascades
-            .iter()
-            .map(GpuShadowCascade::from)
-            .collect();
+        let gpu_cascades: Vec<GpuShadowCascade> =
+            self.cascades.iter().map(GpuShadowCascade::from).collect();
 
         // Upload buffer
-        queue.write_buffer(
-            &self.cascade_buffer,
-            0,
-            bytemuck::cast_slice(&gpu_cascades),
-        );
+        queue.write_buffer(&self.cascade_buffer, 0, bytemuck::cast_slice(&gpu_cascades));
 
         // Create/update bind group
         self.bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -572,12 +568,10 @@ impl CsmRenderer {
         self.shadow_bind_group = Some(device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Shadow Depth Bind Group"),
             layout: &self.shadow_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: self.cascade_buffer.as_entire_binding(),
-                },
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: self.cascade_buffer.as_entire_binding(),
+            }],
         }));
     }
 
@@ -616,11 +610,14 @@ impl CsmRenderer {
             println!("🔍 Shadow rendering debug:");
             println!("  - Index count: {}", index_count);
             for (i, cascade) in self.cascades.iter().enumerate() {
-                println!("  - Cascade {}: near={:.1}, far={:.1}", i, cascade.near, cascade.far);
+                println!(
+                    "  - Cascade {}: near={:.1}, far={:.1}",
+                    i, cascade.near, cascade.far
+                );
                 println!("    view_proj = {:#?}", cascade.view_proj_matrix);
             }
         }
-        
+
         for cascade_idx in 0..CASCADE_COUNT {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(&format!("Shadow Cascade {} Render Pass", cascade_idx)),
@@ -638,17 +635,21 @@ impl CsmRenderer {
             });
 
             render_pass.set_pipeline(&self.shadow_pipeline);
-            
+
             // Bind cascade data (group 0 for shadow pipeline)
             if let Some(ref bind_group) = self.shadow_bind_group {
                 render_pass.set_bind_group(0, bind_group, &[]);
             }
-            
+
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-            
+
             // Draw with instance_index = cascade_idx (for shader cascade selection)
-            render_pass.draw_indexed(0..index_count, 0, cascade_idx as u32..(cascade_idx as u32 + 1));
+            render_pass.draw_indexed(
+                0..index_count,
+                0,
+                cascade_idx as u32..(cascade_idx as u32 + 1),
+            );
         }
     }
 }
@@ -664,7 +665,7 @@ mod tests {
             std::mem::size_of::<GpuShadowCascade>(),
             std::mem::size_of::<[[f32; 4]; 4]>() + // view_proj (64 bytes)
             std::mem::size_of::<[f32; 4]>() +      // split_distances (16 bytes)
-            std::mem::size_of::<[f32; 4]>()        // atlas_transform (16 bytes)
+            std::mem::size_of::<[f32; 4]>() // atlas_transform (16 bytes)
         );
     }
 

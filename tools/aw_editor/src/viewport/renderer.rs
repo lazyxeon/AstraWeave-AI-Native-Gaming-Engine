@@ -26,7 +26,7 @@ use wgpu;
 use super::camera::OrbitCamera;
 use super::entity_renderer::EntityRenderer;
 use super::gizmo_renderer::GizmoRendererWgpu;
-use super::grid_renderer::GridRenderer;
+use super::grid_renderer::{GridRenderSettings, GridRenderer};
 use super::skybox_renderer::SkyboxRenderer;
 use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
@@ -180,6 +180,7 @@ impl ViewportRenderer {
         camera: &OrbitCamera,
         world: &World,
         gizmo_state: Option<&GizmoState>,
+        grid_settings: GridRenderSettings,
     ) -> Result<()> {
         // Ensure depth buffer matches target size
         let target_size = target.size();
@@ -207,7 +208,14 @@ impl ViewportRenderer {
 
         // Pass 2: Grid
         self.grid_renderer
-            .render(&mut encoder, &target_view, depth_view, camera, &self.queue)
+            .render(
+                &mut encoder,
+                &target_view,
+                depth_view,
+                camera,
+                &self.queue,
+                grid_settings,
+            )
             .context("Grid render failed")?;
 
         // Pass 3: Entities
@@ -229,11 +237,14 @@ impl ViewportRenderer {
                 // DEBUG: Log gizmo mode and constraint
                 match &gizmo.mode {
                     crate::gizmo::GizmoMode::Rotate { constraint } => {
-                        println!("🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}", constraint);
+                        println!(
+                            "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
+                            constraint
+                        );
                     }
                     _ => {}
                 }
-                
+
                 // Get entity position from world (old astraweave-core API)
                 if let Some(pose) = world.pose(selected) {
                     // Convert astraweave_core::IVec2 to glam::IVec2
@@ -314,7 +325,7 @@ impl ViewportRenderer {
     pub fn set_selected_entities(&mut self, entities: &[Entity]) {
         self.selected_entities = entities.to_vec();
     }
-    
+
     /// Set selected entity (for backward compatibility)
     pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
         self.selected_entities.clear();
@@ -327,7 +338,7 @@ impl ViewportRenderer {
     pub fn selected_entity(&self) -> Option<Entity> {
         self.selected_entities.first().copied()
     }
-    
+
     /// Get all selected entities
     pub fn selected_entities(&self) -> &[Entity] {
         &self.selected_entities

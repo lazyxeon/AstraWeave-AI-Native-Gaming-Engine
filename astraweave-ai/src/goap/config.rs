@@ -1,7 +1,7 @@
 // TOML configuration system for GOAP learning and persistence
 // Phase 3: Learning & Persistence
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
@@ -200,10 +200,10 @@ impl GOAPConfig {
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self, ConfigError> {
         let contents = fs::read_to_string(path.as_ref())
             .map_err(|e| ConfigError::ReadFailed(e.to_string()))?;
-        
-        let config: GOAPConfig = toml::from_str(&contents)
-            .map_err(|e| ConfigError::ParseFailed(e.to_string()))?;
-        
+
+        let config: GOAPConfig =
+            toml::from_str(&contents).map_err(|e| ConfigError::ParseFailed(e.to_string()))?;
+
         config.validate()?;
         Ok(config)
     }
@@ -231,91 +231,91 @@ impl GOAPConfig {
         // Validate learning config
         if self.learning.initial_success_rate < 0.0 || self.learning.initial_success_rate > 1.0 {
             return Err(ConfigError::InvalidValue(
-                "learning.initial_success_rate must be between 0.0 and 1.0".to_string()
+                "learning.initial_success_rate must be between 0.0 and 1.0".to_string(),
             ));
         }
 
         if self.learning.min_success_rate < 0.0 || self.learning.min_success_rate > 1.0 {
             return Err(ConfigError::InvalidValue(
-                "learning.min_success_rate must be between 0.0 and 1.0".to_string()
+                "learning.min_success_rate must be between 0.0 and 1.0".to_string(),
             ));
         }
 
         if self.learning.max_success_rate < 0.0 || self.learning.max_success_rate > 1.0 {
             return Err(ConfigError::InvalidValue(
-                "learning.max_success_rate must be between 0.0 and 1.0".to_string()
+                "learning.max_success_rate must be between 0.0 and 1.0".to_string(),
             ));
         }
 
         if self.learning.min_success_rate >= self.learning.max_success_rate {
             return Err(ConfigError::InvalidValue(
-                "learning.min_success_rate must be less than max_success_rate".to_string()
+                "learning.min_success_rate must be less than max_success_rate".to_string(),
             ));
         }
 
         // Validate EWMA alpha
         if self.learning.smoothing.ewma_alpha < 0.0 || self.learning.smoothing.ewma_alpha > 1.0 {
             return Err(ConfigError::InvalidValue(
-                "learning.smoothing.ewma_alpha must be between 0.0 and 1.0".to_string()
+                "learning.smoothing.ewma_alpha must be between 0.0 and 1.0".to_string(),
             ));
         }
 
         // Validate cost tuning
         if self.cost_tuning.base_cost_multiplier <= 0.0 {
             return Err(ConfigError::InvalidValue(
-                "cost_tuning.base_cost_multiplier must be positive".to_string()
+                "cost_tuning.base_cost_multiplier must be positive".to_string(),
             ));
         }
 
         if self.cost_tuning.risk_weight < 0.0 {
             return Err(ConfigError::InvalidValue(
-                "cost_tuning.risk_weight must be non-negative".to_string()
+                "cost_tuning.risk_weight must be non-negative".to_string(),
             ));
         }
 
         // Validate thresholds
         if self.cost_tuning.health_critical_threshold >= self.cost_tuning.health_wounded_threshold {
             return Err(ConfigError::InvalidValue(
-                "health_critical_threshold must be less than health_wounded_threshold".to_string()
+                "health_critical_threshold must be less than health_wounded_threshold".to_string(),
             ));
         }
 
         if self.cost_tuning.ammo_critical_threshold >= self.cost_tuning.ammo_low_threshold {
             return Err(ConfigError::InvalidValue(
-                "ammo_critical_threshold must be less than ammo_low_threshold".to_string()
+                "ammo_critical_threshold must be less than ammo_low_threshold".to_string(),
             ));
         }
 
         // Validate morale thresholds
         if self.cost_tuning.morale_low_threshold >= self.cost_tuning.morale_high_threshold {
             return Err(ConfigError::InvalidValue(
-                "morale_low_threshold must be less than morale_high_threshold".to_string()
+                "morale_low_threshold must be less than morale_high_threshold".to_string(),
             ));
         }
 
         // Validate persistence config
         if self.persistence.max_entries_per_action == 0 {
             return Err(ConfigError::InvalidValue(
-                "persistence.max_entries_per_action must be positive".to_string()
+                "persistence.max_entries_per_action must be positive".to_string(),
             ));
         }
 
         // Validate planner config
         if self.planner.max_iterations == 0 {
             return Err(ConfigError::InvalidValue(
-                "planner.max_iterations must be positive".to_string()
+                "planner.max_iterations must be positive".to_string(),
             ));
         }
 
         if self.planner.max_plan_length == 0 {
             return Err(ConfigError::InvalidValue(
-                "planner.max_plan_length must be positive".to_string()
+                "planner.max_plan_length must be positive".to_string(),
             ));
         }
 
         if self.planner.max_concurrent_goals == 0 {
             return Err(ConfigError::InvalidValue(
-                "planner.max_concurrent_goals must be positive".to_string()
+                "planner.max_concurrent_goals must be positive".to_string(),
             ));
         }
 
@@ -326,16 +326,14 @@ impl GOAPConfig {
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<(), ConfigError> {
         let contents = toml::to_string_pretty(self)
             .map_err(|e| ConfigError::SerializeFailed(e.to_string()))?;
-        
+
         // Create parent directories if they don't exist
         if let Some(parent) = path.as_ref().parent() {
-            fs::create_dir_all(parent)
-                .map_err(|e| ConfigError::WriteFailed(e.to_string()))?;
+            fs::create_dir_all(parent).map_err(|e| ConfigError::WriteFailed(e.to_string()))?;
         }
 
-        fs::write(path.as_ref(), contents)
-            .map_err(|e| ConfigError::WriteFailed(e.to_string()))?;
-        
+        fs::write(path.as_ref(), contents).map_err(|e| ConfigError::WriteFailed(e.to_string()))?;
+
         Ok(())
     }
 }
@@ -387,14 +385,17 @@ mod tests {
 
         // Verify key values match
         assert_eq!(loaded.learning.enabled, original.learning.enabled);
-        assert_eq!(loaded.cost_tuning.risk_weight, original.cost_tuning.risk_weight);
+        assert_eq!(
+            loaded.cost_tuning.risk_weight,
+            original.cost_tuning.risk_weight
+        );
         assert_eq!(loaded.persistence.format, original.persistence.format);
     }
 
     #[test]
     fn test_load_or_default_missing_file() {
         let config = GOAPConfig::load_or_default("nonexistent.toml");
-        
+
         // Should return default without panicking
         assert_eq!(config.learning.initial_success_rate, 0.75);
         assert!(config.validate().is_ok());
@@ -444,9 +445,8 @@ mod tests {
 
         let toml_str = toml::to_string(&config).unwrap();
         assert!(toml_str.contains("method = \"bayesian\""));
-        
+
         let deserialized: SmoothingConfig = toml::from_str(&toml_str).unwrap();
         assert_eq!(deserialized.method, SmoothingMethod::Bayesian);
     }
 }
-

@@ -5,9 +5,7 @@
 use astraweave_core::ecs_components::*;
 use astraweave_core::IVec2;
 use astraweave_ecs::{Query, World};
-use astraweave_persistence_ecs::{
-    deserialize_ecs_world, serialize_ecs_world, CPersistenceManager,
-};
+use astraweave_persistence_ecs::{deserialize_ecs_world, serialize_ecs_world, CPersistenceManager};
 use aw_save::{SaveBundleV1, SaveBundleV2, SaveManager, WorldState, SAVE_SCHEMA_VERSION};
 use std::collections::HashMap;
 use tempfile::tempdir;
@@ -34,13 +32,16 @@ fn test_save_bundle_v2_schema_field() {
 
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: 1, y: 2 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: 1, y: 2 },
+        },
+    );
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
 
-    persistence
-        .save_game(0, 0, 0, blob)
-        .expect("save failed");
+    persistence.save_game(0, 0, 0, blob).expect("save failed");
 
     let (bundle, _) = persistence.load_game(0).expect("load failed");
 
@@ -193,14 +194,17 @@ fn test_load_v2_bundle_directly() {
     // Create V2 save
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: 42, y: 84 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: 42, y: 84 },
+        },
+    );
     world.insert(e, CHealth { hp: 200 });
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
 
-    persistence
-        .save_game(0, 999, 0, blob)
-        .expect("save failed");
+    persistence.save_game(0, 999, 0, blob).expect("save failed");
 
     // Load and verify
     let (bundle, _) = persistence.load_game(0).expect("load failed");
@@ -236,9 +240,7 @@ fn test_v2_bundle_has_save_id() {
         .save_game(0, 0, 0, blob.clone())
         .expect("save 1 failed");
 
-    persistence
-        .save_game(1, 0, 0, blob)
-        .expect("save 2 failed");
+    persistence.save_game(1, 0, 0, blob).expect("save 2 failed");
 
     // Load both
     let (bundle1, _) = persistence.load_game(0).expect("load 1 failed");
@@ -260,12 +262,22 @@ fn test_old_components_gracefully_handled() {
 
     // Create entity with only basic components (simulating old save)
     let e1 = world.spawn();
-    world.insert(e1, CPos { pos: IVec2 { x: 1, y: 1 } });
+    world.insert(
+        e1,
+        CPos {
+            pos: IVec2 { x: 1, y: 1 },
+        },
+    );
     world.insert(e1, CHealth { hp: 100 });
 
     // Create entity with all components (new save)
     let e2 = world.spawn();
-    world.insert(e2, CPos { pos: IVec2 { x: 2, y: 2 } });
+    world.insert(
+        e2,
+        CPos {
+            pos: IVec2 { x: 2, y: 2 },
+        },
+    );
     world.insert(e2, CHealth { hp: 100 });
     world.insert(e2, CTeam { id: 1 });
     world.insert(e2, CAmmo { rounds: 30 });
@@ -311,14 +323,17 @@ fn test_forward_compatibility_new_fields() {
 
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(e, CPos { pos: IVec2 { x: 5, y: 10 } });
+    world.insert(
+        e,
+        CPos {
+            pos: IVec2 { x: 5, y: 10 },
+        },
+    );
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
 
     // Save with extra metadata (simulating future fields)
-    persistence
-        .save_game(0, 0, 0, blob)
-        .expect("save failed");
+    persistence.save_game(0, 0, 0, blob).expect("save failed");
 
     // Load should work
     let (bundle, _) = persistence.load_game(0).expect("load failed");

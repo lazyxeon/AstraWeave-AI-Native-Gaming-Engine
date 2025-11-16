@@ -38,8 +38,8 @@ impl TranslateGizmo {
         // Base world-space translation (X and Z for ground plane)
         let mut world_delta = Vec3::new(
             mouse_delta.x * scale_factor,  // Horizontal mouse → world X
-            0.0,                            // No vertical world movement
-            -mouse_delta.y * scale_factor,  // Vertical mouse → world Z (flipped)
+            0.0,                           // No vertical world movement
+            -mouse_delta.y * scale_factor, // Vertical mouse → world Z (flipped)
         );
 
         // Apply constraint in world space or local space

@@ -1,5 +1,5 @@
-use clap::{Parser, Subcommand};
 use astraweave_secrets::{SecretManager, SecretValue};
+use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "aw_secrets")]
@@ -26,7 +26,7 @@ enum Commands {
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
     let manager = SecretManager::global();
-    
+
     match cli.command {
         Commands::Set { key } => {
             println!("Enter secret value (hidden):");
@@ -49,14 +49,14 @@ fn main() -> anyhow::Result<()> {
             interactive_init(manager)?;
         }
     }
-    
+
     Ok(())
 }
 
 fn interactive_init(manager: &SecretManager) -> anyhow::Result<()> {
     println!("AstraWeave Secrets Setup");
     println!("========================\n");
-    
+
     // LLM API Key
     println!("OpenAI/LLM API Key (optional, press Enter to skip):");
     if let Ok(key) = rpassword::read_password() {
@@ -65,7 +65,7 @@ fn interactive_init(manager: &SecretManager) -> anyhow::Result<()> {
             println!("[OK] Stored llm.api_key\n");
         }
     }
-    
+
     println!("Setup complete!");
     Ok(())
 }

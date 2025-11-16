@@ -10,8 +10,7 @@ use astraweave_net::{apply_delta, build_snapshot, diff_snapshots, FullInterest};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-mod common;
-use common::*;
+use crate::common::*;
 
 // ============================================================================
 // BASELINE TESTS (5 tests)
@@ -29,7 +28,8 @@ async fn test_zero_packet_loss_baseline() {
     for i in 0..10 {
         let plan = PlanIntent {
             plan_id: format!("move_{}", i),
-            steps: vec![ActionStep::MoveTo { x: (i % 10) as i32,
+            steps: vec![ActionStep::MoveTo {
+                x: (i % 10) as i32,
                 y: 1,
             }],
         };
@@ -326,7 +326,13 @@ async fn test_20_percent_loss_no_data_corruption() {
         let entity = snap.entities.iter().find(|e| e.id == *id);
         assert!(entity.is_some(), "entity {} missing", id);
         let entity = entity.unwrap();
-        assert_eq!(entity.pos, IVec2 { x: i as i32, y: i as i32 });
+        assert_eq!(
+            entity.pos,
+            IVec2 {
+                x: i as i32,
+                y: i as i32
+            }
+        );
         assert_eq!(entity.hp, 100 - (i as i32 * 10));
         assert_eq!(entity.ammo, i as i32 * 5);
     }
@@ -535,9 +541,7 @@ async fn test_50_percent_loss_recovery() {
 async fn test_varying_packet_loss_stability() {
     // Test with different loss rates to ensure stability
     for loss_rate in [0.0, 0.1, 0.25, 0.40] {
-        let server = spawn_test_server_with_packet_loss(loss_rate)
-            .await
-            .unwrap();
+        let server = spawn_test_server_with_packet_loss(loss_rate).await.unwrap();
 
         let id = server
             .spawn_entity("test", IVec2 { x: 1, y: 1 }, 0, 100)
@@ -642,11 +646,7 @@ async fn test_snapshot_consistency_under_loss() {
         // Entity IDs should be unique
         let mut ids = std::collections::HashSet::new();
         for e in &snap.entities {
-            assert!(
-                ids.insert(e.id),
-                "duplicate entity ID {} in snapshot",
-                e.id
-            );
+            assert!(ids.insert(e.id), "duplicate entity ID {} in snapshot", e.id);
         }
 
         // All entities should have valid state

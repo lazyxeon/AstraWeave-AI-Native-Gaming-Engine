@@ -47,9 +47,7 @@ pub enum ObjectiveType {
         discovered: bool,
     },
     /// Escort NPC to destination (from quest_types.rs)
-    Escort {
-        npc: crate::quest_types::EscortNPC,
-    },
+    Escort { npc: crate::quest_types::EscortNPC },
     /// Defend objective from waves (from quest_types.rs)
     Defend {
         objective: crate::quest_types::DefendObjective,
@@ -73,14 +71,21 @@ impl ObjectiveType {
     /// Check if objective is complete
     pub fn is_complete(&self) -> bool {
         match self {
-            ObjectiveType::Kill { required, current, .. } => current >= required,
-            ObjectiveType::Repair { required, current, .. } => current >= required,
-            ObjectiveType::Fetch { required, current, .. } => current >= required,
+            ObjectiveType::Kill {
+                required, current, ..
+            } => current >= required,
+            ObjectiveType::Repair {
+                required, current, ..
+            } => current >= required,
+            ObjectiveType::Fetch {
+                required, current, ..
+            } => current >= required,
             ObjectiveType::Explore { discovered, .. } => *discovered,
             ObjectiveType::Escort { npc } => npc.reached_destination && npc.health > 0.0,
-            ObjectiveType::Defend { objective, required_waves } => {
-                objective.waves_survived >= *required_waves && objective.current_health > 0.0
-            }
+            ObjectiveType::Defend {
+                objective,
+                required_waves,
+            } => objective.waves_survived >= *required_waves && objective.current_health > 0.0,
             ObjectiveType::TimeTrial { objective } => !objective.is_expired(),
             ObjectiveType::Boss { objective } => objective.is_defeated(),
             ObjectiveType::Collect { objective } => objective.is_complete(),
@@ -90,30 +95,37 @@ impl ObjectiveType {
     /// Get progress as percentage (0.0 to 1.0)
     pub fn progress(&self) -> f32 {
         match self {
-            ObjectiveType::Kill { required, current, .. } => {
-                (*current as f32 / *required as f32).min(1.0)
-            }
-            ObjectiveType::Repair { required, current, .. } => {
-                (*current as f32 / *required as f32).min(1.0)
-            }
-            ObjectiveType::Fetch { required, current, .. } => {
-                (*current as f32 / *required as f32).min(1.0)
-            }
+            ObjectiveType::Kill {
+                required, current, ..
+            } => (*current as f32 / *required as f32).min(1.0),
+            ObjectiveType::Repair {
+                required, current, ..
+            } => (*current as f32 / *required as f32).min(1.0),
+            ObjectiveType::Fetch {
+                required, current, ..
+            } => (*current as f32 / *required as f32).min(1.0),
             ObjectiveType::Explore { discovered, .. } => {
-                if *discovered { 1.0 } else { 0.0 }
+                if *discovered {
+                    1.0
+                } else {
+                    0.0
+                }
             }
             ObjectiveType::Escort { npc } => {
-                if npc.reached_destination { 1.0 } else { 0.5 }
+                if npc.reached_destination {
+                    1.0
+                } else {
+                    0.5
+                }
             }
-            ObjectiveType::Defend { objective, required_waves } => {
-                (objective.waves_survived as f32 / *required_waves as f32).min(1.0)
-            }
+            ObjectiveType::Defend {
+                objective,
+                required_waves,
+            } => (objective.waves_survived as f32 / *required_waves as f32).min(1.0),
             ObjectiveType::TimeTrial { objective } => {
                 1.0 - (objective.elapsed_seconds / objective.time_limit_seconds).min(1.0)
             }
-            ObjectiveType::Boss { objective } => {
-                1.0 - (objective.boss_health / 300.0).max(0.0)
-            }
+            ObjectiveType::Boss { objective } => 1.0 - (objective.boss_health / 300.0).max(0.0),
             ObjectiveType::Collect { objective } => {
                 let collected = objective.items.iter().filter(|i| i.collected).count();
                 collected as f32 / objective.items.len() as f32
@@ -124,29 +136,68 @@ impl ObjectiveType {
     /// Get description for UI display
     pub fn description(&self) -> String {
         match self {
-            ObjectiveType::Kill { target_type, required, current } => {
+            ObjectiveType::Kill {
+                target_type,
+                required,
+                current,
+            } => {
                 format!("Kill {}/{} {}", current, required, target_type)
             }
-            ObjectiveType::Repair { required, current, min_stability } => {
-                format!("Repair {}/{} anchors to {:.0}% stability", current, required, min_stability * 100.0)
+            ObjectiveType::Repair {
+                required,
+                current,
+                min_stability,
+            } => {
+                format!(
+                    "Repair {}/{} anchors to {:.0}% stability",
+                    current,
+                    required,
+                    min_stability * 100.0
+                )
             }
-            ObjectiveType::Fetch { item_name, required, current, .. } => {
+            ObjectiveType::Fetch {
+                item_name,
+                required,
+                current,
+                ..
+            } => {
                 format!("Collect {}/{} {}", current, required, item_name)
             }
-            ObjectiveType::Explore { location_name, discovered, .. } => {
-                format!("Explore {} {}", location_name, if *discovered { "✓" } else { "" })
+            ObjectiveType::Explore {
+                location_name,
+                discovered,
+                ..
+            } => {
+                format!(
+                    "Explore {} {}",
+                    location_name,
+                    if *discovered { "✓" } else { "" }
+                )
             }
             ObjectiveType::Escort { npc } => {
-                format!("Escort {} ({:.0}% health)", npc.name, npc.health_percentage() * 100.0)
+                format!(
+                    "Escort {} ({:.0}% health)",
+                    npc.name,
+                    npc.health_percentage() * 100.0
+                )
             }
-            ObjectiveType::Defend { objective, required_waves } => {
-                format!("Defend: Wave {}/{} ({:.0} HP)", objective.waves_survived, required_waves, objective.current_health)
+            ObjectiveType::Defend {
+                objective,
+                required_waves,
+            } => {
+                format!(
+                    "Defend: Wave {}/{} ({:.0} HP)",
+                    objective.waves_survived, required_waves, objective.current_health
+                )
             }
             ObjectiveType::TimeTrial { objective } => {
                 format!("Time Trial: {:.1}s remaining", objective.remaining_time())
             }
             ObjectiveType::Boss { objective } => {
-                format!("Boss Fight: {:.0} HP ({:?})", objective.boss_health, objective.current_phase)
+                format!(
+                    "Boss Fight: {:.0} HP ({:?})",
+                    objective.boss_health, objective.current_phase
+                )
             }
             ObjectiveType::Collect { objective } => {
                 let collected = objective.items.iter().filter(|i| i.collected).count();
@@ -272,7 +323,12 @@ impl Quest {
     pub fn update_kill_progress(&mut self, target_type: &str, amount: usize) -> bool {
         let mut updated = false;
         for objective in &mut self.objectives {
-            if let ObjectiveType::Kill { target_type: obj_type, current, .. } = objective {
+            if let ObjectiveType::Kill {
+                target_type: obj_type,
+                current,
+                ..
+            } = objective
+            {
                 if obj_type == target_type {
                     *current += amount;
                     updated = true;
@@ -286,7 +342,12 @@ impl Quest {
     pub fn update_repair_progress(&mut self, anchor_stability: f32) -> bool {
         let mut updated = false;
         for objective in &mut self.objectives {
-            if let ObjectiveType::Repair { current, min_stability, .. } = objective {
+            if let ObjectiveType::Repair {
+                current,
+                min_stability,
+                ..
+            } = objective
+            {
                 if anchor_stability >= *min_stability {
                     *current += 1;
                     updated = true;
@@ -300,7 +361,12 @@ impl Quest {
     pub fn update_fetch_progress(&mut self, item_name: &str, amount: usize) -> bool {
         let mut updated = false;
         for objective in &mut self.objectives {
-            if let ObjectiveType::Fetch { item_name: obj_item, current, .. } = objective {
+            if let ObjectiveType::Fetch {
+                item_name: obj_item,
+                current,
+                ..
+            } = objective
+            {
                 if obj_item == item_name {
                     *current += amount;
                     updated = true;
@@ -314,7 +380,13 @@ impl Quest {
     pub fn update_explore_progress(&mut self, player_pos: Vec3) -> bool {
         let mut updated = false;
         for objective in &mut self.objectives {
-            if let ObjectiveType::Explore { target_position, radius, discovered, .. } = objective {
+            if let ObjectiveType::Explore {
+                target_position,
+                radius,
+                discovered,
+                ..
+            } = objective
+            {
                 if !*discovered && player_pos.distance(*target_position) <= *radius {
                     *discovered = true;
                     updated = true;
@@ -354,7 +426,9 @@ impl QuestManager {
     /// Activate quest by ID (checks prerequisites)
     pub fn activate_quest(&mut self, quest_id: &str) -> Result<(), String> {
         // Check if quest exists
-        let quest = self.quests.get(quest_id)
+        let quest = self
+            .quests
+            .get(quest_id)
             .ok_or_else(|| format!("Quest {} not found", quest_id))?;
 
         // Check prerequisites
@@ -384,12 +458,16 @@ impl QuestManager {
 
     /// Get active quest (immutable)
     pub fn active_quest(&self) -> Option<&Quest> {
-        self.active_quest_id.as_ref().and_then(|id| self.quests.get(id))
+        self.active_quest_id
+            .as_ref()
+            .and_then(|id| self.quests.get(id))
     }
 
     /// Get active quest (mutable)
     pub fn active_quest_mut(&mut self) -> Option<&mut Quest> {
-        self.active_quest_id.as_ref().and_then(|id| self.quests.get_mut(id))
+        self.active_quest_id
+            .as_ref()
+            .and_then(|id| self.quests.get_mut(id))
     }
 
     /// Check active quest completion
@@ -577,12 +655,11 @@ mod tests {
 
     #[test]
     fn test_quest_completion() {
-        let mut quest = Quest::new("quest1", "Test", "Test")
-            .with_objective(ObjectiveType::Kill {
-                target_type: "enemy".to_string(),
-                required: 2,
-                current: 0,
-            });
+        let mut quest = Quest::new("quest1", "Test", "Test").with_objective(ObjectiveType::Kill {
+            target_type: "enemy".to_string(),
+            required: 2,
+            current: 0,
+        });
 
         quest.activate();
         assert_eq!(quest.state, QuestState::Active);
@@ -619,7 +696,7 @@ mod tests {
     fn test_quest_manager_registration() {
         let mut manager = QuestManager::new();
         let quest = Quest::new("quest1", "Test", "Test");
-        
+
         manager.register_quest(quest);
         assert!(manager.quest("quest1").is_some());
         assert!(manager.quest("quest2").is_none());
@@ -629,7 +706,7 @@ mod tests {
     fn test_quest_manager_activation() {
         let mut manager = QuestManager::new();
         let quest = Quest::new("quest1", "Test", "Test");
-        
+
         manager.register_quest(quest);
         assert!(manager.activate_quest("quest1").is_ok());
         assert!(manager.active_quest().is_some());
@@ -639,23 +716,22 @@ mod tests {
     #[test]
     fn test_quest_manager_prerequisites() {
         let mut manager = QuestManager::new();
-        
+
         let quest1 = Quest::new("quest1", "First", "First quest");
-        let quest2 = Quest::new("quest2", "Second", "Second quest")
-            .with_prerequisite("quest1");
-        
+        let quest2 = Quest::new("quest2", "Second", "Second quest").with_prerequisite("quest1");
+
         manager.register_quest(quest1);
         manager.register_quest(quest2);
-        
+
         // Can't activate quest2 without completing quest1
         assert!(manager.activate_quest("quest2").is_err());
-        
+
         // Complete quest1
         manager.activate_quest("quest1").unwrap();
         manager.active_quest_mut().unwrap().state = QuestState::Completed;
         manager.completed_quests.push("quest1".to_string());
         manager.active_quest_id = None;
-        
+
         // Now can activate quest2
         assert!(manager.activate_quest("quest2").is_ok());
     }
@@ -663,10 +739,10 @@ mod tests {
     #[test]
     fn test_quest_manager_one_active_at_time() {
         let mut manager = QuestManager::new();
-        
+
         manager.register_quest(Quest::new("quest1", "First", "First"));
         manager.register_quest(Quest::new("quest2", "Second", "Second"));
-        
+
         assert!(manager.activate_quest("quest1").is_ok());
         assert!(manager.activate_quest("quest2").is_err()); // Already active
     }
@@ -674,17 +750,18 @@ mod tests {
     #[test]
     fn test_quest_manager_update_kill() {
         let mut manager = QuestManager::new();
-        
-        let quest = Quest::new("quest1", "Kill Quest", "Kill enemies")
-            .with_objective(ObjectiveType::Kill {
+
+        let quest = Quest::new("quest1", "Kill Quest", "Kill enemies").with_objective(
+            ObjectiveType::Kill {
                 target_type: "enemy".to_string(),
                 required: 5,
                 current: 0,
-            });
-        
+            },
+        );
+
         manager.register_quest(quest);
         manager.activate_quest("quest1").unwrap();
-        
+
         assert!(manager.update_kill("enemy", 3));
         let active = manager.active_quest().unwrap();
         if let ObjectiveType::Kill { current, .. } = &active.objectives[0] {
@@ -695,20 +772,21 @@ mod tests {
     #[test]
     fn test_quest_manager_update_repair() {
         let mut manager = QuestManager::new();
-        
-        let quest = Quest::new("quest1", "Repair Quest", "Repair anchors")
-            .with_objective(ObjectiveType::Repair {
+
+        let quest = Quest::new("quest1", "Repair Quest", "Repair anchors").with_objective(
+            ObjectiveType::Repair {
                 required: 3,
                 current: 0,
                 min_stability: 0.8,
-            });
-        
+            },
+        );
+
         manager.register_quest(quest);
         manager.activate_quest("quest1").unwrap();
-        
+
         assert!(manager.update_repair(0.85)); // Above threshold
         assert!(!manager.update_repair(0.7)); // Below threshold
-        
+
         let active = manager.active_quest().unwrap();
         if let ObjectiveType::Repair { current, .. } = &active.objectives[0] {
             assert_eq!(*current, 1);
@@ -718,7 +796,7 @@ mod tests {
     #[test]
     fn test_quest_manager_completion() {
         let mut manager = QuestManager::new();
-        
+
         let quest = Quest::new("quest1", "Simple Quest", "Complete this")
             .with_objective(ObjectiveType::Kill {
                 target_type: "enemy".to_string(),
@@ -726,19 +804,19 @@ mod tests {
                 current: 0,
             })
             .with_reward(QuestReward::EchoCurrency(100));
-        
+
         manager.register_quest(quest);
         manager.activate_quest("quest1").unwrap();
-        
+
         // Incomplete
         assert!(manager.check_active_quest().is_none());
-        
+
         // Complete objectives
         manager.update_kill("enemy", 2);
         let rewards = manager.check_active_quest();
         assert!(rewards.is_some());
         assert_eq!(rewards.unwrap().len(), 1);
-        
+
         // Quest should be completed and no longer active
         assert!(manager.active_quest().is_none());
         assert!(manager.is_completed("quest1"));
@@ -748,21 +826,22 @@ mod tests {
     #[test]
     fn test_quest_manager_update_fetch() {
         let mut manager = QuestManager::new();
-        
-        let quest = Quest::new("quest1", "Fetch Quest", "Collect items")
-            .with_objective(ObjectiveType::Fetch {
+
+        let quest = Quest::new("quest1", "Fetch Quest", "Collect items").with_objective(
+            ObjectiveType::Fetch {
                 item_name: "echo_shard".to_string(),
                 required: 5,
                 current: 0,
                 delivery_location: Vec3::ZERO,
-            });
-        
+            },
+        );
+
         manager.register_quest(quest);
         manager.activate_quest("quest1").unwrap();
-        
+
         assert!(manager.update_fetch("echo_shard", 3));
         assert!(!manager.update_fetch("wrong_item", 1));
-        
+
         let active = manager.active_quest().unwrap();
         if let ObjectiveType::Fetch { current, .. } = &active.objectives[0] {
             assert_eq!(*current, 3);
@@ -772,24 +851,25 @@ mod tests {
     #[test]
     fn test_quest_manager_update_explore() {
         let mut manager = QuestManager::new();
-        
-        let quest = Quest::new("quest1", "Explore Quest", "Find the ruins")
-            .with_objective(ObjectiveType::Explore {
+
+        let quest = Quest::new("quest1", "Explore Quest", "Find the ruins").with_objective(
+            ObjectiveType::Explore {
                 location_name: "Ruins".to_string(),
                 target_position: Vec3::new(100.0, 0.0, 100.0),
                 radius: 10.0,
                 discovered: false,
-            });
-        
+            },
+        );
+
         manager.register_quest(quest);
         manager.activate_quest("quest1").unwrap();
-        
+
         // Too far
         assert!(!manager.update_explore(Vec3::new(50.0, 0.0, 50.0)));
-        
+
         // Within radius
         assert!(manager.update_explore(Vec3::new(105.0, 0.0, 105.0)));
-        
+
         let active = manager.active_quest().unwrap();
         if let ObjectiveType::Explore { discovered, .. } = &active.objectives[0] {
             assert!(*discovered);

@@ -7,9 +7,9 @@ use criterion::{criterion_group, criterion_main};
 use std::hint::black_box;
 
 #[cfg(feature = "planner_advanced")]
-use criterion::{BenchmarkId, Criterion};
-#[cfg(feature = "planner_advanced")]
 use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
+#[cfg(feature = "planner_advanced")]
+use criterion::{BenchmarkId, Criterion};
 #[cfg(feature = "planner_advanced")]
 use std::collections::BTreeMap;
 
@@ -279,14 +279,15 @@ criterion_group!(
 
 #[cfg(not(feature = "planner_advanced"))]
 fn bench_feature_disabled(c: &mut criterion::Criterion) {
-    c.bench_function("goap_feature_disabled", |b| b.iter(|| {
-        // Placeholder when planner_advanced feature is not enabled
-        std::hint::black_box(0)
-    }));
+    c.bench_function("goap_feature_disabled", |b| {
+        b.iter(|| {
+            // Placeholder when planner_advanced feature is not enabled
+            std::hint::black_box(0)
+        })
+    });
 }
 
 #[cfg(not(feature = "planner_advanced"))]
 criterion_group!(benches, bench_feature_disabled);
 
 criterion_main!(benches);
-

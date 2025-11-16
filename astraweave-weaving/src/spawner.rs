@@ -231,14 +231,13 @@ impl EnemySpawner {
             return Vec::new();
         }
 
-        let enemies_to_spawn = enemies_this_wave.min(
-            (self.max_concurrent_enemies - self.active_enemy_count) as u32
-        );
+        let enemies_to_spawn =
+            enemies_this_wave.min((self.max_concurrent_enemies - self.active_enemy_count) as u32);
 
         for i in 0..enemies_to_spawn {
             // Round-robin spawn points
             let spawn_point_id = available_spawns[i as usize % available_spawns.len()];
-            
+
             // Get spawn point data first (immutable borrow)
             let (spawn_position, spawn_radius, spawn_anchor_id, min_cooldown) = {
                 if let Some(sp) = self.spawn_points.get(&spawn_point_id) {
@@ -247,13 +246,13 @@ impl EnemySpawner {
                     continue; // Skip if spawn point doesn't exist
                 }
             };
-            
+
             // Generate position (immutable borrow of self)
             let position = self.generate_spawn_position(spawn_position, spawn_radius);
-            
+
             // Determine archetype based on wave number
             let archetype = self.determine_archetype();
-            
+
             requests.push(SpawnRequest {
                 position,
                 patrol_radius: spawn_radius,
@@ -262,7 +261,7 @@ impl EnemySpawner {
                 wave: self.current_wave,
                 archetype,
             });
-            
+
             // Set cooldown (mutable borrow)
             if let Some(spawn_point) = self.spawn_points.get_mut(&spawn_point_id) {
                 spawn_point.cooldown = min_cooldown;
@@ -282,18 +281,19 @@ impl EnemySpawner {
             return;
         }
 
-        let broken_count = anchors.iter()
+        let broken_count = anchors
+            .iter()
             .filter(|(_, anchor)| anchor.vfx_state() == AnchorVfxState::Broken)
             .count();
 
-        let critical_count = anchors.iter()
+        let critical_count = anchors
+            .iter()
             .filter(|(_, anchor)| anchor.vfx_state() == AnchorVfxState::Critical)
             .count();
 
         // Base 1.0, +0.5 per broken anchor, +0.25 per critical anchor
-        self.difficulty_multiplier = 1.0 
-            + (broken_count as f32 * 0.5)
-            + (critical_count as f32 * 0.25);
+        self.difficulty_multiplier =
+            1.0 + (broken_count as f32 * 0.5) + (critical_count as f32 * 0.25);
     }
 
     /// Calculates wave size based on current wave and difficulty.
@@ -306,16 +306,19 @@ impl EnemySpawner {
 
     /// Returns IDs of active spawn points (prioritizing broken anchors).
     fn get_active_spawn_points(&self, anchors: &[(usize, &Anchor)]) -> Vec<usize> {
-        let broken_anchor_ids: Vec<usize> = anchors.iter()
+        let broken_anchor_ids: Vec<usize> = anchors
+            .iter()
             .filter(|(_, anchor)| {
-                anchor.vfx_state() == AnchorVfxState::Broken ||
-                anchor.vfx_state() == AnchorVfxState::Critical
+                anchor.vfx_state() == AnchorVfxState::Broken
+                    || anchor.vfx_state() == AnchorVfxState::Critical
             })
             .map(|(id, _)| *id)
             .collect();
 
         // Get spawn points associated with broken anchors (priority)
-        let mut active_spawns: Vec<usize> = self.spawn_points.values()
+        let mut active_spawns: Vec<usize> = self
+            .spawn_points
+            .values()
             .filter(|sp| sp.active && sp.cooldown <= 0.0)
             .filter(|sp| {
                 if let Some(anchor_id) = sp.anchor_id {
@@ -329,7 +332,9 @@ impl EnemySpawner {
 
         // If no broken-anchor spawns available, use any active spawn
         if active_spawns.is_empty() {
-            active_spawns = self.spawn_points.values()
+            active_spawns = self
+                .spawn_points
+                .values()
                 .filter(|sp| sp.active && sp.cooldown <= 0.0)
                 .map(|sp| sp.id)
                 .collect();
@@ -346,15 +351,11 @@ impl EnemySpawner {
         let angle = rng.random_range(0.0..std::f32::consts::TAU);
         let distance = rng.random_range(0.0..radius);
 
-        center + Vec3::new(
-            angle.cos() * distance,
-            0.0,
-            angle.sin() * distance,
-        )
+        center + Vec3::new(angle.cos() * distance, 0.0, angle.sin() * distance)
     }
 
     /// Determines enemy archetype based on wave number and difficulty.
-    /// 
+    ///
     /// Wave 1-2: Standard enemies only
     /// Wave 3-5: Standard + Riftstalkers (fast flankers)
     /// Wave 6-9: Standard + Riftstalkers + Sentinels (tanky AOE)
@@ -362,7 +363,7 @@ impl EnemySpawner {
     fn determine_archetype(&self) -> crate::enemy_types::EnemyArchetype {
         use rand::Rng;
         let mut rng = rand::rng();
-        
+
         // Boss waves (every 5 waves starting at wave 10)
         if self.current_wave >= 10 && self.current_wave % 5 == 0 {
             let boss_chance = rng.random_range(0.0..1.0);
@@ -370,7 +371,7 @@ impl EnemySpawner {
                 return crate::enemy_types::EnemyArchetype::VoidBoss;
             }
         }
-        
+
         // Wave progression
         match self.current_wave {
             1..=2 => crate::enemy_types::EnemyArchetype::Standard,
@@ -418,7 +419,7 @@ impl EnemySpawner {
         self.wave_timer = self.wave_interval;
         self.difficulty_multiplier = 1.0;
         self.active_enemy_count = 0;
-        
+
         for spawn_point in self.spawn_points.values_mut() {
             spawn_point.cooldown = 0.0;
         }
@@ -428,7 +429,7 @@ impl EnemySpawner {
     pub fn difficulty_multiplier(&self) -> f32 {
         self.difficulty_multiplier
     }
-    
+
     /// Alias for `difficulty_multiplier()` (shorter name for integration tests).
     pub fn difficulty(&self) -> f32 {
         self.difficulty_multiplier
@@ -475,13 +476,13 @@ mod tests {
     #[test]
     fn test_add_spawn_point() {
         let mut spawner = EnemySpawner::new();
-        
+
         let id1 = spawner.add_spawn_point(Vec3::new(10.0, 0.0, 5.0), 5.0, Some(0));
         assert_eq!(spawner.spawn_point_count(), 1);
-        
+
         let id2 = spawner.add_spawn_point(Vec3::new(20.0, 0.0, 10.0), 7.0, Some(1));
         assert_eq!(spawner.spawn_point_count(), 2);
-        
+
         assert_ne!(id1, id2);
     }
 
@@ -489,11 +490,11 @@ mod tests {
     fn test_remove_spawn_point() {
         let mut spawner = EnemySpawner::new();
         let id = spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         assert_eq!(spawner.spawn_point_count(), 1);
         assert!(spawner.remove_spawn_point(id));
         assert_eq!(spawner.spawn_point_count(), 0);
-        
+
         // Removing again fails
         assert!(!spawner.remove_spawn_point(id));
     }
@@ -502,17 +503,17 @@ mod tests {
     fn test_wave_timer_countdown() {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // Timer starts at 5.0
         assert_eq!(spawner.time_until_wave(), 5.0);
-        
+
         // Update 2 seconds
         spawner.update(2.0, &anchors);
         assert_eq!(spawner.time_until_wave(), 3.0);
-        
+
         // Update 3 more seconds (wave spawns)
         let requests = spawner.update(3.1, &anchors);
         assert!(requests.len() > 0);
@@ -523,16 +524,16 @@ mod tests {
     fn test_wave_spawning() {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::ZERO, 5.0, Some(0));
-        
+
         let anchor = Anchor::new(0.5, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // Fast-forward to wave spawn
         let requests = spawner.update(5.1, &anchors);
-        
+
         assert_eq!(requests.len(), 3); // base_enemies_per_wave = 3
         assert_eq!(spawner.current_wave(), 2);
-        
+
         for request in &requests {
             assert_eq!(request.wave, 1);
             assert_eq!(request.spawn_point_id, 0);
@@ -544,16 +545,16 @@ mod tests {
     fn test_difficulty_scaling_broken_anchors() {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::ZERO, 5.0, Some(0));
-        
+
         // Create anchors with low stability (broken state < 0.1)
         let anchor1 = Anchor::new(0.05, 50, None); // Broken (< 0.1)
         let anchor2 = Anchor::new(0.03, 50, None); // Broken (< 0.1)
-        
+
         let anchors = vec![(0, &anchor1), (1, &anchor2)];
-        
+
         // Trigger wave spawn to update difficulty
         let _requests = spawner.update(5.1, &anchors);
-        
+
         // Base 1.0 + 2 broken * 0.5 = 2.0
         assert_eq!(spawner.difficulty_multiplier(), 2.0);
     }
@@ -562,15 +563,15 @@ mod tests {
     fn test_difficulty_scaling_critical_anchors() {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::ZERO, 5.0, Some(0));
-        
+
         // Create anchor with critical stability (0.1 <= stability < 0.4)
         let anchor = Anchor::new(0.25, 50, None); // Critical
-        
+
         let anchors = vec![(0, &anchor)];
-        
+
         // Trigger wave spawn to update difficulty
         let _requests = spawner.update(5.1, &anchors);
-        
+
         // Base 1.0 + 1 critical * 0.25 = 1.25
         assert_eq!(spawner.difficulty_multiplier(), 1.25);
     }
@@ -579,18 +580,18 @@ mod tests {
     fn test_wave_size_scaling() {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // Wave 1: 3 enemies
         let requests = spawner.update(5.1, &anchors);
         assert_eq!(requests.len(), 3);
-        
+
         // Wave 2: 3.5 rounded to 4 enemies
         let requests = spawner.update(30.1, &anchors);
         assert_eq!(requests.len(), 4);
-        
+
         // Wave 3: 4 enemies
         let requests = spawner.update(30.1, &anchors);
         assert_eq!(requests.len(), 4);
@@ -600,12 +601,12 @@ mod tests {
     fn test_max_concurrent_enemies() {
         let mut spawner = EnemySpawner::with_settings(5.0, 10, 5);
         spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         spawner.set_active_enemy_count(3); // 3 alive
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // Wave wants to spawn 10, but only 2 slots available
         let requests = spawner.update(5.1, &anchors);
         assert_eq!(requests.len(), 2);
@@ -615,12 +616,12 @@ mod tests {
     fn test_no_spawn_at_max_capacity() {
         let mut spawner = EnemySpawner::with_settings(5.0, 5, 10);
         spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         spawner.set_active_enemy_count(10); // At max
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         let requests = spawner.update(5.1, &anchors);
         assert_eq!(requests.len(), 0);
     }
@@ -629,19 +630,19 @@ mod tests {
     fn test_spawn_point_cooldown() {
         let mut spawner = EnemySpawner::new();
         let _id = spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // First spawn works (wave spawns at 5.1s)
         let requests = spawner.update(5.1, &anchors);
         assert_eq!(requests.len(), 3);
         assert_eq!(spawner.current_wave(), 2); // Wave incremented
-        
+
         // Immediate second spawn blocked by cooldown (force spawn)
         let requests = spawner.force_spawn_wave(&anchors);
         assert_eq!(requests.len(), 0); // Cooldown active
-        
+
         // Cooldown expires after 5 seconds
         spawner.update(5.1, &anchors);
         let requests = spawner.force_spawn_wave(&anchors);
@@ -653,18 +654,23 @@ mod tests {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::new(0.0, 0.0, 0.0), 5.0, Some(0)); // Anchor 0 (perfect)
         spawner.add_spawn_point(Vec3::new(10.0, 0.0, 0.0), 5.0, Some(1)); // Anchor 1 (broken)
-        
+
         let anchor0 = Anchor::new(1.0, 50, None); // Perfect
         let anchor1 = Anchor::new(0.05, 50, None); // Broken (< 0.1)
-        
+
         let anchors = vec![(0, &anchor0), (1, &anchor1)];
-        
+
         let requests = spawner.update(5.1, &anchors);
-        
+
         // All spawns should be at broken anchor's spawn point
         assert!(requests.len() > 0, "Expected spawn requests");
         for request in &requests {
-            assert_eq!(request.anchor_id, Some(1), "Expected spawn at broken anchor (1), got anchor {:?}", request.anchor_id);
+            assert_eq!(
+                request.anchor_id,
+                Some(1),
+                "Expected spawn at broken anchor (1), got anchor {:?}",
+                request.anchor_id
+            );
         }
     }
 
@@ -673,19 +679,19 @@ mod tests {
         let mut spawner = EnemySpawner::with_settings(5.0, 6, 20);
         spawner.add_spawn_point(Vec3::new(0.0, 0.0, 0.0), 5.0, Some(0));
         spawner.add_spawn_point(Vec3::new(10.0, 0.0, 0.0), 5.0, Some(1));
-        
+
         let anchor0 = Anchor::new(1.0, 50, None);
         let anchor1 = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor0), (1, &anchor1)];
-        
+
         let requests = spawner.update(5.1, &anchors);
-        
+
         // 6 enemies, 2 spawn points -> 3 per spawn point
         assert_eq!(requests.len(), 6);
-        
+
         let spawn0_count = requests.iter().filter(|r| r.spawn_point_id == 0).count();
         let spawn1_count = requests.iter().filter(|r| r.spawn_point_id == 1).count();
-        
+
         assert_eq!(spawn0_count, 3);
         assert_eq!(spawn1_count, 3);
     }
@@ -694,15 +700,15 @@ mod tests {
     fn test_reset_spawner() {
         let mut spawner = EnemySpawner::new();
         spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // Advance to wave 3
         spawner.update(5.1, &anchors);
         spawner.update(30.1, &anchors);
         assert_eq!(spawner.current_wave(), 3);
-        
+
         spawner.reset();
         assert_eq!(spawner.current_wave(), 1);
         assert_eq!(spawner.time_until_wave(), 30.0);
@@ -712,21 +718,21 @@ mod tests {
     fn test_set_spawn_point_active() {
         let mut spawner = EnemySpawner::new();
         let id = spawner.add_spawn_point(Vec3::ZERO, 5.0, None);
-        
+
         let anchor = Anchor::new(1.0, 50, None);
         let anchors = vec![(0, &anchor)];
-        
+
         // Spawn works when active
         let requests = spawner.update(5.1, &anchors);
         assert_eq!(requests.len(), 3);
-        
+
         // Disable spawn point
         assert!(spawner.set_spawn_point_active(id, false));
-        
+
         // No spawns when disabled
         let requests = spawner.update(30.1, &anchors);
         assert_eq!(requests.len(), 0);
-        
+
         // Re-enable
         assert!(spawner.set_spawn_point_active(id, true));
         let requests = spawner.update(30.1, &anchors);

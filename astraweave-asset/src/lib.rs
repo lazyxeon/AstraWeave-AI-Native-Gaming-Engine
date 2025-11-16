@@ -1668,7 +1668,7 @@ impl HotReloadManager {
     /// Add an event, applying debouncing and deduplication
     fn add_event(&mut self, guid: String) {
         let now = std::time::Instant::now();
-        
+
         // Check if we have a recent event for this GUID
         if let Some(&last_time) = self.pending_reloads.get(&guid) {
             let elapsed = now.duration_since(last_time).as_millis() as u64;
@@ -1678,10 +1678,10 @@ impl HotReloadManager {
                 return;
             }
         }
-        
+
         // Update timestamp
         self.pending_reloads.insert(guid.clone(), now);
-        
+
         // Add to queue if not already present
         if !self.reload_queue.contains(&guid) {
             self.reload_queue.push_back(guid);
@@ -1708,10 +1708,10 @@ impl AssetWatcher {
     /// Create a new asset watcher with custom debounce time
     pub fn with_debounce(db: Arc<Mutex<AssetDatabase>>, debounce_ms: u64) -> Result<Self> {
         use std::sync::mpsc::{channel, Sender};
-        
+
         let (tx, rx): (Sender<String>, _) = channel();
         let db_clone = db.clone();
-        
+
         let watcher = notify::recommended_watcher(
             move |res: Result<notify::Event, notify::Error>| match res {
                 Ok(event) => {
@@ -1737,12 +1737,12 @@ impl AssetWatcher {
 
         let mut hot_reload_manager = HotReloadManager::new(debounce_ms);
         let db_process = db.clone();
-        
+
         // Spawn background thread to process reload events
         std::thread::spawn(move || {
             while let Ok(guid) = rx.recv() {
                 hot_reload_manager.add_event(guid);
-                
+
                 // Process pending reloads
                 while let Some(guid_to_reload) = hot_reload_manager.process_next() {
                     if let Ok(mut db) = db_process.lock() {

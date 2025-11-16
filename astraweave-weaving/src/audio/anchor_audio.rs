@@ -49,24 +49,24 @@ impl AnchorAudioState {
     /// Get hum volume for VFX state (0.0-1.0)
     pub fn volume_for_state(vfx_state: u8) -> f32 {
         match vfx_state {
-            0 => 0.0,  // Perfect - silent (pristine reality)
-            1 => 0.2,  // Stable - subtle hum
-            2 => 0.5,  // Unstable - moderate hum (warning)
-            3 => 0.8,  // Critical - loud static (danger)
-            4 => 0.0,  // Broken - silent (dead)
-            _ => 0.0,  // Unknown state
+            0 => 0.0, // Perfect - silent (pristine reality)
+            1 => 0.2, // Stable - subtle hum
+            2 => 0.5, // Unstable - moderate hum (warning)
+            3 => 0.8, // Critical - loud static (danger)
+            4 => 0.0, // Broken - silent (dead)
+            _ => 0.0, // Unknown state
         }
     }
 
     /// Get audio file path for VFX state
     pub fn audio_file_for_state(vfx_state: u8) -> &'static str {
         match vfx_state {
-            0 => "",  // Perfect - no sound
+            0 => "", // Perfect - no sound
             1 => "assets/audio/anchor/anchor_hum_stable.ogg",
             2 => "assets/audio/anchor/anchor_hum_unstable.ogg",
             3 => "assets/audio/anchor/anchor_hum_critical.ogg",
-            4 => "",  // Broken - no sound
-            _ => "",  // Unknown state
+            4 => "", // Broken - no sound
+            _ => "", // Unknown state
         }
     }
 
@@ -126,7 +126,8 @@ impl AnchorAudioState {
         // Fade hum volume toward target
         if (self.hum_volume - self.target_hum_volume).abs() > 0.01 {
             let fade_speed = 1.0 / self.crossfade_duration(); // Reach target in crossfade duration
-            let delta = (self.target_hum_volume - self.hum_volume).signum() * fade_speed * delta_time;
+            let delta =
+                (self.target_hum_volume - self.hum_volume).signum() * fade_speed * delta_time;
             self.hum_volume = (self.hum_volume + delta).clamp(0.0, 1.0);
 
             // Update hum volume if playing
@@ -185,15 +186,9 @@ pub enum AudioCommand {
         fade_duration: f32,
     },
     /// Set volume for playing sound
-    SetVolume {
-        source_id: usize,
-        volume: f32,
-    },
+    SetVolume { source_id: usize, volume: f32 },
     /// Set position for playing sound (for moving anchors, if needed)
-    SetPosition {
-        source_id: usize,
-        position: Vec3,
-    },
+    SetPosition { source_id: usize, position: Vec3 },
 }
 
 // ============================================================================
@@ -502,6 +497,8 @@ mod tests {
 
         // Should stop both hums
         assert_eq!(commands.len(), 2);
-        assert!(commands.iter().all(|c| matches!(c, AudioCommand::StopSound { .. })));
+        assert!(commands
+            .iter()
+            .all(|c| matches!(c, AudioCommand::StopSound { .. })));
     }
 }

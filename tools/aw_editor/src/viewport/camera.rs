@@ -93,10 +93,10 @@ impl Default for OrbitCamera {
             pitch: std::f32::consts::PI / 6.0, // 30° pitch (shallower, see more horizon/sky)
             fov: 60.0,
             aspect: 16.0 / 9.0,
-            near: 0.01,              // Very close near plane (10cm) to prevent clipping
+            near: 0.01, // Very close near plane (10cm) to prevent clipping
             far: 1000.0,
-            min_distance: 0.1,       // Allow camera to get very close (10cm from focal point)
-            max_distance: 200.0,     // Allow zooming out further
+            min_distance: 0.1, // Allow camera to get very close (10cm from focal point)
+            max_distance: 200.0, // Allow zooming out further
             min_pitch: -std::f32::consts::PI / 2.0 + 0.01, // Prevent gimbal lock
             max_pitch: std::f32::consts::PI / 2.0 - 0.01, // Prevent gimbal lock
         }

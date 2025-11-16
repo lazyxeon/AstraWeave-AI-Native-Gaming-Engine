@@ -5,32 +5,52 @@ mod hierarchical_planning_tests {
 
     fn create_test_planner() -> AdvancedGOAP {
         let mut planner = AdvancedGOAP::new();
-        
+
         // Add basic test actions
         let mut move_preconds = BTreeMap::new();
         move_preconds.insert("can_move".to_string(), StateValue::Bool(true));
         let mut move_effects = BTreeMap::new();
         move_effects.insert("at_location".to_string(), StateValue::Bool(true));
-        planner.add_action(Box::new(SimpleAction::new("move", move_preconds, move_effects, 1.0)));
+        planner.add_action(Box::new(SimpleAction::new(
+            "move",
+            move_preconds,
+            move_effects,
+            1.0,
+        )));
 
         let mut attack_preconds = BTreeMap::new();
         attack_preconds.insert("has_weapon".to_string(), StateValue::Bool(true));
         attack_preconds.insert("in_range".to_string(), StateValue::Bool(true));
         let mut attack_effects = BTreeMap::new();
         attack_effects.insert("enemy_defeated".to_string(), StateValue::Bool(true));
-        planner.add_action(Box::new(SimpleAction::new("attack", attack_preconds, attack_effects, 2.0)));
+        planner.add_action(Box::new(SimpleAction::new(
+            "attack",
+            attack_preconds,
+            attack_effects,
+            2.0,
+        )));
 
         let mut equip_preconds = BTreeMap::new();
         equip_preconds.insert("has_weapon".to_string(), StateValue::Bool(true));
         let mut equip_effects = BTreeMap::new();
         equip_effects.insert("weapon_equipped".to_string(), StateValue::Bool(true));
-        planner.add_action(Box::new(SimpleAction::new("equip", equip_preconds, equip_effects, 0.5)));
+        planner.add_action(Box::new(SimpleAction::new(
+            "equip",
+            equip_preconds,
+            equip_effects,
+            0.5,
+        )));
 
         let mut scan_preconds = BTreeMap::new();
         let mut scan_effects = BTreeMap::new();
         scan_effects.insert("area_scanned".to_string(), StateValue::Bool(true));
         scan_effects.insert("enemies_located".to_string(), StateValue::Bool(true));
-        planner.add_action(Box::new(SimpleAction::new("scan", scan_preconds, scan_effects, 1.0)));
+        planner.add_action(Box::new(SimpleAction::new(
+            "scan",
+            scan_preconds,
+            scan_effects,
+            1.0,
+        )));
 
         planner
     }
@@ -78,7 +98,7 @@ mod hierarchical_planning_tests {
 
         // Should plan both sub-goals in sequence
         let plan = planner.plan(&start, &main_goal);
-        
+
         if let Some(plan) = plan {
             assert!(plan.contains(&"scan".to_string()));
             assert!(plan.contains(&"equip".to_string()));
@@ -102,14 +122,12 @@ mod hierarchical_planning_tests {
         // Level 1 sub-goal
         let mut l1_desired = BTreeMap::new();
         l1_desired.insert("level1_complete".to_string(), StateValue::Bool(true));
-        let l1_goal = Goal::new("level1", l1_desired)
-            .with_sub_goals(vec![l2_goal]);
+        let l1_goal = Goal::new("level1", l1_desired).with_sub_goals(vec![l2_goal]);
 
         // Root goal
         let mut root_desired = BTreeMap::new();
         root_desired.insert("mission_complete".to_string(), StateValue::Bool(true));
-        let root_goal = Goal::new("root", root_desired)
-            .with_sub_goals(vec![l1_goal]);
+        let root_goal = Goal::new("root", root_desired).with_sub_goals(vec![l1_goal]);
 
         // Check goal depth calculation
         assert_eq!(root_goal.depth(), 3);
@@ -132,13 +150,11 @@ mod hierarchical_planning_tests {
 
         let mut l2_desired = BTreeMap::new();
         l2_desired.insert("l2".to_string(), StateValue::Bool(true));
-        let l2_goal = Goal::new("l2", l2_desired)
-            .with_sub_goals(vec![l3_goal]);
+        let l2_goal = Goal::new("l2", l2_desired).with_sub_goals(vec![l3_goal]);
 
         let mut l1_desired = BTreeMap::new();
         l1_desired.insert("l1".to_string(), StateValue::Bool(true));
-        let l1_goal = Goal::new("l1", l1_desired)
-            .with_sub_goals(vec![l2_goal]);
+        let l1_goal = Goal::new("l1", l1_desired).with_sub_goals(vec![l2_goal]);
 
         let mut root_desired = BTreeMap::new();
         root_desired.insert("root".to_string(), StateValue::Bool(true));
@@ -178,7 +194,7 @@ mod hierarchical_planning_tests {
         // Should pick one of the options (likely higher priority one)
         let plan = planner.plan(&start, &main_goal);
         assert!(plan.is_some());
-        
+
         if let Some(plan) = plan {
             // Should contain either equip or scan, but not necessarily both
             assert!(plan.contains(&"equip".to_string()) || plan.contains(&"scan".to_string()));
@@ -211,7 +227,7 @@ mod hierarchical_planning_tests {
         // Should plan for both sub-goals
         let plan = planner.plan(&start, &main_goal);
         assert!(plan.is_some());
-        
+
         if let Some(plan) = plan {
             assert!(plan.contains(&"equip".to_string()));
             assert!(plan.contains(&"scan".to_string()));
@@ -245,7 +261,7 @@ mod hierarchical_planning_tests {
         // Should skip already-satisfied scan goal
         let plan = planner.plan(&start, &main_goal);
         assert!(plan.is_some());
-        
+
         if let Some(plan) = plan {
             // Should only contain equip, not scan
             assert!(plan.contains(&"equip".to_string()));
@@ -255,8 +271,8 @@ mod hierarchical_planning_tests {
 
     #[test]
     fn test_goal_authoring_integration() {
-        use tempfile::TempDir;
         use std::path::PathBuf;
+        use tempfile::TempDir;
 
         let temp_dir = TempDir::new().unwrap();
         let goal_path = temp_dir.path().join("test_goal.toml");
@@ -264,7 +280,7 @@ mod hierarchical_planning_tests {
         // Create a goal definition
         let mut sub_desired = BTreeMap::new();
         sub_desired.insert("scanned".to_string(), StateValueDef::Bool(true));
-        
+
         let sub_goal_def = GoalDefinition {
             name: "scan_area".to_string(),
             priority: Some(5.0),
@@ -305,7 +321,7 @@ mod hierarchical_planning_tests {
     fn test_goal_scheduler_integration() {
         let planner = create_test_planner();
         let mut scheduler = GoalScheduler::new();
-        
+
         // Add multiple goals
         let mut goal1_desired = BTreeMap::new();
         goal1_desired.insert("area_scanned".to_string(), StateValue::Bool(true));
@@ -327,4 +343,3 @@ mod hierarchical_planning_tests {
         assert_eq!(scheduler.goal_count(), 2);
     }
 }
-

@@ -74,10 +74,10 @@ fn package_demos(output: &str) -> Result<()> {
     // Security: Validate output path is within current directory
     let base = std::env::current_dir()?;
     let output_path = Path::new(output);
-    
+
     let safe_output = safe_under(&base, output_path)
         .map_err(|e| anyhow::anyhow!("Invalid output path: {}", e))?;
-    
+
     fs::create_dir_all(&safe_output)?;
 
     // Copy built binaries

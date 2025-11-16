@@ -3,4 +3,6 @@
 pub mod anchor_audio;
 
 // Re-exports
-pub use anchor_audio::{AnchorAudioState, AnchorAudioSystem, AudioCommand, echo_pickup_audio_command};
+pub use anchor_audio::{
+    echo_pickup_audio_command, AnchorAudioState, AnchorAudioSystem, AudioCommand,
+};

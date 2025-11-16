@@ -28,7 +28,7 @@
 //! let viewport = ViewportWidget::new(cc)?;
 //!
 //! // In eframe::App::update()
-//! viewport.ui(ui, &world)?;
+//! viewport.ui(ui, scene_state, undo_stack)?;
 //! ```
 
 mod camera;
