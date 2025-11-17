@@ -30,8 +30,8 @@
 <a href=#30 id=30 data-nosnippet>30</a></span><span class="attr">#[cfg(any(feature = <span class="string">"obj-assets"</span>, feature = <span class="string">"assets"</span>))]
 <a href=#31 id=31 data-nosnippet>31</a></span><span class="kw">pub mod </span>mesh_obj;
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">pub mod </span>residency;
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">pub mod </span>terrain_material;
-<a href=#34 id=34 data-nosnippet>34</a><span class="kw">pub mod </span>texture_streaming; <span class="comment">// Texture streaming with LRU cache and priority-based loading // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
+<a href=#33 id=33 data-nosnippet>33</a><span class="kw">pub mod </span>texture_streaming; <span class="comment">// Texture streaming with LRU cache and priority-based loading
+<a href=#34 id=34 data-nosnippet>34</a></span><span class="kw">pub mod </span>terrain_material; <span class="comment">// Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
 <a href=#35 id=35 data-nosnippet>35</a>
 <a href=#36 id=36 data-nosnippet>36</a></span><span class="attr">#[cfg(feature = <span class="string">"skinning-gpu"</span>)]
 <a href=#37 id=37 data-nosnippet>37</a></span><span class="kw">pub mod </span>skinning_gpu; <span class="comment">// Phase 2 Task 5 Phase D: GPU skinning pipeline
@@ -60,48 +60,48 @@
 <a href=#60 id=60 data-nosnippet>60</a><span class="kw">pub use </span>texture::Texture;
 <a href=#61 id=61 data-nosnippet>61</a><span class="kw">pub use </span>types::{Instance, Material, SkinnedVertex};
 <a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub mod </span>advanced_post;
-<a href=#64 id=64 data-nosnippet>64</a><span class="kw">pub mod </span>decals; <span class="comment">// Screen-space decal system
-<a href=#65 id=65 data-nosnippet>65</a></span><span class="kw">pub mod </span>deferred; <span class="comment">// Deferred rendering pipeline
-<a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">pub mod </span>effects; <span class="comment">// NEW
+<a href=#63 id=63 data-nosnippet>63</a><span class="kw">pub mod </span>effects; <span class="comment">// NEW
+<a href=#64 id=64 data-nosnippet>64</a></span><span class="kw">pub mod </span>overlay; <span class="comment">// NEW (for cutscene fades/letterbox later)
+<a href=#65 id=65 data-nosnippet>65</a></span><span class="kw">pub mod </span>transparency; <span class="comment">// Transparency depth sorting and render pass
+<a href=#66 id=66 data-nosnippet>66</a></span><span class="kw">pub mod </span>msaa; <span class="comment">// MSAA anti-aliasing resources
 <a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub mod </span>gpu_particles; <span class="comment">// GPU compute-based particle system
-<a href=#68 id=68 data-nosnippet>68</a></span><span class="kw">pub mod </span>msaa; <span class="comment">// MSAA anti-aliasing resources
-<a href=#69 id=69 data-nosnippet>69</a></span><span class="kw">pub mod </span>overlay; <span class="comment">// NEW (for cutscene fades/letterbox later)
-<a href=#70 id=70 data-nosnippet>70</a></span><span class="kw">pub mod </span>transparency; <span class="comment">// Transparency depth sorting and render pass // Advanced post-processing (TAA, motion blur, DOF, color grading)
+<a href=#68 id=68 data-nosnippet>68</a></span><span class="kw">pub mod </span>decals; <span class="comment">// Screen-space decal system
+<a href=#69 id=69 data-nosnippet>69</a></span><span class="kw">pub mod </span>deferred; <span class="comment">// Deferred rendering pipeline
+<a href=#70 id=70 data-nosnippet>70</a></span><span class="kw">pub mod </span>advanced_post; <span class="comment">// Advanced post-processing (TAA, motion blur, DOF, color grading)
 <a href=#71 id=71 data-nosnippet>71</a>
-<a href=#72 id=72 data-nosnippet>72</a></span><span class="kw">pub use </span>advanced_post::{
-<a href=#73 id=73 data-nosnippet>73</a>    AdvancedPostFx, ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-<a href=#74 id=74 data-nosnippet>74</a>};
-<a href=#75 id=75 data-nosnippet>75</a><span class="kw">pub use </span>culling::{
-<a href=#76 id=76 data-nosnippet>76</a>    batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId,
-<a href=#77 id=77 data-nosnippet>77</a>    CullingPipeline, CullingResources, DrawBatch, DrawIndirectCommand, FrustumPlanes, InstanceAABB,
-<a href=#78 id=78 data-nosnippet>78</a>};
-<a href=#79 id=79 data-nosnippet>79</a><span class="kw">pub use </span>culling_node::CullingNode;
-<a href=#80 id=80 data-nosnippet>80</a><span class="kw">pub use </span>decals::{Decal, DecalAtlas, DecalBlendMode, DecalSystem, GpuDecal, DECAL_SHADER};
-<a href=#81 id=81 data-nosnippet>81</a><span class="kw">pub use </span>deferred::{DeferredRenderer, GBuffer, GBufferFormats};
-<a href=#82 id=82 data-nosnippet>82</a><span class="kw">pub use </span>effects::{WeatherFx, WeatherKind};
-<a href=#83 id=83 data-nosnippet>83</a><span class="kw">pub use </span>gpu_particles::{EmitterParams, GpuParticle, GpuParticleSystem};
-<a href=#84 id=84 data-nosnippet>84</a><span class="kw">pub use </span>ibl::{IblManager, IblQuality, IblResources, SkyMode};
-<a href=#85 id=85 data-nosnippet>85</a><span class="kw">pub use </span>material::{
-<a href=#86 id=86 data-nosnippet>86</a>    ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
-<a href=#87 id=87 data-nosnippet>87</a>    MaterialManager, MaterialPackDesc,
-<a href=#88 id=88 data-nosnippet>88</a>};
-<a href=#89 id=89 data-nosnippet>89</a><span class="kw">pub use </span>material_extended::{
-<a href=#90 id=90 data-nosnippet>90</a>    MaterialDefinitionExtended, MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY,
-<a href=#91 id=91 data-nosnippet>91</a>    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE,
-<a href=#92 id=92 data-nosnippet>92</a>    MATERIAL_FLAG_TRANSMISSION,
-<a href=#93 id=93 data-nosnippet>93</a>};
-<a href=#94 id=94 data-nosnippet>94</a><span class="kw">pub use </span>mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
-<a href=#95 id=95 data-nosnippet>95</a><span class="kw">pub use </span>mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
-<a href=#96 id=96 data-nosnippet>96</a><span class="kw">pub use </span>msaa::{create_msaa_depth_texture, MsaaMode, MsaaRenderTarget};
-<a href=#97 id=97 data-nosnippet>97</a><span class="attr">#[cfg(feature = <span class="string">"bloom"</span>)]
-<a href=#98 id=98 data-nosnippet>98</a></span><span class="kw">pub use </span>post::{BloomConfig, BloomPipeline};
-<a href=#99 id=99 data-nosnippet>99</a><span class="kw">pub use </span>residency::ResidencyManager;
-<a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub use </span>terrain_material::{
-<a href=#101 id=101 data-nosnippet>101</a>    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
-<a href=#102 id=102 data-nosnippet>102</a>};
-<a href=#103 id=103 data-nosnippet>103</a><span class="kw">pub use </span>texture_streaming::{TextureStreamingManager, TextureStreamingStats};
-<a href=#104 id=104 data-nosnippet>104</a><span class="kw">pub use </span>transparency::{create_blend_state, BlendMode, TransparencyManager, TransparentInstance};
+<a href=#72 id=72 data-nosnippet>72</a></span><span class="kw">pub use </span>culling::{
+<a href=#73 id=73 data-nosnippet>73</a>    batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId,
+<a href=#74 id=74 data-nosnippet>74</a>    CullingPipeline, CullingResources, DrawBatch, DrawIndirectCommand, FrustumPlanes, InstanceAABB,
+<a href=#75 id=75 data-nosnippet>75</a>};
+<a href=#76 id=76 data-nosnippet>76</a><span class="kw">pub use </span>culling_node::CullingNode;
+<a href=#77 id=77 data-nosnippet>77</a><span class="kw">pub use </span>effects::{WeatherFx, WeatherKind};
+<a href=#78 id=78 data-nosnippet>78</a><span class="kw">pub use </span>transparency::{BlendMode, TransparencyManager, TransparentInstance, create_blend_state};
+<a href=#79 id=79 data-nosnippet>79</a><span class="kw">pub use </span>msaa::{MsaaMode, MsaaRenderTarget, create_msaa_depth_texture};
+<a href=#80 id=80 data-nosnippet>80</a><span class="kw">pub use </span>gpu_particles::{GpuParticleSystem, GpuParticle, EmitterParams};
+<a href=#81 id=81 data-nosnippet>81</a><span class="kw">pub use </span>decals::{DecalSystem, Decal, DecalAtlas, DecalBlendMode, GpuDecal, DECAL_SHADER};
+<a href=#82 id=82 data-nosnippet>82</a><span class="kw">pub use </span>deferred::{DeferredRenderer, GBuffer, GBufferFormats};
+<a href=#83 id=83 data-nosnippet>83</a><span class="kw">pub use </span>advanced_post::{
+<a href=#84 id=84 data-nosnippet>84</a>    AdvancedPostFx, TaaConfig, MotionBlurConfig, DofConfig, ColorGradingConfig,
+<a href=#85 id=85 data-nosnippet>85</a>};
+<a href=#86 id=86 data-nosnippet>86</a><span class="kw">pub use </span>ibl::{IblManager, IblQuality, IblResources, SkyMode};
+<a href=#87 id=87 data-nosnippet>87</a><span class="kw">pub use </span>material::{
+<a href=#88 id=88 data-nosnippet>88</a>    ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
+<a href=#89 id=89 data-nosnippet>89</a>    MaterialManager, MaterialPackDesc,
+<a href=#90 id=90 data-nosnippet>90</a>};
+<a href=#91 id=91 data-nosnippet>91</a><span class="kw">pub use </span>material_extended::{
+<a href=#92 id=92 data-nosnippet>92</a>    MaterialDefinitionExtended, MaterialGpuExtended, MATERIAL_FLAG_ANISOTROPY,
+<a href=#93 id=93 data-nosnippet>93</a>    MATERIAL_FLAG_CLEARCOAT, MATERIAL_FLAG_SHEEN, MATERIAL_FLAG_SUBSURFACE,
+<a href=#94 id=94 data-nosnippet>94</a>    MATERIAL_FLAG_TRANSMISSION,
+<a href=#95 id=95 data-nosnippet>95</a>};
+<a href=#96 id=96 data-nosnippet>96</a><span class="kw">pub use </span>mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
+<a href=#97 id=97 data-nosnippet>97</a><span class="kw">pub use </span>mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
+<a href=#98 id=98 data-nosnippet>98</a><span class="attr">#[cfg(feature = <span class="string">"bloom"</span>)]
+<a href=#99 id=99 data-nosnippet>99</a></span><span class="kw">pub use </span>post::{BloomConfig, BloomPipeline};
+<a href=#100 id=100 data-nosnippet>100</a><span class="kw">pub use </span>residency::ResidencyManager;
+<a href=#101 id=101 data-nosnippet>101</a><span class="kw">pub use </span>texture_streaming::{TextureStreamingManager, TextureStreamingStats};
+<a href=#102 id=102 data-nosnippet>102</a><span class="kw">pub use </span>terrain_material::{
+<a href=#103 id=103 data-nosnippet>103</a>    TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
+<a href=#104 id=104 data-nosnippet>104</a>};
 <a href=#105 id=105 data-nosnippet>105</a>
 <a href=#106 id=106 data-nosnippet>106</a><span class="comment">// Phase 2 Task 5: Skeletal Animation exports
 <a href=#107 id=107 data-nosnippet>107</a></span><span class="kw">pub use </span>animation::{
