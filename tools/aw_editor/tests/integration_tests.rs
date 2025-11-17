@@ -1,29 +1,12 @@
 use astraweave_core::{Entity, IVec2, Team, World};
 use aw_editor::command::{
-    EditAmmoCommand, EditHealthCommand, EditTeamCommand, MoveEntityCommand, RotateEntityCommand,
-    ScaleEntityCommand, UndoStack,
+    EditAmmoCommand, EditHealthCommand, EditTeamCommand, MoveEntityCommand, 
+    RotateEntityCommand, ScaleEntityCommand, UndoStack,
 };
 use aw_editor::component_ui::{ComponentRegistry, ComponentType};
 use aw_editor::scene_serialization::{load_scene, save_scene, SceneData};
+use std::env;
 use std::fs;
-use std::path::{Path, PathBuf};
-
-fn integration_scene_path(file_name: &str) -> PathBuf {
-    let relative = PathBuf::from(format!("test_scenes/integration/{file_name}"));
-    let absolute = Path::new("content").join(&relative);
-    if let Some(parent) = absolute.parent() {
-        fs::create_dir_all(parent).unwrap();
-    }
-    relative
-}
-
-fn integration_scene_exists(path: &Path) -> bool {
-    Path::new("content").join(path).exists()
-}
-
-fn remove_integration_scene(path: &Path) {
-    let _ = fs::remove_file(Path::new("content").join(path));
-}
 
 #[test]
 fn test_full_editor_workflow_with_undo_and_save() {
@@ -32,7 +15,6 @@ fn test_full_editor_workflow_with_undo_and_save() {
     let entity2 = world.spawn("Enemy", IVec2::new(50, 60), Team { id: 2 }, 50, 15);
 
     let mut undo_stack = UndoStack::new(100);
-    undo_stack.set_auto_merge(false);
 
     undo_stack
         .execute(
@@ -50,14 +32,13 @@ fn test_full_editor_workflow_with_undo_and_save() {
         .unwrap();
     assert!((world.pose(entity1).unwrap().rotation - 1.57).abs() < 0.01);
 
-    undo_stack
-        .execute(EditHealthCommand::new(entity2, 50, 25), &mut world)
-        .unwrap();
+    undo_stack.push_executed(EditHealthCommand::new(entity2, 50, 25));
     assert_eq!(world.health(entity2).unwrap().hp, 25);
 
-    let scene_path = integration_scene_path("integration_test_scene.ron");
+    let temp_dir = env::temp_dir();
+    let scene_path = temp_dir.join("integration_test_scene.ron");
     save_scene(&world, &scene_path).unwrap();
-    assert!(integration_scene_exists(&scene_path));
+    assert!(scene_path.exists());
 
     undo_stack.undo(&mut world).unwrap();
     assert_eq!(world.health(entity2).unwrap().hp, 50);
@@ -73,7 +54,7 @@ fn test_full_editor_workflow_with_undo_and_save() {
     assert_eq!(loaded_world.pose(entity1).unwrap().pos, IVec2::new(15, 25));
     assert!((loaded_world.pose(entity1).unwrap().rotation - 1.57).abs() < 0.01);
 
-    remove_integration_scene(&scene_path);
+    fs::remove_file(&scene_path).unwrap();
 }
 
 #[test]
@@ -129,7 +110,10 @@ fn test_undo_redo_with_multiple_entity_types() {
         .unwrap();
 
     undo_stack
-        .execute(ScaleEntityCommand::new(enemy2, 1.0, 2.0), &mut world)
+        .execute(
+            ScaleEntityCommand::new(enemy2, 1.0, 2.0),
+            &mut world,
+        )
         .unwrap();
 
     assert_eq!(world.pose(player).unwrap().pos, IVec2::new(5, 5));
@@ -164,14 +148,14 @@ fn test_scene_save_load_preserves_undo_capability() {
         pose.scale = 2.0;
     }
 
-    let scene_path = integration_scene_path("undo_test_scene.ron");
+    let temp_dir = env::temp_dir();
+    let scene_path = temp_dir.join("undo_test_scene.ron");
 
     let scene = SceneData::from_world(&world);
     scene.save_to_file(&scene_path).unwrap();
 
     let mut loaded_world = load_scene(&scene_path).unwrap();
     let mut undo_stack = UndoStack::new(100);
-    undo_stack.set_auto_merge(false);
 
     undo_stack
         .execute(
@@ -185,7 +169,7 @@ fn test_scene_save_load_preserves_undo_capability() {
     undo_stack.undo(&mut loaded_world).unwrap();
     assert_eq!(loaded_world.pose(entity).unwrap().pos, IVec2::new(10, 10));
 
-    remove_integration_scene(&scene_path);
+    fs::remove_file(&scene_path).unwrap();
 }
 
 #[test]
@@ -195,18 +179,9 @@ fn test_component_edits_with_undo_stack() {
 
     let mut undo_stack = UndoStack::new(100);
 
-    undo_stack
-        .execute(EditHealthCommand::new(entity, 100, 75), &mut world)
-        .unwrap();
-    undo_stack
-        .execute(
-            EditTeamCommand::new(entity, Team { id: 0 }, Team { id: 1 }),
-            &mut world,
-        )
-        .unwrap();
-    undo_stack
-        .execute(EditAmmoCommand::new(entity, 30, 20), &mut world)
-        .unwrap();
+    undo_stack.push_executed(EditHealthCommand::new(entity, 100, 75));
+    undo_stack.push_executed(EditTeamCommand::new(entity, Team { id: 0 }, Team { id: 1 }));
+    undo_stack.push_executed(EditAmmoCommand::new(entity, 30, 20));
 
     assert_eq!(world.health(entity).unwrap().hp, 75);
     assert_eq!(world.team(entity).unwrap().id, 1);
@@ -248,7 +223,8 @@ fn test_complex_scene_with_obstacles_and_undo() {
         )
         .unwrap();
 
-    let scene_path = integration_scene_path("complex_scene_test.ron");
+    let temp_dir = env::temp_dir();
+    let scene_path = temp_dir.join("complex_scene_test.ron");
     save_scene(&world, &scene_path).unwrap();
 
     let loaded_world = load_scene(&scene_path).unwrap();
@@ -259,7 +235,7 @@ fn test_complex_scene_with_obstacles_and_undo() {
     assert!(loaded_world.obstacle(IVec2::new(6, 6)));
     assert!(loaded_world.obstacle(IVec2::new(7, 7)));
 
-    remove_integration_scene(&scene_path);
+    fs::remove_file(&scene_path).unwrap();
 }
 
 #[test]
@@ -268,7 +244,6 @@ fn test_undo_stack_branching_preserves_state() {
     let entity = world.spawn("Player", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
 
     let mut undo_stack = UndoStack::new(100);
-    undo_stack.set_auto_merge(false);
 
     undo_stack
         .execute(

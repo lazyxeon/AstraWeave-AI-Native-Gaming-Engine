@@ -3,7 +3,7 @@
 // This module provides an egui-based modal window for inspecting anchor status
 // and initiating repairs. Triggered by E key when player is in proximity.
 
-use crate::{AbilityType, Anchor, AnchorVfxState};
+use crate::{Anchor, AnchorVfxState, AbilityType};
 
 /// Inspection modal state
 #[derive(Debug, Clone)]
@@ -83,11 +83,11 @@ impl AnchorInspectionModal {
     /// Get stability color for UI (RGB 0.0-1.0)
     pub fn stability_color(&self) -> (f32, f32, f32) {
         match self.vfx_state() {
-            AnchorVfxState::Perfect => (0.2, 0.8, 0.2),  // Green
-            AnchorVfxState::Stable => (0.3, 0.6, 0.9),   // Blue
-            AnchorVfxState::Unstable => (0.9, 0.7, 0.2), // Yellow
-            AnchorVfxState::Critical => (0.9, 0.3, 0.1), // Red
-            AnchorVfxState::Broken => (0.5, 0.5, 0.5),   // Gray
+            AnchorVfxState::Perfect => (0.2, 0.8, 0.2),   // Green
+            AnchorVfxState::Stable => (0.3, 0.6, 0.9),    // Blue
+            AnchorVfxState::Unstable => (0.9, 0.7, 0.2),  // Yellow
+            AnchorVfxState::Critical => (0.9, 0.3, 0.1),  // Red
+            AnchorVfxState::Broken => (0.5, 0.5, 0.5),    // Gray
         }
     }
 
@@ -182,9 +182,7 @@ impl AnchorInspectionModal {
                 // Already repaired notice
                 if self.is_repaired {
                     ui.separator();
-                    ui.label(
-                        egui::RichText::new("✓ Previously repaired").color(egui::Color32::GREEN),
-                    );
+                    ui.label(egui::RichText::new("✓ Previously repaired").color(egui::Color32::GREEN));
                     ui.add_space(5.0);
                 }
 
@@ -202,11 +200,12 @@ impl AnchorInspectionModal {
                         "Repair (R)"
                     };
 
-                    let repair_button = egui::Button::new(button_text).fill(if can_repair {
-                        egui::Color32::from_rgb(40, 120, 40)
-                    } else {
-                        egui::Color32::DARK_GRAY
-                    });
+                    let repair_button = egui::Button::new(button_text)
+                        .fill(if can_repair {
+                            egui::Color32::from_rgb(40, 120, 40)
+                        } else {
+                            egui::Color32::DARK_GRAY
+                        });
 
                     if ui.add_enabled(can_repair, repair_button).clicked() {
                         self.repair_requested = true;

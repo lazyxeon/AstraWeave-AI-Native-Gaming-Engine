@@ -81,32 +81,20 @@ impl ViewportToolbar {
 
                             ui.checkbox(&mut self.snap_enabled, "Grid Snap");
                             if self.snap_enabled {
-                                if ui
-                                    .small_button("0.5")
-                                    .on_hover_text("Grid size: 0.5 units")
-                                    .clicked()
-                                {
+                                if ui.small_button("0.5").on_hover_text("Grid size: 0.5 units").clicked() {
                                     self.snap_size = 0.5;
                                 }
-                                if ui
-                                    .small_button("1.0")
-                                    .on_hover_text("Grid size: 1.0 units")
-                                    .clicked()
-                                {
+                                if ui.small_button("1.0").on_hover_text("Grid size: 1.0 units").clicked() {
                                     self.snap_size = 1.0;
                                 }
-                                if ui
-                                    .small_button("2.0")
-                                    .on_hover_text("Grid size: 2.0 units")
-                                    .clicked()
-                                {
+                                if ui.small_button("2.0").on_hover_text("Grid size: 2.0 units").clicked() {
                                     self.snap_size = 2.0;
                                 }
                                 ui.add(
                                     egui::DragValue::new(&mut self.snap_size)
                                         .speed(0.1)
                                         .range(0.1..=10.0)
-                                        .suffix("m"),
+                                        .suffix("m")
                                 );
                             }
 
@@ -114,25 +102,13 @@ impl ViewportToolbar {
 
                             ui.checkbox(&mut self.angle_snap_enabled, "Angle Snap");
                             if self.angle_snap_enabled {
-                                if ui
-                                    .small_button("15°")
-                                    .on_hover_text("Angle snap: 15 degrees")
-                                    .clicked()
-                                {
+                                if ui.small_button("15°").on_hover_text("Angle snap: 15 degrees").clicked() {
                                     self.angle_snap_degrees = 15.0;
                                 }
-                                if ui
-                                    .small_button("45°")
-                                    .on_hover_text("Angle snap: 45 degrees")
-                                    .clicked()
-                                {
+                                if ui.small_button("45°").on_hover_text("Angle snap: 45 degrees").clicked() {
                                     self.angle_snap_degrees = 45.0;
                                 }
-                                if ui
-                                    .small_button("90°")
-                                    .on_hover_text("Angle snap: 90 degrees")
-                                    .clicked()
-                                {
+                                if ui.small_button("90°").on_hover_text("Angle snap: 90 degrees").clicked() {
                                     self.angle_snap_degrees = 90.0;
                                 }
                             }

@@ -74,14 +74,14 @@ impl RepairProgressBar {
     }
 
     /// Render progress bar in 3D world space
-    ///
+    /// 
     /// This function is called by the game rendering system with the anchor's
     /// world position transformed to screen coordinates.
-    ///
+    /// 
     /// # Arguments
     /// * `screen_x` - X position in screen coordinates (pixels)
     /// * `screen_y` - Y position in screen coordinates (pixels)
-    ///
+    /// 
     /// # Example
     /// ```ignore
     /// let anchor_screen_pos = camera.world_to_screen(anchor.position);
@@ -102,35 +102,32 @@ impl RepairProgressBar {
         let bar_y = screen_y - 30.0;
 
         // Progress bar
-        egui::Area::new(format!(
-            "repair_progress_bar_{}",
-            self.anchor_id.unwrap_or(0)
-        ))
-        .fixed_pos(egui::Pos2::new(bar_x, bar_y))
-        .show(ctx, |ui| {
-            ui.vertical(|ui| {
-                // Text label
-                ui.label(
-                    egui::RichText::new(self.progress_text())
-                        .size(14.0)
-                        .color(egui::Color32::WHITE),
-                );
+        egui::Area::new(format!("repair_progress_bar_{}", self.anchor_id.unwrap_or(0)))
+            .fixed_pos(egui::Pos2::new(bar_x, bar_y))
+            .show(ctx, |ui| {
+                ui.vertical(|ui| {
+                    // Text label
+                    ui.label(
+                        egui::RichText::new(self.progress_text())
+                            .size(14.0)
+                            .color(egui::Color32::WHITE),
+                    );
 
-                // Progress bar background
-                let (r, g, b) = self.background_color();
-                ui.add(
-                    egui::ProgressBar::new(self.progress)
-                        .desired_width(bar_width)
-                        .desired_height(bar_height)
-                        .fill(egui::Color32::from_rgb(
-                            (r * 255.0) as u8,
-                            (g * 255.0) as u8,
-                            (b * 255.0) as u8,
-                        ))
-                        .show_percentage(),
-                );
+                    // Progress bar background
+                    let (r, g, b) = self.background_color();
+                    ui.add(
+                        egui::ProgressBar::new(self.progress)
+                            .desired_width(bar_width)
+                            .desired_height(bar_height)
+                            .fill(egui::Color32::from_rgb(
+                                (r * 255.0) as u8,
+                                (g * 255.0) as u8,
+                                (b * 255.0) as u8,
+                            ))
+                            .show_percentage(),
+                    );
+                });
             });
-        });
     }
 
     /// Render progress bar (no-op when egui feature is disabled)

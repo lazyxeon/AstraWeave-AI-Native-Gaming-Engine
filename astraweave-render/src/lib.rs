@@ -30,8 +30,8 @@ pub mod mesh_gltf; // glTF loader
 #[cfg(any(feature = "obj-assets", feature = "assets"))]
 pub mod mesh_obj;
 pub mod residency;
-pub mod terrain_material;
-pub mod texture_streaming; // Texture streaming with LRU cache and priority-based loading // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
+pub mod texture_streaming; // Texture streaming with LRU cache and priority-based loading
+pub mod terrain_material; // Phase PBR-F: Terrain layering with splat maps and triplanar projection // asset streaming and residency management // OBJ fallback loader // Phase 2 Task 5: Skeletal animation with CPU/GPU skinning
 
 #[cfg(feature = "skinning-gpu")]
 pub mod skinning_gpu; // Phase 2 Task 5 Phase D: GPU skinning pipeline
@@ -60,27 +60,29 @@ pub use terrain::{TerrainMesh, TerrainRenderer, TerrainVertex, VegetationRenderI
 pub use texture::Texture;
 pub use types::{Instance, Material, SkinnedVertex};
 
-pub mod advanced_post;
+pub mod effects; // NEW
+pub mod overlay; // NEW (for cutscene fades/letterbox later)
+pub mod transparency; // Transparency depth sorting and render pass
+pub mod msaa; // MSAA anti-aliasing resources
+pub mod gpu_particles; // GPU compute-based particle system
 pub mod decals; // Screen-space decal system
 pub mod deferred; // Deferred rendering pipeline
-pub mod effects; // NEW
-pub mod gpu_particles; // GPU compute-based particle system
-pub mod msaa; // MSAA anti-aliasing resources
-pub mod overlay; // NEW (for cutscene fades/letterbox later)
-pub mod transparency; // Transparency depth sorting and render pass // Advanced post-processing (TAA, motion blur, DOF, color grading)
+pub mod advanced_post; // Advanced post-processing (TAA, motion blur, DOF, color grading)
 
-pub use advanced_post::{
-    AdvancedPostFx, ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
-};
 pub use culling::{
     batch_visible_instances, build_indirect_commands_cpu, cpu_frustum_cull, BatchId,
     CullingPipeline, CullingResources, DrawBatch, DrawIndirectCommand, FrustumPlanes, InstanceAABB,
 };
 pub use culling_node::CullingNode;
-pub use decals::{Decal, DecalAtlas, DecalBlendMode, DecalSystem, GpuDecal, DECAL_SHADER};
-pub use deferred::{DeferredRenderer, GBuffer, GBufferFormats};
 pub use effects::{WeatherFx, WeatherKind};
-pub use gpu_particles::{EmitterParams, GpuParticle, GpuParticleSystem};
+pub use transparency::{BlendMode, TransparencyManager, TransparentInstance, create_blend_state};
+pub use msaa::{MsaaMode, MsaaRenderTarget, create_msaa_depth_texture};
+pub use gpu_particles::{GpuParticleSystem, GpuParticle, EmitterParams};
+pub use decals::{DecalSystem, Decal, DecalAtlas, DecalBlendMode, GpuDecal, DECAL_SHADER};
+pub use deferred::{DeferredRenderer, GBuffer, GBufferFormats};
+pub use advanced_post::{
+    AdvancedPostFx, TaaConfig, MotionBlurConfig, DofConfig, ColorGradingConfig,
+};
 pub use ibl::{IblManager, IblQuality, IblResources, SkyMode};
 pub use material::{
     ArrayLayout, MaterialGpu, MaterialGpuArrays, MaterialLayerDesc, MaterialLoadStats,
@@ -93,15 +95,13 @@ pub use material_extended::{
 };
 pub use mesh::{CpuMesh, MeshVertex, MeshVertexLayout};
 pub use mesh_registry::{MeshHandle, MeshKey, MeshRegistry};
-pub use msaa::{create_msaa_depth_texture, MsaaMode, MsaaRenderTarget};
 #[cfg(feature = "bloom")]
 pub use post::{BloomConfig, BloomPipeline};
 pub use residency::ResidencyManager;
+pub use texture_streaming::{TextureStreamingManager, TextureStreamingStats};
 pub use terrain_material::{
     TerrainLayerDesc, TerrainLayerGpu, TerrainMaterialDesc, TerrainMaterialGpu,
 };
-pub use texture_streaming::{TextureStreamingManager, TextureStreamingStats};
-pub use transparency::{create_blend_state, BlendMode, TransparencyManager, TransparentInstance};
 
 // Phase 2 Task 5: Skeletal Animation exports
 pub use animation::{

@@ -85,8 +85,7 @@ impl TemplateEngine {
     }
 
     pub fn register_template(&mut self, name: &str, template: PromptTemplate) -> Result<()> {
-        let _ = self
-            .inner
+        let _ = self.inner
             .register_template(name.to_string(), template.template);
         Ok(())
     }

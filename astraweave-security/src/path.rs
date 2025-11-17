@@ -35,7 +35,7 @@ use std::path::{Path, PathBuf};
 pub fn safe_under(base: &Path, user_path: &Path) -> io::Result<PathBuf> {
     // First, validate user_path components before joining
     validate_user_path_components(user_path)?;
-
+    
     // Canonicalize base directory (must exist)
     let base_canonical = base.canonicalize().map_err(|e| {
         io::Error::new(
@@ -55,12 +55,12 @@ pub fn safe_under(base: &Path, user_path: &Path) -> io::Result<PathBuf> {
             // Find the deepest existing parent
             let mut check_path = combined.clone();
             let mut non_existent_parts = Vec::new();
-
+            
             loop {
                 if check_path.exists() {
                     // Found existing parent
                     let parent_canonical = check_path.canonicalize()?;
-
+                    
                     // Verify parent is under base
                     if !parent_canonical.starts_with(&base_canonical) {
                         return Err(io::Error::new(
@@ -72,7 +72,7 @@ pub fn safe_under(base: &Path, user_path: &Path) -> io::Result<PathBuf> {
                             ),
                         ));
                     }
-
+                    
                     // Rebuild path with non-existent parts
                     let mut result = parent_canonical;
                     for part in non_existent_parts.iter().rev() {
@@ -80,12 +80,12 @@ pub fn safe_under(base: &Path, user_path: &Path) -> io::Result<PathBuf> {
                     }
                     return Ok(result);
                 }
-
+                
                 // Store this component and check parent
                 if let Some(filename) = check_path.file_name() {
                     non_existent_parts.push(filename.to_owned());
                 }
-
+                
                 if let Some(parent) = check_path.parent() {
                     check_path = parent.to_path_buf();
                 } else {
@@ -135,6 +135,8 @@ fn validate_user_path_components(user_path: &Path) -> io::Result<()> {
     }
     Ok(())
 }
+
+
 
 /// Validates file extension against allowlist
 ///
@@ -265,17 +267,13 @@ mod tests {
 
         // Non-existent nested path - should still validate
         let result = safe_under(base, Path::new("new/nested/file.txt"));
-
+        
         // This should succeed because we validate components
         if let Err(e) = &result {
             eprintln!("Error: {}", e);
             eprintln!("Error kind: {:?}", e.kind());
         }
-        assert!(
-            result.is_ok(),
-            "Failed to validate non-existent nested path: {:?}",
-            result
-        );
+        assert!(result.is_ok(), "Failed to validate non-existent nested path: {:?}", result);
     }
 
     #[test]
@@ -284,15 +282,15 @@ mod tests {
         // This test is platform-specific and requires symlink permissions
         let temp = tempfile::tempdir().unwrap();
         let base = temp.path();
-
+        
         // Create a directory outside base
         let outside = tempfile::tempdir().unwrap();
         let outside_path = outside.path();
-
+        
         // Create symlink inside base pointing outside
         let link = base.join("escape");
         std::os::unix::fs::symlink(outside_path, &link).unwrap();
-
+        
         // Try to access through symlink
         let result = safe_under(base, Path::new("escape"));
         // After canonicalization, this should point outside base

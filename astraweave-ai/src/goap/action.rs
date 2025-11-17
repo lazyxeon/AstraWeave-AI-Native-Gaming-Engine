@@ -1,6 +1,6 @@
-use super::history::ActionHistory;
-use super::{StateValue, WorldState};
 use std::collections::BTreeMap;
+use super::{StateValue, WorldState};
+use super::history::ActionHistory;
 
 /// Trait for GOAP actions with dynamic cost and risk assessment
 pub trait Action: Send + Sync {
@@ -24,10 +24,10 @@ pub trait Action: Send + Sync {
         if let Some(stats) = history.get_action_stats(self.name()) {
             // Penalize frequently failed actions (up to +10.0 cost)
             let failure_penalty = stats.failure_rate() * 10.0;
-
+            
             // Reward consistently successful actions (up to -2.0 cost)
             let success_bonus = stats.success_rate() * -2.0;
-
+            
             cost += failure_penalty + success_bonus;
         }
 
@@ -147,10 +147,15 @@ mod tests {
 
     #[test]
     fn test_calculate_cost_with_history() {
-        let action = SimpleAction::new("attack", BTreeMap::new(), BTreeMap::new(), 5.0);
+        let action = SimpleAction::new(
+            "attack",
+            BTreeMap::new(),
+            BTreeMap::new(),
+            5.0,
+        );
 
         let mut history = ActionHistory::new();
-
+        
         // Record some failures
         history.record_failure("attack");
         history.record_failure("attack");
@@ -188,3 +193,4 @@ mod tests {
         assert!((prob - 0.666666).abs() < 0.01);
     }
 }
+

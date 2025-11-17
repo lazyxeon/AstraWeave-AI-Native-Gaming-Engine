@@ -160,13 +160,13 @@ impl EntityManager {
 }
 
 /// Multi-selection state for the editor
-///
+/// 
 /// Supports Ctrl+click (toggle), Shift+click (range), and maintains a primary selection
 #[derive(Debug, Clone, Default)]
 pub struct SelectionSet {
     /// All selected entity IDs
     pub entities: HashSet<EntityId>,
-
+    
     /// Primary selection (last selected entity, used for gizmo placement)
     pub primary: Option<EntityId>,
 }
@@ -177,9 +177,9 @@ impl SelectionSet {
     }
 
     /// Add entity to selection
-    ///
+    /// 
     /// # Arguments
-    ///
+    /// 
     /// * `entity` - Entity ID to add
     /// * `is_primary` - Whether this becomes the primary selection
     pub fn add(&mut self, entity: EntityId, is_primary: bool) {
@@ -192,7 +192,7 @@ impl SelectionSet {
     /// Remove entity from selection
     pub fn remove(&mut self, entity: EntityId) {
         self.entities.remove(&entity);
-
+        
         if self.primary == Some(entity) {
             self.primary = self.entities.iter().next().copied();
         }
@@ -240,9 +240,9 @@ impl SelectionSet {
     }
 
     /// Range selection between two entities (for Shift+click in hierarchy)
-    ///
+    /// 
     /// # Arguments
-    ///
+    /// 
     /// * `from` - Start entity ID
     /// * `to` - End entity ID
     /// * `all_ids` - Ordered list of all entity IDs (from hierarchy)
@@ -276,7 +276,7 @@ mod tests {
         let id = manager.create("TestEntity".to_string());
         assert_eq!(id, 1);
         assert_eq!(manager.count(), 1);
-
+        
         let entity = manager.get(id).unwrap();
         assert_eq!(entity.name, "TestEntity");
         assert_eq!(entity.position, Vec3::ZERO);
@@ -286,10 +286,10 @@ mod tests {
     fn test_transform_update() {
         let mut manager = EntityManager::new();
         let id = manager.create("TestEntity".to_string());
-
+        
         let new_pos = Vec3::new(1.0, 2.0, 3.0);
         manager.update_position(id, new_pos);
-
+        
         let entity = manager.get(id).unwrap();
         assert_eq!(entity.position, new_pos);
     }
@@ -299,7 +299,7 @@ mod tests {
         let mut manager = EntityManager::new();
         let id = manager.create("TestEntity".to_string());
         manager.update_scale(id, Vec3::new(2.0, 2.0, 2.0));
-
+        
         let entity = manager.get(id).unwrap();
         let (min, max) = entity.aabb();
         assert_eq!(min, Vec3::new(-1.0, -1.0, -1.0));
@@ -322,11 +322,11 @@ mod tests {
     #[test]
     fn test_selection_multiple() {
         let mut selection = SelectionSet::new();
-
+        
         selection.add(1, true);
         selection.add(2, false);
         selection.add(3, false);
-
+        
         assert_eq!(selection.count(), 3);
         assert!(selection.is_selected(1));
         assert!(selection.is_selected(2));
@@ -337,10 +337,10 @@ mod tests {
     #[test]
     fn test_selection_toggle() {
         let mut selection = SelectionSet::new();
-
+        
         selection.toggle(1);
         assert!(selection.is_selected(1));
-
+        
         selection.toggle(1);
         assert!(!selection.is_selected(1));
         assert!(selection.is_empty());
@@ -352,12 +352,12 @@ mod tests {
         selection.add(1, true);
         selection.add(2, false);
         selection.add(3, false);
-
+        
         selection.remove(2);
         assert_eq!(selection.count(), 2);
         assert!(!selection.is_selected(2));
         assert_eq!(selection.primary, Some(1));
-
+        
         selection.remove(1);
         assert_eq!(selection.count(), 1);
         assert!(selection.primary.is_some());
@@ -368,7 +368,7 @@ mod tests {
         let mut selection = SelectionSet::new();
         selection.add(1, true);
         selection.add(2, false);
-
+        
         selection.clear();
         assert!(selection.is_empty());
         assert_eq!(selection.count(), 0);
@@ -380,7 +380,7 @@ mod tests {
         let mut selection = SelectionSet::new();
         selection.add(1, true);
         selection.add(2, false);
-
+        
         selection.select_only(3);
         assert_eq!(selection.count(), 1);
         assert!(selection.is_selected(3));
@@ -393,9 +393,9 @@ mod tests {
     fn test_selection_range() {
         let mut selection = SelectionSet::new();
         let all_ids = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
+        
         selection.select_range(3, 7, &all_ids);
-
+        
         assert_eq!(selection.count(), 5);
         assert!(selection.is_selected(3));
         assert!(selection.is_selected(4));
@@ -411,9 +411,9 @@ mod tests {
     fn test_selection_range_reverse() {
         let mut selection = SelectionSet::new();
         let all_ids = vec![1, 2, 3, 4, 5];
-
+        
         selection.select_range(5, 2, &all_ids);
-
+        
         assert_eq!(selection.count(), 4);
         assert!(selection.is_selected(2));
         assert!(selection.is_selected(3));

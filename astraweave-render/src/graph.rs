@@ -143,14 +143,13 @@ impl ResourceTable {
         let tex = device.create_texture(desc);
         self.insert_tex(&key_str, tex);
         // Return a reference to the inserted texture (safe: just inserted above)
-        match self.map.get(&key_str).ok_or_else(|| {
-            anyhow::anyhow!("BUG: texture '{}' should exist after insert", key_str)
-        })? {
+        match self
+            .map
+            .get(&key_str)
+            .ok_or_else(|| anyhow::anyhow!("BUG: texture '{}' should exist after insert", key_str))?
+        {
             Resource::Texture(t) => Ok(t),
-            _ => anyhow::bail!(
-                "BUG: resource '{}' inserted as texture but retrieved as different type",
-                key_str
-            ),
+            _ => anyhow::bail!("BUG: resource '{}' inserted as texture but retrieved as different type", key_str),
         }
     }
 }

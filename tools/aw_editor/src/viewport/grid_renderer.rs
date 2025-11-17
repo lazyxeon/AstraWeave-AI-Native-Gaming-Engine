@@ -93,8 +93,8 @@ impl GridRenderer {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: false, // Grid is overlay - don't write depth
-                depth_compare: wgpu::CompareFunction::LessEqual, // Still test against existing depth
+                depth_write_enabled: false,  // Grid is overlay - don't write depth
+                depth_compare: wgpu::CompareFunction::LessEqual,  // Still test against existing depth
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -162,13 +162,11 @@ impl GridRenderer {
         depth: &wgpu::TextureView,
         camera: &OrbitCamera,
         queue: &wgpu::Queue,
-        grid_size: f32,
     ) -> Result<()> {
         // Update uniforms
         let view_proj = camera.view_projection_matrix();
         let inv_view_proj = view_proj.inverse();
 
-        let clamped_size = grid_size.max(0.1);
         let uniforms = GridUniforms {
             view_proj: view_proj.to_cols_array_2d(),
             inv_view_proj: inv_view_proj.to_cols_array_2d(),
@@ -178,8 +176,8 @@ impl GridRenderer {
                 camera.position().z,
             ],
             _padding1: 0.0,
-            grid_size: clamped_size,
-            major_grid_every: (clamped_size * 10.0).max(clamped_size),
+            grid_size: 1.0,                         // 1 meter grid
+            major_grid_every: 10.0,                 // Major grid every 10 lines
             fade_distance: 50.0,                    // Start fading at 50m
             max_distance: 100.0,                    // Completely fade by 100m
             grid_color: [0.3, 0.3, 0.3, 0.3],       // Light gray, semi-transparent
@@ -225,7 +223,7 @@ impl GridRenderer {
 /// Grid shader uniforms
 ///
 /// Must match WGSL struct layout exactly (alignment rules apply).
-#[repr(C, align(16))]
+#[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
 struct GridUniforms {
     /// View-projection matrix
@@ -271,8 +269,10 @@ mod tests {
 
     #[test]
     fn test_grid_uniforms_size() {
-        // Ensure struct size matches WGSL expectations (all values padded to 16 bytes)
-        assert_eq!(std::mem::size_of::<GridUniforms>(), 224);
+        // Ensure struct size matches WGSL expectations
+        // 2 mat4 (32 bytes each) + vec3 + padding + 4 floats + 4 vec4
+        // = 64 + 16 + 16 + 64 = 160 bytes
+        assert_eq!(std::mem::size_of::<GridUniforms>(), 160);
     }
 
     #[test]

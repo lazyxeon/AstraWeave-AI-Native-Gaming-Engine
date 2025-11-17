@@ -1,5 +1,4 @@
 use crate::{Entity, IVec2};
-use astraweave_behavior::BehaviorGraph;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug)]
@@ -25,10 +24,10 @@ pub struct Cooldowns {
 #[derive(Clone, Copy, Debug)]
 pub struct Pose {
     pub pos: IVec2,
-    pub rotation: f32, // Rotation in radians around Y axis (primary, for compatibility)
-    pub rotation_x: f32, // Pitch (rotation around X axis)
-    pub rotation_z: f32, // Roll (rotation around Z axis)
-    pub scale: f32,    // Uniform scale factor
+    pub rotation: f32,     // Rotation in radians around Y axis (primary, for compatibility)
+    pub rotation_x: f32,   // Pitch (rotation around X axis)
+    pub rotation_z: f32,   // Roll (rotation around Z axis)
+    pub scale: f32,        // Uniform scale factor
 }
 
 #[derive(Default)]
@@ -42,7 +41,6 @@ pub struct World {
     ammo: HashMap<Entity, Ammo>,
     cds: HashMap<Entity, Cooldowns>,
     names: HashMap<Entity, String>,
-    behavior_graphs: HashMap<Entity, BehaviorGraph>,
 }
 
 impl World {
@@ -57,16 +55,13 @@ impl World {
     pub fn spawn(&mut self, name: &str, pos: IVec2, team: Team, hp: i32, ammo: i32) -> Entity {
         let id = self.next_id;
         self.next_id += 1;
-        self.poses.insert(
-            id,
-            Pose {
-                pos,
-                rotation: 0.0,
-                rotation_x: 0.0,
-                rotation_z: 0.0,
-                scale: 1.0,
-            },
-        );
+        self.poses.insert(id, Pose { 
+            pos,
+            rotation: 0.0,
+            rotation_x: 0.0,
+            rotation_z: 0.0,
+            scale: 1.0,
+        });
         self.health.insert(id, Health { hp });
         self.team.insert(id, team);
         self.ammo.insert(id, Ammo { rounds: ammo });
@@ -114,18 +109,6 @@ impl World {
     pub fn ammo_mut(&mut self, e: Entity) -> Option<&mut Ammo> {
         self.ammo.get_mut(&e)
     }
-    pub fn behavior_graph(&self, e: Entity) -> Option<&BehaviorGraph> {
-        self.behavior_graphs.get(&e)
-    }
-    pub fn behavior_graph_mut(&mut self, e: Entity) -> Option<&mut BehaviorGraph> {
-        self.behavior_graphs.get_mut(&e)
-    }
-    pub fn set_behavior_graph(&mut self, e: Entity, graph: BehaviorGraph) {
-        self.behavior_graphs.insert(e, graph);
-    }
-    pub fn remove_behavior_graph(&mut self, e: Entity) -> Option<BehaviorGraph> {
-        self.behavior_graphs.remove(&e)
-    }
     pub fn cooldowns(&self, e: Entity) -> Option<&Cooldowns> {
         self.cds.get(&e)
     }
@@ -163,7 +146,6 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_behavior::{BehaviorGraph, BehaviorNode};
 
     #[test]
     fn test_world_new() {
@@ -483,27 +465,5 @@ mod tests {
         assert!(w.obstacle(IVec2 { x: 5, y: 5 }));
         assert!(w.obstacle(IVec2 { x: 10, y: 10 }));
         assert!(!w.obstacle(IVec2 { x: 7, y: 7 }));
-    }
-
-    #[test]
-    fn test_behavior_graph_binding_round_trip() {
-        let mut w = World::new();
-        let entity = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
-        let graph = BehaviorGraph::new(BehaviorNode::Action("idle".into()));
-        w.set_behavior_graph(entity, graph.clone());
-
-        let stored = w.behavior_graph(entity).expect("graph stored");
-        match &stored.root {
-            BehaviorNode::Action(name) => assert_eq!(name, "idle"),
-            other => panic!("unexpected root: {other:?}"),
-        }
-
-        let removed = w.remove_behavior_graph(entity).expect("graph removed");
-        match removed.root {
-            BehaviorNode::Action(name) => assert_eq!(name, "idle"),
-            other => panic!("unexpected root: {other:?}"),
-        }
-
-        assert!(w.behavior_graph(entity).is_none());
     }
 }

@@ -111,7 +111,7 @@ pub struct AdvancedPostFx {
     taa_pipeline: wgpu::RenderPipeline,
     taa_bind_group: wgpu::BindGroup,
     taa_config: TaaConfig,
-
+    
     // Motion blur resources (reserved for future full implementation)
     #[allow(dead_code)]
     velocity_texture: wgpu::Texture,
@@ -123,7 +123,7 @@ pub struct AdvancedPostFx {
     motion_blur_bind_group: Option<wgpu::BindGroup>,
     #[allow(dead_code)]
     motion_blur_config: MotionBlurConfig,
-
+    
     // DOF resources (reserved for future full implementation)
     #[allow(dead_code)]
     dof_pipeline: wgpu::RenderPipeline,
@@ -131,7 +131,7 @@ pub struct AdvancedPostFx {
     dof_bind_group: Option<wgpu::BindGroup>,
     #[allow(dead_code)]
     dof_config: DofConfig,
-
+    
     // Color grading resources (reserved for future full implementation)
     #[allow(dead_code)]
     color_grading_pipeline: wgpu::RenderPipeline,
@@ -141,13 +141,13 @@ pub struct AdvancedPostFx {
     color_grading_bind_group: Option<wgpu::BindGroup>,
     #[allow(dead_code)]
     color_grading_config: ColorGradingConfig,
-
+    
     // Common resources (used in new())
     #[allow(dead_code)]
     sampler: wgpu::Sampler,
     #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
-
+    
     // Previous frame data (reserved for future full implementation)
     #[allow(dead_code)]
     prev_view_proj: Mat4,
@@ -155,12 +155,7 @@ pub struct AdvancedPostFx {
 }
 
 impl AdvancedPostFx {
-    pub fn new(
-        device: &wgpu::Device,
-        width: u32,
-        height: u32,
-        format: wgpu::TextureFormat,
-    ) -> Result<Self> {
+    pub fn new(device: &wgpu::Device, width: u32, height: u32, format: wgpu::TextureFormat) -> Result<Self> {
         let size = wgpu::Extent3d {
             width,
             height,
@@ -178,8 +173,7 @@ impl AdvancedPostFx {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
-        let taa_history_view =
-            taa_history_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let taa_history_view = taa_history_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Create velocity texture for motion blur
         let velocity_texture = device.create_texture(&wgpu::TextureDescriptor {
@@ -344,32 +338,31 @@ impl AdvancedPostFx {
             mapped_at_creation: false,
         });
 
-        let color_grading_pipeline =
-            device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Color Grading Pipeline"),
-                layout: Some(&taa_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &color_grading_shader,
-                    entry_point: Some("vs_main"),
-                    buffers: &[],
-                    compilation_options: Default::default(),
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &color_grading_shader,
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format,
-                        blend: None,
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                    compilation_options: Default::default(),
-                }),
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                multiview: None,
-                cache: None,
-            });
+        let color_grading_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Color Grading Pipeline"),
+            layout: Some(&taa_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &color_grading_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &color_grading_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format,
+                    blend: None,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
 
         // Placeholder bind group (will be created per-frame)
         let taa_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -422,7 +415,7 @@ impl AdvancedPostFx {
         let frame = (self.frame_count % 16) as f32;
         let jitter_x = (halton(frame, 2) - 0.5) * self.taa_config.jitter_scale;
         let jitter_y = (halton(frame, 3) - 0.5) * self.taa_config.jitter_scale;
-
+        
         (jitter_x, jitter_y)
     }
 

@@ -14,7 +14,7 @@
 //! let viewport = ViewportWidget::new(cc)?;
 //!
 //! // In eframe::App::update()
-//! viewport.ui(ui, scene_state, undo_stack, snapping_config)?;
+//! viewport.ui(ui, &world)?;
 //! ```
 //!
 //! # Architecture
@@ -41,12 +41,9 @@ use wgpu;
 use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
 use super::toolbar::ViewportToolbar;
-use crate::gizmo::snapping::SnappingConfig;
-use crate::gizmo::{GizmoMode, GizmoState};
-use crate::interaction::{self, GizmoCancelMetadata, GizmoCommitMetadata, GizmoOperationKind};
-use crate::scene_state::TransformableScene;
-use crate::telemetry::{self, EditorTelemetryEvent};
-use astraweave_core::{Entity, Team};
+use crate::entity_manager::EntityManager;
+use crate::gizmo::{GizmoMode, GizmoState, TransformSnapshot};
+use astraweave_core::{Entity, Team, World};
 
 /// Camera bookmark for F1-F12 quick recall
 #[derive(Clone, Debug)]
@@ -55,11 +52,6 @@ struct CameraBookmark {
     distance: f32,
     yaw: f32,
     pitch: f32,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct ViewportFrameEvents {
-    pub gizmo_commit: Option<GizmoCommitMetadata>,
 }
 
 /// 3D viewport widget for egui
@@ -112,15 +104,6 @@ pub struct ViewportWidget {
 
     /// Camera bookmarks (F1-F12)
     camera_bookmarks: [Option<CameraBookmark>; 12],
-
-    /// Last viewport rect used for rendering/input
-    last_viewport_rect: Option<egui::Rect>,
-
-    /// Cached cursor position projected to the ground plane
-    cached_cursor_world: Option<glam::Vec3>,
-
-    /// Buffered interactions that higher-level UI can consume after the frame completes
-    pending_events: ViewportFrameEvents,
 }
 
 impl ViewportWidget {
@@ -174,12 +157,7 @@ impl ViewportWidget {
             gizmo_state: GizmoState::new(),
             grid_snap_size: 1.0, // Default: snap to 1 unit grid
             angle_snap_increment: 15.0_f32.to_radians(), // 15 degrees
-            camera_bookmarks: [
-                None, None, None, None, None, None, None, None, None, None, None, None,
-            ],
-            last_viewport_rect: None,
-            cached_cursor_world: None,
-            pending_events: ViewportFrameEvents::default(),
+            camera_bookmarks: [None, None, None, None, None, None, None, None, None, None, None, None],
         })
     }
 
@@ -188,8 +166,8 @@ impl ViewportWidget {
     /// # Arguments
     ///
     /// * `ui` - egui UI context
-    /// * `scene` - Transformable scene abstraction (world + editor caches)
-    /// * `snapping` - Shared snapping configuration propagated from the editor hub
+    /// * `world` - Game world (for entity data)
+    /// * `entity_manager` - Entity manager (for transforms and picking)
     ///
     /// # Example
     ///
@@ -197,26 +175,18 @@ impl ViewportWidget {
     /// impl eframe::App for EditorApp {
     ///     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     ///         egui::CentralPanel::default().show(ctx, |ui| {
-    ///             if let Some(scene) = self.scene_state.as_mut() {
-    ///                 self.viewport.ui(ui, scene, &mut self.undo_stack, snapping_config)?;
-    ///             }
+    ///             self.viewport.ui(ui, &self.world, &mut self.entity_manager)?;
     ///         });
     ///     }
     /// }
     /// ```
-    pub fn ui<S: TransformableScene>(
+    pub fn ui(
         &mut self,
         ui: &mut egui::Ui,
-        scene: &mut S,
+        world: &mut World,
+        entity_manager: &mut EntityManager,
         undo_stack: &mut crate::command::UndoStack, // Phase 2.1: Command integration
-        snapping: SnappingConfig,
     ) -> Result<()> {
-        self.grid_snap_size = snapping.grid_size.max(0.1);
-        self.angle_snap_increment = snapping.angle_increment.to_radians();
-        self.toolbar.snap_enabled = snapping.grid_enabled;
-        self.toolbar.snap_size = snapping.grid_size;
-        self.toolbar.angle_snap_enabled = snapping.angle_enabled;
-        self.toolbar.angle_snap_degrees = snapping.angle_increment;
         // Update frame time tracking
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
@@ -238,8 +208,6 @@ impl ViewportWidget {
         let available = ui.available_size();
         let viewport_size = egui::vec2(available.x, available.y);
         let (rect, response) = ui.allocate_exact_size(viewport_size, egui::Sense::click_and_drag());
-        self.last_viewport_rect = Some(rect);
-        self.update_cached_cursor_world(ui.ctx(), rect);
 
         // Request focus on hover or click (enables camera controls)
         if response.hovered() || response.clicked() {
@@ -264,7 +232,7 @@ impl ViewportWidget {
         }
 
         // Handle input (mouse/keyboard) - always process, but camera only moves if focused
-        self.handle_input(&response, ui.ctx(), scene, undo_stack)?;
+        self.handle_input(&response, ui.ctx(), world, entity_manager, undo_stack)?;
 
         // Request continuous repaint to update viewport every frame
         ui.ctx().request_repaint();
@@ -293,17 +261,9 @@ impl ViewportWidget {
             // Render in separate scope to drop MutexGuard early
             {
                 if let Ok(mut renderer) = self.renderer.lock() {
-                    let mut render_snapping = snapping;
-                    if !self.toolbar.show_grid {
-                        render_snapping.grid_enabled = false;
-                    }
-                    if let Err(e) = renderer.render(
-                        &texture,
-                        &self.camera,
-                        scene.world(),
-                        Some(&self.gizmo_state),
-                        &render_snapping,
-                    ) {
+                    if let Err(e) =
+                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state))
+                    {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
                 }
@@ -360,20 +320,20 @@ impl ViewportWidget {
                     rect.right_top() + egui::vec2(-120.0, 40.0),
                     egui::vec2(110.0, 25.0),
                 );
-
+                
                 // Check if mouse is over button
                 let pointer_pos = ui.ctx().pointer_latest_pos();
                 let is_hovering = pointer_pos.map_or(false, |pos| button_rect.contains(pos));
-
+                
                 // Button background (highlight on hover)
                 let button_color = if is_hovering {
                     egui::Color32::from_rgba_premultiplied(60, 120, 180, 220)
                 } else {
                     egui::Color32::from_rgba_premultiplied(40, 80, 140, 200)
                 };
-
+                
                 ui.painter().rect_filled(button_rect, 3.0, button_color);
-
+                
                 // Button text
                 ui.painter().text(
                     button_rect.center(),
@@ -382,7 +342,7 @@ impl ViewportWidget {
                     egui::FontId::proportional(13.0),
                     egui::Color32::WHITE,
                 );
-
+                
                 // Handle click
                 if is_hovering && ui.ctx().input(|i| i.pointer.primary_clicked()) {
                     self.camera.reset_to_origin();
@@ -392,35 +352,32 @@ impl ViewportWidget {
                 // Snapping indicator (top-right, below camera info)
                 if self.gizmo_state.is_active() {
                     let snap_enabled = ui.ctx().input(|i| i.modifiers.ctrl || i.modifiers.command);
-
+                    
                     if snap_enabled {
                         let snap_text = match self.gizmo_state.mode {
                             crate::gizmo::GizmoMode::Translate { .. } => {
                                 format!("📐 Grid Snap: {:.2}m", self.grid_snap_size)
                             }
                             crate::gizmo::GizmoMode::Rotate { .. } => {
-                                format!(
-                                    "🔄 Angle Snap: {}°",
-                                    self.angle_snap_increment.to_degrees() as i32
-                                )
+                                format!("🔄 Angle Snap: {}°", self.angle_snap_increment.to_degrees() as i32)
                             }
                             _ => String::new(),
                         };
-
+                        
                         if !snap_text.is_empty() {
                             let snap_width = 200.0;
                             let snap_rect = egui::Rect::from_min_size(
                                 rect.right_top() + egui::vec2(-snap_width - 10.0, 75.0),
                                 egui::vec2(snap_width, 25.0),
                             );
-
+                            
                             // Bright background to indicate active snapping
                             ui.painter().rect_filled(
                                 snap_rect,
                                 3.0,
                                 egui::Color32::from_rgba_premultiplied(100, 200, 100, 220),
                             );
-
+                            
                             ui.painter().text(
                                 snap_rect.center(),
                                 egui::Align2::CENTER_CENTER,
@@ -472,56 +429,6 @@ impl ViewportWidget {
         Ok(())
     }
 
-    /// Last cached cursor position projected on ground plane.
-    pub fn cursor_world_position(&self) -> Option<glam::Vec3> {
-        self.cached_cursor_world
-    }
-
-    /// Drains the event queue produced during the last `ui` invocation.
-    pub fn take_pending_events(&mut self) -> ViewportFrameEvents {
-        std::mem::take(&mut self.pending_events)
-    }
-
-    /// Compute world position for an arbitrary pointer (absolute coordinates).
-    pub fn world_pos_from_pointer(&self, pointer_pos: egui::Pos2) -> Option<glam::Vec3> {
-        self.last_viewport_rect
-            .and_then(|rect| self.project_pointer_to_ground(pointer_pos, rect))
-    }
-
-    fn update_cached_cursor_world(&mut self, ctx: &egui::Context, rect: egui::Rect) {
-        let pointer_pos = ctx.pointer_latest_pos();
-        self.cached_cursor_world =
-            pointer_pos.and_then(|pos| self.project_pointer_to_ground(pos, rect));
-    }
-
-    fn project_pointer_to_ground(
-        &self,
-        pointer_pos: egui::Pos2,
-        rect: egui::Rect,
-    ) -> Option<glam::Vec3> {
-        if !rect.contains(pointer_pos) {
-            return None;
-        }
-
-        let viewport_pos = egui::Pos2 {
-            x: pointer_pos.x - rect.min.x,
-            y: pointer_pos.y - rect.min.y,
-        };
-
-        let ray = self.camera.ray_from_screen(viewport_pos, rect.size());
-        let denom = ray.direction.y;
-        if denom.abs() < 0.0001 {
-            return None;
-        }
-
-        let t = -ray.origin.y / denom;
-        if t < 0.0 {
-            return None;
-        }
-
-        Some(ray.origin + ray.direction * t)
-    }
-
     /// Handle mouse/keyboard input
     ///
     /// Implements standard 3D viewport controls:
@@ -530,15 +437,16 @@ impl ViewportWidget {
     /// - Scroll: Zoom camera
     /// - G/R/S: Gizmo mode (translate/rotate/scale)
     /// - Click: Select entity
-    fn handle_input<S: TransformableScene>(
+    fn handle_input(
         &mut self,
         response: &egui::Response,
         ctx: &egui::Context,
-        scene: &mut S,
+        world: &mut World,
+        entity_manager: &mut EntityManager,
         undo_stack: &mut crate::command::UndoStack, // Phase 2.1: Command integration
     ) -> Result<()> {
         use crate::gizmo::GizmoMode;
-
+        
         // Update gizmo state with current mouse position
         if let Some(pos) = response.hover_pos() {
             let mouse_pos = glam::Vec2::new(pos.x, pos.y);
@@ -548,182 +456,248 @@ impl ViewportWidget {
         // Gizmo transform application (if active and dragging)
         if self.gizmo_state.is_active() && response.dragged_by(egui::PointerButton::Primary) {
             if let Some(selected_id) = self.selected_entity() {
-                let mouse_delta = self.gizmo_state.mouse_delta();
-
-                match self.gizmo_state.mode {
-                    GizmoMode::Translate { constraint: _ } => {
-                        // Read CURRENT constraint (not captured at match time!)
-                        let constraint = match self.gizmo_state.mode {
-                            GizmoMode::Translate { constraint: c } => c,
-                            _ => crate::gizmo::AxisConstraint::None,
-                        };
-
-                        if constraint == crate::gizmo::AxisConstraint::None {
-                            // FREE MOVEMENT: Entity follows mouse pointer on ground plane
-                            if let Some(mouse_pos_abs) = response.hover_pos() {
-                                if let Some(world_pos) =
-                                    self.project_pointer_to_ground(mouse_pos_abs, response.rect)
-                                {
-                                    let snap_enabled =
-                                        ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
-                                    let final_x = if snap_enabled {
-                                        self.snap_to_grid(world_pos.x)
-                                    } else {
-                                        world_pos.x
+                // Get entity's current pose
+                if let Some(pose) = world.pose(selected_id) {
+                    let mouse_delta = self.gizmo_state.mouse_delta();
+                    
+                    match self.gizmo_state.mode {
+                        GizmoMode::Translate { constraint: _ } => {
+                            // Read CURRENT constraint (not captured at match time!)
+                            let constraint = match self.gizmo_state.mode {
+                                GizmoMode::Translate { constraint: c } => c,
+                                _ => crate::gizmo::AxisConstraint::None,
+                            };
+                            
+                            if constraint == crate::gizmo::AxisConstraint::None {
+                                // FREE MOVEMENT: Entity follows mouse pointer on ground plane
+                                // Get current mouse position in screen space
+                                if let Some(mouse_pos_abs) = response.hover_pos() {
+                                    let viewport_size = response.rect.size();
+                                    // Convert absolute screen position to viewport-relative (0,0 = top-left of viewport)
+                                    let mouse_pos = egui::Pos2 {
+                                        x: mouse_pos_abs.x - response.rect.min.x,
+                                        y: mouse_pos_abs.y - response.rect.min.y,
                                     };
-                                    let final_z = if snap_enabled {
-                                        self.snap_to_grid(world_pos.z)
-                                    } else {
-                                        world_pos.z
+                                    
+                                    // Cast ray from mouse through camera
+                                    let ray = self.camera.ray_from_screen(mouse_pos, viewport_size);
+                                    
+                                    // Intersect ray with ground plane (Y=0)
+                                    let plane_normal = glam::Vec3::Y;
+                                    let plane_point = glam::Vec3::ZERO;
+                                    let denom = ray.direction.dot(plane_normal);
+                                    
+                                    if denom.abs() > 0.0001 {
+                                        let t = (plane_point - ray.origin).dot(plane_normal) / denom;
+                                        if t >= 0.0 {
+                                            // Ground plane intersection point
+                                            let world_pos = ray.origin + ray.direction * t;
+                                            
+                                            // Check if Ctrl is held for grid snapping
+                                            let snap_enabled = ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
+                                            
+                                            // Apply grid snapping if enabled
+                                            let final_x = if snap_enabled {
+                                                self.snap_to_grid(world_pos.x)
+                                            } else {
+                                                world_pos.x
+                                            };
+                                            let final_z = if snap_enabled {
+                                                self.snap_to_grid(world_pos.z)
+                                            } else {
+                                                world_pos.z
+                                            };
+                                            
+                                            // Set entity position directly (no delta, just follow mouse)
+                                            let new_x = final_x.round() as i32;
+                                            let new_z = final_z.round() as i32;
+                                            
+                                            if let Some(pose_mut) = world.pose_mut(selected_id) {
+                                                pose_mut.pos.x = new_x;
+                                                pose_mut.pos.y = new_z; // IVec2.y = world Z
+                                                
+                                                println!(
+                                                    "🔧 Translate (FREE{}): entity={}, mouse_abs=({:.1}, {:.1}), mouse_rel=({:.1}, {:.1}), world=({:.2}, {:.2}), new_pos=({}, {})",
+                                                    if snap_enabled { " + SNAP" } else { "" },
+                                                    selected_id, mouse_pos_abs.x, mouse_pos_abs.y,
+                                                    mouse_pos.x, mouse_pos.y,
+                                                    world_pos.x, world_pos.z, new_x, new_z
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                // CONSTRAINED MOVEMENT: Raycast to ground plane, then project onto constraint axis
+                                if let Some(mouse_pos_abs) = response.hover_pos() {
+                                    let viewport_size = response.rect.size();
+                                    // Convert absolute screen position to viewport-relative
+                                    let mouse_pos = egui::Pos2 {
+                                        x: mouse_pos_abs.x - response.rect.min.x,
+                                        y: mouse_pos_abs.y - response.rect.min.y,
                                     };
-                                    let new_x = final_x.round() as i32;
-                                    let new_z = final_z.round() as i32;
-
-                                    if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
-                                        snapshot.position.x = final_x;
-                                        snapshot.position.z = final_z;
-                                        scene.apply_snapshot(selected_id, &snapshot);
+                                    
+                                    // Get start position from snapshot (for the locked axis)
+                                    let start_pos = if let Some(snapshot) = &self.gizmo_state.start_transform {
+                                        (snapshot.position.x, snapshot.position.z)
+                                    } else {
+                                        (pose.pos.x as f32, pose.pos.y as f32)
+                                    };
+                                    
+                                    // Cast ray from mouse through camera
+                                    let ray = self.camera.ray_from_screen(mouse_pos, viewport_size);
+                                    
+                                    // Intersect ray with ground plane (Y=0)
+                                    let plane_normal = glam::Vec3::Y;
+                                    let plane_point = glam::Vec3::ZERO;
+                                    let denom = ray.direction.dot(plane_normal);
+                                    
+                                    if denom.abs() > 0.0001 {
+                                        let t = (plane_point - ray.origin).dot(plane_normal) / denom;
+                                        if t >= 0.0 {
+                                            // Ground plane intersection point
+                                            let world_pos = ray.origin + ray.direction * t;
+                                            
+                                            // Check if Ctrl is held for grid snapping
+                                            let snap_enabled = ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
+                                            
+                                            // Apply snapping to world position before constraints
+                                            let snapped_x = if snap_enabled {
+                                                self.snap_to_grid(world_pos.x)
+                                            } else {
+                                                world_pos.x
+                                            };
+                                            let snapped_z = if snap_enabled {
+                                                self.snap_to_grid(world_pos.z)
+                                            } else {
+                                                world_pos.z
+                                            };
+                                            
+                                            // Project onto constraint axis (lock one component to start position)
+                                            let (new_x, new_z) = match constraint {
+                                                crate::gizmo::AxisConstraint::X => {
+                                                    // X-axis only: follow mouse X, lock Z to start
+                                                    (snapped_x.round() as i32, start_pos.1 as i32)
+                                                }
+                                                crate::gizmo::AxisConstraint::Z => {
+                                                    // Z-axis only: lock X to start, follow mouse Z
+                                                    (start_pos.0 as i32, snapped_z.round() as i32)
+                                                }
+                                                crate::gizmo::AxisConstraint::Y => {
+                                                    // Y-axis constrained (ground plane - no movement)
+                                                    (start_pos.0 as i32, start_pos.1 as i32)
+                                                }
+                                                _ => {
+                                                    // Planar constraints: use both axes
+                                                    (snapped_x.round() as i32, snapped_z.round() as i32)
+                                                }
+                                            };
+                                            
+                                            if let Some(pose_mut) = world.pose_mut(selected_id) {
+                                                pose_mut.pos.x = new_x;
+                                                pose_mut.pos.y = new_z; // IVec2.y = world Z
+                                                
+                                                println!(
+                                                    "🔧 Translate (CONSTRAINED{}): entity={}, constraint={:?}, start=({:.1}, {:.1}), world=({:.2}, {:.2}), new=({}, {})",
+                                                    if snap_enabled { " + SNAP" } else { "" },
+                                                    selected_id, constraint, start_pos.0, start_pos.1,
+                                                    world_pos.x, world_pos.z, new_x, new_z
+                                                );
+                                            }
+                                        }
                                     }
-
-                                    println!(
-                                            "🔧 Translate (FREE{}): entity={}, mouse_abs=({:.1}, {:.1}), world=({:.2}, {:.2}), new_pos=({}, {})",
-                                            if snap_enabled { " + SNAP" } else { "" },
-                                            selected_id, mouse_pos_abs.x, mouse_pos_abs.y,
-                                            world_pos.x, world_pos.z, new_x, new_z
-                                        );
                                 }
-                            }
-                        } else if let Some(mouse_pos_abs) = response.hover_pos() {
-                            // CONSTRAINED MOVEMENT: project onto axis/plane
-                            let start_pos =
-                                if let Some(snapshot) = &self.gizmo_state.start_transform {
-                                    (snapshot.position.x, snapshot.position.z)
-                                } else if let Some(pose) = scene.world().pose(selected_id) {
-                                    (pose.pos.x as f32, pose.pos.y as f32)
-                                } else {
-                                    (0.0, 0.0)
-                                };
-                            if let Some(world_pos) =
-                                self.project_pointer_to_ground(mouse_pos_abs, response.rect)
-                            {
-                                let snap_enabled =
-                                    ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
-                                let snapped_x = if snap_enabled {
-                                    self.snap_to_grid(world_pos.x)
-                                } else {
-                                    world_pos.x
-                                };
-                                let snapped_z = if snap_enabled {
-                                    self.snap_to_grid(world_pos.z)
-                                } else {
-                                    world_pos.z
-                                };
-
-                                let (new_x, new_z) = match constraint {
-                                    crate::gizmo::AxisConstraint::X => {
-                                        (snapped_x.round() as i32, start_pos.1 as i32)
-                                    }
-                                    crate::gizmo::AxisConstraint::Z => {
-                                        (start_pos.0 as i32, snapped_z.round() as i32)
-                                    }
-                                    crate::gizmo::AxisConstraint::Y => {
-                                        (start_pos.0 as i32, start_pos.1 as i32)
-                                    }
-                                    _ => (snapped_x.round() as i32, snapped_z.round() as i32),
-                                };
-
-                                if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
-                                    snapshot.position.x = new_x as f32;
-                                    snapshot.position.z = new_z as f32;
-                                    scene.apply_snapshot(selected_id, &snapshot);
-                                }
-
-                                println!(
-                                        "🔧 Translate (CONSTRAINED{}): entity={}, constraint={:?}, start=({:.1}, {:.1}), world=({:.2}, {:.2}), new=({}, {})",
-                                        if snap_enabled { " + SNAP" } else { "" },
-                                        selected_id, constraint, start_pos.0, start_pos.1,
-                                        world_pos.x, world_pos.z, new_x, new_z
-                                    );
                             }
                         }
-                    }
-                    GizmoMode::Rotate { constraint: _ } => {
-                        // IMPORTANT: We need to remember the start rotation when drag begins
-                        let (start_x, start_y, start_z) =
-                            if let Some(snapshot) = &self.gizmo_state.start_transform {
+                        GizmoMode::Rotate { constraint: _ } => {
+                            // IMPORTANT: We need to remember the start rotation when drag begins
+                            // For now, we'll store it in the TransformSnapshot rotation field
+                            
+                            // Try to get start rotation from snapshot (stored as Quat)
+                            let (start_x, start_y, start_z) = if let Some(snapshot) = &self.gizmo_state.start_transform {
+                                // Extract XYZ rotations from quaternion
                                 snapshot.rotation.to_euler(glam::EulerRot::XYZ)
-                            } else if let Some(pose) = scene.world().pose(selected_id) {
-                                (pose.rotation_x, pose.rotation, pose.rotation_z)
                             } else {
-                                (0.0, 0.0, 0.0)
+                                // Fallback: capture current as start
+                                (pose.rotation_x, pose.rotation, pose.rotation_z)
                             };
-
-                        let rotation_sensitivity = 0.005; // 200px = 1 radian (57.3°)
-                        let constraint = match self.gizmo_state.mode {
-                            GizmoMode::Rotate { constraint: c } => c,
-                            _ => crate::gizmo::AxisConstraint::None,
-                        };
-
-                        let (rotation_angle, target_axis) = match constraint {
-                            crate::gizmo::AxisConstraint::None => {
-                                (mouse_delta.x * rotation_sensitivity, "Y")
-                            }
-                            crate::gizmo::AxisConstraint::Y => {
-                                (mouse_delta.x * rotation_sensitivity, "Y")
-                            }
-                            crate::gizmo::AxisConstraint::X => {
-                                (-mouse_delta.y * rotation_sensitivity, "X")
-                            }
-                            crate::gizmo::AxisConstraint::Z => {
-                                (mouse_delta.y * rotation_sensitivity, "Z")
-                            }
-                            _ => (0.0, "None"),
-                        };
-
-                        let snap_enabled = ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
-                        let final_angle = if snap_enabled {
-                            self.snap_angle(rotation_angle)
-                        } else {
-                            rotation_angle
-                        };
-
-                        if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
-                            let (mut rx, mut ry, mut rz) =
-                                snapshot.rotation.to_euler(glam::EulerRot::XYZ);
-                            match target_axis {
-                                "X" => rx = start_x + final_angle,
-                                "Y" => ry = start_y + final_angle,
-                                "Z" => rz = start_z + final_angle,
-                                _ => {}
-                            }
-                            snapshot.rotation =
-                                glam::Quat::from_euler(glam::EulerRot::XYZ, rx, ry, rz);
-                            scene.apply_snapshot(selected_id, &snapshot);
-
-                            println!(
-                                    "🔧 Rotate{}: entity={}, axis={}, start={:.1}°, mouse_delta=({:.1}, {:.1}), angle={:.1}°",
+                            
+                            // Calculate rotation angle from TOTAL mouse movement since drag started
+                            let rotation_sensitivity = 0.005; // 200px = 1 radian (57.3°)
+                            
+                            // CRITICAL FIX: Read CURRENT constraint (not captured at match time!)
+                            // This allows mid-drag constraint changes via X/Y/Z keys
+                            let constraint = match self.gizmo_state.mode {
+                                GizmoMode::Rotate { constraint: c } => c,
+                                _ => crate::gizmo::AxisConstraint::None,
+                            };
+                            
+                            let (rotation_angle, target_axis) = match constraint {
+                                crate::gizmo::AxisConstraint::None => {
+                                    // No explicit constraint - default to Y-axis (yaw) but don't highlight
+                                    (mouse_delta.x * rotation_sensitivity, "Y")
+                                }
+                                crate::gizmo::AxisConstraint::Y => {
+                                    // Y-axis explicitly selected: horizontal mouse movement
+                                    (mouse_delta.x * rotation_sensitivity, "Y")
+                                }
+                                crate::gizmo::AxisConstraint::X => {
+                                    // X-axis (pitch): vertical mouse movement (inverted for intuitive control)
+                                    (-mouse_delta.y * rotation_sensitivity, "X")
+                                }
+                                crate::gizmo::AxisConstraint::Z => {
+                                    // Z-axis (roll): vertical mouse movement (same direction as X but different axis)
+                                    (mouse_delta.y * rotation_sensitivity, "Z")
+                                }
+                                _ => (0.0, "None"), // No rotation for planar constraints
+                            };
+                            
+                            // Check if Ctrl is held for angle snapping
+                            let snap_enabled = ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
+                            
+                            // Apply angle snapping if enabled (snap the delta, not the total)
+                            let final_angle = if snap_enabled {
+                                self.snap_angle(rotation_angle)
+                            } else {
+                                rotation_angle
+                            };
+                            
+                            // Set rotation to START + TOTAL_ANGLE (not accumulate frame by frame!)
+                            if let Some(pose_mut) = world.pose_mut(selected_id) {
+                                match target_axis {
+                                    "X" => pose_mut.rotation_x = start_x + final_angle,
+                                    "Y" => pose_mut.rotation = start_y + final_angle,
+                                    "Z" => pose_mut.rotation_z = start_z + final_angle,
+                                    _ => {}
+                                }
+                                
+                                println!(
+                                    "🔧 Rotate{}: entity={}, axis={}, start={:.1}°, mouse_delta=({:.1}, {:.1}), angle={:.1}°, new={:.1}°",
                                     if snap_enabled { " + SNAP" } else { "" },
-                                    selected_id, target_axis,
+                                    selected_id, target_axis, 
                                     match target_axis {
                                         "X" => start_x.to_degrees(),
                                         "Y" => start_y.to_degrees(),
                                         "Z" => start_z.to_degrees(),
                                         _ => 0.0,
                                     },
-                                    mouse_delta.x,
-                                    mouse_delta.y,
-                                    final_angle.to_degrees()
+                                    mouse_delta.x, mouse_delta.y,
+                                    final_angle.to_degrees(),
+                                    match target_axis {
+                                        "X" => pose_mut.rotation_x.to_degrees(),
+                                        "Y" => pose_mut.rotation.to_degrees(),
+                                        "Z" => pose_mut.rotation_z.to_degrees(),
+                                        _ => 0.0,
+                                    }
                                 );
+                            }
                         }
+                        GizmoMode::Scale { constraint: _, uniform: _ } => {
+                            // SCALE MODE: Uses scroll wheel (handled above), not mouse drag
+                            // No-op here - scaling happens via scroll wheel in the zoom section
+                        }
+                        GizmoMode::Inactive => {}
                     }
-                    GizmoMode::Scale {
-                        constraint: _,
-                        uniform: _,
-                    } => {
-                        // SCALE MODE: Uses scroll wheel (handled above), not mouse drag
-                        // No-op here - scaling happens via scroll wheel in the zoom section
-                    }
-                    GizmoMode::Inactive => {}
                 }
             }
         }
@@ -733,10 +707,9 @@ impl ViewportWidget {
         let can_control_camera = response.hovered() || self.has_focus;
 
         // Orbit camera (left mouse drag) - DISABLED during gizmo operation
-        if can_control_camera
-            && response.dragged_by(egui::PointerButton::Primary)
-            && !self.gizmo_state.is_active()
-        // Don't orbit while gizmo active
+        if can_control_camera 
+            && response.dragged_by(egui::PointerButton::Primary) 
+            && !self.gizmo_state.is_active() // Don't orbit while gizmo active
         {
             let delta = response.drag_delta();
             println!(
@@ -771,16 +744,15 @@ impl ViewportWidget {
                     if matches!(self.gizmo_state.mode, GizmoMode::Scale { .. }) {
                         // SCALE MODE: Adjust entity scale with scroll wheel
                         if let Some(selected_id) = self.selected_entity() {
-                            if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
+                            if let Some(pose_mut) = world.pose_mut(selected_id) {
+                                // Scale by 1% per scroll tick (very smooth, gradual scaling)
                                 let scale_delta = 1.0 + (scroll * 0.01);
-                                let mut uniform_scale = snapshot.scale.x * scale_delta;
-                                uniform_scale = uniform_scale.max(0.1).min(10.0);
-                                snapshot.scale = glam::Vec3::splat(uniform_scale);
-                                scene.apply_snapshot(selected_id, &snapshot);
-
+                                let new_scale = (pose_mut.scale * scale_delta).max(0.1).min(10.0);
+                                pose_mut.scale = new_scale;
+                                
                                 println!(
                                     "🔧 Scale (scroll): entity={}, delta={:.3}x, new_scale={:.3}x",
-                                    selected_id, scale_delta, uniform_scale
+                                    selected_id, scale_delta, new_scale
                                 );
                             }
                         }
@@ -793,27 +765,45 @@ impl ViewportWidget {
                 }
             });
         }
-
+        
         // Sync selected entity to gizmo state
         self.gizmo_state.selected_entity = self.selected_entity();
-
+        
         // Clear gizmo state if entity deselected
         if self.selected_entity().is_none() && self.gizmo_state.is_active() {
             self.gizmo_state.mode = GizmoMode::Inactive;
             self.gizmo_state.start_transform = None;
         }
-
+        
         // Capture start transform when beginning a new operation
         if self.gizmo_state.is_active() && self.gizmo_state.start_transform.is_none() {
-            if interaction::ensure_world_snapshot(&mut self.gizmo_state, scene.world()).is_none() {
-                if let Some(selected_id) = self.selected_entity() {
-                    if let Some(snapshot) = scene.snapshot_for(selected_id) {
-                        println!(
-                            "📸 Captured scene-state start transform: {:?}",
-                            snapshot.position
-                        );
-                        self.gizmo_state.start_transform = Some(snapshot);
-                    }
+            if let Some(selected_id) = self.selected_entity() {
+                // Try to capture from World entity first (for actual transforms)
+                if let Some(pose) = world.pose(selected_id) {
+                    let x = pose.pos.x as f32;
+                    let z = pose.pos.y as f32;
+                    // Create quaternion from XYZ Euler angles
+                    let rotation_quat = glam::Quat::from_euler(
+                        glam::EulerRot::XYZ,
+                        pose.rotation_x,
+                        pose.rotation,
+                        pose.rotation_z
+                    );
+                    self.gizmo_state.start_transform = Some(TransformSnapshot {
+                        position: glam::Vec3::new(x, 1.0, z),
+                        rotation: rotation_quat, // Store all 3 rotation axes
+                        scale: glam::Vec3::splat(pose.scale),
+                    });
+                    println!("📸 Captured World start transform: pos=({}, {}), rot=({:.1}°, {:.1}°, {:.1}°), scale={:.2}", 
+                        x, z, pose.rotation_x.to_degrees(), pose.rotation.to_degrees(), pose.rotation_z.to_degrees(), pose.scale);
+                } else if let Some(entity) = entity_manager.get(selected_id as u64) {
+                    // Fallback to EntityManager
+                    self.gizmo_state.start_transform = Some(TransformSnapshot {
+                        position: entity.position,
+                        rotation: entity.rotation,
+                        scale: entity.scale,
+                    });
+                    println!("📸 Captured EntityManager start transform: {:?}", entity.position);
                 }
             }
         }
@@ -824,23 +814,11 @@ impl ViewportWidget {
 
             // Handle gizmo mode keys first
             if i.key_pressed(egui::Key::G) {
-                let prev = self.gizmo_state.mode;
                 self.gizmo_state.handle_key(KeyCode::KeyG);
-                if !matches!(prev, GizmoMode::Translate { .. })
-                    && matches!(self.gizmo_state.mode, GizmoMode::Translate { .. })
-                {
-                    self.emit_gizmo_start(GizmoOperationKind::Translate);
-                }
                 println!("🔧 Gizmo mode: Translate (G)");
             }
             if i.key_pressed(egui::Key::R) {
-                let prev = self.gizmo_state.mode;
                 self.gizmo_state.handle_key(KeyCode::KeyR);
-                if !matches!(prev, GizmoMode::Rotate { .. })
-                    && matches!(self.gizmo_state.mode, GizmoMode::Rotate { .. })
-                {
-                    self.emit_gizmo_start(GizmoOperationKind::Rotate);
-                }
                 println!("🔧 Gizmo mode: Rotate (R)");
             }
             if i.key_pressed(egui::Key::S) {
@@ -850,7 +828,6 @@ impl ViewportWidget {
                 if was_scaling {
                     println!("🔧 Scale mode: OFF (camera control restored)");
                 } else {
-                    self.emit_gizmo_start(GizmoOperationKind::Scale);
                     println!("🔧 Scale mode: ON (use scroll wheel to scale, S to exit)");
                 }
             }
@@ -883,29 +860,26 @@ impl ViewportWidget {
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::Z) {
                 if i.modifiers.shift {
                     // Ctrl+Shift+Z: Redo
-                    if let Err(e) = undo_stack.redo(scene.world_mut()) {
+                    if let Err(e) = undo_stack.redo(world) {
                         eprintln!("❌ Redo failed: {}", e);
                     } else if let Some(desc) = undo_stack.redo_description() {
                         println!("⏭️  Redo: {}", desc);
-                        scene.sync_all();
                     }
                 } else {
                     // Ctrl+Z: Undo
-                    if let Err(e) = undo_stack.undo(scene.world_mut()) {
+                    if let Err(e) = undo_stack.undo(world) {
                         eprintln!("❌ Undo failed: {}", e);
                     } else if let Some(desc) = undo_stack.undo_description() {
                         println!("⏮️  Undo: {}", desc);
-                        scene.sync_all();
                     }
                 }
             }
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::Y) {
                 // Ctrl+Y: Redo (alternative to Ctrl+Shift+Z)
-                if let Err(e) = undo_stack.redo(scene.world_mut()) {
+                if let Err(e) = undo_stack.redo(world) {
                     eprintln!("❌ Redo failed: {}", e);
                 } else if let Some(desc) = undo_stack.redo_description() {
                     println!("⏭️  Redo: {}", desc);
-                    scene.sync_all();
                 }
             }
 
@@ -913,42 +887,37 @@ impl ViewportWidget {
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::C) {
                 // Ctrl+C: Copy selected entities
                 if !self.selected_entities.is_empty() {
-                    self.copy_selection(scene);
+                    self.copy_selection(world);
                     println!("📋 Copied {} entities", self.selected_entities.len());
                 }
             }
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::V) {
                 // Ctrl+V: Paste entities
-                self.paste_selection(scene, undo_stack);
+                self.paste_selection(world, undo_stack);
             }
             if (i.modifiers.command || i.modifiers.ctrl) && i.key_pressed(egui::Key::D) {
                 // Ctrl+D: Duplicate selected entities
                 if !self.selected_entities.is_empty() {
-                    self.duplicate_selection(scene, undo_stack);
+                    self.duplicate_selection(world, undo_stack);
                     println!("📑 Duplicated {} entities", self.selected_entities.len());
                 }
             }
             if i.key_pressed(egui::Key::Delete) {
                 // Delete: Remove selected entities
                 if !self.selected_entities.is_empty() {
-                    self.delete_selection(scene, undo_stack);
+                    self.delete_selection(world, undo_stack);
                     println!("🗑️  Deleted {} entities", self.selected_entities.len());
                 }
             }
             // Select All
             if i.key_pressed(egui::Key::A) {
-                println!(
-                    "🔍 A key pressed! modifiers: ctrl={}, command={}, shift={}",
-                    i.modifiers.ctrl, i.modifiers.command, i.modifiers.shift
-                );
-
+                println!("🔍 A key pressed! modifiers: ctrl={}, command={}, shift={}", 
+                    i.modifiers.ctrl, i.modifiers.command, i.modifiers.shift);
+                
                 if i.modifiers.command || i.modifiers.ctrl {
                     // Ctrl+A: Select all entities
-                    self.select_all(scene);
-                    println!(
-                        "🎯 Selected all entities ({} total)",
-                        self.selected_entities.len()
-                    );
+                    self.select_all(world);
+                    println!("🎯 Selected all entities ({} total)", self.selected_entities.len());
                 }
             }
 
@@ -956,24 +925,21 @@ impl ViewportWidget {
             if i.key_pressed(egui::Key::F) {
                 if let Some(selected_id) = self.selected_entity() {
                     // Frame World entity (match rendering position)
-                    if let Some(pose) = scene.world().pose(selected_id) {
+                    if let Some(pose) = world.pose(selected_id) {
                         let x = pose.pos.x as f32;
                         let z = pose.pos.y as f32;
                         let position = glam::Vec3::new(x, 1.0, z); // Y=1.0 (raised position)
                         let entity_radius = 0.866; // Half diagonal of 1x1x1 cube = sqrt(3)/2
-
+                        
                         // Frame entity in camera view
                         self.camera.frame_entity(position, entity_radius);
-
+                        
                         println!(
                             "🎯 Frame selected World entity {} at {:.2?}",
                             selected_id, position
                         );
                     } else {
-                        println!(
-                            "⚠️  Frame selected: Entity {} not found in scene",
-                            selected_id
-                        );
+                        println!("⚠️  Frame selected: Entity {} not found in World", selected_id);
                     }
                 } else {
                     println!("⚠️  Frame selected: No entity selected");
@@ -990,7 +956,6 @@ impl ViewportWidget {
                     _ => 2.0,
                 };
                 println!("📐 Grid snap size: {:.2}m", self.grid_snap_size);
-                self.emit_grid_settings_event();
             }
 
             if i.key_pressed(egui::Key::CloseBracket) {
@@ -1002,23 +967,13 @@ impl ViewportWidget {
                     _ => 0.25,
                 };
                 println!("📐 Grid snap size: {:.2}m", self.grid_snap_size);
-                self.emit_grid_settings_event();
             }
 
             // Camera bookmarks: F1-F12 (restore), Shift+F1-F12 (save)
             let bookmark_keys = [
-                egui::Key::F1,
-                egui::Key::F2,
-                egui::Key::F3,
-                egui::Key::F4,
-                egui::Key::F5,
-                egui::Key::F6,
-                egui::Key::F7,
-                egui::Key::F8,
-                egui::Key::F9,
-                egui::Key::F10,
-                egui::Key::F11,
-                egui::Key::F12,
+                egui::Key::F1, egui::Key::F2, egui::Key::F3, egui::Key::F4,
+                egui::Key::F5, egui::Key::F6, egui::Key::F7, egui::Key::F8,
+                egui::Key::F9, egui::Key::F10, egui::Key::F11, egui::Key::F12,
             ];
 
             for (slot, key) in bookmark_keys.iter().enumerate() {
@@ -1040,92 +995,138 @@ impl ViewportWidget {
                         self.camera.set_pitch(bookmark.pitch);
                         println!("📷 Restored camera bookmark F{}", slot + 1);
                     } else {
-                        println!(
-                            "⚠️  Camera bookmark F{} not set (use Shift+F{} to save)",
-                            slot + 1,
-                            slot + 1
-                        );
+                        println!("⚠️  Camera bookmark F{} not set (use Shift+F{} to save)", slot + 1, slot + 1);
                     }
                 }
             }
         });
-
+        
         // Handle gizmo confirm/cancel
         if self.gizmo_state.confirmed {
-            if let Some(metadata) = interaction::commit_active_gizmo(
-                &mut self.gizmo_state,
-                scene.world_mut(),
-                undo_stack,
-            ) {
-                scene.sync_entity(metadata.entity);
-                telemetry::record(EditorTelemetryEvent::from(metadata.clone()));
-                self.pending_events.gizmo_commit = Some(metadata);
+            // Phase 2.1: Transform confirmed - create undo command
+            if let Some(snapshot) = &self.gizmo_state.start_transform {
+                if let Some(selected_id) = self.selected_entity() {
+                    // Capture final state from World
+                    if let Some(pose) = world.pose(selected_id) {
+                        // Calculate old position from snapshot (stored as Vec3)
+                        let old_pos = astraweave_core::IVec2 {
+                            x: snapshot.position.x.round() as i32,
+                            y: snapshot.position.z.round() as i32, // IVec2.y = world Z
+                        };
+                        let new_pos = pose.pos; // Already in IVec2 format
+
+                        // Check if we're in move/rotate/scale mode
+                        match &self.gizmo_state.mode {
+                            GizmoMode::Translate { .. } => {
+                                if old_pos != new_pos {
+                                    let cmd = crate::command::MoveEntityCommand::new(
+                                        selected_id,
+                                        old_pos,
+                                        new_pos,
+                                    );
+                                    undo_stack.push_executed(cmd);
+                                    println!("📝 Recorded move: {:?} → {:?}", old_pos, new_pos);
+                                }
+                            }
+                            GizmoMode::Rotate { .. } => {
+                                let old_rot = snapshot.rotation.to_euler(glam::EulerRot::XYZ);
+                                let new_rot = (pose.rotation_x, pose.rotation, pose.rotation_z);
+
+                                let changed = (old_rot.0 - new_rot.0).abs() > 0.01
+                                    || (old_rot.1 - new_rot.1).abs() > 0.01
+                                    || (old_rot.2 - new_rot.2).abs() > 0.01;
+
+                                if changed {
+                                    let cmd = crate::command::RotateEntityCommand::new(
+                                        selected_id,
+                                        old_rot,
+                                        new_rot,
+                                    );
+                                    undo_stack.push_executed(cmd);
+                                    println!(
+                                        "📝 Recorded rotation: ({:.1}°, {:.1}°, {:.1}°) → ({:.1}°, {:.1}°, {:.1}°)",
+                                        old_rot.0.to_degrees(), old_rot.1.to_degrees(), old_rot.2.to_degrees(),
+                                        new_rot.0.to_degrees(), new_rot.1.to_degrees(), new_rot.2.to_degrees()
+                                    );
+                                }
+                            }
+                            GizmoMode::Scale { .. } => {
+                                let old_scale = snapshot.scale.x;
+                                let new_scale = pose.scale;
+
+                                if (old_scale - new_scale).abs() > 0.01 {
+                                    let cmd = crate::command::ScaleEntityCommand::new(
+                                        selected_id,
+                                        old_scale,
+                                        new_scale,
+                                    );
+                                    undo_stack.push_executed(cmd);
+                                    println!("📝 Recorded scale: {:.2} → {:.2}", old_scale, new_scale);
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
             }
+
+            println!("✅ Transform confirmed");
             self.gizmo_state.confirmed = false;
         }
-
+        
         if self.gizmo_state.cancelled {
-            if let Some(GizmoCancelMetadata {
-                entity,
-                operation,
-                snapshot,
-            }) = interaction::cancel_active_gizmo(&mut self.gizmo_state, scene.world_mut())
-            {
-                scene.apply_snapshot(entity, &snapshot);
-                telemetry::record(EditorTelemetryEvent::GizmoCancelled {
-                    entity: entity as u32,
-                    operation,
-                });
+            // Transform cancelled - revert to start_transform (NO undo command created)
+            if let Some(snapshot) = &self.gizmo_state.start_transform {
+                if let Some(selected_id) = self.selected_entity() {
+                    if let Some(entity) = entity_manager.get_mut(selected_id as u64) {
+                        entity.position = snapshot.position;
+                        entity.rotation = snapshot.rotation;
+                        entity.scale = snapshot.scale;
+                        println!("❌ Transform cancelled - reverted to {:?}", snapshot.position);
+                    }
+                }
             }
             self.gizmo_state.cancelled = false;
         }
 
         // Selection (ray-casting entity picking)
         // Track mouse press/release manually since egui's clicked() doesn't work with drag detection
-        let pointer_over_viewport = response.hovered()
-            || response.rect.contains(
-                ctx.input(|i| i.pointer.interact_pos())
-                    .unwrap_or(egui::Pos2::ZERO),
-            );
-
+        let pointer_over_viewport = response.hovered() || response.rect.contains(
+            ctx.input(|i| i.pointer.interact_pos()).unwrap_or(egui::Pos2::ZERO)
+        );
+        
         let mouse_pressed = ctx.input(|i| i.pointer.button_pressed(egui::PointerButton::Primary));
         let mouse_released = ctx.input(|i| i.pointer.button_released(egui::PointerButton::Primary));
         let current_pos = ctx.input(|i| i.pointer.interact_pos());
-
+        
         // Track where mouse was pressed
         if mouse_pressed && pointer_over_viewport {
             self.mouse_pressed_pos = current_pos;
             println!("🖱️ Mouse pressed at: {:?}", current_pos);
         }
-
+        
         // Check for click (press and release at same location without drag)
         let clicked = if mouse_released && self.mouse_pressed_pos.is_some() {
             let press_pos = self.mouse_pressed_pos.unwrap();
             let release_pos = current_pos.unwrap_or(press_pos);
             let drag_distance = (release_pos - press_pos).length();
             let is_click = drag_distance < 5.0; // 5 pixel threshold
-
-            println!(
-                "🖱️ Mouse released: press={:?}, release={:?}, drag_dist={:.1}, is_click={}",
-                press_pos, release_pos, drag_distance, is_click
-            );
-
+            
+            println!("🖱️ Mouse released: press={:?}, release={:?}, drag_dist={:.1}, is_click={}", 
+                press_pos, release_pos, drag_distance, is_click);
+            
             self.mouse_pressed_pos = None; // Clear press state
             is_click && pointer_over_viewport && !self.gizmo_state.is_active()
         } else {
             false
         };
-
-        println!(
-            "🔍 Selection check: clicked={}, pointer_over={}, gizmo_active={}",
-            clicked,
-            pointer_over_viewport,
-            self.gizmo_state.is_active()
-        );
-
+        
+        println!("🔍 Selection check: clicked={}, pointer_over={}, gizmo_active={}", 
+            clicked, pointer_over_viewport, self.gizmo_state.is_active());
+        
         if clicked {
             println!("✅ Click detected for selection!");
-
+            
             if let Some(pos) = current_pos {
                 let viewport_pos_vec = pos - response.rect.min;
                 let viewport_pos = egui::Pos2::new(viewport_pos_vec.x, viewport_pos_vec.y);
@@ -1139,20 +1140,23 @@ impl ViewportWidget {
                 // Check all World entities (matching entity_renderer logic)
                 for entity_id in 1..100 {
                     let entity: Entity = entity_id;
-
-                    if let Some(pose) = scene.world().pose(entity) {
+                    
+                    if let Some(pose) = world.pose(entity) {
                         // Match entity_renderer position calculation
                         let x = pose.pos.x as f32;
                         let z = pose.pos.y as f32;
                         let position = glam::Vec3::new(x, 1.0, z); // Y=1.0 (raised position)
-
+                        
                         // Create AABB for 1x1x1 cube centered at position
                         let aabb_min = position - glam::Vec3::splat(0.5);
                         let aabb_max = position + glam::Vec3::splat(0.5);
-
-                        if let Some(distance) =
-                            Self::ray_intersects_aabb(ray.origin, ray.direction, aabb_min, aabb_max)
-                        {
+                        
+                        if let Some(distance) = Self::ray_intersects_aabb(
+                            ray.origin,
+                            ray.direction,
+                            aabb_min,
+                            aabb_max,
+                        ) {
                             // Found intersection - keep closest
                             if closest_entity.is_none() || distance < closest_entity.unwrap().1 {
                                 closest_entity = Some((entity, distance));
@@ -1164,19 +1168,14 @@ impl ViewportWidget {
                 // Update selection based on modifier keys
                 if let Some((entity_id, distance)) = closest_entity {
                     let modifiers = ctx.input(|i| i.modifiers);
-
+                    
                     // Debug: Print modifier state
-                    println!(
-                        "🔍 Modifiers: ctrl={}, shift={}, alt={}, command={}",
-                        modifiers.ctrl, modifiers.shift, modifiers.alt, modifiers.command
-                    );
-
+                    println!("🔍 Modifiers: ctrl={}, shift={}, alt={}, command={}", 
+                        modifiers.ctrl, modifiers.shift, modifiers.alt, modifiers.command);
+                    
                     if modifiers.ctrl || modifiers.command {
                         // Ctrl+Click: Toggle selection (multi-select)
-                        println!(
-                            "🎯 Before toggle: selected_entities = {:?}",
-                            self.selected_entities
-                        );
+                        println!("🎯 Before toggle: selected_entities = {:?}", self.selected_entities);
                         self.toggle_selection(entity_id);
                         println!(
                             "🎯 Toggled World entity {} (now {} entities selected): {:?}",
@@ -1186,10 +1185,7 @@ impl ViewportWidget {
                         );
                     } else if modifiers.shift {
                         // Shift+Click: Add to selection
-                        println!(
-                            "🎯 Before add: selected_entities = {:?}",
-                            self.selected_entities
-                        );
+                        println!("🎯 Before add: selected_entities = {:?}", self.selected_entities);
                         self.add_to_selection(entity_id);
                         println!(
                             "🎯 Added World entity {} to selection ({} entities selected): {:?}",
@@ -1213,10 +1209,7 @@ impl ViewportWidget {
                         self.gizmo_state.mode = GizmoMode::Inactive;
                         self.gizmo_state.start_transform = None;
                     }
-                    println!(
-                        "🎯 Click at ({:.1}, {:.1}) - No entity hit (selection cleared)",
-                        viewport_pos.x, viewport_pos.y
-                    );
+                    println!("🎯 Click at ({:.1}, {:.1}) - No entity hit (selection cleared)", viewport_pos.x, viewport_pos.y);
                 }
             }
         }
@@ -1492,7 +1485,6 @@ impl ViewportWidget {
     /// Set the selected entities (replaces current selection)
     pub fn set_selected_entities(&mut self, entities: Vec<Entity>) {
         self.selected_entities = entities;
-        self.emit_selection_event();
     }
 
     /// Set a single selected entity (clears other selections)
@@ -1501,21 +1493,18 @@ impl ViewportWidget {
         if let Some(e) = entity {
             self.selected_entities.push(e);
         }
-        self.emit_selection_event();
     }
 
     /// Add an entity to the selection (for multi-select)
     pub fn add_to_selection(&mut self, entity: Entity) {
         if !self.selected_entities.contains(&entity) {
             self.selected_entities.push(entity);
-            self.emit_selection_event();
         }
     }
 
     /// Remove an entity from the selection
     pub fn remove_from_selection(&mut self, entity: Entity) {
         self.selected_entities.retain(|&e| e != entity);
-        self.emit_selection_event();
     }
 
     /// Get reference to the viewport toolbar
@@ -1529,41 +1518,12 @@ impl ViewportWidget {
             self.remove_from_selection(entity);
         } else {
             self.add_to_selection(entity);
-            // add_to_selection already emits event
-            return;
         }
-        self.emit_selection_event();
     }
 
     /// Clear all selections
     pub fn clear_selection(&mut self) {
         self.selected_entities.clear();
-        self.emit_selection_event();
-    }
-
-    fn emit_selection_event(&self) {
-        telemetry::record(EditorTelemetryEvent::SelectionChanged {
-            primary: self.selected_entity().map(|id| id as u32),
-            count: self.selected_entities.len(),
-        });
-    }
-
-    fn emit_grid_settings_event(&self) {
-        telemetry::record(EditorTelemetryEvent::GridSettingsChanged {
-            grid_enabled: self.toolbar.snap_enabled,
-            snap_size: self.grid_snap_size,
-            angle_enabled: self.toolbar.angle_snap_enabled,
-            angle_increment: self.toolbar.angle_snap_degrees,
-        });
-    }
-
-    fn emit_gizmo_start(&self, operation: GizmoOperationKind) {
-        if let Some(entity) = self.selected_entity() {
-            telemetry::record(EditorTelemetryEvent::GizmoStarted {
-                entity: entity as u32,
-                operation,
-            });
-        }
     }
 
     /// Check if an entity is selected
@@ -1572,97 +1532,72 @@ impl ViewportWidget {
     }
 
     /// Copy selected entities to clipboard
-    fn copy_selection<S: TransformableScene>(&mut self, _scene: &S) {
+    fn copy_selection(&mut self, _world: &World) {
         // TODO: Implement clipboard storage
         // For now, we'll store copied entities in a Vec<EntitySnapshot>
         // This will be expanded in Phase 2.2 with full serialization
-        println!(
-            "📋 Copy: {} entities (clipboard not yet implemented)",
-            self.selected_entities.len()
-        );
+        println!("📋 Copy: {} entities (clipboard not yet implemented)", self.selected_entities.len());
     }
 
     /// Paste entities from clipboard
-    fn paste_selection<S: TransformableScene>(
-        &mut self,
-        _scene: &mut S,
-        _undo_stack: &mut crate::command::UndoStack,
-    ) {
+    fn paste_selection(&mut self, _world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         // TODO: Implement paste from clipboard
         // Create new entities with offset position
         println!("📋 Paste: clipboard not yet implemented");
     }
 
     /// Duplicate selected entities (creates copies at offset position)
-    fn duplicate_selection<S: TransformableScene>(
-        &mut self,
-        scene: &mut S,
-        _undo_stack: &mut crate::command::UndoStack,
-    ) {
+    fn duplicate_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         if self.selected_entities.is_empty() {
             println!("⚠️  duplicate_selection: No entities selected");
             return;
         }
 
-        println!(
-            "🔍 duplicate_selection: Starting duplication of {} entities: {:?}",
-            self.selected_entities.len(),
-            self.selected_entities
-        );
+        println!("🔍 duplicate_selection: Starting duplication of {} entities: {:?}", 
+            self.selected_entities.len(), 
+            self.selected_entities);
 
         let mut new_entities = Vec::new();
-
+        
         // Duplicate each selected entity
         for &entity_id in &self.selected_entities {
             println!("  🔍 Processing entity {}", entity_id);
-
-            if let Some(pose) = scene.world().pose(entity_id) {
+            
+            if let Some(pose) = world.pose(entity_id) {
                 // Create new entity at offset position (2 units right)
                 let new_pos = astraweave_core::IVec2 {
                     x: pose.pos.x + 2,
                     y: pose.pos.y,
                 };
+                
+                // Get original entity's properties
+                let health = world.health(entity_id);
+                let team = world.team(entity_id);
+                let ammo = world.ammo(entity_id);
+                let name = world.name(entity_id).unwrap_or("Entity");
 
-                // Get original entity's properties and clone what we need so we can
-                // safely mutably borrow later when spawning the duplicate.
-                let health = scene.world().health(entity_id);
-                let team = scene.world().team(entity_id);
-                let ammo = scene.world().ammo(entity_id);
-                let name = scene
-                    .world()
-                    .name(entity_id)
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| format!("Entity_{}", entity_id));
-
-                println!(
-                    "    📋 Entity {} properties: name={}, team={:?}, health={:?}, ammo={:?}",
-                    entity_id, name, team, health, ammo
-                );
+                println!("    📋 Entity {} properties: name={}, team={:?}, health={:?}, ammo={:?}", 
+                    entity_id, name, team, health, ammo);
 
                 // Create new entity using spawn
-                let new_id = scene.world_mut().spawn(
+                let new_id = world.spawn(
                     &format!("{}_copy", name),
                     new_pos,
                     team.unwrap_or(Team { id: 0 }),
                     health.map(|h| h.hp).unwrap_or(100),
                     ammo.map(|a| a.rounds).unwrap_or(0),
                 );
-
+                
                 // Copy transform properties
-                if let Some(new_pose) = scene.world_mut().pose_mut(new_id) {
+                if let Some(new_pose) = world.pose_mut(new_id) {
                     new_pose.rotation = pose.rotation;
                     new_pose.rotation_x = pose.rotation_x;
                     new_pose.rotation_z = pose.rotation_z;
                     new_pose.scale = pose.scale;
                 }
-
-                scene.sync_entity(new_id);
-
+                
                 new_entities.push(new_id);
-                println!(
-                    "    ✅ Duplicated entity {} → {} at {:?}",
-                    entity_id, new_id, new_pos
-                );
+                println!("    ✅ Duplicated entity {} → {} at {:?}", entity_id, new_id, new_pos);
             } else {
                 println!("    ⚠️  Entity {} has no pose, skipping", entity_id);
             }
@@ -1671,11 +1606,7 @@ impl ViewportWidget {
         // Select the duplicated entities
         if !new_entities.is_empty() {
             self.selected_entities = new_entities;
-            println!(
-                "🎯 duplicate_selection: Complete. New selection: {:?}",
-                self.selected_entities
-            );
-            self.emit_selection_event();
+            println!("🎯 duplicate_selection: Complete. New selection: {:?}", self.selected_entities);
         } else {
             println!("⚠️  duplicate_selection: No entities were duplicated!");
         }
@@ -1684,11 +1615,7 @@ impl ViewportWidget {
     }
 
     /// Delete selected entities
-    fn delete_selection<S: TransformableScene>(
-        &mut self,
-        _scene: &mut S,
-        _undo_stack: &mut crate::command::UndoStack,
-    ) {
+    fn delete_selection(&mut self, _world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         if self.selected_entities.is_empty() {
             return;
         }
@@ -1713,27 +1640,23 @@ impl ViewportWidget {
     }
 
     /// Select all entities in the world
-    fn select_all<S: TransformableScene>(&mut self, scene: &S) {
+    fn select_all(&mut self, world: &World) {
         self.selected_entities.clear();
-
+        
         println!("🔍 select_all: Starting scan for entities...");
-
+        
         // Iterate through all entities (World doesn't expose entity list, so we try a range)
         // This is a workaround - ideally World would have an entities() iterator
         for entity_id in 0..1000 {
-            if scene.world().pose(entity_id).is_some() {
+            if world.pose(entity_id).is_some() {
                 self.selected_entities.push(entity_id);
                 println!("  ✅ Found entity {}", entity_id);
             }
         }
-
-        println!(
-            "🎯 select_all: Selected {} entities total: {:?}",
-            self.selected_entities.len(),
-            self.selected_entities
-        );
-
-        self.emit_selection_event();
+        
+        println!("🎯 select_all: Selected {} entities total: {:?}", 
+            self.selected_entities.len(), 
+            self.selected_entities);
     }
 
     /// Snap a float value to the grid

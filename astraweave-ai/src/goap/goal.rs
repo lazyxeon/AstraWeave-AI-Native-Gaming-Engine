@@ -1,6 +1,6 @@
-use super::{StateValue, WorldState};
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use serde::{Deserialize, Serialize};
+use super::{StateValue, WorldState};
 
 /// Strategy for decomposing a goal into sub-goals
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -28,9 +28,9 @@ pub struct Goal {
     pub desired_state: BTreeMap<String, StateValue>,
     pub priority: f32,
     pub deadline: Option<f32>, // Time by which goal must be achieved
-    pub sub_goals: Vec<Goal>,  // Hierarchical goal decomposition
+    pub sub_goals: Vec<Goal>,   // Hierarchical goal decomposition
     pub decomposition_strategy: DecompositionStrategy,
-    pub max_depth: usize, // Maximum recursion depth for hierarchical planning
+    pub max_depth: usize,       // Maximum recursion depth for hierarchical planning
 }
 
 impl Goal {
@@ -90,7 +90,7 @@ impl Goal {
         match self.deadline {
             Some(deadline) => {
                 let time_remaining = (deadline - current_time).max(0.0);
-
+                
                 // As deadline approaches, urgency increases dramatically
                 // Formula: priority * (1 + 10 / (time_remaining + 1))
                 // At deadline: urgency ≈ priority * 11
@@ -221,18 +221,14 @@ impl Goal {
 
     /// Count total number of goals in hierarchy (including self)
     pub fn total_goal_count(&self) -> usize {
-        1 + self
-            .sub_goals
-            .iter()
-            .map(|g| g.total_goal_count())
-            .sum::<usize>()
+        1 + self.sub_goals.iter().map(|g| g.total_goal_count()).sum::<usize>()
     }
 
     /// Flatten goal hierarchy into ordered sequence (depth-first)
     /// Respects decomposition strategy
     pub fn flatten(&self) -> Vec<Goal> {
         let mut result = Vec::new();
-
+        
         match self.decomposition_strategy {
             DecompositionStrategy::Sequential => {
                 // Add sub-goals in order
@@ -258,7 +254,7 @@ impl Goal {
                 }
             }
         }
-
+        
         result
     }
 
@@ -318,7 +314,8 @@ mod tests {
 
     #[test]
     fn test_urgency_without_deadline() {
-        let goal = Goal::new("explore", BTreeMap::new()).with_priority(5.0);
+        let goal = Goal::new("explore", BTreeMap::new())
+            .with_priority(5.0);
 
         assert_eq!(goal.urgency(0.0), 5.0);
         assert_eq!(goal.urgency(100.0), 5.0); // No deadline, constant urgency
@@ -349,8 +346,8 @@ mod tests {
 
         let mut world = WorldState::new();
         world.set("health", StateValue::Int(50)); // Unmet
-        world.set("ammo", StateValue::Int(30)); // Met
-                                                // in_cover missing                       // Unmet
+        world.set("ammo", StateValue::Int(30));   // Met
+        // in_cover missing                       // Unmet
 
         let unmet = goal.unmet_conditions(&world);
         assert_eq!(unmet.len(), 2);
@@ -382,7 +379,8 @@ mod tests {
 
     #[test]
     fn test_is_achievable() {
-        let goal = Goal::new("timed_objective", BTreeMap::new()).with_deadline(100.0);
+        let goal = Goal::new("timed_objective", BTreeMap::new())
+            .with_deadline(100.0);
 
         assert!(goal.is_achievable(50.0, 30.0)); // 50 + 30 <= 100
         assert!(!goal.is_achievable(80.0, 30.0)); // 80 + 30 > 100
@@ -403,7 +401,8 @@ mod tests {
 
         let mut main_desired = BTreeMap::new();
         main_desired.insert("enemy_defeated".to_string(), StateValue::Bool(true));
-        let main_goal = Goal::new("defeat_enemy", main_desired).with_sub_goals(vec![sub1, sub2]);
+        let main_goal = Goal::new("defeat_enemy", main_desired)
+            .with_sub_goals(vec![sub1, sub2]);
 
         assert_eq!(main_goal.sub_goals.len(), 2);
     }
@@ -416,7 +415,8 @@ mod tests {
 
         let mut main_desired = BTreeMap::new();
         main_desired.insert("objective".to_string(), StateValue::Bool(true));
-        let main_goal = Goal::new("complete", main_desired).with_sub_goals(vec![sub_goal]);
+        let main_goal = Goal::new("complete", main_desired)
+            .with_sub_goals(vec![sub_goal]);
 
         let flattened = main_goal.flatten();
         assert_eq!(flattened.len(), 2);
@@ -426,9 +426,11 @@ mod tests {
 
     #[test]
     fn test_goal_comparison_by_urgency() {
-        let goal1 = Goal::new("low_priority", BTreeMap::new()).with_priority(2.0);
+        let goal1 = Goal::new("low_priority", BTreeMap::new())
+            .with_priority(2.0);
 
-        let goal2 = Goal::new("high_priority", BTreeMap::new()).with_priority(8.0);
+        let goal2 = Goal::new("high_priority", BTreeMap::new())
+            .with_priority(8.0);
 
         let goal3 = Goal::new("urgent_deadline", BTreeMap::new())
             .with_priority(3.0)
@@ -442,9 +444,9 @@ mod tests {
 
     #[test]
     fn test_decomposition_strategy() {
-        let goal =
-            Goal::new("test", BTreeMap::new()).with_strategy(DecompositionStrategy::Parallel);
-
+        let goal = Goal::new("test", BTreeMap::new())
+            .with_strategy(DecompositionStrategy::Parallel);
+        
         assert_eq!(goal.decomposition_strategy, DecompositionStrategy::Parallel);
     }
 
@@ -454,8 +456,9 @@ mod tests {
         assert!(!goal_no_subs.should_decompose(0));
 
         let sub_goal = Goal::new("sub", BTreeMap::new());
-        let goal_with_subs = Goal::new("complex", BTreeMap::new()).with_sub_goals(vec![sub_goal]);
-
+        let goal_with_subs = Goal::new("complex", BTreeMap::new())
+            .with_sub_goals(vec![sub_goal]);
+        
         assert!(goal_with_subs.should_decompose(0));
         assert!(goal_with_subs.should_decompose(4));
         assert!(!goal_with_subs.should_decompose(5)); // At max depth
@@ -465,7 +468,8 @@ mod tests {
     #[test]
     fn test_decompose_priority_inheritance() {
         let sub1 = Goal::new("sub1", BTreeMap::new()); // Default priority 1.0
-        let sub2 = Goal::new("sub2", BTreeMap::new()).with_priority(5.0); // Explicit priority
+        let sub2 = Goal::new("sub2", BTreeMap::new())
+            .with_priority(5.0); // Explicit priority
 
         let parent = Goal::new("parent", BTreeMap::new())
             .with_priority(10.0)
@@ -551,12 +555,15 @@ mod tests {
 
         let sub1 = Goal::new("sub1", BTreeMap::new());
         let sub2 = Goal::new("sub2", BTreeMap::new());
-        let parent = Goal::new("parent", BTreeMap::new()).with_sub_goals(vec![sub1, sub2]);
+        let parent = Goal::new("parent", BTreeMap::new())
+            .with_sub_goals(vec![sub1, sub2]);
         assert_eq!(parent.depth(), 2);
 
         let subsub = Goal::new("subsub", BTreeMap::new());
-        let sub = Goal::new("sub", BTreeMap::new()).with_sub_goals(vec![subsub]);
-        let root = Goal::new("root", BTreeMap::new()).with_sub_goals(vec![sub]);
+        let sub = Goal::new("sub", BTreeMap::new())
+            .with_sub_goals(vec![subsub]);
+        let root = Goal::new("root", BTreeMap::new())
+            .with_sub_goals(vec![sub]);
         assert_eq!(root.depth(), 3);
     }
 
@@ -567,13 +574,16 @@ mod tests {
 
         let sub1 = Goal::new("sub1", BTreeMap::new());
         let sub2 = Goal::new("sub2", BTreeMap::new());
-        let parent = Goal::new("parent", BTreeMap::new()).with_sub_goals(vec![sub1, sub2]);
+        let parent = Goal::new("parent", BTreeMap::new())
+            .with_sub_goals(vec![sub1, sub2]);
         assert_eq!(parent.total_goal_count(), 3); // parent + 2 subs
 
         let subsub1 = Goal::new("subsub1", BTreeMap::new());
         let subsub2 = Goal::new("subsub2", BTreeMap::new());
-        let sub = Goal::new("sub", BTreeMap::new()).with_sub_goals(vec![subsub1, subsub2]);
-        let root = Goal::new("root", BTreeMap::new()).with_sub_goals(vec![sub]);
+        let sub = Goal::new("sub", BTreeMap::new())
+            .with_sub_goals(vec![subsub1, subsub2]);
+        let root = Goal::new("root", BTreeMap::new())
+            .with_sub_goals(vec![sub]);
         assert_eq!(root.total_goal_count(), 4); // root + sub + 2 subsubs
     }
 
@@ -607,3 +617,4 @@ mod tests {
         assert_eq!(flattened[2].name, "sub2");
     }
 }
+

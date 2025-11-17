@@ -39,11 +39,11 @@ impl RotateGizmo {
         // This makes rotation feel more intuitive
         let rotation_delta = match constraint {
             AxisConstraint::Y | AxisConstraint::None => mouse_delta.x, // Horizontal for Y-axis
-            AxisConstraint::X => mouse_delta.y,                        // Vertical for X-axis
-            AxisConstraint::Z => mouse_delta.x,                        // Horizontal for Z-axis
-            _ => mouse_delta.x,                                        // Default to horizontal
+            AxisConstraint::X => mouse_delta.y, // Vertical for X-axis
+            AxisConstraint::Z => mouse_delta.x, // Horizontal for Z-axis
+            _ => mouse_delta.x, // Default to horizontal
         };
-
+        
         // Calculate rotation angle from mouse delta
         // Reduced sensitivity: 0.005 = 200px for 1 radian (57.3°)
         let mut angle = rotation_delta * 0.005 * sensitivity;
@@ -60,7 +60,7 @@ impl RotateGizmo {
             AxisConstraint::Y => Vec3::Y,
             AxisConstraint::Z => Vec3::Z,
             AxisConstraint::None => Vec3::Y, // Default to Y axis (vertical) for free rotation
-            _ => Vec3::Y,                    // Planar constraints default to Y axis
+            _ => Vec3::Y, // Planar constraints default to Y axis
         };
 
         // Create rotation quaternion
@@ -145,9 +145,10 @@ mod tests {
 
     #[test]
     fn test_rotation_x_axis_90_degrees() {
-        // Rotate 90° around X axis. Horizontal input controls Y/Z, so X uses vertical drag.
-        let sensitivity = std::f32::consts::PI; // tuned for new 0.005 scalar
-        let mouse_delta = Vec2::new(0.0, 100.0); // 100px vertical controls X rotation
+        // Rotate 90° around X axis
+        // Mouse delta magnitude: 100px * (π/2) / sensitivity
+        let sensitivity = std::f32::consts::PI / 2.0; // 90° per 100px
+        let mouse_delta = Vec2::new(100.0, 0.0); // 100px horizontal
 
         let rotation = RotateGizmo::calculate_rotation(
             mouse_delta,
@@ -164,8 +165,8 @@ mod tests {
 
     #[test]
     fn test_rotation_y_axis_45_degrees() {
-        let sensitivity = std::f32::consts::PI / 2.0; // accounts for 0.5 multiplier
-        let mouse_delta = Vec2::new(100.0, 0.0); // Y axis uses horizontal delta
+        let sensitivity = std::f32::consts::PI / 4.0; // 45° per 100px
+        let mouse_delta = Vec2::new(0.0, 100.0); // 100px vertical
 
         let rotation = RotateGizmo::calculate_rotation(
             mouse_delta,
@@ -182,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_rotation_z_axis_180_degrees() {
-        let sensitivity = 2.0 * std::f32::consts::PI; // adjust for 0.5 scalar
+        let sensitivity = std::f32::consts::PI; // 180° per 100px
         let mouse_delta = Vec2::new(100.0, 0.0);
 
         let rotation = RotateGizmo::calculate_rotation(
@@ -202,7 +203,7 @@ mod tests {
     fn test_rotation_snap_15_degrees() {
         // Test 15° snapping
         let sensitivity = 1.0; // 1 radian per 100px ≈ 57° per 100px
-        let mouse_delta = Vec2::new(0.0, 30.0); // X axis uses vertical delta
+        let mouse_delta = Vec2::new(30.0, 0.0); // Small movement
 
         let rotation = RotateGizmo::calculate_rotation(
             mouse_delta,
@@ -227,7 +228,7 @@ mod tests {
     #[test]
     fn test_rotation_snap_90_degrees() {
         // Test snapping to 90° (6 × 15°)
-        let sensitivity = std::f32::consts::PI; // ensures 90° pre-snap
+        let sensitivity = std::f32::consts::PI / 2.0; // 90° per 100px
         let mouse_delta = Vec2::new(100.0, 0.0);
 
         let rotation = RotateGizmo::calculate_rotation(
@@ -280,35 +281,33 @@ mod tests {
     }
 
     #[test]
-    fn test_rotation_planar_constraint_defaults_to_y_axis() {
-        // Planar constraints now fall back to vertical (Y) axis rotation
+    fn test_rotation_planar_constraint_returns_identity() {
+        // Planar constraints (XY, XZ, YZ) not supported for rotation
         let rotation = RotateGizmo::calculate_rotation(
             Vec2::new(100.0, 0.0),
-            AxisConstraint::XY,
-            std::f32::consts::PI,
+            AxisConstraint::XY, // Planar
+            1.0,
             false,
             Quat::IDENTITY,
             false,
         );
 
-        let angle = RotateGizmo::get_rotation_angle(rotation, Vec3::Y);
-        assert!(angle.abs() > 0.0);
+        assert_eq!(rotation, Quat::IDENTITY);
     }
 
     #[test]
-    fn test_rotation_none_constraint_defaults_to_y_axis() {
-        // Free rotation (None) maps to Y-axis control
+    fn test_rotation_none_constraint_returns_identity() {
+        // None constraint not supported for rotation
         let rotation = RotateGizmo::calculate_rotation(
             Vec2::new(100.0, 0.0),
             AxisConstraint::None,
-            std::f32::consts::PI,
+            1.0,
             false,
             Quat::IDENTITY,
             false,
         );
 
-        let angle = RotateGizmo::get_rotation_angle(rotation, Vec3::Y);
-        assert_relative_eq!(angle, 90.0, epsilon = 0.1);
+        assert_eq!(rotation, Quat::IDENTITY);
     }
 
     #[test]
@@ -332,7 +331,7 @@ mod tests {
         // Higher sensitivity = more rotation per pixel
         let low_sensitivity = 0.1;
         let high_sensitivity = 1.0;
-        let mouse_delta = Vec2::new(0.0, 50.0);
+        let mouse_delta = Vec2::new(50.0, 0.0);
 
         let rot_low = RotateGizmo::calculate_rotation(
             mouse_delta,

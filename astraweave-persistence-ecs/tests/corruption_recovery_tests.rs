@@ -28,12 +28,7 @@ fn test_corrupted_file_detection_invalid_magic() {
     // Create and save world
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(
-        e,
-        CPos {
-            pos: IVec2 { x: 1, y: 2 },
-        },
-    );
+    world.insert(e, CPos { pos: IVec2 { x: 1, y: 2 } });
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
     let hash = calculate_world_hash(&world);
@@ -67,12 +62,7 @@ fn test_corrupted_file_detection_invalid_payload() {
     let mut world = World::new();
     for i in 0..10 {
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i * 2 },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i * 2 } });
         world.insert(e, CHealth { hp: 100 });
     }
 
@@ -89,7 +79,10 @@ fn test_corrupted_file_detection_invalid_payload() {
     let mut world2 = World::new();
     let result = deserialize_ecs_world(&corrupted_blob, &mut world2);
 
-    assert!(result.is_err(), "deserializing corrupted blob should fail");
+    assert!(
+        result.is_err(),
+        "deserializing corrupted blob should fail"
+    );
 }
 
 #[test]
@@ -107,12 +100,7 @@ fn test_truncated_file_detection() {
     let mut world = World::new();
     for i in 0..100 {
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
     }
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
@@ -195,12 +183,7 @@ fn test_partial_corruption_recovery() {
 
     for i in 0..50 {
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
         world.insert(e, CHealth { hp: 100 });
     }
 
@@ -224,7 +207,10 @@ fn test_partial_corruption_recovery() {
     let mut q = Query::<CPos>::new(&world2);
     // World should either be empty or fully loaded, not partial
     let entity_count = std::iter::from_fn(|| q.next()).count();
-    assert_eq!(entity_count, 0, "world should be empty after failed load");
+    assert_eq!(
+        entity_count, 0,
+        "world should be empty after failed load"
+    );
 }
 
 #[test]
@@ -232,12 +218,7 @@ fn test_corruption_at_start() {
     // Test corruption at the beginning of the blob
     let mut world = World::new();
     let e = world.spawn();
-    world.insert(
-        e,
-        CPos {
-            pos: IVec2 { x: 1, y: 2 },
-        },
-    );
+    world.insert(e, CPos { pos: IVec2 { x: 1, y: 2 } });
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
 
@@ -259,12 +240,7 @@ fn test_corruption_at_end() {
     let mut world = World::new();
     for i in 0..10 {
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
     }
 
     let blob = serialize_ecs_world(&world).expect("serialize failed");
@@ -309,12 +285,7 @@ fn test_world_hash_validation() {
     let mut world = World::new();
     for i in 0..100 {
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
         world.insert(e, CHealth { hp: 100 });
     }
 
@@ -357,23 +328,13 @@ fn test_hash_mismatch_detection() {
     let mut world1 = World::new();
     for i in 0..50 {
         let e = world1.spawn();
-        world1.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i },
-            },
-        );
+        world1.insert(e, CPos { pos: IVec2 { x: i, y: i } });
     }
 
     let mut world2 = World::new();
     for i in 0..50 {
         let e = world2.spawn();
-        world2.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i + 1 },
-            },
-        ); // Different data
+        world2.insert(e, CPos { pos: IVec2 { x: i, y: i + 1 } }); // Different data
     }
 
     let hash1 = calculate_world_hash(&world1);
@@ -400,12 +361,7 @@ fn test_save_load_with_hash_validation() {
     let mut world = World::new();
     for i in 0..200 {
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i * 2 },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i * 2 } });
         world.insert(e, CHealth { hp: 50 + (i % 50) });
     }
 
@@ -461,12 +417,7 @@ fn test_concurrent_save_attempts() {
     for i in 0..5 {
         let mut world = World::new();
         let e = world.spawn();
-        world.insert(
-            e,
-            CPos {
-                pos: IVec2 { x: i, y: i },
-            },
-        );
+        world.insert(e, CPos { pos: IVec2 { x: i, y: i } });
         world.insert(e, CHealth { hp: 100 + i });
 
         let blob = serialize_ecs_world(&world).expect("serialize failed");

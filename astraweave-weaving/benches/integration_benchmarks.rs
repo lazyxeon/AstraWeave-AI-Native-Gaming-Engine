@@ -1,11 +1,11 @@
+use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use astraweave_weaving::*;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use glam::Vec3;
 
 /// Benchmark Player ability cooldown updates (Week 5 Day 1 integration)
 fn bench_player_ability_updates(c: &mut Criterion) {
     let mut group = c.benchmark_group("player_abilities");
-
+    
     for entity_count in [1, 10, 100, 1000].iter() {
         group.bench_with_input(
             BenchmarkId::from_parameter(entity_count),
@@ -18,7 +18,7 @@ fn bench_player_ability_updates(c: &mut Criterion) {
                         p
                     })
                     .collect();
-
+                
                 b.iter(|| {
                     for player in &mut players {
                         player.update(black_box(0.016)); // 60 FPS delta
@@ -27,20 +27,20 @@ fn bench_player_ability_updates(c: &mut Criterion) {
             },
         );
     }
-
+    
     group.finish();
 }
 
 /// Benchmark Player ability activation (dash/shield)
 fn bench_player_ability_activation(c: &mut Criterion) {
     let mut group = c.benchmark_group("player_ability_activation");
-
+    
     // Dash activation
     group.bench_function("dash_activation", |b| {
         let mut player = Player::new(Vec3::ZERO);
         player.echo_currency = 1000;
         player.forward = Vec3::new(1.0, 0.0, 0.0);
-
+        
         b.iter(|| {
             let result = player.use_dash();
             black_box(result);
@@ -48,12 +48,12 @@ fn bench_player_ability_activation(c: &mut Criterion) {
             player.update(1.0); // Reset cooldown
         });
     });
-
+    
     // Shield activation
     group.bench_function("shield_activation", |b| {
         let mut player = Player::new(Vec3::ZERO);
         player.echo_currency = 1000;
-
+        
         b.iter(|| {
             let result = player.use_shield();
             black_box(result);
@@ -61,14 +61,14 @@ fn bench_player_ability_activation(c: &mut Criterion) {
             player.update(5.0); // Reset cooldown
         });
     });
-
+    
     group.finish();
 }
 
 /// Benchmark Quest objective updates (Week 5 Day 1 integration)
 fn bench_quest_objective_updates(c: &mut Criterion) {
     let mut group = c.benchmark_group("quest_objectives");
-
+    
     for quest_count in [1, 10, 50, 100].iter() {
         group.bench_with_input(
             BenchmarkId::from_parameter(quest_count),
@@ -117,7 +117,7 @@ fn bench_quest_objective_updates(c: &mut Criterion) {
                                 ),
                             },
                         };
-
+                        
                         Quest::new(
                             format!("quest_{}", i),
                             format!("Quest {}", i),
@@ -126,7 +126,7 @@ fn bench_quest_objective_updates(c: &mut Criterion) {
                         .with_objective(obj_type)
                     })
                     .collect();
-
+                
                 b.iter(|| {
                     for quest in &quests {
                         let _ = black_box(quest.objectives[0].is_complete());
@@ -137,14 +137,14 @@ fn bench_quest_objective_updates(c: &mut Criterion) {
             },
         );
     }
-
+    
     group.finish();
 }
 
 /// Benchmark Enemy spawner archetype determination (Week 5 Day 1 integration)
 fn bench_enemy_spawner_archetype(c: &mut Criterion) {
     let mut group = c.benchmark_group("enemy_spawner");
-
+    
     // Benchmark archetype determination across wave progression
     for wave in [1, 5, 10, 15, 20].iter() {
         group.bench_with_input(
@@ -153,12 +153,12 @@ fn bench_enemy_spawner_archetype(c: &mut Criterion) {
             |b, &wave_num| {
                 let mut spawner = EnemySpawner::new();
                 spawner.add_spawn_point(Vec3::ZERO, 10.0, None);
-
+                
                 // Advance to target wave
                 for _ in 0..wave_num {
                     spawner.update(30.0, &[]); // Trigger wave spawn
                 }
-
+                
                 b.iter(|| {
                     let requests = spawner.update(black_box(0.016), &[]);
                     black_box(requests);
@@ -166,14 +166,14 @@ fn bench_enemy_spawner_archetype(c: &mut Criterion) {
             },
         );
     }
-
+    
     group.finish();
 }
 
 /// Benchmark full integrated system (Player + Quest + Spawner)
 fn bench_integrated_systems(c: &mut Criterion) {
     let mut group = c.benchmark_group("integrated_systems");
-
+    
     for scenario_size in [10, 50, 100].iter() {
         group.bench_with_input(
             BenchmarkId::from_parameter(scenario_size),
@@ -187,7 +187,7 @@ fn bench_integrated_systems(c: &mut Criterion) {
                         p
                     })
                     .collect();
-
+                
                 let quests: Vec<Quest> = (0..size)
                     .map(|i| {
                         Quest::new(
@@ -205,28 +205,28 @@ fn bench_integrated_systems(c: &mut Criterion) {
                         })
                     })
                     .collect();
-
+                
                 let mut spawner = EnemySpawner::new();
                 spawner.add_spawn_point(Vec3::ZERO, 10.0, None);
-
+                
                 b.iter(|| {
                     // Update all systems
                     for player in &mut players {
                         player.update(black_box(0.016));
                     }
-
+                    
                     for quest in &quests {
                         let _ = black_box(quest.objectives[0].is_complete());
                         let _ = black_box(quest.objectives[0].progress());
                     }
-
+                    
                     let spawn_requests = spawner.update(black_box(0.016), &[]);
                     black_box(spawn_requests);
                 });
             },
         );
     }
-
+    
     group.finish();
 }
 

@@ -1,15 +1,15 @@
-use super::{Action, ActionHistory, Goal, WorldState};
-use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashSet};
+use std::cmp::Ordering;
+use super::{Action, Goal, WorldState, ActionHistory};
 
 /// A* search node for planning
 #[derive(Clone)]
 struct PlanNode {
     state: WorldState,
-    path: Vec<String>, // Action names taken to reach this state
-    g_cost: f32,       // Actual cost from start
-    h_cost: f32,       // Heuristic cost to goal
-    risk: f32,         // Accumulated risk
+    path: Vec<String>,    // Action names taken to reach this state
+    g_cost: f32,          // Actual cost from start
+    h_cost: f32,          // Heuristic cost to goal
+    risk: f32,            // Accumulated risk
 }
 
 impl PlanNode {
@@ -37,10 +37,7 @@ impl PartialOrd for PlanNode {
 impl Ord for PlanNode {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering for min-heap (BinaryHeap is max-heap by default)
-        other
-            .f_cost(5.0)
-            .partial_cmp(&self.f_cost(5.0))
-            .unwrap_or(Ordering::Equal)
+        other.f_cost(5.0).partial_cmp(&self.f_cost(5.0)).unwrap_or(Ordering::Equal)
     }
 }
 
@@ -99,12 +96,7 @@ impl AdvancedGOAP {
     }
 
     /// Internal hierarchical planning with depth tracking
-    fn plan_hierarchical(
-        &self,
-        start: &WorldState,
-        goal: &Goal,
-        depth: usize,
-    ) -> Option<Vec<String>> {
+    fn plan_hierarchical(&self, start: &WorldState, goal: &Goal, depth: usize) -> Option<Vec<String>> {
         // Check if goal is already satisfied
         if goal.is_satisfied(start) {
             tracing::debug!("Goal '{}' already satisfied at depth {}", goal.name, depth);
@@ -114,17 +106,14 @@ impl AdvancedGOAP {
         // Check if we should decompose this goal
         if goal.should_decompose(depth) {
             tracing::debug!("Decomposing goal '{}' at depth {}", goal.name, depth);
-
+            
             // Try hierarchical decomposition first
             if let Some(plan) = self.plan_decomposed(start, goal, depth) {
                 return Some(plan);
             }
-
+            
             // If decomposition failed, fall through to direct planning
-            tracing::debug!(
-                "Decomposition failed for '{}', trying direct planning",
-                goal.name
-            );
+            tracing::debug!("Decomposition failed for '{}', trying direct planning", goal.name);
         }
 
         // Direct planning (standard A* search)
@@ -132,14 +121,9 @@ impl AdvancedGOAP {
     }
 
     /// Plan using goal decomposition (HTN-style)
-    fn plan_decomposed(
-        &self,
-        start: &WorldState,
-        goal: &Goal,
-        depth: usize,
-    ) -> Option<Vec<String>> {
+    fn plan_decomposed(&self, start: &WorldState, goal: &Goal, depth: usize) -> Option<Vec<String>> {
         let sub_goals = goal.decompose()?;
-
+        
         match goal.decomposition_strategy {
             super::DecompositionStrategy::Sequential => {
                 self.plan_sequential(start, &sub_goals, depth + 1)
@@ -147,31 +131,28 @@ impl AdvancedGOAP {
             super::DecompositionStrategy::Parallel | super::DecompositionStrategy::AllOf => {
                 self.plan_parallel(start, &sub_goals, depth + 1)
             }
-            super::DecompositionStrategy::AnyOf => self.plan_any_of(start, &sub_goals, depth + 1),
+            super::DecompositionStrategy::AnyOf => {
+                self.plan_any_of(start, &sub_goals, depth + 1)
+            }
         }
     }
 
     /// Plan sub-goals sequentially
-    fn plan_sequential(
-        &self,
-        start: &WorldState,
-        sub_goals: &[Goal],
-        depth: usize,
-    ) -> Option<Vec<String>> {
+    fn plan_sequential(&self, start: &WorldState, sub_goals: &[Goal], depth: usize) -> Option<Vec<String>> {
         let mut combined_plan = Vec::new();
         let mut current_state = start.clone();
 
         for sub_goal in sub_goals {
             // Recursively plan for this sub-goal
             let sub_plan = self.plan_hierarchical(&current_state, sub_goal, depth)?;
-
+            
             // Simulate state changes from sub-plan
             for action_name in &sub_plan {
                 if let Some(action) = self.actions.iter().find(|a| a.name() == action_name) {
                     current_state.apply_effects(action.effects());
                 }
             }
-
+            
             combined_plan.extend(sub_plan);
         }
 
@@ -179,45 +160,27 @@ impl AdvancedGOAP {
     }
 
     /// Plan sub-goals in parallel/all-of (try to optimize order)
-    fn plan_parallel(
-        &self,
-        start: &WorldState,
-        sub_goals: &[Goal],
-        depth: usize,
-    ) -> Option<Vec<String>> {
+    fn plan_parallel(&self, start: &WorldState, sub_goals: &[Goal], depth: usize) -> Option<Vec<String>> {
         // For now, treat parallel as sequential with priority ordering
         // TODO: In future, could interleave actions for true parallel execution
         let mut sorted_sub_goals = sub_goals.to_vec();
-        sorted_sub_goals.sort_by(|a, b| {
-            b.priority
-                .partial_cmp(&a.priority)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-
+        sorted_sub_goals.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal));
+        
         self.plan_sequential(start, &sorted_sub_goals, depth)
     }
 
     /// Plan for any-of sub-goals (first successful plan wins)
-    fn plan_any_of(
-        &self,
-        start: &WorldState,
-        sub_goals: &[Goal],
-        depth: usize,
-    ) -> Option<Vec<String>> {
+    fn plan_any_of(&self, start: &WorldState, sub_goals: &[Goal], depth: usize) -> Option<Vec<String>> {
         // Try each sub-goal in priority order until one succeeds
         let mut sorted_sub_goals = sub_goals.to_vec();
-        sorted_sub_goals.sort_by(|a, b| {
-            b.priority
-                .partial_cmp(&a.priority)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
-
+        sorted_sub_goals.sort_by(|a, b| b.priority.partial_cmp(&a.priority).unwrap_or(std::cmp::Ordering::Equal));
+        
         for sub_goal in sorted_sub_goals {
             if let Some(plan) = self.plan_hierarchical(start, &sub_goal, depth) {
                 return Some(plan);
             }
         }
-
+        
         None // No sub-goal could be achieved
     }
 
@@ -295,11 +258,7 @@ impl AdvancedGOAP {
             }
         }
 
-        tracing::debug!(
-            "No plan found for goal '{}' after {} iterations",
-            goal.name,
-            iterations
-        );
+        tracing::debug!("No plan found for goal '{}' after {} iterations", goal.name, iterations);
         None // No plan found
     }
 
@@ -361,7 +320,7 @@ impl AdvancedGOAP {
 
             // Simulate success (in reality, check actual execution)
             let success_prob = action.success_probability(world, &self.history);
-
+            
             // For simulation, assume action succeeds if probability > 0.5
             if success_prob > 0.5 {
                 world.apply_effects(action.effects());
@@ -396,8 +355,8 @@ impl Default for AdvancedGOAP {
 mod tests {
     use super::*;
     use crate::goap::action::SimpleAction;
-    use crate::goap::StateValue;
     use std::collections::BTreeMap;
+    use crate::goap::StateValue;
 
     #[test]
     fn test_simple_plan() {
@@ -490,12 +449,7 @@ mod tests {
         preconds.insert("impossible_condition".to_string(), StateValue::Bool(true));
         let mut effects = BTreeMap::new();
         effects.insert("goal".to_string(), StateValue::Bool(true));
-        goap.add_action(Box::new(SimpleAction::new(
-            "impossible",
-            preconds,
-            effects,
-            1.0,
-        )));
+        goap.add_action(Box::new(SimpleAction::new("impossible", preconds, effects, 1.0)));
 
         let start = WorldState::new();
 
@@ -515,12 +469,7 @@ mod tests {
         // Action 1: heal -> health = 100
         let mut heal_effects = BTreeMap::new();
         heal_effects.insert("health".to_string(), StateValue::Int(100));
-        goap.add_action(Box::new(SimpleAction::new(
-            "heal",
-            BTreeMap::new(),
-            heal_effects,
-            3.0,
-        )));
+        goap.add_action(Box::new(SimpleAction::new("heal", BTreeMap::new(), heal_effects, 3.0)));
 
         // Action 2: reload -> ammo = 30
         let mut reload_effects = BTreeMap::new();
@@ -579,12 +528,7 @@ mod tests {
 
         let mut effects = BTreeMap::new();
         effects.insert("done".to_string(), StateValue::Bool(true));
-        goap.add_action(Box::new(SimpleAction::new(
-            "action",
-            BTreeMap::new(),
-            effects,
-            1.0,
-        )));
+        goap.add_action(Box::new(SimpleAction::new("action", BTreeMap::new(), effects, 1.0)));
 
         let start = WorldState::new();
 
@@ -601,3 +545,4 @@ mod tests {
         assert_eq!(plan2, plan3);
     }
 }
+

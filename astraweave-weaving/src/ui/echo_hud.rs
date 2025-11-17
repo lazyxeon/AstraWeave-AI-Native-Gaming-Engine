@@ -102,8 +102,7 @@ impl EchoHud {
 
         // Spawn feedback float if balance changed
         if balance_change != 0 {
-            self.feedback_floats
-                .push(EchoFeedbackFloat::new(balance_change));
+            self.feedback_floats.push(EchoFeedbackFloat::new(balance_change));
         }
 
         self.balance = new_balance;
@@ -132,8 +131,10 @@ impl EchoHud {
             .show(ctx, |ui| {
                 ui.horizontal(|ui| {
                     // Echo icon (simple circle for now, can be replaced with image)
-                    let (rect, _response) =
-                        ui.allocate_exact_size(egui::Vec2::new(24.0, 24.0), egui::Sense::hover());
+                    let (rect, _response) = ui.allocate_exact_size(
+                        egui::Vec2::new(24.0, 24.0),
+                        egui::Sense::hover(),
+                    );
                     ui.painter().circle_filled(
                         rect.center(),
                         12.0,
@@ -163,14 +164,17 @@ impl EchoHud {
             egui::Area::new(format!("feedback_float_{:p}", float as *const _))
                 .fixed_pos(egui::Pos2::new(base_x, base_y + y_offset))
                 .show(ctx, |ui| {
-                    ui.label(egui::RichText::new(float.text()).size(20.0).strong().color(
-                        egui::Color32::from_rgba_unmultiplied(
-                            (r * 255.0) as u8,
-                            (g * 255.0) as u8,
-                            (b * 255.0) as u8,
-                            alpha,
-                        ),
-                    ));
+                    ui.label(
+                        egui::RichText::new(float.text())
+                            .size(20.0)
+                            .strong()
+                            .color(egui::Color32::from_rgba_unmultiplied(
+                                (r * 255.0) as u8,
+                                (g * 255.0) as u8,
+                                (b * 255.0) as u8,
+                                alpha,
+                            )),
+                    );
                 });
         }
     }

@@ -93,10 +93,10 @@ impl Default for OrbitCamera {
             pitch: std::f32::consts::PI / 6.0, // 30° pitch (shallower, see more horizon/sky)
             fov: 60.0,
             aspect: 16.0 / 9.0,
-            near: 0.01, // Very close near plane (10cm) to prevent clipping
+            near: 0.01,              // Very close near plane (10cm) to prevent clipping
             far: 1000.0,
-            min_distance: 0.1, // Allow camera to get very close (10cm from focal point)
-            max_distance: 200.0, // Allow zooming out further
+            min_distance: 0.1,       // Allow camera to get very close (10cm from focal point)
+            max_distance: 200.0,     // Allow zooming out further
             min_pitch: -std::f32::consts::PI / 2.0 + 0.01, // Prevent gimbal lock
             max_pitch: std::f32::consts::PI / 2.0 - 0.01, // Prevent gimbal lock
         }
@@ -380,8 +380,8 @@ mod tests {
     fn test_orbit_camera_default() {
         let camera = OrbitCamera::default();
         assert_eq!(camera.focal_point, Vec3::ZERO);
-        assert_eq!(camera.distance, 25.0);
-        assert_relative_eq!(camera.pitch, std::f32::consts::PI / 6.0);
+        assert_eq!(camera.distance, 10.0);
+        assert_relative_eq!(camera.pitch, std::f32::consts::PI / 4.0);
     }
 
     #[test]
@@ -389,9 +389,9 @@ mod tests {
         let camera = OrbitCamera::default();
         let pos = camera.position();
 
-        // Position should be ~25 units from focal point
+        // Position should be ~10 units from focal point
         let dist = (pos - camera.focal_point).length();
-        assert_relative_eq!(dist, 25.0, epsilon = 0.01);
+        assert_relative_eq!(dist, 10.0, epsilon = 0.01);
     }
 
     #[test]
@@ -403,9 +403,9 @@ mod tests {
         camera.zoom(10.0);
         assert!(camera.distance < initial_dist);
 
-        // Zoom out (overshoot past the original distance)
-        camera.zoom(-6.0);
-        assert!(camera.distance > initial_dist);
+        // Zoom out
+        camera.zoom(-20.0);
+        assert!(camera.distance > initial_dist * 0.9);
     }
 
     #[test]
@@ -413,11 +413,11 @@ mod tests {
         let mut camera = OrbitCamera::default();
 
         // Try to zoom beyond max distance
-        camera.zoom(-9.0);
+        camera.zoom(-1000.0);
         assert_eq!(camera.distance, camera.max_distance);
 
         // Try to zoom below min distance
-        camera.zoom(20_000.0);
+        camera.zoom(1000.0);
         assert_eq!(camera.distance, camera.min_distance);
     }
 

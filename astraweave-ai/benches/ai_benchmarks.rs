@@ -5,7 +5,9 @@ use astraweave_ai::{
     orchestrator::{GoapOrchestrator, Orchestrator, RuleOrchestrator, UtilityOrchestrator},
     tool_sandbox::{validate_tool_action, ToolVerb, ValidationContext},
 };
-use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState, Poi, WorldSnapshot};
+use astraweave_core::{
+    CompanionState, EnemyState, IVec2, PlayerState, Poi, WorldSnapshot,
+};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::{collections::BTreeMap, hint::black_box};
 

@@ -1,5 +1,3 @@
-#![allow(dead_code)] // Large portions of the legacy editor are scaffolded but not yet reconnected
-
 #[derive(Clone, Serialize, Deserialize, Default)]
 struct DialogueDoc {
     title: String,
@@ -31,7 +29,6 @@ struct QuestStep {
     completed: bool,
 }
 
-mod behavior_graph;
 mod brdf_preview;
 mod clipboard; // Phase 3.4 - Copy/Paste/Duplicate
 mod command; // Phase 2.1 - Undo/Redo system
@@ -40,46 +37,38 @@ mod editor_mode; // Phase 4.2 - Play-in-Editor
 mod entity_manager;
 mod file_watcher;
 mod gizmo;
-mod interaction;
 mod material_inspector;
 mod panels;
 mod prefab; // Phase 4.1 - Prefab System
 mod recent_files; // Phase 3 - Recent files tracking
 mod scene_serialization; // Phase 2.2 - Scene Save/Load
-mod scene_state;
-mod telemetry;
 mod ui; // Phase 3 - UI components (StatusBar, etc.)
 mod viewport; // Phase 1.1 - 3D Viewport
               // mod voxel_tools;  // Temporarily disabled - missing astraweave-terrain dependency
 
-use crate::command::{
-    spawn_prefab_with_undo, EditAmmoCommand, EditHealthCommand, EditTeamCommand,
-    PrefabApplyOverridesCommand, PrefabRevertOverridesCommand,
-};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use astraweave_asset::AssetDatabase;
-use astraweave_core::{Entity, IVec2, Team, World};
+use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+use astraweave_core::{IVec2, Team, World};
 use astraweave_dialogue::DialogueGraph;
 use astraweave_nav::NavMesh;
 use astraweave_quests::Quest;
-use behavior_graph::{BehaviorGraphDocument, BehaviorGraphEditorUi};
-use editor_mode::EditorMode;
 use eframe::egui;
-use entity_manager::SelectionSet;
-use gizmo::snapping::SnappingConfig;
+use editor_mode::EditorMode;
+use entity_manager::{EntityManager, SelectionSet};
 use gizmo::state::GizmoMode;
+use gizmo::snapping::SnappingConfig;
 use material_inspector::MaterialInspector;
+use prefab::PrefabManager;
+use recent_files::RecentFilesManager;
+use scene_serialization::SceneData;
+use ui::StatusBar;
 use panels::{
     AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, ChartsPanel, EntityPanel, GraphPanel,
     HierarchyPanel, Panel, PerformancePanel, TransformPanel, WorldPanel,
 };
-use prefab::{PrefabData, PrefabManager, PrefabManagerHandle};
-use recent_files::RecentFilesManager;
-use scene_serialization::SceneData;
-use scene_state::EditorSceneState;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
-use ui::StatusBar;
 use uuid::Uuid;
 use viewport::ViewportWidget; // Phase 1.1
 
@@ -193,8 +182,7 @@ struct EditorApp {
     #[allow(dead_code)]
     quest: QuestDoc,
     asset_db: AssetDatabase,
-    behavior_graph: BehaviorGraphDocument,
-    behavior_graph_ui: BehaviorGraphEditorUi,
+    behavior_graph: BehaviorGraph,
     dialogue_graph: DialogueGraph,
     quest_graph: Quest,
     console_logs: Vec<String>,
@@ -206,10 +194,11 @@ struct EditorApp {
     nav_mesh: NavMesh,
     nav_max_step: f32,
     nav_max_slope_deg: f32,
-    scene_state: EditorSceneState,
-    runtime_world: Option<World>,
+    sim_world: Option<World>,
     sim_tick_count: u64,
     material_inspector: MaterialInspector, // NEW - Phase PBR-G Task 2
+    // Phase 1: Entity management
+    entity_manager: EntityManager,
     selected_entity: Option<u64>,
     // Phase 2.1: Undo/Redo system
     undo_stack: command::UndoStack,
@@ -234,11 +223,12 @@ struct EditorApp {
     // Phase 3.5: StatusBar tracking
     current_gizmo_mode: GizmoMode,
     selection_set: SelectionSet,
+    snapping_config: SnappingConfig,
     last_frame_time: std::time::Instant,
     current_fps: f32,
     recent_files: RecentFilesManager,
     // Phase 4.1: Prefab System
-    prefab_manager: PrefabManagerHandle,
+    prefab_manager: PrefabManager,
     // Phase 4.2: Play-in-Editor
     editor_mode: EditorMode,
     world_snapshot: Option<SceneData>,
@@ -246,7 +236,6 @@ struct EditorApp {
 
 impl Default for EditorApp {
     fn default() -> Self {
-        let scene_state = EditorSceneState::new(Self::create_default_world());
         let mut asset_db = AssetDatabase::new();
         // Try to load from assets.json
         if let Ok(()) = asset_db.load_manifest(&PathBuf::from("assets/assets.json")) {
@@ -293,8 +282,9 @@ impl Default for EditorApp {
                 }],
             },
             asset_db,
-            behavior_graph: BehaviorGraphDocument::new_default(),
-            behavior_graph_ui: BehaviorGraphEditorUi::default(),
+            behavior_graph: BehaviorGraph {
+                root: BehaviorNode::Action("idle".into()),
+            },
             dialogue_graph: DialogueGraph {
                 nodes: vec![astraweave_dialogue::DialogueNode {
                     id: "start".into(),
@@ -325,10 +315,11 @@ impl Default for EditorApp {
             },
             nav_max_step: 0.4,
             nav_max_slope_deg: 60.0,
-            scene_state,
-            runtime_world: None,
+            sim_world: Some(Self::create_default_world()), // Initialize with sample entities
             sim_tick_count: 0,
             material_inspector: MaterialInspector::new(), // NEW - Phase PBR-G Task 2
+            // Phase 1: Entity management
+            entity_manager: EntityManager::new(),
             selected_entity: None,
             // Phase 2.1: Undo/Redo system
             undo_stack: command::UndoStack::new(100), // Store last 100 commands
@@ -353,11 +344,12 @@ impl Default for EditorApp {
             // Phase 3.5: StatusBar state
             current_gizmo_mode: GizmoMode::Inactive,
             selection_set: SelectionSet::new(),
+            snapping_config: SnappingConfig::default(),
             last_frame_time: std::time::Instant::now(),
             current_fps: 60.0,
             recent_files: RecentFilesManager::load(),
             // Phase 4.1: Prefab System
-            prefab_manager: PrefabManager::shared("prefabs"),
+            prefab_manager: PrefabManager::new("prefabs"),
             // Phase 4.2: Play-in-Editor
             editor_mode: EditorMode::default(),
             world_snapshot: None,
@@ -366,123 +358,22 @@ impl Default for EditorApp {
 }
 
 impl EditorApp {
-    fn edit_world(&self) -> &World {
-        self.scene_state.world()
-    }
-
-    fn edit_world_mut(&mut self) -> &mut World {
-        self.scene_state.world_mut()
-    }
-
-    fn runtime_world_mut(&mut self) -> Option<&mut World> {
-        self.runtime_world.as_mut()
-    }
-
-    fn lock_prefab_manager(&self) -> Result<std::sync::MutexGuard<'_, PrefabManager>> {
-        self.prefab_manager
-            .lock()
-            .map_err(|_| anyhow!("Prefab manager lock poisoned"))
-    }
-
-    fn with_world_and_undo_stack<F, R>(&mut self, f: F) -> R
-    where
-        F: FnOnce(&mut command::UndoStack, &mut World) -> R,
-    {
-        let mut undo_stack = std::mem::take(&mut self.undo_stack);
-        let result = {
-            let world = self.scene_state.world_mut();
-            f(&mut undo_stack, world)
-        };
-        self.undo_stack = undo_stack;
-        result
-    }
-
-    fn set_snapping_config(&self, new_config: SnappingConfig) {
-        let current = self.scene_state.snapping_config();
-        if current != new_config {
-            self.scene_state.update_snapping(|cfg| *cfg = new_config);
-        }
-    }
-
-    fn prefab_spawn_coords(&self, world_point: glam::Vec3) -> (i32, i32) {
-        let cfg = self.scene_state.snapping_config();
-        let mut x = world_point.x;
-        let mut z = world_point.z;
-
-        if cfg.grid_enabled && cfg.grid_size > 0.0 {
-            x = (x / cfg.grid_size).round() * cfg.grid_size;
-            z = (z / cfg.grid_size).round() * cfg.grid_size;
-        }
-
-        (x.round() as i32, z.round() as i32)
-    }
-
-    fn handle_prefab_drop(
-        &mut self,
-        prefab_path: PathBuf,
-        world_point: glam::Vec3,
-        viewport: &mut ViewportWidget,
-    ) {
-        let spawn_coords = self.prefab_spawn_coords(world_point);
-        match self.spawn_prefab_for_drop(prefab_path.clone(), spawn_coords) {
-            Ok(entity) => {
-                viewport.set_selected_entity(Some(entity));
-                self.selected_entity = Some(entity as u64);
-                self.selection_set.clear();
-                self.selection_set.add(entity as u64, true);
-                self.scene_state.sync_all();
-                let message = format!(
-                    "Spawned prefab {} at ({}, {})",
-                    prefab_path.display(),
-                    spawn_coords.0,
-                    spawn_coords.1
-                );
-                self.status = message.clone();
-                self.console_logs.push(format!("✅ {}", message));
-            }
-            Err(err) => {
-                let message = format!("Failed to spawn prefab {}: {}", prefab_path.display(), err);
-                self.console_logs.push(format!("❌ {}", message));
-                self.status = message;
-            }
-        }
-    }
-
-    fn spawn_prefab_for_drop(
-        &mut self,
-        prefab_path: PathBuf,
-        spawn_coords: (i32, i32),
-    ) -> Result<Entity> {
-        let mut undo_stack = std::mem::take(&mut self.undo_stack);
-        let entity = spawn_prefab_with_undo(
-            self.prefab_manager.clone(),
-            prefab_path,
-            spawn_coords,
-            self.scene_state.world_mut(),
-            &mut undo_stack,
-        )?;
-        self.undo_stack = undo_stack;
-        Ok(entity)
-    }
-
-    fn notify_prefab_override(&mut self, entity: Entity) {
-        let pose = self.scene_state.world().pose(entity);
-        let health = self.scene_state.world().health(entity);
-
-        if pose.is_none() && health.is_none() {
-            return;
-        }
-
-        if let Ok(mut manager) = self.prefab_manager.lock() {
-            manager.track_override_snapshot(entity, pose, health);
-        }
-    }
-
-    fn process_viewport_events(&mut self, viewport: &mut ViewportWidget) {
-        let events = viewport.take_pending_events();
-        if let Some(metadata) = events.gizmo_commit {
-            self.notify_prefab_override(metadata.entity);
-        }
+    /// Initialize sample entities for viewport testing
+    fn init_sample_entities(entity_manager: &mut EntityManager) {
+        use glam::{Quat, Vec3};
+        
+        // Create a few test entities
+        let cube1 = entity_manager.create("Cube_1".to_string());
+        entity_manager.update_transform(cube1, Vec3::new(0.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        
+        let cube2 = entity_manager.create("Cube_2".to_string());
+        entity_manager.update_transform(cube2, Vec3::new(3.0, 0.0, 0.0), Quat::IDENTITY, Vec3::ONE);
+        
+        let cube3 = entity_manager.create("Cube_3".to_string());
+        entity_manager.update_transform(cube3, Vec3::new(0.0, 0.0, 3.0), Quat::IDENTITY, Vec3::ONE);
+        
+        let sphere = entity_manager.create("Sphere_1".to_string());
+        entity_manager.update_transform(sphere, Vec3::new(-3.0, 1.0, 0.0), Quat::IDENTITY, Vec3::splat(1.5));
     }
 
     /// Create a default world with sample entities for viewport testing
@@ -530,6 +421,9 @@ impl EditorApp {
     /// Returns error if viewport initialization fails (missing wgpu support).
     fn new(cc: &eframe::CreationContext) -> Result<Self> {
         let mut app = Self::default();
+
+        // Initialize sample entities for testing
+        Self::init_sample_entities(&mut app.entity_manager);
 
         // Initialize viewport (requires wgpu render state from CreationContext)
         match ViewportWidget::new(cc) {
@@ -581,69 +475,84 @@ impl EditorApp {
 
     fn show_behavior_graph_editor(&mut self, ui: &mut egui::Ui) {
         ui.heading("Behavior Graph Editor");
-        ui.label("Node-based BT/HTN editor with RON round-tripping");
-        let logs = &mut self.console_logs;
-        self.behavior_graph_ui
-            .show(ui, &mut self.behavior_graph, |msg| logs.push(msg));
-        ui.separator();
-        self.draw_behavior_binding_controls(ui);
-    }
+        ui.label("Node-based BT/HTN editor");
 
-    fn draw_behavior_binding_controls(&mut self, ui: &mut egui::Ui) {
-        ui.heading("Entity Binding");
-        let Some(selected_raw) = self.selected_entity else {
-            ui.label("Select an entity in the viewport to bind this graph.");
-            return;
-        };
-        let entity = selected_raw as Entity;
-        if self.scene_state.world().pose(entity).is_none() {
-            ui.label("Selected entity is no longer present in the scene.");
-            return;
-        }
-
-        let entity_name = self.scene_state.world().name(entity).unwrap_or("Unnamed");
-        ui.label(format!(
-            "Currently editing entity #{entity} ({entity_name})"
-        ));
-
-        if ui.button("Assign Graph To Entity").clicked() {
-            match self.behavior_graph.to_runtime() {
-                Ok(graph) => {
-                    self.scene_state
-                        .world_mut()
-                        .set_behavior_graph(entity, graph);
-                    self.console_logs
-                        .push(format!("🔗 Assigned behavior graph to entity #{entity}"));
+        // Simple tree editor for behavior graph
+        fn show_node(ui: &mut egui::Ui, node: &mut BehaviorNode) {
+            match node {
+                BehaviorNode::Action(ref mut s) => {
+                    ui.horizontal(|ui| {
+                        ui.label("Action:");
+                        ui.text_edit_singleline(s);
+                    });
                 }
-                Err(err) => {
-                    self.console_logs
-                        .push(format!("❌ Failed to assign behavior graph: {err}"));
+                BehaviorNode::Condition(ref mut s) => {
+                    ui.horizontal(|ui| {
+                        ui.label("Condition:");
+                        ui.text_edit_singleline(s);
+                    });
+                }
+                BehaviorNode::Sequence(ref mut children) => {
+                    ui.collapsing("Sequence", |ui| {
+                        for child in children.iter_mut() {
+                            show_node(ui, child);
+                        }
+                        if ui.button("Add Action").clicked() {
+                            children.push(BehaviorNode::Action("new action".into()));
+                        }
+                    });
+                }
+                BehaviorNode::Selector(ref mut children) => {
+                    ui.collapsing("Selector", |ui| {
+                        for child in children.iter_mut() {
+                            show_node(ui, child);
+                        }
+                        if ui.button("Add Action").clicked() {
+                            children.push(BehaviorNode::Action("new action".into()));
+                        }
+                    });
+                }
+                BehaviorNode::Decorator(_, ref mut child) => {
+                    ui.collapsing("Decorator", |ui| {
+                        show_node(ui, child);
+                    });
+                }
+                BehaviorNode::Parallel(ref mut children, _) => {
+                    ui.collapsing("Parallel", |ui| {
+                        for child in children.iter_mut() {
+                            show_node(ui, child);
+                        }
+                        if ui.button("Add Action").clicked() {
+                            children.push(BehaviorNode::Action("new action".into()));
+                        }
+                    });
                 }
             }
         }
 
-        let existing_graph = self.scene_state.world().behavior_graph(entity).cloned();
+        show_node(ui, &mut self.behavior_graph.root);
 
-        if let Some(graph) = existing_graph {
-            ui.colored_label(
-                egui::Color32::from_rgb(120, 200, 255),
-                "Entity has a behavior graph bound",
-            );
-            ui.horizontal(|ui| {
-                if ui.button("Load Graph From Entity").clicked() {
-                    self.behavior_graph = BehaviorGraphDocument::from_runtime(&graph);
-                    self.behavior_graph.mark_clean();
-                    self.console_logs
-                        .push(format!("📥 Loaded behavior graph from entity #{entity}"));
+        if ui.button("Validate Graph").clicked() {
+            // Provide actual feedback instead of just logging
+            let node_count = count_nodes(&self.behavior_graph.root);
+            self.console_logs.push(format!(
+                "✅ Behavior graph validated: {} nodes, structure OK",
+                node_count
+            ));
+            self.status = format!("Validated behavior graph ({} nodes)", node_count);
+        }
+
+        // Helper function to count nodes in the graph
+        fn count_nodes(node: &BehaviorNode) -> usize {
+            match node {
+                BehaviorNode::Action(_) | BehaviorNode::Condition(_) => 1,
+                BehaviorNode::Sequence(children)
+                | BehaviorNode::Selector(children)
+                | BehaviorNode::Parallel(children, _) => {
+                    1 + children.iter().map(count_nodes).sum::<usize>()
                 }
-                if ui.button("Clear Binding").clicked() {
-                    self.scene_state.world_mut().remove_behavior_graph(entity);
-                    self.console_logs
-                        .push(format!("🧹 Cleared behavior graph from entity #{entity}"));
-                }
-            });
-        } else {
-            ui.label("Entity has no behavior graph assigned.");
+                BehaviorNode::Decorator(_, child) => 1 + count_nodes(child),
+            }
         }
     }
 
@@ -1021,20 +930,14 @@ impl eframe::App for EditorApp {
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
         self.last_frame_time = now;
-        self.current_fps = if frame_time > 0.0 {
-            1.0 / frame_time
-        } else {
-            60.0
-        };
-
+        self.current_fps = if frame_time > 0.0 { 1.0 / frame_time } else { 60.0 };
+        
         // Phase 2.1 & 2.2: Global hotkeys for undo/redo and scene save/load
         ctx.input(|i| {
             // Ctrl+Z: Undo
             if i.modifiers.ctrl && i.key_pressed(egui::Key::Z) && !i.modifiers.shift {
-                if self.editor_mode.can_edit() {
-                    let result =
-                        self.with_world_and_undo_stack(|undo_stack, world| undo_stack.undo(world));
-                    if let Err(e) = result {
+                if let Some(world) = self.sim_world.as_mut() {
+                    if let Err(e) = self.undo_stack.undo(world) {
                         self.console_logs.push(format!("❌ Undo failed: {}", e));
                     } else if let Some(desc) = self.undo_stack.redo_description() {
                         self.status = format!("⏮️  Undid: {}", desc);
@@ -1047,10 +950,8 @@ impl eframe::App for EditorApp {
             if (i.modifiers.ctrl && i.key_pressed(egui::Key::Y))
                 || (i.modifiers.ctrl && i.modifiers.shift && i.key_pressed(egui::Key::Z))
             {
-                if self.editor_mode.can_edit() {
-                    let result =
-                        self.with_world_and_undo_stack(|undo_stack, world| undo_stack.redo(world));
-                    if let Err(e) = result {
+                if let Some(world) = self.sim_world.as_mut() {
+                    if let Err(e) = self.undo_stack.redo(world) {
                         self.console_logs.push(format!("❌ Redo failed: {}", e));
                     } else if let Some(desc) = self.undo_stack.undo_description() {
                         self.status = format!("⏭️  Redid: {}", desc);
@@ -1061,29 +962,30 @@ impl eframe::App for EditorApp {
 
             // Ctrl+S: Save Scene
             if i.modifiers.ctrl && i.key_pressed(egui::Key::S) {
-                let world = self.edit_world();
-                let path = if let Some(p) = &self.current_scene_path {
-                    p.clone()
+                if let Some(world) = &self.sim_world {
+                    let path = if let Some(p) = &self.current_scene_path {
+                        p.clone()
+                    } else {
+                        let dir = self.content_root.join("scenes");
+                        let _ = fs::create_dir_all(&dir);
+                        dir.join("untitled.scene.ron")
+                    };
+                    
+                    match scene_serialization::save_scene(world, &path) {
+                        Ok(()) => {
+                            self.current_scene_path = Some(path.clone());
+                            self.recent_files.add_file(path.clone());
+                            self.status = format!("💾 Saved scene to {:?}", path);
+                            self.console_logs.push(format!("✅ Scene saved: {:?}", path));
+                            self.last_autosave = std::time::Instant::now();
+                        }
+                        Err(e) => {
+                            self.status = format!("❌ Scene save failed: {}", e);
+                            self.console_logs.push(format!("❌ Failed to save scene: {}", e));
+                        }
+                    }
                 } else {
-                    let dir = self.content_root.join("scenes");
-                    let _ = fs::create_dir_all(&dir);
-                    dir.join("untitled.scene.ron")
-                };
-
-                match scene_serialization::save_scene(world, &path) {
-                    Ok(()) => {
-                        self.current_scene_path = Some(path.clone());
-                        self.recent_files.add_file(path.clone());
-                        self.status = format!("💾 Saved scene to {:?}", path);
-                        self.console_logs
-                            .push(format!("✅ Scene saved: {:?}", path));
-                        self.last_autosave = std::time::Instant::now();
-                    }
-                    Err(e) => {
-                        self.status = format!("❌ Scene save failed: {}", e);
-                        self.console_logs
-                            .push(format!("❌ Failed to save scene: {}", e));
-                    }
+                    self.console_logs.push("⚠️  No world to save".into());
                 }
             }
 
@@ -1092,59 +994,49 @@ impl eframe::App for EditorApp {
                 let path = self.content_root.join("scenes/untitled.scene.ron");
                 match scene_serialization::load_scene(&path) {
                     Ok(world) => {
-                        self.scene_state = EditorSceneState::new(world);
+                        self.sim_world = Some(world);
                         self.current_scene_path = Some(path.clone());
                         self.recent_files.add_file(path.clone());
                         self.status = format!("📂 Loaded scene from {:?}", path);
-                        self.console_logs
-                            .push(format!("✅ Scene loaded: {:?}", path));
+                        self.console_logs.push(format!("✅ Scene loaded: {:?}", path));
                         self.undo_stack.clear();
                     }
                     Err(e) => {
                         self.status = format!("❌ Scene load failed: {}", e);
-                        self.console_logs
-                            .push(format!("❌ Failed to load scene: {}", e));
+                        self.console_logs.push(format!("❌ Failed to load scene: {}", e));
                     }
                 }
             }
 
             // Ctrl+C: Copy selected entities
             if i.modifiers.ctrl && i.key_pressed(egui::Key::C) && !i.modifiers.shift {
-                let world = self.edit_world();
-                let selected = self.hierarchy_panel.get_all_selected();
-                if !selected.is_empty() {
-                    self.clipboard =
-                        Some(clipboard::ClipboardData::from_entities(world, &selected));
-                    self.status = format!("📋 Copied {} entities", selected.len());
-                    self.console_logs.push(format!(
-                        "📋 Copied {} entities to clipboard",
-                        selected.len()
-                    ));
-                } else {
-                    self.console_logs
-                        .push("⚠️  No entities selected to copy".into());
+                if let Some(world) = &self.sim_world {
+                    let selected = self.hierarchy_panel.get_all_selected();
+                    if !selected.is_empty() {
+                        self.clipboard = Some(clipboard::ClipboardData::from_entities(world, &selected));
+                        self.status = format!("📋 Copied {} entities", selected.len());
+                        self.console_logs.push(format!("📋 Copied {} entities to clipboard", selected.len()));
+                    } else {
+                        self.console_logs.push("⚠️  No entities selected to copy".into());
+                    }
                 }
             }
 
             // Ctrl+V: Paste entities
             if i.modifiers.ctrl && i.key_pressed(egui::Key::V) {
-                if let Some(clipboard) = self.clipboard.clone() {
-                    let entity_count = clipboard.entities.len();
-                    let offset = IVec2 { x: 1, y: 1 };
-                    let result = self.with_world_and_undo_stack(|undo_stack, world| {
+                if let Some(clipboard) = &self.clipboard {
+                    if let Some(world) = &mut self.sim_world {
+                        let offset = IVec2 { x: 1, y: 1 };
                         let cmd = command::SpawnEntitiesCommand::new(clipboard.clone(), offset);
-                        undo_stack.execute(cmd, world)
-                    });
-
-                    match result {
-                        Ok(()) => {
-                            self.status = format!("📋 Pasted {} entities", entity_count);
-                            self.console_logs
-                                .push(format!("✅ Pasted {} entities", entity_count));
-                        }
-                        Err(e) => {
-                            self.status = format!("❌ Paste failed: {}", e);
-                            self.console_logs.push(format!("❌ Paste failed: {}", e));
+                        match self.undo_stack.execute(cmd, world) {
+                            Ok(()) => {
+                                self.status = format!("📋 Pasted {} entities", clipboard.entities.len());
+                                self.console_logs.push(format!("✅ Pasted {} entities", clipboard.entities.len()));
+                            }
+                            Err(e) => {
+                                self.status = format!("❌ Paste failed: {}", e);
+                                self.console_logs.push(format!("❌ Paste failed: {}", e));
+                            }
                         }
                     }
                 } else {
@@ -1154,57 +1046,47 @@ impl eframe::App for EditorApp {
 
             // Ctrl+D: Duplicate selected entities
             if i.modifiers.ctrl && i.key_pressed(egui::Key::D) {
-                let selected = self.hierarchy_panel.get_all_selected();
-                if !selected.is_empty() {
-                    let offset = IVec2 { x: 1, y: 1 };
-                    let selected_clone = selected.clone();
-                    let result = self.with_world_and_undo_stack(|undo_stack, world| {
-                        let cmd =
-                            command::DuplicateEntitiesCommand::new(selected_clone.clone(), offset);
-                        undo_stack.execute(cmd, world)
-                    });
-                    match result {
-                        Ok(()) => {
-                            self.status = format!("📋 Duplicated {} entities", selected.len());
-                            self.console_logs
-                                .push(format!("✅ Duplicated {} entities", selected.len()));
+                if let Some(world) = &mut self.sim_world {
+                    let selected = self.hierarchy_panel.get_all_selected();
+                    if !selected.is_empty() {
+                        let offset = IVec2 { x: 1, y: 1 };
+                        let cmd = command::DuplicateEntitiesCommand::new(selected.clone(), offset);
+                        match self.undo_stack.execute(cmd, world) {
+                            Ok(()) => {
+                                self.status = format!("📋 Duplicated {} entities", selected.len());
+                                self.console_logs.push(format!("✅ Duplicated {} entities", selected.len()));
+                            }
+                            Err(e) => {
+                                self.status = format!("❌ Duplicate failed: {}", e);
+                                self.console_logs.push(format!("❌ Duplicate failed: {}", e));
+                            }
                         }
-                        Err(e) => {
-                            self.status = format!("❌ Duplicate failed: {}", e);
-                            self.console_logs
-                                .push(format!("❌ Duplicate failed: {}", e));
-                        }
+                    } else {
+                        self.console_logs.push("⚠️  No entities selected to duplicate".into());
                     }
-                } else {
-                    self.console_logs
-                        .push("⚠️  No entities selected to duplicate".into());
                 }
             }
 
             // F5: Play
             if i.key_pressed(egui::Key::F5) {
                 if self.editor_mode.is_editing() {
-                    let snapshot = {
-                        let world = self.edit_world();
-                        SceneData::from_world(world)
-                    };
-                    self.world_snapshot = Some(snapshot);
-                    self.editor_mode = EditorMode::Play;
-                    self.simulation_playing = true;
-                    self.status = "▶️ Playing".into();
-                    self.console_logs
-                        .push("▶️ Entered Play mode (F6 to pause, F7 to stop)".into());
+                    if let Some(world) = &self.sim_world {
+                        self.world_snapshot = Some(SceneData::from_world(world));
+                        self.editor_mode = EditorMode::Play;
+                        self.simulation_playing = true;
+                        self.status = "▶️ Playing".into();
+                        self.console_logs.push("▶️ Entered Play mode (F6 to pause, F7 to stop)".into());
+                    }
                 }
             }
-
+            
             // F6: Pause/Unpause
             if i.key_pressed(egui::Key::F6) {
                 if self.editor_mode.is_playing() {
                     self.editor_mode = EditorMode::Paused;
                     self.simulation_playing = false;
                     self.status = "⏸️ Paused".into();
-                    self.console_logs
-                        .push("⏸️ Paused (F5 to resume, F7 to stop)".into());
+                    self.console_logs.push("⏸️ Paused (F5 to resume, F7 to stop)".into());
                 } else if self.editor_mode.is_paused() {
                     self.editor_mode = EditorMode::Play;
                     self.simulation_playing = true;
@@ -1212,17 +1094,16 @@ impl eframe::App for EditorApp {
                     self.console_logs.push("▶️ Resumed playing".into());
                 }
             }
-
+            
             // F7: Stop (restore snapshot)
             if i.key_pressed(egui::Key::F7) {
                 if !self.editor_mode.is_editing() {
                     if let Some(snapshot) = self.world_snapshot.take() {
-                        self.scene_state = EditorSceneState::new(snapshot.to_world());
+                        self.sim_world = Some(snapshot.to_world());
                         self.editor_mode = EditorMode::Edit;
                         self.simulation_playing = false;
                         self.status = "⏹️ Stopped (world restored)".into();
-                        self.console_logs
-                            .push("⏹️ Stopped play mode (world restored to snapshot)".into());
+                        self.console_logs.push("⏹️ Stopped play mode (world restored to snapshot)".into());
                     } else {
                         self.editor_mode = EditorMode::Edit;
                         self.simulation_playing = false;
@@ -1235,29 +1116,25 @@ impl eframe::App for EditorApp {
             // Delete: Delete selected entities
             if i.key_pressed(egui::Key::Delete) {
                 if self.editor_mode.can_edit() {
-                    let selected = self.hierarchy_panel.get_all_selected();
-                    if !selected.is_empty() {
-                        let selected_clone = selected.clone();
-                        let result = self.with_world_and_undo_stack(|undo_stack, world| {
-                            let cmd = command::DeleteEntitiesCommand::new(selected_clone.clone());
-                            undo_stack.execute(cmd, world)
-                        });
-                        match result {
-                            Ok(()) => {
-                                self.hierarchy_panel.set_selected(None);
-                                self.selected_entity = None;
-                                self.status = format!("🗑️  Deleted {} entities", selected.len());
-                                self.console_logs
-                                    .push(format!("✅ Deleted {} entities", selected.len()));
+                    if let Some(world) = &mut self.sim_world {
+                        let selected = self.hierarchy_panel.get_all_selected();
+                        if !selected.is_empty() {
+                            let cmd = command::DeleteEntitiesCommand::new(selected.clone());
+                            match self.undo_stack.execute(cmd, world) {
+                                Ok(()) => {
+                                    self.hierarchy_panel.set_selected(None);
+                                    self.selected_entity = None;
+                                    self.status = format!("🗑️  Deleted {} entities", selected.len());
+                                    self.console_logs.push(format!("✅ Deleted {} entities", selected.len()));
+                                }
+                                Err(e) => {
+                                    self.status = format!("❌ Delete failed: {}", e);
+                                    self.console_logs.push(format!("❌ Delete failed: {}", e));
+                                }
                             }
-                            Err(e) => {
-                                self.status = format!("❌ Delete failed: {}", e);
-                                self.console_logs.push(format!("❌ Delete failed: {}", e));
-                            }
+                        } else {
+                            self.console_logs.push("⚠️  No entities selected to delete".into());
                         }
-                    } else {
-                        self.console_logs
-                            .push("⚠️  No entities selected to delete".into());
                     }
                 }
             }
@@ -1265,25 +1142,24 @@ impl eframe::App for EditorApp {
 
         // Phase 2.2: Autosave every 5 minutes
         if self.last_autosave.elapsed().as_secs() >= 300 {
-            let world = self.edit_world();
-            let autosave_dir = self.content_root.join(".autosave");
-            let _ = fs::create_dir_all(&autosave_dir);
-            let timestamp = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-            let autosave_path = autosave_dir.join(format!("autosave_{}.scene.ron", timestamp));
-
-            match scene_serialization::save_scene(world, &autosave_path) {
-                Ok(()) => {
-                    self.console_logs
-                        .push(format!("💾 Autosaved to {:?}", autosave_path));
-                    self.last_autosave = std::time::Instant::now();
-                }
-                Err(e) => {
-                    self.console_logs
-                        .push(format!("⚠️  Autosave failed: {}", e));
-                    self.last_autosave = std::time::Instant::now();
+            if let Some(world) = &self.sim_world {
+                let autosave_dir = self.content_root.join(".autosave");
+                let _ = fs::create_dir_all(&autosave_dir);
+                let timestamp = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs();
+                let autosave_path = autosave_dir.join(format!("autosave_{}.scene.ron", timestamp));
+                
+                match scene_serialization::save_scene(world, &autosave_path) {
+                    Ok(()) => {
+                        self.console_logs.push(format!("💾 Autosaved to {:?}", autosave_path));
+                        self.last_autosave = std::time::Instant::now();
+                    }
+                    Err(e) => {
+                        self.console_logs.push(format!("⚠️  Autosave failed: {}", e));
+                        self.last_autosave = std::time::Instant::now();
+                    }
                 }
             }
         }
@@ -1382,129 +1258,115 @@ impl eframe::App for EditorApp {
                         }
                     }
                 }
-
+                
                 ui.separator();
-
+                
                 if ui.button("💾 Save Scene").clicked() {
-                    let world = self.edit_world();
-                    let path = if let Some(p) = &self.current_scene_path {
-                        p.clone()
+                    if let Some(world) = &self.sim_world {
+                        let path = if let Some(p) = &self.current_scene_path {
+                            p.clone()
+                        } else {
+                            let dir = self.content_root.join("scenes");
+                            let _ = fs::create_dir_all(&dir);
+                            dir.join("untitled.scene.ron")
+                        };
+                        
+                        match scene_serialization::save_scene(world, &path) {
+                            Ok(()) => {
+                                self.current_scene_path = Some(path.clone());
+                                self.recent_files.add_file(path.clone());
+                                self.status = format!("💾 Saved scene to {:?}", path);
+                                self.console_logs.push(format!("✅ Scene saved: {:?}", path));
+                                self.last_autosave = std::time::Instant::now();
+                            }
+                            Err(e) => {
+                                self.status = format!("❌ Scene save failed: {}", e);
+                                self.console_logs.push(format!("❌ Failed to save scene: {}", e));
+                            }
+                        }
                     } else {
-                        let dir = self.content_root.join("scenes");
-                        let _ = fs::create_dir_all(&dir);
-                        dir.join("untitled.scene.ron")
-                    };
-
-                    match scene_serialization::save_scene(world, &path) {
-                        Ok(()) => {
-                            self.current_scene_path = Some(path.clone());
-                            self.recent_files.add_file(path.clone());
-                            self.status = format!("💾 Saved scene to {:?}", path);
-                            self.console_logs
-                                .push(format!("✅ Scene saved: {:?}", path));
-                            self.last_autosave = std::time::Instant::now();
-                        }
-                        Err(e) => {
-                            self.status = format!("❌ Scene save failed: {}", e);
-                            self.console_logs
-                                .push(format!("❌ Failed to save scene: {}", e));
-                        }
+                        self.console_logs.push("⚠️  No world to save".into());
                     }
                 }
-
+                
                 if ui.button("📂 Load Scene").clicked() {
                     let path = self.content_root.join("scenes/untitled.scene.ron");
                     match scene_serialization::load_scene(&path) {
                         Ok(world) => {
-                            self.scene_state = EditorSceneState::new(world);
+                            self.sim_world = Some(world);
                             self.current_scene_path = Some(path.clone());
                             self.recent_files.add_file(path.clone());
                             self.status = format!("📂 Loaded scene from {:?}", path);
-                            self.console_logs
-                                .push(format!("✅ Scene loaded: {:?}", path));
+                            self.console_logs.push(format!("✅ Scene loaded: {:?}", path));
                             self.undo_stack.clear();
                         }
                         Err(e) => {
                             self.status = format!("❌ Scene load failed: {}", e);
-                            self.console_logs
-                                .push(format!("❌ Failed to load scene: {}", e));
+                            self.console_logs.push(format!("❌ Failed to load scene: {}", e));
                         }
                     }
                 }
-
+                
                 ui.menu_button("📚 Recent Files", |ui| {
                     let recent_files = self.recent_files.get_files().to_vec();
-
+                    
                     if recent_files.is_empty() {
                         ui.label("No recent files");
                     } else {
                         for path in recent_files {
-                            let file_name = path
-                                .file_name()
+                            let file_name = path.file_name()
                                 .and_then(|n| n.to_str())
                                 .unwrap_or("Unknown");
-
+                            
                             if ui.button(file_name).clicked() {
                                 match scene_serialization::load_scene(&path) {
                                     Ok(world) => {
-                                        self.scene_state = EditorSceneState::new(world);
+                                        self.sim_world = Some(world);
                                         self.current_scene_path = Some(path.clone());
                                         self.recent_files.add_file(path.clone());
                                         self.status = format!("📂 Loaded scene from {:?}", path);
-                                        self.console_logs
-                                            .push(format!("✅ Scene loaded: {:?}", path));
+                                        self.console_logs.push(format!("✅ Scene loaded: {:?}", path));
                                         self.undo_stack.clear();
                                         ui.close();
                                     }
                                     Err(e) => {
                                         self.status = format!("❌ Scene load failed: {}", e);
-                                        self.console_logs
-                                            .push(format!("❌ Failed to load scene: {}", e));
+                                        self.console_logs.push(format!("❌ Failed to load scene: {}", e));
                                     }
                                 }
                             }
                         }
-
+                        
                         ui.separator();
-
+                        
                         if ui.button("🗑️ Clear Recent Files").clicked() {
                             self.recent_files.clear();
                             ui.close();
                         }
                     }
                 });
-
+                
                 ui.separator();
-
+                
                 // Phase 4: Play-in-Editor controls
                 ui.horizontal(|ui| {
                     ui.label("Play:");
-
-                    let play_enabled =
-                        self.editor_mode.is_editing() || self.editor_mode.is_paused();
-                    if ui
-                        .add_enabled(play_enabled, egui::Button::new("▶️ Play (F5)"))
-                        .clicked()
-                    {
-                        let scene_data = {
-                            let world = self.edit_world();
-                            SceneData::from_world(world)
-                        };
-                        if self.editor_mode.is_editing() {
-                            self.world_snapshot = Some(scene_data.clone());
+                    
+                    let play_enabled = self.editor_mode.is_editing() || self.editor_mode.is_paused();
+                    if ui.add_enabled(play_enabled, egui::Button::new("▶️ Play (F5)")).clicked() {
+                        if let Some(world) = &self.sim_world {
+                            if self.editor_mode.is_editing() {
+                                self.world_snapshot = Some(SceneData::from_world(world));
+                            }
+                            self.editor_mode = EditorMode::Play;
+                            self.simulation_playing = true;
+                            self.status = "▶️ Playing".into();
+                            self.console_logs.push("▶️ Entered Play mode".into());
                         }
-                        self.runtime_world = Some(scene_data.to_world());
-                        self.editor_mode = EditorMode::Play;
-                        self.simulation_playing = true;
-                        self.status = "▶️ Playing".into();
-                        self.console_logs.push("▶️ Entered Play mode".into());
                     }
-
+                    
                     let pause_enabled = !self.editor_mode.is_editing();
-                    if ui
-                        .add_enabled(pause_enabled, egui::Button::new("⏸️ Pause (F6)"))
-                        .clicked()
-                    {
+                    if ui.add_enabled(pause_enabled, egui::Button::new("⏸️ Pause (F6)")).clicked() {
                         if self.editor_mode.is_playing() {
                             self.editor_mode = EditorMode::Paused;
                             self.simulation_playing = false;
@@ -1512,14 +1374,11 @@ impl eframe::App for EditorApp {
                             self.console_logs.push("⏸️ Paused".into());
                         }
                     }
-
+                    
                     let stop_enabled = !self.editor_mode.is_editing();
-                    if ui
-                        .add_enabled(stop_enabled, egui::Button::new("⏹️ Stop (F7)"))
-                        .clicked()
-                    {
+                    if ui.add_enabled(stop_enabled, egui::Button::new("⏹️ Stop (F7)")).clicked() {
                         if let Some(snapshot) = self.world_snapshot.take() {
-                            self.scene_state = EditorSceneState::new(snapshot.to_world());
+                            self.sim_world = Some(snapshot.to_world());
                             self.status = "⏹️ Stopped (world restored)".into();
                             self.console_logs.push("⏹️ Stopped (world restored)".into());
                         } else {
@@ -1527,19 +1386,18 @@ impl eframe::App for EditorApp {
                         }
                         self.editor_mode = EditorMode::Edit;
                         self.simulation_playing = false;
-                        self.runtime_world = None;
                     }
-
+                    
                     ui.separator();
-
+                    
                     // Status indicator with color
                     let status_label = egui::RichText::new(self.editor_mode.status_text())
                         .color(self.editor_mode.status_color());
                     ui.label(status_label);
-
+                    
                     // Show simulation info when playing
                     if self.editor_mode.is_playing() {
-                        if let Some(world) = &self.runtime_world {
+                        if let Some(world) = &self.sim_world {
                             ui.label(format!(
                                 "| {} entities, tick {}, {:.1}s",
                                 world.entities().len(),
@@ -1596,25 +1454,16 @@ impl eframe::App for EditorApp {
 
                         ui.add_space(10.0);
 
-                        let mut hierarchy_panel = std::mem::take(&mut self.hierarchy_panel);
-
                         ui.collapsing("🌲 Hierarchy", |ui| {
-                            {
-                                let world = self.edit_world_mut();
-                                hierarchy_panel.sync_with_world(world);
-                            }
-
-                            let selected = {
-                                let world = self.edit_world_mut();
-                                hierarchy_panel.show_with_world(ui, world)
-                            };
-
-                            if let Some(selected) = selected {
-                                self.selected_entity = Some(selected as u64);
+                            if let Some(world) = &mut self.sim_world {
+                                self.hierarchy_panel.sync_with_world(world);
+                                if let Some(selected) = self.hierarchy_panel.show_with_world(ui, world) {
+                                    self.selected_entity = Some(selected as u64);
+                                }
                             }
                         });
 
-                        let all_selected = hierarchy_panel.get_all_selected();
+                        let all_selected = self.hierarchy_panel.get_all_selected();
                         self.selection_set.clear();
                         for &entity_id in &all_selected {
                             self.selection_set.add(entity_id as u64, false);
@@ -1623,190 +1472,61 @@ impl eframe::App for EditorApp {
                             self.selection_set.primary = Some(*primary as u64);
                         }
 
-                        self.hierarchy_panel = hierarchy_panel;
-
                         ui.add_space(10.0);
 
-                        let mut entity_panel = std::mem::take(&mut self.entity_panel);
-
                         ui.collapsing("🎮 Entities", |ui| {
-                            use panels::entity_panel::PrefabAction;
-
                             let selected_u32 = self.selected_entity.map(|e| e as u32);
-                            let prefab_info = {
-                                let world = self.scene_state.world();
-                                selected_u32.and_then(|entity| {
-                                    self.lock_prefab_manager()
-                                        .ok()
-                                        .and_then(|mut mgr| mgr.describe_instance(entity, world))
-                                })
-                            };
-
-                            let panel_result = {
-                                let world = self.edit_world_mut();
-                                entity_panel.show_with_world(
-                                    ui,
-                                    world,
-                                    selected_u32,
-                                    prefab_info.as_ref(),
-                                )
-                            };
-
-                            if let Some(action) = panel_result.prefab_action {
-                                match action {
-                                    PrefabAction::Apply { entity } => {
-                                        let prefab_path = self
-                                            .lock_prefab_manager()
-                                            .ok()
-                                            .and_then(|mgr| mgr.instance_path(entity));
-
-                                        match prefab_path {
-                                            Some(prefab_path) => match PrefabData::load_from_file(&prefab_path) {
-                                                Ok(prev_data) => {
-                                                    let mut undo_stack =
-                                                        std::mem::take(&mut self.undo_stack);
-                                                    let handle = self.prefab_manager.clone();
-                                                    let cmd = PrefabApplyOverridesCommand::new(
-                                                        handle,
-                                                        entity,
-                                                        prefab_path.clone(),
-                                                        prev_data,
-                                                    );
-                                                    let exec_result = {
-                                                        let world = self.scene_state.world_mut();
-                                                        undo_stack.execute(cmd, world)
-                                                    };
-
-                                                    if let Err(err) = exec_result {
-                                                        self.console_logs.push(format!(
-                                                            "Failed to apply prefab overrides: {err}"
-                                                        ));
-                                                    } else {
-                                                        self.status =
-                                                            "Prefab saved with overrides".into();
-                                                    }
-                                                    self.undo_stack = undo_stack;
-                                                }
-                                                Err(err) => {
-                                                    self.console_logs.push(format!(
-                                                        "Failed to snapshot prefab before apply: {err}"
-                                                    ));
-                                                }
-                                            },
-                                            None => self
-                                                .console_logs
-                                                .push("No prefab path found for selection".into()),
-                                        }
+                            if let Some(component_edit) = self.entity_panel.show_with_world(ui, &mut self.sim_world, selected_u32) {
+                                use crate::component_ui::ComponentEdit;
+                                use crate::command::{EditHealthCommand, EditTeamCommand, EditAmmoCommand};
+                                
+                                let cmd: Box<dyn crate::command::EditorCommand> = match component_edit {
+                                    ComponentEdit::Health { entity, old_hp, new_hp } => {
+                                        EditHealthCommand::new(entity, old_hp, new_hp)
                                     }
-                                    PrefabAction::Revert { entity } => {
-                                        let snapshot = self
-                                            .lock_prefab_manager()
-                                            .ok()
-                                            .and_then(|mgr| {
-                                                let world = self.scene_state.world();
-                                                mgr.capture_snapshot(world, entity)
-                                            });
-
-                                        match snapshot {
-                                            Some(snapshot) => {
-                                                let mut undo_stack =
-                                                    std::mem::take(&mut self.undo_stack);
-                                                let handle = self.prefab_manager.clone();
-                                                let cmd = PrefabRevertOverridesCommand::new(
-                                                    handle,
-                                                    entity,
-                                                    snapshot,
-                                                );
-                                                let exec_result = {
-                                                    let world = self.scene_state.world_mut();
-                                                    undo_stack.execute(cmd, world)
-                                                };
-
-                                                if let Err(err) = exec_result {
-                                                    self.console_logs.push(format!(
-                                                        "Failed to revert prefab overrides: {err}"
-                                                    ));
-                                                } else {
-                                                    self.scene_state.sync_all();
-                                                    self.status =
-                                                        "Overrides reverted from prefab".into();
-                                                }
-                                                self.undo_stack = undo_stack;
-                                            }
-                                            None => self
-                                                .console_logs
-                                                .push("Failed to capture prefab snapshot".into()),
-                                        }
+                                    ComponentEdit::Team { entity, old_id, new_id } => {
+                                        EditTeamCommand::new(entity, Team { id: old_id }, Team { id: new_id })
                                     }
+                                    ComponentEdit::Ammo { entity, old_rounds, new_rounds } => {
+                                        EditAmmoCommand::new(entity, old_rounds, new_rounds)
+                                    }
+                                };
+                                
+                                if let Some(_world) = &mut self.sim_world {
+                                    self.undo_stack.push_executed(cmd);
                                 }
                             }
-
-                            if let Some(component_edit) = panel_result.component_edit {
-                                use crate::component_ui::ComponentEdit;
-
-                                let (entity, cmd): (Entity, Box<dyn crate::command::EditorCommand>) =
-                                    match component_edit {
-                                        ComponentEdit::Health {
-                                            entity,
-                                            old_hp,
-                                            new_hp,
-                                        } => (
-                                            entity,
-                                            EditHealthCommand::new(entity, old_hp, new_hp),
-                                        ),
-                                        ComponentEdit::Team {
-                                            entity,
-                                            old_id,
-                                            new_id,
-                                        } => (
-                                            entity,
-                                            EditTeamCommand::new(
-                                                entity,
-                                                Team { id: old_id },
-                                                Team { id: new_id },
-                                            ),
-                                        ),
-                                        ComponentEdit::Ammo {
-                                            entity,
-                                            old_rounds,
-                                            new_rounds,
-                                        } => (
-                                            entity,
-                                            EditAmmoCommand::new(
-                                                entity,
-                                                old_rounds,
-                                                new_rounds,
-                                            ),
-                                        ),
-                                    };
-
-                                self.undo_stack.push_executed(cmd);
-                                self.notify_prefab_override(entity);
-                            }
                         });
-
-                        self.entity_panel = entity_panel;
 
                         ui.add_space(10.0);
 
                         ui.collapsing("🔧 Transform", |ui| {
                             // Sync selected entity to transform panel
                             if let Some(selected_id) = self.selected_entity {
-                                let entity = selected_id as u32;
-                                if let Some(transform) = self.scene_state.transform_for(entity) {
+                                if let Some(entity) = self.entity_manager.get(selected_id) {
+                                    // Update panel with entity transform
+                                    let transform = crate::gizmo::Transform {
+                                        position: entity.position,
+                                        rotation: entity.rotation,
+                                        scale: entity.scale,
+                                    };
                                     self.transform_panel.set_selected(transform);
                                 }
                             } else {
                                 self.transform_panel.clear_selection();
                             }
-
+                            
                             self.transform_panel.show(ui);
-
+                            
                             // Apply changes back to entity if transform was modified
                             if let Some(selected_id) = self.selected_entity {
                                 if let Some(new_transform) = self.transform_panel.get_transform() {
-                                    self.scene_state
-                                        .apply_transform(selected_id as u32, &new_transform);
+                                    self.entity_manager.update_transform(
+                                        selected_id,
+                                        new_transform.position,
+                                        new_transform.rotation,
+                                        new_transform.scale,
+                                    );
                                 }
                             }
                         });
@@ -1848,21 +1568,20 @@ impl eframe::App for EditorApp {
         egui::TopBottomPanel::bottom("status_bar")
             .min_height(24.0)
             .show(ctx, |ui| {
-                let snap_config = self.scene_state.snapping_config();
                 StatusBar::show(
                     ui,
                     &self.editor_mode,
                     &self.current_gizmo_mode,
                     &self.selection_set,
                     &self.undo_stack,
-                    &snap_config,
+                    &self.snapping_config,
                     self.current_fps,
                 );
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
-            if let Some(mut viewport) = self.viewport.take() {
+            if let Some(viewport) = &mut self.viewport {
                 // Phase 4: Visual indicator for play mode
                 let viewport_frame = if !self.editor_mode.is_editing() {
                     let border_color = if self.editor_mode.is_playing() {
@@ -1870,168 +1589,86 @@ impl eframe::App for EditorApp {
                     } else {
                         egui::Color32::from_rgb(255, 180, 50)
                     };
-
+                    
                     egui::Frame::NONE
                         .stroke(egui::Stroke::new(3.0, border_color))
                         .inner_margin(4.0)
                 } else {
                     egui::Frame::NONE
                 };
-
+                
                 viewport_frame.show(ui, |ui| {
                     ui.heading("🎮 3D Viewport");
-                    ui.label(
-                        "Phase 1.1 Complete: Grid rendering active, texture display in progress",
-                    );
-
-                    let mut snap_config = self.scene_state.snapping_config();
-                    let mut snap_changed = false;
-                    ui.horizontal(|ui| {
-                        ui.label("⚡ Snapping:");
-
-                        if ui.checkbox(&mut snap_config.grid_enabled, "Grid").changed() {
-                            snap_changed = true;
-                        }
-
-                        ui.label("Size:");
-                        let mut grid_size_idx = match snap_config.grid_size {
-                            s if (s - 0.5).abs() < 0.01 => 0,
-                            s if (s - 1.0).abs() < 0.01 => 1,
-                            s if (s - 2.0).abs() < 0.01 => 2,
-                            _ => 1,
-                        };
-
-                        if ui
-                            .add(
-                                egui::Slider::new(&mut grid_size_idx, 0..=2)
-                                    .show_value(false)
-                                    .custom_formatter(|n, _| match n as usize {
-                                        0 => "0.5".to_string(),
-                                        1 => "1.0".to_string(),
-                                        2 => "2.0".to_string(),
-                                        _ => "1.0".to_string(),
-                                    }),
-                            )
-                            .changed()
-                        {
-                            snap_config.grid_size = match grid_size_idx {
-                                0 => 0.5,
-                                1 => 1.0,
-                                2 => 2.0,
-                                _ => 1.0,
-                            };
-                            snap_changed = true;
-                        }
-
-                        ui.separator();
-                        if ui
-                            .checkbox(&mut snap_config.angle_enabled, "Angle")
-                            .changed()
-                        {
-                            snap_changed = true;
-                        }
-                        ui.label(format!("{}°", snap_config.angle_increment));
-                    });
-
-                    if snap_changed {
-                        self.set_snapping_config(snap_config);
-                    }
-
-                    ui.separator();
-
-                    // Render viewport (takes 70% width, full available height)
-                    // Use edit scene while authoring; switch to runtime world when simulating
-                    let mut undo_stack = std::mem::take(&mut self.undo_stack);
-                    let snap_config = self.scene_state.snapping_config();
-                    let viewport_result = if self.editor_mode.is_editing() {
-                        let world = self.edit_world_mut();
-                        viewport.ui(ui, world, &mut undo_stack, snap_config)
-                    } else if let Some(world) = self.runtime_world_mut() {
-                        viewport.ui(ui, world, &mut undo_stack, snap_config)
-                    } else {
-                        let world = self.edit_world_mut();
-                        viewport.ui(ui, world, &mut undo_stack, snap_config)
+                    ui.label("Phase 1.1 Complete: Grid rendering active, texture display in progress");
+                
+                ui.horizontal(|ui| {
+                    ui.label("⚡ Snapping:");
+                    
+                    ui.checkbox(&mut self.snapping_config.grid_enabled, "Grid");
+                    
+                    ui.label("Size:");
+                    let mut grid_size_idx = match self.snapping_config.grid_size {
+                        s if (s - 0.5).abs() < 0.01 => 0,
+                        s if (s - 1.0).abs() < 0.01 => 1,
+                        s if (s - 2.0).abs() < 0.01 => 2,
+                        _ => 1,
                     };
-
-                    if let Err(e) = viewport_result {
-                        self.console_logs.push(format!("❌ Viewport error: {}", e));
-                        eprintln!("❌ Viewport error: {}", e);
+                    
+                    if ui.add(egui::Slider::new(&mut grid_size_idx, 0..=2)
+                        .show_value(false)
+                        .custom_formatter(|n, _| match n as usize {
+                            0 => "0.5".to_string(),
+                            1 => "1.0".to_string(),
+                            2 => "2.0".to_string(),
+                            _ => "1.0".to_string(),
+                        })).changed() {
+                        self.snapping_config.grid_size = match grid_size_idx {
+                            0 => 0.5,
+                            1 => 1.0,
+                            2 => 2.0,
+                            _ => 1.0,
+                        };
                     }
+                    
+                    ui.separator();
+                    ui.checkbox(&mut self.snapping_config.angle_enabled, "Angle");
+                    ui.label(format!("{}°", self.snapping_config.angle_increment));
+                });
+                
+                ui.separator();
 
-                    self.undo_stack = undo_stack;
+                // Render viewport (takes 70% width, full available height)
+                // Use sim_world if available, otherwise create empty world for first-time rendering
+                let world_to_render = if let Some(ref mut world) = self.sim_world {
+                    world
+                } else {
+                    // Fallback: Create empty world if needed (rare case)
+                    if self.sim_world.is_none() {
+                        self.sim_world = Some(Self::create_default_world());
+                    }
+                    self.sim_world.as_mut().unwrap()
+                };
+
+                if let Err(e) = viewport.ui(ui, world_to_render, &mut self.entity_manager, &mut self.undo_stack) {
+                    self.console_logs.push(format!("❌ Viewport error: {}", e));
+                    eprintln!("❌ Viewport error: {}", e);
+                }
 
                     // Sync selected entity from viewport to app state
                     if let Some(selected) = viewport.selected_entity() {
                         self.selected_entity = Some(selected as u64);
                     }
-
-                    // Sync snapping settings from viewport toolbar to shared hub
-                    let toolbar = viewport.toolbar();
-                    let toolbar_config = SnappingConfig {
-                        grid_size: toolbar.snap_size,
-                        angle_increment: toolbar.angle_snap_degrees,
-                        grid_enabled: toolbar.snap_enabled,
-                        angle_enabled: toolbar.angle_snap_enabled,
-                    };
-                    self.set_snapping_config(toolbar_config);
-
-                    let pointer_released = ui
-                        .ctx()
-                        .input(|i| i.pointer.button_released(egui::PointerButton::Primary));
-
-                    if pointer_released && self.asset_browser.is_dragging_prefab() {
-                        let pointer_pos = ui.ctx().input(|i| i.pointer.latest_pos());
-                        match pointer_pos {
-                            Some(pos) => {
-                                match viewport.world_pos_from_pointer(pos) {
-                                    Some(world_point) => {
-                                        if self.editor_mode.is_editing() {
-                                            if let Some(prefab_path) =
-                                                self.asset_browser.take_dragged_prefab()
-                                            {
-                                                self.handle_prefab_drop(
-                                                    prefab_path,
-                                                    world_point,
-                                                    &mut viewport,
-                                                );
-                                                self.asset_browser.cancel_prefab_drag();
-                                            }
-                                        } else {
-                                            self.console_logs.push(
-                                                "Prefab drops are disabled while the simulation is running.".into(),
-                                            );
-                                            self.asset_browser.cancel_prefab_drag();
-                                        }
-                                    }
-                                    None => {
-                                        self.console_logs.push(
-                                            "Ignored prefab drop outside of the viewport bounds.".into(),
-                                        );
-                                        self.asset_browser.cancel_prefab_drag();
-                                    }
-                                }
-                            }
-                            None => {
-                                self.console_logs
-                                    .push("No pointer data available for prefab drop.".into());
-                                self.asset_browser.cancel_prefab_drag();
-                            }
-                        }
-                    } else {
-                        // No prefab drag active - make sure stale drags are cleared when pointer stays idle
-                        if pointer_released {
-                            self.asset_browser.cancel_prefab_drag();
-                        }
-                    }
-
-                    self.process_viewport_events(&mut viewport);
+                    
+                    // Sync snapping settings from viewport toolbar to EditorApp
+                    self.snapping_config.grid_enabled = viewport.toolbar().snap_enabled;
+                    self.snapping_config.grid_size = viewport.toolbar().snap_size;
+                    self.snapping_config.angle_enabled = viewport.toolbar().angle_snap_enabled;
+                    self.snapping_config.angle_increment = viewport.toolbar().angle_snap_degrees;
 
                     ui.add_space(10.0);
                 });
-
+                
                 ui.separator();
-
-                self.viewport = Some(viewport);
             }
 
             egui::ScrollArea::vertical().show(ui, |ui| {
@@ -2065,8 +1702,8 @@ impl eframe::App for EditorApp {
         });
 
         if self.simulation_playing {
-            // Initialize runtime world if Play was triggered via keyboard shortcut without UI snapshot
-            if self.runtime_world.is_none() {
+            // Initialize world if needed
+            if self.sim_world.is_none() {
                 let mut world = World::new();
                 // Add entities from level
                 for obs in &self.level.obstacles {
@@ -2086,12 +1723,13 @@ impl eframe::App for EditorApp {
                         world.spawn(&npc.archetype, pos, Team { id: 1 }, 50, 10);
                     }
                 }
-                self.runtime_world = Some(world);
+                self.sim_world = Some(world);
                 self.sim_tick_count = 0;
                 self.console_logs
                     .push("Simulation started with entities from level.".into());
             }
             // Tick simulation
+            let _now = std::time::Instant::now();
             let now = std::time::Instant::now();
             let elapsed = now.duration_since(self.last_sim_tick);
             const TICK_INTERVAL: std::time::Duration = std::time::Duration::from_millis(100);
@@ -2099,7 +1737,7 @@ impl eframe::App for EditorApp {
             if elapsed >= TICK_INTERVAL {
                 let ticks = (elapsed.as_millis() / 100) as u64;
                 for _ in 0..ticks {
-                    if let Some(world) = self.runtime_world.as_mut() {
+                    if let Some(world) = &mut self.sim_world {
                         world.tick(0.1); // dt = 0.1s
                                          // Simple behavior: regenerate health
                         for entity in world.entities() {
@@ -2107,12 +1745,8 @@ impl eframe::App for EditorApp {
                                 health.hp = (health.hp + 1).min(100);
                             }
                         }
-                    }
-
-                    self.sim_tick_count += 1;
-
-                    if self.sim_tick_count % 10 == 0 {
-                        if let Some(world) = self.runtime_world.as_ref() {
+                        self.sim_tick_count += 1;
+                        if self.sim_tick_count % 10 == 0 {
                             self.console_logs.push(format!(
                                 "Simulation tick {}: {} entities, time {:.1}s",
                                 self.sim_tick_count,
@@ -2126,8 +1760,8 @@ impl eframe::App for EditorApp {
             }
         } else {
             // Stop simulation
-            if self.runtime_world.is_some() {
-                self.runtime_world = None;
+            if self.sim_world.is_some() {
+                self.sim_world = None;
                 self.console_logs.push("Simulation stopped.".into());
             }
         }

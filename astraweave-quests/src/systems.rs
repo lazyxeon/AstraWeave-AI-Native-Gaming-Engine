@@ -2,7 +2,9 @@ use anyhow::Result;
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
 
-use crate::components::{CActiveQuest, CQuestGenerator, CQuestJournal, CQuestMetrics, QuestState};
+use crate::components::{
+    CActiveQuest, CQuestGenerator, CQuestJournal, CQuestMetrics, QuestState,
+};
 use crate::llm_quests::{BranchingChoice, LlmQuestGenerator, QuestContext};
 
 /// System for managing LLM-powered quest generation and execution

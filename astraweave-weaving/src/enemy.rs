@@ -174,9 +174,7 @@ impl Enemy {
         // Execute behavior for current state
         match self.state {
             EnemyState::Patrol => self.patrol_behavior(position, delta_time),
-            EnemyState::AttackAnchor => {
-                self.attack_anchor_behavior(position, broken_anchor_positions)
-            }
+            EnemyState::AttackAnchor => self.attack_anchor_behavior(position, broken_anchor_positions),
             EnemyState::EngagePlayer => self.engage_player_behavior(position, player_pos),
             EnemyState::Flee => self.flee_behavior(position, player_pos),
             EnemyState::Dead => EnemyBehavior::Idle,
@@ -232,9 +230,7 @@ impl Enemy {
             .min_by(|(_, a), (_, b)| {
                 let dist_a = position.distance(*a);
                 let dist_b = position.distance(*b);
-                dist_a
-                    .partial_cmp(&dist_b)
-                    .unwrap_or(std::cmp::Ordering::Equal)
+                dist_a.partial_cmp(&dist_b).unwrap_or(std::cmp::Ordering::Equal)
             })
             .copied()
     }
@@ -254,12 +250,16 @@ impl Enemy {
     fn generate_patrol_target(&self) -> Vec3 {
         use rand::Rng;
         let mut rng = rand::rng();
-
+        
         let angle = rng.random_range(0.0..std::f32::consts::TAU);
         let distance = rng.random_range(0.0..self.patrol_radius);
-
-        let offset = Vec3::new(angle.cos() * distance, 0.0, angle.sin() * distance);
-
+        
+        let offset = Vec3::new(
+            angle.cos() * distance,
+            0.0,
+            angle.sin() * distance,
+        );
+        
         self.patrol_center + offset
     }
 
@@ -276,17 +276,17 @@ impl Enemy {
                 .find(|(id, _)| *id == target_id)
             {
                 let distance = position.distance(*anchor_pos);
-
+                
                 // Attack if in range and cooldown ready
                 if distance <= 2.0 && self.can_attack() {
                     return EnemyBehavior::Attack(AttackTarget::Anchor(target_id));
                 }
-
+                
                 // Otherwise, move toward anchor
                 return EnemyBehavior::MoveTo(*anchor_pos);
             }
         }
-
+        
         // No valid target, idle
         EnemyBehavior::Idle
     }
@@ -294,12 +294,12 @@ impl Enemy {
     /// Engage player behavior: move toward player and attack when in range.
     fn engage_player_behavior(&self, position: Vec3, player_pos: Vec3) -> EnemyBehavior {
         let distance = position.distance(player_pos);
-
+        
         // Attack if in range and cooldown ready
         if distance <= 2.0 && self.can_attack() {
             return EnemyBehavior::Attack(AttackTarget::Player);
         }
-
+        
         // Otherwise, move toward player
         EnemyBehavior::MoveTo(player_pos)
     }
@@ -356,7 +356,7 @@ impl Enemy {
     /// ```
     pub fn take_damage(&mut self, amount: f32) -> bool {
         self.health = (self.health - amount).max(0.0);
-
+        
         if self.health <= 0.0 {
             self.state = EnemyState::Dead;
             true
@@ -403,13 +403,13 @@ mod tests {
     #[test]
     fn test_take_damage() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-
+        
         // Non-lethal damage
         let killed = enemy.take_damage(30.0);
         assert!(!killed);
         assert_eq!(enemy.health, 70.0);
         assert_eq!(enemy.state, EnemyState::Patrol);
-
+        
         // Lethal damage
         let killed = enemy.take_damage(80.0);
         assert!(killed);
@@ -422,10 +422,10 @@ mod tests {
     fn test_health_percentage() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         assert_eq!(enemy.health_percentage(), 1.0);
-
+        
         enemy.take_damage(50.0);
         assert_eq!(enemy.health_percentage(), 0.5);
-
+        
         enemy.take_damage(50.0);
         assert_eq!(enemy.health_percentage(), 0.0);
     }
@@ -433,21 +433,21 @@ mod tests {
     #[test]
     fn test_attack_cooldown() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
-
+        
         // Can attack initially
         assert!(enemy.can_attack());
-
+        
         // Attack sets cooldown
         let damage = enemy.attack();
         assert_eq!(damage, 10.0);
         assert!(!enemy.can_attack());
         assert_eq!(enemy.attack_timer, 1.0);
-
+        
         // Cooldown decreases over time
         enemy.update(0.5, Vec3::ZERO, Vec3::new(100.0, 0.0, 0.0), &[]);
         assert!(!enemy.can_attack());
         assert_eq!(enemy.attack_timer, 0.5);
-
+        
         // Cooldown completes
         enemy.update(0.6, Vec3::ZERO, Vec3::new(100.0, 0.0, 0.0), &[]);
         assert!(enemy.can_attack());
@@ -458,10 +458,10 @@ mod tests {
     fn test_state_transition_flee() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         enemy.take_damage(85.0); // Health = 15 HP (below flee threshold of 20)
-
+        
         let behavior = enemy.update(0.1, Vec3::ZERO, Vec3::new(5.0, 0.0, 0.0), &[]);
         assert_eq!(enemy.state, EnemyState::Flee);
-
+        
         if let EnemyBehavior::MoveTo(target) = behavior {
             // Should move away from player
             let direction = target.normalize();
@@ -477,10 +477,10 @@ mod tests {
     fn test_state_transition_engage_player() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         let player_pos = Vec3::new(8.0, 0.0, 0.0); // Within aggro range (10.0)
-
+        
         let behavior = enemy.update(0.1, Vec3::ZERO, player_pos, &[]);
         assert_eq!(enemy.state, EnemyState::EngagePlayer);
-
+        
         if let EnemyBehavior::MoveTo(target) = behavior {
             assert_eq!(target, player_pos);
         } else {
@@ -496,7 +496,7 @@ mod tests {
             (0, Vec3::new(10.0, 0.0, 0.0)),
             (1, Vec3::new(20.0, 0.0, 0.0)),
         ];
-
+        
         enemy.update(0.1, Vec3::ZERO, player_pos, &broken_anchors);
         assert_eq!(enemy.state, EnemyState::AttackAnchor);
         assert_eq!(enemy.target_anchor_id, Some(0)); // Nearest anchor
@@ -507,7 +507,7 @@ mod tests {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         let player_pos = Vec3::new(50.0, 0.0, 0.0); // Far away
         let broken_anchors = vec![]; // No broken anchors
-
+        
         enemy.update(0.1, Vec3::ZERO, player_pos, &broken_anchors);
         assert_eq!(enemy.state, EnemyState::Patrol);
         assert_eq!(enemy.target_anchor_id, None);
@@ -517,16 +517,13 @@ mod tests {
     fn test_patrol_behavior() {
         let mut enemy = Enemy::new(Vec3::new(10.0, 0.0, 5.0), 5.0);
         let player_pos = Vec3::new(100.0, 0.0, 0.0);
-
+        
         let behavior = enemy.update(0.1, enemy.patrol_center, player_pos, &[]);
-
+        
         if let EnemyBehavior::MoveTo(target) = behavior {
             // Target should be within patrol radius
             let distance = target.distance(enemy.patrol_center);
-            assert!(
-                distance <= enemy.patrol_radius + 0.1,
-                "Patrol target too far from center"
-            );
+            assert!(distance <= enemy.patrol_radius + 0.1, "Patrol target too far from center");
         } else {
             panic!("Expected MoveTo behavior");
         }
@@ -538,34 +535,28 @@ mod tests {
         let anchor_pos = Vec3::new(1.5, 0.0, 0.0); // Within attack range (2.0)
         let broken_anchors = vec![(0, anchor_pos)];
         let player_pos = Vec3::new(50.0, 0.0, 0.0);
-
+        
         // First update: transition to AttackAnchor state
         enemy.update(0.1, Vec3::ZERO, player_pos, &broken_anchors);
         assert_eq!(enemy.state, EnemyState::AttackAnchor);
-
+        
         // Second update: should attack
         let behavior = enemy.update(0.1, Vec3::ZERO, player_pos, &broken_anchors);
-        assert!(matches!(
-            behavior,
-            EnemyBehavior::Attack(AttackTarget::Anchor(0))
-        ));
+        assert!(matches!(behavior, EnemyBehavior::Attack(AttackTarget::Anchor(0))));
     }
 
     #[test]
     fn test_engage_player_behavior() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         let player_pos = Vec3::new(1.5, 0.0, 0.0); // Within attack range (2.0)
-
+        
         // First update: transition to EngagePlayer state
         enemy.update(0.1, Vec3::ZERO, player_pos, &[]);
         assert_eq!(enemy.state, EnemyState::EngagePlayer);
-
+        
         // Second update: should attack
         let behavior = enemy.update(0.1, Vec3::ZERO, player_pos, &[]);
-        assert!(matches!(
-            behavior,
-            EnemyBehavior::Attack(AttackTarget::Player)
-        ));
+        assert!(matches!(behavior, EnemyBehavior::Attack(AttackTarget::Player)));
     }
 
     #[test]
@@ -573,10 +564,10 @@ mod tests {
         let enemy = Enemy::new(Vec3::ZERO, 5.0);
         let anchors = vec![
             (0, Vec3::new(10.0, 0.0, 0.0)),
-            (1, Vec3::new(5.0, 0.0, 0.0)), // Nearest
+            (1, Vec3::new(5.0, 0.0, 0.0)),  // Nearest
             (2, Vec3::new(20.0, 0.0, 0.0)),
         ];
-
+        
         let nearest = enemy.find_nearest_anchor(Vec3::ZERO, &anchors);
         assert_eq!(nearest, Some((1, Vec3::new(5.0, 0.0, 0.0))));
     }
@@ -586,11 +577,11 @@ mod tests {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         enemy.take_damage(100.0);
         assert_eq!(enemy.state, EnemyState::Dead);
-
+        
         // Updates should not change state
         enemy.update(0.1, Vec3::ZERO, Vec3::new(1.0, 0.0, 0.0), &[]);
         assert_eq!(enemy.state, EnemyState::Dead);
-
+        
         let behavior = enemy.update(0.1, Vec3::ZERO, Vec3::new(1.0, 0.0, 0.0), &[]);
         assert!(matches!(behavior, EnemyBehavior::Idle));
     }
@@ -599,10 +590,10 @@ mod tests {
     fn test_priority_flee_over_engage() {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         enemy.take_damage(85.0); // Health = 15 HP (flee threshold)
-
+        
         let player_pos = Vec3::new(5.0, 0.0, 0.0); // Within aggro range
         enemy.update(0.1, Vec3::ZERO, player_pos, &[]);
-
+        
         // Should flee despite player being in aggro range
         assert_eq!(enemy.state, EnemyState::Flee);
     }
@@ -612,9 +603,9 @@ mod tests {
         let mut enemy = Enemy::new(Vec3::ZERO, 5.0);
         let player_pos = Vec3::new(8.0, 0.0, 0.0); // Within aggro range
         let broken_anchors = vec![(0, Vec3::new(10.0, 0.0, 0.0))];
-
+        
         enemy.update(0.1, Vec3::ZERO, player_pos, &broken_anchors);
-
+        
         // Should engage player despite broken anchor nearby
         assert_eq!(enemy.state, EnemyState::EngagePlayer);
     }

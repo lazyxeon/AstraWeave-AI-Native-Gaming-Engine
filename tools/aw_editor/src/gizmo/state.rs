@@ -3,7 +3,6 @@
 //! Manages modal state transitions (Inactive → Translate → Rotate → Scale)
 //! and constraint application (None → X → Y → Z → XY → XZ → YZ).
 
-use crate::command::TransformTransaction;
 use glam::{Quat, Vec2, Vec3};
 use winit::keyboard::KeyCode;
 
@@ -120,17 +119,11 @@ pub struct GizmoState {
     /// Current operation mode.
     pub mode: GizmoMode,
 
-    /// Last non-inactive operation mode (used for telemetry).
-    pub last_operation: GizmoMode,
-
     /// Selected entity ID (if any).
     pub selected_entity: Option<u32>,
 
     /// Transform before operation started (for undo/cancel).
     pub start_transform: Option<TransformSnapshot>,
-
-    /// Active transform transaction used for undo/redo aggregation.
-    pub transform_transaction: Option<TransformTransaction>,
 
     /// Mouse position when operation started.
     pub start_mouse: Option<Vec2>,
@@ -155,10 +148,8 @@ impl Default for GizmoState {
     fn default() -> Self {
         Self {
             mode: GizmoMode::Inactive,
-            last_operation: GizmoMode::Inactive,
             selected_entity: None,
             start_transform: None,
-            transform_transaction: None,
             start_mouse: None,
             current_mouse: None,
             numeric_buffer: String::new(),
@@ -178,11 +169,9 @@ impl GizmoState {
     /// Start a translate operation.
     pub fn start_translate(&mut self) {
         if self.selected_entity.is_some() {
-            let mode = GizmoMode::Translate {
+            self.mode = GizmoMode::Translate {
                 constraint: AxisConstraint::None,
             };
-            self.mode = mode;
-            self.last_operation = mode;
             self.reset_operation_state();
         }
     }
@@ -190,11 +179,9 @@ impl GizmoState {
     /// Start a rotate operation.
     pub fn start_rotate(&mut self) {
         if self.selected_entity.is_some() {
-            let mode = GizmoMode::Rotate {
+            self.mode = GizmoMode::Rotate {
                 constraint: AxisConstraint::None,
             };
-            self.mode = mode;
-            self.last_operation = mode;
             self.reset_operation_state();
             println!("🔄 Rotate mode started - constraint reset to None");
         }
@@ -203,12 +190,10 @@ impl GizmoState {
     /// Start a scale operation.
     pub fn start_scale(&mut self, uniform: bool) {
         if self.selected_entity.is_some() {
-            let mode = GizmoMode::Scale {
+            self.mode = GizmoMode::Scale {
                 constraint: AxisConstraint::None,
                 uniform,
             };
-            self.mode = mode;
-            self.last_operation = mode;
             self.reset_operation_state();
         }
     }
@@ -239,7 +224,6 @@ impl GizmoState {
     pub fn confirm_transform(&mut self) {
         if self.mode != GizmoMode::Inactive {
             self.confirmed = true;
-            self.last_operation = self.mode;
             self.mode = GizmoMode::Inactive;
             self.numeric_buffer.clear();
         }
@@ -249,7 +233,6 @@ impl GizmoState {
     pub fn cancel_transform(&mut self) {
         if self.mode != GizmoMode::Inactive {
             self.cancelled = true;
-            self.last_operation = self.mode;
             self.mode = GizmoMode::Inactive;
             self.numeric_buffer.clear();
         }

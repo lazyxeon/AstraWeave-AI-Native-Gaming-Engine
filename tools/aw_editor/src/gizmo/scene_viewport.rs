@@ -307,12 +307,9 @@ impl SceneViewport {
                         false, // local_space
                     );
                     transform.position += translation;
-
+                    
                     if self.snapping_config.grid_enabled {
-                        transform.position = TranslateGizmo::snap_position(
-                            transform.position,
-                            &self.snapping_config,
-                        );
+                        transform.position = TranslateGizmo::snap_position(transform.position, &self.snapping_config);
                     }
                 }
             }

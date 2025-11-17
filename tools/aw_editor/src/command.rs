@@ -21,34 +21,25 @@
 //! # Example
 //!
 //! ```rust
-//! use aw_editor::command::{EditorCommand, MoveEntityCommand, UndoStack};
-//! use astraweave_core::{IVec2, Team, World};
+//! use aw_editor::command::{EditorCommand, UndoStack};
 //!
-//! fn run_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
-//!     let mut world = World::new();
-//!     let entity = world.spawn("Training Dummy", IVec2::new(0, 0), Team { id: 1 }, 100, 10);
-//!     let mut undo_stack = UndoStack::new(100);
+//! let mut undo_stack = UndoStack::new(100);
 //!
-//!     // Execute a move command
-//!     let cmd = MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5));
-//!     undo_stack.execute(cmd, &mut world)?;
+//! // Execute a command
+//! let cmd = MoveEntityCommand::new(entity_id, old_pos, new_pos);
+//! undo_stack.execute(cmd, &mut world)?;
 //!
-//!     // Undo and redo the action
-//!     undo_stack.undo(&mut world)?;
-//!     undo_stack.redo(&mut world)?;
+//! // Undo
+//! undo_stack.undo(&mut world)?;
 //!
-//!     Ok(())
-//! }
-//!
-//! run_example().unwrap();
+//! // Redo
+//! undo_stack.redo(&mut world)?;
 //! ```
 
-use crate::clipboard::ClipboardData;
-use crate::prefab::{PrefabData, PrefabEntitySnapshot, PrefabManager, PrefabManagerHandle};
-use anyhow::{anyhow, Context, Result};
-use astraweave_core::{Entity, IVec2, Pose, Team, World};
+use anyhow::Result;
+use astraweave_core::{Entity, IVec2, Team, World};
 use std::fmt;
-use std::path::PathBuf;
+use crate::clipboard::ClipboardData;
 
 // ============================================================================
 // Command Trait
@@ -163,11 +154,7 @@ impl UndoStack {
     ///
     /// Returns `Err` if command execution fails. Failed commands are NOT added to stack.
     #[allow(dead_code)]
-    pub fn execute(
-        &mut self,
-        mut command: Box<dyn EditorCommand>,
-        world: &mut World,
-    ) -> Result<()> {
+    pub fn execute(&mut self, mut command: Box<dyn EditorCommand>, world: &mut World) -> Result<()> {
         // Execute the command first
         command.execute(world)?;
 
@@ -211,7 +198,7 @@ impl UndoStack {
 
         self.cursor -= 1;
         let cmd = &mut self.commands[self.cursor];
-
+        
         println!("⏮️  Undo: {}", cmd.describe());
         cmd.undo(world)?;
 
@@ -229,10 +216,10 @@ impl UndoStack {
         }
 
         let cmd = &mut self.commands[self.cursor];
-
+        
         println!("⏭️  Redo: {}", cmd.describe());
         cmd.execute(world)?;
-
+        
         self.cursor += 1;
 
         Ok(())
@@ -316,162 +303,6 @@ impl UndoStack {
             self.cursor = self.cursor.saturating_sub(remove_count);
         }
     }
-
-    /// Convert a transform transaction into a single undoable command.
-    pub fn push_transaction(&mut self, transaction: TransformTransaction) {
-        if let Some(cmd) = transaction.into_command() {
-            self.push_executed(cmd);
-        }
-    }
-}
-
-impl Default for UndoStack {
-    fn default() -> Self {
-        Self::new(100)
-    }
-}
-
-// ============================================================================
-// Transform Transactions
-// ============================================================================
-
-/// Kind of gizmo-driven transform currently applied.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TransformOperation {
-    Translate,
-    Rotate,
-    Scale,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct TransformPose {
-    pos: IVec2,
-    rot_x: f32,
-    rot_y: f32,
-    rot_z: f32,
-    scale: f32,
-}
-
-impl TransformPose {
-    fn from_pose(pose: &Pose) -> Self {
-        Self {
-            pos: pose.pos,
-            rot_x: pose.rotation_x,
-            rot_y: pose.rotation,
-            rot_z: pose.rotation_z,
-            scale: pose.scale,
-        }
-    }
-
-    pub fn translation(&self) -> IVec2 {
-        self.pos
-    }
-
-    pub fn rotation(&self) -> (f32, f32, f32) {
-        (self.rot_x, self.rot_y, self.rot_z)
-    }
-
-    pub fn scale_uniform(&self) -> f32 {
-        self.scale
-    }
-
-    fn apply_to_world(&self, world: &mut World, entity: Entity) -> Result<()> {
-        if let Some(pose) = world.pose_mut(entity) {
-            pose.pos = self.pos;
-            pose.rotation_x = self.rot_x;
-            pose.rotation = self.rot_y;
-            pose.rotation_z = self.rot_z;
-            pose.scale = self.scale;
-            Ok(())
-        } else {
-            anyhow::bail!("Entity {:?} not found", entity)
-        }
-    }
-}
-
-/// Transaction that captures a drag/transform session so it maps to a single undo entry.
-#[derive(Debug, Clone)]
-pub struct TransformTransaction {
-    entity: Entity,
-    operation: TransformOperation,
-    start: TransformPose,
-    pending: TransformPose,
-}
-
-impl TransformTransaction {
-    /// Begin a new transaction using the entity's current pose.
-    pub fn begin(entity: Entity, operation: TransformOperation, pose: &Pose) -> Self {
-        let start = TransformPose::from_pose(pose);
-        Self {
-            entity,
-            operation,
-            start,
-            pending: start,
-        }
-    }
-
-    /// Update the pending pose with the latest world values.
-    pub fn refresh_from_pose(&mut self, pose: &Pose) {
-        self.pending = TransformPose::from_pose(pose);
-    }
-
-    /// Entity this transaction mutates.
-    pub fn entity(&self) -> Entity {
-        self.entity
-    }
-
-    /// Current operation (translate/rotate/scale).
-    pub fn operation(&self) -> TransformOperation {
-        self.operation
-    }
-
-    pub(crate) fn start_pose(&self) -> &TransformPose {
-        &self.start
-    }
-
-    pub(crate) fn pending_pose(&self) -> &TransformPose {
-        &self.pending
-    }
-
-    fn has_delta(&self) -> bool {
-        match self.operation {
-            TransformOperation::Translate => self.start.pos != self.pending.pos,
-            TransformOperation::Rotate => {
-                (self.start.rot_x - self.pending.rot_x).abs() > 0.01
-                    || (self.start.rot_y - self.pending.rot_y).abs() > 0.01
-                    || (self.start.rot_z - self.pending.rot_z).abs() > 0.01
-            }
-            TransformOperation::Scale => (self.start.scale - self.pending.scale).abs() > 0.01,
-        }
-    }
-
-    /// Revert the world back to the starting pose (used on cancel).
-    pub fn revert(self, world: &mut World) -> Result<()> {
-        self.start.apply_to_world(world, self.entity)
-    }
-
-    /// Convert into a concrete undo command.
-    pub fn into_command(self) -> Option<Box<dyn EditorCommand>> {
-        if !self.has_delta() {
-            return None;
-        }
-
-        let cmd: Box<dyn EditorCommand> = match self.operation {
-            TransformOperation::Translate => {
-                MoveEntityCommand::new(self.entity, self.start.pos, self.pending.pos)
-            }
-            TransformOperation::Rotate => RotateEntityCommand::new(
-                self.entity,
-                (self.start.rot_x, self.start.rot_y, self.start.rot_z),
-                (self.pending.rot_x, self.pending.rot_y, self.pending.rot_z),
-            ),
-            TransformOperation::Scale => {
-                ScaleEntityCommand::new(self.entity, self.start.scale, self.pending.scale)
-            }
-        };
-
-        Some(cmd)
-    }
 }
 
 // ============================================================================
@@ -521,8 +352,7 @@ impl EditorCommand for MoveEntityCommand {
 
     fn try_merge(&mut self, other: &dyn EditorCommand) -> bool {
         // Try to downcast to MoveEntityCommand
-        if let Some(other_move) = (other as &dyn std::any::Any).downcast_ref::<MoveEntityCommand>()
-        {
+        if let Some(other_move) = (other as &dyn std::any::Any).downcast_ref::<MoveEntityCommand>() {
             // Only merge if same entity
             if self.entity_id == other_move.entity_id {
                 // Update new position but keep old position (chain multiple moves)
@@ -592,8 +422,7 @@ impl EditorCommand for RotateEntityCommand {
     }
 
     fn try_merge(&mut self, other: &dyn EditorCommand) -> bool {
-        if let Some(other_rot) = (other as &dyn std::any::Any).downcast_ref::<RotateEntityCommand>()
-        {
+        if let Some(other_rot) = (other as &dyn std::any::Any).downcast_ref::<RotateEntityCommand>() {
             if self.entity_id == other_rot.entity_id {
                 // Update new rotation but keep old rotation
                 self.new_rotation_x = other_rot.new_rotation_x;
@@ -648,9 +477,7 @@ impl EditorCommand for ScaleEntityCommand {
     }
 
     fn try_merge(&mut self, other: &dyn EditorCommand) -> bool {
-        if let Some(other_scale) =
-            (other as &dyn std::any::Any).downcast_ref::<ScaleEntityCommand>()
-        {
+        if let Some(other_scale) = (other as &dyn std::any::Any).downcast_ref::<ScaleEntityCommand>() {
             if self.entity_id == other_scale.entity_id {
                 self.new_scale = other_scale.new_scale;
                 return true;
@@ -684,10 +511,7 @@ impl EditorCommand for EditHealthCommand {
             health.hp = self.new_hp;
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Entity {} has no Health component",
-                self.entity
-            ))
+            Err(anyhow::anyhow!("Entity {} has no Health component", self.entity))
         }
     }
 
@@ -696,10 +520,7 @@ impl EditorCommand for EditHealthCommand {
             health.hp = self.old_hp;
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Entity {} has no Health component",
-                self.entity
-            ))
+            Err(anyhow::anyhow!("Entity {} has no Health component", self.entity))
         }
     }
 
@@ -732,10 +553,7 @@ impl EditorCommand for EditTeamCommand {
             *team = self.new_team;
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Entity {} has no Team component",
-                self.entity
-            ))
+            Err(anyhow::anyhow!("Entity {} has no Team component", self.entity))
         }
     }
 
@@ -744,10 +562,7 @@ impl EditorCommand for EditTeamCommand {
             *team = self.old_team;
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Entity {} has no Team component",
-                self.entity
-            ))
+            Err(anyhow::anyhow!("Entity {} has no Team component", self.entity))
         }
     }
 
@@ -780,10 +595,7 @@ impl EditorCommand for EditAmmoCommand {
             ammo.rounds = self.new_rounds;
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Entity {} has no Ammo component",
-                self.entity
-            ))
+            Err(anyhow::anyhow!("Entity {} has no Ammo component", self.entity))
         }
     }
 
@@ -792,10 +604,7 @@ impl EditorCommand for EditAmmoCommand {
             ammo.rounds = self.old_rounds;
             Ok(())
         } else {
-            Err(anyhow::anyhow!(
-                "Entity {} has no Ammo component",
-                self.entity
-            ))
+            Err(anyhow::anyhow!("Entity {} has no Ammo component", self.entity))
         }
     }
 
@@ -831,10 +640,7 @@ impl EditorCommand for SpawnEntitiesCommand {
         for &entity in &self.spawned_entities {
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 {
-                        x: -10000,
-                        y: -10000,
-                    },
+                    pos: IVec2 { x: -10000, y: -10000 },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
@@ -878,10 +684,7 @@ impl EditorCommand for DuplicateEntitiesCommand {
         for &entity in &self.spawned_entities {
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 {
-                        x: -10000,
-                        y: -10000,
-                    },
+                    pos: IVec2 { x: -10000, y: -10000 },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
@@ -915,14 +718,11 @@ impl DeleteEntitiesCommand {
 impl EditorCommand for DeleteEntitiesCommand {
     fn execute(&mut self, world: &mut World) -> Result<()> {
         self.clipboard_data = Some(ClipboardData::from_entities(world, &self.entities));
-
+        
         for &entity in &self.entities {
             if let Some(pose) = world.pose_mut(entity) {
                 *pose = astraweave_core::Pose {
-                    pos: IVec2 {
-                        x: -10000,
-                        y: -10000,
-                    },
+                    pos: IVec2 { x: -10000, y: -10000 },
                     rotation: 0.0,
                     rotation_x: 0.0,
                     rotation_z: 0.0,
@@ -945,203 +745,6 @@ impl EditorCommand for DeleteEntitiesCommand {
     }
 }
 
-fn lock_prefab_manager(
-    handle: &PrefabManagerHandle,
-) -> Result<std::sync::MutexGuard<'_, PrefabManager>> {
-    handle
-        .lock()
-        .map_err(|_| anyhow!("Prefab manager lock poisoned"))
-}
-
-/// Helper used by the viewport + tests to spawn a prefab through the undo stack.
-pub fn spawn_prefab_with_undo(
-    prefab_manager: PrefabManagerHandle,
-    prefab_path: PathBuf,
-    spawn_coords: (i32, i32),
-    world: &mut World,
-    undo_stack: &mut UndoStack,
-) -> Result<Entity> {
-    let root = {
-        let mut manager = lock_prefab_manager(&prefab_manager)?;
-        manager.instantiate_prefab(&prefab_path, world, spawn_coords)?
-    };
-
-    let mut cmd = PrefabSpawnCommand::new(prefab_manager.clone(), prefab_path, spawn_coords);
-    cmd.mark_executed(root);
-    undo_stack.push_executed(cmd.into_box());
-
-    Ok(root)
-}
-
-pub struct PrefabSpawnCommand {
-    prefab_manager: PrefabManagerHandle,
-    prefab_path: PathBuf,
-    spawn_coords: (i32, i32),
-    spawned_root: Option<Entity>,
-}
-
-impl PrefabSpawnCommand {
-    pub fn new(
-        prefab_manager: PrefabManagerHandle,
-        prefab_path: PathBuf,
-        spawn_coords: (i32, i32),
-    ) -> Self {
-        Self {
-            prefab_manager,
-            prefab_path,
-            spawn_coords,
-            spawned_root: None,
-        }
-    }
-
-    pub fn mark_executed(&mut self, root: Entity) {
-        self.spawned_root = Some(root);
-    }
-
-    pub fn into_box(self) -> Box<dyn EditorCommand> {
-        Box::new(self)
-    }
-}
-
-impl fmt::Debug for PrefabSpawnCommand {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PrefabSpawnCommand")
-            .field("prefab_path", &self.prefab_path)
-            .field("spawn_coords", &self.spawn_coords)
-            .finish()
-    }
-}
-
-impl EditorCommand for PrefabSpawnCommand {
-    fn execute(&mut self, world: &mut World) -> Result<()> {
-        let root = lock_prefab_manager(&self.prefab_manager)?.instantiate_prefab(
-            &self.prefab_path,
-            world,
-            self.spawn_coords,
-        )?;
-        self.spawned_root = Some(root);
-        Ok(())
-    }
-
-    fn undo(&mut self, world: &mut World) -> Result<()> {
-        if let Some(root) = self.spawned_root {
-            lock_prefab_manager(&self.prefab_manager)?.despawn_instance(world, root)?;
-            self.spawned_root = None;
-        }
-        Ok(())
-    }
-
-    fn describe(&self) -> String {
-        format!(
-            "Spawn Prefab {}",
-            self.prefab_path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("unknown")
-        )
-    }
-}
-
-pub struct PrefabApplyOverridesCommand {
-    prefab_manager: PrefabManagerHandle,
-    entity: Entity,
-    prefab_path: PathBuf,
-    previous_data: PrefabData,
-}
-
-impl PrefabApplyOverridesCommand {
-    pub fn new(
-        prefab_manager: PrefabManagerHandle,
-        entity: Entity,
-        prefab_path: PathBuf,
-        previous_data: PrefabData,
-    ) -> Box<dyn EditorCommand> {
-        Box::new(Self {
-            prefab_manager,
-            entity,
-            prefab_path,
-            previous_data,
-        })
-    }
-}
-
-impl fmt::Debug for PrefabApplyOverridesCommand {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PrefabApplyOverridesCommand")
-            .field("entity", &self.entity)
-            .finish()
-    }
-}
-
-impl EditorCommand for PrefabApplyOverridesCommand {
-    fn execute(&mut self, world: &mut World) -> Result<()> {
-        let mut manager = lock_prefab_manager(&self.prefab_manager)?;
-        manager.apply_overrides(self.entity, &*world)?;
-        manager.reload_instance(self.entity)?;
-        Ok(())
-    }
-
-    fn undo(&mut self, _world: &mut World) -> Result<()> {
-        self.previous_data
-            .save_to_file(&self.prefab_path)
-            .context("Failed to restore prefab file")?;
-        lock_prefab_manager(&self.prefab_manager)?.reload_instance(self.entity)?;
-        Ok(())
-    }
-
-    fn describe(&self) -> String {
-        "Apply Prefab Overrides".into()
-    }
-}
-
-pub struct PrefabRevertOverridesCommand {
-    prefab_manager: PrefabManagerHandle,
-    entity: Entity,
-    snapshot: Vec<PrefabEntitySnapshot>,
-}
-
-impl PrefabRevertOverridesCommand {
-    pub fn new(
-        prefab_manager: PrefabManagerHandle,
-        entity: Entity,
-        snapshot: Vec<PrefabEntitySnapshot>,
-    ) -> Box<dyn EditorCommand> {
-        Box::new(Self {
-            prefab_manager,
-            entity,
-            snapshot,
-        })
-    }
-}
-
-impl fmt::Debug for PrefabRevertOverridesCommand {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("PrefabRevertOverridesCommand")
-            .field("entity", &self.entity)
-            .finish()
-    }
-}
-
-impl EditorCommand for PrefabRevertOverridesCommand {
-    fn execute(&mut self, world: &mut World) -> Result<()> {
-        lock_prefab_manager(&self.prefab_manager)?.revert_overrides(self.entity, world)?;
-        Ok(())
-    }
-
-    fn undo(&mut self, world: &mut World) -> Result<()> {
-        lock_prefab_manager(&self.prefab_manager)?.restore_snapshot(
-            world,
-            self.entity,
-            &self.snapshot,
-        );
-        Ok(())
-    }
-
-    fn describe(&self) -> String {
-        "Revert Prefab Overrides".into()
-    }
-}
-
 // ============================================================================
 // Tests
 // ============================================================================
@@ -1153,7 +756,7 @@ mod tests {
     #[test]
     fn test_undo_stack_basic() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(10);
 
@@ -1181,36 +784,20 @@ mod tests {
     #[test]
     fn test_undo_stack_branching() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(10);
-        stack.set_auto_merge(false);
 
         // Execute two commands
-        stack
-            .execute(
-                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
-                &mut world,
-            )
-            .unwrap();
-        stack
-            .execute(
-                MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(10, 10)),
-                &mut world,
-            )
-            .unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)), &mut world).unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(10, 10)), &mut world).unwrap();
 
         // Undo once
         stack.undo(&mut world).unwrap();
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
 
         // Execute new command (should discard redo history)
-        stack
-            .execute(
-                MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(20, 20)),
-                &mut world,
-            )
-            .unwrap();
+        stack.execute(MoveEntityCommand::new(entity, IVec2::new(5, 5), IVec2::new(20, 20)), &mut world).unwrap();
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(20, 20));
         assert!(!stack.can_redo()); // Redo history discarded
     }
@@ -1218,19 +805,17 @@ mod tests {
     #[test]
     fn test_command_merging() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(10);
         stack.set_auto_merge(true);
 
         // Execute 5 consecutive moves (should merge into 1)
         for i in 1..=5 {
-            stack
-                .execute(
-                    MoveEntityCommand::new(entity, IVec2::new(i - 1, i - 1), IVec2::new(i, i)),
-                    &mut world,
-                )
-                .unwrap();
+            stack.execute(
+                MoveEntityCommand::new(entity, IVec2::new(i - 1, i - 1), IVec2::new(i, i)),
+                &mut world,
+            ).unwrap();
         }
 
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
@@ -1244,19 +829,17 @@ mod tests {
     #[test]
     fn test_rotate_command() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(10);
 
         let old_rot = (0.0, 0.0, 0.0);
         let new_rot = (0.5, 1.0, 1.5);
 
-        stack
-            .execute(
-                RotateEntityCommand::new(entity, old_rot, new_rot),
-                &mut world,
-            )
-            .unwrap();
+        stack.execute(
+            RotateEntityCommand::new(entity, old_rot, new_rot),
+            &mut world,
+        ).unwrap();
 
         let pose = world.pose(entity).unwrap();
         assert!((pose.rotation_x - 0.5).abs() < 0.01);
@@ -1274,13 +857,14 @@ mod tests {
     #[test]
     fn test_scale_command() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(10);
 
-        stack
-            .execute(ScaleEntityCommand::new(entity, 1.0, 2.5), &mut world)
-            .unwrap();
+        stack.execute(
+            ScaleEntityCommand::new(entity, 1.0, 2.5),
+            &mut world,
+        ).unwrap();
 
         assert!((world.pose(entity).unwrap().scale - 2.5).abs() < 0.01);
 
@@ -1341,18 +925,15 @@ mod tests {
     #[test]
     fn test_undo_stack_max_size() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(5);
-        stack.set_auto_merge(false);
 
         for i in 0..10 {
-            stack
-                .execute(
-                    MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
-                    &mut world,
-                )
-                .unwrap();
+            stack.execute(
+                MoveEntityCommand::new(entity, IVec2::new(i, i), IVec2::new(i + 1, i + 1)),
+                &mut world,
+            ).unwrap();
         }
 
         assert_eq!(stack.len(), 5);
@@ -1362,16 +943,14 @@ mod tests {
     #[test]
     fn test_undo_stack_descriptions() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         let mut stack = UndoStack::new(10);
 
-        stack
-            .execute(
-                MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
-                &mut world,
-            )
-            .unwrap();
+        stack.execute(
+            MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)),
+            &mut world,
+        ).unwrap();
 
         assert!(stack.undo_description().unwrap().contains("Move Entity"));
         assert!(stack.redo_description().is_none());
@@ -1384,16 +963,12 @@ mod tests {
     #[test]
     fn test_push_executed() {
         let mut world = World::new();
-        let entity = world.spawn("test", IVec2::new(0, 0), Team { id: 0 }, 100, 30);
+        let entity = world.spawn_entity(IVec2::new(0, 0), "test");
 
         world.pose_mut(entity).unwrap().pos = IVec2::new(5, 5);
 
         let mut stack = UndoStack::new(10);
-        stack.push_executed(MoveEntityCommand::new(
-            entity,
-            IVec2::new(0, 0),
-            IVec2::new(5, 5),
-        ));
+        stack.push_executed(MoveEntityCommand::new(entity, IVec2::new(0, 0), IVec2::new(5, 5)));
 
         assert_eq!(world.pose(entity).unwrap().pos, IVec2::new(5, 5));
 
