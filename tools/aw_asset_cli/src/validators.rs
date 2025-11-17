@@ -181,7 +181,7 @@ pub fn validate_ktx2_mipmaps(path: &Path) -> Result<ValidationResult> {
     if identifier == ktx2_id {
         // True KTX2 file
         result.info("Format: True KTX2 (standard)");
-
+        
         if data.len() < 80 {
             result.error("KTX2 file too small (< 80 bytes)");
             return Ok(result);
@@ -203,7 +203,7 @@ pub fn validate_ktx2_mipmaps(path: &Path) -> Result<ValidationResult> {
     } else if &identifier[0..8] == awtex2_id {
         // Legacy AWTEX2 file (temporary during migration)
         result.warning("Format: Legacy AWTEX2 (should migrate to true KTX2)");
-
+        
         if data.len() < 28 {
             result.error("AWTEX2 file too small (< 28 bytes)");
             return Ok(result);
@@ -601,12 +601,12 @@ pub fn verify_manifest_signature(manifest_path: &Path) -> Result<ValidationResul
     let mut result = ValidationResult::new(manifest_path.display().to_string());
 
     // Read manifest file
-    let manifest_content =
-        std::fs::read_to_string(manifest_path).context("Failed to read manifest file")?;
+    let manifest_content = std::fs::read_to_string(manifest_path)
+        .context("Failed to read manifest file")?;
 
     // Parse manifest JSON
-    let manifest_value: serde_json::Value =
-        serde_json::from_str(&manifest_content).context("Failed to parse manifest JSON")?;
+    let manifest_value: serde_json::Value = serde_json::from_str(&manifest_content)
+        .context("Failed to parse manifest JSON")?;
 
     // Extract signature
     let signature = manifest_value

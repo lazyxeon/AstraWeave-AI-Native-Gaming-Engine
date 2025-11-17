@@ -16,11 +16,11 @@
 //! 3. Large scale (1000 entities) - 60 FPS target
 //! 4. Stress test (5000 entities) - capacity measurement
 
-use astraweave_ai::{Orchestrator, RuleOrchestrator};
 use astraweave_core::{
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, Pose, Team, World,
     WorldSnapshot,
 };
+use astraweave_ai::{Orchestrator, RuleOrchestrator};
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::BTreeMap;
 use std::hint::black_box;

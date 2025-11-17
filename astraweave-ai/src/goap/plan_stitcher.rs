@@ -130,9 +130,7 @@ impl PlanStitcher {
 
                 // Check for state conflicts with future actions
                 for (_j, future_action_name) in plan.iter().enumerate().skip(i + 1) {
-                    if let Some(future_action) =
-                        actions.iter().find(|a| a.name() == future_action_name)
-                    {
+                    if let Some(future_action) = actions.iter().find(|a| a.name() == future_action_name) {
                         // Check if effects conflict
                         for (key, value1) in action.effects() {
                             for (key2, value2) in future_action.effects() {
@@ -171,23 +169,18 @@ impl PlanStitcher {
         // Define known incompatible pairs
         // (In a real system, this might be data-driven)
         let incompatible_pairs = vec![
-            ("attack", "heal"),       // Can't attack and heal at same time
-            ("move_to", "move_to"),   // Conflicting movement
+            ("attack", "heal"),     // Can't attack and heal at same time
+            ("move_to", "move_to"), // Conflicting movement
             ("take_cover", "attack"), // Can't attack while taking cover
         ];
 
         incompatible_pairs.iter().any(|(a, b)| {
-            (action1.contains(a) && action2.contains(b))
-                || (action1.contains(b) && action2.contains(a))
+            (action1.contains(a) && action2.contains(b)) || (action1.contains(b) && action2.contains(a))
         })
     }
 
     /// Optimize a plan by removing redundant actions
-    pub fn optimize(
-        plan: Vec<String>,
-        actions: &[Box<dyn Action>],
-        start_state: &WorldState,
-    ) -> Vec<String> {
+    pub fn optimize(plan: Vec<String>, actions: &[Box<dyn Action>], start_state: &WorldState) -> Vec<String> {
         if plan.is_empty() {
             return plan;
         }
@@ -200,10 +193,10 @@ impl PlanStitcher {
             if let Some(action) = actions.iter().find(|a| a.name() == &action_name) {
                 // Check if this action's effects are redundant
                 let mut is_redundant = true;
-
+                
                 for (key, value) in action.effects() {
                     let effect_id = format!("{}={:?}", key, value);
-
+                    
                     // If we haven't seen this effect yet, it's not redundant
                     if !applied_effects.contains(&effect_id) {
                         is_redundant = false;
@@ -232,7 +225,7 @@ impl PlanStitcher {
         start_state: &WorldState,
     ) -> Result<(), StitchError> {
         let conflicts = Self::detect_conflicts(plan, actions, start_state);
-
+        
         if !conflicts.is_empty() {
             return Err(StitchError::ConflictDetected(conflicts));
         }
@@ -252,7 +245,7 @@ impl PlanStitcher {
         for (i, action_name) in plan.iter().enumerate() {
             if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
                 simulated_state.apply_effects(action.effects());
-
+                
                 // A resume point is where state is "stable"
                 // For now, mark every N actions as potential resume point
                 if (i + 1) % 3 == 0 {
@@ -350,12 +343,7 @@ mod tests {
     fn test_optimize_removes_redundant() {
         let mut effects = BTreeMap::new();
         effects.insert("flag".to_string(), StateValue::Bool(true));
-        let action = Box::new(SimpleAction::new(
-            "set_flag",
-            BTreeMap::new(),
-            effects.clone(),
-            1.0,
-        ));
+        let action = Box::new(SimpleAction::new("set_flag", BTreeMap::new(), effects.clone(), 1.0));
 
         let actions: Vec<Box<dyn Action>> = vec![action];
         let plan = vec!["set_flag".to_string(), "set_flag".to_string()]; // Redundant
@@ -367,10 +355,9 @@ mod tests {
 
     #[test]
     fn test_validate_plan_success() {
-        let actions: Vec<Box<dyn Action>> = vec![create_test_action(
-            "action1",
-            vec![("x", StateValue::Int(1))],
-        )];
+        let actions: Vec<Box<dyn Action>> = vec![
+            create_test_action("action1", vec![("x", StateValue::Int(1))]),
+        ];
 
         let plan = vec!["action1".to_string()];
         let start_state = WorldState::new();
@@ -388,12 +375,7 @@ mod tests {
             create_test_action("a4", vec![("w", StateValue::Int(4))]),
         ];
 
-        let plan = vec![
-            "a1".to_string(),
-            "a2".to_string(),
-            "a3".to_string(),
-            "a4".to_string(),
-        ];
+        let plan = vec!["a1".to_string(), "a2".to_string(), "a3".to_string(), "a4".to_string()];
         let start_state = WorldState::new();
 
         let resume_points = PlanStitcher::find_resume_points(&plan, &actions, &start_state);
@@ -401,3 +383,4 @@ mod tests {
         assert!(resume_points.len() > 1); // Should have intermediate points
     }
 }
+

@@ -1,4 +1,4 @@
-use super::{Action, Goal, StateValue, WorldState};
+use super::{Action, Goal, WorldState, StateValue};
 use std::collections::BTreeMap;
 
 /// State difference between two world states
@@ -95,14 +95,12 @@ impl PlanDebugger {
         }
 
         let action_name = &self.plan[self.current_step];
-        let action = self
-            .actions
-            .iter()
+        let action = self.actions.iter()
             .find(|a| a.name() == action_name)
             .ok_or_else(|| format!("Action '{}' not found", action_name))?;
 
         let current_state = self.current_state();
-
+        
         if !action.can_execute(current_state) {
             return Err(format!("Action '{}' preconditions not met", action_name));
         }
@@ -110,7 +108,7 @@ impl PlanDebugger {
         // Apply effects
         let mut new_state = current_state.clone();
         new_state.apply_effects(action.effects());
-
+        
         self.state_history.push(new_state);
         self.current_step += 1;
 
@@ -185,7 +183,8 @@ impl PlanDebugger {
 
     /// Explain why current action was chosen
     pub fn explain_action(&self, action_name: &str) -> Option<Explanation> {
-        let action = self.actions.iter().find(|a| a.name() == action_name)?;
+        let action = self.actions.iter()
+            .find(|a| a.name() == action_name)?;
 
         let state = self.current_state();
 
@@ -213,11 +212,8 @@ impl PlanDebugger {
 
         Some(Explanation {
             action_name: action_name.to_string(),
-            reason: format!(
-                "Action satisfies {} preconditions and applies {} effects",
-                preconditions_met.len(),
-                effects_applied.len()
-            ),
+            reason: format!("Action satisfies {} preconditions and applies {} effects", 
+                           preconditions_met.len(), effects_applied.len()),
             preconditions_met,
             effects_applied,
             cost: action.base_cost(),
@@ -239,10 +235,7 @@ impl PlanDebugger {
                 if current_value.satisfies(target_value) {
                     satisfied.push(format!("{}={:?}", key, current_value));
                 } else {
-                    unsatisfied.push(format!(
-                        "{}={:?} (need {:?})",
-                        key, current_value, target_value
-                    ));
+                    unsatisfied.push(format!("{}={:?} (need {:?})", key, current_value, target_value));
                 }
             } else {
                 unsatisfied.push(format!("{} (missing)", key));
@@ -273,11 +266,7 @@ impl PlanDebugger {
     /// Jump to specific step
     pub fn jump_to_step(&mut self, step: usize) -> Result<(), String> {
         if step > self.plan.len() {
-            return Err(format!(
-                "Step {} is beyond plan length {}",
-                step,
-                self.plan.len()
-            ));
+            return Err(format!("Step {} is beyond plan length {}", step, self.plan.len()));
         }
 
         // Reset to start
@@ -296,10 +285,7 @@ impl PlanDebugger {
         let state = self.current_state();
         let mut output = String::new();
 
-        output.push_str(&format!(
-            "=== World State at Step {} ===\n",
-            self.current_step
-        ));
+        output.push_str(&format!("=== World State at Step {} ===\n", self.current_step));
 
         let mut keys: Vec<_> = state.iter().map(|(k, _)| k).collect();
         keys.sort();
@@ -340,10 +326,8 @@ impl PlanDebugger {
         if !diff.changed.is_empty() {
             output.push_str("\nChanged:\n");
             for change in &diff.changed {
-                output.push_str(&format!(
-                    "  ~ {} = {:?} -> {:?}\n",
-                    change.key, change.old_value, change.new_value
-                ));
+                output.push_str(&format!("  ~ {} = {:?} -> {:?}\n", 
+                    change.key, change.old_value, change.new_value));
             }
         }
 
@@ -387,10 +371,9 @@ mod tests {
     fn test_step_forward() {
         let plan = vec!["action1".to_string()];
         let start = WorldState::new();
-        let actions = vec![create_test_action(
-            "action1",
-            vec![("flag", StateValue::Bool(true))],
-        )];
+        let actions = vec![
+            create_test_action("action1", vec![("flag", StateValue::Bool(true))])
+        ];
 
         let mut debugger = PlanDebugger::new(plan, start, actions);
 
@@ -407,10 +390,9 @@ mod tests {
     fn test_step_backward() {
         let plan = vec!["action1".to_string()];
         let start = WorldState::new();
-        let actions = vec![create_test_action(
-            "action1",
-            vec![("flag", StateValue::Bool(true))],
-        )];
+        let actions = vec![
+            create_test_action("action1", vec![("flag", StateValue::Bool(true))])
+        ];
 
         let mut debugger = PlanDebugger::new(plan, start, actions);
 
@@ -431,13 +413,12 @@ mod tests {
         let mut start = WorldState::new();
         start.set("existing", StateValue::Int(10));
 
-        let actions = vec![create_test_action(
-            "action1",
-            vec![
+        let actions = vec![
+            create_test_action("action1", vec![
                 ("existing", StateValue::Int(20)),
                 ("new", StateValue::Bool(true)),
-            ],
-        )];
+            ])
+        ];
 
         let mut debugger = PlanDebugger::new(plan, start, actions);
         debugger.step_forward().unwrap();
@@ -455,10 +436,9 @@ mod tests {
     fn test_reset() {
         let plan = vec!["action1".to_string()];
         let start = WorldState::new();
-        let actions = vec![create_test_action(
-            "action1",
-            vec![("flag", StateValue::Bool(true))],
-        )];
+        let actions = vec![
+            create_test_action("action1", vec![("flag", StateValue::Bool(true))])
+        ];
 
         let mut debugger = PlanDebugger::new(plan, start, actions);
 
@@ -472,11 +452,7 @@ mod tests {
 
     #[test]
     fn test_jump_to_step() {
-        let plan = vec![
-            "action1".to_string(),
-            "action2".to_string(),
-            "action3".to_string(),
-        ];
+        let plan = vec!["action1".to_string(), "action2".to_string(), "action3".to_string()];
         let start = WorldState::new();
         let actions = vec![
             create_test_action("action1", vec![("step", StateValue::Int(1))]),
@@ -488,20 +464,16 @@ mod tests {
 
         debugger.jump_to_step(2).unwrap();
         assert_eq!(debugger.current_step(), 2);
-        assert_eq!(
-            debugger.current_state().get("step"),
-            Some(&StateValue::Int(2))
-        );
+        assert_eq!(debugger.current_state().get("step"), Some(&StateValue::Int(2)));
     }
 
     #[test]
     fn test_goal_progress() {
         let plan = vec!["action1".to_string()];
         let start = WorldState::new();
-        let actions = vec![create_test_action(
-            "action1",
-            vec![("goal_met", StateValue::Bool(true))],
-        )];
+        let actions = vec![
+            create_test_action("action1", vec![("goal_met", StateValue::Bool(true))])
+        ];
 
         let mut debugger = PlanDebugger::new(plan, start, actions);
 
@@ -521,3 +493,4 @@ mod tests {
         assert_eq!(progress2.satisfied_conditions.len(), 1);
     }
 }
+

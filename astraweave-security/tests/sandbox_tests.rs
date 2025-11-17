@@ -428,7 +428,10 @@ async fn test_deep_recursion_blocked() {
 
     let result = execute_script_sandboxed(script, &sandbox, context).await;
 
-    assert!(result.is_err(), "Deep recursion should hit operation limit");
+    assert!(
+        result.is_err(),
+        "Deep recursion should hit operation limit"
+    );
 }
 
 #[tokio::test]

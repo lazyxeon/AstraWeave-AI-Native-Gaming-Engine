@@ -295,7 +295,7 @@ pub fn compress_bc7(_rgba: &RgbaImage) -> Result<Vec<u8>> {
 #[cfg(feature = "astc")]
 pub fn compress_astc(rgba: &RgbaImage, block_size: AstcBlockSize) -> Result<Vec<u8>> {
     let (width, height) = rgba.dimensions();
-
+    
     anyhow::bail!(
         "ASTC compression not yet implemented. Texture size: {}x{}, block size: {:?}\n\
         \n\

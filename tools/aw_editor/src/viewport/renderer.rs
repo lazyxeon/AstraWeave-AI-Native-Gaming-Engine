@@ -28,8 +28,7 @@ use super::entity_renderer::EntityRenderer;
 use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
 use super::skybox_renderer::SkyboxRenderer;
-use crate::gizmo::snapping::SnappingConfig;
-use crate::gizmo::state::{GizmoMode, GizmoState};
+use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
 
 /// Viewport rendering coordinator
@@ -181,7 +180,6 @@ impl ViewportRenderer {
         camera: &OrbitCamera,
         world: &World,
         gizmo_state: Option<&GizmoState>,
-        snapping: &SnappingConfig,
     ) -> Result<()> {
         // Ensure depth buffer matches target size
         let target_size = target.size();
@@ -208,18 +206,9 @@ impl ViewportRenderer {
             .context("Skybox render failed")?;
 
         // Pass 2: Grid
-        if grid_pass_enabled(snapping) {
-            self.grid_renderer
-                .render(
-                    &mut encoder,
-                    &target_view,
-                    depth_view,
-                    camera,
-                    &self.queue,
-                    snapping.resolved_grid_size(),
-                )
-                .context("Grid render failed")?;
-        }
+        self.grid_renderer
+            .render(&mut encoder, &target_view, depth_view, camera, &self.queue)
+            .context("Grid render failed")?;
 
         // Pass 3: Entities
         self.entity_renderer
@@ -236,18 +225,15 @@ impl ViewportRenderer {
 
         // Pass 4: Gizmos (if entity selected and gizmo active)
         if let (Some(selected), Some(gizmo)) = (self.selected_entity(), gizmo_state) {
-            if gizmo.mode != GizmoMode::Inactive {
+            if gizmo.mode != crate::gizmo::GizmoMode::Inactive {
                 // DEBUG: Log gizmo mode and constraint
                 match &gizmo.mode {
-                    GizmoMode::Rotate { constraint } => {
-                        println!(
-                            "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
-                            constraint
-                        );
+                    crate::gizmo::GizmoMode::Rotate { constraint } => {
+                        println!("🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}", constraint);
                     }
                     _ => {}
                 }
-
+                
                 // Get entity position from world (old astraweave-core API)
                 if let Some(pose) = world.pose(selected) {
                     // Convert astraweave_core::IVec2 to glam::IVec2
@@ -328,7 +314,7 @@ impl ViewportRenderer {
     pub fn set_selected_entities(&mut self, entities: &[Entity]) {
         self.selected_entities = entities.to_vec();
     }
-
+    
     /// Set selected entity (for backward compatibility)
     pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
         self.selected_entities.clear();
@@ -341,15 +327,11 @@ impl ViewportRenderer {
     pub fn selected_entity(&self) -> Option<Entity> {
         self.selected_entities.first().copied()
     }
-
+    
     /// Get all selected entities
     pub fn selected_entities(&self) -> &[Entity] {
         &self.selected_entities
     }
-}
-
-fn grid_pass_enabled(snapping: &SnappingConfig) -> bool {
-    snapping.grid_active()
 }
 
 #[cfg(test)]
@@ -358,20 +340,6 @@ mod tests {
 
     // NOTE: These tests require wgpu device, which needs a GPU or software renderer.
     // Run with: cargo test --features gpu-tests
-
-    #[test]
-    fn grid_pass_tracks_snapping_state() {
-        let config = SnappingConfig::default();
-        assert!(grid_pass_enabled(&config));
-
-        let mut disabled = config;
-        disabled.grid_enabled = false;
-        assert!(!grid_pass_enabled(&disabled));
-
-        let mut zero_size = SnappingConfig::default();
-        zero_size.grid_size = 0.0;
-        assert!(!grid_pass_enabled(&zero_size));
-    }
 
     #[test]
     fn test_viewport_renderer_resize() {

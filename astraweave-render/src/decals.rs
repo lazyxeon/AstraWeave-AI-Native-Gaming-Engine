@@ -99,8 +99,7 @@ impl Decal {
     /// Convert to GPU representation
     pub fn to_gpu(&self) -> GpuDecal {
         // Build projection matrix (world to decal space)
-        let transform =
-            Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.position);
+        let transform = Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.position);
         let inv_projection = transform.inverse();
 
         GpuDecal {
@@ -179,7 +178,10 @@ impl DecalAtlas {
     /// Get UV coordinates for a decal in the atlas
     pub fn get_uv(&self, atlas_x: u32, atlas_y: u32) -> ([f32; 2], [f32; 2]) {
         let cell_size = 1.0 / self.grid_size as f32;
-        let offset = [atlas_x as f32 * cell_size, atlas_y as f32 * cell_size];
+        let offset = [
+            atlas_x as f32 * cell_size,
+            atlas_y as f32 * cell_size,
+        ];
         let scale = [cell_size, cell_size];
         (offset, scale)
     }
@@ -314,7 +316,7 @@ mod tests {
             ([0.0, 0.0], [1.0, 1.0]),
         );
         decal.fade_duration = 2.0;
-
+        
         assert!(decal.update(1.0)); // Still alive at 50%
         assert!(decal.update(0.5)); // Still alive at 75%
         assert!(!decal.update(0.6)); // Dead after exceeding duration

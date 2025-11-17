@@ -3236,14 +3236,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // self.sky.render(&mut enc, &self.main_color_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         // Replace with:
-        let sky_color_target = &self.hdr_view; // Use HDR view as the main color target for sky
-        self.sky.render(
-            &mut enc,
-            sky_color_target,
-            &self.depth.view,
-            Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
-            &self.queue,
-        )?;
+        let sky_color_target = &self.hdr_view;  // Use HDR view as the main color target for sky
+        self.sky.render(&mut enc, sky_color_target, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
         // Ensure bind groups are properly recreated or updated if needed to avoid corruption
         // Add safety check before render pass
@@ -3533,7 +3527,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // but SSR/SSAO pipelines are not yet implemented in the Renderer struct.
         // To enable:
         // 1. Add ssr_pipeline, ssr_bind_group fields to Renderer struct
-        // 2. Add ssao_pipeline, ssao_bind_group fields to Renderer struct
+        // 2. Add ssao_pipeline, ssao_bind_group fields to Renderer struct  
         // 3. Initialize them in new() using WGSL_SSR and WGSL_SSAO from post.rs
         // 4. Uncomment and wire the render passes below
         // 5. Bloom is partially implemented; see bloom_* fields in struct
@@ -4542,7 +4536,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // For now, primarily handle sky/environment bind groups
         // Camera, material, light bind groups are typically stable
         // Future: Add comprehensive bind group recreation if needed
-
+        
         // Sky renderer has its own internal bind groups that may need recreation
         // This is a placeholder for future sky bind group management
         log::debug!("Bind groups marked for recreation (sky/environment)");

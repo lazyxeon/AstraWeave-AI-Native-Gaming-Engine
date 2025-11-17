@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
+use serde::{Deserialize, Serialize};
 
 /// State value with deterministic hashing and extended comparison support
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -57,21 +57,23 @@ impl StateValue {
             // Exact matches
             (StateValue::Bool(a), StateValue::Bool(b)) => a == b,
             (StateValue::String(a), StateValue::String(b)) => a == b,
-
+            
             // Numeric exact matches
             (StateValue::Int(a), StateValue::Int(b)) => a == b,
             (StateValue::Float(a), StateValue::Float(b)) => (a.0 - b.0).abs() < 1e-6,
-
+            
             // Range matching
-            (StateValue::Int(val), StateValue::IntRange(min, max)) => val >= min && val <= max,
+            (StateValue::Int(val), StateValue::IntRange(min, max)) => {
+                val >= min && val <= max
+            }
             (StateValue::Float(val), StateValue::FloatApprox(target_val, epsilon)) => {
                 (val.0 - target_val).abs() <= *epsilon
             }
-
+            
             // Mixed type conversions
             (StateValue::Int(i), StateValue::Float(f)) => (*i as f32 - f.0).abs() < 1e-6,
             (StateValue::Float(f), StateValue::Int(i)) => (f.0 - *i as f32).abs() < 1e-6,
-
+            
             _ => false,
         }
     }
@@ -92,13 +94,7 @@ impl StateValue {
                     0.0
                 }
             }
-            _ => {
-                if self == target {
-                    0.0
-                } else {
-                    1.0
-                }
-            }
+            _ => if self == target { 0.0 } else { 1.0 },
         }
     }
 }
@@ -358,3 +354,4 @@ mod tests {
         assert_eq!(hash2, hash3);
     }
 }
+

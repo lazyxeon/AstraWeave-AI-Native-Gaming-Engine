@@ -147,9 +147,7 @@ mod tests {
         // Mock asset
         let guid = "test_guid".to_string();
         {
-            let mut db = db
-                .lock()
-                .map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?;
+            let mut db = db.lock().map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?;
             db.assets.insert(
                 guid.clone(),
                 AssetMetadata {
@@ -175,9 +173,7 @@ mod tests {
         // Load another to trigger eviction
         let guid2 = "test_guid2".to_string();
         {
-            let mut db = db
-                .lock()
-                .map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?;
+            let mut db = db.lock().map_err(|e| anyhow::anyhow!("Mutex poisoned: {}", e))?;
             db.assets.insert(
                 guid2.clone(),
                 AssetMetadata {

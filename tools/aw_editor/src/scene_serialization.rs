@@ -82,14 +82,11 @@ impl SceneData {
     pub fn to_world(&self) -> World {
         let mut world = World::new();
         world.t = self.time;
-        // We'll restore entities using their original IDs, then restore next_id
-        let desired_next_id = self.next_entity_id;
+        world.next_id = self.next_entity_id;
 
         world.obstacles = self.obstacles.iter().copied().collect();
 
         for entity_data in &self.entities {
-            // Ensure the next spawned entity reuses the recorded ID
-            world.next_id = entity_data.id;
             let id = world.spawn(
                 &entity_data.name,
                 entity_data.pos,
@@ -112,9 +109,6 @@ impl SceneData {
             }
         }
 
-        // Restore next entity id exactly as recorded
-        world.next_id = desired_next_id;
-
         world
     }
 
@@ -122,18 +116,19 @@ impl SceneData {
         // Security: Validate path is within content directory and has correct extension
         let base = std::env::current_dir().context("Failed to get current directory")?;
         let content_base = base.join("content");
-
+        
         // Create content directory if it doesn't exist
-        fs::create_dir_all(&content_base).context("Failed to create content directory")?;
-
+        fs::create_dir_all(&content_base)
+            .context("Failed to create content directory")?;
+        
         // Validate path is within content directory
         let safe_path = safe_under(&content_base, path)
             .map_err(|e| anyhow::anyhow!("Invalid scene path: {}", e))?;
-
+        
         // Validate extension
         validate_extension(&safe_path, &["ron", "json", "toml"])
             .map_err(|e| anyhow::anyhow!("Invalid scene file extension: {}", e))?;
-
+        
         let ron_string = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
             .context("Failed to serialize scene to RON")?;
 
@@ -142,8 +137,7 @@ impl SceneData {
                 .context(format!("Failed to create directory: {:?}", parent))?;
         }
 
-        fs::write(&safe_path, ron_string)
-            .context(format!("Failed to write scene to {:?}", safe_path))?;
+        fs::write(&safe_path, ron_string).context(format!("Failed to write scene to {:?}", safe_path))?;
 
         println!("💾 Saved scene to {:?}", safe_path);
         Ok(())
@@ -153,15 +147,15 @@ impl SceneData {
         // Security: Validate path is within content directory and has correct extension
         let base = std::env::current_dir().context("Failed to get current directory")?;
         let content_base = base.join("content");
-
+        
         // Validate path is within content directory
         let safe_path = safe_under(&content_base, path)
             .map_err(|e| anyhow::anyhow!("Invalid scene path: {}", e))?;
-
+        
         // Validate extension
         validate_extension(&safe_path, &["ron", "json", "toml"])
             .map_err(|e| anyhow::anyhow!("Invalid scene file extension: {}", e))?;
-
+        
         let contents = fs::read_to_string(&safe_path)
             .context(format!("Failed to read scene from {:?}", safe_path))?;
 
@@ -186,39 +180,12 @@ pub fn load_scene(path: &Path) -> Result<World> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::{Path, PathBuf};
-
-    fn test_scene_path(name: &str) -> PathBuf {
-        let relative = PathBuf::from(format!("test_scenes/{name}"));
-        let actual = Path::new("content").join(&relative);
-        if let Some(parent) = actual.parent() {
-            fs::create_dir_all(parent).unwrap();
-        }
-        relative
-    }
-
-    fn remove_scene_file(relative: &Path) {
-        let actual = Path::new("content").join(relative);
-        let _ = fs::remove_file(actual);
-    }
 
     #[test]
     fn test_scene_roundtrip() {
         let mut world = World::new();
-        let e1 = world.spawn(
-            "Player",
-            IVec2 { x: 5, y: 10 },
-            astraweave_core::Team { id: 0 },
-            100,
-            30,
-        );
-        let e2 = world.spawn(
-            "Enemy",
-            IVec2 { x: 20, y: 15 },
-            astraweave_core::Team { id: 2 },
-            50,
-            15,
-        );
+        let e1 = world.spawn("Player", IVec2 { x: 5, y: 10 }, astraweave_core::Team { id: 0 }, 100, 30);
+        let e2 = world.spawn("Enemy", IVec2 { x: 20, y: 15 }, astraweave_core::Team { id: 2 }, 50, 15);
 
         world.obstacles.insert((10, 10));
         world.obstacles.insert((11, 10));
@@ -246,17 +213,10 @@ mod tests {
     #[test]
     fn test_scene_serialization() {
         let mut world = World::new();
-        world.spawn(
-            "TestEntity",
-            IVec2 { x: 0, y: 0 },
-            astraweave_core::Team { id: 0 },
-            100,
-            30,
-        );
+        world.spawn("TestEntity", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
 
         let scene = SceneData::from_world(&world);
-        let ron_string =
-            ron::ser::to_string_pretty(&scene, ron::ser::PrettyConfig::default()).unwrap();
+        let ron_string = ron::ser::to_string_pretty(&scene, ron::ser::PrettyConfig::default()).unwrap();
 
         assert!(ron_string.contains("version"));
         assert!(ron_string.contains("TestEntity"));
@@ -284,7 +244,7 @@ mod tests {
     #[test]
     fn test_scene_with_multiple_entities() {
         let mut world = World::new();
-
+        
         for i in 0..10 {
             world.spawn(
                 &format!("Entity{}", i),
@@ -301,13 +261,11 @@ mod tests {
         let restored = scene.to_world();
         assert_eq!(restored.entities().len(), 10);
 
-        let restored_entities = restored.entities();
         for i in 0..10 {
             let entity_name = format!("Entity{}", i);
-            let found = restored_entities
-                .iter()
-                .copied()
-                .find(|&id| restored.name(id) == Some(entity_name.as_str()));
+            let found = restored.entities().iter().find(|&&id| {
+                restored.name(id) == Some(entity_name.as_str())
+            });
             assert!(found.is_some(), "Entity {} should exist", i);
         }
     }
@@ -315,13 +273,7 @@ mod tests {
     #[test]
     fn test_scene_with_all_components() {
         let mut world = World::new();
-        let entity = world.spawn(
-            "CompleteEntity",
-            IVec2 { x: 5, y: 10 },
-            astraweave_core::Team { id: 1 },
-            75,
-            25,
-        );
+        let entity = world.spawn("CompleteEntity", IVec2 { x: 5, y: 10 }, astraweave_core::Team { id: 1 }, 75, 25);
 
         if let Some(pose) = world.pose_mut(entity) {
             pose.rotation = 3.14;
@@ -353,7 +305,7 @@ mod tests {
     #[test]
     fn test_scene_with_obstacles() {
         let mut world = World::new();
-
+        
         for x in 0..5 {
             for y in 0..5 {
                 world.obstacles.insert((x, y));
@@ -375,58 +327,44 @@ mod tests {
 
     #[test]
     fn test_scene_file_io() {
+        use std::env;
         let mut world = World::new();
-        world.spawn(
-            "Player",
-            IVec2 { x: 10, y: 20 },
-            astraweave_core::Team { id: 0 },
-            100,
-            30,
-        );
+        world.spawn("Player", IVec2 { x: 10, y: 20 }, astraweave_core::Team { id: 0 }, 100, 30);
         world.obstacles.insert((5, 5));
 
-        let scene_path = test_scene_path("aw_editor_test_scene.ron");
+        let temp_dir = env::temp_dir();
+        let test_path = temp_dir.join("aw_editor_test_scene.ron");
 
         let scene = SceneData::from_world(&world);
-        scene.save_to_file(&scene_path).unwrap();
+        scene.save_to_file(&test_path).unwrap();
 
-        assert!(Path::new("content").join(&scene_path).exists());
+        assert!(test_path.exists());
 
-        let loaded_scene = SceneData::load_from_file(&scene_path).unwrap();
+        let loaded_scene = SceneData::load_from_file(&test_path).unwrap();
         assert_eq!(loaded_scene.entities.len(), 1);
         assert_eq!(loaded_scene.obstacles.len(), 1);
         assert_eq!(loaded_scene.entities[0].name, "Player");
 
-        remove_scene_file(&scene_path);
+        fs::remove_file(&test_path).unwrap();
     }
 
     #[test]
     fn test_save_and_load_scene() {
+        use std::env;
         let mut world = World::new();
-        world.spawn(
-            "Entity1",
-            IVec2 { x: 1, y: 2 },
-            astraweave_core::Team { id: 0 },
-            100,
-            30,
-        );
-        world.spawn(
-            "Entity2",
-            IVec2 { x: 3, y: 4 },
-            astraweave_core::Team { id: 1 },
-            50,
-            15,
-        );
+        world.spawn("Entity1", IVec2 { x: 1, y: 2 }, astraweave_core::Team { id: 0 }, 100, 30);
+        world.spawn("Entity2", IVec2 { x: 3, y: 4 }, astraweave_core::Team { id: 1 }, 50, 15);
 
-        let scene_path = test_scene_path("aw_editor_test_save_load.ron");
+        let temp_dir = env::temp_dir();
+        let test_path = temp_dir.join("aw_editor_test_save_load.ron");
 
-        save_scene(&world, &scene_path).unwrap();
-        assert!(Path::new("content").join(&scene_path).exists());
+        save_scene(&world, &test_path).unwrap();
+        assert!(test_path.exists());
 
-        let loaded_world = load_scene(&scene_path).unwrap();
+        let loaded_world = load_scene(&test_path).unwrap();
         assert_eq!(loaded_world.entities().len(), 2);
 
-        remove_scene_file(&scene_path);
+        fs::remove_file(&test_path).unwrap();
     }
 
     #[test]
@@ -444,20 +382,8 @@ mod tests {
     #[test]
     fn test_scene_preserves_entity_ids() {
         let mut world = World::new();
-        let e1 = world.spawn(
-            "E1",
-            IVec2 { x: 0, y: 0 },
-            astraweave_core::Team { id: 0 },
-            100,
-            30,
-        );
-        let e2 = world.spawn(
-            "E2",
-            IVec2 { x: 1, y: 1 },
-            astraweave_core::Team { id: 1 },
-            50,
-            15,
-        );
+        let e1 = world.spawn("E1", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
+        let e2 = world.spawn("E2", IVec2 { x: 1, y: 1 }, astraweave_core::Team { id: 1 }, 50, 15);
 
         let scene = SceneData::from_world(&world);
         let restored = scene.to_world();

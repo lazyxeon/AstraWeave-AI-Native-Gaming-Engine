@@ -5,7 +5,6 @@ use crate::interaction::{self, GizmoCancelMetadata, GizmoOperationKind};
 use crate::telemetry::{self, EditorTelemetryEvent};
 use anyhow::{Context, Result};
 use astraweave_core::{Entity, IVec2, World};
-use glam::Vec3;
 
 /// Minimal harness that drives gizmo operations without a GPU/egui session.
 ///
@@ -44,27 +43,12 @@ impl GizmoHarness {
         &self.undo_stack
     }
 
-    /// Number of undoable commands currently stored.
-    pub fn undo_depth(&self) -> usize {
-        self.undo_stack.len()
-    }
-
     pub fn select(&mut self, entity: Entity) {
         self.gizmo.selected_entity = Some(entity);
         telemetry::record(EditorTelemetryEvent::SelectionChanged {
             primary: Some(entity as u32),
             count: 1,
         });
-    }
-
-    /// Undo the last command captured during the session.
-    pub fn undo_last(&mut self) -> Result<()> {
-        self.undo_stack.undo(&mut self.world)
-    }
-
-    /// Redo the most recent command if available.
-    pub fn redo_last(&mut self) -> Result<()> {
-        self.undo_stack.redo(&mut self.world)
     }
 
     fn selected_entity(&self) -> Result<Entity> {
@@ -92,18 +76,7 @@ impl GizmoHarness {
         if let Some(pose) = self.world.pose_mut(entity) {
             pose.pos.x += delta.x;
             pose.pos.y += delta.y;
-
-            if self._snapping.grid_active() {
-                let snapped = self._snapping.snap_position(Vec3::new(
-                    pose.pos.x as f32,
-                    0.0,
-                    pose.pos.y as f32,
-                ));
-                pose.pos.x = snapped.x.round() as i32;
-                pose.pos.y = snapped.z.round() as i32;
-            }
         }
-        interaction::refresh_transaction_state(&mut self.gizmo, &self.world);
         Ok(())
     }
 

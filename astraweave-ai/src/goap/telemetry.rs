@@ -1,8 +1,8 @@
 // Telemetry hooks for GOAP plan quality metrics and execution outcomes
 // Phase 2: Engine Integration
 
-use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use serde::{Serialize, Deserialize};
 use std::time::{Duration, Instant};
 
 /// Telemetry event types
@@ -96,22 +96,18 @@ impl TelemetryCollector {
     pub fn record(&mut self, event: TelemetryEvent) {
         // Update metrics based on event type
         match &event {
-            TelemetryEvent::PlanGenerated {
-                planning_time_ms,
-                step_count,
-                ..
-            } => {
+            TelemetryEvent::PlanGenerated { planning_time_ms, step_count, .. } => {
                 self.metrics.total_plans_generated += 1;
-
+                
                 // Update averages
                 let n = self.metrics.total_plans_generated as f64;
-                self.metrics.avg_planning_time_ms =
+                self.metrics.avg_planning_time_ms = 
                     (self.metrics.avg_planning_time_ms * (n - 1.0) + planning_time_ms) / n;
-
+                
                 let n = self.metrics.total_plans_generated as f32;
-                self.metrics.avg_steps_per_plan =
+                self.metrics.avg_steps_per_plan = 
                     (self.metrics.avg_steps_per_plan * (n - 1.0) + *step_count as f32) / n;
-
+                
                 // Update min/max
                 if *planning_time_ms < self.metrics.fastest_plan_ms {
                     self.metrics.fastest_plan_ms = *planning_time_ms;
@@ -119,7 +115,7 @@ impl TelemetryCollector {
                 if *planning_time_ms > self.metrics.slowest_plan_ms {
                     self.metrics.slowest_plan_ms = *planning_time_ms;
                 }
-
+                
                 self.current_plan_start = Some(Instant::now());
             }
             TelemetryEvent::PlanCompleted { .. } => {
@@ -146,10 +142,9 @@ impl TelemetryCollector {
     }
 
     fn update_success_rate(&mut self) {
-        let total_attempted =
-            self.metrics.total_plans_completed + self.metrics.total_plans_abandoned;
+        let total_attempted = self.metrics.total_plans_completed + self.metrics.total_plans_abandoned;
         if total_attempted > 0 {
-            self.metrics.avg_plan_success_rate =
+            self.metrics.avg_plan_success_rate = 
                 self.metrics.total_plans_completed as f32 / total_attempted as f32;
         }
     }
@@ -192,16 +187,10 @@ impl TelemetryCollector {
         println!("   • Completed: {}", self.metrics.total_plans_completed);
         println!("   • Abandoned: {}", self.metrics.total_plans_abandoned);
         println!("   • Failures: {}", self.metrics.total_planning_failures);
-        println!(
-            "   • Success rate: {:.1}%",
-            self.metrics.avg_plan_success_rate * 100.0
-        );
+        println!("   • Success rate: {:.1}%", self.metrics.avg_plan_success_rate * 100.0);
 
         println!("\n⏱️  Performance:");
-        println!(
-            "   • Avg planning time: {:.2}ms",
-            self.metrics.avg_planning_time_ms
-        );
+        println!("   • Avg planning time: {:.2}ms", self.metrics.avg_planning_time_ms);
         println!("   • Fastest: {:.2}ms", self.metrics.fastest_plan_ms);
         println!("   • Slowest: {:.2}ms", self.metrics.slowest_plan_ms);
 
@@ -236,12 +225,7 @@ impl PlanExecutionTracker {
         }
     }
 
-    pub fn record_step(
-        &mut self,
-        action_name: String,
-        success: bool,
-        duration: Duration,
-    ) -> TelemetryEvent {
+    pub fn record_step(&mut self, action_name: String, success: bool, duration: Duration) -> TelemetryEvent {
         if success {
             self.steps_executed += 1;
         } else {
@@ -328,7 +312,7 @@ mod tests {
         let mut tracker = PlanExecutionTracker::new("test-plan".to_string());
 
         let event = tracker.record_step("move".to_string(), true, Duration::from_millis(50));
-
+        
         match event {
             TelemetryEvent::StepExecuted { success, .. } => {
                 assert!(success);
@@ -345,3 +329,4 @@ mod tests {
         }
     }
 }
+

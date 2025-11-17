@@ -1,10 +1,9 @@
 // tools/aw_editor/src/panels/entity_panel.rs - Entity inspector using Astract
 
 use super::Panel;
-use crate::component_ui::{ComponentEdit, ComponentRegistry};
-use crate::prefab::{EntityOverrides, PrefabUiInfo};
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
+use crate::component_ui::{ComponentEdit, ComponentRegistry};
 use egui::Ui;
 
 /// Entity panel - inspect and edit entity properties
@@ -12,18 +11,6 @@ use egui::Ui;
 /// Now integrated with real ECS World instead of mock entities.
 pub struct EntityPanel {
     component_registry: ComponentRegistry,
-}
-
-#[derive(Debug, Default)]
-pub struct EntityPanelResult {
-    pub component_edit: Option<ComponentEdit>,
-    pub prefab_action: Option<PrefabAction>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrefabAction {
-    Apply { entity: Entity },
-    Revert { entity: Entity },
 }
 
 impl EntityPanel {
@@ -44,134 +31,97 @@ impl EntityPanel {
     /// # Returns
     ///
     /// Optional ComponentEdit if a component was modified (for undo system)
-    pub fn show_with_world(
-        &mut self,
-        ui: &mut Ui,
-        world: &mut World,
-        selected_entity: Option<Entity>,
-        prefab_info: Option<&PrefabUiInfo>,
-    ) -> EntityPanelResult {
+    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>, selected_entity: Option<Entity>, prefab_instance: Option<&crate::prefab::PrefabInstance>) -> Option<ComponentEdit> {
         ui.heading("🎮 Entity Inspector");
         ui.separator();
 
         // Entity management buttons
         ui.horizontal(|ui| {
             if ui.button("➕ Spawn Companion").clicked() {
-                let entity_count = world.entities().len();
-                let pos = IVec2 {
-                    x: rand::random::<i32>() % 30,
-                    y: rand::random::<i32>() % 30,
-                };
-                let entity = world.spawn(
-                    &format!("Companion_{}", entity_count),
-                    pos,
-                    Team { id: 0 }, // Team 0 = companion
-                    100,            // HP
-                    30,             // Ammo
-                );
-                println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
+                if let Some(world) = world {
+                    let entity_count = world.entities().len();
+                    let pos = IVec2 {
+                        x: rand::random::<i32>() % 30,
+                        y: rand::random::<i32>() % 30,
+                    };
+                    let entity = world.spawn(
+                        &format!("Companion_{}", entity_count),
+                        pos,
+                        Team { id: 0 }, // Team 0 = companion
+                        100,            // HP
+                        30,             // Ammo
+                    );
+                    println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
+                }
             }
 
             if ui.button("➕ Spawn Enemy").clicked() {
-                let entity_count = world.entities().len();
-                let pos = IVec2 {
-                    x: rand::random::<i32>() % 30,
-                    y: rand::random::<i32>() % 30,
-                };
-                let entity = world.spawn(
-                    &format!("Enemy_{}", entity_count),
-                    pos,
-                    Team { id: 1 }, // Team 1 = enemy
-                    80,             // HP
-                    20,             // Ammo
-                );
-                println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
+                if let Some(world) = world {
+                    let entity_count = world.entities().len();
+                    let pos = IVec2 {
+                        x: rand::random::<i32>() % 30,
+                        y: rand::random::<i32>() % 30,
+                    };
+                    let entity = world.spawn(
+                        &format!("Enemy_{}", entity_count),
+                        pos,
+                        Team { id: 1 }, // Team 1 = enemy
+                        80,             // HP
+                        20,             // Ammo
+                    );
+                    println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
+                }
             }
 
             if ui.button("🗑️ Clear All").clicked() {
-                *world = World::new();
-                println!("🗑️ Cleared all entities");
+                if let Some(world) = world {
+                    *world = World::new();
+                    println!("🗑️ Cleared all entities");
+                }
             }
         });
 
         ui.add_space(10.0);
 
-        let mut result = EntityPanelResult::default();
+        let mut component_edit = None;
 
         if let Some(entity) = selected_entity {
-            ui.group(|ui| {
-                ui.heading(format!("✏️ Entity #{}", entity));
-
-                if let Some(info) = prefab_info {
+            if let Some(world) = world {
+                ui.group(|ui| {
+                    ui.heading(format!("✏️ Entity #{}", entity));
+                    
+                    if let Some(instance) = prefab_instance {
+                        ui.separator();
+                        ui.horizontal(|ui| {
+                            ui.label("💾 Prefab Instance:");
+                            ui.monospace(instance.source.file_name().unwrap_or_default().to_string_lossy().as_ref());
+                        });
+                        
+                        if instance.has_overrides(entity) {
+                            ui.colored_label(
+                                egui::Color32::from_rgb(100, 150, 255),
+                                "⚠️ Modified components (blue text indicates overrides)"
+                            );
+                        }
+                    }
+                    
                     ui.separator();
-                    ui.horizontal(|ui| {
-                        ui.label("💾 Prefab Instance:");
-                        ui.monospace(
-                            info.source
-                                .file_name()
-                                .unwrap_or_default()
-                                .to_string_lossy()
-                                .as_ref(),
-                        );
-                    });
-
-                    ui.horizontal(|ui| {
-                        let apply_enabled = info.has_overrides;
-                        if ui
-                            .add_enabled(apply_enabled, egui::Button::new("⬆ Apply to Prefab"))
-                            .clicked()
-                        {
-                            result.prefab_action = Some(PrefabAction::Apply { entity });
-                        }
-
-                        if ui
-                            .button("↩ Revert Overrides")
-                            .on_hover_text("Restore values from prefab definition")
-                            .clicked()
-                        {
-                            result.prefab_action = Some(PrefabAction::Revert { entity });
-                        }
-                    });
-
-                    if info.has_overrides {
-                        ui.colored_label(
-                            egui::Color32::from_rgb(100, 150, 255),
-                            "⚠️ Overrides detected (apply to bake into prefab or revert)",
-                        );
-
-                        if let Some(overrides) = info.overrides.as_ref() {
-                            render_override_summary(ui, overrides);
-                        }
+                    
+                    let components = self.component_registry.get_entity_components(world, entity);
+                    
+                    if components.is_empty() {
+                        ui.label("No components");
                     } else {
-                        ui.label("No overrides detected – prefab matches source file.");
-                    }
-                }
-
-                ui.separator();
-
-                if world.behavior_graph(entity).is_some() {
-                    ui.colored_label(
-                        egui::Color32::from_rgb(100, 200, 255),
-                        "🧠 Behavior graph bound",
-                    );
-                } else {
-                    ui.label("🧠 No behavior graph assigned");
-                }
-
-                ui.separator();
-
-                let components = self.component_registry.get_entity_components(world, entity);
-
-                if components.is_empty() {
-                    ui.label("No components");
-                } else {
-                    for component_type in components {
-                        if let Some(edit) = component_type.show_ui(world, entity, ui) {
-                            result.component_edit = Some(edit);
+                        for component_type in components {
+                            if let Some(edit) = component_type.show_ui(world, entity, ui) {
+                                component_edit = Some(edit);
+                            }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                ui.label("⚠️ No world initialized");
+            }
         } else {
             ui.label("No entity selected");
             ui.label("Click an entity in the viewport to inspect it");
@@ -181,69 +131,49 @@ impl EntityPanel {
         ui.add_space(10.0);
 
         // Display entity count
-        let entity_count = world.entities().len();
-        ui.label(format!("📊 Total Entities: {}", entity_count));
+        if let Some(world) = world {
+            let entity_count = world.entities().len();
+            ui.label(format!("📊 Total Entities: {}", entity_count));
 
-        ui.separator();
+            ui.separator();
 
-        // List all entities
-        egui::ScrollArea::vertical()
-            .max_height(400.0)
-            .show(ui, |ui| {
-                for entity in world.entities() {
-                    if let Some(pose) = world.pose(entity) {
-                        let team = world.team(entity).unwrap_or(Team { id: 0 });
-                        let health = world.health(entity).unwrap_or(Health { hp: 0 });
-                        let ammo = world.ammo(entity).unwrap_or(Ammo { rounds: 0 });
+            // List all entities
+            egui::ScrollArea::vertical()
+                .max_height(400.0)
+                .show(ui, |ui| {
+                    for entity in world.entities() {
+                        if let Some(pose) = world.pose(entity) {
+                            let team = world.team(entity).unwrap_or(Team { id: 0 });
+                            let health = world.health(entity).unwrap_or(Health { hp: 0 });
+                            let ammo = world.ammo(entity).unwrap_or(Ammo { rounds: 0 });
 
-                        let team_name = if team.id == 0 { "Companion" } else { "Enemy" };
-                        let team_color = if team.id == 0 {
-                            egui::Color32::from_rgb(100, 150, 255)
-                        } else {
-                            egui::Color32::from_rgb(255, 100, 100)
-                        };
+                            let team_name = if team.id == 0 { "Companion" } else { "Enemy" };
+                            let team_color = if team.id == 0 {
+                                egui::Color32::from_rgb(100, 150, 255)
+                            } else {
+                                egui::Color32::from_rgb(255, 100, 100)
+                            };
 
-                        ui.group(|ui| {
-                            ui.horizontal(|ui| {
-                                ui.label(
-                                    egui::RichText::new(format!("Entity #{}", entity)).strong(),
-                                );
-                                ui.label(egui::RichText::new(team_name).color(team_color));
+                            ui.group(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(
+                                        egui::RichText::new(format!("Entity #{}", entity)).strong(),
+                                    );
+                                    ui.label(egui::RichText::new(team_name).color(team_color));
+                                });
+
+                                ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
+                                ui.label(format!("❤️  Health: {}", health.hp));
+                                ui.label(format!("🔫 Ammo: {}", ammo.rounds));
                             });
-
-                            ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
-                            ui.label(format!("❤️  Health: {}", health.hp));
-                            ui.label(format!("🔫 Ammo: {}", ammo.rounds));
-                        });
+                        }
                     }
-                }
-            });
-
-        result
-    }
-}
-
-fn render_override_summary(ui: &mut Ui, overrides: &EntityOverrides) {
-    let mut bullets = Vec::new();
-    if overrides.pos_x.is_some() || overrides.pos_y.is_some() {
-        bullets.push("Position (moved)");
-    }
-    if overrides.health.is_some() && overrides.max_health.is_some() {
-        bullets.push("Health + Max Health");
-    } else if overrides.health.is_some() {
-        bullets.push("Health");
-    } else if overrides.max_health.is_some() {
-        bullets.push("Max Health");
-    }
-
-    if bullets.is_empty() {
-        ui.label("Overrides detected but no tracked fields found.");
-        return;
-    }
-
-    ui.label("Changed fields:");
-    for bullet in bullets {
-        ui.label(format!("• {}", bullet));
+                });
+        } else {
+            ui.label("⚠️  No world initialized");
+        }
+        
+        component_edit
     }
 }
 

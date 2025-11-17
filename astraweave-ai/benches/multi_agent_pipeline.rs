@@ -33,10 +33,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
     let enemies: Vec<EnemyState> = (0..enemy_count)
         .map(|i| EnemyState {
             id: (agent_id * 1000 + i) as u32,
-            pos: IVec2 {
-                x: 50 + (i as i32) * 5,
-                y: 50 + (i as i32) * 5,
-            },
+            pos: IVec2 { x: 50 + (i as i32) * 5, y: 50 + (i as i32) * 5 },
             hp: 80,
             cover: "none".to_string(),
             last_seen: 0.0,
@@ -68,10 +65,7 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
 fn perception_phase(agent_count: usize, enemies_per_agent: usize) -> Vec<WorldSnapshot> {
     (0..agent_count)
         .map(|i| {
-            let agent_pos = IVec2 {
-                x: (i as i32) * 10,
-                y: (i as i32) * 10,
-            };
+            let agent_pos = IVec2 { x: (i as i32) * 10, y: (i as i32) * 10 };
             create_agent_snapshot(i, agent_pos, enemies_per_agent)
         })
         .collect()

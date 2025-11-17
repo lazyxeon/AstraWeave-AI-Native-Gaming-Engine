@@ -1,12 +1,12 @@
+use crate::entity_manager::SelectionSet;
 use crate::command::UndoStack;
 use crate::editor_mode::EditorMode;
-use crate::entity_manager::SelectionSet;
-use crate::gizmo::snapping::SnappingConfig;
 use crate::gizmo::state::GizmoMode;
-use egui::{Align, Layout, Ui};
+use crate::gizmo::snapping::SnappingConfig;
+use egui::{Ui, Layout, Align};
 
 /// Status bar component for the bottom of the editor
-///
+/// 
 /// Shows:
 /// - Editor mode (Edit/Play/Paused)
 /// - Current gizmo mode (Translate/Rotate/Scale)
@@ -30,38 +30,39 @@ impl StatusBar {
         ui.horizontal(|ui| {
             Self::show_editor_mode(ui, editor_mode);
             ui.separator();
-
+            
             Self::show_gizmo_mode(ui, gizmo_mode);
             ui.separator();
-
+            
             Self::show_selection(ui, selection);
             ui.separator();
-
+            
             Self::show_undo_redo(ui, undo_stack);
-
+            
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 Self::show_fps(ui, fps);
                 ui.separator();
-
+                
                 Self::show_snap_settings(ui, snap_config);
             });
         });
     }
-
+    
     fn show_editor_mode(ui: &mut Ui, mode: &EditorMode) {
         let status_label = egui::RichText::new(mode.status_text())
             .color(mode.status_color())
             .strong();
-
+        
         let hotkey_text = match mode {
             EditorMode::Edit => "Press F5 to Play",
             EditorMode::Play => "F6 to Pause, F7 to Stop",
             EditorMode::Paused => "F5 to Resume, F7 to Stop",
         };
-
-        ui.label(status_label).on_hover_text(hotkey_text);
+        
+        ui.label(status_label)
+            .on_hover_text(hotkey_text);
     }
-
+    
     fn show_gizmo_mode(ui: &mut Ui, mode: &GizmoMode) {
         let (icon, text, hotkey) = match mode {
             GizmoMode::Inactive => ("⏸️", "Inactive", "ESC"),
@@ -69,14 +70,14 @@ impl StatusBar {
             GizmoMode::Rotate { .. } => ("🔄", "Rotate", "R"),
             GizmoMode::Scale { .. } => ("📏", "Scale", "S"),
         };
-
+        
         ui.label(format!("{} {} ({})", icon, text, hotkey))
             .on_hover_text(format!("Press {} to switch to {} mode", hotkey, text));
     }
-
+    
     fn show_selection(ui: &mut Ui, selection: &SelectionSet) {
         let count = selection.count();
-
+        
         if count == 0 {
             ui.label("Nothing selected");
         } else if count == 1 {
@@ -86,7 +87,7 @@ impl StatusBar {
                 .on_hover_text("Use Ctrl+Click to toggle selection, Shift+Click for range");
         }
     }
-
+    
     fn show_undo_redo(ui: &mut Ui, undo_stack: &UndoStack) {
         if undo_stack.can_undo() {
             let desc = undo_stack.undo_description().unwrap();
@@ -96,9 +97,9 @@ impl StatusBar {
             ui.label("⏮️  Nothing to undo")
                 .on_hover_text("Make some changes to enable undo");
         }
-
+        
         ui.add_space(8.0);
-
+        
         if undo_stack.can_redo() {
             let desc = undo_stack.redo_description().unwrap();
             ui.label(format!("⏭️  Redo: {}", desc))
@@ -108,24 +109,24 @@ impl StatusBar {
                 .on_hover_text("Undo something to enable redo");
         }
     }
-
+    
     fn show_snap_settings(ui: &mut Ui, snap: &SnappingConfig) {
         if snap.grid_enabled {
             ui.label(format!("🔲 Grid: {:.1}u", snap.grid_size))
                 .on_hover_text("Grid snapping enabled - Hold Ctrl to snap positions");
         }
-
+        
         if snap.angle_enabled {
             ui.label(format!("🔄 Angle: {:.0}°", snap.angle_increment))
                 .on_hover_text("Angle snapping enabled - Hold Ctrl to snap rotations");
         }
-
+        
         if !snap.grid_enabled && !snap.angle_enabled {
             ui.label("⚡ Snap: OFF")
                 .on_hover_text("Press S to toggle snapping");
         }
     }
-
+    
     fn show_fps(ui: &mut Ui, fps: f32) {
         let color = if fps >= 55.0 {
             egui::Color32::GREEN
@@ -134,7 +135,7 @@ impl StatusBar {
         } else {
             egui::Color32::RED
         };
-
+        
         ui.colored_label(color, format!("FPS: {:.0}", fps))
             .on_hover_text("Target: 60 FPS for smooth editing");
     }
@@ -143,31 +144,23 @@ impl StatusBar {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::command::UndoStack;
     use crate::entity_manager::SelectionSet;
-    use crate::gizmo::snapping::SnappingConfig;
+    use crate::command::UndoStack;
     use crate::gizmo::state::GizmoMode;
-    use crate::gizmo::AxisConstraint;
+    use crate::gizmo::snapping::SnappingConfig;
 
     #[test]
     fn test_status_bar_creation() {
         let selection = SelectionSet::new();
         let undo_stack = UndoStack::new(100);
-        let gizmo_mode = GizmoMode::Translate {
-            constraint: AxisConstraint::None,
-        };
+        let gizmo_mode = GizmoMode::Translate { constraint: AxisConstraint::None };
         let snap_config = SnappingConfig::default();
-
+        
         assert_eq!(selection.count(), 0);
         assert!(!undo_stack.can_undo());
         assert!(!undo_stack.can_redo());
-
-        assert_eq!(
-            gizmo_mode,
-            GizmoMode::Translate {
-                constraint: AxisConstraint::None
-            }
-        );
+        
+        assert_eq!(gizmo_mode, GizmoMode::Translate { constraint: AxisConstraint::None });
         assert!(snap_config.grid_enabled);
     }
 }

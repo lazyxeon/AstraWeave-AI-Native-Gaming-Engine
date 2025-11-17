@@ -51,31 +51,31 @@ pub struct GpuParticleSystem {
     /// Particle buffer (double-buffered for ping-pong)
     particle_buffer_a: wgpu::Buffer,
     particle_buffer_b: wgpu::Buffer,
-
+    
     /// Emitter parameters buffer
     emitter_params_buffer: wgpu::Buffer,
-
+    
     /// Compute pipeline for particle update
     update_pipeline: wgpu::ComputePipeline,
-
+    
     /// Compute pipeline for particle emission (reserved for future use)
     #[allow(dead_code)]
     emit_pipeline: wgpu::ComputePipeline,
-
+    
     /// Bind group layout (used in new())
     #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
-
+    
     /// Bind groups (ping-pong)
     bind_group_a: wgpu::BindGroup,
     bind_group_b: wgpu::BindGroup,
-
+    
     /// Current active buffer (false = A, true = B)
     active_buffer: bool,
-
+    
     /// Maximum particle count
     max_particles: u32,
-
+    
     /// Current particle count
     particle_count: u32,
 }
@@ -83,27 +83,26 @@ pub struct GpuParticleSystem {
 impl GpuParticleSystem {
     pub fn new(device: &wgpu::Device, max_particles: u32) -> Result<Self> {
         // Create particle buffers (double-buffered)
-        let particle_buffer_size =
-            (max_particles as u64) * std::mem::size_of::<GpuParticle>() as u64;
-
+        let particle_buffer_size = (max_particles as u64) * std::mem::size_of::<GpuParticle>() as u64;
+        
         let particle_buffer_a = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Buffer A"),
             size: particle_buffer_size,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::VERTEX
+            usage: wgpu::BufferUsages::STORAGE 
+                | wgpu::BufferUsages::VERTEX 
                 | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-
+        
         let particle_buffer_b = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Buffer B"),
             size: particle_buffer_size,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::VERTEX
+            usage: wgpu::BufferUsages::STORAGE 
+                | wgpu::BufferUsages::VERTEX 
                 | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-
+        
         // Create emitter params buffer
         let emitter_params_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Emitter Params Buffer"),
@@ -111,18 +110,18 @@ impl GpuParticleSystem {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-
+        
         // Load compute shaders
         let update_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Particle Update Shader"),
             source: wgpu::ShaderSource::Wgsl(PARTICLE_UPDATE_SHADER.into()),
         });
-
+        
         let emit_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Particle Emit Shader"),
             source: wgpu::ShaderSource::Wgsl(PARTICLE_EMIT_SHADER.into()),
         });
-
+        
         // Create bind group layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Particle Compute BG Layout"),
@@ -162,7 +161,7 @@ impl GpuParticleSystem {
                 },
             ],
         });
-
+        
         // Create bind groups (ping-pong)
         let bind_group_a = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Particle Compute BG A"),
@@ -182,7 +181,7 @@ impl GpuParticleSystem {
                 },
             ],
         });
-
+        
         let bind_group_b = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Particle Compute BG B"),
             layout: &bind_group_layout,
@@ -201,14 +200,14 @@ impl GpuParticleSystem {
                 },
             ],
         });
-
+        
         // Create compute pipelines
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Particle Compute Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
-
+        
         let update_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Particle Update Pipeline"),
             layout: Some(&pipeline_layout),
@@ -217,7 +216,7 @@ impl GpuParticleSystem {
             compilation_options: Default::default(),
             cache: None,
         });
-
+        
         let emit_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Particle Emit Pipeline"),
             layout: Some(&pipeline_layout),
@@ -226,7 +225,7 @@ impl GpuParticleSystem {
             compilation_options: Default::default(),
             cache: None,
         });
-
+        
         Ok(Self {
             particle_buffer_a,
             particle_buffer_b,
@@ -241,7 +240,7 @@ impl GpuParticleSystem {
             particle_count: 0,
         })
     }
-
+    
     /// Update particle system
     pub fn update(
         &mut self,
@@ -251,33 +250,33 @@ impl GpuParticleSystem {
     ) {
         // Upload emitter params
         queue.write_buffer(&self.emitter_params_buffer, 0, bytemuck::bytes_of(params));
-
+        
         // Dispatch compute shader
         let bind_group = if self.active_buffer {
             &self.bind_group_b
         } else {
             &self.bind_group_a
         };
-
+        
         let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("Particle Update Pass"),
             timestamp_writes: None,
         });
-
+        
         pass.set_pipeline(&self.update_pipeline);
         pass.set_bind_group(0, bind_group, &[]);
-
+        
         // Dispatch with 64 threads per workgroup
         let workgroups = (self.max_particles + 63) / 64;
         pass.dispatch_workgroups(workgroups, 1, 1);
-
+        
         drop(pass);
-
+        
         // Swap buffers
         self.active_buffer = !self.active_buffer;
         self.particle_count = params.particle_count.min(self.max_particles);
     }
-
+    
     /// Get the current particle buffer for rendering
     pub fn particle_buffer(&self) -> &wgpu::Buffer {
         if self.active_buffer {
@@ -286,7 +285,7 @@ impl GpuParticleSystem {
             &self.particle_buffer_a
         }
     }
-
+    
     /// Get particle count
     pub fn particle_count(&self) -> u32 {
         self.particle_count

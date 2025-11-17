@@ -61,7 +61,7 @@ impl TransparencyManager {
         blend_mode: BlendMode,
     ) {
         let camera_distance = (world_position - self.camera_position).length();
-
+        
         self.transparent_instances.push(TransparentInstance {
             instance_index,
             world_position,
@@ -73,20 +73,22 @@ impl TransparencyManager {
     /// Update camera position and perform depth sorting
     pub fn update(&mut self, camera_position: Vec3) {
         self.camera_position = camera_position;
-
+        
         // Recalculate distances
         for instance in &mut self.transparent_instances {
             instance.camera_distance = (instance.world_position - camera_position).length();
         }
-
+        
         // Sort back-to-front (furthest first)
         self.sorted_indices = (0..self.transparent_instances.len()).collect();
         self.sorted_indices.sort_by(|&a, &b| {
             let dist_a = self.transparent_instances[a].camera_distance;
             let dist_b = self.transparent_instances[b].camera_distance;
-
+            
             // Reverse order for back-to-front
-            dist_b.partial_cmp(&dist_a).unwrap_or(Ordering::Equal)
+            dist_b
+                .partial_cmp(&dist_a)
+                .unwrap_or(Ordering::Equal)
         });
     }
 
@@ -180,21 +182,21 @@ mod tests {
     #[test]
     fn test_depth_sorting() {
         let mut manager = TransparencyManager::new();
-
+        
         // Add instances at different distances
         manager.add_instance(0, Vec3::new(0.0, 0.0, -5.0), BlendMode::Alpha);
         manager.add_instance(1, Vec3::new(0.0, 0.0, -10.0), BlendMode::Alpha);
         manager.add_instance(2, Vec3::new(0.0, 0.0, -2.0), BlendMode::Alpha);
-
+        
         // Update with camera at origin
         manager.update(Vec3::ZERO);
-
+        
         // Check back-to-front order (furthest first)
         let sorted: Vec<u32> = manager
             .sorted_instances()
             .map(|inst| inst.instance_index)
             .collect();
-
+        
         assert_eq!(sorted, vec![1, 0, 2]); // -10, -5, -2
     }
 
@@ -213,10 +215,10 @@ mod tests {
         manager.add_instance(1, Vec3::ZERO, BlendMode::Additive);
         manager.add_instance(2, Vec3::ZERO, BlendMode::Alpha);
         manager.update(Vec3::ZERO);
-
+        
         let alpha_count = manager.instances_by_blend_mode(BlendMode::Alpha).count();
         let additive_count = manager.instances_by_blend_mode(BlendMode::Additive).count();
-
+        
         assert_eq!(alpha_count, 2);
         assert_eq!(additive_count, 1);
     }

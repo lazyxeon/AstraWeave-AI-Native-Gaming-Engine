@@ -3,8 +3,8 @@
 
 #[cfg(feature = "planner_advanced")]
 mod learning_integration_tests {
+    use astraweave_ai::goap::{ActionHistory, learning::*, config};
     use astraweave_ai::goap::persistence::{HistoryPersistence, PersistenceFormat};
-    use astraweave_ai::goap::{config, learning::*, ActionHistory};
     use tempfile::TempDir;
 
     #[test]
@@ -34,15 +34,11 @@ mod learning_integration_tests {
 
         // Probability should reflect the improvement
         let prob = manager.get_probability("attack", &history);
-
+        
         // With EWMA smoothing, recent 80% success should dominate
-        assert!(
-            prob > 0.6,
-            "Probability should reflect recent improvement: got {}",
-            prob
-        );
+        assert!(prob > 0.6, "Probability should reflect recent improvement: got {}", prob);
         assert!(prob < 0.9, "But not be overconfident: got {}", prob);
-
+        
         println!("Learned probability after 20 executions: {:.2}", prob);
     }
 
@@ -72,14 +68,14 @@ mod learning_integration_tests {
         assert_eq!(stats.executions, 7);
         assert_eq!(stats.successes, 5);
         assert_eq!(stats.failures, 2);
-
+        
         println!("History persisted successfully across sessions");
     }
 
     #[test]
     fn test_config_driven_smoothing_methods() {
         let mut history = ActionHistory::new();
-
+        
         // Build history: 7 successes, 3 failures (70% raw rate)
         for _ in 0..7 {
             history.record_success("attack", 0.1);
@@ -92,27 +88,24 @@ mod learning_integration_tests {
         let mut ewma_config = config::GOAPConfig::default();
         ewma_config.learning.smoothing.method = config::SmoothingMethod::Ewma;
         ewma_config.learning.smoothing.ewma_alpha = 0.5; // Quick adaptation
-
+        
         let mut ewma_manager = LearningManager::new(ewma_config);
         let ewma_prob = ewma_manager.get_probability("attack", &history);
-
+        
         // Test Bayesian method
         let mut bayesian_config = config::GOAPConfig::default();
         bayesian_config.learning.smoothing.method = config::SmoothingMethod::Bayesian;
         bayesian_config.learning.smoothing.bayesian_prior_successes = 3;
         bayesian_config.learning.smoothing.bayesian_prior_failures = 1;
-
+        
         let mut bayesian_manager = LearningManager::new(bayesian_config);
         let bayesian_prob = bayesian_manager.get_probability("attack", &history);
 
         // Both should be reasonable, but may differ
         assert!(ewma_prob > 0.5 && ewma_prob < 0.9);
         assert!(bayesian_prob > 0.5 && bayesian_prob < 0.9);
-
-        println!(
-            "EWMA probability: {:.2}, Bayesian probability: {:.2}",
-            ewma_prob, bayesian_prob
-        );
+        
+        println!("EWMA probability: {:.2}, Bayesian probability: {:.2}", ewma_prob, bayesian_prob);
     }
 
     #[test]
@@ -141,29 +134,18 @@ mod learning_integration_tests {
         let early_avg = probabilities[..10].iter().sum::<f32>() / 10.0;
         let late_avg = probabilities[20..].iter().sum::<f32>() / 10.0;
 
-        println!(
-            "Early avg probability: {:.3}, Late avg: {:.3}",
-            early_avg, late_avg
-        );
-
+        println!("Early avg probability: {:.3}, Late avg: {:.3}", early_avg, late_avg);
+        
         // Late estimate should be more accurate (closer to 90%)
-        assert!(
-            (late_avg - 0.9).abs() < (early_avg - 0.9).abs(),
-            "Learning should converge towards true rate"
-        );
-
+        assert!((late_avg - 0.9).abs() < (early_avg - 0.9).abs(), 
+                "Learning should converge towards true rate");
+        
         // Late estimates should also be more stable (lower variance)
-        let late_variance: f32 = probabilities[20..]
-            .iter()
+        let late_variance: f32 = probabilities[20..].iter()
             .map(|p| (p - late_avg).powi(2))
-            .sum::<f32>()
-            / 10.0;
-
-        assert!(
-            late_variance < 0.01,
-            "Late estimates should be stable: variance = {}",
-            late_variance
-        );
+            .sum::<f32>() / 10.0;
+        
+        assert!(late_variance < 0.01, "Late estimates should be stable: variance = {}", late_variance);
     }
 
     #[test]
@@ -185,7 +167,7 @@ mod learning_integration_tests {
 
         // Session 2: Load and continue learning
         let mut history_s2 = HistoryPersistence::load(&file_path, PersistenceFormat::Json).unwrap();
-
+        
         for _ in 0..5 {
             history_s2.record_success("attack", 0.1);
         }
@@ -198,7 +180,7 @@ mod learning_integration_tests {
 
         let heal_stats = history_s2.get_action_stats("heal").unwrap();
         assert_eq!(heal_stats.executions, 10); // All from s1
-
+        
         println!("Multi-session learning verified successfully");
     }
 
@@ -209,7 +191,7 @@ mod learning_integration_tests {
         config.learning.max_success_rate = 0.8;
 
         let mut manager = LearningManager::new(config.clone());
-
+        
         // Create history with very low success rate
         let mut low_history = ActionHistory::new();
         for _ in 0..10 {
@@ -218,11 +200,8 @@ mod learning_integration_tests {
         low_history.record_success("risky_action", 0.1);
 
         let low_prob = manager.get_probability("risky_action", &low_history);
-        assert!(
-            low_prob >= config.learning.min_success_rate,
-            "Should respect min bound: got {}",
-            low_prob
-        );
+        assert!(low_prob >= config.learning.min_success_rate, 
+                "Should respect min bound: got {}", low_prob);
 
         // Create history with very high success rate
         let mut high_history = ActionHistory::new();
@@ -231,16 +210,10 @@ mod learning_integration_tests {
         }
 
         let high_prob = manager.get_probability("safe_action", &high_history);
-        assert!(
-            high_prob <= config.learning.max_success_rate,
-            "Should respect max bound: got {}",
-            high_prob
-        );
-
-        println!(
-            "Config bounds enforced: low={:.2}, high={:.2}",
-            low_prob, high_prob
-        );
+        assert!(high_prob <= config.learning.max_success_rate,
+                "Should respect max bound: got {}", high_prob);
+        
+        println!("Config bounds enforced: low={:.2}, high={:.2}", low_prob, high_prob);
     }
 
     #[test]
@@ -265,11 +238,8 @@ mod learning_integration_tests {
         assert_eq!(history.len(), 1);
         assert!(history.get_action_stats("common_action").is_some());
         assert!(history.get_action_stats("rare_action_1").is_none());
-
-        println!(
-            "Noise reduction successful: {} actions remain",
-            history.len()
-        );
+        
+        println!("Noise reduction successful: {} actions remain", history.len());
     }
 
     #[test]
@@ -301,15 +271,12 @@ mod learning_integration_tests {
         assert_eq!(json_stats.executions, bin_stats.executions);
         assert_eq!(json_stats.successes, bin_stats.successes);
         assert_eq!(json_stats.failures, bin_stats.failures);
-
+        
         // Check file sizes
         let json_size = std::fs::metadata(&json_path).unwrap().len();
         let bin_size = std::fs::metadata(&bin_path).unwrap().len();
-
-        println!(
-            "JSON size: {} bytes, Bincode size: {} bytes",
-            json_size, bin_size
-        );
+        
+        println!("JSON size: {} bytes, Bincode size: {} bytes", json_size, bin_size);
         assert!(bin_size < json_size, "Bincode should be more compact");
     }
 
@@ -345,11 +312,8 @@ mod learning_integration_tests {
         let prob2 = manager.get_probability("test", &history);
 
         // Probabilities may differ due to different smoothing methods
-        println!(
-            "Probability with EWMA: {:.2}, with Bayesian: {:.2}",
-            prob1, prob2
-        );
-
+        println!("Probability with EWMA: {:.2}, with Bayesian: {:.2}", prob1, prob2);
+        
         // Both should be valid probabilities
         assert!(prob1 > 0.0 && prob1 < 1.0);
         assert!(prob2 > 0.0 && prob2 < 1.0);
@@ -391,20 +355,13 @@ mod learning_integration_tests {
         // Step 4: Simulate new session
         let reloaded_config = config::GOAPConfig::load(&config_path).unwrap();
         let mut new_manager = LearningManager::new(reloaded_config);
-        let reloaded_history =
-            HistoryPersistence::load(&history_path, PersistenceFormat::Json).unwrap();
+        let reloaded_history = HistoryPersistence::load(&history_path, PersistenceFormat::Json).unwrap();
 
         // Verify learning persisted
         let final_prob = new_manager.get_probability("adaptive_action", &reloaded_history);
-        assert!(
-            final_prob > 0.6,
-            "Should have learned high success rate: got {}",
-            final_prob
-        );
-
-        println!(
-            "Complete learning cycle verified: final probability = {:.2}",
-            final_prob
-        );
+        assert!(final_prob > 0.6, "Should have learned high success rate: got {}", final_prob);
+        
+        println!("Complete learning cycle verified: final probability = {:.2}", final_prob);
     }
 }
+

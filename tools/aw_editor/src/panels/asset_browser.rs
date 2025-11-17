@@ -1,7 +1,7 @@
-use egui::{ColorImage, ImageData, ScrollArea, TextureHandle, Ui};
-use std::collections::HashMap;
-use std::fs;
+use egui::{ScrollArea, Ui, TextureHandle, ColorImage, ImageData};
 use std::path::{Path, PathBuf};
+use std::fs;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AssetType {
@@ -23,16 +23,14 @@ impl AssetType {
         }
 
         let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-
+        
         if file_name.ends_with(".prefab.ron") {
             return AssetType::Prefab;
         }
-
+        
         match path.extension().and_then(|e| e.to_str()) {
             Some("glb") | Some("gltf") | Some("obj") | Some("fbx") => AssetType::Model,
-            Some("png") | Some("jpg") | Some("jpeg") | Some("ktx2") | Some("dds") => {
-                AssetType::Texture
-            }
+            Some("png") | Some("jpg") | Some("jpeg") | Some("ktx2") | Some("dds") => AssetType::Texture,
             Some("ron") => AssetType::Scene,
             Some("toml") | Some("json") => AssetType::Config,
             Some("wav") | Some("ogg") | Some("mp3") => AssetType::Audio,
@@ -81,7 +79,7 @@ impl AssetEntry {
     pub fn from_path(path: PathBuf) -> Option<Self> {
         let name = path.file_name()?.to_string_lossy().to_string();
         let asset_type = AssetType::from_path(&path);
-
+        
         let size = if path.is_file() {
             fs::metadata(&path).ok()?.len()
         } else {
@@ -153,14 +151,6 @@ impl AssetBrowser {
         self.dragged_prefab.take()
     }
 
-    pub fn is_dragging_prefab(&self) -> bool {
-        self.dragged_prefab.is_some()
-    }
-
-    pub fn cancel_prefab_drag(&mut self) {
-        self.dragged_prefab = None;
-    }
-
     fn scan_current_directory(&mut self) {
         self.entries.clear();
 
@@ -183,11 +173,7 @@ impl AssetBrowser {
                 }
 
                 if !self.search_query.is_empty() {
-                    if !entry
-                        .name
-                        .to_lowercase()
-                        .contains(&self.search_query.to_lowercase())
-                    {
+                    if !entry.name.to_lowercase().contains(&self.search_query.to_lowercase()) {
                         return false;
                     }
                 }
@@ -196,11 +182,13 @@ impl AssetBrowser {
             })
             .collect();
 
-        entries.sort_by(|a, b| match (&a.asset_type, &b.asset_type) {
-            (AssetType::Directory, AssetType::Directory) => a.name.cmp(&b.name),
-            (AssetType::Directory, _) => std::cmp::Ordering::Less,
-            (_, AssetType::Directory) => std::cmp::Ordering::Greater,
-            _ => a.name.cmp(&b.name),
+        entries.sort_by(|a, b| {
+            match (&a.asset_type, &b.asset_type) {
+                (AssetType::Directory, AssetType::Directory) => a.name.cmp(&b.name),
+                (AssetType::Directory, _) => std::cmp::Ordering::Less,
+                (_, AssetType::Directory) => std::cmp::Ordering::Greater,
+                _ => a.name.cmp(&b.name),
+            }
         });
 
         self.entries = entries;
@@ -239,17 +227,16 @@ impl AssetBrowser {
         let rgba = image_data.to_rgba8();
         let size = [rgba.width() as usize, rgba.height() as usize];
         let pixels = rgba.into_raw();
-
+        
         let color_image = ColorImage::from_rgba_unmultiplied(size, &pixels);
-
+        
         let texture = ctx.load_texture(
             path.display().to_string(),
             ImageData::Color(std::sync::Arc::new(color_image)),
-            egui::TextureOptions::LINEAR,
+            egui::TextureOptions::LINEAR
         );
-
-        self.thumbnail_cache
-            .insert(path.to_path_buf(), texture.clone());
+        
+        self.thumbnail_cache.insert(path.to_path_buf(), texture.clone());
         Some(texture)
     }
 
@@ -275,35 +262,23 @@ impl AssetBrowser {
 
             ui.separator();
 
-            if ui
-                .selectable_label(self.view_mode == ViewMode::List, "📄 List")
-                .clicked()
-            {
+            if ui.selectable_label(self.view_mode == ViewMode::List, "📄 List").clicked() {
                 self.view_mode = ViewMode::List;
             }
-            if ui
-                .selectable_label(self.view_mode == ViewMode::Grid, "🔲 Grid")
-                .clicked()
-            {
+            if ui.selectable_label(self.view_mode == ViewMode::Grid, "🔲 Grid").clicked() {
                 self.view_mode = ViewMode::Grid;
             }
         });
 
         ui.horizontal(|ui| {
             ui.label("Filter:");
-
-            if ui
-                .selectable_label(self.filter_type.is_none(), "All")
-                .clicked()
-            {
+            
+            if ui.selectable_label(self.filter_type.is_none(), "All").clicked() {
                 self.filter_type = None;
                 self.scan_current_directory();
             }
 
-            if ui
-                .selectable_label(self.filter_type == Some(AssetType::Model), "🎭 Models")
-                .clicked()
-            {
+            if ui.selectable_label(self.filter_type == Some(AssetType::Model), "🎭 Models").clicked() {
                 self.filter_type = if self.filter_type == Some(AssetType::Model) {
                     None
                 } else {
@@ -312,10 +287,7 @@ impl AssetBrowser {
                 self.scan_current_directory();
             }
 
-            if ui
-                .selectable_label(self.filter_type == Some(AssetType::Texture), "🖼️ Textures")
-                .clicked()
-            {
+            if ui.selectable_label(self.filter_type == Some(AssetType::Texture), "🖼️ Textures").clicked() {
                 self.filter_type = if self.filter_type == Some(AssetType::Texture) {
                     None
                 } else {
@@ -324,10 +296,7 @@ impl AssetBrowser {
                 self.scan_current_directory();
             }
 
-            if ui
-                .selectable_label(self.filter_type == Some(AssetType::Scene), "🌍 Scenes")
-                .clicked()
-            {
+            if ui.selectable_label(self.filter_type == Some(AssetType::Scene), "🌍 Scenes").clicked() {
                 self.filter_type = if self.filter_type == Some(AssetType::Scene) {
                     None
                 } else {
@@ -339,8 +308,7 @@ impl AssetBrowser {
 
         ui.label(format!(
             "📂 {}",
-            self.current_path
-                .strip_prefix(&self.root_path)
+            self.current_path.strip_prefix(&self.root_path)
                 .unwrap_or(&self.current_path)
                 .display()
         ));
@@ -348,7 +316,7 @@ impl AssetBrowser {
         ui.separator();
 
         let mut path_to_navigate = None;
-
+        
         match self.view_mode {
             ViewMode::List => {
                 ScrollArea::vertical()
@@ -384,9 +352,7 @@ impl AssetBrowser {
                             }
 
                             if response.hovered() {
-                                response
-                                    .clone()
-                                    .on_hover_text(entry.path.display().to_string());
+                                response.clone().on_hover_text(entry.path.display().to_string());
                             }
 
                             if entry.asset_type == AssetType::Prefab {
@@ -403,7 +369,7 @@ impl AssetBrowser {
                                     "Empty directory"
                                 } else {
                                     "No matching assets"
-                                },
+                                }
                             );
                         }
                     });
@@ -415,22 +381,15 @@ impl AssetBrowser {
                         let item_spacing = 8.0;
                         let thumbnail_size = self.thumbnail_size;
                         let available_width = ui.available_width();
-                        let items_per_row = ((available_width + item_spacing)
-                            / (thumbnail_size + item_spacing))
-                            .floor()
-                            .max(1.0) as usize;
+                        let items_per_row = ((available_width + item_spacing) / (thumbnail_size + item_spacing)).floor().max(1.0) as usize;
 
-                        ui.style_mut().spacing.item_spacing =
-                            egui::vec2(item_spacing, item_spacing);
+                        ui.style_mut().spacing.item_spacing = egui::vec2(item_spacing, item_spacing);
 
                         for row_start in (0..self.entries.len()).step_by(items_per_row) {
                             ui.horizontal(|ui| {
-                                for i in
-                                    row_start..(row_start + items_per_row).min(self.entries.len())
-                                {
+                                for i in row_start..(row_start + items_per_row).min(self.entries.len()) {
                                     let entry = &self.entries[i];
-                                    let is_selected =
-                                        self.selected_asset.as_ref() == Some(&entry.path);
+                                    let is_selected = self.selected_asset.as_ref() == Some(&entry.path);
                                     let entry_path = entry.path.clone();
                                     let entry_name = entry.name.clone();
                                     let entry_asset_type = entry.asset_type;
@@ -447,7 +406,7 @@ impl AssetBrowser {
 
                                         let (rect, response) = ui.allocate_exact_size(
                                             egui::vec2(thumbnail_size, thumbnail_size),
-                                            egui::Sense::click(),
+                                            egui::Sense::click()
                                         );
 
                                         if ui.is_rect_visible(rect) {
@@ -467,9 +426,9 @@ impl AssetBrowser {
                                                     rect.shrink(4.0),
                                                     egui::Rect::from_min_max(
                                                         egui::pos2(0.0, 0.0),
-                                                        egui::pos2(1.0, 1.0),
+                                                        egui::pos2(1.0, 1.0)
                                                     ),
-                                                    egui::Color32::WHITE,
+                                                    egui::Color32::WHITE
                                                 );
                                             } else {
                                                 let icon_pos = rect.center();
@@ -478,7 +437,7 @@ impl AssetBrowser {
                                                     egui::Align2::CENTER_CENTER,
                                                     entry_asset_type.icon(),
                                                     egui::FontId::proportional(32.0),
-                                                    entry_asset_type.color(),
+                                                    entry_asset_type.color()
                                                 );
                                             }
                                         }
@@ -498,9 +457,7 @@ impl AssetBrowser {
                                         }
 
                                         if response.hovered() {
-                                            response
-                                                .clone()
-                                                .on_hover_text(entry_path.display().to_string());
+                                            response.clone().on_hover_text(entry_path.display().to_string());
                                         }
 
                                         if entry_asset_type == AssetType::Prefab {
@@ -511,7 +468,7 @@ impl AssetBrowser {
 
                                         ui.add(
                                             egui::Label::new(&entry_name)
-                                                .wrap_mode(egui::TextWrapMode::Truncate),
+                                                .wrap_mode(egui::TextWrapMode::Truncate)
                                         );
                                     });
                                 }
@@ -525,13 +482,13 @@ impl AssetBrowser {
                                     "Empty directory"
                                 } else {
                                     "No matching assets"
-                                },
+                                }
                             );
                         }
                     });
             }
         }
-
+        
         if let Some(path) = path_to_navigate {
             self.navigate_to(path);
         }
@@ -556,30 +513,14 @@ impl AssetBrowser {
 mod tests {
     use super::*;
     use std::env;
-    use tempfile::tempdir;
 
     #[test]
     fn test_asset_type_from_path() {
-        assert_eq!(
-            AssetType::from_path(Path::new("test.glb")),
-            AssetType::Model
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("texture.png")),
-            AssetType::Texture
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("scene.ron")),
-            AssetType::Scene
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("config.toml")),
-            AssetType::Config
-        );
-        assert_eq!(
-            AssetType::from_path(Path::new("unknown.xyz")),
-            AssetType::Unknown
-        );
+        assert_eq!(AssetType::from_path(Path::new("test.glb")), AssetType::Model);
+        assert_eq!(AssetType::from_path(Path::new("texture.png")), AssetType::Texture);
+        assert_eq!(AssetType::from_path(Path::new("scene.ron")), AssetType::Scene);
+        assert_eq!(AssetType::from_path(Path::new("config.toml")), AssetType::Config);
+        assert_eq!(AssetType::from_path(Path::new("unknown.xyz")), AssetType::Unknown);
     }
 
     #[test]
@@ -600,24 +541,14 @@ mod tests {
 
     #[test]
     fn test_asset_browser_navigation() {
-        let temp_dir = tempdir().unwrap();
-        let root_path = temp_dir.path().to_path_buf();
-        let child_path = root_path.join("child");
-        std::fs::create_dir_all(&child_path).unwrap();
-
-        let mut browser = AssetBrowser::new(root_path.clone());
-
-        // Already at root, navigate_up should not move outside root
+        let temp_dir = env::temp_dir();
+        let mut browser = AssetBrowser::new(temp_dir.clone());
+        
         browser.navigate_up();
-        assert_eq!(browser.current_path, root_path);
-
-        // Navigate into child directory and ensure path updates
-        browser.navigate_to(child_path.clone());
-        assert_eq!(browser.current_path, child_path);
-
-        // Navigating up from child returns to root
-        browser.navigate_up();
-        assert_eq!(browser.current_path, root_path);
+        assert!(browser.current_path != temp_dir);
+        
+        browser.navigate_to(temp_dir.clone());
+        assert_eq!(browser.current_path, temp_dir);
     }
 
     #[test]
@@ -658,23 +589,5 @@ mod tests {
 
         browser.search_query = "test".to_string();
         assert_eq!(browser.search_query, "test");
-    }
-
-    #[test]
-    fn test_prefab_drag_helpers() {
-        let temp_dir = tempdir().unwrap();
-        let mut browser = AssetBrowser::new(temp_dir.path().to_path_buf());
-        assert!(!browser.is_dragging_prefab());
-
-        let prefab_path = temp_dir.path().join("example.prefab.ron");
-        browser.dragged_prefab = Some(prefab_path.clone());
-        assert!(browser.is_dragging_prefab());
-        assert_eq!(browser.take_dragged_prefab(), Some(prefab_path));
-        assert!(!browser.is_dragging_prefab());
-
-        // Ensure cancel clears any pending drag
-        browser.dragged_prefab = Some(temp_dir.path().join("second.prefab.ron"));
-        browser.cancel_prefab_drag();
-        assert!(!browser.is_dragging_prefab());
     }
 }

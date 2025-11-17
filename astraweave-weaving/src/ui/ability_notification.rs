@@ -143,7 +143,7 @@ impl AbilityUnlockNotification {
     /// Get ability icon (placeholder, can be replaced with image)
     pub fn ability_icon_text(&self) -> &'static str {
         match self.ability {
-            Some(AbilityType::EchoDash) => "⚡",        // Lightning bolt
+            Some(AbilityType::EchoDash) => "⚡", // Lightning bolt
             Some(AbilityType::BarricadeDeploy) => "🛡️", // Shield
             None => "",
         }
@@ -164,10 +164,7 @@ impl AbilityUnlockNotification {
 
         // Notification panel
         egui::Area::new("ability_unlock_notification")
-            .anchor(
-                egui::Align2::CENTER_CENTER,
-                egui::Vec2::new(0.0, y_pos - screen_rect.center().y),
-            )
+            .anchor(egui::Align2::CENTER_CENTER, egui::Vec2::new(0.0, y_pos - screen_rect.center().y))
             .show(ctx, |ui| {
                 let alpha = (self.alpha * 255.0) as u8;
 
@@ -185,9 +182,7 @@ impl AbilityUnlockNotification {
                                 egui::RichText::new("✨ New Ability Unlocked! ✨")
                                     .size(24.0)
                                     .strong()
-                                    .color(egui::Color32::from_rgba_unmultiplied(
-                                        255, 215, 0, alpha,
-                                    )),
+                                    .color(egui::Color32::from_rgba_unmultiplied(255, 215, 0, alpha)),
                             );
                             ui.add_space(10.0);
 
@@ -197,17 +192,27 @@ impl AbilityUnlockNotification {
 
                             // Ability name
                             if let Some(name) = self.ability_name() {
-                                ui.label(egui::RichText::new(name).size(28.0).strong().color(
-                                    egui::Color32::from_rgba_unmultiplied(255, 255, 255, alpha),
-                                ));
+                                ui.label(
+                                    egui::RichText::new(name)
+                                        .size(28.0)
+                                        .strong()
+                                        .color(egui::Color32::from_rgba_unmultiplied(
+                                            255, 255, 255, alpha,
+                                        )),
+                                );
                             }
                             ui.add_space(5.0);
 
                             // Ability description
                             if let Some(desc) = self.ability_description() {
-                                ui.label(egui::RichText::new(desc).size(16.0).italics().color(
-                                    egui::Color32::from_rgba_unmultiplied(200, 200, 200, alpha),
-                                ));
+                                ui.label(
+                                    egui::RichText::new(desc)
+                                        .size(16.0)
+                                        .italics()
+                                        .color(egui::Color32::from_rgba_unmultiplied(
+                                            200, 200, 200, alpha,
+                                        )),
+                                );
                             }
                             ui.add_space(10.0);
                         });

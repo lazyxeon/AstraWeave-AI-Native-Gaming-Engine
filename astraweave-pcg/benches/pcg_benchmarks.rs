@@ -443,3 +443,4 @@ criterion_group!(
     bench_scaling,
 );
 criterion_main!(benches);
+

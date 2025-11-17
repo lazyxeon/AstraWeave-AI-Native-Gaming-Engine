@@ -36,34 +36,39 @@ pub struct GBuffer {
     /// Albedo texture (RGB = albedo, A = roughness)
     pub albedo_texture: wgpu::Texture,
     pub albedo_view: wgpu::TextureView,
-
+    
     /// Normal texture (RGB = normal, A = metallic)
     pub normal_texture: wgpu::Texture,
     pub normal_view: wgpu::TextureView,
-
+    
     /// Position texture (RGB = world position, A = AO)
     pub position_texture: wgpu::Texture,
     pub position_view: wgpu::TextureView,
-
+    
     /// Emissive texture
     pub emissive_texture: wgpu::Texture,
     pub emissive_view: wgpu::TextureView,
-
+    
     /// Depth texture
     pub depth_texture: wgpu::Texture,
     pub depth_view: wgpu::TextureView,
-
+    
     /// Texture size
     pub width: u32,
     pub height: u32,
-
+    
     /// Formats
     pub formats: GBufferFormats,
 }
 
 impl GBuffer {
     /// Create a new G-buffer
-    pub fn new(device: &wgpu::Device, width: u32, height: u32, formats: GBufferFormats) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        width: u32,
+        height: u32,
+        formats: GBufferFormats,
+    ) -> Self {
         let size = wgpu::Extent3d {
             width,
             height,
@@ -216,13 +221,13 @@ impl GBuffer {
 pub struct DeferredRenderer {
     /// G-buffer
     gbuffer: GBuffer,
-
+    
     /// Light accumulation pipeline
     light_pipeline: wgpu::RenderPipeline,
-
+    
     /// Light accumulation bind group
     light_bind_group: wgpu::BindGroup,
-
+    
     /// Bind group layout (used in new())
     #[allow(dead_code)]
     bind_group_layout: wgpu::BindGroupLayout,
@@ -393,7 +398,11 @@ impl DeferredRenderer {
     }
 
     /// Perform light accumulation pass
-    pub fn light_pass(&self, encoder: &mut wgpu::CommandEncoder, output_view: &wgpu::TextureView) {
+    pub fn light_pass(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        output_view: &wgpu::TextureView,
+    ) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Deferred Light Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
