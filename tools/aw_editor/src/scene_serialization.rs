@@ -82,11 +82,14 @@ impl SceneData {
     pub fn to_world(&self) -> World {
         let mut world = World::new();
         world.t = self.time;
-        world.next_id = self.next_entity_id;
+        // We'll restore entities using their original IDs, then restore next_id
+        let desired_next_id = self.next_entity_id;
 
         world.obstacles = self.obstacles.iter().copied().collect();
 
         for entity_data in &self.entities {
+            // Ensure the next spawned entity reuses the recorded ID
+            world.next_id = entity_data.id;
             let id = world.spawn(
                 &entity_data.name,
                 entity_data.pos,
@@ -108,6 +111,9 @@ impl SceneData {
                 cooldowns.map = entity_data.cooldowns.clone();
             }
         }
+
+        // Restore next entity id exactly as recorded
+        world.next_id = desired_next_id;
 
         world
     }
@@ -180,6 +186,21 @@ pub fn load_scene(path: &Path) -> Result<World> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::{Path, PathBuf};
+
+    fn test_scene_path(name: &str) -> PathBuf {
+        let relative = PathBuf::from(format!("test_scenes/{name}"));
+        let actual = Path::new("content").join(&relative);
+        if let Some(parent) = actual.parent() {
+            fs::create_dir_all(parent).unwrap();
+        }
+        relative
+    }
+
+    fn remove_scene_file(relative: &Path) {
+        let actual = Path::new("content").join(relative);
+        let _ = fs::remove_file(actual);
+    }
 
     #[test]
     fn test_scene_roundtrip() {
@@ -280,12 +301,13 @@ mod tests {
         let restored = scene.to_world();
         assert_eq!(restored.entities().len(), 10);
 
+        let restored_entities = restored.entities();
         for i in 0..10 {
             let entity_name = format!("Entity{}", i);
-            let found = restored
-                .entities()
+            let found = restored_entities
                 .iter()
-                .find(|&&id| restored.name(id) == Some(entity_name.as_str()));
+                .copied()
+                .find(|&id| restored.name(id) == Some(entity_name.as_str()));
             assert!(found.is_some(), "Entity {} should exist", i);
         }
     }
@@ -353,7 +375,6 @@ mod tests {
 
     #[test]
     fn test_scene_file_io() {
-        use std::env;
         let mut world = World::new();
         world.spawn(
             "Player",
@@ -364,25 +385,23 @@ mod tests {
         );
         world.obstacles.insert((5, 5));
 
-        let temp_dir = env::temp_dir();
-        let test_path = temp_dir.join("aw_editor_test_scene.ron");
+        let scene_path = test_scene_path("aw_editor_test_scene.ron");
 
         let scene = SceneData::from_world(&world);
-        scene.save_to_file(&test_path).unwrap();
+        scene.save_to_file(&scene_path).unwrap();
 
-        assert!(test_path.exists());
+        assert!(Path::new("content").join(&scene_path).exists());
 
-        let loaded_scene = SceneData::load_from_file(&test_path).unwrap();
+        let loaded_scene = SceneData::load_from_file(&scene_path).unwrap();
         assert_eq!(loaded_scene.entities.len(), 1);
         assert_eq!(loaded_scene.obstacles.len(), 1);
         assert_eq!(loaded_scene.entities[0].name, "Player");
 
-        fs::remove_file(&test_path).unwrap();
+        remove_scene_file(&scene_path);
     }
 
     #[test]
     fn test_save_and_load_scene() {
-        use std::env;
         let mut world = World::new();
         world.spawn(
             "Entity1",
@@ -399,16 +418,15 @@ mod tests {
             15,
         );
 
-        let temp_dir = env::temp_dir();
-        let test_path = temp_dir.join("aw_editor_test_save_load.ron");
+        let scene_path = test_scene_path("aw_editor_test_save_load.ron");
 
-        save_scene(&world, &test_path).unwrap();
-        assert!(test_path.exists());
+        save_scene(&world, &scene_path).unwrap();
+        assert!(Path::new("content").join(&scene_path).exists());
 
-        let loaded_world = load_scene(&test_path).unwrap();
+        let loaded_world = load_scene(&scene_path).unwrap();
         assert_eq!(loaded_world.entities().len(), 2);
 
-        fs::remove_file(&test_path).unwrap();
+        remove_scene_file(&scene_path);
     }
 
     #[test]

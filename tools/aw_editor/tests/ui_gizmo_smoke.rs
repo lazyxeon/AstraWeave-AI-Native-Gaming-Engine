@@ -24,7 +24,12 @@ fn translate_drag_records_commit_event() {
     harness.begin_translate().unwrap();
     harness.drag_translate(IVec2 { x: 5, y: -2 }).unwrap();
     harness.confirm().unwrap();
-    drop(_guard);
+
+    assert_eq!(
+        harness.undo_depth(),
+        1,
+        "gizmo commit should record one undo"
+    );
 
     let world = harness.into_world();
     assert_eq!(world.pose(entity).unwrap().pos, IVec2 { x: 5, y: -2 });
@@ -47,7 +52,12 @@ fn cancel_reverts_world_and_emits_event() {
     harness.begin_translate().unwrap();
     harness.drag_translate(IVec2 { x: -3, y: 4 }).unwrap();
     harness.cancel().unwrap();
-    drop(_guard);
+
+    assert_eq!(
+        harness.undo_depth(),
+        0,
+        "cancelled drags must not record undo"
+    );
 
     let world = harness.into_world();
     assert_eq!(world.pose(entity).unwrap().pos, IVec2 { x: 0, y: 0 });

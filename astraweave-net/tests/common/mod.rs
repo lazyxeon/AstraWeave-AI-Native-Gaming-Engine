@@ -26,7 +26,9 @@ impl TestServer {
 
     /// Get current tick
     pub fn current_tick(&self) -> u64 {
-        self.server.tick.load(std::sync::atomic::Ordering::Relaxed)
+        self.server
+            .tick
+            .load(std::sync::atomic::Ordering::Relaxed)
     }
 
     /// Get current world snapshot
@@ -221,11 +223,7 @@ pub fn create_test_world() -> World {
 
 /// Assert snapshots are consistent
 pub fn assert_snapshots_consistent(s1: &Snapshot, s2: &Snapshot) {
-    assert_eq!(
-        s1.entities.len(),
-        s2.entities.len(),
-        "entity count mismatch"
-    );
+    assert_eq!(s1.entities.len(), s2.entities.len(), "entity count mismatch");
     for e1 in &s1.entities {
         let e2 = s2.entities.iter().find(|e| e.id == e1.id);
         assert!(e2.is_some(), "entity {} missing in second snapshot", e1.id);

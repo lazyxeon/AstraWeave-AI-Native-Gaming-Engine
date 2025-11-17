@@ -28,7 +28,7 @@
 //! let viewport = ViewportWidget::new(cc)?;
 //!
 //! // In eframe::App::update()
-//! viewport.ui(ui, scene_state, undo_stack)?;
+//! viewport.ui(ui, &mut world, &mut undo_stack, snapping_config)?;
 //! ```
 
 mod camera;
@@ -40,4 +40,4 @@ mod skybox_renderer;
 mod toolbar;
 mod widget;
 
-pub use widget::ViewportWidget;
+pub use widget::{ViewportFrameEvents, ViewportWidget};

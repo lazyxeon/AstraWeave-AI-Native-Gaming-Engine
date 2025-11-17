@@ -24,10 +24,9 @@ pub mod state;
 pub mod translate;
 
 pub use picking::{GizmoHandle, GizmoPicker};
-pub use rendering::{GizmoRenderParams, GizmoRenderer};
+pub(crate) use rendering::GizmoRenderParams;
 pub use rotate::RotateGizmo;
 pub use scale::ScaleGizmo;
-pub use scene_viewport::Transform;
 pub use snapping::SnappingConfig;
-pub use state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
+pub(crate) use state::{AxisConstraint, GizmoMode, GizmoState};
 pub use translate::TranslateGizmo;

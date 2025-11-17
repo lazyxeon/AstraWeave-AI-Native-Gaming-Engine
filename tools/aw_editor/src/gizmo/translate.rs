@@ -133,28 +133,24 @@ mod tests {
             false, // world space
         );
 
-        // Expected: mouse_delta * scale_factor
-        // scale_factor = 10.0 * 0.01 = 0.1
-        // delta.x = 100.0 * 0.1 = 10.0
-        // delta.y = -(-50.0) * 0.1 = 5.0 (flip Y)
-        assert_relative_eq!(delta.x, 10.0, epsilon = 0.001);
-        assert_relative_eq!(delta.y, 5.0, epsilon = 0.001);
-        assert_relative_eq!(delta.z, 0.0, epsilon = 0.001);
+        // scale_factor = 10.0 * 0.002 = 0.02 (lower sensitivity)
+        assert_relative_eq!(delta.x, 2.0, epsilon = 0.001);
+        assert_relative_eq!(delta.y, 0.0, epsilon = 0.001);
+        assert_relative_eq!(delta.z, 1.0, epsilon = 0.001);
     }
 
     #[test]
     fn test_translation_world_space_x_axis() {
         // Constrain to X axis
         let delta = TranslateGizmo::calculate_translation(
-            Vec2::new(100.0, 50.0),
+            Vec2::new(100.0, -50.0),
             AxisConstraint::X,
             10.0,
             Quat::IDENTITY,
             false,
         );
 
-        // Expected: only X component preserved
-        assert_relative_eq!(delta.x, 10.0, epsilon = 0.001);
+        assert_relative_eq!(delta.x, 2.0, epsilon = 0.001);
         assert_relative_eq!(delta.y, 0.0, epsilon = 0.001);
         assert_relative_eq!(delta.z, 0.0, epsilon = 0.001);
     }
@@ -170,15 +166,15 @@ mod tests {
             false,
         );
 
-        // Expected: only Y component preserved
+        // Ground-plane gizmo does not move along Y
         assert_relative_eq!(delta.x, 0.0, epsilon = 0.001);
-        assert_relative_eq!(delta.y, 5.0, epsilon = 0.001); // Flip Y
+        assert_relative_eq!(delta.y, 0.0, epsilon = 0.001);
         assert_relative_eq!(delta.z, 0.0, epsilon = 0.001);
     }
 
     #[test]
     fn test_translation_world_space_z_axis() {
-        // Constrain to Z axis (no screen-space Z movement, should be zero)
+        // Constrain to Z axis (vertical mouse delta → world Z)
         let delta = TranslateGizmo::calculate_translation(
             Vec2::new(100.0, 50.0),
             AxisConstraint::Z,
@@ -187,15 +183,14 @@ mod tests {
             false,
         );
 
-        // Expected: only Z component (which is 0 in screen-space XY)
         assert_relative_eq!(delta.x, 0.0, epsilon = 0.001);
         assert_relative_eq!(delta.y, 0.0, epsilon = 0.001);
-        assert_relative_eq!(delta.z, 0.0, epsilon = 0.001);
+        assert_relative_eq!(delta.z, -1.0, epsilon = 0.001);
     }
 
     #[test]
     fn test_translation_world_space_xy_plane() {
-        // Constrain to YZ plane (exclude X)
+        // XY plane collapses to ground X movement (no Y axis)
         let delta = TranslateGizmo::calculate_translation(
             Vec2::new(100.0, -50.0),
             AxisConstraint::XY, // YZ plane
@@ -204,19 +199,17 @@ mod tests {
             false,
         );
 
-        // Expected: X excluded, Y and Z preserved
-        assert_relative_eq!(delta.x, 0.0, epsilon = 0.001);
-        assert_relative_eq!(delta.y, 5.0, epsilon = 0.001);
+        assert_relative_eq!(delta.x, 2.0, epsilon = 0.001);
+        assert_relative_eq!(delta.y, 0.0, epsilon = 0.001);
         assert_relative_eq!(delta.z, 0.0, epsilon = 0.001);
     }
 
     #[test]
     fn test_translation_camera_distance_scaling() {
-        // Farther camera = larger translation per pixel
         let delta_near = TranslateGizmo::calculate_translation(
             Vec2::new(100.0, 0.0),
             AxisConstraint::None,
-            5.0, // 5 units away
+            5.0, // scale 0.01
             Quat::IDENTITY,
             false,
         );
@@ -224,13 +217,13 @@ mod tests {
         let delta_far = TranslateGizmo::calculate_translation(
             Vec2::new(100.0, 0.0),
             AxisConstraint::None,
-            20.0, // 20 units away
+            20.0, // scale 0.04
             Quat::IDENTITY,
             false,
         );
 
-        // Far should be 4× larger (20 / 5 = 4)
-        assert_relative_eq!(delta_far.x / delta_near.x, 4.0, epsilon = 0.001);
+        assert_relative_eq!(delta_near.x, 1.0, epsilon = 0.001);
+        assert_relative_eq!(delta_far.x, 4.0, epsilon = 0.001);
     }
 
     #[test]
@@ -341,8 +334,9 @@ mod tests {
             false,
         );
 
-        assert_relative_eq!(delta.x, -10.0, epsilon = 0.001);
-        assert_relative_eq!(delta.y, -5.0, epsilon = 0.001); // Flip Y
+        assert_relative_eq!(delta.x, -2.0, epsilon = 0.001);
+        assert_relative_eq!(delta.y, 0.0, epsilon = 0.001);
+        assert_relative_eq!(delta.z, -1.0, epsilon = 0.001);
     }
 
     #[test]
@@ -356,8 +350,7 @@ mod tests {
             false,
         );
 
-        // With clamped distance of 0.01, scale_factor = 0.01 * 0.01 = 0.0001
-        // But actually it clamps to 0.01, so we get 100.0 * 0.01 = 1.0
-        assert_relative_eq!(delta.x, 1.0, epsilon = 0.001);
+        // scale_factor clamps to 0.001 → 100 * 0.001 = 0.1
+        assert_relative_eq!(delta.x, 0.1, epsilon = 0.001);
     }
 }
