@@ -38,7 +38,6 @@ rhai = { workspace = true }
 glam = { workspace = true }
 rand = "0.8"
 astract = { path = "../../crates/astract" }
-tracing = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs", optional = true }
 astraweave-render = { path = "../../astraweave-render", optional = true }
@@ -50,9 +49,11 @@ astraweave-quests = { path = "../../astraweave-quests" }
 astraweave-nav = { path = "../../astraweave-nav" }
 astraweave-observability = { path = "../../astraweave-observability" }
 astraweave-security = { path = "../../astraweave-security" }
+tracing = { workspace = true }
 [dev-dependencies]
 approx = "0.5"
 criterion = { version = "0.5", features = ["html_reports"] }
+tempfile = "3"
 
 [[bench]]
 name = "gizmo_benchmarks"

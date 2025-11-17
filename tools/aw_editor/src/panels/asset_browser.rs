@@ -153,6 +153,14 @@ impl AssetBrowser {
         self.dragged_prefab.take()
     }
 
+    pub fn is_dragging_prefab(&self) -> bool {
+        self.dragged_prefab.is_some()
+    }
+
+    pub fn cancel_prefab_drag(&mut self) {
+        self.dragged_prefab = None;
+    }
+
     fn scan_current_directory(&mut self) {
         self.entries.clear();
 
@@ -548,6 +556,7 @@ impl AssetBrowser {
 mod tests {
     use super::*;
     use std::env;
+    use tempfile::tempdir;
 
     #[test]
     fn test_asset_type_from_path() {
@@ -591,14 +600,24 @@ mod tests {
 
     #[test]
     fn test_asset_browser_navigation() {
-        let temp_dir = env::temp_dir();
-        let mut browser = AssetBrowser::new(temp_dir.clone());
+        let temp_dir = tempdir().unwrap();
+        let root_path = temp_dir.path().to_path_buf();
+        let child_path = root_path.join("child");
+        std::fs::create_dir_all(&child_path).unwrap();
 
+        let mut browser = AssetBrowser::new(root_path.clone());
+
+        // Already at root, navigate_up should not move outside root
         browser.navigate_up();
-        assert!(browser.current_path != temp_dir);
+        assert_eq!(browser.current_path, root_path);
 
-        browser.navigate_to(temp_dir.clone());
-        assert_eq!(browser.current_path, temp_dir);
+        // Navigate into child directory and ensure path updates
+        browser.navigate_to(child_path.clone());
+        assert_eq!(browser.current_path, child_path);
+
+        // Navigating up from child returns to root
+        browser.navigate_up();
+        assert_eq!(browser.current_path, root_path);
     }
 
     #[test]
@@ -639,5 +658,23 @@ mod tests {
 
         browser.search_query = "test".to_string();
         assert_eq!(browser.search_query, "test");
+    }
+
+    #[test]
+    fn test_prefab_drag_helpers() {
+        let temp_dir = tempdir().unwrap();
+        let mut browser = AssetBrowser::new(temp_dir.path().to_path_buf());
+        assert!(!browser.is_dragging_prefab());
+
+        let prefab_path = temp_dir.path().join("example.prefab.ron");
+        browser.dragged_prefab = Some(prefab_path.clone());
+        assert!(browser.is_dragging_prefab());
+        assert_eq!(browser.take_dragged_prefab(), Some(prefab_path));
+        assert!(!browser.is_dragging_prefab());
+
+        // Ensure cancel clears any pending drag
+        browser.dragged_prefab = Some(temp_dir.path().join("second.prefab.ron"));
+        browser.cancel_prefab_drag();
+        assert!(!browser.is_dragging_prefab());
     }
 }

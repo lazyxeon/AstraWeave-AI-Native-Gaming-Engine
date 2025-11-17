@@ -166,18 +166,18 @@ fn test_simple_triangle() {
                 );
                 return vec4<f32>(positions[in_vertex_index], 0.0, 1.0);
             }
-
+            
             @fragment
             fn fs_main() -> @location(0) vec4<f32> {
                 return vec4<f32>(1.0, 0.0, 0.0, 1.0); // Red
             }
         "#;
-
+        
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Triangle Shader"),
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
-
+        
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Triangle Pipeline"),
             layout: None,
@@ -206,11 +206,11 @@ fn test_simple_triangle() {
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
-
+        
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Triangle Encoder"),
         });
-
+        
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Triangle Pass"),
@@ -226,11 +226,11 @@ fn test_simple_triangle() {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-
+            
             render_pass.set_pipeline(&pipeline);
             render_pass.draw(0..3, 0..1);
         }
-
+        
         queue.submit(Some(encoder.finish()));
     });
 

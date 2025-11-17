@@ -4022,7 +4022,7 @@ async fn run() -> Result<()> {
                                     KeyCode::F5 => {
                                         if pressed {
                                             ui.pbr_e_demo_enabled = !ui.pbr_e_demo_enabled;
-                                            println!("PBR-E Demo: {} | Material: {:?} | Grid: {}x{}",
+                                            println!("PBR-E Demo: {} | Material: {:?} | Grid: {}x{}", 
                                                 if ui.pbr_e_demo_enabled { "ENABLED" } else { "DISABLED" },
                                                 ui.pbr_e_material_type,
                                                 ui.pbr_e_grid_size,
@@ -4041,7 +4041,7 @@ async fn run() -> Result<()> {
                                                 pbr_e_demo::DemoMaterialType::Transmission => pbr_e_demo::DemoMaterialType::Clearcoat,
                                             };
                                             let (x_label, y_label) = pbr_e_demo::get_param_labels(ui.pbr_e_material_type);
-                                            println!("PBR-E Material: {:?} | X={} Y={} | Grid: {}x{}",
+                                            println!("PBR-E Material: {:?} | X={} Y={} | Grid: {}x{}", 
                                                 ui.pbr_e_material_type,
                                                 x_label,
                                                 y_label,
@@ -4055,8 +4055,8 @@ async fn run() -> Result<()> {
                                             // Decrease grid size (min 3)
                                             if ui.pbr_e_grid_size > 3 {
                                                 ui.pbr_e_grid_size -= 1;
-                                                println!("PBR-E Grid Size: {}x{} ({} spheres)",
-                                                    ui.pbr_e_grid_size,
+                                                println!("PBR-E Grid Size: {}x{} ({} spheres)", 
+                                                    ui.pbr_e_grid_size, 
                                                     ui.pbr_e_grid_size,
                                                     ui.pbr_e_grid_size * ui.pbr_e_grid_size
                                                 );
@@ -4068,8 +4068,8 @@ async fn run() -> Result<()> {
                                             // Increase grid size (max 10)
                                             if ui.pbr_e_grid_size < 10 {
                                                 ui.pbr_e_grid_size += 1;
-                                                println!("PBR-E Grid Size: {}x{} ({} spheres)",
-                                                    ui.pbr_e_grid_size,
+                                                println!("PBR-E Grid Size: {}x{} ({} spheres)", 
+                                                    ui.pbr_e_grid_size, 
                                                     ui.pbr_e_grid_size,
                                                     ui.pbr_e_grid_size * ui.pbr_e_grid_size
                                                 );
@@ -4556,19 +4556,19 @@ async fn run() -> Result<()> {
 
                         // Sync sim to render and batch instances by mesh type
                         let lod_settings = ui.active_lod_settings().clone();
-
+                        
                         // Phase PBR-E: Switch between normal instances and PBR-E demo instances
                         if ui.pbr_e_demo_enabled {
                             // Generate PBR-E demo instances (spheres with advanced materials)
                             generate_pbr_e_demo_instances(&ui, &mut render);
-
+                            
                             // Create sphere instances for PBR-E demo
                             instances.clear();
                             for (pos, radius, mat_id) in &render.pbr_e_demo_instances {
                                 let scale_mat = Mat4::from_scale(Vec3::splat(*radius));
                                 let translation = Mat4::from_translation(*pos);
                                 let model_mat = translation * scale_mat;
-
+                                
                                 instances.push(InstanceRaw {
                                     model: model_mat.to_cols_array_2d(),
                                     color: [1.0, 1.0, 1.0, 1.0],  // White (material controls appearance)
@@ -4582,7 +4582,7 @@ async fn run() -> Result<()> {
                             // Normal rendering mode
                             sync_instances_from_physics(&physics, &characters, camera.position, &lod_settings, &mut instances);
                         }
-
+                        
                         render.instance_count = instances.len() as u32;
 
                         // Batch instances by mesh type for efficient rendering
@@ -4753,7 +4753,7 @@ async fn run() -> Result<()> {
                             }
                             // IBL bind group (shifted to group 4)
                             rp.set_bind_group(4, &render.ibl_bg, &[]);
-
+                            
                             // Render skybox first
                             for batch in &instance_batches {
                                 if matches!(batch.mesh_key.category, MeshCategory::Skybox) {
@@ -4798,7 +4798,7 @@ async fn run() -> Result<()> {
                                             rp.set_bind_group(3, &render.default_material_bind_group, &[]);
                                         }
                                         rp.set_bind_group(4, &render.ibl_bg, &[]);
-
+                                        
                                         rp.set_vertex_buffer(0, gpu.vertex_full.slice(..));
                                         rp.set_vertex_buffer(1, render.instance_vb.slice(..));
                                         rp.set_index_buffer(gpu.index.slice(..), wgpu::IndexFormat::Uint32);
@@ -4818,7 +4818,7 @@ async fn run() -> Result<()> {
                                     rp.set_bind_group(3, &render.default_material_bind_group, &[]);
                                 }
                                 rp.set_bind_group(4, &render.ibl_bg, &[]);
-
+                                
                                 if let Some(mesh) = render.meshes.get(&batch.mesh_key) {
                                     // Minimal pipeline expects position-only buffer (Float32x3)
                                     rp.set_vertex_buffer(0, mesh.vertex_pos.slice(..));
@@ -4892,7 +4892,7 @@ async fn run() -> Result<()> {
                 if render.hot_reload_enabled {
                     if let Some(ref mut watcher) = render.file_watcher {
                         let events = watcher.collect_events();
-
+                        
                         for event in events {
                             let result = match event {
                                 ReloadEvent::Material { ref path, material_type } => {
@@ -4927,18 +4927,18 @@ async fn run() -> Result<()> {
                                                         // Determine target texture array and index based on type
                                                         let (texture_array, array_index, color_space) = match texture_type {
                                                             self::material_hot_reload::TextureType::Albedo => {
-                                                                (render.material_integrator.manager().albedo_texture(),
-                                                                 array_indices.albedo_index,
+                                                                (render.material_integrator.manager().albedo_texture(), 
+                                                                 array_indices.albedo_index, 
                                                                  self::material_hot_reload::ColorSpace::SRGB)
                                                             }
                                                             self::material_hot_reload::TextureType::Normal => {
-                                                                (render.material_integrator.manager().normal_texture(),
-                                                                 array_indices.normal_index,
+                                                                (render.material_integrator.manager().normal_texture(), 
+                                                                 array_indices.normal_index, 
                                                                  self::material_hot_reload::ColorSpace::Linear)
                                                             }
                                                             self::material_hot_reload::TextureType::ORM => {
-                                                                (render.material_integrator.manager().mra_texture(),
-                                                                 array_indices.orm_index,
+                                                                (render.material_integrator.manager().mra_texture(), 
+                                                                 array_indices.orm_index, 
                                                                  self::material_hot_reload::ColorSpace::Linear)
                                                             }
                                                             _ => {
@@ -4946,14 +4946,14 @@ async fn run() -> Result<()> {
                                                                 continue;
                                                             }
                                                         };
-
+                                                        
                                                         // Verify texture array is available
                                                         if let Some(texture) = texture_array {
                                                             // Load texture data from file
                                                             match image::open(path) {
                                                                 Ok(img) => {
                                                                     let _rgba = img.to_rgba8();
-
+                                                                    
                                                                     // Upload to GPU texture array via MaterialReloadManager
                                                                     render.reload_manager.reload_texture(
                                                                         &render.device,
@@ -5000,7 +5000,7 @@ async fn run() -> Result<()> {
                                     Ok(())
                                 }
                             };
-
+                            
                             // Update UI message based on result
                             match result {
                                 Ok(_) => {
@@ -5017,7 +5017,7 @@ async fn run() -> Result<()> {
                         }
                     }
                 }
-
+                
                 window.request_redraw();
             }
             Event::DeviceEvent {
@@ -7735,14 +7735,14 @@ fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_wid
     let na = normalize(a.n * 2.0 - 1.0);
     let nb = normalize(b.n * 2.0 - 1.0);
     let nc = normalize(c.n * 2.0 - 1.0);
-
+    
     // Use weighted average with angle-based weighting for better normal interpolation
     let n_blend = na * wnorm.x + nb * wnorm.y + nc * wnorm.z;
     let nr = normalize(n_blend) * 0.5 + 0.5;
-
+    
     // MRA blending with material property preservation
     let mr = a.m * wnorm.x + b.m * wnorm.y + c.m * wnorm.z;
-
+    
     // Optional debug tint to validate material sampling bindings
     if (u_debug.debug_tint == 1u) {
         let tint_a = vec3<f32>(1.0, 0.0, 0.0);
@@ -7754,11 +7754,11 @@ fn blend3(a: SampleSet, b: SampleSet, c: SampleSet, w: vec3<f32>, transition_wid
 }
 
 // Enhanced triplanar sampling with detail mapping and micro-variation
-fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: vec3<f32>,
+fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: vec3<f32>, 
                            scale: f32, detail_scale: f32) -> SampleSet {
     // Base UV coordinates for triplanar mapping
     let uv_x = world_pos.zy * scale;
-    let uv_y = world_pos.xz * scale;
+    let uv_y = world_pos.xz * scale; 
     let uv_z = world_pos.xy * scale;
     // Add micro-variation using FBM noise to break up tiling without grid artifacts
     let n_xy = fbm2(world_pos.xy * detail_scale * 0.15, 4, 2.0, 0.5);
@@ -7768,18 +7768,18 @@ fn sample_triplanar_enhanced(material_idx: i32, world_pos: vec3<f32>, normal: ve
     let uv_x_varied = uv_x + vec2<f32>(n_yz, n_zx) * v;
     let uv_y_varied = uv_y + vec2<f32>(n_zx, n_xy) * v;
     let uv_z_varied = uv_z + vec2<f32>(n_xy, n_yz) * v;
-
+    
     // Sample each axis with variation
     let sample_x = get_material(material_idx, uv_x_varied);
     let sample_y = get_material(material_idx, uv_y_varied);
     let sample_z = get_material(material_idx, uv_z_varied);
-
+    
     // Enhanced weight calculation based on normal with smooth transitions
     let n_abs = abs(normal);
     let weights = pow(n_abs, vec3<f32>(2.0)); // Slightly softer to reduce seams
     let weight_sum = max(weights.x + weights.y + weights.z, 1e-4);
     let wnorm = weights / weight_sum;
-
+    
     // Use enhanced blending with smooth transitions
     return blend3(sample_x, sample_y, sample_z, wnorm, 2.0);
 }
@@ -7809,16 +7809,16 @@ fn perturb_normal(normal: vec3<f32>, world_pos: vec3<f32>, detail_scale: f32, st
 // Calculate tessellation factor based on distance and terrain features
 fn calculate_tessellation_factor(world_pos: vec3<f32>, camera_pos: vec3<f32>, slope: f32) -> f32 {
     let distance = length(world_pos - camera_pos);
-
+    
     // Base tessellation decreases with distance
     let distance_factor = clamp(1.0 - distance / 100.0, 0.1, 1.0);
-
+    
     // Increase tessellation on steep slopes for better detail
     let slope_factor = 1.0 + slope * 2.0;
-
+    
     // Combine factors with some noise for natural variation
     let noise_factor = sin(world_pos.x * 0.01) * cos(world_pos.z * 0.01) * 0.1 + 0.9;
-
+    
     return distance_factor * slope_factor * noise_factor;
 }
 
@@ -7871,18 +7871,18 @@ fn vs_main(in: VsIn) -> VsOut {
     let model = mat4x4<f32>(in.m0, in.m1, in.m2, in.m3);
   var out: VsOut;
   let world = model * vec4<f32>(in.pos, 1.0);
-
+  
 // Special handling for skybox (mesh_type 5) - position at far plane
     if (in.mesh_type == 5u) {
     // For skybox, apply model transform then scale down the large vertices
-    let scaled_vertex = vec4<f32>(in.pos * 0.5, 1.0); // Larger skybox for better coverage
+    let scaled_vertex = vec4<f32>(in.pos * 0.5, 1.0); // Larger skybox for better coverage  
     let world_skybox = model * scaled_vertex; // Apply model transform (camera translation)
     out.pos = u_camera.view_proj * world_skybox;
     // Ensure skybox is always at far plane
     out.pos.z = out.pos.w * 0.999; // At far plane
     out.world_pos = world_skybox.xyz;
     out.local_pos = in.pos;
-
+    
     // For skybox, we use position as texture coordinates
     let pos_normalized = normalize(in.pos);
     out.uv = vec2<f32>(
@@ -7897,18 +7897,18 @@ fn vs_main(in: VsIn) -> VsOut {
         out.uv = vec2<f32>(world.x / scale, world.z / scale);
       out.local_pos = in.pos;
   }
-
+  
     // Default normal (up). Real meshes should provide normals; this keeps lighting reasonable.
     out.normal = vec3<f32>(0.0, 1.0, 0.0);
-
+  
   out.color = in.color;
   out.mesh_type = in.mesh_type;
   out.material_id = in.material_id;
-
+  
   // Calculate view direction for sky effects
   let camera_pos = vec3<f32>(0.0, 5.0, 0.0); // Better approximation for typical camera height
   out.view_dir = normalize(world.xyz - camera_pos);
-
+  
   return out;
 }
 
@@ -7971,11 +7971,11 @@ fn get_water_level(world_pos: vec2<f32>, time: f32) -> f32 {
   let wave_scale = 0.5;
   let wave_time = time * 2.0;
   let wave_pos = world_pos * wave_scale + vec2<f32>(wave_time * 0.3, wave_time * 0.5);
-
+  
   // Water surface animation
   let wave1 = sin(wave_pos.x * 4.0) * cos(wave_pos.y * 3.0) * 0.1;
   let wave2 = sin(wave_pos.x * 8.0 + 1.0) * cos(wave_pos.y * 6.0 + 1.5) * 0.05;
-
+  
   return -1.8 + wave1 + wave2; // Base water level with waves
 }
 
@@ -8034,7 +8034,7 @@ fn get_biome_terrain_height(world_pos: vec2<f32>, biome_type: i32) -> f32 {
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   var col = in.color.rgb;
     let time = u_scene.time;
-
+  
   // Mesh-specific rendering based on mesh type
     if (in.mesh_type == 1u) { // Tree (separate bark and foliage materials)
         let V = normalize(-in.view_dir);
@@ -8216,11 +8216,11 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     col = sky_color(in.view_dir, time);
     return vec4<f32>(col, 1.0);
   }
-
+  
     // For ground or other unspecified mesh types, use PBR-ish terrain rendering
   // Determine biome type for this world position
   let biome_type = get_biome_type(in.world_pos.xz);
-
+  
   // Enhanced ground rendering with biome-specific terrain
   let ground_y = -2.0;
   let terrain_height = get_biome_terrain_height(in.world_pos.xz, biome_type);
@@ -8228,19 +8228,19 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
   let terrain_surface = ground_y + terrain_height;
   let dist_to_terrain = abs(in.world_pos.y - terrain_surface);
   let dist_to_water = abs(in.world_pos.y - water_level);
-
+  
   // Check if we're rendering the terrain surface
   if (dist_to_terrain < 0.8 || (in.mesh_type == 0u && in.world_pos.y < ground_y + 1.0)) {
         // Enhanced triplanar sampling with biome-specific scales and detail mapping
         let ws_pos = in.world_pos;
         let base_scale = 2.0;
         let detail_scale = 8.0;
-
+        
         // Biome-specific texture scaling for more realistic material distribution
         var biome_scale = base_scale;
         if (biome_type == 1) { biome_scale = base_scale * 1.2; } // Desert - slightly larger scale
         else if (biome_type == 2) { biome_scale = base_scale * 0.9; } // Forest - slightly smaller scale
-
+        
         // Enhanced surface normal calculation with better height gradients
         let eps = 0.3;
         let hC = terrain_height;
@@ -8256,14 +8256,14 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         let slope = clamp(1.0 - n_world.y, 0.0, 1.0);
         let height_factor = clamp((hC + 2.0) / 4.0, 0.0, 1.0); // Normalized height factor
         let moisture_factor = sin(ws_pos.x * 0.01) * cos(ws_pos.z * 0.008) * 0.5 + 0.5; // Pseudo-moisture
-
+        
         // Base material weights with biome-specific logic
         var w_grass = 0.0;
         var w_dirt = 0.0;
         var w_stone = 0.0;
         var w_sand = 0.0;
         var w_forest = 0.0;
-
+        
         if (biome_type == 0) { // Grassland
             // Grass dominates low slopes and mid elevations
             w_grass = (1.0 - slope) * smoothstep(0.0, 0.6, height_factor) * (1.0 - moisture_factor * 0.3);
@@ -8271,7 +8271,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             w_dirt = slope * 0.4 + moisture_factor * 0.2;
             // Stone for rocky outcrops
             w_stone = smoothstep(0.3, 0.8, slope) * 0.6;
-
+            
         } else if (biome_type == 1) { // Desert
             // Sand dominates with some variation
             w_sand = 0.7 * (1.0 - smoothstep(0.4, 0.9, slope));
@@ -8279,7 +8279,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             w_stone = smoothstep(0.2, 0.7, slope) * 0.8;
             // Dirt in transitional areas
             w_dirt = 0.2 * (1.0 - slope) * moisture_factor;
-
+            
         } else if (biome_type == 2) { // Forest
             // Forest floor dominates with organic materials
             w_forest = 0.6 * (1.0 - slope) * smoothstep(0.0, 0.7, height_factor);
@@ -8290,7 +8290,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
             // Stone for rocky areas
             w_stone = smoothstep(0.5, 1.0, slope) * 0.5;
         }
-
+        
         // Normalize weights to ensure they sum to 1
         var total_weight = w_grass + w_dirt + w_stone + w_sand + w_forest;
         if (total_weight < 0.1) {
@@ -8314,19 +8314,19 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let forest_sample = sample_triplanar_enhanced(MATERIAL_FOREST_FLOOR, ws_pos, n_world, biome_scale, detail_scale);
 
         // Combine materials with enhanced blending
-        var base_color = grass_sample.c * w_grass +
-                        dirt_sample.c * w_dirt +
-                        stone_sample.c * w_stone +
-                        sand_sample.c * w_sand +
+        var base_color = grass_sample.c * w_grass + 
+                        dirt_sample.c * w_dirt + 
+                        stone_sample.c * w_stone + 
+                        sand_sample.c * w_sand + 
                         forest_sample.c * w_forest;
     base_color = base_color * mix(vec3<f32>(1.0), u_material.albedo.rgb, 0.2);
-
-        var mra = grass_sample.m * w_grass +
-                 dirt_sample.m * w_dirt +
-                 stone_sample.m * w_stone +
-                 sand_sample.m * w_sand +
+        
+        var mra = grass_sample.m * w_grass + 
+                 dirt_sample.m * w_dirt + 
+                 stone_sample.m * w_stone + 
+                 sand_sample.m * w_sand + 
                  forest_sample.m * w_forest;
-
+        
         // Enhanced normal blending with proper interpolation
         var normal_blend = (grass_sample.n * 2.0 - 1.0) * w_grass +
                           (dirt_sample.n * 2.0 - 1.0) * w_dirt +
@@ -8337,12 +8337,12 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 
     // Calculate tessellation factor for geometry detail
         let tessellation_factor = calculate_tessellation_factor(ws_pos, vec3<f32>(0.0, 5.0, 0.0), slope);
-
+        
         // Use tessellation factor to modulate detail mapping strength
     let detail_strength = 0.6; // Base strength for micro detail mapping
     let adaptive_detail_strength = detail_strength * tessellation_factor;
         base_color = apply_detail_mapping(base_color, ws_pos, detail_scale, adaptive_detail_strength);
-
+        
         // Apply normal perturbation with adaptive strength
         let adaptive_normal_strength = 0.1 * tessellation_factor;
         normal = perturb_normal(normal, ws_pos, detail_scale * 2.0, adaptive_normal_strength);
@@ -8353,7 +8353,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     roughness = mix(roughness, clamp(u_material.roughness_metallic.x, 0.05, 1.0), 0.25);
     metallic = mix(metallic, clamp(u_material.roughness_metallic.y, 0.0, 1.0), 0.25);
     let emissive = u_material.emissive.rgb * u_material.emissive.w;
-
+    
     // Biome-specific terrain texturing
         // Note: Removed large flat-color biome overlays; rely on layered PBR materials above
         // Enhanced PBR lighting with improved Cook-Torrance BRDF
@@ -8368,7 +8368,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         let F0 = pow((ior - 1.0) / (ior + 1.0), 2.0);
         let F0_vec = mix(vec3<f32>(F0, F0, F0), base_color, metallic);
         let F = F0_vec + (vec3<f32>(1.0, 1.0, 1.0) - F0_vec) * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0);
-
+        
         // Improved Normal Distribution Function (GGX)
         let a = roughness * roughness;
         let a2 = a * a;
@@ -8376,7 +8376,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         let NdotH2 = NdotH * NdotH;
         let denom = (NdotH2 * (a2 - 1.0) + 1.0);
         let D = a2 / (3.14159 * denom * denom + 1e-5);
-
+        
         // Enhanced Geometry Smith with correlated masking-shadowing
         let NdotV = max(dot(N, V), 0.0);
         let NdotL = max(dot(N, L), 0.0);
@@ -8387,20 +8387,20 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 
         // Enhanced diffuse with subsurface scattering for organic materials
         let kd = (vec3<f32>(1.0, 1.0, 1.0) - F) * (1.0 - metallic);
-
+        
         // Add subsurface scattering approximation for materials like grass and soil
         let subsurface_factor = 0.15 * (1.0 - roughness) * (1.0 - metallic) * ao;
         let subsurface = subsurface_factor * base_color * max(dot(N, L), 0.0) * 0.5;
-
+        
         let diffuse = kd * base_color / 3.14159 + subsurface;
         let specular = (F * D * G_geom) / max(4.0 * NdotV * NdotL + 1e-5, 1e-5);
-
+        
         // Enhanced ambient lighting with sky contribution and improved AO
     let ibl_on = f32((u_debug.debug_tint & 2u) >> 1u);
     let sky_ambient = sky_color(normalize(in.world_pos), time) * 0.22 + sample_ibl_diffuse_wrapper(N) * 0.18 * ibl_on;
         let enhanced_ao = pow(ao, 0.8); // Enhance AO contrast
         let ambient = base_color * enhanced_ao * 0.3 + sky_ambient * enhanced_ao;
-
+        
         let shadow = sample_shadow(in.world_pos, N, L);
     let R = reflect(-V, N);
     let spec_ibl = sample_ibl_specular_wrapper(R, roughness, NdotV) * ibl_on;
@@ -8428,26 +8428,26 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         // Leave color in linear HDR here; post pass will apply exposure + tone mapping
         col = color;
         // Atmospheric perspective now handled by height fog above (pre-tonemap)
-
+    
   } else if (dist_to_water < 0.3 && terrain_height < -0.5) {
     // Water rendering for rivers and lakes
     let water_color = vec3<f32>(0.1, 0.3, 0.6);
     let wave_distortion = sin(in.world_pos.x * 2.0 + time) * cos(in.world_pos.z * 1.8 + time * 1.2) * 0.05;
     let water_surface = water_color + vec3<f32>(wave_distortion, wave_distortion * 0.5, -wave_distortion * 0.3);
-
+    
     // Reflection and transparency effects
     let view_angle = abs(dot(normalize(in.view_dir), vec3<f32>(0.0, 1.0, 0.0)));
     let reflection_factor = 1.0 - view_angle;
     let sky = sky_color(reflect(in.view_dir, vec3<f32>(0.0, 1.0, 0.0)), time);
-
+    
     col = mix(water_surface, sky, reflection_factor * 0.6);
-
+    
   } else {
     // Sky rendering for non-terrain objects or background
         if (in.mesh_type == 5u) { // Skybox
       // Full procedural sky rendering
       col = sky_color(in.view_dir, time);
-
+      
     } else if (in.mesh_type == 1u) { // Trees
       // Enhanced tree rendering with seasonal variation
       let tree_base_color = in.color.rgb;
@@ -8455,24 +8455,24 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
       let autumn_color = vec3<f32>(0.8, 0.4, 0.1);
       let summer_color = vec3<f32>(0.2, 0.8, 0.3);
       col = mix(tree_base_color, mix(summer_color, autumn_color, seasonal_factor), 0.3);
-
+      
         } else if (in.mesh_type == 2u) { // Houses/Structures
       // Enhanced building rendering with weathering
       col = in.color.rgb;
       let weathering = sin(in.world_pos.x * 0.5) * cos(in.world_pos.z * 0.3) * 0.1;
       col = col * (0.95 + weathering);
-
+      
         } else if (in.mesh_type == 3u) { // Rocks fallback tint
             let rock_tint = vec3<f32>(0.55, 0.56, 0.52);
             col = mix(in.color.rgb, rock_tint, 0.4);
-
+      
     } else {
       // Other objects get sky ambient lighting
       let sky = sky_color(in.view_dir, time);
       col = in.color.rgb * 0.8 + sky * 0.2;
     }
   }
-
+  
     return vec4<f32>(col, 1.0);
 }
 "#

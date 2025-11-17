@@ -11,9 +11,8 @@ use glam::{Quat, Vec3};
 use wgpu;
 
 use super::camera::OrbitCamera;
-use crate::gizmo::{
-    AxisConstraint, GizmoMode, GizmoRenderParams, GizmoRenderer as GizmoGeometry, GizmoState,
-};
+use crate::gizmo::rendering::{GizmoRenderParams, GizmoRenderer as GizmoGeometry};
+use crate::gizmo::state::{AxisConstraint, GizmoMode, GizmoState};
 
 /// Gizmo renderer for viewport
 ///

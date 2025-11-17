@@ -14,7 +14,7 @@
 //! let viewport = ViewportWidget::new(cc)?;
 //!
 //! // In eframe::App::update()
-//! viewport.ui(ui, scene_state, undo_stack)?;
+//! viewport.ui(ui, scene_state, undo_stack, snapping_config)?;
 //! ```
 //!
 //! # Architecture
@@ -39,11 +39,11 @@ use std::sync::{Arc, Mutex};
 use wgpu;
 
 use super::camera::OrbitCamera;
-use super::grid_renderer::GridRenderSettings;
 use super::renderer::ViewportRenderer;
 use super::toolbar::ViewportToolbar;
+use crate::gizmo::snapping::SnappingConfig;
 use crate::gizmo::{GizmoMode, GizmoState};
-use crate::interaction::{self, GizmoCancelMetadata, GizmoOperationKind};
+use crate::interaction::{self, GizmoCancelMetadata, GizmoCommitMetadata, GizmoOperationKind};
 use crate::scene_state::TransformableScene;
 use crate::telemetry::{self, EditorTelemetryEvent};
 use astraweave_core::{Entity, Team};
@@ -55,6 +55,11 @@ struct CameraBookmark {
     distance: f32,
     yaw: f32,
     pitch: f32,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct ViewportFrameEvents {
+    pub gizmo_commit: Option<GizmoCommitMetadata>,
 }
 
 /// 3D viewport widget for egui
@@ -107,6 +112,15 @@ pub struct ViewportWidget {
 
     /// Camera bookmarks (F1-F12)
     camera_bookmarks: [Option<CameraBookmark>; 12],
+
+    /// Last viewport rect used for rendering/input
+    last_viewport_rect: Option<egui::Rect>,
+
+    /// Cached cursor position projected to the ground plane
+    cached_cursor_world: Option<glam::Vec3>,
+
+    /// Buffered interactions that higher-level UI can consume after the frame completes
+    pending_events: ViewportFrameEvents,
 }
 
 impl ViewportWidget {
@@ -163,6 +177,9 @@ impl ViewportWidget {
             camera_bookmarks: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
             ],
+            last_viewport_rect: None,
+            cached_cursor_world: None,
+            pending_events: ViewportFrameEvents::default(),
         })
     }
 
@@ -172,6 +189,7 @@ impl ViewportWidget {
     ///
     /// * `ui` - egui UI context
     /// * `scene` - Transformable scene abstraction (world + editor caches)
+    /// * `snapping` - Shared snapping configuration propagated from the editor hub
     ///
     /// # Example
     ///
@@ -180,7 +198,7 @@ impl ViewportWidget {
     ///     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
     ///         egui::CentralPanel::default().show(ctx, |ui| {
     ///             if let Some(scene) = self.scene_state.as_mut() {
-    ///                 self.viewport.ui(ui, scene, &mut self.undo_stack)?;
+    ///                 self.viewport.ui(ui, scene, &mut self.undo_stack, snapping_config)?;
     ///             }
     ///         });
     ///     }
@@ -191,7 +209,14 @@ impl ViewportWidget {
         ui: &mut egui::Ui,
         scene: &mut S,
         undo_stack: &mut crate::command::UndoStack, // Phase 2.1: Command integration
+        snapping: SnappingConfig,
     ) -> Result<()> {
+        self.grid_snap_size = snapping.grid_size.max(0.1);
+        self.angle_snap_increment = snapping.angle_increment.to_radians();
+        self.toolbar.snap_enabled = snapping.grid_enabled;
+        self.toolbar.snap_size = snapping.grid_size;
+        self.toolbar.angle_snap_enabled = snapping.angle_enabled;
+        self.toolbar.angle_snap_degrees = snapping.angle_increment;
         // Update frame time tracking
         let now = std::time::Instant::now();
         let frame_time = now.duration_since(self.last_frame_time).as_secs_f32();
@@ -213,6 +238,8 @@ impl ViewportWidget {
         let available = ui.available_size();
         let viewport_size = egui::vec2(available.x, available.y);
         let (rect, response) = ui.allocate_exact_size(viewport_size, egui::Sense::click_and_drag());
+        self.last_viewport_rect = Some(rect);
+        self.update_cached_cursor_world(ui.ctx(), rect);
 
         // Request focus on hover or click (enables camera controls)
         if response.hovered() || response.clicked() {
@@ -266,17 +293,16 @@ impl ViewportWidget {
             // Render in separate scope to drop MutexGuard early
             {
                 if let Ok(mut renderer) = self.renderer.lock() {
-                    let grid_settings = GridRenderSettings {
-                        enabled: self.toolbar.show_grid,
-                        spacing: self.grid_snap_size.max(0.1),
-                        major_line_multiple: 10.0,
-                    };
+                    let mut render_snapping = snapping;
+                    if !self.toolbar.show_grid {
+                        render_snapping.grid_enabled = false;
+                    }
                     if let Err(e) = renderer.render(
                         &texture,
                         &self.camera,
                         scene.world(),
                         Some(&self.gizmo_state),
-                        grid_settings,
+                        &render_snapping,
                     ) {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
@@ -446,6 +472,56 @@ impl ViewportWidget {
         Ok(())
     }
 
+    /// Last cached cursor position projected on ground plane.
+    pub fn cursor_world_position(&self) -> Option<glam::Vec3> {
+        self.cached_cursor_world
+    }
+
+    /// Drains the event queue produced during the last `ui` invocation.
+    pub fn take_pending_events(&mut self) -> ViewportFrameEvents {
+        std::mem::take(&mut self.pending_events)
+    }
+
+    /// Compute world position for an arbitrary pointer (absolute coordinates).
+    pub fn world_pos_from_pointer(&self, pointer_pos: egui::Pos2) -> Option<glam::Vec3> {
+        self.last_viewport_rect
+            .and_then(|rect| self.project_pointer_to_ground(pointer_pos, rect))
+    }
+
+    fn update_cached_cursor_world(&mut self, ctx: &egui::Context, rect: egui::Rect) {
+        let pointer_pos = ctx.pointer_latest_pos();
+        self.cached_cursor_world =
+            pointer_pos.and_then(|pos| self.project_pointer_to_ground(pos, rect));
+    }
+
+    fn project_pointer_to_ground(
+        &self,
+        pointer_pos: egui::Pos2,
+        rect: egui::Rect,
+    ) -> Option<glam::Vec3> {
+        if !rect.contains(pointer_pos) {
+            return None;
+        }
+
+        let viewport_pos = egui::Pos2 {
+            x: pointer_pos.x - rect.min.x,
+            y: pointer_pos.y - rect.min.y,
+        };
+
+        let ray = self.camera.ray_from_screen(viewport_pos, rect.size());
+        let denom = ray.direction.y;
+        if denom.abs() < 0.0001 {
+            return None;
+        }
+
+        let t = -ray.origin.y / denom;
+        if t < 0.0 {
+            return None;
+        }
+
+        Some(ray.origin + ray.direction * t)
+    }
+
     /// Handle mouse/keyboard input
     ///
     /// Implements standard 3D viewport controls:
@@ -485,60 +561,40 @@ impl ViewportWidget {
                         if constraint == crate::gizmo::AxisConstraint::None {
                             // FREE MOVEMENT: Entity follows mouse pointer on ground plane
                             if let Some(mouse_pos_abs) = response.hover_pos() {
-                                let viewport_size = response.rect.size();
-                                let mouse_pos = egui::Pos2 {
-                                    x: mouse_pos_abs.x - response.rect.min.x,
-                                    y: mouse_pos_abs.y - response.rect.min.y,
-                                };
-                                let ray = self.camera.ray_from_screen(mouse_pos, viewport_size);
-                                let plane_normal = glam::Vec3::Y;
-                                let plane_point = glam::Vec3::ZERO;
-                                let denom = ray.direction.dot(plane_normal);
+                                if let Some(world_pos) =
+                                    self.project_pointer_to_ground(mouse_pos_abs, response.rect)
+                                {
+                                    let snap_enabled =
+                                        ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
+                                    let final_x = if snap_enabled {
+                                        self.snap_to_grid(world_pos.x)
+                                    } else {
+                                        world_pos.x
+                                    };
+                                    let final_z = if snap_enabled {
+                                        self.snap_to_grid(world_pos.z)
+                                    } else {
+                                        world_pos.z
+                                    };
+                                    let new_x = final_x.round() as i32;
+                                    let new_z = final_z.round() as i32;
 
-                                if denom.abs() > 0.0001 {
-                                    let t = (plane_point - ray.origin).dot(plane_normal) / denom;
-                                    if t >= 0.0 {
-                                        let world_pos = ray.origin + ray.direction * t;
-                                        let snap_enabled =
-                                            ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
-                                        let final_x = if snap_enabled {
-                                            self.snap_to_grid(world_pos.x)
-                                        } else {
-                                            world_pos.x
-                                        };
-                                        let final_z = if snap_enabled {
-                                            self.snap_to_grid(world_pos.z)
-                                        } else {
-                                            world_pos.z
-                                        };
-                                        let new_x = final_x.round() as i32;
-                                        let new_z = final_z.round() as i32;
-
-                                        if let Some(mut snapshot) = scene.snapshot_for(selected_id)
-                                        {
-                                            snapshot.position.x = final_x;
-                                            snapshot.position.z = final_z;
-                                            scene.apply_snapshot(selected_id, &snapshot);
-                                        }
-
-                                        println!(
-                                                "🔧 Translate (FREE{}): entity={}, mouse_abs=({:.1}, {:.1}), mouse_rel=({:.1}, {:.1}), world=({:.2}, {:.2}), new_pos=({}, {})",
-                                                if snap_enabled { " + SNAP" } else { "" },
-                                                selected_id, mouse_pos_abs.x, mouse_pos_abs.y,
-                                                mouse_pos.x, mouse_pos.y,
-                                                world_pos.x, world_pos.z, new_x, new_z
-                                            );
+                                    if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
+                                        snapshot.position.x = final_x;
+                                        snapshot.position.z = final_z;
+                                        scene.apply_snapshot(selected_id, &snapshot);
                                     }
+
+                                    println!(
+                                            "🔧 Translate (FREE{}): entity={}, mouse_abs=({:.1}, {:.1}), world=({:.2}, {:.2}), new_pos=({}, {})",
+                                            if snap_enabled { " + SNAP" } else { "" },
+                                            selected_id, mouse_pos_abs.x, mouse_pos_abs.y,
+                                            world_pos.x, world_pos.z, new_x, new_z
+                                        );
                                 }
                             }
                         } else if let Some(mouse_pos_abs) = response.hover_pos() {
                             // CONSTRAINED MOVEMENT: project onto axis/plane
-                            let viewport_size = response.rect.size();
-                            let mouse_pos = egui::Pos2 {
-                                x: mouse_pos_abs.x - response.rect.min.x,
-                                y: mouse_pos_abs.y - response.rect.min.y,
-                            };
-
                             let start_pos =
                                 if let Some(snapshot) = &self.gizmo_state.start_transform {
                                     (snapshot.position.x, snapshot.position.z)
@@ -547,55 +603,47 @@ impl ViewportWidget {
                                 } else {
                                     (0.0, 0.0)
                                 };
+                            if let Some(world_pos) =
+                                self.project_pointer_to_ground(mouse_pos_abs, response.rect)
+                            {
+                                let snap_enabled =
+                                    ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
+                                let snapped_x = if snap_enabled {
+                                    self.snap_to_grid(world_pos.x)
+                                } else {
+                                    world_pos.x
+                                };
+                                let snapped_z = if snap_enabled {
+                                    self.snap_to_grid(world_pos.z)
+                                } else {
+                                    world_pos.z
+                                };
 
-                            let ray = self.camera.ray_from_screen(mouse_pos, viewport_size);
-                            let plane_normal = glam::Vec3::Y;
-                            let plane_point = glam::Vec3::ZERO;
-                            let denom = ray.direction.dot(plane_normal);
-
-                            if denom.abs() > 0.0001 {
-                                let t = (plane_point - ray.origin).dot(plane_normal) / denom;
-                                if t >= 0.0 {
-                                    let world_pos = ray.origin + ray.direction * t;
-                                    let snap_enabled =
-                                        ctx.input(|i| i.modifiers.ctrl || i.modifiers.command);
-                                    let snapped_x = if snap_enabled {
-                                        self.snap_to_grid(world_pos.x)
-                                    } else {
-                                        world_pos.x
-                                    };
-                                    let snapped_z = if snap_enabled {
-                                        self.snap_to_grid(world_pos.z)
-                                    } else {
-                                        world_pos.z
-                                    };
-
-                                    let (new_x, new_z) = match constraint {
-                                        crate::gizmo::AxisConstraint::X => {
-                                            (snapped_x.round() as i32, start_pos.1 as i32)
-                                        }
-                                        crate::gizmo::AxisConstraint::Z => {
-                                            (start_pos.0 as i32, snapped_z.round() as i32)
-                                        }
-                                        crate::gizmo::AxisConstraint::Y => {
-                                            (start_pos.0 as i32, start_pos.1 as i32)
-                                        }
-                                        _ => (snapped_x.round() as i32, snapped_z.round() as i32),
-                                    };
-
-                                    if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
-                                        snapshot.position.x = new_x as f32;
-                                        snapshot.position.z = new_z as f32;
-                                        scene.apply_snapshot(selected_id, &snapshot);
+                                let (new_x, new_z) = match constraint {
+                                    crate::gizmo::AxisConstraint::X => {
+                                        (snapped_x.round() as i32, start_pos.1 as i32)
                                     }
+                                    crate::gizmo::AxisConstraint::Z => {
+                                        (start_pos.0 as i32, snapped_z.round() as i32)
+                                    }
+                                    crate::gizmo::AxisConstraint::Y => {
+                                        (start_pos.0 as i32, start_pos.1 as i32)
+                                    }
+                                    _ => (snapped_x.round() as i32, snapped_z.round() as i32),
+                                };
 
-                                    println!(
-                                            "🔧 Translate (CONSTRAINED{}): entity={}, constraint={:?}, start=({:.1}, {:.1}), world=({:.2}, {:.2}), new=({}, {})",
-                                            if snap_enabled { " + SNAP" } else { "" },
-                                            selected_id, constraint, start_pos.0, start_pos.1,
-                                            world_pos.x, world_pos.z, new_x, new_z
-                                        );
+                                if let Some(mut snapshot) = scene.snapshot_for(selected_id) {
+                                    snapshot.position.x = new_x as f32;
+                                    snapshot.position.z = new_z as f32;
+                                    scene.apply_snapshot(selected_id, &snapshot);
                                 }
+
+                                println!(
+                                        "🔧 Translate (CONSTRAINED{}): entity={}, constraint={:?}, start=({:.1}, {:.1}), world=({:.2}, {:.2}), new=({}, {})",
+                                        if snap_enabled { " + SNAP" } else { "" },
+                                        selected_id, constraint, start_pos.0, start_pos.1,
+                                        world_pos.x, world_pos.z, new_x, new_z
+                                    );
                             }
                         }
                     }
@@ -1010,7 +1058,8 @@ impl ViewportWidget {
                 undo_stack,
             ) {
                 scene.sync_entity(metadata.entity);
-                telemetry::record(EditorTelemetryEvent::from(metadata));
+                telemetry::record(EditorTelemetryEvent::from(metadata.clone()));
+                self.pending_events.gizmo_commit = Some(metadata);
             }
             self.gizmo_state.confirmed = false;
         }

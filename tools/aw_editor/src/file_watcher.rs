@@ -149,16 +149,14 @@ impl FileWatcher {
 
             if file_name.ends_with(".prefab.ron") {
                 let mut state = debounce_state.lock().unwrap();
-                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path));
+                state.insert_event(path.clone(), ReloadEvent::Prefab(path));
             } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy().to_lowercase();
 
                 // Material TOML files
                 if ext_str == "toml" {
                     let mut state = debounce_state.lock().unwrap();
-                    state
-                        .buffer
-                        .insert(path.clone(), ReloadEvent::Material(path));
+                    state.insert_event(path.clone(), ReloadEvent::Material(path));
                 }
                 // Texture files
                 else if matches!(
@@ -166,14 +164,12 @@ impl FileWatcher {
                     "png" | "jpg" | "jpeg" | "ktx2" | "dds" | "basis"
                 ) {
                     let mut state = debounce_state.lock().unwrap();
-                    state
-                        .buffer
-                        .insert(path.clone(), ReloadEvent::Texture(path));
+                    state.insert_event(path.clone(), ReloadEvent::Texture(path));
                 }
                 // Model files
                 else if matches!(ext_str.as_str(), "glb" | "gltf") {
                     let mut state = debounce_state.lock().unwrap();
-                    state.buffer.insert(path.clone(), ReloadEvent::Model(path));
+                    state.insert_event(path.clone(), ReloadEvent::Model(path));
                 }
             }
         }
@@ -211,13 +207,6 @@ impl FileWatcher {
                     state.last_event_time.remove(&path);
                 }
             }
-
-            // Update last event times for remaining buffered events
-            let now = Instant::now();
-            let remaining_paths: Vec<PathBuf> = state.buffer.keys().cloned().collect();
-            for path in remaining_paths {
-                state.last_event_time.entry(path).or_insert(now);
-            }
         }
     }
 }
@@ -237,6 +226,11 @@ impl DebounceState {
             buffer: HashMap::new(),
             last_event_time: HashMap::new(),
         }
+    }
+
+    fn insert_event(&mut self, path: PathBuf, event: ReloadEvent) {
+        self.buffer.insert(path.clone(), event);
+        self.last_event_time.insert(path, Instant::now());
     }
 }
 

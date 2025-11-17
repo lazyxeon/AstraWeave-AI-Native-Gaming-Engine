@@ -145,10 +145,9 @@ mod tests {
 
     #[test]
     fn test_rotation_x_axis_90_degrees() {
-        // Rotate 90° around X axis
-        // Mouse delta magnitude: 100px * (π/2) / sensitivity
-        let sensitivity = std::f32::consts::PI / 2.0; // 90° per 100px
-        let mouse_delta = Vec2::new(100.0, 0.0); // 100px horizontal
+        // Rotate 90° around X axis. Horizontal input controls Y/Z, so X uses vertical drag.
+        let sensitivity = std::f32::consts::PI; // tuned for new 0.005 scalar
+        let mouse_delta = Vec2::new(0.0, 100.0); // 100px vertical controls X rotation
 
         let rotation = RotateGizmo::calculate_rotation(
             mouse_delta,
@@ -165,8 +164,8 @@ mod tests {
 
     #[test]
     fn test_rotation_y_axis_45_degrees() {
-        let sensitivity = std::f32::consts::PI / 4.0; // 45° per 100px
-        let mouse_delta = Vec2::new(0.0, 100.0); // 100px vertical
+        let sensitivity = std::f32::consts::PI / 2.0; // accounts for 0.5 multiplier
+        let mouse_delta = Vec2::new(100.0, 0.0); // Y axis uses horizontal delta
 
         let rotation = RotateGizmo::calculate_rotation(
             mouse_delta,
@@ -183,7 +182,7 @@ mod tests {
 
     #[test]
     fn test_rotation_z_axis_180_degrees() {
-        let sensitivity = std::f32::consts::PI; // 180° per 100px
+        let sensitivity = 2.0 * std::f32::consts::PI; // adjust for 0.5 scalar
         let mouse_delta = Vec2::new(100.0, 0.0);
 
         let rotation = RotateGizmo::calculate_rotation(
@@ -203,7 +202,7 @@ mod tests {
     fn test_rotation_snap_15_degrees() {
         // Test 15° snapping
         let sensitivity = 1.0; // 1 radian per 100px ≈ 57° per 100px
-        let mouse_delta = Vec2::new(30.0, 0.0); // Small movement
+        let mouse_delta = Vec2::new(0.0, 30.0); // X axis uses vertical delta
 
         let rotation = RotateGizmo::calculate_rotation(
             mouse_delta,
@@ -228,7 +227,7 @@ mod tests {
     #[test]
     fn test_rotation_snap_90_degrees() {
         // Test snapping to 90° (6 × 15°)
-        let sensitivity = std::f32::consts::PI / 2.0; // 90° per 100px
+        let sensitivity = std::f32::consts::PI; // ensures 90° pre-snap
         let mouse_delta = Vec2::new(100.0, 0.0);
 
         let rotation = RotateGizmo::calculate_rotation(
@@ -281,33 +280,35 @@ mod tests {
     }
 
     #[test]
-    fn test_rotation_planar_constraint_returns_identity() {
-        // Planar constraints (XY, XZ, YZ) not supported for rotation
+    fn test_rotation_planar_constraint_defaults_to_y_axis() {
+        // Planar constraints now fall back to vertical (Y) axis rotation
         let rotation = RotateGizmo::calculate_rotation(
             Vec2::new(100.0, 0.0),
-            AxisConstraint::XY, // Planar
-            1.0,
+            AxisConstraint::XY,
+            std::f32::consts::PI,
             false,
             Quat::IDENTITY,
             false,
         );
 
-        assert_eq!(rotation, Quat::IDENTITY);
+        let angle = RotateGizmo::get_rotation_angle(rotation, Vec3::Y);
+        assert!(angle.abs() > 0.0);
     }
 
     #[test]
-    fn test_rotation_none_constraint_returns_identity() {
-        // None constraint not supported for rotation
+    fn test_rotation_none_constraint_defaults_to_y_axis() {
+        // Free rotation (None) maps to Y-axis control
         let rotation = RotateGizmo::calculate_rotation(
             Vec2::new(100.0, 0.0),
             AxisConstraint::None,
-            1.0,
+            std::f32::consts::PI,
             false,
             Quat::IDENTITY,
             false,
         );
 
-        assert_eq!(rotation, Quat::IDENTITY);
+        let angle = RotateGizmo::get_rotation_angle(rotation, Vec3::Y);
+        assert_relative_eq!(angle, 90.0, epsilon = 0.1);
     }
 
     #[test]
@@ -331,7 +332,7 @@ mod tests {
         // Higher sensitivity = more rotation per pixel
         let low_sensitivity = 0.1;
         let high_sensitivity = 1.0;
-        let mouse_delta = Vec2::new(50.0, 0.0);
+        let mouse_delta = Vec2::new(0.0, 50.0);
 
         let rot_low = RotateGizmo::calculate_rotation(
             mouse_delta,

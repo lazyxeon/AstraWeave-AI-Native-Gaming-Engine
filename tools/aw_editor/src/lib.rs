@@ -1,6 +1,7 @@
 // Library exports for aw_editor (enables benchmarks and testing)
 #![allow(dead_code)] // Suppress dead code warnings for benchmark-only exports
 
+pub mod behavior_graph;
 pub mod clipboard;
 pub mod command;
 pub mod component_ui;
@@ -19,9 +20,18 @@ pub use command::{
 };
 pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
+pub use headless::GizmoHarness;
+pub use interaction::{
+    cancel_active_gizmo, commit_active_gizmo, ensure_world_snapshot, GizmoCancelMetadata,
+    GizmoCommitMetadata, GizmoMeasurement, GizmoOperationKind,
+};
 pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
 pub use scene_serialization::{EntityData, SceneData};
 pub use scene_state::{EditorSceneState, TransformableScene};
+pub use telemetry::{
+    drain_captured_events, enable_capture, record as record_telemetry, EditorTelemetryEvent,
+    TelemetryCaptureGuard,
+};
 pub use ui::StatusBar;
 
 pub mod gizmo {

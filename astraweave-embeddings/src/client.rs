@@ -95,10 +95,6 @@ impl MockEmbeddingClient {
 
 use rand::Rng;
 
-#[allow(unused_imports)]
-#[cfg(feature = "small_rng")]
-use rand::{rngs::SmallRng, SeedableRng};
-
 #[async_trait]
 impl EmbeddingClient for MockEmbeddingClient {
     async fn embed(&self, text: &str) -> Result<Vec<f32>> {

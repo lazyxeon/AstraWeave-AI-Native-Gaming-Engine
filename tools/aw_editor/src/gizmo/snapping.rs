@@ -34,6 +34,20 @@ impl SnappingConfig {
         self
     }
 
+    /// Returns true when grid snapping should be applied/rendered.
+    pub fn grid_active(&self) -> bool {
+        self.grid_enabled && self.grid_size > f32::EPSILON
+    }
+
+    /// Returns a positive grid size that can be fed directly into shaders/UI.
+    pub fn resolved_grid_size(&self) -> f32 {
+        if self.grid_size > f32::EPSILON {
+            self.grid_size
+        } else {
+            1.0
+        }
+    }
+
     pub fn snap_position(&self, position: Vec3) -> Vec3 {
         if !self.grid_enabled || self.grid_size <= 0.0 {
             return position;
@@ -93,6 +107,31 @@ mod tests {
         let pos = Vec3::new(1.7, 2.3, -0.4);
         let snapped = config.snap_position(pos);
         assert_eq!(snapped, pos);
+    }
+
+    #[test]
+    fn test_grid_active_toggle() {
+        let config = SnappingConfig::default();
+        assert!(config.grid_active());
+
+        let mut disabled = config;
+        disabled.grid_enabled = false;
+        assert!(!disabled.grid_active());
+
+        let mut zero_size = SnappingConfig::default();
+        zero_size.grid_size = 0.0;
+        assert!(!zero_size.grid_active());
+    }
+
+    #[test]
+    fn test_resolved_grid_size_defaults_positive() {
+        let mut config = SnappingConfig::default();
+        config.grid_size = 0.0;
+        assert_eq!(config.resolved_grid_size(), 1.0);
+
+        let mut custom = SnappingConfig::default();
+        custom.grid_size = 2.5;
+        assert_eq!(custom.resolved_grid_size(), 2.5);
     }
 
     #[test]

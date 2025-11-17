@@ -66,6 +66,13 @@ pub struct IVec2 {
     pub y: i32,
 }
 
+impl IVec2 {
+    /// Convenience constructor mirroring glam's API to simplify editor tests.
+    pub const fn new(x: i32, y: i32) -> Self {
+        Self { x, y }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorldSnapshot {
     pub t: f32,

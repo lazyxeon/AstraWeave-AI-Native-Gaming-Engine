@@ -147,6 +147,7 @@ mod tests {
     use crate::entity_manager::SelectionSet;
     use crate::gizmo::snapping::SnappingConfig;
     use crate::gizmo::state::GizmoMode;
+    use crate::gizmo::AxisConstraint;
 
     #[test]
     fn test_status_bar_creation() {

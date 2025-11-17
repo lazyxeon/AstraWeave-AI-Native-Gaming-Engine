@@ -1,4 +1,5 @@
 use crate::{Entity, IVec2};
+use astraweave_behavior::BehaviorGraph;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug)]
@@ -41,6 +42,7 @@ pub struct World {
     ammo: HashMap<Entity, Ammo>,
     cds: HashMap<Entity, Cooldowns>,
     names: HashMap<Entity, String>,
+    behavior_graphs: HashMap<Entity, BehaviorGraph>,
 }
 
 impl World {
@@ -112,6 +114,18 @@ impl World {
     pub fn ammo_mut(&mut self, e: Entity) -> Option<&mut Ammo> {
         self.ammo.get_mut(&e)
     }
+    pub fn behavior_graph(&self, e: Entity) -> Option<&BehaviorGraph> {
+        self.behavior_graphs.get(&e)
+    }
+    pub fn behavior_graph_mut(&mut self, e: Entity) -> Option<&mut BehaviorGraph> {
+        self.behavior_graphs.get_mut(&e)
+    }
+    pub fn set_behavior_graph(&mut self, e: Entity, graph: BehaviorGraph) {
+        self.behavior_graphs.insert(e, graph);
+    }
+    pub fn remove_behavior_graph(&mut self, e: Entity) -> Option<BehaviorGraph> {
+        self.behavior_graphs.remove(&e)
+    }
     pub fn cooldowns(&self, e: Entity) -> Option<&Cooldowns> {
         self.cds.get(&e)
     }
@@ -149,6 +163,7 @@ impl World {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use astraweave_behavior::{BehaviorGraph, BehaviorNode};
 
     #[test]
     fn test_world_new() {
@@ -468,5 +483,27 @@ mod tests {
         assert!(w.obstacle(IVec2 { x: 5, y: 5 }));
         assert!(w.obstacle(IVec2 { x: 10, y: 10 }));
         assert!(!w.obstacle(IVec2 { x: 7, y: 7 }));
+    }
+
+    #[test]
+    fn test_behavior_graph_binding_round_trip() {
+        let mut w = World::new();
+        let entity = w.spawn("player", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
+        let graph = BehaviorGraph::new(BehaviorNode::Action("idle".into()));
+        w.set_behavior_graph(entity, graph.clone());
+
+        let stored = w.behavior_graph(entity).expect("graph stored");
+        match &stored.root {
+            BehaviorNode::Action(name) => assert_eq!(name, "idle"),
+            other => panic!("unexpected root: {other:?}"),
+        }
+
+        let removed = w.remove_behavior_graph(entity).expect("graph removed");
+        match removed.root {
+            BehaviorNode::Action(name) => assert_eq!(name, "idle"),
+            other => panic!("unexpected root: {other:?}"),
+        }
+
+        assert!(w.behavior_graph(entity).is_none());
     }
 }

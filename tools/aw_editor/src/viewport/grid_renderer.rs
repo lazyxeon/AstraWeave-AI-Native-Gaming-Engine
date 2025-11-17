@@ -22,49 +22,6 @@ use wgpu;
 
 use super::camera::OrbitCamera;
 
-/// Runtime configuration for the visual grid overlay.
-#[derive(Debug, Clone, Copy)]
-pub struct GridRenderSettings {
-    /// Whether the grid should be rendered this frame.
-    pub enabled: bool,
-    /// Grid spacing in meters (minor lines).
-    pub spacing: f32,
-    /// How many minor lines between each major line (default 10).
-    pub major_line_multiple: f32,
-}
-
-impl Default for GridRenderSettings {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            spacing: 1.0,
-            major_line_multiple: 10.0,
-        }
-    }
-}
-
-impl GridRenderSettings {
-    /// Returns a sanitized copy with sensible defaults (no zero/negative spacing).
-    pub fn sanitized(self) -> Self {
-        let spacing = if self.spacing <= 0.0 {
-            1.0
-        } else {
-            self.spacing
-        };
-        let major_line_multiple = if self.major_line_multiple <= 0.0 {
-            10.0
-        } else {
-            self.major_line_multiple
-        };
-
-        Self {
-            enabled: self.enabled,
-            spacing,
-            major_line_multiple,
-        }
-    }
-}
-
 /// Grid renderer using screen-space technique
 pub struct GridRenderer {
     /// Render pipeline
@@ -205,17 +162,13 @@ impl GridRenderer {
         depth: &wgpu::TextureView,
         camera: &OrbitCamera,
         queue: &wgpu::Queue,
-        settings: GridRenderSettings,
+        grid_size: f32,
     ) -> Result<()> {
-        let settings = settings.sanitized();
-        if !settings.enabled {
-            return Ok(());
-        }
-
         // Update uniforms
         let view_proj = camera.view_projection_matrix();
         let inv_view_proj = view_proj.inverse();
 
+        let clamped_size = grid_size.max(0.1);
         let uniforms = GridUniforms {
             view_proj: view_proj.to_cols_array_2d(),
             inv_view_proj: inv_view_proj.to_cols_array_2d(),
@@ -225,8 +178,8 @@ impl GridRenderer {
                 camera.position().z,
             ],
             _padding1: 0.0,
-            grid_size: settings.spacing,
-            major_grid_every: settings.major_line_multiple,
+            grid_size: clamped_size,
+            major_grid_every: (clamped_size * 10.0).max(clamped_size),
             fade_distance: 50.0,                    // Start fading at 50m
             max_distance: 100.0,                    // Completely fade by 100m
             grid_color: [0.3, 0.3, 0.3, 0.3],       // Light gray, semi-transparent
@@ -272,7 +225,7 @@ impl GridRenderer {
 /// Grid shader uniforms
 ///
 /// Must match WGSL struct layout exactly (alignment rules apply).
-#[repr(C)]
+#[repr(C, align(16))]
 #[derive(Copy, Clone, Pod, Zeroable)]
 struct GridUniforms {
     /// View-projection matrix
@@ -317,23 +270,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn grid_settings_sanitizes_spacing() {
-        let input = GridRenderSettings {
-            enabled: true,
-            spacing: 0.0,
-            major_line_multiple: -4.0,
-        };
-        let sanitized = input.sanitized();
-        assert!(sanitized.spacing > 0.0);
-        assert!(sanitized.major_line_multiple > 0.0);
-    }
-
-    #[test]
     fn test_grid_uniforms_size() {
-        // Ensure struct size matches WGSL expectations
-        // 2 mat4 (32 bytes each) + vec3 + padding + 4 floats + 4 vec4
-        // = 64 + 16 + 16 + 64 = 160 bytes
-        assert_eq!(std::mem::size_of::<GridUniforms>(), 160);
+        // Ensure struct size matches WGSL expectations (all values padded to 16 bytes)
+        assert_eq!(std::mem::size_of::<GridUniforms>(), 224);
     }
 
     #[test]
