@@ -752,18 +752,7 @@ impl EditorCommand for DeleteEntitiesCommand {
         self.clipboard_data = Some(ClipboardData::from_entities(world, &self.entities));
 
         for &entity in &self.entities {
-            if let Some(pose) = world.pose_mut(entity) {
-                *pose = astraweave_core::Pose {
-                    pos: IVec2 {
-                        x: -10000,
-                        y: -10000,
-                    },
-                    rotation: 0.0,
-                    rotation_x: 0.0,
-                    rotation_z: 0.0,
-                    scale: 0.0,
-                };
-            }
+            world.destroy_entity(entity);
         }
         Ok(())
     }
