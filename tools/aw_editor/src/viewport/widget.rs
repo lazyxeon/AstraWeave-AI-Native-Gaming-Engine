@@ -1550,14 +1550,15 @@ impl ViewportWidget {
     }
 
     /// Paste entities from clipboard
-    fn paste_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+    fn paste_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         if let Some(clipboard) = &self.clipboard {
             let offset = astraweave_core::IVec2::new(2, 2);
             
             match clipboard.spawn_entities(world, offset) {
                 Ok(spawned) => {
+                    let count = spawned.len();
                     self.selected_entities = spawned;
-                    println!("📋 Pasted {} entities", spawned.len());
+                    println!("📋 Pasted {} entities", count);
                 }
                 Err(e) => {
                     println!("⚠️  Paste failed: {}", e);

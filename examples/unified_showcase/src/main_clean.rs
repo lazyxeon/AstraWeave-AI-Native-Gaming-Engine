@@ -1,4 +1,5 @@
 use glam::{Mat4, Quat, Vec3};
+use std::collections::HashMap;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
 /// AstraWeave Unified Showcase - CLEAN IMPLEMENTATION
@@ -625,16 +626,17 @@ impl ShowcaseApp {
     // STEP 2: GLTF MESH LOADING
     // ========================================================================
 
-    /// Load a GLTF mesh
-    fn load_gltf_mesh(
+    /// Load a GLTF model (which may contain multiple meshes)
+    fn load_gltf_model(
         &mut self,
         path: &str,
-        material_index: usize,
-    ) -> Result<usize, Box<dyn std::error::Error>> {
+        material_map: &HashMap<String, usize>,
+        default_material_index: usize,
+    ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
         // Try to canonicalize path for better error messages
         let path_buf = std::path::Path::new(path);
         log::info!("Loading GLTF: {}", path);
-        let loaded = match gltf_loader::load_gltf(path_buf) {
+        let loaded_meshes = match gltf_loader::load_gltf(path_buf) {
             Ok(l) => l,
             Err(e) => {
                 // Try fallback: path relative to workspace 'assets' folder
@@ -666,64 +668,83 @@ impl ShowcaseApp {
                         );
                     }
                 }
-                res? // This will return the error or the loaded mesh
+                res? // This will return the error or the loaded meshes
             }
         };
 
-        println!(
-            "  ✅ Loaded GLTF: {} ({} vertices, {} triangles)",
-            path,
-            loaded.vertices.len(),
-            loaded.indices.len() / 3
-        );
+        let mut mesh_indices = Vec::new();
 
-        // Convert to our Vertex format (preserving vertex colors!)
-        let vertices: Vec<Vertex> = loaded
-            .vertices
-            .iter()
-            .map(|v| Vertex {
-                position: v.position,
-                normal: v.normal,
-                uv: v.uv,
-                color: v.color, // Preserve vertex colors from GLTF!
-                tangent: v.tangent,
-            })
-            .collect();
+        for loaded in loaded_meshes {
+            println!(
+                "  ✅ Loaded Mesh '{}': {} vertices, {} triangles, material: {:?}",
+                loaded.name,
+                loaded.vertices.len(),
+                loaded.indices.len() / 3,
+                loaded.material_name
+            );
 
-        let vertex_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{} Vertices", path)),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
+            // Determine material index
+            let material_index = if let Some(mat_name) = &loaded.material_name {
+                *material_map.get(mat_name).unwrap_or(&default_material_index)
+            } else {
+                default_material_index
+            };
+
+            // Convert to our Vertex format (preserving vertex colors!)
+            let vertices: Vec<Vertex> = loaded
+                .vertices
+                .iter()
+                .map(|v| Vertex {
+                    position: v.position,
+                    normal: v.normal,
+                    uv: v.uv,
+                    color: v.color, // Preserve vertex colors from GLTF!
+                    tangent: v.tangent,
+                })
+                .collect();
+
+            let vertex_buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&format!("{} Vertices", loaded.name)),
+                    contents: bytemuck::cast_slice(&vertices),
+                    usage: wgpu::BufferUsages::VERTEX,
+                });
+
+            let index_buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&format!("{} Indices", loaded.name)),
+                    contents: bytemuck::cast_slice(&loaded.indices),
+                    usage: wgpu::BufferUsages::INDEX,
+                });
+
+            self.meshes.push(Mesh {
+                vertex_buffer,
+                index_buffer,
+                num_indices: loaded.indices.len() as u32,
+                material_index,
             });
 
-        let index_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{} Indices", path)),
-                contents: bytemuck::cast_slice(&loaded.indices),
-                usage: wgpu::BufferUsages::INDEX,
-            });
+            mesh_indices.push(self.meshes.len() - 1);
+        }
 
-        self.meshes.push(Mesh {
-            vertex_buffer,
-            index_buffer,
-            num_indices: loaded.indices.len() as u32,
-            material_index,
-        });
-
-        Ok(self.meshes.len() - 1)
+        Ok(mesh_indices)
     }
 
     /// Load mesh with fallback to procedural cube
-    fn load_gltf_mesh_with_fallback(&mut self, path: &str, material_index: usize) -> usize {
-        match self.load_gltf_mesh(path, material_index) {
-            Ok(index) => index,
+    fn load_gltf_model_with_fallback(
+        &mut self,
+        path: &str,
+        material_map: &HashMap<String, usize>,
+        default_material_index: usize,
+    ) -> Vec<usize> {
+        match self.load_gltf_model(path, material_map, default_material_index) {
+            Ok(indices) => indices,
             Err(e) => {
                 println!("  ⚠️  Failed to load {}: {}", path, e);
                 println!("  📦 Using fallback cube geometry");
-                self.create_cube_mesh(material_index)
+                vec![self.create_cube_mesh(default_material_index)]
             }
         }
     }
@@ -1084,6 +1105,43 @@ impl ShowcaseApp {
             [218, 165, 132, 255],    // Fallback
         );
 
+        // White material for vertex-colored models (characters)
+        // We use a 1x1 white texture so vertex colors show through purely
+        let (white_tex, white_view) = self.create_fallback_texture([255, 255, 255, 255]);
+        let white_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("White Material Bind Group"),
+            layout: &self.material_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&white_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&white_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&white_view),
+                },
+            ],
+        });
+        self.materials.push(Material {
+            name: "White (Vertex Color)".to_string(),
+            albedo_texture: white_tex,
+            albedo_view: white_view,
+            normal_texture: None,
+            normal_view: None,
+            roughness_texture: None,
+            roughness_view: None,
+            bind_group: white_bind_group,
+        });
+        let white_mat = self.materials.len() - 1;
+
         println!();
         println!("=== MESHES ===");
 
@@ -1091,34 +1149,88 @@ impl ShowcaseApp {
         println!("  🌍 Creating terrain...");
         let ground_mesh = self.create_ground_plane(500.0, green_mat);
 
+        // Material Maps
+        let mut tree_map = HashMap::new();
+        tree_map.insert("wood".to_string(), brown_mat);
+        tree_map.insert("leaves".to_string(), green_mat);
+        // Fallback for Kenney trees which might use "dark" or "light"
+        tree_map.insert("dark".to_string(), brown_mat);
+        tree_map.insert("light".to_string(), green_mat);
+
+        let mut rock_map = HashMap::new();
+        rock_map.insert("stone".to_string(), gray_mat);
+
+        let mut char_map = HashMap::new();
+        // Characters usually rely on vertex colors, so map everything to white
+        // unless we have specific textures for them
+
         // Load multiple tree variants (brown material for trunks)
-        let tree_default =
-            self.load_gltf_mesh_with_fallback("assets/models/tree_default.glb", brown_mat);
-        let tree_oak = self.load_gltf_mesh_with_fallback("assets/models/tree_oak.glb", brown_mat);
-        let tree_pine =
-            self.load_gltf_mesh_with_fallback("assets/models/tree_pineDefaultA.glb", brown_mat);
-        let tree_meshes = vec![tree_default, tree_oak, tree_pine];
+        let tree_default = self.load_gltf_model_with_fallback(
+            "assets/models/tree_default.glb",
+            &tree_map,
+            brown_mat,
+        );
+        let tree_oak =
+            self.load_gltf_model_with_fallback("assets/models/tree_oak.glb", &tree_map, brown_mat);
+        let tree_pine = self.load_gltf_model_with_fallback(
+            "assets/models/tree_pineDefaultA.glb",
+            &tree_map,
+            brown_mat,
+        );
+        let tree_models = vec![tree_default, tree_oak, tree_pine];
 
         // Load multiple rock variants (gray material for stones)
-        let rock_large_a =
-            self.load_gltf_mesh_with_fallback("assets/models/rock_largeA.glb", gray_mat);
-        let rock_large_b =
-            self.load_gltf_mesh_with_fallback("assets/models/rock_largeB.glb", gray_mat);
-        let rock_small_a =
-            self.load_gltf_mesh_with_fallback("assets/models/rock_smallA.glb", gray_mat);
-        let rock_meshes = vec![rock_large_a, rock_large_b, rock_small_a];
+        let rock_large_a = self.load_gltf_model_with_fallback(
+            "assets/models/rock_largeA.glb",
+            &rock_map,
+            gray_mat,
+        );
+        let rock_large_b = self.load_gltf_model_with_fallback(
+            "assets/models/rock_largeB.glb",
+            &rock_map,
+            gray_mat,
+        );
+        let rock_small_a = self.load_gltf_model_with_fallback(
+            "assets/models/rock_smallA.glb",
+            &rock_map,
+            gray_mat,
+        );
+        let rock_models = vec![rock_large_a, rock_large_b, rock_small_a];
 
         // Load Kenney character/NPC models (skin tone material)
         println!("  🧍 Loading characters...");
-        let char_a = self.load_gltf_mesh_with_fallback("assets/models/character-a.glb", skin_mat);
-        let char_b = self.load_gltf_mesh_with_fallback("assets/models/character-b.glb", skin_mat);
-        let char_c = self.load_gltf_mesh_with_fallback("assets/models/character-c.glb", skin_mat);
-        let char_d = self.load_gltf_mesh_with_fallback("assets/models/character-d.glb", skin_mat);
-        let char_e = self.load_gltf_mesh_with_fallback("assets/models/character-e.glb", skin_mat);
-        let character_meshes = vec![char_a, char_b, char_c, char_d, char_e];
+        let char_a = self.load_gltf_model_with_fallback(
+            "assets/models/character-a.glb",
+            &char_map,
+            white_mat,
+        );
+        let char_b = self.load_gltf_model_with_fallback(
+            "assets/models/character-b.glb",
+            &char_map,
+            white_mat,
+        );
+        let char_c = self.load_gltf_model_with_fallback(
+            "assets/models/character-c.glb",
+            &char_map,
+            white_mat,
+        );
+        let char_d = self.load_gltf_model_with_fallback(
+            "assets/models/character-d.glb",
+            &char_map,
+            white_mat,
+        );
+        let char_e = self.load_gltf_model_with_fallback(
+            "assets/models/character-e.glb",
+            &char_map,
+            white_mat,
+        );
+        let character_models = vec![char_a, char_b, char_c, char_d, char_e];
 
-        let building_mesh =
-            self.load_gltf_mesh_with_fallback("assets/models/rock_largeA.glb", gray_mat);
+        let building_model = self.load_gltf_model_with_fallback(
+            "assets/models/rock_largeA.glb",
+            &rock_map,
+            gray_mat,
+        );
 
         println!();
         println!("=== SCENE OBJECTS ===");
@@ -1149,16 +1261,20 @@ impl ShowcaseApp {
                     let scale = Vec3::splat(1.5);
 
                     // Cycle through tree variants
-                    let mesh_index = tree_meshes[tree_idx % tree_meshes.len()];
+                    let model_meshes = &tree_models[tree_idx % tree_models.len()];
                     tree_idx += 1;
 
-                    self.objects.push(SceneObject {
-                        mesh_index,
-                        position,
-                        rotation,
-                        scale,
-                        model_bind_group: self.create_model_bind_group(position, rotation, scale),
-                    });
+                    for &mesh_index in model_meshes {
+                        self.objects.push(SceneObject {
+                            mesh_index,
+                            position,
+                            rotation,
+                            scale,
+                            model_bind_group: self.create_model_bind_group(
+                                position, rotation, scale,
+                            ),
+                        });
+                    }
                 }
             }
         }
@@ -1173,15 +1289,17 @@ impl ShowcaseApp {
             let scale = Vec3::splat(1.0 + (i as f32 * 0.1));
 
             // Cycle through rock variants
-            let mesh_index = rock_meshes[i % rock_meshes.len()];
+            let model_meshes = &rock_models[i % rock_models.len()];
 
-            self.objects.push(SceneObject {
-                mesh_index,
-                position,
-                rotation,
-                scale,
-                model_bind_group: self.create_model_bind_group(position, rotation, scale),
-            });
+            for &mesh_index in model_meshes {
+                self.objects.push(SceneObject {
+                    mesh_index,
+                    position,
+                    rotation,
+                    scale,
+                    model_bind_group: self.create_model_bind_group(position, rotation, scale),
+                });
+            }
         }
 
         // Characters/NPCs scattered around the scene
@@ -1198,15 +1316,17 @@ impl ShowcaseApp {
             let scale = Vec3::splat(1.0);
 
             // Cycle through character variants
-            let mesh_index = character_meshes[i % character_meshes.len()];
+            let model_meshes = &character_models[i % character_models.len()];
 
-            self.objects.push(SceneObject {
-                mesh_index,
-                position,
-                rotation,
-                scale,
-                model_bind_group: self.create_model_bind_group(position, rotation, scale),
-            });
+            for &mesh_index in model_meshes {
+                self.objects.push(SceneObject {
+                    mesh_index,
+                    position,
+                    rotation,
+                    scale,
+                    model_bind_group: self.create_model_bind_group(position, rotation, scale),
+                });
+            }
         }
 
         // Buildings in corners
@@ -1222,13 +1342,15 @@ impl ShowcaseApp {
             let rotation = Quat::IDENTITY;
             let scale = Vec3::new(2.0, 3.0, 2.0);
 
-            self.objects.push(SceneObject {
-                mesh_index: building_mesh,
-                position: pos,
-                rotation,
-                scale,
-                model_bind_group: self.create_model_bind_group(pos, rotation, scale),
-            });
+            for &mesh_index in &building_model {
+                self.objects.push(SceneObject {
+                    mesh_index,
+                    position: pos,
+                    rotation,
+                    scale,
+                    model_bind_group: self.create_model_bind_group(pos, rotation, scale),
+                });
+            }
         }
 
         println!();
