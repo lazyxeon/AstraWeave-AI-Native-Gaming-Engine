@@ -218,8 +218,8 @@ impl GizmoRendererWgpu {
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
-        // Generate gizmo geometry
-        let gizmo_scale = 1.0; // Fixed size for now (TODO: scale with camera distance)
+        let camera_distance = (camera.position() - world_position).length();
+        let gizmo_scale = (camera_distance * 0.08).max(0.1).min(10.0);
 
         // Extract constraint from mode
         let constraint = match gizmo_state.mode {

@@ -20,6 +20,7 @@ pub struct LoadedMesh {
     pub vertices: Vec<GltfVertex>,
     pub indices: Vec<u32>,
     pub name: String,
+    pub material_name: Option<String>,
 }
 
 /// Compute AABB (axis-aligned bounding box) for a set of positions
