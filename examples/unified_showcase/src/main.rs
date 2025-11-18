@@ -82,6 +82,7 @@ struct InstanceData {
 }
 
 /// Material - simple texture reference
+#[allow(dead_code)]
 struct Material {
     name: String,
     albedo_texture: wgpu::Texture,
@@ -102,6 +103,7 @@ struct Mesh {
 }
 
 /// Scene object instance
+#[allow(dead_code)]
 struct SceneObject {
     mesh_index: usize,
     position: Vec3,
@@ -114,6 +116,7 @@ struct SceneObject {
 // APPLICATION STATE
 // ============================================================================
 
+#[allow(dead_code)]
 struct ShowcaseApp {
     // GPU resources
     device: wgpu::Device,
@@ -138,6 +141,7 @@ struct ShowcaseApp {
     // Lighting & Shadows
     light_buffer: wgpu::Buffer,
     light_bind_group: wgpu::BindGroup,
+    light_uniform_bind_group: wgpu::BindGroup, // New: For shadow pass (no texture)
     shadow_texture: wgpu::Texture,
     shadow_view: wgpu::TextureView,
     shadow_sampler: wgpu::Sampler,
@@ -152,6 +156,10 @@ struct ShowcaseApp {
     sampler: wgpu::Sampler,
     depth_texture: wgpu::Texture,
     depth_view: wgpu::TextureView,
+    
+    // Default textures
+    default_normal_view: wgpu::TextureView,
+    default_mra_view: wgpu::TextureView,
 }
 
 impl ShowcaseApp {
@@ -385,6 +393,22 @@ impl ShowcaseApp {
                 ],
             });
 
+        // Light uniform bind group layout (for shadow pass - no texture)
+        let light_uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Light Uniform Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+            });
+
         // Create pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline Layout"),
@@ -445,7 +469,7 @@ impl ShowcaseApp {
                 &camera_bind_group_layout, // Not used but kept for compatibility if needed
                 &material_bind_group_layout, // Not used
                 &model_bind_group_layout,
-                &light_bind_group_layout,
+                &light_uniform_bind_group_layout, // Use the uniform-only layout
             ],
             push_constant_ranges: &[],
         });
@@ -541,6 +565,54 @@ impl ShowcaseApp {
             ],
         });
 
+        let light_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Light Uniform Bind Group"),
+            layout: &light_uniform_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: light_buffer.as_entire_binding(),
+                },
+            ],
+        });
+
+        // Create default textures
+        let default_normal_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Default Normal"),
+            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &default_normal_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &[128, 128, 255, 255],
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+        );
+        let default_normal_view = default_normal_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let default_mra_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Default MRA"),
+            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &default_mra_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &[255, 255, 0, 255], // R=1(AO), G=1(Rough), B=0(Metal)
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+        );
+        let default_mra_view = default_mra_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         println!("✅ Render pipeline created");
 
         Self {
@@ -560,6 +632,7 @@ impl ShowcaseApp {
             camera_pitch: -20.0_f32.to_radians(),
             light_buffer,
             light_bind_group,
+            light_uniform_bind_group,
             shadow_texture,
             shadow_view,
             shadow_sampler,
@@ -570,6 +643,8 @@ impl ShowcaseApp {
             sampler,
             depth_texture,
             depth_view,
+            default_normal_view,
+            default_mra_view,
         }
     }
 
@@ -581,9 +656,16 @@ impl ShowcaseApp {
     fn load_texture(
         &self,
         path: &str,
+        is_srgb: bool,
     ) -> Result<(wgpu::Texture, wgpu::TextureView), Box<dyn std::error::Error>> {
         let img = image::open(path)?.to_rgba8();
         let (width, height) = img.dimensions();
+
+        let format = if is_srgb {
+            wgpu::TextureFormat::Rgba8UnormSrgb
+        } else {
+            wgpu::TextureFormat::Rgba8Unorm
+        };
 
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             label: Some(path),
@@ -595,7 +677,7 @@ impl ShowcaseApp {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
@@ -632,8 +714,8 @@ impl ShowcaseApp {
         name: &str,
         texture_path: &str,
     ) -> Result<usize, Box<dyn std::error::Error>> {
-        // Load albedo
-        let (texture, view) = self.load_texture(texture_path)?;
+        // Load albedo (sRGB)
+        let (texture, view) = self.load_texture(texture_path, true)?;
 
         // Try to load normal map and roughness/mra maps using common suffixes
         let p = std::path::Path::new(texture_path);
@@ -643,14 +725,16 @@ impl ShowcaseApp {
         let roughness_path = dir.join(format!("{}_mra.png", stem));
 
         let (normal_texture, normal_view) = if normal_path.exists() {
-            let (t, v) = self.load_texture(normal_path.to_str().unwrap())?;
+            // Normal map (Linear)
+            let (t, v) = self.load_texture(normal_path.to_str().unwrap(), false)?;
             (Some(t), Some(v))
         } else {
             (None, None)
         };
 
         let (roughness_texture, roughness_view) = if roughness_path.exists() {
-            let (t, v) = self.load_texture(roughness_path.to_str().unwrap())?;
+            // Roughness/MRA map (Linear)
+            let (t, v) = self.load_texture(roughness_path.to_str().unwrap(), false)?;
             (Some(t), Some(v))
         } else {
             (None, None)
@@ -668,18 +752,18 @@ impl ShowcaseApp {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&self.sampler),
                 },
-                // Normal map (binding 2) if present, otherwise fallback to albedo view
+                // Normal map (binding 2) if present, otherwise fallback to default normal
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: wgpu::BindingResource::TextureView(
-                        normal_view.as_ref().unwrap_or(&view),
+                        normal_view.as_ref().unwrap_or(&self.default_normal_view),
                     ),
                 },
-                // Roughness/MRA map (binding 3) if present, otherwise fallback to albedo view
+                // Roughness/MRA map (binding 3) if present, otherwise fallback to default MRA
                 wgpu::BindGroupEntry {
                     binding: 3,
                     resource: wgpu::BindingResource::TextureView(
-                        roughness_view.as_ref().unwrap_or(&view),
+                        roughness_view.as_ref().unwrap_or(&self.default_mra_view),
                     ),
                 },
             ],
@@ -774,11 +858,11 @@ impl ShowcaseApp {
                         },
                         wgpu::BindGroupEntry {
                             binding: 2,
-                            resource: wgpu::BindingResource::TextureView(&view),
+                            resource: wgpu::BindingResource::TextureView(&self.default_normal_view),
                         },
                         wgpu::BindGroupEntry {
                             binding: 3,
-                            resource: wgpu::BindingResource::TextureView(&view),
+                            resource: wgpu::BindingResource::TextureView(&self.default_mra_view),
                         },
                     ],
                 });
@@ -1153,16 +1237,23 @@ impl ShowcaseApp {
     ) {
         println!("  🏝️  Generating floating island (radius: {})...", radius);
         
-        let tile_size = 2.0; // Assuming 2m tiles
+        let tile_size = 1.0; // Kenney assets are 1m tiles
         
         for x in -radius..=radius {
             for z in -radius..=radius {
                 let dist = ((x * x + z * z) as f32).sqrt();
                 
                 if dist <= radius as f32 {
-                    let position = Vec3::new(x as f32 * tile_size, 0.0, z as f32 * tile_size);
-                    let rotation = Quat::IDENTITY;
-                    let scale = Vec3::ONE;
+                    // Add slight height variation to break the grid look
+                    let height_offset = (x as f32 * 0.5).sin() * (z as f32 * 0.5).cos() * 0.2;
+                    let position = Vec3::new(x as f32 * tile_size, height_offset, z as f32 * tile_size);
+                    
+                    // Random rotation for grass to break uniformity
+                    let random_rot = (x * 3 + z * 7) as f32 * 0.1;
+                    let rotation = Quat::from_rotation_y(random_rot);
+                    
+                    // Slight overlap to prevent gaps
+                    let scale = Vec3::splat(1.01);
 
                     // Place grass on top
                     for &mesh_index in grass_model {
@@ -1279,11 +1370,11 @@ impl ShowcaseApp {
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&white_view),
+                    resource: wgpu::BindingResource::TextureView(&self.default_normal_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: wgpu::BindingResource::TextureView(&white_view),
+                    resource: wgpu::BindingResource::TextureView(&self.default_mra_view),
                 },
             ],
         });
@@ -1305,13 +1396,19 @@ impl ShowcaseApp {
         // Material Maps
         let mut tree_map = HashMap::new();
         tree_map.insert("wood".to_string(), brown_mat);
+        tree_map.insert("woodBark".to_string(), brown_mat);
         tree_map.insert("leaves".to_string(), green_mat);
+        tree_map.insert("leafsGreen".to_string(), green_mat);
+        tree_map.insert("leafsDark".to_string(), green_mat);
         tree_map.insert("dark".to_string(), brown_mat);
         tree_map.insert("light".to_string(), green_mat);
 
         let mut rock_map = HashMap::new();
         rock_map.insert("stone".to_string(), gray_mat);
-        rock_map.insert("dirt".to_string(), skin_mat);
+        rock_map.insert("stones".to_string(), gray_mat);
+        rock_map.insert("dirt".to_string(), gray_mat); // Use gray stone for dirt/rocks to avoid white look
+        rock_map.insert("grass".to_string(), green_mat);
+        rock_map.insert("bricks".to_string(), skin_mat); // Use reddish slate for bricks
 
         let char_map = HashMap::new();
         // Characters usually rely on vertex colors, so map everything to white
@@ -1401,7 +1498,7 @@ impl ShowcaseApp {
         let character_models = vec![char_a, char_b, char_c, char_d, char_e];
 
         let building_model = self.load_gltf_model_with_fallback(
-            "assets/models/rock_largeA.glb",
+            "assets/models/tower.glb",
             &rock_map,
             gray_mat,
         );
@@ -1621,8 +1718,17 @@ impl ShowcaseApp {
             });
 
             shadow_pass.set_pipeline(&self.shadow_pipeline);
+            // Bind camera group (required by pipeline layout even if unused by shader)
+            shadow_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            
+            // Bind a dummy material group (required by pipeline layout)
+            // We just use the first available material since the shadow shader doesn't read textures
+            if let Some(mat) = self.materials.first() {
+                shadow_pass.set_bind_group(1, &mat.bind_group, &[]);
+            }
+
             // Bind light group (contains light view-proj)
-            shadow_pass.set_bind_group(3, &self.light_bind_group, &[]);
+            shadow_pass.set_bind_group(3, &self.light_uniform_bind_group, &[]);
 
             for object in &self.objects {
                 let mesh = &self.meshes[object.mesh_index];
