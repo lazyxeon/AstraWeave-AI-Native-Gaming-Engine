@@ -28,4 +28,4 @@ default = []
 
 [[bin]]
 name = "unified_showcase"
-path = "src/main_clean.rs"  # CLEAN IMPLEMENTATION: Proper texture handling
+path = "src/main.rs"  # CLEAN IMPLEMENTATION: Proper texture handling

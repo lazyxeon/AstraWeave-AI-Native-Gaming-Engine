@@ -169,40 +169,27 @@ fn generate_smooth_normals(positions: &[[f32; 3]], indices: &[u32]) -> Vec<[f32;
 pub fn load_gltf(path: impl AsRef<Path>) -> Result<Vec<LoadedMesh>> {
     let path = path.as_ref();
 
-    log::info!("Attempting to load GLTF: {}", path.display());
+    // Canonicalize path to ensure gltf crate can find relative resources
+    let abs_path = std::fs::canonicalize(path)
+        .with_context(|| format!("Failed to canonicalize path: {}", path.display()))?;
 
-    // Try to import via path first (convenience), but if it fails, read file and
-    // attempt import_slice - this can provide more detailed diagnostics
-    let import_res = match gltf::import(path) {
-        Ok(x) => Ok(x),
-        Err(e) => {
-            log::warn!(
-                "gltf::import(path) failed for {}: {:?}, attempting import_slice fallback",
-                path.display(),
-                e
-            );
-            // Try to read file bytes and import from memory to capture more granular error
-            match std::fs::read(path) {
-                Ok(bytes) => {
-                    log::info!("  Read file: {} bytes", bytes.len());
-                    if bytes.len() >= 4 {
-                        log::info!("  Header: {:02x?}", &bytes[..4]);
-                    }
-                    gltf::import_slice(&bytes)
-                }
-                Err(err) => {
-                    log::error!("Failed to read GLTF file {}: {}", path.display(), err);
-                    Err(e)
-                }
-            }
-        }
-    };
-    if let Err(ref err) = import_res {
-        // Print detailed diagnostic error chain for debugging
-        log::error!("gltf::import failed for {}: {:?}", path.display(), err);
-    }
-    let (document, buffers, _images) =
-        import_res.with_context(|| format!("Failed to load GLTF file: {}", path.display()))?;
+    log::info!("Attempting to load GLTF: {}", abs_path.display());
+
+    // Use open file to ensure we have read permissions and it exists
+    let file = std::fs::File::open(&abs_path)
+        .with_context(|| format!("Failed to open file: {}", abs_path.display()))?;
+    let reader = std::io::BufReader::new(file);
+
+    // Use Gltf::from_reader to load
+    let gltf = gltf::Gltf::from_reader(reader)
+        .with_context(|| format!("Failed to parse GLTF from reader: {}", abs_path.display()))?;
+
+    // Load buffers (this handles external bin files relative to the GLTF file)
+    let base_dir = abs_path.parent().unwrap_or(Path::new("."));
+    let buffers = gltf::import_buffers(&gltf.document, Some(base_dir), gltf.blob)
+        .with_context(|| "Failed to load GLTF buffers")?;
+
+    let document = gltf.document;
 
     log::info!("GLTF loaded successfully, parsing meshes...");
 
