@@ -85,8 +85,6 @@ fn rhai_to_json(d: &rhai::Dynamic) -> Result<serde_json::Value> {
         Ok(serde_json::Value::from(b))
     } else if let Some(s) = d.clone().try_cast::<String>() {
         Ok(serde_json::Value::from(s))
-    } else if d.is_unit() {
-        Ok(serde_json::Value::Null)
     } else {
         Ok(serde_json::Value::Null)
     }

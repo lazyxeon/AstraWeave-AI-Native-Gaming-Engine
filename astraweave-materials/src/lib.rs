@@ -68,8 +68,8 @@ pub fn compile_to_wgsl(g: &Graph) -> Result<(String, Vec<String>)> {
                 expr_of(nodes, weight, binds)?,
                 expr_of(nodes, roughness, binds)?
             ),
-            Node::Anisotropy { amount } => expr_of(nodes, amount, binds)?,
-            Node::Transmission { amount } => expr_of(nodes, amount, binds)?,
+            Node::Anisotropy { amount } => expr_of(nodes, amount, binds)?.to_string(),
+            Node::Transmission { amount } => expr_of(nodes, amount, binds)?.to_string(),
             Node::NormalMap { id, uv, scale } => {
                 binds.push(id.clone());
                 format!(

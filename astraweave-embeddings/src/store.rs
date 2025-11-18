@@ -42,10 +42,8 @@ pub struct VectorStoreMetrics {
 impl VectorStore {
     /// Create a new vector store with default configuration
     pub fn new(dimensions: usize) -> Self {
-        let config = EmbeddingConfig {
-            dimensions,
-            ..Default::default()
-        };
+        let mut config = EmbeddingConfig::default();
+        config.dimensions = dimensions;
         Self::with_config(config)
     }
 

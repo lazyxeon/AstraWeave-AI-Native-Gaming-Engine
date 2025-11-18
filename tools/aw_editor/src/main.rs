@@ -1934,7 +1934,7 @@ impl eframe::App for EditorApp {
                                         }
                                     }
                                     PrefabAction::ApplyChangesToFile(entity) => {
-                                        if let Some(instance) = self.prefab_manager.find_instance(entity) {
+                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
                                             let source = instance.source.display().to_string();
                                             if let Some(world) = self.scene_state.as_ref().map(|s| s.world()) {
                                                 match instance.apply_to_prefab(world) {
@@ -1953,6 +1953,58 @@ impl eframe::App for EditorApp {
                                                             entity, e
                                                         ));
                                                         self.status = format!("❌ Apply failed: {}", e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    PrefabAction::RevertAllToOriginal(entity) => {
+                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
+                                            let source = instance.source.display().to_string();
+                                            let entity_count = instance.entity_mapping.len();
+                                            if let Some(world) = self.scene_state.as_mut().map(|s| s.world_mut()) {
+                                                match instance.revert_all_to_prefab(world) {
+                                                    Ok(()) => {
+                                                        info!("Reverted {} entities to prefab: {}", entity_count, source);
+                                                        self.console_logs.push(format!(
+                                                            "🔄 Reverted {} entities to prefab original",
+                                                            entity_count
+                                                        ));
+                                                        self.status = format!("🔄 Reverted {} entities to prefab", entity_count);
+                                                    }
+                                                    Err(e) => {
+                                                        error!("Failed to revert {} entities to {}: {}", entity_count, source, e);
+                                                        self.console_logs.push(format!(
+                                                            "❌ Failed to revert {} entities: {}",
+                                                            entity_count, e
+                                                        ));
+                                                        self.status = format!("❌ Revert all failed: {}", e);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    PrefabAction::ApplyAllChangesToFile(entity) => {
+                                        if let Some(instance) = self.prefab_manager.find_instance_mut(entity) {
+                                            let source = instance.source.display().to_string();
+                                            let entity_count = instance.entity_mapping.len();
+                                            if let Some(world) = self.scene_state.as_ref().map(|s| s.world()) {
+                                                match instance.apply_all_to_prefab(world) {
+                                                    Ok(()) => {
+                                                        info!("Applied {} entities to prefab: {}", entity_count, source);
+                                                        self.console_logs.push(format!(
+                                                            "💾 Applied {} entities to prefab file",
+                                                            entity_count
+                                                        ));
+                                                        self.status = format!("💾 Applied {} entities to prefab", entity_count);
+                                                    }
+                                                    Err(e) => {
+                                                        error!("Failed to apply {} entities to {}: {}", entity_count, source, e);
+                                                        self.console_logs.push(format!(
+                                                            "❌ Failed to apply {} entities: {}",
+                                                            entity_count, e
+                                                        ));
+                                                        self.status = format!("❌ Apply all failed: {}", e);
                                                     }
                                                 }
                                             }

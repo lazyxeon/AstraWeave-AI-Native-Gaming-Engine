@@ -198,31 +198,96 @@ impl PrefabInstance {
     }
 
     pub fn revert_to_prefab(&mut self, world: &mut World) -> Result<()> {
-        let prefab_data = PrefabData::load_from_file(&self.source)?;
+        // Validate prefab file exists and is readable
+        if !self.source.exists() {
+            anyhow::bail!(
+                "Cannot revert: Prefab file does not exist: {}",
+                self.source.display()
+            );
+        }
+        
+        let metadata = std::fs::metadata(&self.source)
+            .context("Cannot revert: Unable to read prefab file metadata")?;
+        
+        if !metadata.is_file() {
+            anyhow::bail!(
+                "Cannot revert: Path is not a file: {}",
+                self.source.display()
+            );
+        }
+        
+        let prefab_data = PrefabData::load_from_file(&self.source)
+            .context("Cannot revert: Failed to load prefab file")?;
 
+        if prefab_data.entities.is_empty() {
+            anyhow::bail!("Cannot revert: Prefab file contains no entities");
+        }
+
+        let mut reverted_count = 0;
         for (prefab_idx, entity) in &self.entity_mapping {
             if let Some(prefab_entity_data) = prefab_data.entities.get(*prefab_idx) {
+                // Restore pose (position)
                 if let Some(pose) = world.pose_mut(*entity) {
                     pose.pos.x = prefab_entity_data.pos_x;
                     pose.pos.y = prefab_entity_data.pos_y;
+                    reverted_count += 1;
+                }
+                
+                // Restore health
+                if let Some(health) = world.health_mut(*entity) {
+                    health.hp = prefab_entity_data.health;
                 }
             }
         }
 
+        // Clear all overrides since we've reverted to prefab state
         self.overrides.clear();
+        
+        if reverted_count == 0 {
+            anyhow::bail!("Cannot revert: No entities were reverted (possible data mismatch)");
+        }
+        
         Ok(())
     }
 
-    pub fn apply_to_prefab(&self, world: &World) -> Result<()> {
-        let mut prefab_data = PrefabData::load_from_file(&self.source)?;
+    pub fn apply_to_prefab(&mut self, world: &World) -> Result<()> {
+        // Validate prefab file exists
+        if !self.source.exists() {
+            anyhow::bail!(
+                "Cannot apply: Prefab file does not exist: {}",
+                self.source.display()
+            );
+        }
+        
+        // Check if file is read-only
+        let metadata = std::fs::metadata(&self.source)
+            .context("Cannot apply: Unable to read prefab file metadata")?;
+        
+        if metadata.permissions().readonly() {
+            anyhow::bail!(
+                "Cannot apply: Prefab file is read-only: {}. Please change file permissions.",
+                self.source.display()
+            );
+        }
+        
+        let mut prefab_data = PrefabData::load_from_file(&self.source)
+            .context("Cannot apply: Failed to load prefab file")?;
 
+        if prefab_data.entities.is_empty() {
+            anyhow::bail!("Cannot apply: Prefab file contains no entities");
+        }
+
+        let mut applied_count = 0;
         for (prefab_idx, entity) in &self.entity_mapping {
             if let Some(prefab_entity_data) = prefab_data.entities.get_mut(*prefab_idx) {
+                // Apply current pose to prefab
                 if let Some(pose) = world.pose(*entity) {
                     prefab_entity_data.pos_x = pose.pos.x;
                     prefab_entity_data.pos_y = pose.pos.y;
+                    applied_count += 1;
                 }
 
+                // Apply current health to prefab
                 if let Some(health) = world.health(*entity) {
                     prefab_entity_data.health = health.hp;
                     prefab_entity_data.max_health = health.hp;
@@ -230,7 +295,135 @@ impl PrefabInstance {
             }
         }
 
-        prefab_data.save_to_file(&self.source)?;
+        if applied_count == 0 {
+            anyhow::bail!("Cannot apply: No entities were applied (possible data mismatch)");
+        }
+
+        // Save updated prefab to file
+        prefab_data.save_to_file(&self.source)
+            .context("Cannot apply: Failed to save prefab file (check disk space and permissions)")?;
+        
+        // Clear overrides since current state is now the prefab state
+        self.overrides.clear();
+        
+        Ok(())
+    }
+
+    /// Revert ALL entities in this prefab instance to their original prefab state
+    pub fn revert_all_to_prefab(&mut self, world: &mut World) -> Result<()> {
+        // Validate prefab file exists and is readable
+        if !self.source.exists() {
+            anyhow::bail!(
+                "Cannot revert all: Prefab file does not exist: {}",
+                self.source.display()
+            );
+        }
+        
+        let prefab_data = PrefabData::load_from_file(&self.source)
+            .context("Cannot revert all: Failed to load prefab file")?;
+        
+        if prefab_data.entities.is_empty() {
+            anyhow::bail!("Cannot revert all: Prefab file contains no entities");
+        }
+        
+        if self.entity_mapping.is_empty() {
+            anyhow::bail!("Cannot revert all: No entities in prefab instance");
+        }
+        
+        let mut reverted_count = 0;
+
+        for (prefab_idx, entity) in &self.entity_mapping {
+            if let Some(prefab_entity_data) = prefab_data.entities.get(*prefab_idx) {
+                // Restore pose (position)
+                if let Some(pose) = world.pose_mut(*entity) {
+                    pose.pos.x = prefab_entity_data.pos_x;
+                    pose.pos.y = prefab_entity_data.pos_y;
+                }
+                
+                // Restore health
+                if let Some(health) = world.health_mut(*entity) {
+                    health.hp = prefab_entity_data.health;
+                }
+                
+                reverted_count += 1;
+            }
+        }
+
+        if reverted_count == 0 {
+            anyhow::bail!("Cannot revert all: No entities were reverted (possible data mismatch)");
+        }
+
+        // Clear all overrides since we've reverted all entities
+        self.overrides.clear();
+        
+        println!("✅ Reverted {} entities to prefab state", reverted_count);
+        Ok(())
+    }
+
+    /// Apply ALL entities in this prefab instance to the prefab file
+    pub fn apply_all_to_prefab(&mut self, world: &World) -> Result<()> {
+        // Validate prefab file exists
+        if !self.source.exists() {
+            anyhow::bail!(
+                "Cannot apply all: Prefab file does not exist: {}",
+                self.source.display()
+            );
+        }
+        
+        // Check if file is read-only
+        let metadata = std::fs::metadata(&self.source)
+            .context("Cannot apply all: Unable to read prefab file metadata")?;
+        
+        if metadata.permissions().readonly() {
+            anyhow::bail!(
+                "Cannot apply all: Prefab file is read-only: {}. Please change file permissions.",
+                self.source.display()
+            );
+        }
+        
+        let mut prefab_data = PrefabData::load_from_file(&self.source)
+            .context("Cannot apply all: Failed to load prefab file")?;
+        
+        if prefab_data.entities.is_empty() {
+            anyhow::bail!("Cannot apply all: Prefab file contains no entities");
+        }
+        
+        if self.entity_mapping.is_empty() {
+            anyhow::bail!("Cannot apply all: No entities in prefab instance");
+        }
+        
+        let mut applied_count = 0;
+
+        for (prefab_idx, entity) in &self.entity_mapping {
+            if let Some(prefab_entity_data) = prefab_data.entities.get_mut(*prefab_idx) {
+                // Apply current pose to prefab
+                if let Some(pose) = world.pose(*entity) {
+                    prefab_entity_data.pos_x = pose.pos.x;
+                    prefab_entity_data.pos_y = pose.pos.y;
+                }
+
+                // Apply current health to prefab
+                if let Some(health) = world.health(*entity) {
+                    prefab_entity_data.health = health.hp;
+                    prefab_entity_data.max_health = health.hp;
+                }
+                
+                applied_count += 1;
+            }
+        }
+
+        if applied_count == 0 {
+            anyhow::bail!("Cannot apply all: No entities were applied (possible data mismatch)");
+        }
+
+        // Save updated prefab to file
+        prefab_data.save_to_file(&self.source)
+            .context("Cannot apply all: Failed to save prefab file (check disk space and permissions)")?;
+        
+        // Clear all overrides since current state is now the prefab state
+        self.overrides.clear();
+        
+        println!("✅ Applied {} entities to prefab file", applied_count);
         Ok(())
     }
 }

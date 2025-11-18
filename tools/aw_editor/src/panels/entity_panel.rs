@@ -12,6 +12,8 @@ use egui::Ui;
 pub enum PrefabAction {
     RevertToOriginal(Entity),
     ApplyChangesToFile(Entity),
+    RevertAllToOriginal(Entity),  // Revert all entities in prefab instance (entity is any member)
+    ApplyAllChangesToFile(Entity), // Apply all entities in prefab instance (entity is any member)
 }
 
 /// Entity panel - inspect and edit entity properties
@@ -56,6 +58,8 @@ impl EntityPanel {
         let mut clear_all = false;
         let mut revert_to_prefab = false;
         let mut apply_to_prefab = false;
+        let mut revert_all_to_prefab = false;
+        let mut apply_all_to_prefab = false;
 
         ui.horizontal(|ui| {
             if ui.button("➕ Spawn Companion").clicked() {
@@ -153,7 +157,7 @@ impl EntityPanel {
                             "⚠️ Modified components (blue text indicates overrides)",
                         );
                         
-                        // Add Apply/Revert buttons
+                        // Single entity operations
                         ui.horizontal(|ui| {
                             if ui.button("💾 Apply to Prefab").clicked() {
                                 apply_to_prefab = true;
@@ -164,6 +168,26 @@ impl EntityPanel {
                         });
                         ui.label("💾 Apply: save changes back to prefab file");
                         ui.label("🔄 Revert: discard changes and restore original");
+                        
+                        ui.add_space(8.0);
+                        ui.separator();
+                        ui.add_space(4.0);
+                        
+                        // Bulk operations for entire prefab instance
+                        ui.colored_label(
+                            egui::Color32::from_rgb(255, 180, 100),
+                            "⚠️ Bulk Operations (affects ALL entities in prefab)",
+                        );
+                        ui.horizontal(|ui| {
+                            if ui.button("💾 Apply All to Prefab").clicked() {
+                                apply_all_to_prefab = true;
+                            }
+                            if ui.button("🔄 Revert All to Prefab").clicked() {
+                                revert_all_to_prefab = true;
+                            }
+                        });
+                        ui.label("💾 Apply All: save ALL entity changes to prefab file");
+                        ui.label("🔄 Revert All: discard ALL changes and restore all entities");
                     }
                 }
 
@@ -244,6 +268,10 @@ impl EntityPanel {
             selected_entity.map(PrefabAction::RevertToOriginal)
         } else if apply_to_prefab {
             selected_entity.map(PrefabAction::ApplyChangesToFile)
+        } else if revert_all_to_prefab {
+            selected_entity.map(PrefabAction::RevertAllToOriginal)
+        } else if apply_all_to_prefab {
+            selected_entity.map(PrefabAction::ApplyAllChangesToFile)
         } else {
             None
         };

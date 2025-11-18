@@ -1,9 +1,9 @@
 At line:1 char:53
-+ $PSDefaultParameterValues['*:Encoding'] = 'utf8'; if exist .github\wo ...
++ $PSDefaultParameterValues['*:Encoding'] = 'utf8'; if exist .github (d ...
 +                                                     ~
 Missing '(' after 'if' in if statement.
-At line:1 char:177
-+ ... l .github\workflows\*.yaml else (echo No .github/workflows directory)
+At line:1 char:131
++ ... ithub (dir /s /b .github\*.md else (echo .github directory not found)
 +                                                                          ~
 Missing closing ')' in expression.
     + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
