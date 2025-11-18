@@ -112,7 +112,7 @@ impl GizmoHarness {
 
     pub fn undo_depth(&self) -> usize {
         if self.undo_stack.can_undo() {
-            1
+            self.undo_stack.len() - self.undo_stack.cursor()
         } else {
             0
         }

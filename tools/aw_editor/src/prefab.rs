@@ -3,6 +3,7 @@ use astraweave_core::{Entity, World};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PrefabData {
@@ -442,6 +443,10 @@ impl PrefabManager {
             instances: Vec::new(),
             prefab_directory,
         }
+    }
+
+    pub fn shared<P: AsRef<Path>>(prefab_directory: P) -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(Self::new(prefab_directory)))
     }
 
     pub fn create_prefab(&self, world: &World, entity: Entity, name: &str) -> Result<PathBuf> {

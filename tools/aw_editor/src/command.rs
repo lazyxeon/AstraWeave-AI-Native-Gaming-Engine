@@ -282,6 +282,12 @@ impl UndoStack {
         self.commands.is_empty()
     }
 
+    /// Get current cursor position (for calculating undo depth).
+    #[allow(dead_code)]
+    pub fn cursor(&self) -> usize {
+        self.cursor
+    }
+
     /// Add an already-executed command to the undo stack.
     ///
     /// Use this when you've already applied a transform (e.g., during gizmo drag)

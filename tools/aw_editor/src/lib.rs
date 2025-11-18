@@ -10,6 +10,7 @@ pub mod entity_manager;
 pub mod prefab;
 pub mod runtime;
 pub mod scene_serialization;
+pub mod scene_state;
 pub mod ui;
 
 pub use command::{
@@ -20,6 +21,7 @@ pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
 pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
 pub use runtime::{EditorRuntime, RuntimeState, RuntimeStats};
 pub use scene_serialization::{EntityData, SceneData};
+pub use scene_state::{EditorSceneState, TransformableScene};
 pub use ui::StatusBar;
 
 pub mod gizmo {
