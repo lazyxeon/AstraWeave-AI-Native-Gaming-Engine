@@ -1,0 +1,755 @@
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `HierarchyAction`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\mod.rs:39:27[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m39[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub use hierarchy_panel::{HierarchyAction, HierarchyPanel};[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                           [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `edit_world_mut` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\main.rs:384:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m379[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl EditorApp {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m--------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m384[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn edit_world_mut(&mut self) -> Option<&mut World> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `resolve_entity_label` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\main.rs:686:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m643[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl EditorApp {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m--------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m686[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn resolve_entity_label(&self, entity: Entity) -> String {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `file_path`, `set_file_path`, `is_dirty`, and `mark_clean` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\behavior_graph\document.rs:232:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m175[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl BehaviorGraphDocument {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m--------------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn file_path(&self) -> Option<&Path> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m236[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn set_file_path(&mut self, path: Option<PathBuf>) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m240[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn is_dirty(&self) -> bool {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m244[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn mark_clean(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `set_lighting` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\brdf_preview.rs:65:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m50[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl BrdfPreview {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m----------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m65[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn set_lighting(&mut self, direction: Vec3, intensity: f32, color: [f32; 3]) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated items `to_json` and `from_json` are never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\clipboard.rs:65:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl ClipboardData {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14massociated items in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m65[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn to_json(&self) -> Result<String> {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m69[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn from_json(json: &str) -> Result<Self> {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated function `component_name` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\component_ui.rs:25:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m23[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub trait InspectorUI {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14massociated function in this trait[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn ui(&mut self, ui: &mut Ui, label: &str) -> bool;[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn component_name() -> &'static str[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `name` and `show_ui` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\component_ui.rs:234:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m224[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl ComponentType {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m234[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn name(&self) -> &'static str {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m252[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn show_ui(&self, world: &mut World, entity: Entity, ui: &mut Ui) -> Option<ComponentEdit> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: multiple methods are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\entity_manager.rs:193:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m174[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl SelectionSet {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-----------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m193[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn remove(&mut self, entity: EntityId) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m202[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn toggle(&mut self, entity: EntityId) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m217[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn select_only(&mut self, entity: EntityId) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m223[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn is_selected(&self, entity: EntityId) -> bool {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m233[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn is_empty(&self) -> bool {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m238[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn to_vec(&self) -> Vec<EntityId> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m249[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn select_range(&mut self, from: EntityId, to: EntityId, all_ids: &[EntityId]) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `0` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\file_watcher.rs:59:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Prefab(PathBuf),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m------[0m[0m [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mfield in this variant[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `ReloadEvent` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[38;5;9m- [0m[0m    Prefab([0m[0m[38;5;9mPathBuf[0m[0m),[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[38;5;10m+ [0m[0m    Prefab([0m[0m[38;5;10m()[0m[0m),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `0` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\file_watcher.rs:61:11[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m61[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Model(PathBuf),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-----[0m[0m [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mfield in this variant[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `ReloadEvent` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider changing the field to be of unit type to suppress this warning while preserving the field numbering, or remove the field[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m61[0m[0m [0m[0m[38;5;9m- [0m[0m    Model([0m[0m[38;5;9mPathBuf[0m[0m),[0m
+[0m[1m[38;5;14m61[0m[0m [0m[0m[38;5;10m+ [0m[0m    Model([0m[0m[38;5;10m()[0m[0m),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: constant `COLOR_GRAY` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\rendering.rs:19:11[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m19[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub const COLOR_GRAY: [f32; 3] = [0.5, 0.5, 0.5]; // Gray (inactive)[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: fields `position`, `rotation`, `camera_pos`, `view_proj`, and `mode` are never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\rendering.rs:25:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m23[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct GizmoRenderParams {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-----------------[0m[0m [0m[0m[1m[38;5;14mfields in this struct[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Gizmo world position (center)[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub position: Vec3,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m28[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub rotation: Quat,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub camera_pos: Vec3,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m37[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub view_proj: Mat4,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m40[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub mode: GizmoMode,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `GizmoRenderParams` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated functions `transform_vertices` and `generate_label_position` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\rendering.rs:327:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m52[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl GizmoRenderer {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14massociated functions in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m327[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn transform_vertices(vertices: &[Vec3], position: Vec3, rotation: Quat) -> Vec<Vec3> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m338[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn generate_label_position(axis: Vec3, params: &GizmoRenderParams) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: multiple fields are never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\scene_viewport.rs:21:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m19[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct CameraController {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m----------------[0m[0m [0m[0m[1m[38;5;14mfields in this struct[0m
+[0m[1m[38;5;14m20[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Camera position in world space.[0m
+[0m[1m[38;5;14m21[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub position: Vec3,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Camera target (look-at point).[0m
+[0m[1m[38;5;14m23[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub target: Vec3,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Up vector.[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub up: Vec3,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^[0m
+[0m[1m[38;5;14m26[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Field of view (radians).[0m
+[0m[1m[38;5;14m27[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fov: f32,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^[0m
+[0m[1m[38;5;14m28[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Aspect ratio (width / height).[0m
+[0m[1m[38;5;14m29[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub aspect: f32,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m[1m[38;5;14m30[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Near plane distance.[0m
+[0m[1m[38;5;14m31[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub near: f32,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Far plane distance.[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub far: f32,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `CameraController` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: multiple methods are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\scene_viewport.rs:52:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m50[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl CameraController {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m---------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m51[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Get view matrix.[0m
+[0m[1m[38;5;14m52[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn view_matrix(&self) -> Mat4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m57[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn projection_matrix(&self) -> Mat4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m62[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn view_projection_matrix(&self) -> Mat4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m67[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn inverse_view_projection_matrix(&self) -> Mat4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m76[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn orbit(&mut self, delta: Vec2, sensitivity: f32) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m99[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn pan(&mut self, delta: Vec2, sensitivity: f32) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m121[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn zoom(&mut self, delta: f32, sensitivity: f32) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m133[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn distance(&self) -> f32 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `matrix` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\scene_viewport.rs:158:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m156[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl Transform {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m--------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m157[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Get transform matrix.[0m
+[0m[1m[38;5;14m158[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn matrix(&self) -> Mat4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct `SceneViewport` is never constructed[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\scene_viewport.rs:164:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m164[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct SceneViewport {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: multiple associated items are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\scene_viewport.rs:203:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m201[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl SceneViewport {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14massociated items in this implementation[0m
+[0m[1m[38;5;14m202[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Create new scene viewport.[0m
+[0m[1m[38;5;14m203[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m208[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn set_aspect_ratio(&mut self, width: f32, height: f32) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m213[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn handle_key(&mut self, key: KeyCode) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m218[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn update_mouse(&mut self, pos: Vec2) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m225[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn mouse_delta(&self) -> Vec2 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m230[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn handle_mouse_down(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m253[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn handle_mouse_up(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m261[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn update_hover(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m278[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn apply_gizmo_transform(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m365[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn gizmo_render_params(&self) -> Option<GizmoRenderParams> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated items `new`, `with_grid_size`, `with_angle_increment`, and `snap_position` are never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\snapping.rs:23:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl SnappingConfig {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-------------------[0m[0m [0m[0m[1m[38;5;14massociated items in this implementation[0m
+[0m[1m[38;5;14m23[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m27[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn with_grid_size(mut self, size: f32) -> Self {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn with_angle_increment(mut self, degrees: f32) -> Self {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m37[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn snap_position(&self, position: Vec3) -> Vec3 {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `is_planar` and `is_single_axis` are never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\state.rs:59:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m44[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl AxisConstraint {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn is_planar(self) -> bool {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m67[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn is_single_axis(self) -> bool {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `local_space` is never read[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\state.rs:144:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m118[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct GizmoState {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m----------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m144[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub local_space: bool,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `GizmoState` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `parse_numeric_input`, `constraint_text`, and `mode_text` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\state.rs:309:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m163[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl GizmoState {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m---------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m309[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn parse_numeric_input(&self) -> Option<f32> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m332[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn constraint_text(&self) -> String {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m352[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn mode_text(&self) -> String {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct `TranslateGizmo` is never constructed[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\translate.rs:7:12[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m7[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct TranslateGizmo;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated functions `snap_position`, `calculate_translation`, `calculate_translation_numeric`, `apply_constraint_world`, and `apply_constraint_local` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\translate.rs:11:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m9[0m[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl TranslateGizmo {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-------------------[0m[0m [0m[0m[1m[38;5;14massociated functions in this implementation[0m
+[0m[1m[38;5;14m10[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Snap position to grid using snapping configuration.[0m
+[0m[1m[38;5;14m11[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn snap_position(position: Vec3, snapping: &SnappingConfig) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m26[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn calculate_translation([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m76[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn calculate_translation_numeric([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m103[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn apply_constraint_world(delta: Vec3, constraint: AxisConstraint) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m116[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn apply_constraint_local(delta: Vec3, constraint: AxisConstraint) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: fields `operation`, `measurement`, and `constraint` are never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\interaction.rs:36:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct GizmoCommitMetadata {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-------------------[0m[0m [0m[0m[1m[38;5;14mfields in this struct[0m
+[0m[1m[38;5;14m35[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub entity: Entity,[0m
+[0m[1m[38;5;14m36[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub operation: GizmoOperationKind,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m[1m[38;5;14m37[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub measurement: GizmoMeasurement,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m[1m[38;5;14m38[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub constraint: Option<String>,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `GizmoCommitMetadata` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct `GizmoCancelMetadata` is never constructed[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\interaction.rs:43:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m43[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct GizmoCancelMetadata {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `commit_active_gizmo` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\interaction.rs:77:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m77[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn commit_active_gizmo([0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `cancel_active_gizmo` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\interaction.rs:179:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m179[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn cancel_active_gizmo([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `ensure_world_snapshot` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\interaction.rs:209:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m209[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn ensure_world_snapshot(state: &mut GizmoState, world: &World) -> Option<TransformSnapshot> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `pan_offset` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\material_inspector.rs:37:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct MaterialInspector {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-----------------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m37[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub pan_offset: (f32, f32),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variant `Split` is never constructed[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\material_inspector.rs:126:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m122[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub enum DisplayMode {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m          [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14mvariant in this enum[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m126[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Split, // Side-by-side comparison[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `DisplayMode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `name` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\mod.rs:11:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m9[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub trait Panel {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;14m-----[0m[0m [0m[0m[1m[38;5;14mmethod in this trait[0m
+[0m[1m[38;5;14m10[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Panel display name (shown in tabs/titles)[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn name(&self) -> &str;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `initialized` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\advanced_widgets_panel.rs:21:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m5[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct AdvancedWidgetsPanel {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m--------------------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m21[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    initialized: bool,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `initialize_tree_views` and `update` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\advanced_widgets_panel.rs:80:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m30[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl AdvancedWidgetsPanel {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-------------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m80[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn initialize_tree_views(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m188[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn update(&mut self) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variant `Material` is never constructed[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\asset_browser.rs:11:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m7[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub enum AssetType {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m          [0m[0m[1m[38;5;14m---------[0m[0m [0m[0m[1m[38;5;14mvariant in this enum[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Material,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `AssetType` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `selected_asset`, `get_asset_count`, and `get_current_directory` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\asset_browser.rs:217:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m133[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl AssetBrowser {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-----------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m217[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn selected_asset(&self) -> Option<&Path> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m538[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn get_asset_count(&self) -> usize {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m542[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn get_current_directory(&self) -> &Path {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `entity` is never read[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\hierarchy_panel.rs:8:9[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m7[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct HierarchyNode {[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-------------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m8[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub entity: Entity,[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `HierarchyNode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `take_pending_actions`, `get_selected`, and `get_parent` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\hierarchy_panel.rs:52:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m36[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl HierarchyPanel {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m52[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn take_pending_actions(&mut self) -> Vec<HierarchyAction> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m78[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn get_selected(&self) -> Option<Entity> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m135[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn get_parent(&self, entity: Entity) -> Option<Entity> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `id` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\transform_panel.rs:15:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m14[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct SceneEntity {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m15[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub id: u32,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `SceneEntity` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `camera` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\transform_panel.rs:50:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m31[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct TransformPanel {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m--------------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m50[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    camera: CameraController,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `get_transform_mut` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\panels\transform_panel.rs:146:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m97[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl TransformPanel {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-------------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m146[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn get_transform_mut(&mut self) -> Option<&mut Transform> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `has_any_override` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\prefab.rs:56:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m44[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl EntityOverrides {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m--------------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m56[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn has_any_override(&self) -> bool {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated functions `from_entity` and `collect_entity_recursive` are never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\prefab.rs:62:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m61[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl PrefabData {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m---------------[0m[0m [0m[0m[1m[38;5;14massociated functions in this implementation[0m
+[0m[1m[38;5;14m62[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn from_entity(world: &World, entity: Entity, name: String) -> Result<Self> {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m76[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn collect_entity_recursive([0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `prefab_directory` is never read[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\prefab.rs:433:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m431[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct PrefabManager {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-------------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m432[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    instances: Vec<PrefabInstance>,[0m
+[0m[1m[38;5;14m433[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    prefab_directory: PathBuf,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `create_prefab` and `get_all_prefab_files` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\prefab.rs:447:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m436[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl PrefabManager {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m447[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn create_prefab(&self, world: &World, entity: Entity, name: &str) -> Result<PathBuf> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m482[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn get_all_prefab_files(&self) -> Result<Vec<PathBuf>> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `remove_missing_files` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\recent_files.rs:62:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m19[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl RecentFilesManager {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m-----------------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m62[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn remove_missing_files(&mut self) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `is_paused` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\runtime.rs:113:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m80[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl EditorRuntime {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m113[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn is_paused(&self) -> bool {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `world`, `world_mut`, `sync_all`, `snapshot_for`, and `apply_snapshot` are never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\scene_state.rs:12:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m10[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub trait TransformableScene {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;14m------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this trait[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Access the underlying simulation world (read-only).[0m
+[0m[1m[38;5;14m12[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn world(&self) -> &World;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m15[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn world_mut(&mut self) -> &mut World;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m18[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn sync_all(&mut self);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn snapshot_for(&self, entity: Entity) -> Option<TransformSnapshot>;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m28[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn apply_snapshot(&mut self, entity: Entity, snapshot: &TransformSnapshot);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: methods `transform_for` and `apply_transform` are never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\scene_state.rs:62:12[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m40[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl EditorSceneState {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m---------------------[0m[0m [0m[0m[1m[38;5;14mmethods in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m62[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn transform_for(&self, entity: Entity) -> Option<Transform> {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m67[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn apply_transform(&mut self, entity: Entity, transform: &Transform) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `pose_to_transform` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\scene_state.rs:176:4[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m176[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mfn pose_to_transform(pose: Pose) -> Transform {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m    [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated items `new`, `right`, and `up` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\viewport\camera.rs:115:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m106[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl OrbitCamera {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m----------------[0m[0m [0m[0m[1m[38;5;14massociated items in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m115[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(focal_point: Vec3, distance: f32, yaw: f32, pitch: f32) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m289[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn right(&self) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m294[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn up(&self) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: associated items `new` and `at` are never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\viewport\camera.rs:361:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m359[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl Ray {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m--------[0m[0m [0m[0m[1m[38;5;14massociated items in this implementation[0m
+[0m[1m[38;5;14m360[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Create new ray[0m
+[0m[1m[38;5;14m361[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(origin: Vec3, direction: Vec3) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m369[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn at(&self, t: f32) -> Vec3 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;11m^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `shading_mode` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\viewport\toolbar.rs:22:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m20[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct ViewportToolbar {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m---------------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m21[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    /// Current shading mode[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub shading_mode: ShadingMode,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `ViewportToolbar` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variants `Unlit` and `Wireframe` are never constructed[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\viewport\toolbar.rs:179:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m174[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub enum ShadingMode {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m          [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14mvariants in this enum[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m179[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Unlit,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m182[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Wireframe,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `ShadingMode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_editor` (bin "aw_editor") generated 55 warnings (run `cargo fix --bin "aw_editor"` to apply 1 suggestion)
+[1m[32m   Compiling[0m aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: arguments to this function are incorrect[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\integration_tests.rs:245:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m245[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut cmd = EditTeamCommand::new(entity, old_team, new_team);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m         [0m[0m[1m[38;5;14m--------[0m[0m  [0m[0m[1m[38;5;14m--------[0m[0m [0m[0m[1m[38;5;14mexpected `Team`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                [0m[0m[1m[38;5;14mexpected `Team`, found `u8`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: associated function defined here[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor\src\command.rs:554:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m554[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(entity: Entity, old_team: Team, new_team: Team) -> Box<Self> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;10m^^^[0m
+[0m[1m[38;5;14mhelp[0m[0m: try wrapping the expression in `astraweave_core::Team`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m245[0m[0m [0m[0m[1m[38;5;14m| [0m[0m    let mut cmd = EditTeamCommand::new(entity, [0m[0m[38;5;10mastraweave_core::Team { id: [0m[0mold_team[0m[0m[38;5;10m }[0m[0m, new_team);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                [0m[0m[38;5;10m+++++++++++++++++++++++++++[0m[0m          [0m[0m[38;5;10m+[0m
+[0m[1m[38;5;14mhelp[0m[0m: try wrapping the expression in `astraweave_core::Team`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m245[0m[0m [0m[0m[1m[38;5;14m| [0m[0m    let mut cmd = EditTeamCommand::new(entity, old_team, [0m[0m[38;5;10mastraweave_core::Team { id: [0m[0mnew_team[0m[0m[38;5;10m }[0m[0m);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                          [0m[0m[38;5;10m+++++++++++++++++++++++++++[0m[0m          [0m[0m[38;5;10m+[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: arguments to this function are incorrect[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\integration_tests.rs:676:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m676[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .execute(EditTeamCommand::new(entity, 0, 3), &mut world)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m         [0m[0m[1m[38;5;14m-[0m[0m  [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14mexpected `Team`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                               [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                               [0m[0m[1m[38;5;14mexpected `Team`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: associated function defined here[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor\src\command.rs:554:12[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m554[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(entity: Entity, old_team: Team, new_team: Team) -> Box<Self> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;10m^^^[0m
+[0m[1m[38;5;14mhelp[0m[0m: try wrapping the expression in `astraweave_core::Team`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m676[0m[0m [0m[0m[1m[38;5;14m| [0m[0m        .execute(EditTeamCommand::new(entity, [0m[0m[38;5;10mastraweave_core::Team { id: [0m[0m0[0m[0m[38;5;10m }[0m[0m, 3), &mut world)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                               [0m[0m[38;5;10m+++++++++++++++++++++++++++[0m[0m   [0m[0m[38;5;10m+[0m
+[0m[1m[38;5;14mhelp[0m[0m: try wrapping the expression in `astraweave_core::Team`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m676[0m[0m [0m[0m[1m[38;5;14m| [0m[0m        .execute(EditTeamCommand::new(entity, 0, [0m[0m[38;5;10mastraweave_core::Team { id: [0m[0m3[0m[0m[38;5;10m }[0m[0m), &mut world)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                  [0m[0m[38;5;10m+++++++++++++++++++++++++++[0m[0m   [0m[0m[38;5;10m+[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variable does not need to be mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\integration_tests.rs:301:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m301[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut world = create_test_world();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m----[0m[0m[1m[38;5;11m^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mhelp: remove this `mut`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_mut)]` on by default[0m
+
+[0m[1m[38;5;15mFor more information about this error, try `rustc --explain E0308`.[0m
+[1m[33mwarning[0m[1m:[0m `aw_editor` (test "integration_tests") generated 1 warning
+[1m[31merror[0m[1m:[0m could not compile `aw_editor` (test "integration_tests") due to 2 previous errors; 1 warning emitted
