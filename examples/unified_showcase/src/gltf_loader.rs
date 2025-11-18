@@ -164,9 +164,9 @@ fn generate_smooth_normals(positions: &[[f32; 3]], indices: &[u32]) -> Vec<[f32;
         .collect()
 }
 
-/// Load a GLTF/GLB file and extract ALL primitives (merged into single mesh)
-/// This is critical for models like Kenney trees where trunk and leaves are separate primitives.
-pub fn load_gltf(path: impl AsRef<Path>) -> Result<LoadedMesh> {
+/// Load a GLTF/GLB file and extract primitives as separate meshes
+/// This allows for multi-material objects (e.g. trees with trunk/leaves)
+pub fn load_gltf(path: impl AsRef<Path>) -> Result<Vec<LoadedMesh>> {
     let path = path.as_ref();
 
     log::info!("Attempting to load GLTF: {}", path.display());
@@ -206,13 +206,10 @@ pub fn load_gltf(path: impl AsRef<Path>) -> Result<LoadedMesh> {
 
     log::info!("GLTF loaded successfully, parsing meshes...");
 
-    // Collect ALL primitives from ALL meshes
-    let mut all_vertices = Vec::new();
-    let mut all_indices = Vec::new();
-    let mut mesh_name = String::from("unnamed");
+    let mut loaded_meshes = Vec::new();
 
     for mesh in document.meshes() {
-        mesh_name = mesh.name().unwrap_or("unnamed").to_string();
+        let mesh_name = mesh.name().unwrap_or("unnamed").to_string();
         log::info!(
             "Processing mesh: '{}' with {} primitives",
             mesh_name,
@@ -262,7 +259,7 @@ pub fn load_gltf(path: impl AsRef<Path>) -> Result<LoadedMesh> {
                 .read_colors(0)
                 .map(|iter| iter.into_rgba_f32().collect())
                 .unwrap_or_else(|| {
-                    log::info!("  Primitive {}: No vertex colors, using white", prim_idx);
+                    // log::info!("  Primitive {}: No vertex colors, using white", prim_idx);
                     vec![[1.0, 1.0, 1.0, 1.0]; positions.len()]
                 });
 
@@ -270,22 +267,16 @@ pub fn load_gltf(path: impl AsRef<Path>) -> Result<LoadedMesh> {
             let tangents: Vec<[f32; 4]> = if let Some(tangents_iter) = reader.read_tangents() {
                 tangents_iter.map(|t| [t[0], t[1], t[2], t[3]]).collect()
             } else {
-                log::info!(
-                    "  Primitive {}: No tangents found, computing tangents",
-                    prim_idx
-                );
+                // log::info!(
+                //     "  Primitive {}: No tangents found, computing tangents",
+                //     prim_idx
+                // );
                 compute_tangents(&positions, &uvs, &normals, &indices)
             };
 
-            // Offset indices by current vertex count (for merging primitives)
-            let index_offset = all_vertices.len() as u32;
-
-            // Store triangle count before moving indices
-            let triangle_count = indices.len() / 3;
-
-            // Append vertices with colors
+            let mut vertices = Vec::with_capacity(positions.len());
             for i in 0..positions.len() {
-                all_vertices.push(GltfVertex {
+                vertices.push(GltfVertex {
                     position: positions[i],
                     normal: normals[i],
                     uv: uvs[i],
@@ -294,126 +285,27 @@ pub fn load_gltf(path: impl AsRef<Path>) -> Result<LoadedMesh> {
                 });
             }
 
-            // Append indices (with offset)
-            for idx in indices {
-                all_indices.push(idx + index_offset);
-            }
-
+            let material_name = primitive.material().name().map(|s| s.to_string());
+            
             log::info!(
-                "  Primitive {}: {} vertices, {} triangles",
+                "  Primitive {}: {} vertices, {} triangles, material: {:?}",
                 prim_idx,
                 positions.len(),
-                triangle_count
-            );
-        }
-    }
-
-    if all_vertices.is_empty() {
-        anyhow::bail!("No valid primitives found in GLTF file");
-    }
-
-    log::info!(
-        "Loaded GLTF mesh '{}': {} total vertices, {} total triangles (from {} primitives)",
-        mesh_name,
-        all_vertices.len(),
-        all_indices.len() / 3,
-        document
-            .meshes()
-            .map(|m| m.primitives().len())
-            .sum::<usize>()
-    );
-
-    Ok(LoadedMesh {
-        vertices: all_vertices,
-        indices: all_indices,
-        name: mesh_name,
-    })
-}
-
-/// Load multiple meshes from a GLTF file
-#[allow(dead_code)]
-pub fn load_gltf_all_meshes(path: impl AsRef<Path>) -> Result<Vec<LoadedMesh>> {
-    let path = path.as_ref();
-    let (document, buffers, _images) = gltf::import(path)
-        .with_context(|| format!("Failed to load GLTF file: {}", path.display()))?;
-
-    let mut loaded_meshes = Vec::new();
-
-    for mesh in document.meshes() {
-        for primitive in mesh.primitives() {
-            let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
-
-            let positions: Vec<[f32; 3]> = reader
-                .read_positions()
-                .context("No position data in mesh")?
-                .collect();
-
-            let normals: Vec<[f32; 3]> = reader
-                .read_normals()
-                .map(|iter| iter.collect())
-                .unwrap_or_else(|| vec![[0.0, 1.0, 0.0]; positions.len()]);
-
-            let uvs: Vec<[f32; 2]> = reader
-                .read_tex_coords(0)
-                .map(|iter| iter.into_f32().collect())
-                .unwrap_or_else(|| vec![[0.0, 0.0]; positions.len()]);
-
-            let colors: Vec<[f32; 4]> = reader
-                .read_colors(0)
-                .map(|iter| iter.into_rgba_f32().collect())
-                .unwrap_or_else(|| vec![[1.0, 1.0, 1.0, 1.0]; positions.len()]);
-
-            let indices: Vec<u32> = reader
-                .read_indices()
-                .context("No index data in mesh")?
-                .into_u32()
-                .collect();
-
-            let tangents: Vec<[f32; 4]> = if let Some(titer) = reader.read_tangents() {
-                titer.map(|t| [t[0], t[1], t[2], t[3]]).collect()
-            } else {
-                compute_tangents(&positions, &uvs, &normals, &indices)
-            };
-
-            let vertices: Vec<GltfVertex> = positions
-                .iter()
-                .zip(normals.iter())
-                .zip(uvs.iter())
-                .zip(colors.iter())
-                .map(|(((pos, normal), uv), color)| GltfVertex {
-                    position: *pos,
-                    normal: *normal,
-                    uv: *uv,
-                    color: *color,
-                    tangent: [1.0, 0.0, 0.0, 1.0], // default, replaced below
-                })
-                .collect();
-
-            // Fill actual tangents (compute_tangents produced one per-vertex)
-            let mut vertices_with_tangents: Vec<GltfVertex> = vertices
-                .into_iter()
-                .enumerate()
-                .map(|(i, mut v)| {
-                    v.tangent = tangents[i];
-                    v
-                })
-                .collect();
-
-            // indices already read earlier
-
-            log::info!(
-                "Loaded mesh '{}': {} vertices, {} triangles",
-                mesh.name().unwrap_or("unnamed"),
-                vertices_with_tangents.len(),
-                indices.len() / 3
+                indices.len() / 3,
+                material_name
             );
 
             loaded_meshes.push(LoadedMesh {
-                vertices: vertices_with_tangents,
+                vertices,
                 indices,
-                name: mesh.name().unwrap_or("unnamed").to_string(),
+                name: mesh_name.clone(),
+                material_name,
             });
         }
+    }
+
+    if loaded_meshes.is_empty() {
+        anyhow::bail!("No valid primitives found in GLTF file");
     }
 
     Ok(loaded_meshes)
@@ -428,7 +320,9 @@ mod tests {
         // This test requires the demo_plane.gltf file to exist
         let result = load_gltf("../../assets/demo_plane.gltf");
         if result.is_ok() {
-            let mesh = result.unwrap();
+            let meshes = result.unwrap();
+            assert!(!meshes.is_empty(), "Should have meshes");
+            let mesh = &meshes[0];
             assert!(!mesh.vertices.is_empty(), "Should have vertices");
             assert!(!mesh.indices.is_empty(), "Should have indices");
             assert_eq!(mesh.indices.len() % 3, 0, "Indices should be triangles");
