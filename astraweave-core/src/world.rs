@@ -118,6 +118,21 @@ impl World {
         }
     }
 
+    /// Destroy an entity, removing all its components from the world.
+    /// Returns true if the entity existed and was destroyed, false otherwise.
+    pub fn destroy_entity(&mut self, e: Entity) -> bool {
+        let existed = self.poses.remove(&e).is_some();
+        if existed {
+            self.health.remove(&e);
+            self.team.remove(&e);
+            self.ammo.remove(&e);
+            self.cds.remove(&e);
+            self.names.remove(&e);
+            self.behavior_graphs.remove(&e);
+        }
+        existed
+    }
+
     // getters/setters
     pub fn pose(&self, e: Entity) -> Option<Pose> {
         self.poses.get(&e).copied()
@@ -543,4 +558,70 @@ mod tests {
         assert!(w.obstacle(IVec2 { x: 10, y: 10 }));
         assert!(!w.obstacle(IVec2 { x: 7, y: 7 }));
     }
+
+    #[test]
+    fn test_destroy_entity_removes_all_components() {
+        let mut w = World::new();
+        let e = w.spawn("player", IVec2 { x: 5, y: 10 }, Team { id: 0 }, 100, 30);
+
+        assert!(w.pose(e).is_some());
+        assert!(w.health(e).is_some());
+        assert!(w.team(e).is_some());
+        assert!(w.ammo(e).is_some());
+        assert!(w.cooldowns(e).is_some());
+        assert!(w.name(e).is_some());
+
+        let destroyed = w.destroy_entity(e);
+        assert!(destroyed);
+
+        assert!(w.pose(e).is_none());
+        assert!(w.health(e).is_none());
+        assert!(w.team(e).is_none());
+        assert!(w.ammo(e).is_none());
+        assert!(w.cooldowns(e).is_none());
+        assert!(w.name(e).is_none());
+        assert!(w.behavior_graph(e).is_none());
+    }
+
+    #[test]
+    fn test_destroy_entity_returns_false_for_nonexistent_entity() {
+        let mut w = World::new();
+        let destroyed = w.destroy_entity(999);
+        assert!(!destroyed);
+    }
+
+    #[test]
+    fn test_destroy_entity_updates_entities_list() {
+        let mut w = World::new();
+        let e1 = w.spawn("entity1", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
+        let e2 = w.spawn("entity2", IVec2 { x: 5, y: 5 }, Team { id: 0 }, 100, 30);
+        let e3 = w.spawn("entity3", IVec2 { x: 10, y: 10 }, Team { id: 0 }, 100, 30);
+
+        assert_eq!(w.entities().len(), 3);
+
+        w.destroy_entity(e2);
+
+        let entities = w.entities();
+        assert_eq!(entities.len(), 2);
+        assert!(entities.contains(&e1));
+        assert!(!entities.contains(&e2));
+        assert!(entities.contains(&e3));
+    }
+
+    #[test]
+    fn test_destroy_entity_preserves_other_entities() {
+        let mut w = World::new();
+        let e1 = w.spawn("entity1", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
+        let e2 = w.spawn("entity2", IVec2 { x: 5, y: 5 }, Team { id: 1 }, 80, 20);
+
+        w.destroy_entity(e1);
+
+        assert!(w.pose(e1).is_none());
+        assert!(w.pose(e2).is_some());
+        assert_eq!(w.pose(e2).unwrap().pos, IVec2 { x: 5, y: 5 });
+        assert_eq!(w.health(e2).unwrap().hp, 80);
+        assert_eq!(w.team(e2).unwrap().id, 1);
+        assert_eq!(w.ammo(e2).unwrap().rounds, 20);
+    }
 }
+
