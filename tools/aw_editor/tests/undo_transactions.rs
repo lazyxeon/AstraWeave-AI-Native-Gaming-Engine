@@ -1,5 +1,5 @@
 use astraweave_core::{IVec2, Team, World};
-use aw_editor::headless::GizmoHarness;
+use aw_editor_lib::headless::GizmoHarness;
 
 fn harness_with_entity() -> (GizmoHarness, u32) {
     let mut world = World::new();

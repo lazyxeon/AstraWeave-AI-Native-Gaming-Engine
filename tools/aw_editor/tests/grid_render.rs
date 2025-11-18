@@ -1,6 +1,6 @@
 use astraweave_core::{IVec2, Team, World};
-use aw_editor::gizmo::snapping::SnappingConfig;
-use aw_editor::headless::GizmoHarness;
+use aw_editor_lib::gizmo::snapping::SnappingConfig;
+use aw_editor_lib::headless::GizmoHarness;
 
 fn spawn_world() -> (World, u32) {
     let mut world = World::new();

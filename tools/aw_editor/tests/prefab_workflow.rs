@@ -1,10 +1,10 @@
 use astraweave_core::{IVec2, Team, World};
-use aw_editor::command::{
+use aw_editor_lib::command::{
     spawn_prefab_with_undo, PrefabApplyOverridesCommand, PrefabRevertOverridesCommand,
     PrefabSpawnCommand, UndoStack,
 };
-use aw_editor::prefab::{PrefabData, PrefabEntityData, PrefabManager};
-use aw_editor::EditorCommand;
+use aw_editor_lib::prefab::{PrefabData, PrefabEntityData, PrefabManager};
+use aw_editor_lib::EditorCommand;
 use tempfile::tempdir;
 
 fn sample_prefab() -> PrefabData {

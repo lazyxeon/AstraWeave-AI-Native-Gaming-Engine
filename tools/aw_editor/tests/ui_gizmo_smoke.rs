@@ -1,7 +1,7 @@
 use astraweave_core::{IVec2, Team, World};
-use aw_editor::headless::GizmoHarness;
-use aw_editor::interaction::GizmoMeasurement;
-use aw_editor::telemetry::{self, EditorTelemetryEvent};
+use aw_editor_lib::headless::GizmoHarness;
+use aw_editor_lib::interaction::GizmoMeasurement;
+use aw_editor_lib::telemetry::{self, EditorTelemetryEvent};
 
 fn spawn_test_world() -> (World, u32) {
     let mut world = World::new();

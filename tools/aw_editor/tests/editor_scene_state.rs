@@ -1,8 +1,8 @@
 use std::f32::consts::FRAC_PI_4;
 
 use astraweave_core::{Entity, IVec2, Team, World};
-use aw_editor::scene_state::EditorSceneState;
-use aw_editor::TransformableScene;
+use aw_editor_lib::scene_state::EditorSceneState;
+use aw_editor_lib::TransformableScene;
 use glam::{Quat, Vec3};
 
 type SceneAndEntity = (EditorSceneState, Entity);
