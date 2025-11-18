@@ -732,11 +732,18 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Read these for quality assessment and remediation guidance:**
 
+0. **SECURITY_REMEDIATION_REPORT.md** ✅ **COMPLETE** (November 18, 2025)
+   - **Priority 1 security fixes for network server**
+   - Security Grade: C+ → A- (92/100)
+   - Fixed: DoS (rate limiting), forgery (HMAC-SHA256), crashes (panic paths), cleartext (TLS enforcement)
+   - 4 critical vulnerabilities eliminated
+   - Commit: 88434f3 - Production-ready network security
+
 1. **COMPREHENSIVE_AUDIT_REPORT.md** (Multi-Agent Audit - November 18, 2025)
    - **START HERE**: Overall assessment A- (92/100)
    - 7 critical dimensions: Architecture, Code Quality, Security, Testing, Documentation, Dependencies, Competitive Analysis
    - Executive summary with critical issues and remediation roadmap
-   - Security vulnerabilities: Broken rate limiting, weak signatures, panic-on-error
+   - Security vulnerabilities: Broken rate limiting, weak signatures, panic-on-error (NOW FIXED - see #0)
    - Production blockers: Non-functional editor (4-6 weeks to fix)
    - Competitive position: Exceeds Bevy/Godot in AI/rendering
    - Timeline: 3-4 months to MVP, 6-9 months to commercial, 12-18 months to AAA parity
