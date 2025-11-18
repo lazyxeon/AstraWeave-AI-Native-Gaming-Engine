@@ -6,8 +6,10 @@ use std::{
 use anyhow::{anyhow, Result};
 use axum::{routing::get, Router};
 use futures::{SinkExt, StreamExt};
+use hmac::{Hmac, Mac};
 use parking_lot::Mutex;
 use rustls_pemfile::{certs, private_key};
+use sha2::Sha256;
 use tokio::{net::TcpListener, time::Instant};
 use tokio_rustls::{rustls::ServerConfig, TlsAcceptor};
 use tokio_tungstenite::{
@@ -20,6 +22,8 @@ use aw_net_proto::{
     new_room_id, ClientToServer, Codec, ServerToClient, SessionKey, PROTOCOL_VERSION,
 };
 
+type HmacSha256 = Hmac<Sha256>;
+
 type PlayerId = String;
 type RoomId = String;
 
@@ -31,8 +35,9 @@ struct Player {
     display: String,
     last_input_seq: u32,
     last_seen: Instant,
-    // simplistic rate limit
+    // token bucket rate limit
     tokens: f32,
+    last_refill: Instant,
 }
 
 #[derive(Clone)]
@@ -93,7 +98,10 @@ fn create_tls_acceptor(cert_path: &Path, key_path: &Path) -> Result<TlsAcceptor>
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::from_default_env().add_directive("info".parse().unwrap()))
+        .with_env_filter(
+            EnvFilter::from_default_env()
+                .add_directive("info".parse().map_err(|e| anyhow!("Invalid log directive: {}", e))?)
+        )
         .init();
 
     // Parse command-line arguments for TLS configuration
@@ -106,8 +114,15 @@ async fn main() -> Result<()> {
     while i < args.len() {
         match args[i].as_str() {
             "--disable-tls" => {
-                tls_enabled = false;
-                info!("TLS disabled via command line");
+                #[cfg(not(debug_assertions))]
+                {
+                    return Err(anyhow!("SECURITY: TLS cannot be disabled in release builds"));
+                }
+                #[cfg(debug_assertions)]
+                {
+                    tls_enabled = false;
+                    info!("TLS disabled via command line (debug build only)");
+                }
             }
             "--tls-cert" => {
                 if i + 1 < args.len() {
@@ -147,14 +162,28 @@ async fn main() -> Result<()> {
 
     // Spawn HTTP server
     tokio::spawn(async move {
-        let addr: SocketAddr = "0.0.0.0:8789".parse().unwrap();
-        info!("HTTP admin on http://{}", addr);
-        let listener = TcpListener::bind(addr).await.unwrap();
-        axum::serve(listener, http_app).await.unwrap();
+        let addr_result: Result<SocketAddr> = "0.0.0.0:8789".parse()
+            .map_err(|e| anyhow!("Invalid HTTP admin address: {}", e));
+        
+        match addr_result {
+            Ok(addr) => {
+                info!("HTTP admin on http://{}", addr);
+                match TcpListener::bind(addr).await {
+                    Ok(listener) => {
+                        if let Err(e) = axum::serve(listener, http_app).await {
+                            warn!("HTTP server error: {}", e);
+                        }
+                    }
+                    Err(e) => warn!("Failed to bind HTTP server: {}", e),
+                }
+            }
+            Err(e) => warn!("HTTP server initialization failed: {}", e),
+        }
     });
 
     // WS server
-    let ws_addr: SocketAddr = "0.0.0.0:8788".parse().unwrap();
+    let ws_addr: SocketAddr = "0.0.0.0:8788".parse()
+        .map_err(|e| anyhow!("Invalid WebSocket address: {}", e))?;
 
     let listener = TcpListener::bind(ws_addr).await?;
 
@@ -330,7 +359,8 @@ async fn handle_socket_tls(
                 display: "player".into(),
                 last_input_seq: 0,
                 last_seen: tokio::time::Instant::now(),
-                tokens: 30.0, // token bucket
+                tokens: 30.0,
+                last_refill: tokio::time::Instant::now(),
             },
         );
         tick_hz = room.tick_hz;
@@ -384,7 +414,7 @@ async fn handle_socket_tls(
 
             // Send authoritative snapshot periodically
             _ = tokio::time::sleep(tick_dt) => {
-                let (snap, sid) = build_snapshot(&app, &rid);
+                let (snap, sid) = build_snapshot(&app, &rid)?;
                 _last_snap = sid;
                 send_tls(&app, &mut ws, &snap).await?;
             }
@@ -510,7 +540,8 @@ async fn handle_socket(
                 display: "player".into(),
                 last_input_seq: 0,
                 last_seen: tokio::time::Instant::now(),
-                tokens: 30.0, // token bucket
+                tokens: 30.0,
+                last_refill: tokio::time::Instant::now(),
             },
         );
         tick_hz = room.tick_hz;
@@ -564,7 +595,7 @@ async fn handle_socket(
 
             // Send authoritative snapshot periodically
             _ = tokio::time::sleep(tick_dt) => {
-                let (snap, sid) = build_snapshot(&app, &rid);
+                let (snap, sid) = build_snapshot(&app, &rid)?;
                 _last_snap = sid;
                 send(&app, &mut ws, &snap).await?;
             }
@@ -584,10 +615,11 @@ async fn handle_socket(
     Ok(())
 }
 
-fn build_snapshot(app: &AppState, rid: &str) -> (ServerToClient, u32) {
+fn build_snapshot(app: &AppState, rid: &str) -> Result<(ServerToClient, u32)> {
     let (server_tick, sid, payload) = {
         let mut rooms = app.rooms.lock();
-        let room = rooms.get_mut(rid).unwrap();
+        let room = rooms.get_mut(rid)
+            .ok_or_else(|| anyhow!("Room {} not found", rid))?;
         room.tick += 1;
         room.snap_id = room.snap_id.wrapping_add(1);
 
@@ -600,7 +632,8 @@ fn build_snapshot(app: &AppState, rid: &str) -> (ServerToClient, u32) {
             tick: u64,
         }
         let demo = DemoState { tick: server_tick };
-        let raw = postcard::to_allocvec(&demo).unwrap();
+        let raw = postcard::to_allocvec(&demo)
+            .map_err(|e| anyhow!("Failed to serialize snapshot: {}", e))?;
 
         (server_tick, sid, raw)
     };
@@ -612,7 +645,7 @@ fn build_snapshot(app: &AppState, rid: &str) -> (ServerToClient, u32) {
         compressed: true,
         payload: lz4_flex::compress_prepend_size(&payload),
     };
-    (msg, sid)
+    Ok((msg, sid))
 }
 
 async fn on_client_msg(
@@ -629,30 +662,42 @@ async fn on_client_msg(
             sig,
             ..
         } => {
-            // basic rate limit
+            // token bucket rate limit
             let mut kick = false;
             {
                 let mut rooms = app.rooms.lock();
                 if let Some(room) = rooms.get_mut(rid) {
                     if let Some(p) = room.players.get_mut(pid) {
-                        p.tokens += 8.0; // refill
-                        if p.tokens > 60.0 {
-                            p.tokens = 60.0;
+                        let now = tokio::time::Instant::now();
+                        let elapsed = now.duration_since(p.last_refill).as_secs_f32();
+                        
+                        // Refill tokens based on elapsed time (8 tokens/sec)
+                        const REFILL_RATE: f32 = 8.0;
+                        const BUCKET_SIZE: f32 = 60.0;
+                        const COST_PER_MESSAGE: f32 = 1.0;
+                        
+                        p.tokens += REFILL_RATE * elapsed;
+                        if p.tokens > BUCKET_SIZE {
+                            p.tokens = BUCKET_SIZE;
                         }
-                        p.tokens -= 1.0;
+                        p.last_refill = now;
+                        
+                        // Deduct cost
+                        p.tokens -= COST_PER_MESSAGE;
+                        
                         if p.tokens < 0.0 {
                             kick = true;
                         } else {
                             p.last_input_seq = seq;
-                            p.last_seen = tokio::time::Instant::now();
+                            p.last_seen = now;
                         }
-                        // lightweight tamper check: verify sig with session hint
-                        let mut hint = [0u8; 8];
-                        hint.copy_from_slice(&room.session_key.0[0..8]);
-                        if sig != aw_net_proto::sign16(&input_blob, &hint) {
-                            // tamper detected; you can keep counters and kick later
-                            // for demo, just warn
-                            warn!("tamper-evident signature mismatch for pid={pid}");
+                        // Cryptographically secure tamper check: HMAC-SHA256
+                        let mut mac = HmacSha256::new_from_slice(&room.session_key.0)
+                            .expect("HMAC can take key of any size");
+                        mac.update(&input_blob);
+                        
+                        if mac.verify_slice(&sig).is_err() {
+                            warn!("HMAC signature verification failed for pid={pid}");
                         }
                     }
                 }
@@ -745,28 +790,42 @@ async fn on_client_msg_tls(
             sig,
             ..
         } => {
-            // basic rate limit
+            // token bucket rate limit
             let mut kick = false;
             {
                 let mut rooms = app.rooms.lock();
                 if let Some(room) = rooms.get_mut(rid) {
                     if let Some(p) = room.players.get_mut(pid) {
-                        p.tokens += 8.0; // refill
-                        if p.tokens > 60.0 {
-                            p.tokens = 60.0;
+                        let now = tokio::time::Instant::now();
+                        let elapsed = now.duration_since(p.last_refill).as_secs_f32();
+                        
+                        // Refill tokens based on elapsed time (8 tokens/sec)
+                        const REFILL_RATE: f32 = 8.0;
+                        const BUCKET_SIZE: f32 = 60.0;
+                        const COST_PER_MESSAGE: f32 = 1.0;
+                        
+                        p.tokens += REFILL_RATE * elapsed;
+                        if p.tokens > BUCKET_SIZE {
+                            p.tokens = BUCKET_SIZE;
                         }
-                        p.tokens -= 1.0;
+                        p.last_refill = now;
+                        
+                        // Deduct cost
+                        p.tokens -= COST_PER_MESSAGE;
+                        
                         if p.tokens < 0.0 {
                             kick = true;
                         } else {
                             p.last_input_seq = seq;
-                            p.last_seen = tokio::time::Instant::now();
+                            p.last_seen = now;
                         }
-                        // lightweight tamper check: verify sig with session hint
-                        let mut hint = [0u8; 8];
-                        hint.copy_from_slice(&room.session_key.0[0..8]);
-                        if sig != aw_net_proto::sign16(&input_blob, &hint) {
-                            warn!("tamper-evident signature mismatch for pid={pid}");
+                        // Cryptographically secure tamper check: HMAC-SHA256
+                        let mut mac = HmacSha256::new_from_slice(&room.session_key.0)
+                            .expect("HMAC can take key of any size");
+                        mac.update(&input_blob);
+                        
+                        if mac.verify_slice(&sig).is_err() {
+                            warn!("HMAC signature verification failed for pid={pid}");
                         }
                     }
                 }
