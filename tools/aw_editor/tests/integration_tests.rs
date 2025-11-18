@@ -239,16 +239,16 @@ fn test_edit_team_command() {
     let mut world = create_test_world();
     let entity = world.entities()[0];
 
-    let old_team = world.team(entity).unwrap().id;
-    let new_team = 5;
+    let old_team = world.team(entity).unwrap();
+    let new_team = Team { id: 5 };
 
     let mut cmd = EditTeamCommand::new(entity, old_team, new_team);
     cmd.execute(&mut world).expect("edit team should succeed");
 
-    assert_eq!(world.team(entity).unwrap().id, new_team);
+    assert_eq!(world.team(entity).unwrap().id, 5);
 
     cmd.undo(&mut world).expect("undo should succeed");
-    assert_eq!(world.team(entity).unwrap().id, old_team);
+    assert_eq!(world.team(entity).unwrap().id, old_team.id);
 }
 
 #[test]
@@ -673,7 +673,7 @@ fn test_complex_undo_redo_sequence() {
         .expect("health");
 
     undo_stack
-        .execute(EditTeamCommand::new(entity, 0, 3), &mut world)
+        .execute(EditTeamCommand::new(entity, Team { id: 0 }, Team { id: 3 }), &mut world)
         .expect("team");
 
     // Undo all

@@ -109,4 +109,24 @@ impl GizmoHarness {
     pub fn snapping_config_mut(&mut self) -> &mut SnappingConfig {
         &mut self._snapping
     }
+
+    pub fn undo_depth(&self) -> usize {
+        if self.undo_stack.can_undo() {
+            1
+        } else {
+            0
+        }
+    }
+
+    pub fn undo_last(&mut self) -> Result<(), String> {
+        self.undo_stack
+            .undo(&mut self.world)
+            .map_err(|e| format!("Undo failed: {}", e))
+    }
+
+    pub fn redo_last(&mut self) -> Result<(), String> {
+        self.undo_stack
+            .redo(&mut self.world)
+            .map_err(|e| format!("Redo failed: {}", e))
+    }
 }
