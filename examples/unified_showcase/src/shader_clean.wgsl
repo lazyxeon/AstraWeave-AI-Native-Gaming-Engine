@@ -142,8 +142,7 @@ fn fetch_shadow(shadow_pos: vec4<f32>, normal: vec3<f32>, light_dir: vec3<f32>) 
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let texture_color = textureSample(albedo_texture, texture_sampler, in.uv).rgb;
     let normal_sample = textureSample(normal_texture, texture_sampler, in.uv).rgb;
-    // Roughness is in Green channel for glTF MRA workflow (Red=Occlusion, Green=Roughness, Blue=Metalness)
-    let roughness_sample = textureSample(roughness_texture, texture_sampler, in.uv).g;
+    let roughness_sample = textureSample(roughness_texture, texture_sampler, in.uv).r;
     
     let albedo = in.color.rgb * texture_color;
     
@@ -156,10 +155,9 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let mapped_normal = normalize(TBN * n_sample);
     
     let view_dir = normalize(camera.camera_pos - in.world_position);
-    
-    // Directional light (sun)
-    // light.position is the sun's position, so direction TO light is normalize(light.position)
-    let light_dir = normalize(light.position); 
+    let light_dir = normalize(light.position - in.world_position); // Point light or Directional?
+    // For directional light, light.position is actually the direction source
+    // But let's assume light.position is the sun position (far away)
     
     // Diffuse
     let diffuse_strength = max(dot(mapped_normal, light_dir), 0.0);
