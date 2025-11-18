@@ -728,6 +728,80 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 ---
 
+## Quality & Audit Reports
+
+**Read these for quality assessment and remediation guidance:**
+
+1. **COMPREHENSIVE_AUDIT_REPORT.md** (Multi-Agent Audit - November 18, 2025)
+   - **START HERE**: Overall assessment A- (92/100)
+   - 7 critical dimensions: Architecture, Code Quality, Security, Testing, Documentation, Dependencies, Competitive Analysis
+   - Executive summary with critical issues and remediation roadmap
+   - Security vulnerabilities: Broken rate limiting, weak signatures, panic-on-error
+   - Production blockers: Non-functional editor (4-6 weeks to fix)
+   - Competitive position: Exceeds Bevy/Godot in AI/rendering
+   - Timeline: 3-4 months to MVP, 6-9 months to commercial, 12-18 months to AAA parity
+
+2. **DOCUMENTATION_AUDIT_REPORT.md** (November 18, 2025)
+   - **Grade: C+ (73/100)** - Functional but needs work
+   - 718 lines comprehensive documentation analysis
+   - Critical gaps: 42/47 crates (89%) missing README.md
+   - 100+ TODO/FIXME comments (maintenance debt)
+   - Master reports A+ (world-class internal documentation)
+   - Remediation: 200 hours (5 weeks full-time) to world-class standard
+   - Also in: `docs/current/DOCUMENTATION_AUDIT_REPORT.md`
+
+3. **DOCUMENTATION_AUDIT_SUMMARY.md** (Executive Summary)
+   - TL;DR version of documentation audit
+   - Top 5 biggest impact actions (55 hours → +19 grade points)
+   - Quick reference for documentation priorities
+   - Also in: `docs/current/DOCUMENTATION_AUDIT_SUMMARY.md`
+
+4. **COMPETITIVE_ANALYSIS_SUMMARY.md** + **COMPETITIVE_MATRIX.md**
+   - Market positioning vs Bevy, Godot, Unity, Unreal
+   - Feature comparison matrix
+   - Strengths: AI (12,700 agents @ 60 FPS), rendering (MegaLights)
+   - Gaps: Tooling (0 plugins), ecosystem
+
+5. **GAP_ANALYSIS_ACTION_PLAN.md**
+   - Prioritized action items from competitive analysis
+   - Phased remediation roadmap
+
+6. **EXTERNAL_RESEARCH_COMPETITIVE_ANALYSIS.md**
+   - Deep dive into competitor research
+   - Industry benchmarks
+
+**Veilweaver Game Project Audits**:
+
+7. **docs/current/VEILWEAVER_FOUNDATION_AUDIT_REPORT.md** (November 8, 2025)
+   - **Status: ✅ COMPLETE** - Foundation ready for implementation
+   - Weaving system: 94.26% test coverage (21 → 64 tests)
+   - Timeline: 6-8 weeks to fully playable 30-minute vertical slice
+   - Production-ready grade: ⭐⭐⭐⭐⭐ A+
+   - Also in: `docs/projects/veilweaver/FOUNDATION_AUDIT_SUMMARY.md`
+
+**Code Quality Audits** (docs/root-archive/):
+
+8. **docs/root-archive/UNWRAP_AUDIT_ANALYSIS.md** (Week 6)
+   - 637 `.unwrap()` calls cataloged (342 P0 critical)
+   - Risk prioritization and remediation plan
+   - Safe error handling patterns
+   - Referenced in "Key Metrics Documents" section
+
+9. **docs/root-archive/HERMES2PRO_MIGRATION_PHASE1_AUDIT.md**
+   - LLM migration audit (Phi-3 → Hermes 2 Pro)
+   - Root cause analysis
+
+10. **docs/root-archive/AUDIT_PHASE_1_COMPLETE.md**
+    - Phase 1 audit completion summary
+
+**Update Frequency**:
+- COMPREHENSIVE_AUDIT_REPORT.md: Review after major milestones (quarterly)
+- DOCUMENTATION_AUDIT_REPORT.md: Re-audit when documentation coverage changes ±10%
+- Competitive analysis: Update when new competitor features launch
+- Veilweaver audits: Update per vertical slice milestone
+
+---
+
 ## Working Effectively
 
 ### Build Strategy
