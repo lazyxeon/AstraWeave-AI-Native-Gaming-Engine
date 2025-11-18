@@ -13,21 +13,20 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon.svg">
-        <link rel="shortcut icon" href="favicon.png">
-        <link rel="stylesheet" href="css/variables.css">
-        <link rel="stylesheet" href="css/general.css">
-        <link rel="stylesheet" href="css/chrome.css">
-        <link rel="stylesheet" href="css/print.css" media="print">
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-2459343d.css">
+        <link rel="stylesheet" href="css/chrome-9dfbd86b.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
-        <link rel="stylesheet" href="fonts/fonts.css">
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="highlight-css" href="highlight.css">
-        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
-        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
@@ -37,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex.js";
+            window.path_to_searchindex_js = "searchindex-b9e84159.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc.js"></script>
+        <script src="toc-ffc84c52.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -54,7 +53,7 @@
             </div>
         </div>
     </div>
-    <div id="body-container">
+    <div id="mdbook-body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
@@ -83,12 +82,12 @@
             html.classList.add("js");
         </script>
 
-        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             let sidebar = null;
-            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -103,39 +102,39 @@
             }
         </script>
 
-        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
                 <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
             </noscript>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
         </nav>
 
-        <div id="page-wrapper" class="page-wrapper">
+        <div id="mdbook-page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
-                <div id="menu-bar" class="menu-bar sticky">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
-                            <i class="fa fa-bars"></i>
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
                         </label>
-                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
-                            <i class="fa fa-paint-brush"></i>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
                         </button>
-                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
-                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
-                            <i class="fa fa-search"></i>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
                         </button>
                     </div>
 
@@ -143,53 +142,48 @@
 
                     <div class="right-buttons">
                         <a href="print.html" title="Print this book" aria-label="Print this book">
-                            <i id="print-button" class="fa fa-print"></i>
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
                         <a href="https://github.com/lazyxeon/AstraWeave-AI-Native-Gaming-Engine" title="Git repository" aria-label="Git repository">
-                            <i id="git-repository-button" class="fa fa-github"></i>
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg></span>
                         </a>
 
                     </div>
                 </div>
 
-                <div id="search-wrapper" class="hidden">
-                    <form id="searchbar-outer" class="searchbar-outer">
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
                         <div class="search-wrapper">
-                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
                             <div class="spinner-wrapper">
-                                <i class="fa fa-spinner fa-spin"></i>
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
                             </div>
                         </div>
                     </form>
-                    <div id="searchresults-outer" class="searchresults-outer hidden">
-                        <div id="searchresults-header" class="searchresults-header"></div>
-                        <ul id="searchresults">
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
                         </ul>
                     </div>
                 </div>
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
                 <script>
-                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
-                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
-                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
                         link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
                     });
                 </script>
 
-                <div id="content" class="content">
+                <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="astraweave-ai-native-game-engine-documentation"><a class="header" href="#astraweave-ai-native-game-engine-documentation">AstraWeave: AI-Native Game Engine Documentation</a></h1>
 <p>Welcome to the comprehensive documentation for <strong>AstraWeave</strong>, the first game engine built from the ground up for AI-native gameplay.</p>
 <h2 id="what-is-astraweave"><a class="header" href="#what-is-astraweave">What is AstraWeave?</a></h2>
 <p>AstraWeave is a deterministic, ECS-based game engine where <strong>AI agents are first-class citizens</strong>. Unlike traditional engines where AI is bolted on as an afterthought, AstraWeave implements the core AI loop (<strong>Perception → Reasoning → Planning → Action</strong>) directly into the simulation architecture.</p>
 <h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
-<p>🧠 <strong>AI-Native Architecture</strong> - Agents plan through sandboxed tools with full engine validation<br />
-🎯 <strong>Deterministic Simulation</strong> - 60Hz fixed-tick simulation with authoritative validation<br />
-🛡️ <strong>Tool Sandbox Security</strong> - AI can only act through validated verbs (no cheating)<br />
-🤝 <strong>Persistent Companions</strong> - AI profiles that learn and adapt across sessions<br />
-🎭 <strong>Adaptive Boss Systems</strong> - Directors that evolve tactics and reshape battlefields<br />
-🌐 <strong>Local-First AI</strong> - 7B-12B quantized LLMs for low-latency decisions</p>
+<p>🧠 <strong>AI-Native Architecture</strong> - Agents plan through sandboxed tools with full engine validation<br>🎯 <strong>Deterministic Simulation</strong> - 60Hz fixed-tick simulation with authoritative validation<br>🛡️ <strong>Tool Sandbox Security</strong> - AI can only act through validated verbs (no cheating)<br>🤝 <strong>Persistent Companions</strong> - AI profiles that learn and adapt across sessions<br>🎭 <strong>Adaptive Boss Systems</strong> - Directors that evolve tactics and reshape battlefields<br>🌐 <strong>Local-First AI</strong> - 7B-12B quantized LLMs for low-latency decisions</p>
 <h2 id="who-is-this-for"><a class="header" href="#who-is-this-for">Who is This For?</a></h2>
 <p>This documentation serves different types of users:</p>
 <h3 id="-game-developers"><a class="header" href="#-game-developers">🎮 Game Developers</a></h3>
@@ -197,43 +191,44 @@
 <li>Want to build games with intelligent AI companions</li>
 <li>Need dynamic bosses that adapt to player strategies</li>
 <li>Seek emergent gameplay from AI agent interactions</li>
-<li><strong>Start with:</strong> <a href="./getting-started/quick-start.html">Quick Start Guide</a></li>
+<li><strong>Start with:</strong> <a href="#quick-start">Quick Start Guide</a></li>
 </ul>
 <h3 id="-engine-contributors"><a class="header" href="#-engine-contributors">🔧 Engine Contributors</a></h3>
 <ul>
-<li>Want to contribute to the engine's core systems</li>
+<li>Want to contribute to the engine’s core systems</li>
 <li>Interested in AI-native architecture design</li>
 <li>Need to understand the codebase structure</li>
-<li><strong>Start with:</strong> <a href="./dev/contributing.html">Contributing Guide</a></li>
+<li><strong>Start with:</strong> <a href="#contributing-guide">Contributing Guide</a></li>
 </ul>
 <h3 id="-ai-researchers"><a class="header" href="#-ai-researchers">🧠 AI Researchers</a></h3>
 <ul>
 <li>Studying AI-native game architectures</li>
 <li>Interested in perception, planning, and validation systems</li>
 <li>Want to understand tool-based AI validation</li>
-<li><strong>Start with:</strong> <a href="./architecture/ai-native.html">AI-Native Design</a></li>
+<li><strong>Start with:</strong> <a href="#ai-native-design">AI-Native Design</a></li>
 </ul>
 <h3 id="-students--learners"><a class="header" href="#-students--learners">📚 Students &amp; Learners</a></h3>
 <ul>
 <li>Learning about game engine architecture</li>
 <li>Understanding ECS and deterministic simulation</li>
 <li>Exploring AI in games</li>
-<li><strong>Start with:</strong> <a href="./architecture/overview.html">Architecture Overview</a></li>
+<li><strong>Start with:</strong> <a href="#architecture-overview">Architecture Overview</a></li>
 </ul>
 <h2 id="quick-navigation"><a class="header" href="#quick-navigation">Quick Navigation</a></h2>
 <ul>
-<li><strong>New to AstraWeave?</strong> → <a href="./getting-started/quick-start.html">Quick Start Guide</a></li>
-<li><strong>Want to build a game?</strong> → <a href="./game-dev/first-game.html">Building Your First Game</a></li>
-<li><strong>Need API reference?</strong> → <a href="./api/index.html">API Documentation</a></li>
-<li><strong>Looking for examples?</strong> → <a href="./examples/index.html">Working Examples</a></li>
-<li><strong>Want to contribute?</strong> → <a href="./dev/contributing.html">Contributing Guide</a></li>
-<li><strong>Having issues?</strong> → <a href="./resources/troubleshooting.html">Troubleshooting</a></li>
+<li><strong>New to AstraWeave?</strong> → <a href="#quick-start">Quick Start Guide</a></li>
+<li><strong>Want to build a game?</strong> → <a href="#building-your-first-game">Building Your First Game</a></li>
+<li><strong>Need API reference?</strong> → <a href="#api-documentation">API Documentation</a></li>
+<li><strong>Looking for examples?</strong> → <a href="#working-examples">Working Examples</a></li>
+<li><strong>Want to contribute?</strong> → <a href="#contributing-guide">Contributing Guide</a></li>
+<li><strong>Having issues?</strong> → <a href="#troubleshooting-2">Troubleshooting</a></li>
 </ul>
 <h2 id="reference-implementation-veilweaver"><a class="header" href="#reference-implementation-veilweaver">Reference Implementation: Veilweaver</a></h2>
-<p><strong>Veilweaver: Threads of Eternity</strong> serves as AstraWeave's reference implementation—a complete AI-native Action RPG that demonstrates the engine's capabilities. Learn more in the <a href="./veilweaver/overview.html">Veilweaver section</a>.</p>
-<hr />
-<p><em>Ready to build the future of AI-native gaming? Let's get started!</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
+<p><strong>Veilweaver: Threads of Eternity</strong> serves as AstraWeave’s reference implementation—a complete AI-native Action RPG that demonstrates the engine’s capabilities. Learn more in the <a href="veilweaver/overview.html">Veilweaver section</a>.</p>
+<hr>
+<p><em>Ready to build the future of AI-native gaming? Let’s get started!</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h1>
 <p>Get up and running with AstraWeave in minutes! This guide will help you install the engine, run your first AI companion, and understand the basic concepts.</p>
 <h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
 <ul>
@@ -248,7 +243,7 @@
 cd AstraWeave-AI-Native-Gaming-Engine
 </code></pre>
 <h3 id="2-system-dependencies-linux"><a class="header" href="#2-system-dependencies-linux">2. System Dependencies (Linux)</a></h3>
-<p>If you're on Linux, install the required system packages:</p>
+<p>If you’re on Linux, install the required system packages:</p>
 <pre><code class="language-bash">sudo apt-get update
 sudo apt-get install -y build-essential pkg-config cmake ninja-build \
   libx11-dev libxi-dev libxcursor-dev libxrandr-dev libxinerama-dev \
@@ -264,16 +259,16 @@ sudo apt-get install -y build-essential pkg-config cmake ninja-build \
 </code></pre>
 <p>This typically takes 8-15 seconds after initial dependency download.</p>
 <h2 id="your-first-ai-companion"><a class="header" href="#your-first-ai-companion">Your First AI Companion</a></h2>
-<p>Let's run the most basic example to see AstraWeave in action:</p>
+<p>Let’s run the most basic example to see AstraWeave in action:</p>
 <pre><code class="language-bash">cargo run -p hello_companion --release
 </code></pre>
-<h3 id="what-youll-see"><a class="header" href="#what-youll-see">What You'll See</a></h3>
+<h3 id="what-youll-see"><a class="header" href="#what-youll-see">What You’ll See</a></h3>
 <p>The demo will show:</p>
 <ol>
 <li><strong>AI Perception</strong>: The companion perceives the world state</li>
 <li><strong>Planning</strong>: AI generates a plan using its understanding</li>
 <li><strong>Tool Validation</strong>: The engine validates what the AI wants to do</li>
-<li><strong>Expected Panic</strong>: The demo will panic with "LosBlocked" - this is expected behavior demonstrating the validation system</li>
+<li><strong>Expected Panic</strong>: The demo will panic with “LosBlocked” - this is expected behavior demonstrating the validation system</li>
 </ol>
 <h3 id="example-output"><a class="header" href="#example-output">Example Output</a></h3>
 <pre><code>[INFO] AI Companion initialized
@@ -284,9 +279,9 @@ sudo apt-get install -y build-essential pkg-config cmake ninja-build \
 [ERROR] Validation failed: LosBlocked
 thread 'main' panicked at 'LOS validation failed'
 </code></pre>
-<p><strong>This panic is intentional!</strong> It demonstrates AstraWeave's core principle: <em>the AI can only do what the engine validates as possible</em>.</p>
+<p><strong>This panic is intentional!</strong> It demonstrates AstraWeave’s core principle: <em>the AI can only do what the engine validates as possible</em>.</p>
 <h2 id="understanding-what-happened"><a class="header" href="#understanding-what-happened">Understanding What Happened</a></h2>
-<p>The hello_companion example showcases AstraWeave's fundamental architecture:</p>
+<p>The hello_companion example showcases AstraWeave’s fundamental architecture:</p>
 <ol>
 <li><strong>Fixed-Tick Simulation</strong>: The world runs at deterministic 60Hz</li>
 <li><strong>AI Perception</strong>: AI agents receive structured world snapshots</li>
@@ -295,12 +290,12 @@ thread 'main' panicked at 'LOS validation failed'
 <li><strong>Safety First</strong>: Invalid actions are rejected, maintaining game integrity</li>
 </ol>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
-<p>Now that you've seen the core loop in action:</p>
+<p>Now that you’ve seen the core loop in action:</p>
 <ul>
-<li><strong>Learn the Architecture</strong>: Read <a href="getting-started/../architecture/ai-native.html">AI-Native Design</a></li>
-<li><strong>Build Your First Game</strong>: Follow <a href="getting-started/../game-dev/first-game.html">Building Your First Game</a></li>
-<li><strong>Explore More Examples</strong>: Check out <a href="getting-started/../examples/index.html">Working Examples</a></li>
-<li><strong>Dive Deeper</strong>: Study <a href="getting-started/../core-systems/ai/index.html">Core Systems</a></li>
+<li><strong>Learn the Architecture</strong>: Read <a href="#ai-native-design">AI-Native Design</a></li>
+<li><strong>Build Your First Game</strong>: Follow <a href="#building-your-first-game">Building Your First Game</a></li>
+<li><strong>Explore More Examples</strong>: Check out <a href="#working-examples">Working Examples</a></li>
+<li><strong>Dive Deeper</strong>: Study <a href="#ai-system">Core Systems</a></li>
 </ul>
 <h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
 <h3 id="build-errors"><a class="header" href="#build-errors">Build Errors</a></h3>
@@ -316,10 +311,11 @@ thread 'main' panicked at 'LOS validation failed'
 <li><strong>Audio errors</strong>: Install audio system dependencies (ALSA/PulseAudio on Linux)</li>
 <li><strong>Permission errors</strong>: Make sure your user can access graphics and audio devices</li>
 </ul>
-<p>For more help, see <a href="getting-started/../resources/troubleshooting.html">Troubleshooting</a>.</p>
-<hr />
-<p><strong>🎉 Congratulations!</strong> You've successfully run your first AstraWeave AI companion. The engine validated the AI's actions and maintained world integrity, just as it should.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h1>
+<p>For more help, see <a href="#troubleshooting-2">Troubleshooting</a>.</p>
+<hr>
+<p><strong>🎉 Congratulations!</strong> You’ve successfully run your first AstraWeave AI companion. The engine validated the AI’s actions and maintained world integrity, just as it should.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="installation-guide"><a class="header" href="#installation-guide">Installation Guide</a></h1>
 <p>This guide covers detailed installation instructions for AstraWeave on different platforms, including all dependencies and troubleshooting common issues.</p>
 <h2 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h2>
 <h3 id="minimum-requirements"><a class="header" href="#minimum-requirements">Minimum Requirements</a></h3>
@@ -522,7 +518,7 @@ export CARGO_TARGET_DIR=/path/to/shared/target
 </code></pre>
 <h2 id="troubleshooting-1"><a class="header" href="#troubleshooting-1">Troubleshooting</a></h2>
 <h3 id="common-build-errors"><a class="header" href="#common-build-errors">Common Build Errors</a></h3>
-<h4 id="linker-not-found"><a class="header" href="#linker-not-found">"linker not found"</a></h4>
+<h4 id="linker-not-found"><a class="header" href="#linker-not-found">“linker not found”</a></h4>
 <ul>
 <li><strong>Linux</strong>: Install <code>build-essential</code> or <code>gcc</code></li>
 <li><strong>macOS</strong>: Install Xcode Command Line Tools</li>
@@ -576,15 +572,18 @@ export DISPLAY=""
 <h2 id="next-steps-1"><a class="header" href="#next-steps-1">Next Steps</a></h2>
 <p>With AstraWeave installed:</p>
 <ol>
-<li>Run through the <a href="getting-started/./quick-start.html">Quick Start Guide</a></li>
-<li>Explore <a href="getting-started/../examples/index.html">Working Examples</a></li>
-<li>Read about <a href="getting-started/../architecture/overview.html">Architecture</a></li>
-<li>Build <a href="getting-started/../game-dev/first-game.html">Your First Game</a></li>
+<li>Run through the <a href="#quick-start">Quick Start Guide</a></li>
+<li>Explore <a href="#working-examples">Working Examples</a></li>
+<li>Read about <a href="#architecture-overview">Architecture</a></li>
+<li>Build <a href="#building-your-first-game">Your First Game</a></li>
 </ol>
-<p>For ongoing development, see the <a href="getting-started/../dev/contributing.html">Contributing Guide</a> and <a href="getting-started/../dev/building.html">Building from Source</a>.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="your-first-ai-companion-1"><a class="header" href="#your-first-ai-companion-1">Your First AI Companion</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="system-requirements-1"><a class="header" href="#system-requirements-1">System Requirements</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="architecture-overview"><a class="header" href="#architecture-overview">Architecture Overview</a></h1>
+<p>For ongoing development, see the <a href="#contributing-guide">Contributing Guide</a> and <a href="#building-from-source">Building from Source</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="your-first-ai-companion-1"><a class="header" href="#your-first-ai-companion-1">Your First AI Companion</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="system-requirements-1"><a class="header" href="#system-requirements-1">System Requirements</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="architecture-overview"><a class="header" href="#architecture-overview">Architecture Overview</a></h1>
 <p>AstraWeave represents a fundamental shift in game engine design: instead of treating AI as an afterthought, it places intelligent agents at the core of the architecture. This document explains the key architectural decisions and how they enable truly AI-native gameplay.</p>
 <h2 id="core-philosophy-ai-first-design"><a class="header" href="#core-philosophy-ai-first-design">Core Philosophy: AI-First Design</a></h2>
 <p>Traditional game engines follow this pattern:</p>
@@ -639,7 +638,7 @@ export DISPLAY=""
 <h2 id="the-deterministic-core"><a class="header" href="#the-deterministic-core">The Deterministic Core</a></h2>
 <h3 id="fixed-tick-simulation"><a class="header" href="#fixed-tick-simulation">Fixed-Tick Simulation</a></h3>
 <p>AstraWeave runs the simulation at exactly 60Hz, regardless of rendering framerate:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>const TICK_RATE: f64 = 60.0;
 const TICK_DURATION: Duration = Duration::from_nanos(16_666_667); // 1/60 second
@@ -648,7 +647,7 @@ const TICK_DURATION: Duration = Duration::from_nanos(16_666_667); // 1/60 second
 fn tick_simulation(&amp;mut self) {
     self.world.step(TICK_DURATION);
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>Deterministic physics and AI behavior</li>
@@ -658,7 +657,7 @@ fn tick_simulation(&amp;mut self) {
 </ul>
 <h3 id="entity-component-system-ecs"><a class="header" href="#entity-component-system-ecs">Entity-Component-System (ECS)</a></h3>
 <p>AstraWeave uses an archetype-based ECS for cache-friendly performance:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Components are pure data
 #[derive(Component)]
@@ -678,7 +677,7 @@ fn ai_perception_system(
         // Update agent perception based on world state
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Key Benefits:</strong></p>
 <ul>
 <li>Cache-friendly data layout</li>
@@ -689,7 +688,7 @@ fn ai_perception_system(
 <h2 id="the-ai-pipeline"><a class="header" href="#the-ai-pipeline">The AI Pipeline</a></h2>
 <h3 id="1-perception-bus"><a class="header" href="#1-perception-bus">1. Perception Bus</a></h3>
 <p>AI agents receive structured snapshots of the world state:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>#[derive(Serialize, Deserialize)]
 pub struct PerceptionSnapshot {
@@ -699,7 +698,7 @@ pub struct PerceptionSnapshot {
     pub audio_events: Vec&lt;AudioEvent&gt;,
     pub world_state: WorldState,
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Design Principles:</strong></p>
 <ul>
 <li><strong>Filtered Information</strong>: Agents only perceive what they should be able to see/hear</li>
@@ -709,7 +708,7 @@ pub struct PerceptionSnapshot {
 </ul>
 <h3 id="2-planning-layer"><a class="header" href="#2-planning-layer">2. Planning Layer</a></h3>
 <p>AI models generate plans using the perception data:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub struct AIPlan {
     pub agent_id: EntityId,
@@ -725,7 +724,7 @@ pub enum Intent {
     Interact { target: EntityId, interaction_type: String },
     Communicate { target: EntityId, message: String },
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Key Features:</strong></p>
 <ul>
 <li><strong>High-Level Intents</strong>: AI thinks in terms of goals, not implementation</li>
@@ -735,7 +734,7 @@ pub enum Intent {
 </ul>
 <h3 id="3-tool-validation"><a class="header" href="#3-tool-validation">3. Tool Validation</a></h3>
 <p>Every AI action must be validated by the engine:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub trait Tool {
     fn validate(&amp;self, world: &amp;World, usage: &amp;ToolUsage) -&gt; ValidationResult;
@@ -767,14 +766,14 @@ impl Tool for MovementTool {
         ExecutionResult::Success
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Validation Categories:</strong></p>
 <ul>
 <li><strong>Physics Constraints</strong>: Can the action physically happen?</li>
-<li><strong>Resource Requirements</strong>: Does the agent have what's needed?</li>
+<li><strong>Resource Requirements</strong>: Does the agent have what’s needed?</li>
 <li><strong>Cooldowns</strong>: Is the action available now?</li>
 <li><strong>Line of Sight</strong>: Can the agent see the target?</li>
-<li><strong>Game Rules</strong>: Does this follow the game's rules?</li>
+<li><strong>Game Rules</strong>: Does this follow the game’s rules?</li>
 </ul>
 <h2 id="networking-architecture"><a class="header" href="#networking-architecture">Networking Architecture</a></h2>
 <h3 id="server-authority"><a class="header" href="#server-authority">Server Authority</a></h3>
@@ -790,7 +789,7 @@ impl Tool for MovementTool {
 </ul>
 <h3 id="intent-replication"><a class="header" href="#intent-replication">Intent Replication</a></h3>
 <p>Instead of replicating low-level actions, AstraWeave replicates high-level intents:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>#[derive(Serialize, Deserialize)]
 pub struct NetworkIntent {
@@ -799,7 +798,7 @@ pub struct NetworkIntent {
     pub timestamp: u64,
     pub predicted_outcome: Option&lt;PredictedResult&gt;,
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Advantages:</strong></p>
 <ul>
 <li>Lower bandwidth than action replication</li>
@@ -840,7 +839,7 @@ astraweave-nav/      # Navigation and pathfinding
 astraweave-net/      # Networking layer
 </code></pre>
 <h3 id="plugin-system"><a class="header" href="#plugin-system">Plugin System</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub trait EnginePlugin {
     fn build(&amp;self, app: &amp;mut App);
@@ -855,7 +854,7 @@ impl EnginePlugin for CustomGamePlugin {
            .register_component::&lt;CustomComponent&gt;();
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="security-model"><a class="header" href="#security-model">Security Model</a></h2>
 <h3 id="ai-sandboxing"><a class="header" href="#ai-sandboxing">AI Sandboxing</a></h3>
 <p>AI agents cannot:</p>
@@ -882,7 +881,7 @@ impl EnginePlugin for CustomGamePlugin {
 </ul>
 <h2 id="development-philosophy"><a class="header" href="#development-philosophy">Development Philosophy</a></h2>
 <h3 id="composition-over-inheritance"><a class="header" href="#composition-over-inheritance">Composition Over Inheritance</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Instead of inheritance hierarchies
 class AIAgent extends Entity { ... }
@@ -891,9 +890,9 @@ class AIAgent extends Entity { ... }
 struct Entity {
     components: HashMap&lt;ComponentId, Box&lt;dyn Component&gt;&gt;
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="data-driven-design"><a class="header" href="#data-driven-design">Data-Driven Design</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Behavior configured through data
 #[derive(Deserialize)]
@@ -903,9 +902,9 @@ struct AIProfile {
     risk_tolerance: f32,
     preferred_tools: Vec&lt;String&gt;,
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="testable-architecture"><a class="header" href="#testable-architecture">Testable Architecture</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Every system is pure and testable
 fn ai_planning_system(
@@ -914,33 +913,40 @@ fn ai_planning_system(
 ) -&gt; Vec&lt;AIPlan&gt; {
     // Pure function - easy to test
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="comparison-with-traditional-engines"><a class="header" href="#comparison-with-traditional-engines">Comparison with Traditional Engines</a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Aspect</th><th>Traditional Engine</th><th>AstraWeave</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Aspect</th><th>Traditional Engine</th><th>AstraWeave</th></tr>
+</thead>
+<tbody>
 <tr><td>AI Integration</td><td>Bolted-on scripting</td><td>Core architecture</td></tr>
 <tr><td>Action Validation</td><td>Trust-based</td><td>Engine-validated</td></tr>
 <tr><td>Determinism</td><td>Variable</td><td>Fixed-tick</td></tr>
 <tr><td>Networking</td><td>Action replication</td><td>Intent replication</td></tr>
 <tr><td>Performance</td><td>Variable</td><td>Predictable</td></tr>
 <tr><td>Testing</td><td>Difficult</td><td>Deterministic</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h2 id="next-steps-2"><a class="header" href="#next-steps-2">Next Steps</a></h2>
 <p>To understand specific systems:</p>
 <ul>
-<li><a href="architecture/./ai-native.html">AI-Native Design</a> - Deep dive into AI architecture</li>
-<li><a href="architecture/./ecs.html">ECS Architecture</a> - Entity-Component-System details</li>
-<li><a href="architecture/./deterministic.html">Deterministic Simulation</a> - Fixed-tick simulation</li>
-<li><a href="architecture/./tool-validation.html">Tool Validation System</a> - How AI actions are validated</li>
+<li><a href="#ai-native-design">AI-Native Design</a> - Deep dive into AI architecture</li>
+<li><a href="#ecs-architecture">ECS Architecture</a> - Entity-Component-System details</li>
+<li><a href="#deterministic-simulation">Deterministic Simulation</a> - Fixed-tick simulation</li>
+<li><a href="#tool-validation-system">Tool Validation System</a> - How AI actions are validated</li>
 </ul>
 <p>To start building:</p>
 <ul>
-<li><a href="architecture/../game-dev/first-game.html">Building Your First Game</a></li>
-<li><a href="architecture/../core-systems/ai/index.html">Core Systems</a></li>
-<li><a href="architecture/../examples/index.html">Working Examples</a></li>
+<li><a href="#building-your-first-game">Building Your First Game</a></li>
+<li><a href="#ai-system">Core Systems</a></li>
+<li><a href="#working-examples">Working Examples</a></li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ai-native-design"><a class="header" href="#ai-native-design">AI-Native Design</a></h1>
-<p>AstraWeave's AI-native design represents a fundamental shift in how game engines approach artificial intelligence. Instead of treating AI as an add-on feature, we've built the entire engine around the principle that <strong>AI agents are first-class citizens</strong>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ai-native-design"><a class="header" href="#ai-native-design">AI-Native Design</a></h1>
+<p>AstraWeave’s AI-native design represents a fundamental shift in how game engines approach artificial intelligence. Instead of treating AI as an add-on feature, we’ve built the entire engine around the principle that <strong>AI agents are first-class citizens</strong>.</p>
 <h2 id="the-traditional-approach-and-why-it-fails"><a class="header" href="#the-traditional-approach-and-why-it-fails">The Traditional Approach (And Why It Fails)</a></h2>
 <p>Most game engines follow this pattern:</p>
 <pre><code>Game Engine → Game Logic → AI Scripting Layer → NPC Behaviors
@@ -953,7 +959,7 @@ fn ai_planning_system(
 <li>AI behavior is scripted, not emergent</li>
 <li>Hard to test and debug AI interactions</li>
 </ul>
-<h2 id="astraweaves-ai-native-approach"><a class="header" href="#astraweaves-ai-native-approach">AstraWeave's AI-Native Approach</a></h2>
+<h2 id="astraweaves-ai-native-approach"><a class="header" href="#astraweaves-ai-native-approach">AstraWeave’s AI-Native Approach</a></h2>
 <p>AstraWeave inverts this relationship:</p>
 <pre><code>AI Agents ← Tool Validation ← Engine Core ← Game Logic
 </code></pre>
@@ -968,7 +974,7 @@ fn ai_planning_system(
 <h2 id="core-principles"><a class="header" href="#core-principles">Core Principles</a></h2>
 <h3 id="1-perception-based-decision-making"><a class="header" href="#1-perception-based-decision-making">1. Perception-Based Decision Making</a></h3>
 <p>AI agents only know what they can perceive:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>#[derive(Serialize, Deserialize)]
 pub struct PerceptionSnapshot {
@@ -978,11 +984,11 @@ pub struct PerceptionSnapshot {
     pub remembered_information: Vec&lt;MemoryItem&gt;,
     pub world_constraints: Vec&lt;Constraint&gt;,
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>No omniscience</strong>: AI cannot access:</p>
 <ul>
 <li>Hidden game state</li>
-<li>Other agents' thoughts</li>
+<li>Other agents’ thoughts</li>
 <li>Perfect world information</li>
 <li>Player UI state</li>
 <li>Debug information</li>
@@ -996,7 +1002,7 @@ pub struct PerceptionSnapshot {
 </ul>
 <h3 id="2-intent-based-actions"><a class="header" href="#2-intent-based-actions">2. Intent-Based Actions</a></h3>
 <p>AI generates high-level intents, not low-level commands:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub enum Intent {
     // High-level goals
@@ -1006,7 +1012,7 @@ pub struct PerceptionSnapshot {
     
     // Not low-level commands like "move left 3 pixels"
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>AI thinks strategically, not tactically</li>
@@ -1016,7 +1022,7 @@ pub struct PerceptionSnapshot {
 </ul>
 <h3 id="3-tool-based-execution"><a class="header" href="#3-tool-based-execution">3. Tool-Based Execution</a></h3>
 <p>All AI actions go through validated tools:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub trait Tool {
     // Every action must be validated first
@@ -1028,7 +1034,7 @@ pub struct PerceptionSnapshot {
     // Tools have constraints and cooldowns
     fn get_constraints(&amp;self) -&gt; ToolConstraints;
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <p><strong>No direct world manipulation</strong>: AI cannot:</p>
 <ul>
 <li>Teleport entities</li>
@@ -1038,7 +1044,7 @@ pub struct PerceptionSnapshot {
 </ul>
 <h2 id="the-ai-pipeline-architecture"><a class="header" href="#the-ai-pipeline-architecture">The AI Pipeline Architecture</a></h2>
 <h3 id="phase-1-perception"><a class="header" href="#phase-1-perception">Phase 1: Perception</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn perception_system(
     mut agents: Query&lt;(&amp;Position, &amp;AIAgent, &amp;mut PerceptionState)&gt;,
@@ -1080,9 +1086,9 @@ pub struct PerceptionSnapshot {
         perception.current_snapshot = Some(snapshot);
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="phase-2-planning"><a class="header" href="#phase-2-planning">Phase 2: Planning</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn ai_planning_system(
     mut agents: Query&lt;(&amp;AIAgent, &amp;PerceptionState, &amp;mut PlanningState)&gt;,
@@ -1114,9 +1120,9 @@ pub struct PerceptionSnapshot {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="phase-3-validation"><a class="header" href="#phase-3-validation">Phase 3: Validation</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn tool_validation_system(
     mut agents: Query&lt;(&amp;PlanningState, &amp;mut ActionQueue)&gt;,
@@ -1148,9 +1154,9 @@ pub struct PerceptionSnapshot {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="phase-4-execution"><a class="header" href="#phase-4-execution">Phase 4: Execution</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn action_execution_system(
     mut agents: Query&lt;&amp;mut ActionQueue&gt;,
@@ -1175,11 +1181,11 @@ pub struct PerceptionSnapshot {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="tool-design-philosophy"><a class="header" href="#tool-design-philosophy">Tool Design Philosophy</a></h2>
 <h3 id="tools-as-affordances"><a class="header" href="#tools-as-affordances">Tools as Affordances</a></h3>
 <p>In AstraWeave, tools represent what an agent <em>can do</em>, not what it <em>will do</em>:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub struct MovementTool {
     max_speed: f32,
@@ -1214,10 +1220,10 @@ impl Tool for MovementTool {
         ValidationResult::Valid
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="tool-composition"><a class="header" href="#tool-composition">Tool Composition</a></h3>
 <p>Complex behaviors emerge from combining simple tools:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI plans using multiple tools in sequence
 let complex_plan = AIPlan {
@@ -1236,10 +1242,10 @@ let complex_plan = AIPlan {
         },
     ],
 };
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="learning-and-adaptation"><a class="header" href="#learning-and-adaptation">Learning and Adaptation</a></h2>
 <h3 id="memory-system-integration"><a class="header" href="#memory-system-integration">Memory System Integration</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub struct AIMemory {
     // Short-term working memory
@@ -1275,9 +1281,9 @@ impl AIMemory {
         });
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="dynamic-behavior-adaptation"><a class="header" href="#dynamic-behavior-adaptation">Dynamic Behavior Adaptation</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn adaptation_system(
     mut agents: Query&lt;(&amp;mut AIAgent, &amp;AIMemory)&gt;,
@@ -1301,20 +1307,20 @@ impl AIMemory {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="emergent-behavior-examples"><a class="header" href="#emergent-behavior-examples">Emergent Behavior Examples</a></h2>
 <h3 id="cooperative-pathfinding"><a class="header" href="#cooperative-pathfinding">Cooperative Pathfinding</a></h3>
 <p>When multiple AI agents need to navigate through a narrow passage:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// No explicit coordination code needed
 // Emergent behavior arises from:
 // 1. Each agent perceives others as obstacles
 // 2. Movement tool validates non-collision
 // 3. Agents naturally take turns or find alternate routes
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="dynamic-alliance-formation"><a class="header" href="#dynamic-alliance-formation">Dynamic Alliance Formation</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Agents can form alliances based on shared threats
 fn threat_response_planning(
@@ -1339,9 +1345,9 @@ fn threat_response_planning(
         strategy: choose_defensive_strategy(threats, potential_allies),
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="adaptive-combat-tactics"><a class="header" href="#adaptive-combat-tactics">Adaptive Combat Tactics</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI learns and counters player strategies
 fn combat_planning(
@@ -1368,10 +1374,10 @@ fn combat_planning(
         commitment: calculate_commitment(player_patterns.skill_level),
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="performance-considerations-1"><a class="header" href="#performance-considerations-1">Performance Considerations</a></h2>
 <h3 id="computational-efficiency"><a class="header" href="#computational-efficiency">Computational Efficiency</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI planning can be expensive, so we use various optimizations:
 
@@ -1405,9 +1411,9 @@ impl AIService {
         Ok(plan)
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="memory-management-1"><a class="header" href="#memory-management-1">Memory Management</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI memory systems need careful management
 impl AIMemory {
@@ -1424,10 +1430,10 @@ impl AIMemory {
         self.failure_memory.truncate(100); // Keep top 100
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="debugging-ai-behavior"><a class="header" href="#debugging-ai-behavior">Debugging AI Behavior</a></h2>
 <h3 id="explainable-ai"><a class="header" href="#explainable-ai">Explainable AI</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>#[derive(Debug, Serialize)]
 pub struct AIPlan {
@@ -1443,9 +1449,9 @@ pub struct AIPlan {
 My ally is engaged in combat nearby and could use support. I have a clear 
 line of sight and my weapon is ready. I'm choosing to attack rather than 
 flank because the enemy seems focused on my ally and won't see me coming."
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="debug-visualization"><a class="header" href="#debug-visualization">Debug Visualization</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// In development builds, expose AI decision making
 #[cfg(debug_assertions)]
@@ -1460,10 +1466,10 @@ impl AIAgent {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="integration-with-traditional-game-systems"><a class="header" href="#integration-with-traditional-game-systems">Integration with Traditional Game Systems</a></h2>
 <h3 id="physics-integration"><a class="header" href="#physics-integration">Physics Integration</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI respects physics constraints
 impl Tool for MovementTool {
@@ -1480,9 +1486,9 @@ impl Tool for MovementTool {
         ValidationResult::Valid
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="animation-integration"><a class="header" href="#animation-integration">Animation Integration</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI actions trigger appropriate animations
 impl Tool for CombatTool {
@@ -1497,9 +1503,14 @@ impl Tool for CombatTool {
         self.resolve_combat(world, usage)
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="comparison-traditional-vs-ai-native"><a class="header" href="#comparison-traditional-vs-ai-native">Comparison: Traditional vs AI-Native</a></h2>
-<div class="table-wrapper"><table><thead><tr><th>Aspect</th><th>Traditional Approach</th><th>AstraWeave AI-Native</th></tr></thead><tbody>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Aspect</th><th>Traditional Approach</th><th>AstraWeave AI-Native</th></tr>
+</thead>
+<tbody>
 <tr><td><strong>Decision Making</strong></td><td>Scripted state machines</td><td>LLM-based planning</td></tr>
 <tr><td><strong>World Knowledge</strong></td><td>Omniscient access</td><td>Perception-limited</td></tr>
 <tr><td><strong>Action Execution</strong></td><td>Direct world manipulation</td><td>Tool-validated actions</td></tr>
@@ -1508,11 +1519,12 @@ impl Tool for CombatTool {
 <tr><td><strong>Debugging</strong></td><td>Complex state inspection</td><td>Natural language reasoning</td></tr>
 <tr><td><strong>Performance</strong></td><td>Predictable overhead</td><td>Variable AI complexity</td></tr>
 <tr><td><strong>Emergence</strong></td><td>Limited by scripts</td><td>Unbounded combinations</td></tr>
-</tbody></table>
+</tbody>
+</table>
 </div>
 <h2 id="best-practices-for-ai-native-development"><a class="header" href="#best-practices-for-ai-native-development">Best Practices for AI-Native Development</a></h2>
 <h3 id="1-design-affordances-not-behaviors"><a class="header" href="#1-design-affordances-not-behaviors">1. Design Affordances, Not Behaviors</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Good: Define what an agent CAN do
 pub struct InteractionTool {
@@ -1523,9 +1535,9 @@ pub struct InteractionTool {
 
 // Avoid: Scripting what an agent WILL do
 // pub fn npc_behavior_script() { ... }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="2-embrace-failure-as-learning"><a class="header" href="#2-embrace-failure-as-learning">2. Embrace Failure as Learning</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// AI failures are features, not bugs
 if let Err(validation_error) = tool.validate(world, usage) {
@@ -1534,9 +1546,9 @@ if let Err(validation_error) = tool.validate(world, usage) {
     
     // AI will avoid this mistake in similar situations
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="3-provide-rich-perception"><a class="header" href="#3-provide-rich-perception">3. Provide Rich Perception</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Give AI agents the information they need to make good decisions
 pub struct PerceptionSnapshot {
@@ -1546,9 +1558,9 @@ pub struct PerceptionSnapshot {
     pub social_context: SocialContext,
     pub recent_events: Vec&lt;GameEvent&gt;,
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="4-use-hierarchical-planning"><a class="header" href="#4-use-hierarchical-planning">4. Use Hierarchical Planning</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Break complex goals into manageable sub-goals
 pub enum Intent {
@@ -1561,7 +1573,7 @@ pub enum Intent {
     // Low-level operational goals
     MoveToCover { cover_position: Vec3 },
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="future-directions"><a class="header" href="#future-directions">Future Directions</a></h2>
 <h3 id="advanced-ai-architectures"><a class="header" href="#advanced-ai-architectures">Advanced AI Architectures</a></h3>
 <ul>
@@ -1577,12 +1589,15 @@ pub enum Intent {
 <li><strong>Distributed Processing</strong>: AI planning across multiple cores/machines</li>
 <li><strong>Hybrid Approaches</strong>: Combine neural networks with symbolic reasoning</li>
 </ul>
-<hr />
-<p><em>AI-native design is not just about making NPCs smarter - it's about creating fundamentally new types of interactive experiences where AI agents are true participants in the game world, subject to the same rules and constraints as human players.</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ecs-architecture"><a class="header" href="#ecs-architecture">ECS Architecture</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="deterministic-simulation"><a class="header" href="#deterministic-simulation">Deterministic Simulation</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="tool-validation-system"><a class="header" href="#tool-validation-system">Tool Validation System</a></h1>
-<p>The AstraWeave LLM integration includes a comprehensive tool validation system that ensures LLM-generated plans are safe and comply with the game's allowed actions.</p>
+<hr>
+<p><em>AI-native design is not just about making NPCs smarter - it’s about creating fundamentally new types of interactive experiences where AI agents are true participants in the game world, subject to the same rules and constraints as human players.</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ecs-architecture"><a class="header" href="#ecs-architecture">ECS Architecture</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="deterministic-simulation"><a class="header" href="#deterministic-simulation">Deterministic Simulation</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="tool-validation-system"><a class="header" href="#tool-validation-system">Tool Validation System</a></h1>
+<p>The AstraWeave LLM integration includes a comprehensive tool validation system that ensures LLM-generated plans are safe and comply with the game’s allowed actions.</p>
 <h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
 <p>The tool validation system works in three layers:</p>
 <ol>
@@ -1593,7 +1608,7 @@ pub enum Intent {
 <h2 id="components"><a class="header" href="#components">Components</a></h2>
 <h3 id="toolregistry"><a class="header" href="#toolregistry">ToolRegistry</a></h3>
 <p>The <code>ToolRegistry</code> defines which tools are available to the LLM:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>pub struct ToolRegistry {
     pub tools: Vec&lt;ToolSpec&gt;,
@@ -1604,7 +1619,7 @@ pub struct ToolSpec {
     pub name: String,
     pub args: BTreeMap&lt;String, String&gt;, // argument name -&gt; type
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="validation-process"><a class="header" href="#validation-process">Validation Process</a></h3>
 <ol>
 <li><strong>LLM Response Parsing</strong>: Parse the JSON response into a <code>PlanIntent</code></li>
@@ -1635,7 +1650,7 @@ pub struct ToolSpec {
 <li><strong>Constraint enforcement</strong>: Runtime validation prevents illegal moves</li>
 </ul>
 <h2 id="usage-example"><a class="header" href="#usage-example">Usage Example</a></h2>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>use astraweave_llm::{parse_llm_plan, MockLlm, plan_from_llm};
 
@@ -1655,7 +1670,7 @@ let plan = parse_llm_plan(llm_response, &amp;registry)?;
 
 // Full end-to-end validation
 let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?;
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
 <p>The validation system includes comprehensive tests covering:</p>
 <ul>
@@ -1677,24 +1692,42 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <li>Complex constraint evaluation</li>
 <li>Custom validation plugins</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ai-system"><a class="header" href="#ai-system">AI System</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="perception-bus"><a class="header" href="#perception-bus">Perception Bus</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="planning-layer"><a class="header" href="#planning-layer">Planning Layer</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="tool-sandbox"><a class="header" href="#tool-sandbox">Tool Sandbox</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="behavior-trees"><a class="header" href="#behavior-trees">Behavior Trees</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="physics"><a class="header" href="#physics">Physics</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="rendering"><a class="header" href="#rendering">Rendering</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="audio"><a class="header" href="#audio">Audio</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="navigation"><a class="header" href="#navigation">Navigation</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="input-system"><a class="header" href="#input-system">Input System</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="networking"><a class="header" href="#networking">Networking</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="building-your-first-game"><a class="header" href="#building-your-first-game">Building Your First Game</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ai-companions"><a class="header" href="#ai-companions">AI Companions</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="adaptive-bosses"><a class="header" href="#adaptive-bosses">Adaptive Bosses</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="crafting--combat"><a class="header" href="#crafting--combat">Crafting &amp; Combat</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="dialogue-systems"><a class="header" href="#dialogue-systems">Dialogue Systems</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="procedural-content"><a class="header" href="#procedural-content">Procedural Content</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="working-examples"><a class="header" href="#working-examples">Working Examples</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ai-system"><a class="header" href="#ai-system">AI System</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="perception-bus"><a class="header" href="#perception-bus">Perception Bus</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="planning-layer"><a class="header" href="#planning-layer">Planning Layer</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="tool-sandbox"><a class="header" href="#tool-sandbox">Tool Sandbox</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="behavior-trees"><a class="header" href="#behavior-trees">Behavior Trees</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="physics"><a class="header" href="#physics">Physics</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="rendering"><a class="header" href="#rendering">Rendering</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="audio"><a class="header" href="#audio">Audio</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="navigation"><a class="header" href="#navigation">Navigation</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="input-system"><a class="header" href="#input-system">Input System</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="networking"><a class="header" href="#networking">Networking</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="building-your-first-game"><a class="header" href="#building-your-first-game">Building Your First Game</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ai-companions"><a class="header" href="#ai-companions">AI Companions</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="adaptive-bosses"><a class="header" href="#adaptive-bosses">Adaptive Bosses</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="crafting--combat"><a class="header" href="#crafting--combat">Crafting &amp; Combat</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="dialogue-systems"><a class="header" href="#dialogue-systems">Dialogue Systems</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="procedural-content"><a class="header" href="#procedural-content">Procedural Content</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="working-examples"><a class="header" href="#working-examples">Working Examples</a></h1>
 <p>AstraWeave includes over 20 examples demonstrating different aspects of the engine. This page focuses on the <strong>working examples</strong> that you can build and run to learn the engine.</p>
 <blockquote>
 <p><strong>Note</strong>: AstraWeave is under active development. Some examples have compilation issues due to API evolution. This page focuses on examples that are confirmed to work.</p>
@@ -1702,8 +1735,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <h2 id="core-ai-examples"><a class="header" href="#core-ai-examples">Core AI Examples</a></h2>
 <p>These examples demonstrate the AI-native architecture:</p>
 <h3 id="hello-companion-"><a class="header" href="#hello-companion-">Hello Companion ✅</a></h3>
-<p><strong>Location</strong>: <code>examples/hello_companion</code><br />
-<strong>Status</strong>: ✅ Working (expected panic)</p>
+<p><strong>Location</strong>: <code>examples/hello_companion</code><br><strong>Status</strong>: ✅ Working (expected panic)</p>
 <p>The simplest example of AI perception, planning, and validation.</p>
 <pre><code class="language-bash">cargo run -p hello_companion --release
 </code></pre>
@@ -1714,11 +1746,10 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <li>Tool validation system (demonstrates failure case)</li>
 <li>Fixed-tick simulation loop</li>
 </ul>
-<p><strong>Expected behavior</strong>: Shows AI plan generation, then panics with "LosBlocked" error. This demonstrates that the AI cannot perform invalid actions.</p>
-<p><a href="examples/./hello-companion.html">→ Detailed walkthrough</a></p>
+<p><strong>Expected behavior</strong>: Shows AI plan generation, then panics with “LosBlocked” error. This demonstrates that the AI cannot perform invalid actions.</p>
+<p><a href="#hello-companion-walkthrough">→ Detailed walkthrough</a></p>
 <h3 id="adaptive-boss-"><a class="header" href="#adaptive-boss-">Adaptive Boss ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/adaptive_boss</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/adaptive_boss</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Multi-phase boss that adapts its strategy based on player behavior.</p>
 <pre><code class="language-bash">cargo run -p adaptive_boss --release
 </code></pre>
@@ -1730,8 +1761,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <li>Boss pattern recognition</li>
 </ul>
 <h3 id="companion-profile-"><a class="header" href="#companion-profile-">Companion Profile ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/companion_profile</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/companion_profile</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Demonstrates persistent AI profiles that learn and adapt.</p>
 <pre><code class="language-bash">cargo run -p companion_profile --release
 </code></pre>
@@ -1745,8 +1775,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <h2 id="core-engine-examples"><a class="header" href="#core-engine-examples">Core Engine Examples</a></h2>
 <p>These examples showcase fundamental engine systems:</p>
 <h3 id="physics-demo-3d-"><a class="header" href="#physics-demo-3d-">Physics Demo 3D ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/physics_demo3d</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/physics_demo3d</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Demonstrates the Rapier3D physics integration.</p>
 <pre><code class="language-bash">cargo run -p physics_demo3d --release
 </code></pre>
@@ -1758,8 +1787,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <li>Physics-based AI movement</li>
 </ul>
 <h3 id="navmesh-demo-"><a class="header" href="#navmesh-demo-">Navmesh Demo ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/navmesh_demo</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/navmesh_demo</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Shows navigation mesh generation and pathfinding.</p>
 <pre><code class="language-bash">cargo run -p navmesh_demo --release
 </code></pre>
@@ -1771,8 +1799,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <li>AI navigation coordination</li>
 </ul>
 <h3 id="audio-spatial-demo-"><a class="header" href="#audio-spatial-demo-">Audio Spatial Demo ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/audio_spatial_demo</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/audio_spatial_demo</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Spatial audio system with 3D positioning.</p>
 <pre><code class="language-bash">cargo run -p audio_spatial_demo --release
 </code></pre>
@@ -1786,8 +1813,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <h2 id="networking-examples"><a class="header" href="#networking-examples">Networking Examples</a></h2>
 <p>These examples show multiplayer and IPC capabilities:</p>
 <h3 id="ipc-loopback-"><a class="header" href="#ipc-loopback-">IPC Loopback ✅</a></h3>
-<p><strong>Location</strong>: <code>examples/ipc_loopback</code><br />
-<strong>Status</strong>: ✅ Should work</p>
+<p><strong>Location</strong>: <code>examples/ipc_loopback</code><br><strong>Status</strong>: ✅ Should work</p>
 <p>Demonstrates inter-process communication for AI models.</p>
 <pre><code class="language-bash">cargo run -p ipc_loopback --release
 </code></pre>
@@ -1799,8 +1825,7 @@ let plan = plan_from_llm(&amp;client, &amp;world_snapshot, &amp;registry).await?
 <li>AI model hot-swapping</li>
 </ul>
 <h3 id="coop-serverclient-"><a class="header" href="#coop-serverclient-">Coop Server/Client ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/coop_server</code>, <code>examples/coop_client</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/coop_server</code>, <code>examples/coop_client</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Basic multiplayer client-server architecture.</p>
 <pre><code class="language-bash"># Terminal 1
 cargo run -p coop_server --release
@@ -1818,8 +1843,7 @@ cargo run -p coop_client --release
 <h2 id="tool-and-planning-examples"><a class="header" href="#tool-and-planning-examples">Tool and Planning Examples</a></h2>
 <p>These examples focus on AI planning and tool usage:</p>
 <h3 id="llm-tool-call-"><a class="header" href="#llm-tool-call-">LLM Tool Call ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/llm_toolcall</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/llm_toolcall</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Direct demonstration of LLM tool calling.</p>
 <pre><code class="language-bash">cargo run -p llm_toolcall --release
 </code></pre>
@@ -1831,8 +1855,7 @@ cargo run -p coop_client --release
 <li>Planning validation</li>
 </ul>
 <h3 id="phase-director-"><a class="header" href="#phase-director-">Phase Director ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/phase_director</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/phase_director</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Complex AI director managing multiple phases.</p>
 <pre><code class="language-bash">cargo run -p phase_director --release
 </code></pre>
@@ -1846,13 +1869,11 @@ cargo run -p coop_client --release
 <h2 id="development-examples"><a class="header" href="#development-examples">Development Examples</a></h2>
 <p>These examples help with engine development:</p>
 <h3 id="debug-overlay-"><a class="header" href="#debug-overlay-">Debug Overlay ❌</a></h3>
-<p><strong>Location</strong>: <code>examples/debug_overlay</code><br />
-<strong>Status</strong>: ❌ Has compilation issues (egui API)</p>
+<p><strong>Location</strong>: <code>examples/debug_overlay</code><br><strong>Status</strong>: ❌ Has compilation issues (egui API)</p>
 <p>Debug UI overlay for development.</p>
 <p><strong>Known issues</strong>: egui API mismatches with current version.</p>
 <h3 id="persona-loader-"><a class="header" href="#persona-loader-">Persona Loader ⚠️</a></h3>
-<p><strong>Location</strong>: <code>examples/persona_loader</code><br />
-<strong>Status</strong>: ⚠️ Check compilation</p>
+<p><strong>Location</strong>: <code>examples/persona_loader</code><br><strong>Status</strong>: ⚠️ Check compilation</p>
 <p>Loading and managing AI personas from files.</p>
 <pre><code class="language-bash">cargo run -p persona_loader --release
 </code></pre>
@@ -1913,7 +1934,7 @@ cargo test -p astraweave-input
 <h2 id="building-your-own-examples"><a class="header" href="#building-your-own-examples">Building Your Own Examples</a></h2>
 <p>When creating new examples:</p>
 <h3 id="minimal-example-structure"><a class="header" href="#minimal-example-structure">Minimal Example Structure</a></h3>
-<pre><pre class="playground"><code class="language-rust">// examples/my_example/src/main.rs
+<pre class="playground"><code class="language-rust">// examples/my_example/src/main.rs
 use astraweave_core::*;
 use astraweave_ai::*;
 
@@ -1928,7 +1949,7 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
     world.run()?;
     
     Ok(())
-}</code></pre></pre>
+}</code></pre>
 <h3 id="cargotoml-template"><a class="header" href="#cargotoml-template">Cargo.toml Template</a></h3>
 <pre><code class="language-toml">[package]
 name = "my_example"
@@ -1942,15 +1963,16 @@ anyhow.workspace = true
 </code></pre>
 <h2 id="next-steps-3"><a class="header" href="#next-steps-3">Next Steps</a></h2>
 <ul>
-<li><strong>Start Simple</strong>: Begin with <a href="examples/./hello-companion.html">Hello Companion</a></li>
-<li><strong>Learn Architecture</strong>: Read <a href="examples/../architecture/ai-native.html">AI-Native Design</a></li>
-<li><strong>Build Something</strong>: Follow <a href="examples/../game-dev/first-game.html">Building Your First Game</a></li>
-<li><strong>Contribute</strong>: Help fix broken examples in <a href="examples/../dev/contributing.html">Contributing Guide</a></li>
+<li><strong>Start Simple</strong>: Begin with <a href="#hello-companion-walkthrough">Hello Companion</a></li>
+<li><strong>Learn Architecture</strong>: Read <a href="#ai-native-design">AI-Native Design</a></li>
+<li><strong>Build Something</strong>: Follow <a href="#building-your-first-game">Building Your First Game</a></li>
+<li><strong>Contribute</strong>: Help fix broken examples in <a href="#contributing-guide">Contributing Guide</a></li>
 </ul>
-<hr />
-<p><em>The working examples are your best introduction to AstraWeave's capabilities. Start with hello_companion and work your way up to more complex scenarios.</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="hello-companion-walkthrough"><a class="header" href="#hello-companion-walkthrough">Hello Companion Walkthrough</a></h1>
-<p>The <code>hello_companion</code> example is the perfect introduction to AstraWeave's AI-native architecture. This walkthrough explains every step of what happens when you run this example and why it's designed this way.</p>
+<hr>
+<p><em>The working examples are your best introduction to AstraWeave’s capabilities. Start with hello_companion and work your way up to more complex scenarios.</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="hello-companion-walkthrough"><a class="header" href="#hello-companion-walkthrough">Hello Companion Walkthrough</a></h1>
+<p>The <code>hello_companion</code> example is the perfect introduction to AstraWeave’s AI-native architecture. This walkthrough explains every step of what happens when you run this example and why it’s designed this way.</p>
 <h2 id="running-the-example"><a class="header" href="#running-the-example">Running the Example</a></h2>
 <pre><code class="language-bash">cargo run -p hello_companion --release
 </code></pre>
@@ -1968,11 +1990,11 @@ anyhow.workspace = true
 thread 'main' panicked at examples/hello_companion/src/main.rs:42:5:
 called `Result::unwrap()` on an `Err` value: ToolValidationError(LosBlocked)
 </code></pre>
-<p><strong>This panic is intentional!</strong> It demonstrates AstraWeave's core principle: AI agents cannot perform actions that violate the game world's constraints.</p>
+<p><strong>This panic is intentional!</strong> It demonstrates AstraWeave’s core principle: AI agents cannot perform actions that violate the game world’s constraints.</p>
 <h2 id="code-walkthrough"><a class="header" href="#code-walkthrough">Code Walkthrough</a></h2>
-<p>Let's examine the source code to understand each step:</p>
+<p>Let’s examine the source code to understand each step:</p>
 <h3 id="1-engine-initialization"><a class="header" href="#1-engine-initialization">1. Engine Initialization</a></h3>
-<pre><pre class="playground"><code class="language-rust">// examples/hello_companion/src/main.rs
+<pre class="playground"><code class="language-rust">// examples/hello_companion/src/main.rs
 use astraweave_core::*;
 use astraweave_ai::*;
 
@@ -1986,15 +2008,15 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
     // Configure the engine systems
     world.add_plugin(CorePlugin)
          .add_plugin(AIPlugin)
-         .add_plugin(PhysicsPlugin);</code></pre></pre>
-<p><strong>What's happening:</strong></p>
+         .add_plugin(PhysicsPlugin);</code></pre>
+<p><strong>What’s happening:</strong></p>
 <ul>
 <li>Sets up the Entity-Component-System (ECS) world</li>
 <li>Registers core systems for AI, physics, and simulation</li>
 <li>Configures 60Hz fixed-tick simulation</li>
 </ul>
 <h3 id="2-spawning-the-ai-companion"><a class="header" href="#2-spawning-the-ai-companion">2. Spawning the AI Companion</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>    // Spawn an AI companion entity
     let companion = world.spawn()
@@ -2011,8 +2033,8 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
         .id();
     
     info!("Spawned AI companion with ID: {:?}", companion);
-<span class="boring">}</span></code></pre></pre>
-<p><strong>What's happening:</strong></p>
+<span class="boring">}</span></code></pre>
+<p><strong>What’s happening:</strong></p>
 <ul>
 <li>Creates a new entity in the ECS world</li>
 <li>Adds position component (where the companion is)</li>
@@ -2020,7 +2042,7 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 <li>Adds movement capability (what it can do)</li>
 </ul>
 <h3 id="3-the-simulation-loop"><a class="header" href="#3-the-simulation-loop">3. The Simulation Loop</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>    // Run simulation for a few ticks
     for tick in 0..5 {
@@ -2032,8 +2054,8 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
         // Small delay so we can see the output
         std::thread::sleep(Duration::from_millis(100));
     }
-<span class="boring">}</span></code></pre></pre>
-<p><strong>What's happening:</strong></p>
+<span class="boring">}</span></code></pre>
+<p><strong>What’s happening:</strong></p>
 <ul>
 <li>Runs exactly 5 simulation ticks</li>
 <li>Each tick advances the world by exactly 1/60th of a second</li>
@@ -2042,7 +2064,7 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 <h3 id="4-the-ai-pipeline-inside-worldstep"><a class="header" href="#4-the-ai-pipeline-inside-worldstep">4. The AI Pipeline (Inside world.step())</a></h3>
 <p>During each <code>world.step()</code> call, several systems run in sequence:</p>
 <h4 id="a-perception-system"><a class="header" href="#a-perception-system">A. Perception System</a></h4>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn ai_perception_system(
     mut query: Query&lt;(&amp;Position, &amp;AIAgent, &amp;mut PerceptionState)&gt;,
@@ -2073,9 +2095,9 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
         });
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h4 id="b-ai-planning-system"><a class="header" href="#b-ai-planning-system">B. AI Planning System</a></h4>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn ai_planning_system(
     mut query: Query&lt;(&amp;AIAgent, &amp;PerceptionState, &amp;mut PlanningState)&gt;,
@@ -2098,9 +2120,9 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h4 id="c-tool-validation-system"><a class="header" href="#c-tool-validation-system">C. Tool Validation System</a></h4>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>fn tool_validation_system(
     mut query: Query&lt;(&amp;PlanningState, &amp;mut ActionState)&gt;,
@@ -2131,9 +2153,9 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
         }
     }
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="why-does-it-panic"><a class="header" href="#why-does-it-panic">Why Does It Panic?</a></h2>
-<p>The panic occurs because the AI tries to move to a position but there's no clear line of sight. Here's what happens:</p>
+<p>The panic occurs because the AI tries to move to a position but there’s no clear line of sight. Here’s what happens:</p>
 <h3 id="1-ai-perception"><a class="header" href="#1-ai-perception">1. AI Perception</a></h3>
 <ul>
 <li>The companion perceives its current position (0, 0, 0)</li>
@@ -2147,7 +2169,7 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 <h3 id="3-tool-validation-1"><a class="header" href="#3-tool-validation-1">3. Tool Validation</a></h3>
 <ul>
 <li>The MovementTool.validate() method checks line of sight</li>
-<li>There's an invisible obstacle blocking the path</li>
+<li>There’s an invisible obstacle blocking the path</li>
 <li>Validation fails with <code>LosBlocked</code> error</li>
 </ul>
 <h3 id="4-engine-authority"><a class="header" href="#4-engine-authority">4. Engine Authority</a></h3>
@@ -2157,16 +2179,16 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 </ul>
 <h2 id="key-learning-points"><a class="header" href="#key-learning-points">Key Learning Points</a></h2>
 <h3 id="1-ai-cannot-cheat"><a class="header" href="#1-ai-cannot-cheat">1. AI Cannot Cheat</a></h3>
-<p>The AI doesn't have perfect information about the world. It can only act based on what it perceives, and all actions must be validated by the engine.</p>
+<p>The AI doesn’t have perfect information about the world. It can only act based on what it perceives, and all actions must be validated by the engine.</p>
 <h3 id="2-deterministic-behavior"><a class="header" href="#2-deterministic-behavior">2. Deterministic Behavior</a></h3>
-<p>Run the example multiple times - you'll get the same result every time. This determinism is crucial for:</p>
+<p>Run the example multiple times - you’ll get the same result every time. This determinism is crucial for:</p>
 <ul>
 <li>Reliable testing</li>
 <li>Networking (same simulation on all clients)</li>
 <li>Debugging AI behavior</li>
 </ul>
 <h3 id="3-tool-based-architecture"><a class="header" href="#3-tool-based-architecture">3. Tool-Based Architecture</a></h3>
-<p>The AI doesn't directly move entities or change the world. It can only request actions through validated tools:</p>
+<p>The AI doesn’t directly move entities or change the world. It can only request actions through validated tools:</p>
 <ul>
 <li>MovementTool (for movement)</li>
 <li>InteractionTool (for object interaction)</li>
@@ -2174,7 +2196,7 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 <li>CommunicationTool (for dialogue)</li>
 </ul>
 <h3 id="4-perception-vs-reality"><a class="header" href="#4-perception-vs-reality">4. Perception vs Reality</a></h3>
-<p>The AI's perception is limited and may not match reality. This creates interesting emergent behavior as AI agents must:</p>
+<p>The AI’s perception is limited and may not match reality. This creates interesting emergent behavior as AI agents must:</p>
 <ul>
 <li>Explore to gather information</li>
 <li>Make decisions with incomplete data</li>
@@ -2183,16 +2205,16 @@ fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
 <h2 id="modifying-the-example"><a class="header" href="#modifying-the-example">Modifying the Example</a></h2>
 <h3 id="make-it-not-panic"><a class="header" href="#make-it-not-panic">Make It Not Panic</a></h3>
 <p>To see successful AI behavior, modify the world setup:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Remove the obstacle that blocks line of sight
 world.remove_obstacle(Vec3::new(5.0, 0.0, 2.5));
 
 // Or give the AI perfect perception
 ai_agent.perception_range = f32::INFINITY;
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="add-more-interesting-behavior"><a class="header" href="#add-more-interesting-behavior">Add More Interesting Behavior</a></h3>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Add a target for the AI to find
 world.spawn()
@@ -2203,7 +2225,7 @@ world.spawn()
     });
 
 // The AI will now try to navigate to and interact with the chest
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h3 id="enable-logging-for-more-detail"><a class="header" href="#enable-logging-for-more-detail">Enable Logging for More Detail</a></h3>
 <pre><code class="language-bash">RUST_LOG=debug cargo run -p hello_companion --release
 </code></pre>
@@ -2242,18 +2264,18 @@ world.spawn()
 <h2 id="next-steps-4"><a class="header" href="#next-steps-4">Next Steps</a></h2>
 <p>After understanding hello_companion:</p>
 <ol>
-<li><strong>Explore More Examples</strong>: Try <a href="examples/./adaptive-boss.html">Adaptive Boss</a> for complex AI</li>
-<li><strong>Learn Architecture</strong>: Read <a href="examples/../architecture/ai-native.html">AI-Native Design</a></li>
-<li><strong>Build Your Own</strong>: Follow <a href="examples/../game-dev/first-game.html">Building Your First Game</a></li>
-<li><strong>Dive Deeper</strong>: Study <a href="examples/../core-systems/ai/index.html">Core AI Systems</a></li>
+<li><strong>Explore More Examples</strong>: Try <a href="#adaptive-boss">Adaptive Boss</a> for complex AI</li>
+<li><strong>Learn Architecture</strong>: Read <a href="#ai-native-design">AI-Native Design</a></li>
+<li><strong>Build Your Own</strong>: Follow <a href="#building-your-first-game">Building Your First Game</a></li>
+<li><strong>Dive Deeper</strong>: Study <a href="#ai-system">Core AI Systems</a></li>
 </ol>
 <h2 id="common-questions"><a class="header" href="#common-questions">Common Questions</a></h2>
 <h3 id="q-why-does-it-panic-instead-of-just-logging-the-error"><a class="header" href="#q-why-does-it-panic-instead-of-just-logging-the-error">Q: Why does it panic instead of just logging the error?</a></h3>
-<p><strong>A</strong>: The panic demonstrates that validation failures are serious. In a real game, you'd handle this gracefully, but the example uses panic to make the validation concept crystal clear.</p>
+<p><strong>A</strong>: The panic demonstrates that validation failures are serious. In a real game, you’d handle this gracefully, but the example uses panic to make the validation concept crystal clear.</p>
 <h3 id="q-can-i-make-the-ai-smarter-to-avoid-this-error"><a class="header" href="#q-can-i-make-the-ai-smarter-to-avoid-this-error">Q: Can I make the AI smarter to avoid this error?</a></h3>
 <p><strong>A</strong>: Yes! You can:</p>
 <ul>
-<li>Improve the AI's perception system</li>
+<li>Improve the AI’s perception system</li>
 <li>Give it better pathfinding tools</li>
 <li>Add obstacle detection to its planning</li>
 <li>Implement learning from failed actions</li>
@@ -2266,38 +2288,63 @@ world.spawn()
 <li>Works in multiplayer</li>
 <li>Enables complex AI interactions</li>
 </ul>
-<p>The "failed action = learning opportunity" approach leads to much more interesting AI behavior than scripted sequences.</p>
-<hr />
-<p><em>The hello_companion example may be simple, but it demonstrates the fundamental principles that enable AstraWeave's AI-native gameplay. Every complex AI behavior in the engine builds on these same validation patterns.</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="adaptive-boss"><a class="header" href="#adaptive-boss">Adaptive Boss</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="physics-demo"><a class="header" href="#physics-demo">Physics Demo</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="navmesh-demo"><a class="header" href="#navmesh-demo">Navmesh Demo</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="audio-spatial"><a class="header" href="#audio-spatial">Audio Spatial</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting-examples"><a class="header" href="#troubleshooting-examples">Troubleshooting Examples</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="veilweaver-overview"><a class="header" href="#veilweaver-overview">Veilweaver Overview</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="game-mechanics"><a class="header" href="#game-mechanics">Game Mechanics</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="ai-integration"><a class="header" href="#ai-integration">AI Integration</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="world-design"><a class="header" href="#world-design">World Design</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="contributing-guide"><a class="header" href="#contributing-guide">Contributing Guide</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="testing-1"><a class="header" href="#testing-1">Testing</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="code-style"><a class="header" href="#code-style">Code Style</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="adding-new-features"><a class="header" href="#adding-new-features">Adding New Features</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="performance-optimization"><a class="header" href="#performance-optimization">Performance Optimization</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="api-documentation"><a class="header" href="#api-documentation">API Documentation</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="crate-documentation"><a class="header" href="#crate-documentation">Crate Documentation</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="command-line-tools"><a class="header" href="#command-line-tools">Command Line Tools</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="platform-support"><a class="header" href="#platform-support">Platform Support</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="faq"><a class="header" href="#faq">FAQ</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="performance-tips"><a class="header" href="#performance-tips">Performance Tips</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="troubleshooting-2"><a class="header" href="#troubleshooting-2">Troubleshooting</a></h1>
+<p>The “failed action = learning opportunity” approach leads to much more interesting AI behavior than scripted sequences.</p>
+<hr>
+<p><em>The hello_companion example may be simple, but it demonstrates the fundamental principles that enable AstraWeave’s AI-native gameplay. Every complex AI behavior in the engine builds on these same validation patterns.</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="adaptive-boss"><a class="header" href="#adaptive-boss">Adaptive Boss</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="physics-demo"><a class="header" href="#physics-demo">Physics Demo</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="navmesh-demo"><a class="header" href="#navmesh-demo">Navmesh Demo</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="audio-spatial"><a class="header" href="#audio-spatial">Audio Spatial</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="troubleshooting-examples"><a class="header" href="#troubleshooting-examples">Troubleshooting Examples</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="veilweaver-overview"><a class="header" href="#veilweaver-overview">Veilweaver Overview</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="game-mechanics"><a class="header" href="#game-mechanics">Game Mechanics</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ai-integration"><a class="header" href="#ai-integration">AI Integration</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="world-design"><a class="header" href="#world-design">World Design</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="contributing-guide"><a class="header" href="#contributing-guide">Contributing Guide</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="testing-1"><a class="header" href="#testing-1">Testing</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="code-style"><a class="header" href="#code-style">Code Style</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="adding-new-features"><a class="header" href="#adding-new-features">Adding New Features</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="performance-optimization"><a class="header" href="#performance-optimization">Performance Optimization</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="api-documentation"><a class="header" href="#api-documentation">API Documentation</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="crate-documentation"><a class="header" href="#crate-documentation">Crate Documentation</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="command-line-tools"><a class="header" href="#command-line-tools">Command Line Tools</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="platform-support"><a class="header" href="#platform-support">Platform Support</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="faq"><a class="header" href="#faq">FAQ</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="performance-tips"><a class="header" href="#performance-tips">Performance Tips</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="best-practices"><a class="header" href="#best-practices">Best Practices</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="common-patterns"><a class="header" href="#common-patterns">Common Patterns</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="troubleshooting-2"><a class="header" href="#troubleshooting-2">Troubleshooting</a></h1>
 <p>This guide helps you solve common issues when working with AstraWeave. Issues are organized by category with specific solutions.</p>
 <h2 id="build-issues"><a class="header" href="#build-issues">Build Issues</a></h2>
 <h3 id="rust-toolchain-problems"><a class="header" href="#rust-toolchain-problems">Rust Toolchain Problems</a></h3>
-<h4 id="error-rustc-version-mismatch"><a class="header" href="#error-rustc-version-mismatch">Error: "rustc version mismatch"</a></h4>
+<h4 id="error-rustc-version-mismatch"><a class="header" href="#error-rustc-version-mismatch">Error: “rustc version mismatch”</a></h4>
 <pre><code>error: rustc version doesn't match the expected version
 </code></pre>
 <p><strong>Solution:</strong></p>
@@ -2309,7 +2356,7 @@ rustup default 1.89.0
 # Verify version
 rustc --version  # Should show 1.89.0
 </code></pre>
-<h4 id="error-rust-toolchaintoml-not-respected"><a class="header" href="#error-rust-toolchaintoml-not-respected">Error: "rust-toolchain.toml not respected"</a></h4>
+<h4 id="error-rust-toolchaintoml-not-respected"><a class="header" href="#error-rust-toolchaintoml-not-respected">Error: “rust-toolchain.toml not respected”</a></h4>
 <p><strong>Solution:</strong></p>
 <pre><code class="language-bash"># Force toolchain installation
 rustup toolchain install 1.89.0
@@ -2320,7 +2367,7 @@ cargo clean
 cargo build -p astraweave-core
 </code></pre>
 <h3 id="dependency-issues"><a class="header" href="#dependency-issues">Dependency Issues</a></h3>
-<h4 id="error-linker-cc-not-found"><a class="header" href="#error-linker-cc-not-found">Error: "linker <code>cc</code> not found"</a></h4>
+<h4 id="error-linker-cc-not-found"><a class="header" href="#error-linker-cc-not-found">Error: “linker <code>cc</code> not found”</a></h4>
 <p><strong>Linux Solution:</strong></p>
 <pre><code class="language-bash">sudo apt-get install build-essential
 </code></pre>
@@ -2329,7 +2376,7 @@ cargo build -p astraweave-core
 </code></pre>
 <p><strong>Windows Solution:</strong>
 Install Visual Studio with C++ build tools.</p>
-<h4 id="error-failed-to-find-required-package"><a class="header" href="#error-failed-to-find-required-package">Error: "failed to find required package"</a></h4>
+<h4 id="error-failed-to-find-required-package"><a class="header" href="#error-failed-to-find-required-package">Error: “failed to find required package”</a></h4>
 <pre><code>error: could not find `wgpu` in the registry
 </code></pre>
 <p><strong>Solution:</strong></p>
@@ -2341,7 +2388,7 @@ rm -rf ~/.cargo/registry
 cargo update
 </code></pre>
 <h3 id="graphics-dependencies"><a class="header" href="#graphics-dependencies">Graphics Dependencies</a></h3>
-<h4 id="error-vulkan-not-found"><a class="header" href="#error-vulkan-not-found">Error: "Vulkan not found"</a></h4>
+<h4 id="error-vulkan-not-found"><a class="header" href="#error-vulkan-not-found">Error: “Vulkan not found”</a></h4>
 <p><strong>Linux Solution:</strong></p>
 <pre><code class="language-bash"># Ubuntu/Debian
 sudo apt-get install mesa-vulkan-drivers vulkan-tools
@@ -2366,7 +2413,7 @@ Update your graphics drivers from manufacturer website:</p>
 Vulkan support requires MoltenVK:</p>
 <pre><code class="language-bash">brew install molten-vk
 </code></pre>
-<h4 id="error-wgpu-adapter-not-found"><a class="header" href="#error-wgpu-adapter-not-found">Error: "wgpu adapter not found"</a></h4>
+<h4 id="error-wgpu-adapter-not-found"><a class="header" href="#error-wgpu-adapter-not-found">Error: “wgpu adapter not found”</a></h4>
 <pre><code>thread 'main' panicked at 'No suitable graphics adapter found'
 </code></pre>
 <p><strong>Solutions:</strong></p>
@@ -2390,7 +2437,7 @@ cargo run -p hello_companion
 </li>
 </ol>
 <h3 id="audio-dependencies"><a class="header" href="#audio-dependencies">Audio Dependencies</a></h3>
-<h4 id="error-alsa-lib-errors-linux"><a class="header" href="#error-alsa-lib-errors-linux">Error: "ALSA lib errors" (Linux)</a></h4>
+<h4 id="error-alsa-lib-errors-linux"><a class="header" href="#error-alsa-lib-errors-linux">Error: “ALSA lib errors” (Linux)</a></h4>
 <pre><code>ALSA lib pcm_dmix.c:1089:(snd_pcm_dmix_open) unable to open slave
 </code></pre>
 <p><strong>Solution:</strong></p>
@@ -2403,7 +2450,7 @@ aplay -l
 # If no devices, check PulseAudio
 pulseaudio --check
 </code></pre>
-<h4 id="error-no-audio-output-device-found"><a class="header" href="#error-no-audio-output-device-found">Error: "No audio output device found"</a></h4>
+<h4 id="error-no-audio-output-device-found"><a class="header" href="#error-no-audio-output-device-found">Error: “No audio output device found”</a></h4>
 <p><strong>Linux Solution:</strong></p>
 <pre><code class="language-bash"># Restart audio services
 systemctl --user restart pulseaudio
@@ -2413,7 +2460,7 @@ Check that Windows Audio service is running in Services.</p>
 <p><strong>macOS Solution:</strong>
 Usually works out of the box. Check System Preferences &gt; Sound.</p>
 <h3 id="example-compilation-issues"><a class="header" href="#example-compilation-issues">Example Compilation Issues</a></h3>
-<h4 id="error-examples-fail-to-compile"><a class="header" href="#error-examples-fail-to-compile">Error: "examples fail to compile"</a></h4>
+<h4 id="error-examples-fail-to-compile"><a class="header" href="#error-examples-fail-to-compile">Error: “examples fail to compile”</a></h4>
 <p>Many examples have known compilation issues. Use only the working examples:</p>
 <p><strong>Working Examples:</strong></p>
 <pre><code class="language-bash">cargo build -p hello_companion      # ✅ Works (expected panic)
@@ -2437,7 +2484,7 @@ cargo clippy-all                    # Run clippy on working crates
 </code></pre>
 <h2 id="runtime-issues-1"><a class="header" href="#runtime-issues-1">Runtime Issues</a></h2>
 <h3 id="graphics-issues"><a class="header" href="#graphics-issues">Graphics Issues</a></h3>
-<h4 id="error-validation-error-in-wgpu"><a class="header" href="#error-validation-error-in-wgpu">Error: "Validation error in wgpu"</a></h4>
+<h4 id="error-validation-error-in-wgpu"><a class="header" href="#error-validation-error-in-wgpu">Error: “Validation error in wgpu”</a></h4>
 <pre><code>wgpu validation error: Buffer usage VERTEX | COPY_DST is not valid
 </code></pre>
 <p><strong>Solutions:</strong></p>
@@ -2449,17 +2496,17 @@ cargo clippy-all                    # Run clippy on working crates
 </li>
 <li><strong>Reduce graphics settings in your code</strong></li>
 </ol>
-<h4 id="error-surface-creation-failed"><a class="header" href="#error-surface-creation-failed">Error: "Surface creation failed"</a></h4>
+<h4 id="error-surface-creation-failed"><a class="header" href="#error-surface-creation-failed">Error: “Surface creation failed”</a></h4>
 <pre><code>Error creating surface: SurfaceError(OutOfMemory)
 </code></pre>
 <p><strong>Solutions:</strong></p>
 <ol>
 <li><strong>Reduce window size:</strong>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// In your window configuration
 .with_inner_size(winit::dpi::LogicalSize::new(800, 600))
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 </li>
 <li><strong>Lower graphics quality settings</strong></li>
 <li><strong>Check available VRAM:</strong>
@@ -2470,18 +2517,18 @@ radeontop   # for AMD
 </li>
 </ol>
 <h3 id="ai-model-issues"><a class="header" href="#ai-model-issues">AI Model Issues</a></h3>
-<h4 id="error-ai-model-not-found"><a class="header" href="#error-ai-model-not-found">Error: "AI model not found"</a></h4>
+<h4 id="error-ai-model-not-found"><a class="header" href="#error-ai-model-not-found">Error: “AI model not found”</a></h4>
 <pre><code>Error: Could not load AI model 'companion-7b'
 </code></pre>
 <p><strong>Solutions:</strong></p>
 <ol>
 <li>
 <p><strong>Use mock AI for testing:</strong></p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// In your configuration
 ai_agent.ai_model = AIModel::Mock;
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 </li>
 <li>
 <p><strong>Download required models:</strong></p>
@@ -2491,14 +2538,14 @@ ai_agent.ai_model = AIModel::Mock;
 </li>
 <li>
 <p><strong>Configure model path:</strong></p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>ai_agent.ai_model = AIModel::Local("path/to/your/model".to_string());
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 </li>
 </ol>
 <h3 id="performance-issues-1"><a class="header" href="#performance-issues-1">Performance Issues</a></h3>
-<h4 id="issue-low-fps--stuttering"><a class="header" href="#issue-low-fps--stuttering">Issue: "Low FPS / Stuttering"</a></h4>
+<h4 id="issue-low-fps--stuttering"><a class="header" href="#issue-low-fps--stuttering">Issue: “Low FPS / Stuttering”</a></h4>
 <p><strong>Diagnosis:</strong></p>
 <pre><code class="language-bash"># Always use release builds for performance testing
 cargo run -p hello_companion --release
@@ -2526,17 +2573,17 @@ radeontop   # AMD
 </li>
 <li>
 <p><strong>Reduce AI complexity:</strong></p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Lower AI planning frequency
 ai_agent.planning_interval = Duration::from_millis(1000); // Instead of 500
 
 // Reduce perception range
 ai_agent.perception_range = 5.0; // Instead of 10.0
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 </li>
 </ol>
-<h4 id="issue-high-memory-usage"><a class="header" href="#issue-high-memory-usage">Issue: "High memory usage"</a></h4>
+<h4 id="issue-high-memory-usage"><a class="header" href="#issue-high-memory-usage">Issue: “High memory usage”</a></h4>
 <p><strong>Diagnosis:</strong></p>
 <pre><code class="language-bash"># Check memory usage
 cargo run --release -p hello_companion &amp;
@@ -2546,11 +2593,11 @@ ps aux | grep hello_companion
 <ol>
 <li>
 <p><strong>Limit AI memory:</strong></p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>ai_memory.max_episodic_memories = 100;
 ai_memory.max_working_memory = 10;
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 </li>
 <li>
 <p><strong>Use memory profiling:</strong></p>
@@ -2561,7 +2608,7 @@ valgrind --tool=massif cargo run --release -p hello_companion
 </li>
 </ol>
 <h3 id="network-issues"><a class="header" href="#network-issues">Network Issues</a></h3>
-<h4 id="error-connection-refused-multiplayer-examples"><a class="header" href="#error-connection-refused-multiplayer-examples">Error: "Connection refused" (multiplayer examples)</a></h4>
+<h4 id="error-connection-refused-multiplayer-examples"><a class="header" href="#error-connection-refused-multiplayer-examples">Error: “Connection refused” (multiplayer examples)</a></h4>
 <pre><code>Error: Connection refused (os error 111)
 </code></pre>
 <p><strong>Solutions:</strong></p>
@@ -2586,16 +2633,16 @@ sudo ufw allow 8080
 </li>
 <li>
 <p><strong>Use localhost:</strong></p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Make sure client connects to localhost
 let server_addr = "127.0.0.1:8080";
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 </li>
 </ol>
 <h2 id="development-issues"><a class="header" href="#development-issues">Development Issues</a></h2>
 <h3 id="ide-problems"><a class="header" href="#ide-problems">IDE Problems</a></h3>
-<h4 id="issue-rust-analyzer-not-working"><a class="header" href="#issue-rust-analyzer-not-working">Issue: "rust-analyzer not working"</a></h4>
+<h4 id="issue-rust-analyzer-not-working"><a class="header" href="#issue-rust-analyzer-not-working">Issue: “rust-analyzer not working”</a></h4>
 <p><strong>Solution:</strong></p>
 <pre><code class="language-bash"># Restart rust-analyzer
 # In VS Code: Ctrl+Shift+P &gt; "Rust Analyzer: Restart Server"
@@ -2603,7 +2650,7 @@ let server_addr = "127.0.0.1:8080";
 # Or reinstall
 rustup component add rust-analyzer
 </code></pre>
-<h4 id="issue-slow-code-completion"><a class="header" href="#issue-slow-code-completion">Issue: "Slow code completion"</a></h4>
+<h4 id="issue-slow-code-completion"><a class="header" href="#issue-slow-code-completion">Issue: “Slow code completion”</a></h4>
 <p><strong>Solutions:</strong></p>
 <ol>
 <li><strong>Exclude target directory from indexing</strong></li>
@@ -2617,7 +2664,7 @@ rustup component add rust-analyzer
 </li>
 </ol>
 <h3 id="testing-issues"><a class="header" href="#testing-issues">Testing Issues</a></h3>
-<h4 id="error-tests-hanging"><a class="header" href="#error-tests-hanging">Error: "Tests hanging"</a></h4>
+<h4 id="error-tests-hanging"><a class="header" href="#error-tests-hanging">Error: “Tests hanging”</a></h4>
 <pre><code class="language-bash">cargo test -p astraweave-input
 # Hangs indefinitely
 </code></pre>
@@ -2639,12 +2686,12 @@ rustup component add rust-analyzer
 </code></pre>
 </li>
 </ol>
-<h4 id="error-test-failures-due-to-timing"><a class="header" href="#error-test-failures-due-to-timing">Error: "Test failures due to timing"</a></h4>
+<h4 id="error-test-failures-due-to-timing"><a class="header" href="#error-test-failures-due-to-timing">Error: “Test failures due to timing”</a></h4>
 <pre><code>thread 'ai_planning_test' panicked at 'assertion failed: plan.is_some()'
 </code></pre>
 <p><strong>Solution:</strong>
 Tests involving AI may have timing dependencies:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>// Add delays in tests
 #[test]
@@ -2657,10 +2704,10 @@ fn ai_planning_test() {
     let plan = world.get_ai_plan();
     assert!(plan.is_some());
 }
-<span class="boring">}</span></code></pre></pre>
+<span class="boring">}</span></code></pre>
 <h2 id="platform-specific-issues-1"><a class="header" href="#platform-specific-issues-1">Platform-Specific Issues</a></h2>
 <h3 id="linux-issues"><a class="header" href="#linux-issues">Linux Issues</a></h3>
-<h4 id="issue-wayland-compatibility"><a class="header" href="#issue-wayland-compatibility">Issue: "Wayland compatibility"</a></h4>
+<h4 id="issue-wayland-compatibility"><a class="header" href="#issue-wayland-compatibility">Issue: “Wayland compatibility”</a></h4>
 <p>Some features may not work correctly on Wayland:</p>
 <pre><code class="language-bash"># Force X11 if needed
 export WAYLAND_DISPLAY=""
@@ -2669,14 +2716,14 @@ export DISPLAY=:0
 # Or force Wayland if X11 is causing issues
 export DISPLAY=""
 </code></pre>
-<h4 id="issue-audio-permission-denied"><a class="header" href="#issue-audio-permission-denied">Issue: "Audio permission denied"</a></h4>
+<h4 id="issue-audio-permission-denied"><a class="header" href="#issue-audio-permission-denied">Issue: “Audio permission denied”</a></h4>
 <pre><code class="language-bash"># Add user to audio group
 sudo usermod -a -G audio $USER
 
 # Restart session or reboot
 </code></pre>
 <h3 id="macos-issues"><a class="header" href="#macos-issues">macOS Issues</a></h3>
-<h4 id="issue-code-signing-errors"><a class="header" href="#issue-code-signing-errors">Issue: "Code signing errors"</a></h4>
+<h4 id="issue-code-signing-errors"><a class="header" href="#issue-code-signing-errors">Issue: “Code signing errors”</a></h4>
 <pre><code>error: codesign failed with exit code 1
 </code></pre>
 <p><strong>Solution:</strong></p>
@@ -2686,26 +2733,26 @@ export MACOSX_DEPLOYMENT_TARGET=11.0
 # Or sign manually
 codesign --force --deep --sign - target/release/hello_companion
 </code></pre>
-<h4 id="issue-metal-validation-errors"><a class="header" href="#issue-metal-validation-errors">Issue: "Metal validation errors"</a></h4>
+<h4 id="issue-metal-validation-errors"><a class="header" href="#issue-metal-validation-errors">Issue: “Metal validation errors”</a></h4>
 <p>Use software rendering if Metal causes issues:</p>
 <pre><code class="language-bash">export WGPU_BACKEND=gl
 cargo run -p hello_companion --release
 </code></pre>
 <h3 id="windows-issues"><a class="header" href="#windows-issues">Windows Issues</a></h3>
-<h4 id="issue-msvc-runtime-missing"><a class="header" href="#issue-msvc-runtime-missing">Issue: "MSVC runtime missing"</a></h4>
+<h4 id="issue-msvc-runtime-missing"><a class="header" href="#issue-msvc-runtime-missing">Issue: “MSVC runtime missing”</a></h4>
 <p>Install Microsoft Visual C++ Redistributable:</p>
 <ul>
-<li>Download from Microsoft's website</li>
+<li>Download from Microsoft’s website</li>
 <li>Or install Visual Studio with C++ tools</li>
 </ul>
-<h4 id="issue-antivirus-blocking-execution"><a class="header" href="#issue-antivirus-blocking-execution">Issue: "Antivirus blocking execution"</a></h4>
+<h4 id="issue-antivirus-blocking-execution"><a class="header" href="#issue-antivirus-blocking-execution">Issue: “Antivirus blocking execution”</a></h4>
 <p>Add exclusions for:</p>
 <ul>
 <li>Project directory</li>
 <li><code>%USERPROFILE%\.cargo</code></li>
 <li><code>target\</code> directory</li>
 </ul>
-<h4 id="issue-path-too-long-errors"><a class="header" href="#issue-path-too-long-errors">Issue: "Path too long errors"</a></h4>
+<h4 id="issue-path-too-long-errors"><a class="header" href="#issue-path-too-long-errors">Issue: “Path too long errors”</a></h4>
 <pre><code class="language-bash"># Enable long paths in Windows
 # Run as Administrator in PowerShell:
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
@@ -2780,7 +2827,7 @@ RUST_BACKTRACE=full cargo run -p hello_companion 2&gt;&amp;1 | tee error.log
 <h4 id="current-development-state"><a class="header" href="#current-development-state">Current Development State</a></h4>
 <p>AstraWeave is under active development. Known limitations:</p>
 <ol>
-<li><strong>Many examples don't compile</strong> due to API evolution</li>
+<li><strong>Many examples don’t compile</strong> due to API evolution</li>
 <li><strong>Limited AI model integration</strong> - mostly uses mock AI</li>
 <li><strong>Graphics API compatibility</strong> - some newer GPU features not supported</li>
 <li><strong>Documentation gaps</strong> - some advanced features lack documentation</li>
@@ -2792,10 +2839,12 @@ RUST_BACKTRACE=full cargo run -p hello_companion 2&gt;&amp;1 | tee error.log
 <li><strong>Stick to stable APIs</strong> in core crates</li>
 <li><strong>Contribute fixes</strong> for broken examples</li>
 </ol>
-<hr />
-<p><em>If you're still having issues after trying these solutions, please create an issue on GitHub with the requested information. The community is here to help!</em></p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="community"><a class="header" href="#community">Community</a></h1>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="astraweave-roadmap--aligning-with-leading-rust-game-engines"><a class="header" href="#astraweave-roadmap--aligning-with-leading-rust-game-engines">AstraWeave Roadmap — Aligning with Leading Rust Game Engines</a></h1>
+<hr>
+<p><em>If you’re still having issues after trying these solutions, please create an issue on GitHub with the requested information. The community is here to help!</em></p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="community"><a class="header" href="#community">Community</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="astraweave-roadmap--aligning-with-leading-rust-game-engines"><a class="header" href="#astraweave-roadmap--aligning-with-leading-rust-game-engines">AstraWeave Roadmap — Aligning with Leading Rust Game Engines</a></h1>
 <h2 id="current-snapshot-q2-2025"><a class="header" href="#current-snapshot-q2-2025">Current Snapshot (Q2 2025)</a></h2>
 <h3 id="foundations-already-in-place"><a class="header" href="#foundations-already-in-place">Foundations Already in Place</a></h3>
 <ul>
@@ -2808,11 +2857,11 @@ RUST_BACKTRACE=full cargo run -p hello_companion 2&gt;&amp;1 | tee error.log
 <h3 id="gaps-and-risks-blocking-engine-parity"><a class="header" href="#gaps-and-risks-blocking-engine-parity">Gaps and Risks Blocking Engine Parity</a></h3>
 <ul>
 <li>⚠️ Core systems still rely on ad-hoc structs; there is no ECS schedule, component storage abstraction, or plugin boundary comparable to Bevy/Fyrox (e.g., <code>World</code> is a bespoke HashMap aggregate).【F:astraweave-core/src/world.rs†L29-L127】</li>
-<li>⚠️ Critical gameplay/AI functionality was stubbed or duplicated: orchestrator implementations in <code>astraweave-ai</code> diverged between <code>lib.rs</code> and <code>orchestrator.rs</code>; the tool sandbox validator was unimplemented; capture/replay routines returned "Not yet implemented". These have been addressed in Phase 0 iteration 1: orchestrators unified, basic tool sandbox taxonomy in place, and minimal JSON capture/replay implemented with tests.【F:astraweave-ai/src/orchestrator.rs†L1-L200】【F:astraweave-ai/src/tool_sandbox.rs†L1-L120】【F:astraweave-core/src/capture_replay.rs†L1-L200】</li>
+<li>⚠️ Critical gameplay/AI functionality was stubbed or duplicated: orchestrator implementations in <code>astraweave-ai</code> diverged between <code>lib.rs</code> and <code>orchestrator.rs</code>; the tool sandbox validator was unimplemented; capture/replay routines returned “Not yet implemented”. These have been addressed in Phase 0 iteration 1: orchestrators unified, basic tool sandbox taxonomy in place, and minimal JSON capture/replay implemented with tests.【F:astraweave-ai/src/orchestrator.rs†L1-L200】【F:astraweave-ai/src/tool_sandbox.rs†L1-L120】【F:astraweave-core/src/capture_replay.rs†L1-L200】</li>
 <li>⚠️ Observability and CI gates are aspirational: golden-image tests, deterministic replays, asset signing, and AI plan snapshot tests are only documented stubs with no automated enforcement.【F:astraweave-core/src/capture_replay.rs†L1-L16】【F:astraweave-ai/tests/plan_snapshot.rs†L1-L8】【F:tools/asset_signing.rs†L1-L16】</li>
 <li>⚠️ Rendering, asset, and tooling crates are not yet unified under a render graph or asset database; there is no scheduler that integrates renderer, physics, AI, and networking in a deterministic frame loop.</li>
 </ul>
-<hr />
+<hr>
 <h2 id="phase-0-01-months-stabilize-deduplicate-and-validate-baseline"><a class="header" href="#phase-0-01-months-stabilize-deduplicate-and-validate-baseline">Phase 0 (0–1 months): Stabilize, Deduplicate, and Validate Baseline</a></h2>
 <p><strong>Objectives:</strong> eliminate stubs, ensure repeatable builds/tests, and align nomenclature before layering new systems.</p>
 <p><strong>Key Tasks</strong></p>
@@ -2830,14 +2879,14 @@ RUST_BACKTRACE=full cargo run -p hello_companion 2&gt;&amp;1 | tee error.log
 <li>CI pipeline blocks merges on format, lint, unit/integration tests, and renderer golden images. [Pending]</li>
 <li>Deterministic AI plan snapshots and world capture/replay succeed in automation.</li>
 </ul>
-<hr />
+<hr>
 <h2 id="phase-1-13-months-ecs--simulation-core-parity"><a class="header" href="#phase-1-13-months-ecs--simulation-core-parity">Phase 1 (1–3 months): ECS &amp; Simulation Core Parity</a></h2>
 <p><strong>Objectives:</strong> evolve the bespoke world into a modular ECS with scheduling, reflecting the architecture of Bevy/Fyrox/Amethyst.</p>
 <p><strong>Key Tasks</strong></p>
 <ol>
 <li>Introduce an <code>astraweave-ecs</code> crate providing archetype-based storage, command buffers, and deterministic scheduling (or adopt <code>bevy_ecs</code> via a compatibility layer) and migrate <code>astraweave-core::World</code> onto it.</li>
 <li>Define system stages (Perception → Simulation → AI Planning → Physics → Presentation) with explicit schedules and frame boundaries.</li>
-<li>Implement resource injection, events, and fixed-timestep drivers comparable to Bevy's <code>App</code>/<code>Schedule</code> API, exposing plugin registration points across crates.</li>
+<li>Implement resource injection, events, and fixed-timestep drivers comparable to Bevy’s <code>App</code>/<code>Schedule</code> API, exposing plugin registration points across crates.</li>
 <li>Port existing world interactions (spawning, cooldown ticks, LOS helpers) into ECS components/systems with coverage tests and benchmarks.</li>
 <li>Provide migration utilities bridging legacy HashMap-backed saves to the new ECS layout.</li>
 </ol>
@@ -2847,7 +2896,7 @@ RUST_BACKTRACE=full cargo run -p hello_companion 2&gt;&amp;1 | tee error.log
 <li>Plugins for AI, physics, rendering, and input register via a unified application builder.</li>
 <li>Benchmarks demonstrate stable frame times comparable to baseline HashMap implementation.</li>
 </ul>
-<hr />
+<hr>
 <h3 id="phase-1-progress-update-sep-2025"><a class="header" href="#phase-1-progress-update-sep-2025">Phase 1 progress update (Sep 2025)</a></h3>
 <p>What’s landed in this iteration:</p>
 <ul>
@@ -2953,7 +3002,7 @@ cargo run -p ecs_ai_demo
 <li>ECS-driven scene graph produces renderable instances via the render graph.</li>
 <li>Profiling captures (wgpu trace) integrated into CI for regression detection.</li>
 </ul>
-<hr />
+<hr>
 <h3 id="phase-2-progress-update-sep-2025"><a class="header" href="#phase-2-progress-update-sep-2025">Phase 2 progress update (Sep 2025)</a></h3>
 <p>What’s landed in this iteration:</p>
 <ul>
@@ -3022,7 +3071,7 @@ cargo test -p astraweave-scene
 <li>CI verifies asset hashes, metadata completeness, and importer round-trip tests. ✅</li>
 <li>Editor displays asset metadata and previews via ECS-powered viewers. ⏳</li>
 </ul>
-<hr />
+<hr>
 <h3 id="phase-3-progress-update-sep-2025"><a class="header" href="#phase-3-progress-update-sep-2025">Phase 3 progress update (Sep 2025)</a></h3>
 <p>What’s landed in this iteration:</p>
 <ul>
@@ -3082,7 +3131,7 @@ cargo check -p astraweave-render -p aw_editor
 <li>Editor UI with asset inspection and metadata display</li>
 <li>Signing/verification pipeline for asset integrity</li>
 </ul>
-<hr />
+<hr>
 <h2 id="phase-4-811-months-authoring-tools--workflow-integration"><a class="header" href="#phase-4-811-months-authoring-tools--workflow-integration">Phase 4 (8–11 months): Authoring Tools &amp; Workflow Integration</a></h2>
 <p><strong>Objectives:</strong> evolve <code>tools/aw_editor</code> into a multi-dock authoring environment comparable to Godot/Bevy editors.</p>
 <p><strong>Key Tasks</strong></p>
@@ -3204,9 +3253,9 @@ editor-full = [...]                 # All features
 <li>Runtime verified on Windows desktop</li>
 <li>Ready for production use</li>
 </ul>
-<hr />
+<hr>
 <h2 id="phase-5-1114-months-ai-gameplay-and-systems-depth"><a class="header" href="#phase-5-1114-months-ai-gameplay-and-systems-depth">Phase 5 (11–14 months): AI, Gameplay, and Systems Depth</a></h2>
-<p><strong>Objectives:</strong> achieve AI/gameplay feature parity with precedent engines' gameplay modules. (Includes Phase 4 refinements: interactive graph node positioning and UI smoke tests)</p>
+<p><strong>Objectives:</strong> achieve AI/gameplay feature parity with precedent engines’ gameplay modules. (Includes Phase 4 refinements: interactive graph node positioning and UI smoke tests)</p>
 <p><strong>Key Tasks</strong></p>
 <ol>
 <li>✅ Implement full tool validation categories (nav, physics, resources, visibility) and integrate with Rapier/navmesh data. (ValidationContext added with nav/physics hooks, LOS via Bresenham, cooldown/resource checks; integrated with astraweave-nav and rapier3d; unit tests pass)</li>
@@ -3222,7 +3271,7 @@ editor-full = [...]                 # All features
 <li>Gameplay feature tests (combat, quests, dialogue) pass in CI.</li>
 </ul>
 <h3 id="phase-5-progress-update-oct-2025"><a class="header" href="#phase-5-progress-update-oct-2025">Phase 5 progress update (Oct 2025)</a></h3>
-<p>What's landed in this iteration:</p>
+<p>What’s landed in this iteration:</p>
 <ul>
 <li>
 <p>Tool validation with nav/physics integration ✅</p>
@@ -3279,7 +3328,7 @@ editor-full = [...]                 # All features
 <li>Current baseline: engine provides a material manager, TOML-based material packs, an interleaved MeshVertex (P/N/T/UV), an IBL manager, and an HDR offscreen -&gt; post pipeline. Examples mix procedural shading and material sampling.</li>
 <li>Goal: implement a deterministic, high-quality PBR texture pipeline with robust asset tooling, consistent color-space handling, IBL with prefiltering, a centralized WGSL PBR library, and editor/tooling to author/validate materials.</li>
 </ul>
-<p>Scope (what "complete PBR texture workflow" includes):</p>
+<p>Scope (what “complete PBR texture workflow” includes):</p>
 <ul>
 <li>Material definition schema + GPU representation (MaterialGpu)</li>
 <li>Texture ingestion (bake/compress/mipgen), color-space enforcement (sRGB vs linear)</li>
@@ -3436,7 +3485,7 @@ editor-full = [...]                 # All features
 <li>✅ Implement anisotropic GGX (elliptical distribution with tangent/bitangent)</li>
 <li>✅ Implement subsurface scattering (Burley diffusion profile with wrapped diffuse)</li>
 <li>✅ Implement sheen (Charlie distribution for retroreflection)</li>
-<li>✅ Implement transmission (Fresnel-dielectric, Snell's law, Beer-Lambert attenuation)</li>
+<li>✅ Implement transmission (Fresnel-dielectric, Snell’s law, Beer-Lambert attenuation)</li>
 <li>✅ Create comprehensive unit tests (28/28 tests passing, 100%)</li>
 <li>✅ Material batching with per-instance material_id (infrastructure complete)</li>
 <li>✅ Visual validation sphere grid scenes (8 tests for parameter sweeps)</li>
@@ -3482,7 +3531,7 @@ editor-full = [...]                 # All features
 <li>Anisotropy: Elliptical GGX, separate α_t/α_b roughness, tangent space rotation</li>
 <li>SSS: Burley diffusion, wrapped diffuse (forward + back scattering), blend with Lambertian</li>
 <li>Sheen: Charlie distribution (inverted Gaussian), peaks at grazing angles, retroreflection</li>
-<li>Transmission: Exact Fresnel-dielectric, Snell's law refraction, Beer-Lambert absorption, TIR handling</li>
+<li>Transmission: Exact Fresnel-dielectric, Snell’s law refraction, Beer-Lambert absorption, TIR handling</li>
 </ul>
 </li>
 <li>References:
@@ -3632,7 +3681,7 @@ editor-full = [...]                 # All features
 <li>✅ Color-coded status messages (✅ green, ⚠ orange, ❌ red)</li>
 <li>✅ Improved spacing with add_space() calls (4px/8px patterns)</li>
 <li>✅ Material count display next to Refresh button</li>
-<li>✅ Better button labels ("Load Demo Material" clarity)</li>
+<li>✅ Better button labels (“Load Demo Material” clarity)</li>
 <li>✅ Empty state improvements with helpful guidance</li>
 <li>✅ Edge case testing documented (missing dirs, corrupt TOML, large textures)</li>
 <li>✅ Performance testing (large databases, rapid switching, BRDF stress)</li>
@@ -3692,7 +3741,7 @@ editor-full = [...]                 # All features
 <li>✅ Cargo caching (15-20 min → 30s builds, 97% faster)</li>
 <li>✅ Test execution (astraweave-render, terrain materials, advanced materials)</li>
 <li>✅ WGSL shader validation (basic syntax checks)</li>
-<li>✅ Code quality checks (cargo fmt --check, clippy -D warnings)</li>
+<li>✅ Code quality checks (cargo fmt –check, clippy -D warnings)</li>
 <li>✅ Documentation: <a href="../root-archive/docs/pbr/PBR_G_TASK5_CI_INTEGRATION_GUIDE.html">PBR_G_TASK5_CI_INTEGRATION_GUIDE.md</a> (400+ lines), <a href="../root-archive/docs/pbr/PBR_G_TASK5_COMPLETION.html">PBR_G_TASK5_COMPLETION.md</a></li>
 </ul>
 </li>
@@ -3771,9 +3820,9 @@ editor-full = [...]                 # All features
 <li>Tooltips: 20+ hover text additions (on_hover_text) for all controls</li>
 <li>Status Colors: ✅ green (success), ⚠ orange (warning), ❌ red (error)</li>
 <li>Spacing: add_space(4.0) between controls, add_space(8.0) between sections</li>
-<li>Material Count: Display next to Refresh button "(3 materials)"</li>
-<li>Button Labels: "Load Demo Material" (clarifies hardcoded behavior)</li>
-<li>Empty States: Better messaging with guidance ("Create .toml files or click Refresh")</li>
+<li>Material Count: Display next to Refresh button “(3 materials)”</li>
+<li>Button Labels: “Load Demo Material” (clarifies hardcoded behavior)</li>
+<li>Empty States: Better messaging with guidance (“Create .toml files or click Refresh”)</li>
 <li>Testing: Compiles cleanly (3 warnings for future features)</li>
 </ul>
 </li>
@@ -3786,7 +3835,7 @@ editor-full = [...]                 # All features
 <li>Performance: 2-5 min (cached), 15-25 min (cold), ~90% cache hit rate</li>
 <li>.github/workflows/pbr-pipeline-ci.yml: PBR pipeline CI workflow (180+ lines)</li>
 <li>3 Jobs: (1) Build PBR Components (matrix: Linux, Windows, macOS), (2) Test PBR Features, (3) Validate WGSL Shaders</li>
-<li>Job 1: System deps (Linux: Vulkan, X11), cargo fmt --check, cargo clippy -D warnings, build astraweave-render/aw_asset_cli/aw_editor (release)</li>
+<li>Job 1: System deps (Linux: Vulkan, X11), cargo fmt –check, cargo clippy -D warnings, build astraweave-render/aw_asset_cli/aw_editor (release)</li>
 <li>Job 2: Test astraweave-render, terrain materials, advanced materials, generate summary</li>
 <li>Job 3: Basic WGSL syntax checks, shader file listing</li>
 <li><a href="../root-archive/docs/pbr/PBR_G_TASK5_CI_INTEGRATION_GUIDE.html">PBR_G_TASK5_CI_INTEGRATION_GUIDE.md</a>: Comprehensive CI guide (400+ lines)</li>
@@ -3802,10 +3851,10 @@ editor-full = [...]                 # All features
 <li>ReloadEvent enum: Material(PathBuf), Texture(PathBuf)</li>
 <li>Debouncing: Prevents 3-5 rapid saves → 1 reload (67% reduction)</li>
 <li>material_inspector.rs: Hot-reload integration (~100 lines)</li>
-<li>New fields: file_watcher (Option<FileWatcher>), last_reload_time, reload_count</li>
+<li>New fields: file_watcher (Option<filewatcher>), last_reload_time, reload_count</filewatcher></li>
 <li>process_hot_reload() method: Collects events, checks current material, calls load_material()</li>
 <li>Smart filtering: Only reloads if path matches currently loaded material or its textures</li>
-<li>UI indicators: 🔄 (enabled) / ⭕ (disabled), reload count, "Last reload: 0.3s ago"</li>
+<li>UI indicators: 🔄 (enabled) / ⭕ (disabled), reload count, “Last reload: 0.3s ago”</li>
 <li>Error handling: Graceful fallback (corrupt TOML, missing files, no assets/materials dir)</li>
 <li>Status messages: ✅ green (success), ⚠ orange (warning), ❌ red (error)</li>
 <li>Performance: Watcher overhead &lt;0.1ms/event, material reload 10-50ms, texture reload 5-30ms</li>
@@ -3886,7 +3935,7 @@ editor-full = [...]                 # All features
 </ol>
 <p>Next steps for maintainers</p>
 <ol>
-<li>Approve the schema for <code>MaterialGpu</code> and TOML fields; I'll generate the initial Rust struct + WGSL mapping.</li>
+<li>Approve the schema for <code>MaterialGpu</code> and TOML fields; I’ll generate the initial Rust struct + WGSL mapping.</li>
 <li>Prioritize Phase PBR-A and PBR-B in the next sprint; add tasks into the project board and CI gating.</li>
 </ol>
 <p>Notes:</p>
@@ -3901,7 +3950,7 @@ editor-full = [...]                 # All features
 <li>Current baseline: engine provides a material manager, TOML-based material packs, an interleaved MeshVertex (P/N/T/UV), an IBL manager, and an HDR offscreen -&gt; post pipeline. Examples mix procedural shading and material sampling.</li>
 <li>Goal: implement a deterministic, high-quality PBR texture pipeline with robust asset tooling, consistent color-space handling, IBL with prefiltering, a centralized WGSL PBR library, and editor/tooling to author/validate materials.</li>
 </ul>
-<p>Scope (what "complete PBR texture workflow" includes):</p>
+<p>Scope (what “complete PBR texture workflow” includes):</p>
 <ul>
 <li>Material definition schema + GPU representation (MaterialGpu)</li>
 <li>Texture ingestion (bake/compress/mipgen), color-space enforcement (sRGB vs linear)</li>
@@ -4097,7 +4146,7 @@ editor-full = [...]                 # All features
 </ol>
 <p>Next steps for maintainers</p>
 <ol>
-<li>Approve the schema for <code>MaterialGpu</code> and TOML fields; I'll generate the initial Rust struct + WGSL mapping.</li>
+<li>Approve the schema for <code>MaterialGpu</code> and TOML fields; I’ll generate the initial Rust struct + WGSL mapping.</li>
 <li>Prioritize Phase PBR-A and PBR-B in the next sprint; add tasks into the project board and CI gating.</li>
 </ol>
 <p>Notes:</p>
@@ -4115,7 +4164,7 @@ editor-full = [...]                 # All features
 <li>Tool sandbox enforces safety constraints and logs telemetry.</li>
 <li>Gameplay feature tests pass in CI.</li>
 </ul>
-<hr />
+<hr>
 <h2 id="phase-6-1418-months-networking-persistence-and-scale"><a class="header" href="#phase-6-1418-months-networking-persistence-and-scale">Phase 6 (14–18 months): Networking, Persistence, and Scale</a></h2>
 <p><strong>Objectives:</strong> reach multiplayer-ready fidelity similar to Amethyst/Godot networking stacks.</p>
 <p><strong>Key Tasks</strong></p>
@@ -4130,9 +4179,9 @@ editor-full = [...]                 # All features
 <li>✅ 4-player deterministic demo with AI companions runs without desync in CI soak tests.</li>
 <li>✅ Save/replay flows validated across platform targets with checksum verification.</li>
 </ul>
-<hr />
+<hr>
 <h3 id="phase-6-progress-update-nov-2025---final-validation-complete-"><a class="header" href="#phase-6-progress-update-nov-2025---final-validation-complete-">Phase 6 progress update (Nov 2025) - FINAL VALIDATION COMPLETE ✅</a></h3>
-<p>What's landed in this iteration:</p>
+<p>What’s landed in this iteration:</p>
 <ul>
 <li>
 <p>ECS Networking Integration ✅</p>
@@ -4209,7 +4258,7 @@ cargo check -p astraweave-net-ecs -p astraweave-persistence-ecs -p astraweave-se
 <li>Stress testing covers ECS operations, networking, and persistence scenarios</li>
 <li>All Phase 6 features follow gaming engine precedents and best practices</li>
 </ul>
-<hr />
+<hr>
 <h2 id="phase-7-1824-months-observability-packaging-and-ecosystem"><a class="header" href="#phase-7-1824-months-observability-packaging-and-ecosystem">Phase 7 (18–24 months): Observability, Packaging, and Ecosystem</a></h2>
 <p><strong>Objectives:</strong> polish for production adoption and third-party extensibility.</p>
 <p><strong>Key Tasks</strong></p>
@@ -4224,9 +4273,9 @@ cargo check -p astraweave-net-ecs -p astraweave-persistence-ecs -p astraweave-se
 <li>External teams can author content using published SDK/docs without engine modifications.</li>
 <li>Release pipelines produce signed binaries, documentation, and sample content automatically.</li>
 </ul>
-<hr />
+<hr>
 <h3 id="phase-7-progress-update-oct-2025---final-validation-complete-"><a class="header" href="#phase-7-progress-update-oct-2025---final-validation-complete-">Phase 7 progress update (Oct 2025) - FINAL VALIDATION COMPLETE ✅</a></h3>
-<p>What's landed in this iteration:</p>
+<p>What’s landed in this iteration:</p>
 <ul>
 <li>
 <p>Observability stack integrated ✅</p>
@@ -4285,7 +4334,7 @@ cargo run --bin aw_demo_builder -- build-all
 <li>Demo builder automates example compilation and packaging</li>
 <li>Documentation site ready for publishing</li>
 </ul>
-<hr />
+<hr>
 <h2 id="continuous-workstreams"><a class="header" href="#continuous-workstreams">Continuous Workstreams</a></h2>
 <ul>
 <li><strong>Quality &amp; Security:</strong> Maintain cargo-audit/deny, SBOM generation, secret scanning, and hardened LLM adapters.</li>
@@ -4310,6 +4359,11 @@ cargo run --bin aw_demo_builder -- build-all
 
         </div>
 
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
 
 
 
@@ -4318,13 +4372,13 @@ cargo run --bin aw_demo_builder -- build-all
         </script>
 
 
-        <script src="elasticlunr.min.js"></script>
-        <script src="mark.min.js"></script>
-        <script src="searcher.js"></script>
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-c2a407aa.js"></script>
 
-        <script src="clipboard.min.js"></script>
-        <script src="highlight.js"></script>
-        <script src="book.js"></script>
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
 
