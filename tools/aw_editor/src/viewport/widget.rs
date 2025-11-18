@@ -104,6 +104,9 @@ pub struct ViewportWidget {
 
     /// Camera bookmarks (F1-F12)
     camera_bookmarks: [Option<CameraBookmark>; 12],
+    
+    /// Clipboard for copy/paste operations
+    clipboard: Option<crate::clipboard::ClipboardData>,
 }
 
 impl ViewportWidget {
@@ -155,11 +158,12 @@ impl ViewportWidget {
             last_frame_time: std::time::Instant::now(),
             frame_times: Vec::with_capacity(60),
             gizmo_state: GizmoState::new(),
-            grid_snap_size: 1.0, // Default: snap to 1 unit grid
-            angle_snap_increment: 15.0_f32.to_radians(), // 15 degrees
+            grid_snap_size: 1.0,
+            angle_snap_increment: 15.0_f32.to_radians(),
             camera_bookmarks: [
                 None, None, None, None, None, None, None, None, None, None, None, None,
             ],
+            clipboard: None,
         })
     }
 
@@ -1535,21 +1539,33 @@ impl ViewportWidget {
     }
 
     /// Copy selected entities to clipboard
-    fn copy_selection(&mut self, _world: &World) {
-        // TODO: Implement clipboard storage
-        // For now, we'll store copied entities in a Vec<EntitySnapshot>
-        // This will be expanded in Phase 2.2 with full serialization
-        println!(
-            "📋 Copy: {} entities (clipboard not yet implemented)",
-            self.selected_entities.len()
-        );
+    fn copy_selection(&mut self, world: &World) {
+        if self.selected_entities.is_empty() {
+            return;
+        }
+
+        let entities: Vec<_> = self.selected_entities.iter().copied().collect();
+        self.clipboard = Some(crate::clipboard::ClipboardData::from_entities(world, &entities));
+        println!("📋 Copied {} entities to clipboard", entities.len());
     }
 
     /// Paste entities from clipboard
-    fn paste_selection(&mut self, _world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
-        // TODO: Implement paste from clipboard
-        // Create new entities with offset position
-        println!("📋 Paste: clipboard not yet implemented");
+    fn paste_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
+        if let Some(clipboard) = &self.clipboard {
+            let offset = astraweave_core::IVec2::new(2, 2);
+            
+            match clipboard.spawn_entities(world, offset) {
+                Ok(spawned) => {
+                    self.selected_entities = spawned;
+                    println!("📋 Pasted {} entities", spawned.len());
+                }
+                Err(e) => {
+                    println!("⚠️  Paste failed: {}", e);
+                }
+            }
+        } else {
+            println!("📋 Clipboard is empty");
+        }
     }
 
     /// Duplicate selected entities (creates copies at offset position)
@@ -1637,30 +1653,26 @@ impl ViewportWidget {
     /// Delete selected entities
     fn delete_selection(
         &mut self,
-        _world: &mut World,
-        _undo_stack: &mut crate::command::UndoStack,
+        world: &mut World,
+        undo_stack: &mut crate::command::UndoStack,
     ) {
         if self.selected_entities.is_empty() {
             return;
         }
 
-        // TODO: World doesn't have destroy_entity yet - this is a placeholder
-        // For now, just log what would be deleted
-        for &entity_id in &self.selected_entities {
-            println!("🗑️  Would delete entity {}", entity_id);
+        let entities_to_delete: Vec<_> = self.selected_entities.iter().copied().collect();
+        
+        let delete_cmd = crate::command::DeleteEntitiesCommand::new(entities_to_delete);
+        if let Err(e) = undo_stack.execute(delete_cmd, world) {
+            println!("⚠️  Delete failed: {}", e);
         }
 
-        // Clear selection after "deletion"
         self.clear_selection();
 
-        // Clear gizmo state
         if self.gizmo_state.is_active() {
             self.gizmo_state.mode = GizmoMode::Inactive;
             self.gizmo_state.start_transform = None;
         }
-
-        // TODO: Add DeleteCommand to undo stack with entity snapshots (Phase 2.1 extension)
-        // TODO: Implement actual entity removal in World API
     }
 
     /// Select all entities in the world
