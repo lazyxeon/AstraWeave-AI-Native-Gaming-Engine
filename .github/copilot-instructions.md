@@ -732,14 +732,14 @@ tools/aw_asset_cli/     # Asset pipeline tooling
 
 **Read these for quality assessment and remediation guidance:**
 
-0. **SECURITY_REMEDIATION_REPORT.md** ✅ **COMPLETE** (November 18, 2025)
+0. **docs/audits/SECURITY_REMEDIATION_REPORT.md** ✅ **COMPLETE** (November 18, 2025)
    - **Priority 1 security fixes for network server**
    - Security Grade: C+ → A- (92/100)
    - Fixed: DoS (rate limiting), forgery (HMAC-SHA256), crashes (panic paths), cleartext (TLS enforcement)
    - 4 critical vulnerabilities eliminated
    - Commit: 88434f3 - Production-ready network security
 
-1. **COMPREHENSIVE_AUDIT_REPORT.md** (Multi-Agent Audit - November 18, 2025)
+1. **docs/audits/COMPREHENSIVE_AUDIT_REPORT.md** (Multi-Agent Audit - November 18, 2025)
    - **START HERE**: Overall assessment A- (92/100)
    - 7 critical dimensions: Architecture, Code Quality, Security, Testing, Documentation, Dependencies, Competitive Analysis
    - Executive summary with critical issues and remediation roadmap
@@ -748,7 +748,7 @@ tools/aw_asset_cli/     # Asset pipeline tooling
    - Competitive position: Exceeds Bevy/Godot in AI/rendering
    - Timeline: 3-4 months to MVP, 6-9 months to commercial, 12-18 months to AAA parity
 
-2. **DOCUMENTATION_AUDIT_REPORT.md** (November 18, 2025)
+2. **docs/audits/DOCUMENTATION_AUDIT_REPORT.md** (November 18, 2025)
    - **Grade: C+ (73/100)** - Functional but needs work
    - 718 lines comprehensive documentation analysis
    - Critical gaps: 42/47 crates (89%) missing README.md
@@ -757,23 +757,23 @@ tools/aw_asset_cli/     # Asset pipeline tooling
    - Remediation: 200 hours (5 weeks full-time) to world-class standard
    - Also in: `docs/current/DOCUMENTATION_AUDIT_REPORT.md`
 
-3. **DOCUMENTATION_AUDIT_SUMMARY.md** (Executive Summary)
+3. **docs/audits/DOCUMENTATION_AUDIT_SUMMARY.md** (Executive Summary)
    - TL;DR version of documentation audit
    - Top 5 biggest impact actions (55 hours → +19 grade points)
    - Quick reference for documentation priorities
    - Also in: `docs/current/DOCUMENTATION_AUDIT_SUMMARY.md`
 
-4. **COMPETITIVE_ANALYSIS_SUMMARY.md** + **COMPETITIVE_MATRIX.md**
+4. **docs/audits/COMPETITIVE_ANALYSIS_SUMMARY.md** + **docs/audits/COMPETITIVE_MATRIX.md**
    - Market positioning vs Bevy, Godot, Unity, Unreal
    - Feature comparison matrix
    - Strengths: AI (12,700 agents @ 60 FPS), rendering (MegaLights)
    - Gaps: Tooling (0 plugins), ecosystem
 
-5. **GAP_ANALYSIS_ACTION_PLAN.md**
+5. **docs/audits/GAP_ANALYSIS_ACTION_PLAN.md**
    - Prioritized action items from competitive analysis
    - Phased remediation roadmap
 
-6. **EXTERNAL_RESEARCH_COMPETITIVE_ANALYSIS.md**
+6. **docs/audits/EXTERNAL_RESEARCH_COMPETITIVE_ANALYSIS.md**
    - Deep dive into competitor research
    - Industry benchmarks
 
