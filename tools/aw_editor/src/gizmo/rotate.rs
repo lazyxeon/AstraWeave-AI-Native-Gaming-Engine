@@ -34,19 +34,25 @@ impl RotateGizmo {
         object_rotation: Quat,
         local_space: bool,
     ) -> Quat {
-        // For Y-axis rotation (default), use horizontal mouse delta
-        // For X-axis rotation, use vertical mouse delta
-        // This makes rotation feel more intuitive
+        // Map mouse delta to rotation based on axis
+        // Use both horizontal and vertical components to support drag in any direction
+        // This allows intuitive rotation regardless of drag direction
         let rotation_delta = match constraint {
-            AxisConstraint::Y | AxisConstraint::None => mouse_delta.x, // Horizontal for Y-axis
-            AxisConstraint::X => mouse_delta.y, // Vertical for X-axis
-            AxisConstraint::Z => mouse_delta.x, // Horizontal for Z-axis
-            _ => mouse_delta.x, // Default to horizontal
+            AxisConstraint::X | AxisConstraint::Y | AxisConstraint::Z => {
+                // Use the component with larger magnitude (primary drag direction)
+                if mouse_delta.x.abs() > mouse_delta.y.abs() {
+                    mouse_delta.x
+                } else {
+                    mouse_delta.y
+                }
+            }
+            _ => 0.0, // Will return IDENTITY below
         };
-        
+
         // Calculate rotation angle from mouse delta
-        // Reduced sensitivity: 0.005 = 200px for 1 radian (57.3°)
-        let mut angle = rotation_delta * 0.005 * sensitivity;
+        // Sensitivity is in radians per 100 pixels
+        // rotation_delta / 100.0 gives normalized distance, multiplied by sensitivity gives radians
+        let mut angle = rotation_delta * (sensitivity / 100.0);
 
         // Apply snapping if enabled (15° increments = π/12 radians)
         if snap_enabled {
@@ -59,8 +65,8 @@ impl RotateGizmo {
             AxisConstraint::X => Vec3::X,
             AxisConstraint::Y => Vec3::Y,
             AxisConstraint::Z => Vec3::Z,
-            AxisConstraint::None => Vec3::Y, // Default to Y axis (vertical) for free rotation
-            _ => Vec3::Y, // Planar constraints default to Y axis
+            AxisConstraint::None => return Quat::IDENTITY, // None constraint not supported for rotation
+            _ => return Quat::IDENTITY,                    // Planar constraints not supported for rotation
         };
 
         // Create rotation quaternion

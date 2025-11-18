@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 const MAX_RECENT_FILES: usize = 10;
 const RECENT_FILES_PATH: &str = ".recent_files.json";
@@ -18,9 +18,7 @@ impl Default for RecentFilesManager {
 
 impl RecentFilesManager {
     pub fn new() -> Self {
-        Self {
-            files: Vec::new(),
-        }
+        Self { files: Vec::new() }
     }
 
     pub fn load() -> Self {

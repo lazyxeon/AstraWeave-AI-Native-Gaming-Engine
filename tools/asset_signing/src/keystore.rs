@@ -97,8 +97,8 @@ impl KeyStore {
     /// # Arguments
     /// * `path` - Path to PEM-encoded public key file
     pub fn import_public_key(path: &str) -> Result<VerifyingKey, String> {
-        let pem_content =
-            std::fs::read_to_string(path).map_err(|e| format!("Failed to read public key: {}", e))?;
+        let pem_content = std::fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read public key: {}", e))?;
 
         // Strip PEM header/footer and whitespace
         let key_data: String = pem_content

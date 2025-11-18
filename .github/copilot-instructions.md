@@ -157,6 +157,36 @@ AstraWeave is a **deterministic, ECS-based game engine** where **AI agents are f
      - **NEW**: `PHASE_8_1_DAY_2_SESSION_COMPLETE.md` - Day 2 session summary
      - **NEW**: `PHASE_8_1_DAY_3_SESSION_COMPLETE.md` - Day 3 session summary
 
+- 🎯 **Phase 8.6: UI Testing Sprint** (Nov 18-Dec 1, 2025) - **READY TO START**
+  - **Objective**: Achieve 80%+ UI test coverage (astraweave-ui: 19.83% → 80%+)
+  - **Timeline**: 10-12 days (54+ tests across 3 priorities)
+  - **Priority 1**: Core HUD Logic (25 tests, 5-6h) - Easing, physics, quest logic, combos, notifications
+  - **Priority 2**: HUD State Management (20 tests, 4-5h) - Visibility, dialogue, tooltips, spawning
+  - **Priority 3**: Edge Cases & Integration (9 tests, 2-3h) - Persistence, panels, callbacks
+  - **Documentation**: `docs/current/PHASE_8_6_UI_TESTING_SPRINT.md`
+
+- 🎯 **Phase 8.7: LLM Support Testing Sprint** (Dec 2-15, 2025) - **PLANNED**
+  - **Objective**: Raise LLM support coverage (35.54% → 80%+ across 6 crates)
+  - **Timeline**: 19 days (305 tests across 4 sprints)
+  - **Sprint 1** (Week 1): Foundations - Fix embeddings bug, Context & RAG core (63 tests)
+  - **Sprint 2** (Week 2): Prompts & LLM Streaming (59 tests)
+  - **Sprint 3** (Week 3): Persona & Memory Management (67 tests)
+  - **Sprint 4** (Week 4): Advanced Features & Integration (108 tests)
+  - **Critical Fix**: MockEmbeddingClient determinism bug (astraweave-embeddings/src/client.rs:77)
+  - **Documentation**: `docs/current/PHASE_8_7_LLM_TESTING_SPRINT.md`
+
+- 📋 **Phase 9.2: Scripting Runtime Integration** (Jan 2026) - **FUTURE PLANNING**
+  - **Objective**: Complete sandboxed Rhai scripting system for modding
+  - **Timeline**: 6-9 weeks (4 phases)
+  - **Phase 1**: Component Scripting (CScript, ECS integration, 2-3 weeks)
+  - **Phase 2**: Event Callbacks (on_collision, on_trigger, 1-2 weeks)
+  - **Phase 3**: API Exposure (37-function API, security hardening, 1 week)
+  - **Phase 4**: Tool Scripting & Polish (editor automation, visual scripting foundation, 2-3 weeks)
+  - **Performance Target**: <10 µs per script, 1,000+ entities @ 60 FPS
+  - **Security**: 100% sandboxed (operation limits, timeout, script signing)
+  - **Infrastructure**: Leverages existing astraweave-author + astraweave-security (Rhai 1.23)
+  - **Documentation**: `docs/current/PHASE_9_2_SCRIPTING_INTEGRATION_PLAN.md`
+
 - ✅ **Astract Gizmo Sprint COMPLETE (Days 9-13)** (Nov 2-3, 2025)
    - **Mission**: React-style declarative UI framework for AstraWeave editor
    - **Day 9**: Animation system (Tween, Spring, Easing, Controller) - 36/36 tests, 1,650 LOC

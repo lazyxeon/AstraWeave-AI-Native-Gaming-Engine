@@ -42,7 +42,7 @@ impl GoalScheduler {
             .iter()
             .position(|g| g.priority < goal.priority)
             .unwrap_or(self.active_goals.len());
-        
+
         self.active_goals.insert(insert_pos, goal);
     }
 
@@ -99,10 +99,10 @@ impl GoalScheduler {
         // Check if we should replan
         if self.should_replan(current_time, world) {
             self.last_replan_time = current_time;
-            
+
             // Find most urgent goal (clone to avoid borrow issues)
             let most_urgent_goal = self.get_most_urgent_goal(current_time)?.clone();
-            
+
             // Plan for the most urgent goal
             if let Some(plan) = planner.plan(world, &most_urgent_goal) {
                 let goal_name = most_urgent_goal.name.clone();
@@ -136,7 +136,11 @@ impl GoalScheduler {
 
         // 3. Current goal is satisfied (plan complete)
         if let Some(current_goal_name) = &self.current_goal_name {
-            if let Some(current_goal) = self.active_goals.iter().find(|g| &g.name == current_goal_name) {
+            if let Some(current_goal) = self
+                .active_goals
+                .iter()
+                .find(|g| &g.name == current_goal_name)
+            {
                 if current_goal.is_satisfied(world) {
                     return true;
                 }
@@ -148,12 +152,18 @@ impl GoalScheduler {
 
         // 4. A more urgent goal has appeared (urgency changed significantly)
         if let Some(current_goal_name) = &self.current_goal_name {
-            if let Some(current_goal) = self.active_goals.iter().find(|g| &g.name == current_goal_name) {
+            if let Some(current_goal) = self
+                .active_goals
+                .iter()
+                .find(|g| &g.name == current_goal_name)
+            {
                 let current_urgency = current_goal.urgency(current_time);
-                
+
                 // Check if any other goal is significantly more urgent
                 for goal in &self.active_goals {
-                    if goal.name != *current_goal_name && goal.urgency(current_time) > current_urgency * 1.5 {
+                    if goal.name != *current_goal_name
+                        && goal.urgency(current_time) > current_urgency * 1.5
+                    {
                         tracing::info!(
                             "Preempting '{}' for more urgent '{}'",
                             current_goal_name,
@@ -170,13 +180,11 @@ impl GoalScheduler {
 
     /// Get the most urgent goal based on current time
     fn get_most_urgent_goal(&self, current_time: f32) -> Option<&Goal> {
-        self.active_goals
-            .iter()
-            .max_by(|a, b| {
-                a.urgency(current_time)
-                    .partial_cmp(&b.urgency(current_time))
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
+        self.active_goals.iter().max_by(|a, b| {
+            a.urgency(current_time)
+                .partial_cmp(&b.urgency(current_time))
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
     }
 
     /// Calculate effective urgency for a goal
@@ -229,7 +237,7 @@ mod tests {
     #[test]
     fn test_add_goal_priority_order() {
         let mut scheduler = GoalScheduler::new();
-        
+
         scheduler.add_goal(create_test_goal("low", 2.0, None));
         scheduler.add_goal(create_test_goal("high", 10.0, None));
         scheduler.add_goal(create_test_goal("medium", 5.0, None));
@@ -248,11 +256,11 @@ mod tests {
         scheduler.add_goal(create_test_goal("goal2", 3.0, None));
 
         assert_eq!(scheduler.goal_count(), 2);
-        
+
         let removed = scheduler.remove_goal("goal1");
         assert!(removed.is_some());
         assert_eq!(scheduler.goal_count(), 1);
-        
+
         let removed_again = scheduler.remove_goal("goal1");
         assert!(removed_again.is_none());
     }
@@ -264,9 +272,9 @@ mod tests {
         scheduler.add_goal(create_test_goal("goal2", 3.0, None));
 
         assert!(scheduler.has_goals());
-        
+
         scheduler.clear();
-        
+
         assert!(!scheduler.has_goals());
         assert_eq!(scheduler.goal_count(), 0);
     }
@@ -274,11 +282,11 @@ mod tests {
     #[test]
     fn test_remove_satisfied_goals() {
         let mut scheduler = GoalScheduler::new();
-        
+
         let mut desired = BTreeMap::new();
         desired.insert("flag".to_string(), StateValue::Bool(true));
         let goal = Goal::new("set_flag", desired).with_priority(5.0);
-        
+
         scheduler.add_goal(goal);
 
         // Create world where goal is satisfied from the start
@@ -286,7 +294,7 @@ mod tests {
         world.set("flag", StateValue::Bool(true));
 
         let planner = AdvancedGOAP::new();
-        
+
         // Update should remove satisfied goal
         scheduler.update(0.0, &world, &planner);
         assert_eq!(scheduler.goal_count(), 0); // Goal removed because satisfied
@@ -303,7 +311,7 @@ mod tests {
         // Before deadline - goal should remain (if it hasn't been removed as unachievable)
         // Since planner has no actions, goal will be removed. Let's just test the expiration logic.
         scheduler.update(5.0, &world, &planner);
-        
+
         // Add goal back for expiration test
         if scheduler.goal_count() == 0 {
             scheduler.add_goal(create_test_goal("urgent", 5.0, Some(10.0)));
@@ -316,7 +324,7 @@ mod tests {
     #[test]
     fn test_urgency_deadline_priority() {
         let scheduler = GoalScheduler::new();
-        
+
         let goal_no_deadline = create_test_goal("no_deadline", 5.0, None);
         let goal_with_deadline = create_test_goal("deadline", 3.0, Some(5.0));
 
@@ -362,7 +370,8 @@ mod tests {
                 create_test_goal("low_priority", 2.0, None),
                 create_test_goal("high_priority", 10.0, None),
                 create_test_goal("urgent_deadline", 5.0, Some(1.0)),
-            ].into(),
+            ]
+            .into(),
             current_plan: None,
             current_goal_name: None,
             last_replan_time: 0.0,
@@ -375,4 +384,3 @@ mod tests {
         assert_eq!(most_urgent.unwrap().name, "urgent_deadline");
     }
 }
-

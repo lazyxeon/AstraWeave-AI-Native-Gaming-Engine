@@ -46,10 +46,10 @@ impl ParticleType {
     /// Get particle color (RGB)
     pub fn color(self) -> Vec3 {
         match self {
-            ParticleType::Spark => Vec3::new(0.2, 0.6, 1.0),      // Bright blue
-            ParticleType::Glitch => Vec3::new(0.9, 0.7, 0.2),     // Yellow
-            ParticleType::Tear => Vec3::new(1.0, 0.2, 0.1),       // Red
-            ParticleType::Void => Vec3::new(0.1, 0.0, 0.2),       // Dark purple
+            ParticleType::Spark => Vec3::new(0.2, 0.6, 1.0), // Bright blue
+            ParticleType::Glitch => Vec3::new(0.9, 0.7, 0.2), // Yellow
+            ParticleType::Tear => Vec3::new(1.0, 0.2, 0.1),  // Red
+            ParticleType::Void => Vec3::new(0.1, 0.0, 0.2),  // Dark purple
             ParticleType::Restoration => Vec3::new(0.3, 0.8, 1.0), // Bright cyan
         }
     }
@@ -201,23 +201,23 @@ impl AnchorParticleEmitter {
     /// Get emission rate (particles per second) for current VFX state
     pub fn emission_rate(&self) -> f32 {
         match self.vfx_state {
-            0 => 0.0,    // Perfect - no particles
-            1 => 5.0,    // Stable - rare glitches
-            2 => 20.0,   // Unstable - frequent glitches
-            3 => 50.0,   // Critical - reality tears
-            4 => 100.0,  // Broken - catastrophic
-            _ => 0.0,    // Unknown state
+            0 => 0.0,   // Perfect - no particles
+            1 => 5.0,   // Stable - rare glitches
+            2 => 20.0,  // Unstable - frequent glitches
+            3 => 50.0,  // Critical - reality tears
+            4 => 100.0, // Broken - catastrophic
+            _ => 0.0,   // Unknown state
         }
     }
 
     /// Get particle type for current VFX state
     fn particle_type_for_state(&self) -> ParticleType {
         match self.vfx_state {
-            1 => ParticleType::Spark,   // Stable
-            2 => ParticleType::Glitch,  // Unstable
-            3 => ParticleType::Tear,    // Critical
-            4 => ParticleType::Void,    // Broken
-            _ => ParticleType::Spark,   // Default (shouldn't happen for Perfect)
+            1 => ParticleType::Spark,  // Stable
+            2 => ParticleType::Glitch, // Unstable
+            3 => ParticleType::Tear,   // Critical
+            4 => ParticleType::Void,   // Broken
+            _ => ParticleType::Spark,  // Default (shouldn't happen for Perfect)
         }
     }
 
@@ -231,7 +231,7 @@ impl AnchorParticleEmitter {
 
         // Random position on sphere surface (radius = 1.5 units)
         let theta = rand::random::<f32>() * std::f32::consts::TAU; // 0-2π
-        let phi = rand::random::<f32>() * std::f32::consts::PI;    // 0-π
+        let phi = rand::random::<f32>() * std::f32::consts::PI; // 0-π
         let radius = 1.5;
 
         let x = radius * phi.sin() * theta.cos();
@@ -339,7 +339,13 @@ impl AnchorParticleSystem {
     }
 
     /// Update emitter state (position, VFX state, repair status)
-    pub fn update_emitter(&mut self, anchor_id: usize, position: Vec3, vfx_state: u8, is_repairing: bool) {
+    pub fn update_emitter(
+        &mut self,
+        anchor_id: usize,
+        position: Vec3,
+        vfx_state: u8,
+        is_repairing: bool,
+    ) {
         if let Some(emitter) = self.emitters.iter_mut().find(|e| e.anchor_id == anchor_id) {
             emitter.anchor_position = position;
             emitter.vfx_state = vfx_state;

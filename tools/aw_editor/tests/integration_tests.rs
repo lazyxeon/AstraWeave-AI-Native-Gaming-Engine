@@ -1,7 +1,7 @@
 use astraweave_core::{Entity, IVec2, Team, World};
 use aw_editor::command::{
-    EditAmmoCommand, EditHealthCommand, EditTeamCommand, MoveEntityCommand, 
-    RotateEntityCommand, ScaleEntityCommand, UndoStack,
+    EditAmmoCommand, EditHealthCommand, EditTeamCommand, MoveEntityCommand, RotateEntityCommand,
+    ScaleEntityCommand, UndoStack,
 };
 use aw_editor::component_ui::{ComponentRegistry, ComponentType};
 use aw_editor::scene_serialization::{load_scene, save_scene, SceneData};
@@ -110,10 +110,7 @@ fn test_undo_redo_with_multiple_entity_types() {
         .unwrap();
 
     undo_stack
-        .execute(
-            ScaleEntityCommand::new(enemy2, 1.0, 2.0),
-            &mut world,
-        )
+        .execute(ScaleEntityCommand::new(enemy2, 1.0, 2.0), &mut world)
         .unwrap();
 
     assert_eq!(world.pose(player).unwrap().pos, IVec2::new(5, 5));

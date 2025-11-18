@@ -1,10 +1,18 @@
 // tools/aw_editor/src/panels/entity_panel.rs - Entity inspector using Astract
 
 use super::Panel;
+use crate::component_ui::{ComponentEdit, ComponentRegistry};
+use crate::scene_state::{EditorSceneState, TransformableScene};
 use astract::prelude::*;
 use astraweave_core::{Ammo, Entity, Health, IVec2, Team, World};
-use crate::component_ui::{ComponentEdit, ComponentRegistry};
 use egui::Ui;
+
+/// Actions that require prefab manager access
+#[derive(Debug, Clone, Copy)]
+pub enum PrefabAction {
+    RevertToOriginal(Entity),
+    ApplyChangesToFile(Entity),
+}
 
 /// Entity panel - inspect and edit entity properties
 ///
@@ -25,103 +33,164 @@ impl EntityPanel {
     /// # Arguments
     ///
     /// * `ui` - egui UI context
-    /// * `world` - Mutable reference to ECS world (optional)
+    /// * `scene_state` - Mutable reference to canonical edit-mode scene (optional)
     /// * `selected_entity` - Currently selected entity (optional)
+    /// * `prefab_instance` - Optional prefab instance for override tracking
     ///
     /// # Returns
     ///
-    /// Optional ComponentEdit if a component was modified (for undo system)
-    pub fn show_with_world(&mut self, ui: &mut Ui, world: &mut Option<World>, selected_entity: Option<Entity>, prefab_instance: Option<&crate::prefab::PrefabInstance>) -> Option<ComponentEdit> {
+    /// Tuple of (Optional ComponentEdit for undo, Optional PrefabAction to execute)
+    pub fn show_with_scene_state(
+        &mut self,
+        ui: &mut Ui,
+        scene_state: Option<&mut EditorSceneState>,
+        selected_entity: Option<Entity>,
+        prefab_instance: Option<&crate::prefab::PrefabInstance>,
+    ) -> (Option<ComponentEdit>, Option<PrefabAction>) {
         ui.heading("🎮 Entity Inspector");
         ui.separator();
 
         // Entity management buttons
+        let mut spawn_companion = false;
+        let mut spawn_enemy = false;
+        let mut clear_all = false;
+        let mut revert_to_prefab = false;
+        let mut apply_to_prefab = false;
+
         ui.horizontal(|ui| {
             if ui.button("➕ Spawn Companion").clicked() {
-                if let Some(world) = world {
-                    let entity_count = world.entities().len();
-                    let pos = IVec2 {
-                        x: rand::random::<i32>() % 30,
-                        y: rand::random::<i32>() % 30,
-                    };
-                    let entity = world.spawn(
-                        &format!("Companion_{}", entity_count),
-                        pos,
-                        Team { id: 0 }, // Team 0 = companion
-                        100,            // HP
-                        30,             // Ammo
-                    );
-                    println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
-                }
+                spawn_companion = true;
             }
 
             if ui.button("➕ Spawn Enemy").clicked() {
-                if let Some(world) = world {
-                    let entity_count = world.entities().len();
-                    let pos = IVec2 {
-                        x: rand::random::<i32>() % 30,
-                        y: rand::random::<i32>() % 30,
-                    };
-                    let entity = world.spawn(
-                        &format!("Enemy_{}", entity_count),
-                        pos,
-                        Team { id: 1 }, // Team 1 = enemy
-                        80,             // HP
-                        20,             // Ammo
-                    );
-                    println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
-                }
+                spawn_enemy = true;
             }
 
             if ui.button("🗑️ Clear All").clicked() {
-                if let Some(world) = world {
-                    *world = World::new();
-                    println!("🗑️ Cleared all entities");
-                }
+                clear_all = true;
             }
         });
 
         ui.add_space(10.0);
 
+        let Some(scene_state) = scene_state else {
+            ui.label("⚠️ No world initialized");
+            return (None, None);
+        };
+
+        if spawn_companion {
+            let entity_count = scene_state.world().entities().len();
+            let pos = IVec2 {
+                x: rand::random::<i32>() % 30,
+                y: rand::random::<i32>() % 30,
+            };
+            let entity = {
+                let world = scene_state.world_mut();
+                world.spawn(
+                    &format!("Companion_{}", entity_count),
+                    pos,
+                    Team { id: 0 },
+                    100,
+                    30,
+                )
+            };
+            scene_state.sync_entity(entity);
+            println!("✅ Spawned companion #{} at ({}, {})", entity, pos.x, pos.y);
+        }
+
+        if spawn_enemy {
+            let entity_count = scene_state.world().entities().len();
+            let pos = IVec2 {
+                x: rand::random::<i32>() % 30,
+                y: rand::random::<i32>() % 30,
+            };
+            let entity = {
+                let world = scene_state.world_mut();
+                world.spawn(
+                    &format!("Enemy_{}", entity_count),
+                    pos,
+                    Team { id: 1 },
+                    80,
+                    20,
+                )
+            };
+            scene_state.sync_entity(entity);
+            println!("✅ Spawned enemy #{} at ({}, {})", entity, pos.x, pos.y);
+        }
+
+        if clear_all {
+            {
+                let world = scene_state.world_mut();
+                *world = World::new();
+            }
+            scene_state.sync_all();
+            println!("🗑️ Cleared all entities");
+        }
+
         let mut component_edit = None;
 
         if let Some(entity) = selected_entity {
-            if let Some(world) = world {
-                ui.group(|ui| {
-                    ui.heading(format!("✏️ Entity #{}", entity));
-                    
-                    if let Some(instance) = prefab_instance {
-                        ui.separator();
-                        ui.horizontal(|ui| {
-                            ui.label("💾 Prefab Instance:");
-                            ui.monospace(instance.source.file_name().unwrap_or_default().to_string_lossy().as_ref());
-                        });
-                        
-                        if instance.has_overrides(entity) {
-                            ui.colored_label(
-                                egui::Color32::from_rgb(100, 150, 255),
-                                "⚠️ Modified components (blue text indicates overrides)"
-                            );
-                        }
-                    }
-                    
+            ui.group(|ui| {
+                ui.heading(format!("✏️ Entity #{}", entity));
+
+                if let Some(instance) = prefab_instance {
                     ui.separator();
-                    
-                    let components = self.component_registry.get_entity_components(world, entity);
-                    
-                    if components.is_empty() {
-                        ui.label("No components");
-                    } else {
-                        for component_type in components {
-                            if let Some(edit) = component_type.show_ui(world, entity, ui) {
-                                component_edit = Some(edit);
+                    ui.horizontal(|ui| {
+                        ui.label("💾 Prefab Instance:");
+                        ui.monospace(
+                            instance
+                                .source
+                                .file_name()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .as_ref(),
+                        );
+                    });
+
+                    if instance.has_overrides(entity) {
+                        ui.colored_label(
+                            egui::Color32::from_rgb(100, 150, 255),
+                            "⚠️ Modified components (blue text indicates overrides)",
+                        );
+                        
+                        // Add Apply/Revert buttons
+                        ui.horizontal(|ui| {
+                            if ui.button("💾 Apply to Prefab").clicked() {
+                                apply_to_prefab = true;
                             }
+                            if ui.button("🔄 Revert to Prefab").clicked() {
+                                revert_to_prefab = true;
+                            }
+                        });
+                        ui.label("💾 Apply: save changes back to prefab file");
+                        ui.label("🔄 Revert: discard changes and restore original");
+                    }
+                }
+
+                ui.separator();
+
+                let components = {
+                    let world = scene_state.world_mut();
+                    self.component_registry.get_entity_components(world, entity)
+                };
+
+                if components.is_empty() {
+                    ui.label("No components");
+                } else {
+                    // Get override information for this entity
+                    let entity_overrides = prefab_instance.and_then(|inst| inst.overrides.get(&entity));
+                    
+                    for component_type in components {
+                        let edit = {
+                            let world = scene_state.world_mut();
+                            component_type.show_ui_with_overrides(world, entity, ui, entity_overrides)
+                        };
+                        if let Some(edit) = edit {
+                            component_edit = Some(edit);
                         }
                     }
-                });
-            } else {
-                ui.label("⚠️ No world initialized");
-            }
+                }
+            });
         } else {
             ui.label("No entity selected");
             ui.label("Click an entity in the viewport to inspect it");
@@ -131,49 +200,55 @@ impl EntityPanel {
         ui.add_space(10.0);
 
         // Display entity count
-        if let Some(world) = world {
-            let entity_count = world.entities().len();
-            ui.label(format!("📊 Total Entities: {}", entity_count));
+        let entity_count = scene_state.world().entities().len();
+        ui.label(format!("📊 Total Entities: {}", entity_count));
 
-            ui.separator();
+        ui.separator();
 
-            // List all entities
-            egui::ScrollArea::vertical()
-                .max_height(400.0)
-                .show(ui, |ui| {
-                    for entity in world.entities() {
-                        if let Some(pose) = world.pose(entity) {
-                            let team = world.team(entity).unwrap_or(Team { id: 0 });
-                            let health = world.health(entity).unwrap_or(Health { hp: 0 });
-                            let ammo = world.ammo(entity).unwrap_or(Ammo { rounds: 0 });
+        // List all entities
+        egui::ScrollArea::vertical()
+            .max_height(400.0)
+            .show(ui, |ui| {
+                let world = scene_state.world();
+                for entity in world.entities() {
+                    if let Some(pose) = world.pose(entity) {
+                        let team = world.team(entity).unwrap_or(Team { id: 0 });
+                        let health = world.health(entity).unwrap_or(Health { hp: 0 });
+                        let ammo = world.ammo(entity).unwrap_or(Ammo { rounds: 0 });
 
-                            let team_name = if team.id == 0 { "Companion" } else { "Enemy" };
-                            let team_color = if team.id == 0 {
-                                egui::Color32::from_rgb(100, 150, 255)
-                            } else {
-                                egui::Color32::from_rgb(255, 100, 100)
-                            };
+                        let team_name = if team.id == 0 { "Companion" } else { "Enemy" };
+                        let team_color = if team.id == 0 {
+                            egui::Color32::from_rgb(100, 150, 255)
+                        } else {
+                            egui::Color32::from_rgb(255, 100, 100)
+                        };
 
-                            ui.group(|ui| {
-                                ui.horizontal(|ui| {
-                                    ui.label(
-                                        egui::RichText::new(format!("Entity #{}", entity)).strong(),
-                                    );
-                                    ui.label(egui::RichText::new(team_name).color(team_color));
-                                });
-
-                                ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
-                                ui.label(format!("❤️  Health: {}", health.hp));
-                                ui.label(format!("🔫 Ammo: {}", ammo.rounds));
+                        ui.group(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.label(
+                                    egui::RichText::new(format!("Entity #{}", entity)).strong(),
+                                );
+                                ui.label(egui::RichText::new(team_name).color(team_color));
                             });
-                        }
+
+                            ui.label(format!("📍 Position: ({}, {})", pose.pos.x, pose.pos.y));
+                            ui.label(format!("❤️  Health: {}", health.hp));
+                            ui.label(format!("🔫 Ammo: {}", ammo.rounds));
+                        });
                     }
-                });
+                }
+            });
+
+        // Generate prefab action if buttons were clicked
+        let prefab_action = if revert_to_prefab {
+            selected_entity.map(PrefabAction::RevertToOriginal)
+        } else if apply_to_prefab {
+            selected_entity.map(PrefabAction::ApplyChangesToFile)
         } else {
-            ui.label("⚠️  No world initialized");
-        }
-        
-        component_edit
+            None
+        };
+
+        (component_edit, prefab_action)
     }
 }
 

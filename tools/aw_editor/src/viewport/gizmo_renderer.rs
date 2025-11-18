@@ -220,7 +220,7 @@ impl GizmoRendererWgpu {
 
         // Generate gizmo geometry
         let gizmo_scale = 1.0; // Fixed size for now (TODO: scale with camera distance)
-        
+
         // Extract constraint from mode
         let constraint = match gizmo_state.mode {
             GizmoMode::Translate { constraint } => constraint,
@@ -228,12 +228,12 @@ impl GizmoRendererWgpu {
             GizmoMode::Scale { constraint, .. } => constraint,
             GizmoMode::Inactive => AxisConstraint::None,
         };
-        
+
         // DEBUG: Log constraint for rotate mode
         if matches!(gizmo_state.mode, GizmoMode::Rotate { .. }) {
             println!("🎨 Gizmo Renderer: Rotate constraint = {:?}", constraint);
         }
-        
+
         let params = GizmoRenderParams {
             position: world_position,
             rotation: world_rotation,

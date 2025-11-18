@@ -506,10 +506,6 @@ mod tests {
             direction: Vec3::new(0.0, 0.0, 1.0),
         };
 
-        let mode = GizmoMode::Translate {
-            constraint: AxisConstraint::None,
-        };
-
         // Manually test pick (since we need inv_view_proj for full API)
         let handle = picker.pick_translate_handle(&ray, gizmo_pos);
         assert_eq!(handle, Some(GizmoHandle::TranslateX));

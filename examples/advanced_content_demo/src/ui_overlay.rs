@@ -1,11 +1,10 @@
 /// UI Overlay Module for Advanced Content Demo
-/// 
+///
 /// This module provides console-based UI overlays for demonstrating
 /// ability cooldowns, quest progress, and Echo currency HUD.
-/// 
+///
 /// In a real game engine, this would be replaced with actual egui/imgui rendering,
 /// but for this demo we use ANSI escape codes and console formatting.
-
 use astraweave_weaving::*;
 use glam::Vec3;
 
@@ -14,7 +13,7 @@ pub mod colors {
     pub const RESET: &str = "\x1b[0m";
     pub const BOLD: &str = "\x1b[1m";
     pub const DIM: &str = "\x1b[2m";
-    
+
     pub const RED: &str = "\x1b[31m";
     pub const GREEN: &str = "\x1b[32m";
     pub const YELLOW: &str = "\x1b[33m";
@@ -22,7 +21,7 @@ pub mod colors {
     pub const MAGENTA: &str = "\x1b[35m";
     pub const CYAN: &str = "\x1b[36m";
     pub const WHITE: &str = "\x1b[37m";
-    
+
     pub const BG_BLACK: &str = "\x1b[40m";
     pub const BG_RED: &str = "\x1b[41m";
     pub const BG_GREEN: &str = "\x1b[42m";
@@ -34,7 +33,7 @@ pub fn render_cooldown_bar(ability_name: &str, current: f32, max: f32, width: us
     let percentage = (current / max).min(1.0).max(0.0);
     let filled = (percentage * width as f32) as usize;
     let empty = width.saturating_sub(filled);
-    
+
     let bar_color = if percentage < 0.3 {
         colors::RED
     } else if percentage < 0.7 {
@@ -42,7 +41,7 @@ pub fn render_cooldown_bar(ability_name: &str, current: f32, max: f32, width: us
     } else {
         colors::GREEN
     };
-    
+
     format!(
         "{}{:<12}{} [{}{}{}{}] {:.1}s / {:.1}s{}",
         colors::BOLD,
@@ -78,7 +77,7 @@ pub fn render_echo_hud(echo_currency: i32, max_width: usize) -> String {
 /// Renders quest progress UI with checkboxes
 pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
     let mut lines = Vec::new();
-    
+
     // Quest title
     lines.push(format!(
         "{}{}{} {} {}{}",
@@ -89,7 +88,7 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
         quest.state.symbol(),
         colors::RESET
     ));
-    
+
     // Quest description
     lines.push(format!(
         "   {}{}{}",
@@ -97,7 +96,7 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
         quest.description,
         colors::RESET
     ));
-    
+
     // Objectives with checkboxes
     for (i, obj) in quest.objectives.iter().enumerate() {
         let checkbox = if obj.is_complete() {
@@ -105,10 +104,10 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
         } else {
             format!("{}☐{}", colors::DIM, colors::RESET)
         };
-        
+
         let progress_text = obj.progress();
         let desc = obj.description();
-        
+
         lines.push(format!(
             "   {} {}. {} {}({})",
             checkbox,
@@ -119,7 +118,7 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
             colors::RESET
         ));
     }
-    
+
     // Rewards
     if let Some(reward_text) = quest.reward_description() {
         lines.push(format!(
@@ -130,14 +129,14 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
             colors::RESET
         ));
     }
-    
+
     lines
 }
 
 /// Renders ability panel with cooldowns and Echo costs
 pub fn render_ability_panel(player: &Player) -> Vec<String> {
     let mut lines = Vec::new();
-    
+
     lines.push(format!(
         "{}{} Abilities {}{}",
         colors::BOLD,
@@ -145,7 +144,7 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
         "⚔",
         colors::RESET
     ));
-    
+
     // Dash ability
     let dash = &player.ability_manager.dash;
     let dash_ready = player.ability_manager.can_use_dash();
@@ -154,7 +153,7 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
     } else {
         format!("{}COOLDOWN{}", colors::RED, colors::RESET)
     };
-    
+
     lines.push(format!(
         "  {}[D]{} Dash ({}⚡) - {}",
         colors::CYAN,
@@ -162,19 +161,14 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
         dash.echo_cost,
         dash_status
     ));
-    
+
     if !dash_ready {
         lines.push(format!(
             "     {}",
-            render_cooldown_bar(
-                "Cooldown",
-                dash.cooldown_current,
-                dash.cooldown_max,
-                20
-            )
+            render_cooldown_bar("Cooldown", dash.cooldown_current, dash.cooldown_max, 20)
         ));
     }
-    
+
     // Shield ability
     let shield = &player.ability_manager.shield;
     let shield_ready = player.ability_manager.can_use_shield();
@@ -183,7 +177,7 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
     } else {
         format!("{}COOLDOWN{}", colors::RED, colors::RESET)
     };
-    
+
     lines.push(format!(
         "  {}[S]{} Shield ({}⚡) - {}",
         colors::CYAN,
@@ -191,40 +185,38 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
         shield.echo_cost,
         shield_status
     ));
-    
+
     if !shield_ready {
         lines.push(format!(
             "     {}",
-            render_cooldown_bar(
-                "Cooldown",
-                shield.cooldown_current,
-                shield.cooldown_max,
-                20
-            )
+            render_cooldown_bar("Cooldown", shield.cooldown_current, shield.cooldown_max, 20)
         ));
     }
-    
+
     lines
 }
 
 /// Renders full HUD overlay (combines all UI elements)
 pub fn render_full_hud(player: &Player, quest: &Quest, frame_width: usize) -> String {
     let mut output = String::new();
-    
+
     // Top bar: Echo HUD
-    output.push_str(&format!("{}\n", render_echo_hud(player.echo_currency, frame_width)));
+    output.push_str(&format!(
+        "{}\n",
+        render_echo_hud(player.echo_currency, frame_width)
+    ));
     output.push_str(&format!("{}\n", "─".repeat(frame_width)));
-    
+
     // Left panel: Abilities
     let ability_lines = render_ability_panel(player);
     output.push_str(&format!("\n{}\n", ability_lines.join("\n")));
-    
+
     // Right panel: Quest progress (would be overlaid in real UI)
     let quest_lines = render_quest_progress(quest);
     output.push_str(&format!("\n{}\n", quest_lines.join("\n")));
-    
+
     output.push_str(&format!("\n{}\n", "─".repeat(frame_width)));
-    
+
     output
 }
 
@@ -310,10 +302,22 @@ pub fn render_particle_effect(effect_type: &str, position: Vec3) -> String {
 pub fn play_audio_effect(effect_type: &str) -> String {
     match effect_type {
         "dash_whoosh" => format!("{}🔊 Audio: Dash Whoosh{}", colors::YELLOW, colors::RESET),
-        "shield_activate" => format!("{}🔊 Audio: Shield Activate{}", colors::YELLOW, colors::RESET),
-        "quest_complete" => format!("{}🔊 Audio: Quest Complete Jingle{}", colors::YELLOW, colors::RESET),
+        "shield_activate" => format!(
+            "{}🔊 Audio: Shield Activate{}",
+            colors::YELLOW,
+            colors::RESET
+        ),
+        "quest_complete" => format!(
+            "{}🔊 Audio: Quest Complete Jingle{}",
+            colors::YELLOW,
+            colors::RESET
+        ),
         "spawn_portal" => format!("{}🔊 Audio: Portal Sound{}", colors::YELLOW, colors::RESET),
-        "objective_complete" => format!("{}🔊 Audio: Objective Complete{}", colors::YELLOW, colors::RESET),
+        "objective_complete" => format!(
+            "{}🔊 Audio: Objective Complete{}",
+            colors::YELLOW,
+            colors::RESET
+        ),
         _ => format!("🔊 Audio: {}", effect_type),
     }
 }
@@ -321,7 +325,7 @@ pub fn play_audio_effect(effect_type: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_render_cooldown_bar() {
         let bar = render_cooldown_bar("Test", 5.0, 10.0, 20);
@@ -329,28 +333,28 @@ mod tests {
         assert!(bar.contains("5.0"));
         assert!(bar.contains("10.0"));
     }
-    
+
     #[test]
     fn test_render_echo_hud() {
         let hud = render_echo_hud(100, 60);
         assert!(hud.contains("100"));
         assert!(hud.contains("Echo"));
     }
-    
+
     #[test]
     fn test_render_notification() {
         let notif = render_notification("Quest Complete!", "You earned 50 Echo", "✅");
         assert!(notif.contains("Quest Complete!"));
         assert!(notif.contains("50 Echo"));
     }
-    
+
     #[test]
     fn test_render_particle_effect() {
         let effect = render_particle_effect("dash_trail", Vec3::new(10.0, 0.0, 5.0));
         assert!(effect.contains("Dash Trail"));
         assert!(effect.contains("10.0"));
     }
-    
+
     #[test]
     fn test_play_audio_effect() {
         let audio = play_audio_effect("dash_whoosh");

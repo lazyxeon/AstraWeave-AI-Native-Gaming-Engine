@@ -1,7 +1,7 @@
 //! Common test utilities for astraweave-weaving tests
 
-use astraweave_weaving::*;
 use astraweave_weaving::patterns::*;
+use astraweave_weaving::*;
 use std::collections::BTreeMap;
 
 /// Simple RNG for deterministic tests (Linear Congruential Generator)
@@ -29,7 +29,7 @@ pub fn create_test_config() -> WeaveConfig {
     cooldowns.insert("aid_event".to_string(), 300);
     cooldowns.insert("supply_drop_food".to_string(), 600);
     cooldowns.insert("mediator".to_string(), 900);
-    
+
     WeaveConfig {
         budget_per_tick: 20,
         cooldowns,
@@ -44,9 +44,7 @@ pub fn create_test_adjudicator() -> WeaveAdjudicator {
 
 /// Create a mock WeaveIntent for testing
 pub fn create_test_intent(id: &str, priority: f32, cost: u32) -> WeaveIntent {
-    WeaveIntent::new(id)
-        .with_priority(priority)
-        .with_cost(cost)
+    WeaveIntent::new(id).with_priority(priority).with_cost(cost)
 }
 
 /// Create a test WorldMetrics with specific values
@@ -78,12 +76,12 @@ where
     T: std::fmt::Debug + PartialEq,
 {
     let mut results = Vec::new();
-    
+
     for run in 0..3 {
         let mut rng = create_test_rng(seed);
         let result = test_fn(&mut rng);
         results.push(result);
-        
+
         if run > 0 {
             assert_eq!(
                 results[0], results[run],
@@ -103,7 +101,7 @@ pub fn hash_adjudicator_state(adjudicator: &WeaveAdjudicator) -> u64 {
 
 /// Create a test PatternDetector for low health clusters
 pub fn create_low_health_detector() -> LowHealthClusterDetector {
-    LowHealthClusterDetector { 
+    LowHealthClusterDetector {
         threshold: 0.25,
         min_cluster_size: 3,
     }
@@ -121,7 +119,7 @@ pub fn create_faction_conflict_detector() -> FactionConflictDetector {
 
 /// Create a test PatternDetector for combat intensity
 pub fn create_combat_intensity_detector() -> CombatIntensityDetector {
-    CombatIntensityDetector { 
+    CombatIntensityDetector {
         events_threshold: 10,
         time_window: 5.0,
     }
@@ -143,7 +141,7 @@ mod tests {
     fn test_rng_determinism() {
         let mut rng1 = create_test_rng(12345);
         let mut rng2 = create_test_rng(12345);
-        
+
         for _ in 0..10 {
             assert_eq!(rng1.next(), rng2.next());
         }

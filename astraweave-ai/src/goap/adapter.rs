@@ -1,8 +1,8 @@
 // Enhanced WorldSnapshot to GOAP WorldState adapter
 // Phase 2: Engine Integration
 
+use super::{OrderedFloat, StateValue, WorldState};
 use astraweave_core::WorldSnapshot;
-use super::{WorldState, StateValue, OrderedFloat};
 
 /// Enhanced adapter with richer state extraction
 pub struct SnapshotAdapter;
@@ -16,7 +16,10 @@ impl SnapshotAdapter {
         state.set("player_hp", StateValue::Int(snap.player.hp));
         state.set("player_x", StateValue::Int(snap.player.pos.x));
         state.set("player_y", StateValue::Int(snap.player.pos.y));
-        state.set("player_stance", StateValue::String(snap.player.stance.clone()));
+        state.set(
+            "player_stance",
+            StateValue::String(snap.player.stance.clone()),
+        );
 
         // Player health categories
         let player_critical = snap.player.hp < 30;
@@ -43,7 +46,7 @@ impl SnapshotAdapter {
         for (name, value) in &snap.me.cooldowns {
             let cd_key = format!("cd_{}", name);
             state.set(&cd_key, StateValue::Float(OrderedFloat(*value)));
-            
+
             // Add boolean flag for active cooldowns
             let active_key = format!("{}_on_cooldown", name);
             state.set(&active_key, StateValue::Bool(*value > 0.0));
@@ -69,9 +72,9 @@ impl SnapshotAdapter {
             let dist_x = (snap.me.pos.x - first_enemy.pos.x).abs();
             let dist_y = (snap.me.pos.y - first_enemy.pos.y).abs();
             let manhattan_distance = dist_x + dist_y;
-            
+
             state.set("enemy_distance", StateValue::Int(manhattan_distance));
-            
+
             // Range flags
             state.set("in_range", StateValue::Bool(manhattan_distance <= 8));
             state.set("in_melee_range", StateValue::Bool(manhattan_distance <= 2));
@@ -85,7 +88,6 @@ impl SnapshotAdapter {
             // Enemy health categories
             state.set("enemy_wounded", StateValue::Bool(first_enemy.hp < 50));
             state.set("enemy_critical", StateValue::Bool(first_enemy.hp < 20));
-
         } else {
             state.set("enemy_distance", StateValue::Int(999));
             state.set("in_range", StateValue::Bool(false));
@@ -96,20 +98,19 @@ impl SnapshotAdapter {
 
         // === Combat State ===
         state.set("in_combat", StateValue::Bool(!snap.enemies.is_empty()));
-        
+
         // Safe state assessment
         let low_health = snap.me.ammo < 10 || snap.player.hp < 40;
         state.set("low_health", StateValue::Bool(low_health));
-        
-        let safe_state = snap.enemies.is_empty() || 
-                         (snap.me.ammo > 10 && snap.player.hp > 60);
+
+        let safe_state = snap.enemies.is_empty() || (snap.me.ammo > 10 && snap.player.hp > 60);
         state.set("safe", StateValue::Bool(safe_state));
 
         // === Tactical Flags ===
-        
+
         // Should retreat?
-        let should_retreat = (snap.player.hp < 30 && !snap.enemies.is_empty()) ||
-                            (snap.me.ammo < 5 && !snap.enemies.is_empty());
+        let should_retreat = (snap.player.hp < 30 && !snap.enemies.is_empty())
+            || (snap.me.ammo < 5 && !snap.enemies.is_empty());
         state.set("should_retreat", StateValue::Bool(should_retreat));
 
         // Should heal?
@@ -129,8 +130,8 @@ impl SnapshotAdapter {
         state.set("has_medkit", StateValue::Bool(true)); // Placeholder - would check inventory
 
         // === Positional State ===
-        let distance_to_player = (snap.me.pos.x - snap.player.pos.x).abs() + 
-                                 (snap.me.pos.y - snap.player.pos.y).abs();
+        let distance_to_player =
+            (snap.me.pos.x - snap.player.pos.x).abs() + (snap.me.pos.y - snap.player.pos.y).abs();
         state.set("distance_to_player", StateValue::Int(distance_to_player));
         state.set("near_player", StateValue::Bool(distance_to_player < 5));
         state.set("far_from_player", StateValue::Bool(distance_to_player > 10));
@@ -155,8 +156,10 @@ impl SnapshotAdapter {
         let enemy_count = snap.enemies.len();
         let ammo = snap.me.ammo;
         let hp = snap.player.hp;
-        
-        let enemy_dist = snap.enemies.first()
+
+        let enemy_dist = snap
+            .enemies
+            .first()
             .map(|e| (snap.me.pos.x - e.pos.x).abs() + (snap.me.pos.y - e.pos.y).abs())
             .unwrap_or(999);
 
@@ -170,8 +173,8 @@ impl SnapshotAdapter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState};
     use std::collections::BTreeMap;
-    use astraweave_core::{PlayerState, CompanionState, EnemyState, IVec2};
 
     fn make_test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
@@ -235,7 +238,7 @@ mod tests {
     fn test_enhanced_adapter_health_categories() {
         let mut snap = make_test_snapshot();
         snap.player.hp = 25;
-        
+
         let state = SnapshotAdapter::to_world_state(&snap);
 
         assert_eq!(state.get("player_critical"), Some(&StateValue::Bool(true)));
@@ -246,7 +249,7 @@ mod tests {
     fn test_enhanced_adapter_ammo_flags() {
         let mut snap = make_test_snapshot();
         snap.me.ammo = 3;
-        
+
         let state = SnapshotAdapter::to_world_state(&snap);
 
         assert_eq!(state.get("ammo_critical"), Some(&StateValue::Bool(true)));
@@ -263,4 +266,3 @@ mod tests {
         assert!(summary.contains("Enemies:1"));
     }
 }
-

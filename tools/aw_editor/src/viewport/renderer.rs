@@ -229,11 +229,14 @@ impl ViewportRenderer {
                 // DEBUG: Log gizmo mode and constraint
                 match &gizmo.mode {
                     crate::gizmo::GizmoMode::Rotate { constraint } => {
-                        println!("🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}", constraint);
+                        println!(
+                            "🎨 Renderer: Rendering Rotate gizmo, constraint = {:?}",
+                            constraint
+                        );
                     }
                     _ => {}
                 }
-                
+
                 // Get entity position from world (old astraweave-core API)
                 if let Some(pose) = world.pose(selected) {
                     // Convert astraweave_core::IVec2 to glam::IVec2
@@ -314,7 +317,7 @@ impl ViewportRenderer {
     pub fn set_selected_entities(&mut self, entities: &[Entity]) {
         self.selected_entities = entities.to_vec();
     }
-    
+
     /// Set selected entity (for backward compatibility)
     pub fn set_selected_entity(&mut self, entity: Option<Entity>) {
         self.selected_entities.clear();
@@ -327,7 +330,7 @@ impl ViewportRenderer {
     pub fn selected_entity(&self) -> Option<Entity> {
         self.selected_entities.first().copied()
     }
-    
+
     /// Get all selected entities
     pub fn selected_entities(&self) -> &[Entity] {
         &self.selected_entities

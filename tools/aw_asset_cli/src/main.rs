@@ -308,7 +308,7 @@ fn process_texture(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf
     // Check for compression tools and fail hard if missing
     let has_toktx = which("toktx").is_ok();
     let has_basisu = which("basisu").is_ok();
-    
+
     if !has_toktx && !has_basisu {
         return Err(anyhow!(
             "No texture compression tools found in PATH.\n\
@@ -325,7 +325,7 @@ fn process_texture(src: &Path, out_root: &str, compress: bool) -> Result<PathBuf
             After installation, ensure the tool is in your system PATH."
         ));
     }
-    
+
     if let Ok(toktx) = which("toktx") {
         // BasisU UASTC KTX2 with Zstd
         let status = Command::new(toktx)

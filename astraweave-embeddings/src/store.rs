@@ -42,8 +42,10 @@ pub struct VectorStoreMetrics {
 impl VectorStore {
     /// Create a new vector store with default configuration
     pub fn new(dimensions: usize) -> Self {
-        let mut config = EmbeddingConfig::default();
-        config.dimensions = dimensions;
+        let config = EmbeddingConfig {
+            dimensions,
+            ..Default::default()
+        };
         Self::with_config(config)
     }
 
@@ -288,7 +290,6 @@ impl VectorStore {
 }
 
 /// Distance functions for different metrics
-
 fn cosine_distance(a: &[f32], b: &[f32]) -> f32 {
     let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
     let norm_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();

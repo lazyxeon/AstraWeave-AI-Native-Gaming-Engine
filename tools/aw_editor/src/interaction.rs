@@ -1,5 +1,6 @@
 use crate::command::{MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack};
 use crate::gizmo::state::{GizmoMode, GizmoState, TransformSnapshot};
+use crate::prefab::PrefabManager;
 use astraweave_core::{Entity, IVec2, World};
 use glam::Quat;
 
@@ -46,11 +47,8 @@ pub struct GizmoCancelMetadata {
 }
 
 fn active_or_last_mode(state: &GizmoState) -> GizmoMode {
-    if matches!(state.mode, GizmoMode::Inactive) {
-        state.last_operation
-    } else {
-        state.mode
-    }
+    // Always use current mode - if inactive, return Inactive
+    state.mode
 }
 
 fn constraint_label(mode: GizmoMode) -> Option<String> {
@@ -72,10 +70,28 @@ fn mode_to_kind(mode: GizmoMode) -> Option<GizmoOperationKind> {
 }
 
 /// Attempt to commit the active gizmo operation, pushing an undo command if needed.
+/// 
+/// **NEW (Nov 17)**: Optionally accepts a `PrefabManager` to auto-track overrides when
+/// transforming prefab instances. If `prefab_manager` is `Some`, any committed transform
+/// will automatically mark the entity as having overrides.
 pub fn commit_active_gizmo(
     state: &mut GizmoState,
     world: &mut World,
     undo_stack: &mut UndoStack,
+) -> Option<GizmoCommitMetadata> {
+    commit_active_gizmo_with_prefab_tracking(state, world, undo_stack, None)
+}
+
+/// Extended version of `commit_active_gizmo` with auto-tracking for prefab overrides.
+///
+/// When `prefab_manager` is provided and the entity is part of a prefab instance,
+/// successfully committed transforms will automatically call `track_override()` to
+/// mark the entity as modified.
+pub fn commit_active_gizmo_with_prefab_tracking(
+    state: &mut GizmoState,
+    world: &mut World,
+    undo_stack: &mut UndoStack,
+    prefab_manager: Option<&mut PrefabManager>,
 ) -> Option<GizmoCommitMetadata> {
     let entity = state.selected_entity?;
     let snapshot = state.start_transform?;
@@ -148,6 +164,14 @@ pub fn commit_active_gizmo(
     };
 
     state.start_transform = None;
+    
+    // Auto-track prefab override if entity is part of a prefab instance
+    if let (Some(mgr), Some(meta)) = (prefab_manager, &metadata) {
+        if let Some(instance) = mgr.find_instance_mut(meta.entity) {
+            instance.track_override(meta.entity, world);
+        }
+    }
+    
     metadata
 }
 

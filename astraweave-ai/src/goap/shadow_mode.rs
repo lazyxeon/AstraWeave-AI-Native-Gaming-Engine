@@ -1,10 +1,10 @@
 // Shadow Mode: Side-by-side comparison of GOAP vs RuleOrchestrator
 // Phase 2: Engine Integration
 
-use astraweave_core::{PlanIntent, WorldSnapshot};
 use crate::orchestrator::Orchestrator;
+use astraweave_core::{PlanIntent, WorldSnapshot};
+use serde::{Deserialize, Serialize};
 use std::time::Instant;
-use serde::{Serialize, Deserialize};
 
 /// Comparison result between two planning approaches
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,7 +63,8 @@ impl PlanComparison {
         let goap_summary = PlanSummary::from_intent(&goap_plan, goap_time_ms);
 
         let differences = PlanDiff::compute(&rule_summary, &goap_summary);
-        let metrics = ComparisonMetrics::compute(&rule_summary, &goap_summary, rule_time_ms, goap_time_ms);
+        let metrics =
+            ComparisonMetrics::compute(&rule_summary, &goap_summary, rule_time_ms, goap_time_ms);
 
         Self {
             timestamp: snap.t,
@@ -78,31 +79,52 @@ impl PlanComparison {
     /// Format as human-readable log entry
     pub fn to_log_entry(&self) -> String {
         let mut log = String::new();
-        
-        log.push_str(&format!("\n═══ Shadow Mode Comparison @ t={:.1}s ═══\n", self.timestamp));
+
+        log.push_str(&format!(
+            "\n═══ Shadow Mode Comparison @ t={:.1}s ═══\n",
+            self.timestamp
+        ));
         log.push_str(&format!("Situation: {}\n\n", self.tactical_summary));
 
         log.push_str("🤖 RuleOrchestrator:\n");
         log.push_str(&format!("  Plan ID: {}\n", self.rule_plan.plan_id));
         log.push_str(&format!("  Steps: {}\n", self.rule_plan.step_count));
         log.push_str(&format!("  Actions: {:?}\n", self.rule_plan.action_types));
-        log.push_str(&format!("  Planning Time: {:.2}ms\n\n", self.rule_plan.planning_time_ms));
+        log.push_str(&format!(
+            "  Planning Time: {:.2}ms\n\n",
+            self.rule_plan.planning_time_ms
+        ));
 
         log.push_str("🧠 GOAP Planner:\n");
         log.push_str(&format!("  Plan ID: {}\n", self.goap_plan.plan_id));
         log.push_str(&format!("  Steps: {}\n", self.goap_plan.step_count));
         log.push_str(&format!("  Actions: {:?}\n", self.goap_plan.action_types));
-        log.push_str(&format!("  Planning Time: {:.2}ms\n\n", self.goap_plan.planning_time_ms));
+        log.push_str(&format!(
+            "  Planning Time: {:.2}ms\n\n",
+            self.goap_plan.planning_time_ms
+        ));
 
         log.push_str("📊 Differences:\n");
-        log.push_str(&format!("  Similarity Score: {:.1}%\n", self.differences.similarity_score * 100.0));
-        log.push_str(&format!("  Common Actions: {}\n", self.differences.actions_in_common));
-        
+        log.push_str(&format!(
+            "  Similarity Score: {:.1}%\n",
+            self.differences.similarity_score * 100.0
+        ));
+        log.push_str(&format!(
+            "  Common Actions: {}\n",
+            self.differences.actions_in_common
+        ));
+
         if !self.differences.unique_to_rule.is_empty() {
-            log.push_str(&format!("  Only in Rule: {:?}\n", self.differences.unique_to_rule));
+            log.push_str(&format!(
+                "  Only in Rule: {:?}\n",
+                self.differences.unique_to_rule
+            ));
         }
         if !self.differences.unique_to_goap.is_empty() {
-            log.push_str(&format!("  Only in GOAP: {:?}\n", self.differences.unique_to_goap));
+            log.push_str(&format!(
+                "  Only in GOAP: {:?}\n",
+                self.differences.unique_to_goap
+            ));
         }
         if self.differences.order_differs {
             log.push_str("  ⚠ Action order differs\n");
@@ -110,9 +132,15 @@ impl PlanComparison {
 
         log.push_str("\n📈 Metrics:\n");
         if self.metrics.rule_faster {
-            log.push_str(&format!("  ✓ Rule faster by {:.2}ms\n", self.metrics.time_difference_ms));
+            log.push_str(&format!(
+                "  ✓ Rule faster by {:.2}ms\n",
+                self.metrics.time_difference_ms
+            ));
         } else {
-            log.push_str(&format!("  ✓ GOAP faster by {:.2}ms\n", self.metrics.time_difference_ms.abs()));
+            log.push_str(&format!(
+                "  ✓ GOAP faster by {:.2}ms\n",
+                self.metrics.time_difference_ms.abs()
+            ));
         }
 
         if self.metrics.both_empty {
@@ -133,8 +161,16 @@ impl PlanComparison {
 
 impl PlanSummary {
     fn from_intent(intent: &PlanIntent, planning_time_ms: f64) -> Self {
-        let action_types: Vec<String> = intent.steps.iter()
-            .map(|step| format!("{:?}", step).split_whitespace().next().unwrap_or("Unknown").to_string())
+        let action_types: Vec<String> = intent
+            .steps
+            .iter()
+            .map(|step| {
+                format!("{:?}", step)
+                    .split_whitespace()
+                    .next()
+                    .unwrap_or("Unknown")
+                    .to_string()
+            })
             .collect();
 
         Self {
@@ -157,12 +193,16 @@ impl PlanDiff {
 
         let actions_in_common = rule_set.intersection(&goap_set).count();
 
-        let unique_to_rule: Vec<String> = rule.action_types.iter()
+        let unique_to_rule: Vec<String> = rule
+            .action_types
+            .iter()
             .filter(|a| !goap_set.contains(a))
             .map(|s| s.clone())
             .collect();
 
-        let unique_to_goap: Vec<String> = goap.action_types.iter()
+        let unique_to_goap: Vec<String> = goap
+            .action_types
+            .iter()
             .filter(|a| !rule_set.contains(a))
             .map(|s| s.clone())
             .collect();
@@ -186,7 +226,12 @@ impl PlanDiff {
 }
 
 impl ComparisonMetrics {
-    fn compute(rule: &PlanSummary, goap: &PlanSummary, rule_time_ms: f64, goap_time_ms: f64) -> Self {
+    fn compute(
+        rule: &PlanSummary,
+        goap: &PlanSummary,
+        rule_time_ms: f64,
+        goap_time_ms: f64,
+    ) -> Self {
         Self {
             rule_faster: rule_time_ms < goap_time_ms,
             time_difference_ms: rule_time_ms - goap_time_ms,
@@ -229,7 +274,8 @@ impl ShadowModeRunner {
         let goap_time_ms = goap_start.elapsed().as_secs_f64() * 1000.0;
 
         // Create comparison
-        let comparison = PlanComparison::new(snap, rule_plan, rule_time_ms, goap_plan, goap_time_ms);
+        let comparison =
+            PlanComparison::new(snap, rule_plan, rule_time_ms, goap_plan, goap_time_ms);
 
         if self.log_to_console {
             println!("{}", comparison.to_log_entry());
@@ -270,32 +316,39 @@ impl ShadowModeReport {
         }
 
         let total = comparisons.len();
-        
-        let avg_similarity = comparisons.iter()
-            .map(|c| c.differences.similarity_score)
-            .sum::<f32>() / total as f32;
 
-        let goap_faster_count = comparisons.iter()
+        let avg_similarity = comparisons
+            .iter()
+            .map(|c| c.differences.similarity_score)
+            .sum::<f32>()
+            / total as f32;
+
+        let goap_faster_count = comparisons
+            .iter()
             .filter(|c| !c.metrics.rule_faster)
             .count();
 
         let rule_faster_count = total - goap_faster_count;
 
-        let avg_time_diff_ms = comparisons.iter()
+        let avg_time_diff_ms = comparisons
+            .iter()
             .map(|c| c.metrics.time_difference_ms)
-            .sum::<f64>() / total as f64;
+            .sum::<f64>()
+            / total as f64;
 
-        let both_empty_count = comparisons.iter()
-            .filter(|c| c.metrics.both_empty)
-            .count();
+        let both_empty_count = comparisons.iter().filter(|c| c.metrics.both_empty).count();
 
-        let avg_rule_steps = comparisons.iter()
+        let avg_rule_steps = comparisons
+            .iter()
             .map(|c| c.rule_plan.step_count)
-            .sum::<usize>() as f32 / total as f32;
+            .sum::<usize>() as f32
+            / total as f32;
 
-        let avg_goap_steps = comparisons.iter()
+        let avg_goap_steps = comparisons
+            .iter()
             .map(|c| c.goap_plan.step_count)
-            .sum::<usize>() as f32 / total as f32;
+            .sum::<usize>() as f32
+            / total as f32;
 
         Self {
             total_comparisons: total,
@@ -317,21 +370,26 @@ impl ShadowModeReport {
         println!("📊 Total Comparisons: {}", self.total_comparisons);
         println!("🎯 Average Similarity: {:.1}%", self.avg_similarity * 100.0);
         println!("\n⏱️  Performance:");
-        println!("   • GOAP faster: {} times ({:.1}%)", 
+        println!(
+            "   • GOAP faster: {} times ({:.1}%)",
             self.goap_faster_count,
             (self.goap_faster_count as f32 / self.total_comparisons as f32) * 100.0
         );
-        println!("   • Rule faster: {} times ({:.1}%)", 
+        println!(
+            "   • Rule faster: {} times ({:.1}%)",
             self.rule_faster_count,
             (self.rule_faster_count as f32 / self.total_comparisons as f32) * 100.0
         );
-        println!("   • Avg time difference: {:.2}ms", self.avg_time_diff_ms.abs());
+        println!(
+            "   • Avg time difference: {:.2}ms",
+            self.avg_time_diff_ms.abs()
+        );
 
         println!("\n📈 Plan Characteristics:");
         println!("   • Avg Rule steps: {:.1}", self.avg_rule_steps);
         println!("   • Avg GOAP steps: {:.1}", self.avg_goap_steps);
         println!("   • Both empty: {} times", self.both_empty_count);
-        
+
         println!("\n════════════════════════════════════════\n");
     }
 }
@@ -354,8 +412,8 @@ impl Default for ShadowModeReport {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use astraweave_core::{ActionStep, CompanionState, IVec2, PlayerState};
     use std::collections::BTreeMap;
-    use astraweave_core::{PlayerState, CompanionState, ActionStep, IVec2};
 
     fn make_test_snapshot() -> WorldSnapshot {
         WorldSnapshot {
@@ -386,7 +444,11 @@ mod tests {
         let rule_plan = PlanIntent {
             plan_id: "rule-1".to_string(),
             steps: vec![
-                ActionStep::MoveTo { x: 10, y: 10, speed: None },
+                ActionStep::MoveTo {
+                    x: 10,
+                    y: 10,
+                    speed: None,
+                },
                 ActionStep::Attack { target_id: 1 },
             ],
         };
@@ -394,7 +456,11 @@ mod tests {
         let goap_plan = PlanIntent {
             plan_id: "goap-1".to_string(),
             steps: vec![
-                ActionStep::MoveTo { x: 10, y: 10, speed: None },
+                ActionStep::MoveTo {
+                    x: 10,
+                    y: 10,
+                    speed: None,
+                },
                 ActionStep::Reload,
                 ActionStep::Attack { target_id: 1 },
             ],
@@ -415,11 +481,19 @@ mod tests {
             let snap = make_test_snapshot();
             let rule_plan = PlanIntent {
                 plan_id: format!("rule-{}", i),
-                steps: vec![ActionStep::MoveTo { x: i, y: i, speed: None }],
+                steps: vec![ActionStep::MoveTo {
+                    x: i,
+                    y: i,
+                    speed: None,
+                }],
             };
             let goap_plan = PlanIntent {
                 plan_id: format!("goap-{}", i),
-                steps: vec![ActionStep::MoveTo { x: i, y: i, speed: None }],
+                steps: vec![ActionStep::MoveTo {
+                    x: i,
+                    y: i,
+                    speed: None,
+                }],
             };
 
             comparisons.push(PlanComparison::new(&snap, rule_plan, 1.0, goap_plan, 1.5));
@@ -432,4 +506,3 @@ mod tests {
         assert!(report.avg_similarity > 0.9); // Plans are very similar
     }
 }
-

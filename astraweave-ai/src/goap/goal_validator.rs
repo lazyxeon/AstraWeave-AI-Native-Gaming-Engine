@@ -145,13 +145,15 @@ impl GoalValidator {
             result.add(
                 ValidationError::error("Goal name cannot be empty")
                     .with_field("name")
-                    .with_suggestion("Provide a descriptive name like 'defend_position' or 'escort_player'")
+                    .with_suggestion(
+                        "Provide a descriptive name like 'defend_position' or 'escort_player'",
+                    ),
             );
         } else if goal.name.len() > 100 {
             result.add(
                 ValidationError::warning("Goal name is very long (>100 chars)")
                     .with_field("name")
-                    .with_suggestion("Consider a shorter, more concise name")
+                    .with_suggestion("Consider a shorter, more concise name"),
             );
         }
 
@@ -159,18 +161,24 @@ impl GoalValidator {
         if let Some(priority) = goal.priority {
             if priority < 0.0 {
                 result.add(
-                    ValidationError::error(format!("Priority must be non-negative, got {}", priority))
-                        .with_field("priority")
+                    ValidationError::error(format!(
+                        "Priority must be non-negative, got {}",
+                        priority
+                    ))
+                    .with_field("priority"),
                 );
             } else if priority > 10.0 {
                 result.add(
-                    ValidationError::warning(format!("Priority {} is very high (>10), typically 1-10 is recommended", priority))
-                        .with_field("priority")
+                    ValidationError::warning(format!(
+                        "Priority {} is very high (>10), typically 1-10 is recommended",
+                        priority
+                    ))
+                    .with_field("priority"),
                 );
             } else if priority == 0.0 {
                 result.add(
                     ValidationError::warning("Priority is 0, goal will have lowest urgency")
-                        .with_field("priority")
+                        .with_field("priority"),
                 );
             }
         }
@@ -179,18 +187,23 @@ impl GoalValidator {
         if let Some(deadline) = goal.deadline_seconds {
             if deadline < 0.0 {
                 result.add(
-                    ValidationError::error(format!("Deadline must be non-negative, got {}", deadline))
-                        .with_field("deadline_seconds")
+                    ValidationError::error(format!(
+                        "Deadline must be non-negative, got {}",
+                        deadline
+                    ))
+                    .with_field("deadline_seconds"),
                 );
             } else if deadline < 1.0 {
                 result.add(
                     ValidationError::warning("Deadline is very short (<1s), may be unachievable")
-                        .with_field("deadline_seconds")
+                        .with_field("deadline_seconds"),
                 );
             } else if deadline > 3600.0 {
                 result.add(
-                    ValidationError::info("Deadline is very long (>1 hour), urgency will be minimal")
-                        .with_field("deadline_seconds")
+                    ValidationError::info(
+                        "Deadline is very long (>1 hour), urgency will be minimal",
+                    )
+                    .with_field("deadline_seconds"),
                 );
             }
         }
@@ -213,13 +226,16 @@ impl GoalValidator {
             if max_depth == 0 {
                 result.add(
                     ValidationError::warning("Max depth is 0, sub-goals will never be decomposed")
-                        .with_field("max_depth")
+                        .with_field("max_depth"),
                 );
             } else if max_depth > 10 {
                 result.add(
-                    ValidationError::warning(format!("Max depth {} is very large, may cause performance issues", max_depth))
-                        .with_field("max_depth")
-                        .with_suggestion("Recommended max depth is 3-5")
+                    ValidationError::warning(format!(
+                        "Max depth {} is very large, may cause performance issues",
+                        max_depth
+                    ))
+                    .with_field("max_depth")
+                    .with_suggestion("Recommended max depth is 3-5"),
                 );
             }
         }
@@ -229,7 +245,7 @@ impl GoalValidator {
             result.add(
                 ValidationError::error("Goal has no desired state conditions")
                     .with_field("desired_state")
-                    .with_suggestion("Add at least one condition like 'objective_complete = true'")
+                    .with_suggestion("Add at least one condition like 'objective_complete = true'"),
             );
         }
 
@@ -243,7 +259,7 @@ impl GoalValidator {
             for (i, sub_goal) in sub_goals.iter().enumerate() {
                 let mut sub_result = ValidationResult::new();
                 self.validate_schema(sub_goal, &mut sub_result);
-                
+
                 // Prefix sub-goal errors with path
                 for mut error in sub_result.errors {
                     if let Some(field) = error.field {
@@ -262,21 +278,21 @@ impl GoalValidator {
     }
 
     /// Validate state value types and ranges
-    fn validate_state_value(&self, key: &str, value: &StateValueDef, result: &mut ValidationResult) {
+    fn validate_state_value(
+        &self,
+        key: &str,
+        value: &StateValueDef,
+        result: &mut ValidationResult,
+    ) {
         // Check if state variable is known
         if !self.known_state_variables.contains(key) && !key.starts_with("custom_") {
             let msg = format!("Unknown state variable '{}', may not work at runtime", key);
             if self.strict_mode {
-                result.add(
-                    ValidationError::error(msg)
-                        .with_field(key)
-                        .with_suggestion("Add 'custom_' prefix for custom variables or verify spelling")
-                );
+                result.add(ValidationError::error(msg).with_field(key).with_suggestion(
+                    "Add 'custom_' prefix for custom variables or verify spelling",
+                ));
             } else {
-                result.add(
-                    ValidationError::warning(msg)
-                        .with_field(key)
-                );
+                result.add(ValidationError::warning(msg).with_field(key));
             }
         }
 
@@ -286,25 +302,34 @@ impl GoalValidator {
                 if min > max {
                     result.add(
                         ValidationError::error(format!("IntRange min ({}) > max ({})", min, max))
-                            .with_field(key)
+                            .with_field(key),
                     );
                 } else if min == max {
                     result.add(
-                        ValidationError::info(format!("IntRange min == max ({}), consider using exact value", min))
-                            .with_field(key)
+                        ValidationError::info(format!(
+                            "IntRange min == max ({}), consider using exact value",
+                            min
+                        ))
+                        .with_field(key),
                     );
                 }
             }
-            StateValueDef::FloatApprox { value: _, tolerance } => {
+            StateValueDef::FloatApprox {
+                value: _,
+                tolerance,
+            } => {
                 if *tolerance < 0.0 {
                     result.add(
                         ValidationError::error("FloatApprox tolerance must be non-negative")
-                            .with_field(key)
+                            .with_field(key),
                     );
                 } else if *tolerance > 100.0 {
                     result.add(
-                        ValidationError::warning(format!("FloatApprox tolerance {} is very large", tolerance))
-                            .with_field(key)
+                        ValidationError::warning(format!(
+                            "FloatApprox tolerance {} is very large",
+                            tolerance
+                        ))
+                        .with_field(key),
                     );
                 }
             }
@@ -318,31 +343,41 @@ impl GoalValidator {
         if let Some(ref sub_goals) = goal.sub_goals {
             if !sub_goals.is_empty() && goal.decomposition.is_none() {
                 result.add(
-                    ValidationError::warning("Goal has sub-goals but no decomposition strategy specified")
-                        .with_field("decomposition")
-                        .with_suggestion("Add 'decomposition = \"sequential\"' or other strategy")
+                    ValidationError::warning(
+                        "Goal has sub-goals but no decomposition strategy specified",
+                    )
+                    .with_field("decomposition")
+                    .with_suggestion("Add 'decomposition = \"sequential\"' or other strategy"),
                 );
             }
 
             // Check for conflicting desired states in sub-goals
-            if goal.decomposition.as_deref() == Some("parallel") || goal.decomposition.as_deref() == Some("all_of") {
+            if goal.decomposition.as_deref() == Some("parallel")
+                || goal.decomposition.as_deref() == Some("all_of")
+            {
                 self.check_conflicting_sub_goals(sub_goals, result);
             }
 
             // Check if any-of has at least 2 options
             if goal.decomposition.as_deref() == Some("any_of") && sub_goals.len() < 2 {
                 result.add(
-                    ValidationError::warning("'any_of' strategy with only one sub-goal, consider using direct goal")
-                        .with_field("decomposition")
+                    ValidationError::warning(
+                        "'any_of' strategy with only one sub-goal, consider using direct goal",
+                    )
+                    .with_field("decomposition"),
                 );
             }
         }
 
         // Check for decomposition without sub-goals
-        if goal.decomposition.is_some() && (goal.sub_goals.is_none() || goal.sub_goals.as_ref().unwrap().is_empty()) {
+        if goal.decomposition.is_some()
+            && (goal.sub_goals.is_none() || goal.sub_goals.as_ref().unwrap().is_empty())
+        {
             result.add(
-                ValidationError::warning("Decomposition strategy specified but no sub-goals defined")
-                    .with_field("decomposition")
+                ValidationError::warning(
+                    "Decomposition strategy specified but no sub-goals defined",
+                )
+                .with_field("decomposition"),
             );
         }
     }
@@ -368,7 +403,7 @@ impl GoalValidator {
                     goal.name,
                     path.join(" → ")
                 ))
-                .with_field(&goal.name)
+                .with_field(&goal.name),
             );
             return;
         }
@@ -390,7 +425,11 @@ impl GoalValidator {
     }
 
     /// Check for conflicting desired states between sub-goals
-    fn check_conflicting_sub_goals(&self, sub_goals: &[GoalDefinition], result: &mut ValidationResult) {
+    fn check_conflicting_sub_goals(
+        &self,
+        sub_goals: &[GoalDefinition],
+        result: &mut ValidationResult,
+    ) {
         let mut state_map: HashMap<String, Vec<(usize, &StateValueDef)>> = HashMap::new();
 
         for (i, sub_goal) in sub_goals.iter().enumerate() {
@@ -425,7 +464,16 @@ impl GoalValidator {
             (StateValueDef::Int(i1), StateValueDef::Int(i2)) => i1 == i2,
             (StateValueDef::String(s1), StateValueDef::String(s2)) => s1 == s2,
             // Ranges might overlap
-            (StateValueDef::IntRange { min: min1, max: max1 }, StateValueDef::IntRange { min: min2, max: max2 }) => {
+            (
+                StateValueDef::IntRange {
+                    min: min1,
+                    max: max1,
+                },
+                StateValueDef::IntRange {
+                    min: min2,
+                    max: max2,
+                },
+            ) => {
                 !(max1 < min2 || max2 < min1) // Ranges overlap if not disjoint
             }
             _ => true, // Different types or floats, assume compatible
@@ -439,15 +487,21 @@ impl GoalValidator {
 
         if depth > 5 {
             result.add(
-                ValidationError::warning(format!("Goal hierarchy is {} levels deep, may impact performance", depth))
-                    .with_suggestion("Consider flattening or splitting into separate top-level goals")
+                ValidationError::warning(format!(
+                    "Goal hierarchy is {} levels deep, may impact performance",
+                    depth
+                ))
+                .with_suggestion("Consider flattening or splitting into separate top-level goals"),
             );
         }
 
         if total_goals > 20 {
             result.add(
-                ValidationError::warning(format!("Goal hierarchy contains {} total goals, very complex", total_goals))
-                    .with_suggestion("Consider simplifying or splitting into multiple goals")
+                ValidationError::warning(format!(
+                    "Goal hierarchy contains {} total goals, very complex",
+                    total_goals
+                ))
+                .with_suggestion("Consider simplifying or splitting into multiple goals"),
             );
         }
 
@@ -455,10 +509,14 @@ impl GoalValidator {
         if let Some(ref sub_goals) = goal.sub_goals {
             if sub_goals.len() > 1 {
                 let priorities: Vec<_> = sub_goals.iter().filter_map(|g| g.priority).collect();
-                if priorities.len() == sub_goals.len() && priorities.windows(2).all(|w| (w[0] - w[1]).abs() < 0.01) {
+                if priorities.len() == sub_goals.len()
+                    && priorities.windows(2).all(|w| (w[0] - w[1]).abs() < 0.01)
+                {
                     result.add(
-                        ValidationError::info("All sub-goals have same priority, order may be arbitrary")
-                            .with_suggestion("Differentiate priorities if order matters")
+                        ValidationError::info(
+                            "All sub-goals have same priority, order may be arbitrary",
+                        )
+                        .with_suggestion("Differentiate priorities if order matters"),
                     );
                 }
             }
@@ -470,7 +528,11 @@ impl GoalValidator {
             if sub_goals.is_empty() {
                 1
             } else {
-                1 + sub_goals.iter().map(|g| self.calculate_depth(g)).max().unwrap_or(0)
+                1 + sub_goals
+                    .iter()
+                    .map(|g| self.calculate_depth(g))
+                    .max()
+                    .unwrap_or(0)
             }
         } else {
             1
@@ -489,35 +551,90 @@ impl GoalValidator {
     fn default_state_variables() -> HashSet<String> {
         vec![
             // Player state
-            "player_hp", "player_x", "player_y", "player_is_wounded", "player_is_critical",
-            "player_is_down", "player_at_extraction", "player_alive",
+            "player_hp",
+            "player_x",
+            "player_y",
+            "player_is_wounded",
+            "player_is_critical",
+            "player_is_down",
+            "player_at_extraction",
+            "player_alive",
             // Companion state
-            "my_ammo", "my_x", "my_y", "my_morale", "my_is_wounded", "my_is_critical",
-            "my_has_ammo", "my_needs_reload", "my_hp",
+            "my_ammo",
+            "my_x",
+            "my_y",
+            "my_morale",
+            "my_is_wounded",
+            "my_is_critical",
+            "my_has_ammo",
+            "my_needs_reload",
+            "my_hp",
             // Combat state
-            "enemy_count", "in_combat", "enemy_hp", "enemy_x", "enemy_y",
-            "enemy_is_wounded", "enemy_is_critical", "enemy_distance",
-            "enemy_in_range_melee", "enemy_in_range_short", "enemy_in_range_long",
-            "enemy_defeated", "enemy_damaged", "threats_neutralized", "threats_in_path",
+            "enemy_count",
+            "in_combat",
+            "enemy_hp",
+            "enemy_x",
+            "enemy_y",
+            "enemy_is_wounded",
+            "enemy_is_critical",
+            "enemy_distance",
+            "enemy_in_range_melee",
+            "enemy_in_range_short",
+            "enemy_in_range_long",
+            "enemy_defeated",
+            "enemy_damaged",
+            "threats_neutralized",
+            "threats_in_path",
             // Tactical state
-            "needs_healing", "can_move", "has_cover_available", "in_cover",
-            "weapon_equipped", "has_weapon", "in_range", "at_location",
-            "area_scanned", "enemies_located", "path_clear", "position_held",
-            "enemies_suppressed", "reinforcements_called", "ready_for_combat",
+            "needs_healing",
+            "can_move",
+            "has_cover_available",
+            "in_cover",
+            "weapon_equipped",
+            "has_weapon",
+            "in_range",
+            "at_location",
+            "area_scanned",
+            "enemies_located",
+            "path_clear",
+            "position_held",
+            "enemies_suppressed",
+            "reinforcements_called",
+            "ready_for_combat",
             // Mission state
-            "at_extraction", "mission_complete", "objective_complete",
-            "position_captured", "enemies_defeated", "position_secured",
+            "at_extraction",
+            "mission_complete",
+            "objective_complete",
+            "position_captured",
+            "enemies_defeated",
+            "position_secured",
             // Revive state
-            "ally_revived", "ally_safe", "safe_zone_established", "smoke_deployed",
-            "visibility_reduced", "distance_to_ally", "ally_health", "ally_conscious",
+            "ally_revived",
+            "ally_safe",
+            "safe_zone_established",
+            "smoke_deployed",
+            "visibility_reduced",
+            "distance_to_ally",
+            "ally_health",
+            "ally_conscious",
             "nearby_enemies",
             // Patrol state
-            "area_patrolled", "threats_reported", "at_waypoint_1", "waypoint_1_scanned",
-            "at_waypoint_2", "waypoint_2_scanned", "at_waypoint_3", "waypoint_3_scanned",
+            "area_patrolled",
+            "threats_reported",
+            "at_waypoint_1",
+            "waypoint_1_scanned",
+            "at_waypoint_2",
+            "waypoint_2_scanned",
+            "at_waypoint_3",
+            "waypoint_3_scanned",
             "at_patrol_start",
             // Equipment state
-            "ammo_loaded", "grenades_ready", "team_coordinated", "equipment_ready",
-            "cover_quality", "fortified",
+            "ammo_loaded",
+            "grenades_ready",
+            "team_coordinated",
+            "equipment_ready",
+            "cover_quality",
+            "fortified",
         ]
         .into_iter()
         .map(String::from)
@@ -539,7 +656,7 @@ mod tests {
     fn create_simple_goal() -> GoalDefinition {
         let mut desired = BTreeMap::new();
         desired.insert("enemy_defeated".to_string(), StateValueDef::Bool(true));
-        
+
         GoalDefinition {
             name: "defeat_enemy".to_string(),
             priority: Some(5.0),
@@ -556,7 +673,7 @@ mod tests {
         let validator = GoalValidator::new();
         let goal = create_simple_goal();
         let result = validator.validate(&goal);
-        
+
         assert!(result.is_valid(), "Expected no errors: {:?}", result.errors);
     }
 
@@ -565,10 +682,13 @@ mod tests {
         let validator = GoalValidator::new();
         let mut goal = create_simple_goal();
         goal.name = "".to_string();
-        
+
         let result = validator.validate(&goal);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| e.message.contains("name cannot be empty")));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("name cannot be empty")));
     }
 
     #[test]
@@ -576,10 +696,13 @@ mod tests {
         let validator = GoalValidator::new();
         let mut goal = create_simple_goal();
         goal.priority = Some(-1.0);
-        
+
         let result = validator.validate(&goal);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| e.message.contains("non-negative")));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("non-negative")));
     }
 
     #[test]
@@ -587,19 +710,22 @@ mod tests {
         let validator = GoalValidator::new();
         let mut goal = create_simple_goal();
         goal.decomposition = Some("invalid_strategy".to_string());
-        
+
         let result = validator.validate(&goal);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| e.message.contains("Invalid decomposition")));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("Invalid decomposition")));
     }
 
     #[test]
     fn test_circular_dependency() {
         let validator = GoalValidator::new();
-        
+
         let mut desired = BTreeMap::new();
         desired.insert("flag".to_string(), StateValueDef::Bool(true));
-        
+
         // Create circular: A → B → A
         let goal_a_inner = GoalDefinition {
             name: "goal_a".to_string(),
@@ -610,7 +736,7 @@ mod tests {
             desired_state: desired.clone(),
             sub_goals: None,
         };
-        
+
         let goal_b = GoalDefinition {
             name: "goal_b".to_string(),
             priority: Some(5.0),
@@ -620,7 +746,7 @@ mod tests {
             desired_state: desired.clone(),
             sub_goals: Some(vec![goal_a_inner]),
         };
-        
+
         let goal_a = GoalDefinition {
             name: "goal_a".to_string(),
             priority: Some(5.0),
@@ -630,35 +756,44 @@ mod tests {
             desired_state: desired,
             sub_goals: Some(vec![goal_b]),
         };
-        
+
         let result = validator.validate(&goal_a);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| e.message.contains("Circular dependency")));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("Circular dependency")));
     }
 
     #[test]
     fn test_unknown_state_variable_warning() {
         let validator = GoalValidator::new();
         let mut goal = create_simple_goal();
-        goal.desired_state.insert("completely_unknown_var".to_string(), StateValueDef::Bool(true));
-        
+        goal.desired_state.insert(
+            "completely_unknown_var".to_string(),
+            StateValueDef::Bool(true),
+        );
+
         let result = validator.validate(&goal);
         assert!(result.has_warnings());
-        assert!(result.warnings.iter().any(|w| w.message.contains("Unknown state variable")));
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("Unknown state variable")));
     }
 
     #[test]
     fn test_complexity_warnings() {
         let validator = GoalValidator::new();
-        
+
         // Create very deep hierarchy
         let mut goal = create_simple_goal();
         let mut current = &mut goal;
-        
+
         for i in 0..7 {
             let mut sub_desired = BTreeMap::new();
             sub_desired.insert(format!("level_{}", i), StateValueDef::Bool(true));
-            
+
             let sub_goal = GoalDefinition {
                 name: format!("level_{}", i),
                 priority: Some(5.0),
@@ -668,14 +803,17 @@ mod tests {
                 desired_state: sub_desired,
                 sub_goals: None,
             };
-            
+
             current.sub_goals = Some(vec![sub_goal]);
             current = current.sub_goals.as_mut().unwrap().get_mut(0).unwrap();
         }
-        
+
         let result = validator.validate(&goal);
         assert!(result.has_warnings());
-        assert!(result.warnings.iter().any(|w| w.message.contains("levels deep")));
+        assert!(result
+            .warnings
+            .iter()
+            .any(|w| w.message.contains("levels deep")));
     }
 
     #[test]
@@ -686,10 +824,12 @@ mod tests {
             "health".to_string(),
             StateValueDef::IntRange { min: 100, max: 50 }, // Invalid: min > max
         );
-        
+
         let result = validator.validate(&goal);
         assert!(!result.is_valid());
-        assert!(result.errors.iter().any(|e| e.message.contains("IntRange min")));
+        assert!(result
+            .errors
+            .iter()
+            .any(|e| e.message.contains("IntRange min")));
     }
 }
-

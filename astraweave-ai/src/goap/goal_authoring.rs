@@ -1,5 +1,5 @@
-use super::{Goal, DecompositionStrategy, StateValue};
-use anyhow::{Result, anyhow};
+use super::{DecompositionStrategy, Goal, StateValue};
+use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -49,10 +49,10 @@ impl GoalDefinition {
     pub fn load(path: &Path) -> Result<Self> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| anyhow!("Failed to read goal file {}: {}", path.display(), e))?;
-        
+
         let goal: GoalDefinition = toml::from_str(&content)
             .map_err(|e| anyhow!("Failed to parse TOML in {}: {}", path.display(), e))?;
-        
+
         goal.validate()?;
         Ok(goal)
     }
@@ -60,13 +60,13 @@ impl GoalDefinition {
     /// Save goal definition to TOML file
     pub fn save(&self, path: &Path) -> Result<()> {
         self.validate()?;
-        
-        let content = toml::to_string_pretty(self)
-            .map_err(|e| anyhow!("Failed to serialize goal: {}", e))?;
-        
+
+        let content =
+            toml::to_string_pretty(self).map_err(|e| anyhow!("Failed to serialize goal: {}", e))?;
+
         std::fs::write(path, content)
             .map_err(|e| anyhow!("Failed to write goal file {}: {}", path.display(), e))?;
-        
+
         Ok(())
     }
 
@@ -78,13 +78,19 @@ impl GoalDefinition {
 
         if let Some(priority) = self.priority {
             if priority < 0.0 {
-                return Err(anyhow!("Goal priority must be non-negative, got {}", priority));
+                return Err(anyhow!(
+                    "Goal priority must be non-negative, got {}",
+                    priority
+                ));
             }
         }
 
         if let Some(deadline) = self.deadline_seconds {
             if deadline < 0.0 {
-                return Err(anyhow!("Goal deadline must be non-negative, got {}", deadline));
+                return Err(anyhow!(
+                    "Goal deadline must be non-negative, got {}",
+                    deadline
+                ));
             }
         }
 
@@ -156,7 +162,10 @@ impl GoalDefinition {
                     StateValue::Int(i) => StateValueDef::Int(*i),
                     StateValue::Float(f) => StateValueDef::Float(f.0 as f64),
                     StateValue::String(s) => StateValueDef::String(s.clone()),
-                    StateValue::IntRange(min, max) => StateValueDef::IntRange { min: *min, max: *max },
+                    StateValue::IntRange(min, max) => StateValueDef::IntRange {
+                        min: *min,
+                        max: *max,
+                    },
                     StateValue::FloatApprox(f, tol) => StateValueDef::FloatApprox {
                         value: *f as f64,
                         tolerance: *tol as f64,
@@ -176,7 +185,12 @@ impl GoalDefinition {
         let sub_goals = if goal.sub_goals.is_empty() {
             None
         } else {
-            Some(goal.sub_goals.iter().map(|g| GoalDefinition::from_goal(g)).collect())
+            Some(
+                goal.sub_goals
+                    .iter()
+                    .map(|g| GoalDefinition::from_goal(g))
+                    .collect(),
+            )
         };
 
         Self {
@@ -202,15 +216,15 @@ impl GoalLibrary {
     pub fn load(path: &Path) -> Result<Self> {
         let content = std::fs::read_to_string(path)
             .map_err(|e| anyhow!("Failed to read goal library {}: {}", path.display(), e))?;
-        
+
         let library: GoalLibrary = toml::from_str(&content)
             .map_err(|e| anyhow!("Failed to parse TOML in {}: {}", path.display(), e))?;
-        
+
         // Validate all goals
         for goal in &library.goals {
             goal.validate()?;
         }
-        
+
         Ok(library)
     }
 
@@ -218,10 +232,10 @@ impl GoalLibrary {
     pub fn save(&self, path: &Path) -> Result<()> {
         let content = toml::to_string_pretty(self)
             .map_err(|e| anyhow!("Failed to serialize goal library: {}", e))?;
-        
+
         std::fs::write(path, content)
             .map_err(|e| anyhow!("Failed to write goal library {}: {}", path.display(), e))?;
-        
+
         Ok(())
     }
 
@@ -279,7 +293,10 @@ mod tests {
         assert!(matches!(int_val.to_state_value(), StateValue::Int(42)));
 
         let range_val = StateValueDef::IntRange { min: 0, max: 100 };
-        assert!(matches!(range_val.to_state_value(), StateValue::IntRange(0, 100)));
+        assert!(matches!(
+            range_val.to_state_value(),
+            StateValue::IntRange(0, 100)
+        ));
     }
 
     #[test]
@@ -303,7 +320,10 @@ mod tests {
         assert_eq!(goal.priority, 8.0);
         assert_eq!(goal.deadline, Some(30.0));
         assert_eq!(goal.max_depth, 5);
-        assert_eq!(goal.decomposition_strategy, DecompositionStrategy::Sequential);
+        assert_eq!(
+            goal.decomposition_strategy,
+            DecompositionStrategy::Sequential
+        );
         assert_eq!(goal.desired_state.len(), 2);
     }
 
@@ -324,7 +344,10 @@ mod tests {
         assert_eq!(converted_goal.name, original_goal.name);
         assert_eq!(converted_goal.priority, original_goal.priority);
         assert_eq!(converted_goal.deadline, original_goal.deadline);
-        assert_eq!(converted_goal.decomposition_strategy, original_goal.decomposition_strategy);
+        assert_eq!(
+            converted_goal.decomposition_strategy,
+            original_goal.decomposition_strategy
+        );
     }
 
     #[test]
@@ -431,4 +454,3 @@ mod tests {
         assert!(loaded.get_goal("nonexistent").is_none());
     }
 }
-
