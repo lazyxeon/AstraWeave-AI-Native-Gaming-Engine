@@ -315,12 +315,19 @@ mod tests {
             name: "test_template".to_string(),
             version: "1.0.0".to_string(),
             description: "A test template".to_string(),
-            variables: vec!["character_name".to_string()],
+            category: TemplateCategory::Dialogue,
+            author: Some("Test Author".to_string()),
+            created_at: 0,
+            updated_at: 0,
+            tags: vec![],
+            required_variables: vec!["character_name".to_string()],
+            optional_variables: std::collections::HashMap::new(),
+            usage_stats: UsageStats::default(),
         };
 
         assert_eq!(metadata.name, "test_template");
         assert_eq!(metadata.version, "1.0.0");
-        assert_eq!(metadata.variables.len(), 1);
+        assert_eq!(metadata.required_variables.len(), 1);
     }
 
     #[test]

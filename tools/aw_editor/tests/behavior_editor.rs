@@ -1,6 +1,6 @@
 use astraweave_behavior::BehaviorNode;
 use astraweave_core::{IVec2, Team, World};
-use aw_editor::behavior_graph::{BehaviorGraphDocument, BehaviorGraphNodeKind};
+use aw_editor_lib::behavior_graph::{BehaviorGraphDocument, BehaviorGraphNodeKind};
 use tempfile::NamedTempFile;
 
 #[test]

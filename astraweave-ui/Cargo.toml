@@ -24,6 +24,7 @@ astraweave-cinematics = { path = "../astraweave-cinematics" }
 
 [dev-dependencies]
 criterion = { workspace = true }
+tempfile = "3.0"
 
 [[bench]]
 name = "ui_benchmarks"

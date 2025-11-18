@@ -1,4 +1,4 @@
-use super::{Action, Goal, WorldState, ActionHistory};
+use super::{Action, ActionHistory, Goal, WorldState};
 use std::fmt::Write;
 
 /// Visualization format for plans and goals
@@ -63,7 +63,9 @@ impl PlanVisualizer {
     ) -> String {
         match self.format {
             VisualizationFormat::AsciiTree => self.render_plan_tree(plan, actions, history),
-            VisualizationFormat::AsciiTimeline => self.render_plan_timeline(plan, actions, history, start_state),
+            VisualizationFormat::AsciiTimeline => {
+                self.render_plan_timeline(plan, actions, history, start_state)
+            }
             VisualizationFormat::Dot => self.render_plan_dot(plan, actions, history),
             VisualizationFormat::Text => self.render_plan_text(plan, actions, history),
             VisualizationFormat::Json => self.render_plan_json(plan, actions, history),
@@ -91,14 +93,15 @@ impl PlanVisualizer {
 
         // Calculate total metrics
         let (total_cost, total_risk) = self.calculate_plan_metrics(plan, actions, history);
-        
+
         writeln!(
             &mut output,
             "Plan ({} actions, cost: {:.1}, risk: {:.2})",
             plan.len(),
             total_cost,
             total_risk
-        ).unwrap();
+        )
+        .unwrap();
 
         for (i, action_name) in plan.iter().enumerate() {
             let is_last = i == plan.len() - 1;
@@ -113,19 +116,22 @@ impl PlanVisualizer {
                         &mut output,
                         "{} {} (cost: {:.1}, risk: {:.2})",
                         prefix, action_name, cost, risk
-                    ).unwrap();
+                    )
+                    .unwrap();
                 } else if self.show_costs {
                     writeln!(
                         &mut output,
                         "{} {} (cost: {:.1})",
                         prefix, action_name, cost
-                    ).unwrap();
+                    )
+                    .unwrap();
                 } else if self.show_risks {
                     writeln!(
                         &mut output,
                         "{} {} (risk: {:.2})",
                         prefix, action_name, risk
-                    ).unwrap();
+                    )
+                    .unwrap();
                 } else {
                     writeln!(&mut output, "{} {}", prefix, action_name).unwrap();
                 }
@@ -150,13 +156,19 @@ impl PlanVisualizer {
         let mut current_state = start_state.clone();
 
         // Header
-        writeln!(&mut output, "{:<6} | {:<20} | {:<30} | {}", "Time", "Action", "State Changes", "Success").unwrap();
+        writeln!(
+            &mut output,
+            "{:<6} | {:<20} | {:<30} | {}",
+            "Time", "Action", "State Changes", "Success"
+        )
+        .unwrap();
         writeln!(&mut output, "{}", "-".repeat(80)).unwrap();
 
         for action_name in plan {
             if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
                 let success_prob = action.success_probability(&current_state, history);
-                let duration = history.get_action_stats(action_name)
+                let duration = history
+                    .get_action_stats(action_name)
                     .map(|s| s.avg_duration)
                     .unwrap_or(1.0);
 
@@ -178,7 +190,8 @@ impl PlanVisualizer {
                     &mut output,
                     "{:<6.1} | {:<20} | {:<30} | {}",
                     current_time, action_name, state_changes, success_icon
-                ).unwrap();
+                )
+                .unwrap();
 
                 current_state.apply_effects(action.effects());
                 current_time += duration;
@@ -205,28 +218,20 @@ impl PlanVisualizer {
 
         for (i, action_name) in plan.iter().enumerate() {
             let node_id = format!("action_{}", i);
-            
+
             if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
                 let cost = action.calculate_cost(&WorldState::new(), history);
                 let risk = 1.0 - action.success_probability(&WorldState::new(), history);
-                
+
                 let label = if self.show_costs && self.show_risks {
                     format!("{}\\ncost: {:.1}\\nrisk: {:.2}", action_name, cost, risk)
                 } else {
                     action_name.clone()
                 };
 
-                writeln!(
-                    &mut output,
-                    "  {} [label=\"{}\"];",
-                    node_id, label
-                ).unwrap();
+                writeln!(&mut output, "  {} [label=\"{}\"];", node_id, label).unwrap();
             } else {
-                writeln!(
-                    &mut output,
-                    "  {} [label=\"{}\"];",
-                    node_id, action_name
-                ).unwrap();
+                writeln!(&mut output, "  {} [label=\"{}\"];", node_id, action_name).unwrap();
             }
 
             if i == 0 {
@@ -262,7 +267,7 @@ impl PlanVisualizer {
                 if self.show_costs || self.show_risks {
                     let cost = action.calculate_cost(&WorldState::new(), history);
                     let risk = 1.0 - action.success_probability(&WorldState::new(), history);
-                    
+
                     write!(&mut output, " (").unwrap();
                     if self.show_costs {
                         write!(&mut output, "cost: {:.1}", cost).unwrap();
@@ -297,11 +302,11 @@ impl PlanVisualizer {
 
         for (i, action_name) in plan.iter().enumerate() {
             let comma = if i < plan.len() - 1 { "," } else { "" };
-            
+
             if let Some(action) = actions.iter().find(|a| a.name() == action_name) {
                 let cost = action.calculate_cost(&WorldState::new(), history);
                 let risk = 1.0 - action.success_probability(&WorldState::new(), history);
-                
+
                 writeln!(&mut output, "    {{").unwrap();
                 writeln!(&mut output, "      \"name\": \"{}\",", action_name).unwrap();
                 writeln!(&mut output, "      \"cost\": {:.2},", cost).unwrap();
@@ -348,7 +353,8 @@ impl PlanVisualizer {
             &mut output,
             "{}{} {} ({}{})",
             indent, strategy_str, goal.name, priority_str, deadline_str
-        ).unwrap();
+        )
+        .unwrap();
 
         for (i, sub_goal) in goal.sub_goals.iter().enumerate() {
             let is_last_sub = i == goal.sub_goals.len() - 1;
@@ -395,7 +401,8 @@ impl PlanVisualizer {
             output,
             "  node_{} [label=\"[{}] {}\\npriority: {:.1}\"];",
             current_id, strategy_str, goal.name, goal.priority
-        ).unwrap();
+        )
+        .unwrap();
 
         if let Some(parent) = parent_id {
             writeln!(output, "  node_{} -> node_{};", parent, current_id).unwrap();
@@ -411,7 +418,12 @@ impl PlanVisualizer {
         let mut output = String::new();
 
         let indent = "  ".repeat(depth);
-        writeln!(&mut output, "{}{} (priority: {:.1})", indent, goal.name, goal.priority).unwrap();
+        writeln!(
+            &mut output,
+            "{}{} (priority: {:.1})",
+            indent, goal.name, goal.priority
+        )
+        .unwrap();
 
         for sub_goal in &goal.sub_goals {
             output.push_str(&self.render_goal_text(sub_goal, depth + 1));
@@ -441,7 +453,10 @@ impl PlanVisualizer {
     }
 
     /// Format state changes for display
-    fn format_state_changes(&self, effects: &std::collections::BTreeMap<String, super::StateValue>) -> String {
+    fn format_state_changes(
+        &self,
+        effects: &std::collections::BTreeMap<String, super::StateValue>,
+    ) -> String {
         if effects.is_empty() {
             return String::from("(no changes)");
         }
@@ -493,7 +508,7 @@ mod tests {
         let start = WorldState::new();
 
         let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
-        
+
         assert!(output.contains("Plan"));
         assert!(output.contains("move"));
         assert!(output.contains("attack"));
@@ -503,14 +518,14 @@ mod tests {
     #[test]
     fn test_visualize_goal_hierarchy() {
         let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTree);
-        
+
         let sub_goal = Goal::new("sub", BTreeMap::new()).with_priority(5.0);
         let main_goal = Goal::new("main", BTreeMap::new())
             .with_priority(10.0)
             .with_sub_goals(vec![sub_goal]);
 
         let output = visualizer.visualize_goal_hierarchy(&main_goal);
-        
+
         assert!(output.contains("main"));
         assert!(output.contains("sub"));
         assert!(output.contains("priority"));
@@ -528,7 +543,7 @@ mod tests {
         let start = WorldState::new();
 
         let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
-        
+
         assert!(output.contains("1. action1"));
         assert!(output.contains("2. action2"));
     }
@@ -536,15 +551,13 @@ mod tests {
     #[test]
     fn test_dot_format() {
         let visualizer = PlanVisualizer::new(VisualizationFormat::Dot);
-        let actions: Vec<Box<dyn Action>> = vec![
-            create_test_action("action1", 1.0),
-        ];
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("action1", 1.0)];
         let plan = vec!["action1".to_string()];
         let history = ActionHistory::new();
         let start = WorldState::new();
 
         let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
-        
+
         assert!(output.contains("digraph Plan"));
         assert!(output.contains("action_0"));
         assert!(output.contains("start"));
@@ -554,15 +567,13 @@ mod tests {
     #[test]
     fn test_timeline_format() {
         let visualizer = PlanVisualizer::new(VisualizationFormat::AsciiTimeline);
-        let actions: Vec<Box<dyn Action>> = vec![
-            create_test_action("action1", 1.0),
-        ];
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("action1", 1.0)];
         let plan = vec!["action1".to_string()];
         let history = ActionHistory::new();
         let start = WorldState::new();
 
         let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
-        
+
         assert!(output.contains("Time"));
         assert!(output.contains("Action"));
         assert!(output.contains("Success"));
@@ -571,15 +582,13 @@ mod tests {
     #[test]
     fn test_json_format() {
         let visualizer = PlanVisualizer::new(VisualizationFormat::Json);
-        let actions: Vec<Box<dyn Action>> = vec![
-            create_test_action("action1", 1.0),
-        ];
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("action1", 1.0)];
         let plan = vec!["action1".to_string()];
         let history = ActionHistory::new();
         let start = WorldState::new();
 
         let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
-        
+
         assert!(output.contains("\"actions\""));
         assert!(output.contains("\"name\""));
         assert!(output.contains("\"cost\""));
@@ -590,18 +599,15 @@ mod tests {
         let visualizer = PlanVisualizer::new(VisualizationFormat::Text)
             .with_costs(false)
             .with_risks(false);
-        
-        let actions: Vec<Box<dyn Action>> = vec![
-            create_test_action("action1", 1.0),
-        ];
+
+        let actions: Vec<Box<dyn Action>> = vec![create_test_action("action1", 1.0)];
         let plan = vec!["action1".to_string()];
         let history = ActionHistory::new();
         let start = WorldState::new();
 
         let output = visualizer.visualize_plan(&plan, &actions, &history, &start);
-        
+
         assert!(!output.contains("cost"));
         assert!(!output.contains("risk"));
     }
 }
-

@@ -361,7 +361,7 @@ impl EntityRenderer {
                     glam::EulerRot::XYZ,
                     pose.rotation_x,
                     pose.rotation,
-                    pose.rotation_z
+                    pose.rotation_z,
                 );
                 let scale = Mat4::from_scale(Vec3::splat(pose.scale));
                 let model = translation * rotation * scale; // TRS order

@@ -3,63 +3,108 @@ use egui::Ui;
 
 #[derive(Clone, Copy, Debug)]
 pub enum ComponentEdit {
-    Health { entity: Entity, old_hp: i32, new_hp: i32 },
-    Team { entity: Entity, old_id: u8, new_id: u8 },
-    Ammo { entity: Entity, old_rounds: i32, new_rounds: i32 },
+    Health {
+        entity: Entity,
+        old_hp: i32,
+        new_hp: i32,
+    },
+    Team {
+        entity: Entity,
+        old_id: u8,
+        new_id: u8,
+    },
+    Ammo {
+        entity: Entity,
+        old_rounds: i32,
+        new_rounds: i32,
+    },
 }
 
 pub trait InspectorUI {
     fn ui(&mut self, ui: &mut Ui, label: &str) -> bool;
-    fn component_name() -> &'static str where Self: Sized;
+    fn component_name() -> &'static str
+    where
+        Self: Sized;
 }
 
 impl InspectorUI for Pose {
     fn ui(&mut self, ui: &mut Ui, label: &str) -> bool {
         let mut changed = false;
-        
+
         ui.collapsing(label, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Position:");
-                changed |= ui.add(egui::DragValue::new(&mut self.pos.x).prefix("X: ").speed(0.1)).changed();
-                changed |= ui.add(egui::DragValue::new(&mut self.pos.y).prefix("Y: ").speed(0.1)).changed();
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.pos.x)
+                            .prefix("X: ")
+                            .speed(0.1),
+                    )
+                    .changed();
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.pos.y)
+                            .prefix("Y: ")
+                            .speed(0.1),
+                    )
+                    .changed();
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Rotation:");
                 let mut rotation_deg = self.rotation.to_degrees();
-                if ui.add(egui::DragValue::new(&mut rotation_deg).suffix("°").speed(1.0)).changed() {
+                if ui
+                    .add(
+                        egui::DragValue::new(&mut rotation_deg)
+                            .suffix("°")
+                            .speed(1.0),
+                    )
+                    .changed()
+                {
                     self.rotation = rotation_deg.to_radians();
                     changed = true;
                 }
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Pitch:");
                 let mut pitch_deg = self.rotation_x.to_degrees();
-                if ui.add(egui::DragValue::new(&mut pitch_deg).suffix("°").speed(1.0)).changed() {
+                if ui
+                    .add(egui::DragValue::new(&mut pitch_deg).suffix("°").speed(1.0))
+                    .changed()
+                {
                     self.rotation_x = pitch_deg.to_radians();
                     changed = true;
                 }
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Roll:");
                 let mut roll_deg = self.rotation_z.to_degrees();
-                if ui.add(egui::DragValue::new(&mut roll_deg).suffix("°").speed(1.0)).changed() {
+                if ui
+                    .add(egui::DragValue::new(&mut roll_deg).suffix("°").speed(1.0))
+                    .changed()
+                {
                     self.rotation_z = roll_deg.to_radians();
                     changed = true;
                 }
             });
-            
+
             ui.horizontal(|ui| {
                 ui.label("Scale:");
-                changed |= ui.add(egui::DragValue::new(&mut self.scale).speed(0.01).range(0.01..=100.0)).changed();
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.scale)
+                            .speed(0.01)
+                            .range(0.01..=100.0),
+                    )
+                    .changed();
             });
         });
-        
+
         changed
     }
-    
+
     fn component_name() -> &'static str {
         "Pose"
     }
@@ -68,12 +113,18 @@ impl InspectorUI for Pose {
 impl InspectorUI for Health {
     fn ui(&mut self, ui: &mut Ui, label: &str) -> bool {
         let mut changed = false;
-        
+
         ui.collapsing(label, |ui| {
             ui.horizontal(|ui| {
                 ui.label("HP:");
-                changed |= ui.add(egui::DragValue::new(&mut self.hp).speed(1.0).range(0..=1000)).changed();
-                
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.hp)
+                            .speed(1.0)
+                            .range(0..=1000),
+                    )
+                    .changed();
+
                 let health_pct = (self.hp as f32 / 100.0).clamp(0.0, 1.0);
                 let health_color = if health_pct > 0.6 {
                     egui::Color32::GREEN
@@ -82,19 +133,22 @@ impl InspectorUI for Health {
                 } else {
                     egui::Color32::RED
                 };
-                
-                let (rect, _) = ui.allocate_exact_size(egui::vec2(100.0, 10.0), egui::Sense::hover());
-                ui.painter().rect_filled(rect, 2.0, egui::Color32::DARK_GRAY);
-                
+
+                let (rect, _) =
+                    ui.allocate_exact_size(egui::vec2(100.0, 10.0), egui::Sense::hover());
+                ui.painter()
+                    .rect_filled(rect, 2.0, egui::Color32::DARK_GRAY);
+
                 let filled_width = rect.width() * health_pct;
-                let filled_rect = egui::Rect::from_min_size(rect.min, egui::vec2(filled_width, rect.height()));
+                let filled_rect =
+                    egui::Rect::from_min_size(rect.min, egui::vec2(filled_width, rect.height()));
                 ui.painter().rect_filled(filled_rect, 2.0, health_color);
             });
         });
-        
+
         changed
     }
-    
+
     fn component_name() -> &'static str {
         "Health"
     }
@@ -103,16 +157,19 @@ impl InspectorUI for Health {
 impl InspectorUI for Team {
     fn ui(&mut self, ui: &mut Ui, label: &str) -> bool {
         let mut changed = false;
-        
+
         ui.collapsing(label, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Team ID:");
                 let mut id_i32 = self.id as i32;
-                if ui.add(egui::DragValue::new(&mut id_i32).speed(1.0).range(0..=255)).changed() {
+                if ui
+                    .add(egui::DragValue::new(&mut id_i32).speed(1.0).range(0..=255))
+                    .changed()
+                {
                     self.id = id_i32 as u8;
                     changed = true;
                 }
-                
+
                 let team_name = match self.id {
                     0 => "Player",
                     1 => "Companion",
@@ -122,10 +179,10 @@ impl InspectorUI for Team {
                 ui.label(format!("({})", team_name));
             });
         });
-        
+
         changed
     }
-    
+
     fn component_name() -> &'static str {
         "Team"
     }
@@ -134,17 +191,23 @@ impl InspectorUI for Team {
 impl InspectorUI for Ammo {
     fn ui(&mut self, ui: &mut Ui, label: &str) -> bool {
         let mut changed = false;
-        
+
         ui.collapsing(label, |ui| {
             ui.horizontal(|ui| {
                 ui.label("Rounds:");
-                changed |= ui.add(egui::DragValue::new(&mut self.rounds).speed(1.0).range(0..=1000)).changed();
+                changed |= ui
+                    .add(
+                        egui::DragValue::new(&mut self.rounds)
+                            .speed(1.0)
+                            .range(0..=1000),
+                    )
+                    .changed();
             });
         });
-        
+
         changed
     }
-    
+
     fn component_name() -> &'static str {
         "Ammo"
     }
@@ -167,7 +230,7 @@ impl ComponentType {
             ComponentType::Ammo,
         ]
     }
-    
+
     pub fn name(&self) -> &'static str {
         match self {
             ComponentType::Pose => "Pose",
@@ -176,7 +239,7 @@ impl ComponentType {
             ComponentType::Ammo => "Ammo",
         }
     }
-    
+
     pub fn has_component(&self, world: &World, entity: Entity) -> bool {
         match self {
             ComponentType::Pose => world.pose(entity).is_some(),
@@ -185,19 +248,61 @@ impl ComponentType {
             ComponentType::Ammo => world.ammo(entity).is_some(),
         }
     }
-    
+
     pub fn show_ui(&self, world: &mut World, entity: Entity, ui: &mut Ui) -> Option<ComponentEdit> {
+        self.show_ui_with_overrides(world, entity, ui, None)
+    }
+
+    /// Show component UI with optional override indicators
+    ///
+    /// If overrides are provided, displays visual indicators (⚠️ icon + colored label) for modified components
+    pub fn show_ui_with_overrides(
+        &self,
+        world: &mut World,
+        entity: Entity,
+        ui: &mut Ui,
+        overrides: Option<&crate::prefab::EntityOverrides>,
+    ) -> Option<ComponentEdit> {
         match self {
             ComponentType::Pose => {
                 if let Some(pose) = world.pose_mut(entity) {
-                    pose.ui(ui, "📍 Pose");
+                    let is_overridden = overrides.map_or(false, |o| o.has_pose_override());
+                    let label = if is_overridden {
+                        "⚠️ 📍 Pose *"
+                    } else {
+                        "📍 Pose"
+                    };
+                    
+                    if is_overridden {
+                        ui.push_id("pose_override", |ui| {
+                            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(100, 150, 255));
+                            pose.ui(ui, label);
+                        });
+                    } else {
+                        pose.ui(ui, label);
+                    }
                 }
                 None
             }
             ComponentType::Health => {
                 if let Some(health) = world.health_mut(entity) {
                     let old_hp = health.hp;
-                    let changed = health.ui(ui, "❤️ Health");
+                    let is_overridden = overrides.map_or(false, |o| o.has_health_override());
+                    let label = if is_overridden {
+                        "⚠️ ❤️ Health *"
+                    } else {
+                        "❤️ Health"
+                    };
+                    
+                    let changed = if is_overridden {
+                        ui.push_id("health_override", |ui| {
+                            ui.visuals_mut().override_text_color = Some(egui::Color32::from_rgb(100, 150, 255));
+                            health.ui(ui, label)
+                        }).inner
+                    } else {
+                        health.ui(ui, label)
+                    };
+                    
                     if changed {
                         return Some(ComponentEdit::Health {
                             entity,
@@ -250,9 +355,10 @@ impl ComponentRegistry {
             types: ComponentType::all().to_vec(),
         }
     }
-    
+
     pub fn get_entity_components(&self, world: &World, entity: Entity) -> Vec<ComponentType> {
-        self.types.iter()
+        self.types
+            .iter()
             .filter(|ct| ct.has_component(world, entity))
             .copied()
             .collect()
@@ -357,7 +463,12 @@ mod tests {
             new_hp: 50,
         };
 
-        if let ComponentEdit::Health { entity: e, old_hp, new_hp } = edit {
+        if let ComponentEdit::Health {
+            entity: e,
+            old_hp,
+            new_hp,
+        } = edit
+        {
             assert_eq!(e, entity);
             assert_eq!(old_hp, 100);
             assert_eq!(new_hp, 50);
@@ -375,7 +486,12 @@ mod tests {
             new_id: 2,
         };
 
-        if let ComponentEdit::Team { entity: e, old_id, new_id } = edit {
+        if let ComponentEdit::Team {
+            entity: e,
+            old_id,
+            new_id,
+        } = edit
+        {
             assert_eq!(e, entity);
             assert_eq!(old_id, 0);
             assert_eq!(new_id, 2);
@@ -393,7 +509,12 @@ mod tests {
             new_rounds: 15,
         };
 
-        if let ComponentEdit::Ammo { entity: e, old_rounds, new_rounds } = edit {
+        if let ComponentEdit::Ammo {
+            entity: e,
+            old_rounds,
+            new_rounds,
+        } = edit
+        {
             assert_eq!(e, entity);
             assert_eq!(old_rounds, 30);
             assert_eq!(new_rounds, 15);

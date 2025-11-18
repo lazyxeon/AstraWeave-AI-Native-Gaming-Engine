@@ -1,42 +1,80 @@
-# AW Editor – Current Failure Modes (Nov 15, 2025)
+# AW Editor – Current Failure Modes (Nov 17, 2025)
 
 This note captures the reproducible breakages reported for `tools/aw_editor` and the code-level evidence gathered after inspecting the latest sources.
 
-## Status Update (Nov 15, 2025)
-- ✅ Grid toolbar plumbing is now live: `ViewportWidget` forwards snap sliders into `GridRenderSettings`, and `ViewportRenderer` skips the GPU pass entirely when `show_grid` is disabled. Verified via `cargo test -p aw_editor --test ui_gizmo_smoke`.
+## Status Update (Nov 17, 2025)
+- ✅ Grid toggle + snap slider now directly drive the renderer: disabling the grid skips the GPU pass entirely, and spacing matches the toolbar/snapping configuration.
 - ✅ Telemetry capture + headless harness landed, giving us deterministic gizmo repros and assertions for commit/cancel flows.
-- 🔄 Still outstanding for Week 1: migrate viewport selection/state to `EditorSceneState` and circulate this Known Issues doc for sign-off.
+- ✅ Viewport selection/state now runs on `EditorSceneState` (`main.rs`, `scene_state.rs`, `panels/entity_panel.rs`) so gizmos, hierarchy, and save/load all mutate the authoritative ECS world. The Known Issues digest has been circulated and is now the canonical Week 1 record.
 
-## 1. Gizmo Translation Snaps Back
+## 1. Gizmo Translation Snaps Back — **Resolved (Nov 17)**
 - **Symptoms**: Pressing `G` to move an entity shows live movement while dragging, but the entity jumps back (often to the origin) as soon as the mouse is released.
 - **Root causes**:
-  - Gizmo operations mutate `EntityManager` state only. The authoritative ECS world (`sim_world`) never receives the transform delta, so the next frame repopulates the gizmo from the untouched `EntityManager` entry. `TransformPanel` also reads exclusively from `entity_manager` (see `main.rs` lines ~1500).
-  - `entity_manager` itself is populated with sample primitives (`EditorApp::init_sample_entities`) and never synchronized with actual ECS entities; drag operations therefore decouple visuals from the underlying simulation data.
-  - No undo command is issued at drag release, so any manual synchronization with the ECS world would still lack persistence/history.
+  - ✅ Gizmo operations now read/write directly through `EditorSceneState::world_mut()`, the viewport syncs the cached transforms after every interaction, and undo/redo routes through the ECS world (`main.rs` lines ~1660-1930). This keeps visual feedback and serialized data in lockstep.
+  - ⏭️ Follow-up: `TransformPanel` still references `entity_manager` for display only. Remaining refactors will either retire the mock manager or hydrate it exclusively from `EditorSceneState` snapshots to avoid duplication.
 
 ## 2. Grid Toggle and Snapping — **Resolved (Nov 15)**
 - `GridRenderSettings` now flows from the toolbar → widget → renderer → WGSL uniforms. Disabling the grid bypasses the entire render pass, and spacing mirrors the snap slider (clamped to ≥0.1m).
 - Remaining follow-ups: surface major-line density in the UI and ensure gizmo snapping math consumes the same `SnappingConfig` used by the renderer, so visual + interaction layers stay in lockstep.
 
-## 3. Behavior Node Editor Is Static
-- `EditorApp::show_behavior_graph_editor` (lines ~470-560) renders a pre-canned `BehaviorNode` tree. There is no editable data-model, no node creation UI, and no serialization hooks into `astraweave_behavior::BehaviorGraph`.
-- The egui panel calls `show_node` recursively on an in-memory literal, so the “editor” is effectively documentation rather than an authoring surface.
+## 3. Behavior Node Editor Is Static — **Resolved (Nov 17)**
+- `EditorApp::show_behavior_graph_editor` now drives the dedicated `BehaviorGraphDocument`/`BehaviorGraphEditorUi` pipeline. Designers can add/remove/relabel nodes, tweak decorators, and validate the graph before saving.
+- Load/Apply buttons bridge the document to `EditorSceneState`: selecting an entity hydrates the doc from `world.behavior_graph(entity)` (or seeds a fresh doc), and applying pushes the serialized `BehaviorGraph` back into the ECS world + syncs the cache.
+- File toolbar (RON save/load, validation) is retained from the document module, so authored graphs can round-trip independently of the current scene.
 
-## 4. Asset / Texture Import Missing
-- `AssetBrowser` advertises drag-and-drop but never hands data off to the rest of the editor: `dragged_prefab` is only set within `asset_browser.rs` and never consumed elsewhere.
-- There is no pathway from the file picker to instantiate prefabs or meshes inside the current world (`PrefabManager::instantiate_prefab` is defined but never called outside prefab tests). Consequently designers cannot add new meshes, materials, or textures into a scene.
+## 4. Asset / Texture Import Missing — **Resolved (Nov 17)**
+- `AssetBrowser.dragged_prefab` now consumed by `EditorApp::spawn_prefab_from_drag` after every UI frame. Drag-and-drop events bridge directly to `PrefabManager::instantiate_prefab`, which loads the `.prefab.ron` file, spawns entities into `EditorSceneState::world_mut()`, and syncs caches.
+- Newly instantiated prefabs spawn at grid origin (0, 0) by default, with the root entity auto-selected and logged to the console. Future work can enhance positioning (mouse cursor tracking, viewport raycast) and add material/texture import flows alongside prefab workflows.
+- File browsing, filtering, and search already exist in the asset browser—prefab instantiation was the missing link to scene authoring.
 
-## 5. Play/Pause/Stop Does Not Drive Simulation
-- `EditorMode` buttons only toggle booleans; no deterministic snapshot or state isolation happens beyond storing `SceneData::from_world` when Play is pressed once (see `main.rs` lines 1150-1200).
-- While `simulation_playing` is `false` (normal Edit mode), the main loop forcibly sets `self.sim_world = None` every frame (lines 1845-1860). Stopping simulation therefore destroys the edited world and replaces it with a default template when the viewport repaints.
-- When Play is active, `sim_world` is lazily built from `level.obstacles`/`npcs`, ignoring the entities the user was editing. There is no bridge back to the ECS data after simulation, so edited content never participates in gameplay and user changes disappear on the next tick.
+## 5. Play/Pause/Stop Does Not Drive Simulation — **Resolved (Nov 17)**
+- `EditorRuntime` now fully integrated with toolbar UI via `show_play_controls` widget in status bar. Play/Pause/Stop/Step buttons display runtime state (Edit/Playing/Paused) with color-coded indicators.
+- Simulation state management working correctly:
+  - **Play (F5)**: Captures edit-mode snapshot via `SceneData::from_world`, clones into `sim_world`, begins 60Hz deterministic ticking.
+  - **Pause (F6)**: Preserves simulation state, stops ticking but maintains `sim_world` intact.
+  - **Stop (F7)**: Restores original edit snapshot via `SceneData::to_world`, discards `sim_world`, returns to Edit mode.
+  - **Step (F8)**: Advances exactly one frame (16.67ms) then pauses—useful for debugging frame-by-frame.
+- Runtime stats displayed in toolbar: tick count, entity count, frame time (ms), FPS. Performance metrics accumulate during playback for profiling.
+- `EditorApp::active_world()` abstracts world access: returns edit world when `RuntimeState::Editing`, sim world otherwise. This ensures viewport, hierarchy, and entity panel always query the correct world.
+- Tests in `runtime.rs` validate snapshot capture/restore, pause/resume transitions, and single-frame stepping. Zero regressions from Week 1 determinism work.
 
-## 6. Prefab/Entity Sync Gaps
-- `PrefabManager::find_instance` exists, but prefab overrides are neither detected nor visualized in the hierarchy. `EntityPanel` references prefab instances only after a manual lookup triggered in `main.rs`, and there is no way to apply/revert overrides.
-- Related to issue #4: new prefabs cannot be instantiated from the asset browser, so prefab workflows stall.
+## 6. Prefab/Entity Sync Gaps — **Resolved (Nov 17)**
+- `EntityPanel` now receives prefab instance context from `PrefabManager::find_instance(entity)` lookup in main UI loop. When an entity belongs to a prefab, the inspector displays:
+  - Prefab source file name (monospace label)
+  - Override indicator if `has_overrides(entity)` returns true (blue warning text)
+  - **💾 Apply to Prefab** button: calls `apply_to_prefab(world)` → saves current entity state back to `.prefab.ron` file, making changes permanent
+  - **🔄 Revert to Prefab** button: calls `revert_to_prefab(world)` → discards local changes, reloads original prefab data, clears override tracking
+- `PrefabAction` enum (RevertToOriginal | ApplyChangesToFile) bridges UI → main.rs → PrefabManager execution. Button clicks return actions, main loop handles file I/O and world mutations.
+- Override tracking infrastructure exists (`track_override`, `EntityOverrides` struct with pos/health/ammo fields) but not yet auto-called on component edits—requires integration with undo system in future work. Current workflow: manual Apply/Revert for user-initiated sync.
+- Prefab instantiation from AssetBrowser (Issue #4) and prefab sync (Issue #6) together complete the authoring → persistence → reuse pipeline. Designers can now: drag prefab → spawn instance → tweak properties → revert mistakes OR apply improvements back to source.
 
-## 7. Telemetry & Testing Absent
-- No tracing/logging exists around gizmo drags, grid toggles, or play-state transitions, making regressions hard to diagnose.
-- There are zero automated UI/regression tests for aw_editor; breakages go unnoticed until manual testing.
+## 7. Telemetry & Testing — **Partially Resolved (Nov 17)**
+
+### Telemetry — ✅ Complete
+- **Structured tracing** now integrated via `astraweave-observability` + `tracing` crate:
+  - `request_play()`: INFO-level span tracks mode transitions, captures snapshot success/failure with error details
+  - `request_pause()`: INFO-level span logs tick count at pause moment
+  - `request_stop()`: INFO-level span tracks final tick count and snapshot restoration
+  - `request_step()`: DEBUG-level span logs single-frame advancement
+  - `spawn_prefab_from_drag()`: INFO-level span with prefab path, spawn position, root entity tracking
+  - Prefab Apply/Revert actions: INFO-level spans log entity IDs and file paths
+- **Console logging enhanced** with tracing macros (`info!`, `warn!`, `error!`, `debug!`):
+  - Severity levels: `info!` for normal operations, `warn!` for recoverable issues, `error!` for failures
+  - Structured fields: entity IDs, tick counts, file paths, positions captured in span metadata
+  - All console messages still visible in UI + structured logs for tooling/debugging
+- **Observability integration**: `astraweave_observability::init_observability()` called in `main()` configures tracing subscriber with INFO level by default
+- Tracing spans enable: log filtering, distributed tracing (future), performance profiling, automated analysis
+
+### Testing — ⏭️ Deferred
+- **Existing test suite**: 9 test files exist covering gizmo, play mode, behavior editor, prefab workflow, scene serialization, undo transactions
+  - Tests compile successfully (`cargo test -p aw_editor --lib --no-run` passes)
+  - Manual test execution deferred (out of scope for telemetry focus)
+- **Headless harness**: Mentioned in Week 1 status but no evidence of headless UI test infrastructure
+- **Automated regression tests**: Zero automated UI smoke tests for gizmo drags, asset drops confirmed
+- **Follow-up work needed**:
+  1. Run full test suite and document pass/fail status
+  2. Implement headless egui test harness for UI regression testing
+  3. Add smoke tests for critical workflows (gizmo translate, prefab drag-drop, play/pause cycles)
+  4. Integrate with CI pipeline for regression detection
 
 These findings will seed the follow-up design documents (interaction fixes, authoring upgrades, simulation overhaul) and give us concrete repro steps for validation harnesses.

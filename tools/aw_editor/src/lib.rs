@@ -1,6 +1,7 @@
 // Library exports for aw_editor (enables benchmarks and testing)
 #![allow(dead_code)] // Suppress dead code warnings for benchmark-only exports
 
+pub mod behavior_graph;
 pub mod clipboard;
 pub mod command;
 pub mod component_ui;
@@ -11,12 +12,14 @@ pub mod runtime;
 pub mod scene_serialization;
 pub mod ui;
 
+pub use command::{
+    EditorCommand, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand, UndoStack,
+};
 pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
-pub use command::{EditorCommand, UndoStack, MoveEntityCommand, RotateEntityCommand, ScaleEntityCommand};
 pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
 pub use runtime::{EditorRuntime, RuntimeState, RuntimeStats};
-pub use scene_serialization::{SceneData, EntityData};
+pub use scene_serialization::{EntityData, SceneData};
 pub use ui::StatusBar;
 
 pub mod gizmo {
@@ -44,3 +47,8 @@ pub mod gizmo {
     pub use state::{AxisConstraint, GizmoMode, GizmoState, TransformSnapshot};
     pub use translate::TranslateGizmo;
 }
+
+// Headless testing infrastructure
+pub mod headless;
+pub mod interaction;
+pub mod telemetry;

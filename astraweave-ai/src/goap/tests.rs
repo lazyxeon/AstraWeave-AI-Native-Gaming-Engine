@@ -118,11 +118,7 @@ mod planner_invariants {
 
         // All plans should be identical
         for (i, plan) in plans.iter().enumerate().skip(1) {
-            assert_eq!(
-                plans[0], *plan,
-                "Plan {} differs from plan 0",
-                i
-            );
+            assert_eq!(plans[0], *plan, "Plan {} differs from plan 0", i);
         }
     }
 
@@ -322,4 +318,3 @@ mod planner_invariants {
         assert!(plan.is_none());
     }
 }
-

@@ -2,7 +2,7 @@
 // Phase 3: Learning & Persistence
 
 use super::ActionHistory;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -29,7 +29,7 @@ impl PersistedHistory {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         let checksum = Self::calculate_checksum(&history);
 
         Self {
@@ -46,15 +46,15 @@ impl PersistedHistory {
         use std::hash::{Hash, Hasher};
 
         let mut hasher = DefaultHasher::new();
-        
+
         // Get all action names and sort for determinism
         let mut action_names: Vec<String> = history.action_names();
         action_names.sort();
-        
+
         // Hash each action's stats in sorted order
         for action_name in action_names {
             action_name.hash(&mut hasher);
-            
+
             if let Some(stats) = history.get_action_stats(&action_name) {
                 stats.executions.hash(&mut hasher);
                 stats.successes.hash(&mut hasher);
@@ -63,7 +63,7 @@ impl PersistedHistory {
                 stats.avg_duration.to_bits().hash(&mut hasher);
             }
         }
-        
+
         hasher.finish()
     }
 
@@ -79,7 +79,7 @@ impl PersistedHistory {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        
+
         now.saturating_sub(self.timestamp)
     }
 }
@@ -121,7 +121,11 @@ impl std::fmt::Display for PersistenceError {
             Self::WriteFailed(msg) => write!(f, "Write failed: {}", msg),
             Self::ReadFailed(msg) => write!(f, "Read failed: {}", msg),
             Self::ChecksumMismatch { expected, actual } => {
-                write!(f, "Checksum mismatch: expected {}, got {}", expected, actual)
+                write!(
+                    f,
+                    "Checksum mismatch: expected {}, got {}",
+                    expected, actual
+                )
             }
             Self::UnsupportedVersion(v) => write!(f, "Unsupported schema version: {}", v),
         }
@@ -143,19 +147,14 @@ impl HistoryPersistence {
         let persisted = PersistedHistory::new(history.clone());
 
         let data = match format {
-            PersistenceFormat::Json => {
-                serde_json::to_string_pretty(&persisted)
-                    .map_err(|e| PersistenceError::SerializationFailed(e.to_string()))?
-                    .into_bytes()
-            }
-            PersistenceFormat::Bincode => {
-                bincode::serialize(&persisted)
-                    .map_err(|e| PersistenceError::SerializationFailed(e.to_string()))?
-            }
+            PersistenceFormat::Json => serde_json::to_string_pretty(&persisted)
+                .map_err(|e| PersistenceError::SerializationFailed(e.to_string()))?
+                .into_bytes(),
+            PersistenceFormat::Bincode => bincode::serialize(&persisted)
+                .map_err(|e| PersistenceError::SerializationFailed(e.to_string()))?,
         };
 
-        fs::write(path.as_ref(), data)
-            .map_err(|e| PersistenceError::WriteFailed(e.to_string()))?;
+        fs::write(path.as_ref(), data).map_err(|e| PersistenceError::WriteFailed(e.to_string()))?;
 
         Ok(())
     }
@@ -165,18 +164,14 @@ impl HistoryPersistence {
         path: P,
         format: PersistenceFormat,
     ) -> PersistenceResult<ActionHistory> {
-        let data = fs::read(path.as_ref())
-            .map_err(|e| PersistenceError::ReadFailed(e.to_string()))?;
+        let data =
+            fs::read(path.as_ref()).map_err(|e| PersistenceError::ReadFailed(e.to_string()))?;
 
         let persisted: PersistedHistory = match format {
-            PersistenceFormat::Json => {
-                serde_json::from_slice(&data)
-                    .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?
-            }
-            PersistenceFormat::Bincode => {
-                bincode::deserialize(&data)
-                    .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?
-            }
+            PersistenceFormat::Json => serde_json::from_slice(&data)
+                .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?,
+            PersistenceFormat::Bincode => bincode::deserialize(&data)
+                .map_err(|e| PersistenceError::DeserializationFailed(e.to_string()))?,
         };
 
         // Validate version
@@ -195,17 +190,17 @@ impl HistoryPersistence {
     }
 
     /// Load history with fallback to empty on error
-    pub fn load_or_default<P: AsRef<Path>>(
-        path: P,
-        format: PersistenceFormat,
-    ) -> ActionHistory {
+    pub fn load_or_default<P: AsRef<Path>>(path: P, format: PersistenceFormat) -> ActionHistory {
         match Self::load(path, format) {
             Ok(history) => {
                 tracing::info!("Successfully loaded ActionHistory from disk");
                 history
             }
             Err(e) => {
-                tracing::warn!("Failed to load ActionHistory: {}. Starting with empty history.", e);
+                tracing::warn!(
+                    "Failed to load ActionHistory: {}. Starting with empty history.",
+                    e
+                );
                 ActionHistory::new()
             }
         }
@@ -256,8 +251,8 @@ mod tests {
             .expect("Failed to save");
 
         // Load
-        let loaded = HistoryPersistence::load(&file_path, PersistenceFormat::Json)
-            .expect("Failed to load");
+        let loaded =
+            HistoryPersistence::load(&file_path, PersistenceFormat::Json).expect("Failed to load");
 
         // Verify
         let original_stats = original.get_action_stats("attack").unwrap();
@@ -292,10 +287,8 @@ mod tests {
 
     #[test]
     fn test_load_or_default_missing_file() {
-        let history = HistoryPersistence::load_or_default(
-            "nonexistent_file.json",
-            PersistenceFormat::Json,
-        );
+        let history =
+            HistoryPersistence::load_or_default("nonexistent_file.json", PersistenceFormat::Json);
 
         // Should return empty history without panicking
         assert!(history.get_action_stats("attack").is_none());
@@ -324,12 +317,18 @@ mod tests {
         // Load should fail due to checksum mismatch
         let result = HistoryPersistence::load(&file_path, PersistenceFormat::Json);
         assert!(result.is_err(), "Expected checksum mismatch error");
-        
+
         match result {
             Err(PersistenceError::ChecksumMismatch { expected, actual }) => {
                 // Expected - stored checksum (9999999999) should differ from calculated
-                assert_eq!(expected, 9999999999, "Stored checksum should be our corrupted value");
-                assert_ne!(actual, 9999999999, "Calculated checksum should be different");
+                assert_eq!(
+                    expected, 9999999999,
+                    "Stored checksum should be our corrupted value"
+                );
+                assert_ne!(
+                    actual, 9999999999,
+                    "Calculated checksum should be different"
+                );
             }
             Err(e) => panic!("Expected ChecksumMismatch, got: {}", e),
             Ok(_) => panic!("Expected error, but load succeeded"),
@@ -348,7 +347,9 @@ mod tests {
         assert!(HistoryPersistence::validate_file(&file_path, PersistenceFormat::Json).is_ok());
 
         // Invalid file
-        assert!(HistoryPersistence::validate_file("nonexistent.json", PersistenceFormat::Json).is_err());
+        assert!(
+            HistoryPersistence::validate_file("nonexistent.json", PersistenceFormat::Json).is_err()
+        );
     }
 
     #[test]
@@ -367,9 +368,8 @@ mod tests {
 
         // Bincode should be smaller than JSON
         assert!(bin_size < json_size);
-        
+
         println!("JSON size: {} bytes", json_size);
         println!("Bincode size: {} bytes", bin_size);
     }
 }
-

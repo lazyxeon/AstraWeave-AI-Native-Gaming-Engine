@@ -18,7 +18,7 @@
 //! with AstraWeave's custom ECS and adding unique optimizations.
 //!
 //! ## Architecture
-//! 
+//!
 //! ```text
 //! AstraWeave ECS → RenderAdapter → Bevy Render Pipeline → GPU
 //!                      ↓                     ↓
@@ -50,33 +50,20 @@
 
 #![warn(missing_docs)]
 
-pub mod render;
 pub mod adapter;
 pub mod extensions;
+pub mod render;
 
 // Re-exports for convenience
-pub use render::{
-    BevyRenderer,
-    RenderConfig,
-    Tonemapping,
-    shadow::{
-        ShadowRenderer,
-        CascadeShadowConfig,
-        ShadowCascade,
-        CASCADE_COUNT,
-        CASCADE_RESOLUTION,
-    },
-};
 pub use adapter::{
-    RenderAdapter,
-    RenderExtractError,
-    RenderTransform,
-    RenderMesh,
-    RenderMaterial,
-    DirectionalLight,
-    PointLight,
-    SpotLight,
-    ExtractionStats,
+    DirectionalLight, ExtractionStats, PointLight, RenderAdapter, RenderExtractError,
+    RenderMaterial, RenderMesh, RenderTransform, SpotLight,
+};
+pub use render::{
+    shadow::{
+        CascadeShadowConfig, ShadowCascade, ShadowRenderer, CASCADE_COUNT, CASCADE_RESOLUTION,
+    },
+    BevyRenderer, RenderConfig, Tonemapping,
 };
 
 /// Bevy renderer version

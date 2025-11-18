@@ -1,4 +1,5 @@
 use crate::{Entity, IVec2};
+use astraweave_behavior::BehaviorGraph;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug)]
@@ -24,10 +25,10 @@ pub struct Cooldowns {
 #[derive(Clone, Copy, Debug)]
 pub struct Pose {
     pub pos: IVec2,
-    pub rotation: f32,     // Rotation in radians around Y axis (primary, for compatibility)
-    pub rotation_x: f32,   // Pitch (rotation around X axis)
-    pub rotation_z: f32,   // Roll (rotation around Z axis)
-    pub scale: f32,        // Uniform scale factor
+    pub rotation: f32, // Rotation in radians around Y axis (primary, for compatibility)
+    pub rotation_x: f32, // Pitch (rotation around X axis)
+    pub rotation_z: f32, // Roll (rotation around Z axis)
+    pub scale: f32,    // Uniform scale factor
 }
 
 #[derive(Default)]
@@ -41,6 +42,7 @@ pub struct World {
     ammo: HashMap<Entity, Ammo>,
     cds: HashMap<Entity, Cooldowns>,
     names: HashMap<Entity, String>,
+    behavior_graphs: HashMap<Entity, BehaviorGraph>,
 }
 
 impl World {
@@ -55,13 +57,45 @@ impl World {
     pub fn spawn(&mut self, name: &str, pos: IVec2, team: Team, hp: i32, ammo: i32) -> Entity {
         let id = self.next_id;
         self.next_id += 1;
-        self.poses.insert(id, Pose { 
-            pos,
-            rotation: 0.0,
-            rotation_x: 0.0,
-            rotation_z: 0.0,
-            scale: 1.0,
-        });
+        self.insert_entity(id, name, pos, team, hp, ammo)
+    }
+
+    /// Spawn an entity with an explicit id (used for deterministic serialization).
+    pub fn spawn_with_id(
+        &mut self,
+        id: Entity,
+        name: &str,
+        pos: IVec2,
+        team: Team,
+        hp: i32,
+        ammo: i32,
+    ) -> Entity {
+        if id >= self.next_id {
+            self.next_id = id + 1;
+        }
+        self.insert_entity(id, name, pos, team, hp, ammo)
+    }
+
+    fn insert_entity(
+        &mut self,
+        id: Entity,
+        name: &str,
+        pos: IVec2,
+        team: Team,
+        hp: i32,
+        ammo: i32,
+    ) -> Entity {
+        debug_assert!(!self.poses.contains_key(&id), "entity {id} already exists");
+        self.poses.insert(
+            id,
+            Pose {
+                pos,
+                rotation: 0.0,
+                rotation_x: 0.0,
+                rotation_z: 0.0,
+                scale: 1.0,
+            },
+        );
         self.health.insert(id, Health { hp });
         self.team.insert(id, team);
         self.ammo.insert(id, Ammo { rounds: ammo });
@@ -117,6 +151,18 @@ impl World {
     }
     pub fn name(&self, e: Entity) -> Option<&str> {
         self.names.get(&e).map(|s| s.as_str())
+    }
+    pub fn behavior_graph(&self, e: Entity) -> Option<&BehaviorGraph> {
+        self.behavior_graphs.get(&e)
+    }
+    pub fn behavior_graph_mut(&mut self, e: Entity) -> Option<&mut BehaviorGraph> {
+        self.behavior_graphs.get_mut(&e)
+    }
+    pub fn set_behavior_graph(&mut self, e: Entity, graph: BehaviorGraph) {
+        self.behavior_graphs.insert(e, graph);
+    }
+    pub fn remove_behavior_graph(&mut self, e: Entity) -> Option<BehaviorGraph> {
+        self.behavior_graphs.remove(&e)
     }
 
     pub fn all_of_team(&self, team_id: u8) -> Vec<Entity> {
@@ -191,6 +237,16 @@ mod tests {
         assert_eq!(e3, 3);
         assert_eq!(w.next_id, 4);
         assert_eq!(w.entities().len(), 3);
+    }
+
+    #[test]
+    fn test_spawn_with_id_preserves_entity_id() {
+        let mut w = World::new();
+        let e = w.spawn_with_id(42, "custom", IVec2 { x: 1, y: 2 }, Team { id: 0 }, 90, 12);
+
+        assert_eq!(e, 42);
+        assert_eq!(w.next_id, 43);
+        assert_eq!(w.pose(42).unwrap().pos, IVec2 { x: 1, y: 2 });
     }
 
     #[test]
@@ -356,6 +412,27 @@ mod tests {
     fn test_name_nonexistent_entity() {
         let w = World::new();
         assert!(w.name(999).is_none());
+    }
+
+    #[test]
+    fn test_behavior_graph_assignment_and_retrieval() {
+        use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+
+        let mut world = World::new();
+        let entity = world.spawn("ai", IVec2 { x: 0, y: 0 }, Team { id: 0 }, 100, 30);
+        let graph = BehaviorGraph::new(BehaviorNode::Action("idle".into()));
+
+        world.set_behavior_graph(entity, graph.clone());
+        let stored = world.behavior_graph(entity).expect("graph stored");
+        if let BehaviorNode::Action(name) = &stored.root {
+            assert_eq!(name, "idle");
+        } else {
+            panic!("expected action node");
+        }
+
+        let removed = world.remove_behavior_graph(entity);
+        assert!(removed.is_some());
+        assert!(world.behavior_graph(entity).is_none());
     }
 
     #[test]

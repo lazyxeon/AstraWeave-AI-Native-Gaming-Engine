@@ -32,14 +32,16 @@ impl TranslateGizmo {
     ) -> Vec3 {
         // Convert screen-space mouse delta to world units
         // Scale by camera distance (objects farther away move more per pixel)
-        // Reduced sensitivity: 0.002 = 500px for 1 unit at 10m distance
-        let scale_factor = (camera_distance * 0.002).max(0.001); // Much lower sensitivity
+        // Base sensitivity: 0.01 = 100px for 1 unit at 10m distance
+        let scale_factor = (camera_distance * 0.01).max(0.01);
 
-        // Base world-space translation (X and Z for ground plane)
+        // Base world-space translation mapping:
+        // Horizontal mouse movement → X-axis translation
+        // Vertical mouse movement → Y-axis translation (upward = positive)
         let mut world_delta = Vec3::new(
             mouse_delta.x * scale_factor,  // Horizontal mouse → world X
-            0.0,                            // No vertical world movement
-            -mouse_delta.y * scale_factor,  // Vertical mouse → world Z (flipped)
+            -mouse_delta.y * scale_factor, // Vertical mouse → world Y (flip for intuitive up = positive)
+            0.0,                           // Z handled by constraints or camera view
         );
 
         // Apply constraint in world space or local space
@@ -100,13 +102,13 @@ impl TranslateGizmo {
     /// Apply constraint in world space.
     fn apply_constraint_world(delta: Vec3, constraint: AxisConstraint) -> Vec3 {
         match constraint {
-            AxisConstraint::None => delta, // Free movement on XZ plane
+            AxisConstraint::None => delta, // Free movement in XY plane
             AxisConstraint::X => Vec3::new(delta.x, 0.0, 0.0), // Only X axis
-            AxisConstraint::Y => Vec3::ZERO, // Y axis not used for ground plane
+            AxisConstraint::Y => Vec3::new(0.0, delta.y, 0.0), // Only Y axis
             AxisConstraint::Z => Vec3::new(0.0, 0.0, delta.z), // Only Z axis
-            AxisConstraint::XY => Vec3::new(delta.x, 0.0, 0.0), // XY plane → X only (no Y in ground)
-            AxisConstraint::XZ => Vec3::new(delta.x, 0.0, delta.z), // XZ plane (full ground movement)
-            AxisConstraint::YZ => Vec3::new(0.0, 0.0, delta.z), // YZ plane → Z only (no Y in ground)
+            AxisConstraint::XY => Vec3::new(delta.x, delta.y, 0.0), // XY plane
+            AxisConstraint::XZ => Vec3::new(delta.x, 0.0, delta.z), // XZ plane
+            AxisConstraint::YZ => Vec3::new(0.0, delta.y, delta.z), // YZ plane
         }
     }
 
@@ -198,13 +200,13 @@ mod tests {
         // Constrain to YZ plane (exclude X)
         let delta = TranslateGizmo::calculate_translation(
             Vec2::new(100.0, -50.0),
-            AxisConstraint::XY, // YZ plane
+            AxisConstraint::YZ, // YZ plane (X locked)
             10.0,
             Quat::IDENTITY,
             false,
         );
 
-        // Expected: X excluded, Y and Z preserved
+        // Expected: X excluded, Y preserved, Z=0 (from base mapping)
         assert_relative_eq!(delta.x, 0.0, epsilon = 0.001);
         assert_relative_eq!(delta.y, 5.0, epsilon = 0.001);
         assert_relative_eq!(delta.z, 0.0, epsilon = 0.001);

@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use astraweave_behavior::BehaviorGraph;
 use astraweave_core::{Entity, IVec2, World};
 use astraweave_security::path::{safe_under, validate_extension};
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,8 @@ pub struct EntityData {
     pub team_id: u8,
     pub ammo: i32,
     pub cooldowns: HashMap<String, f32>,
+    #[serde(default)]
+    pub behavior_graph: Option<BehaviorGraph>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -53,6 +56,8 @@ impl SceneData {
                 .map(|cd| cd.map.clone())
                 .unwrap_or_default();
 
+            let behavior_graph = world.behavior_graph(entity_id).cloned();
+
             entities.push(EntityData {
                 id: entity_id,
                 name,
@@ -65,6 +70,7 @@ impl SceneData {
                 team_id: team,
                 ammo: ammo_rounds,
                 cooldowns,
+                behavior_graph,
             });
         }
 
@@ -87,7 +93,8 @@ impl SceneData {
         world.obstacles = self.obstacles.iter().copied().collect();
 
         for entity_data in &self.entities {
-            let id = world.spawn(
+            let id = world.spawn_with_id(
+                entity_data.id,
                 &entity_data.name,
                 entity_data.pos,
                 astraweave_core::Team {
@@ -107,6 +114,10 @@ impl SceneData {
             if let Some(cooldowns) = world.cooldowns_mut(id) {
                 cooldowns.map = entity_data.cooldowns.clone();
             }
+
+            if let Some(graph) = &entity_data.behavior_graph {
+                world.set_behavior_graph(id, graph.clone());
+            }
         }
 
         world
@@ -116,19 +127,18 @@ impl SceneData {
         // Security: Validate path is within content directory and has correct extension
         let base = std::env::current_dir().context("Failed to get current directory")?;
         let content_base = base.join("content");
-        
+
         // Create content directory if it doesn't exist
-        fs::create_dir_all(&content_base)
-            .context("Failed to create content directory")?;
-        
+        fs::create_dir_all(&content_base).context("Failed to create content directory")?;
+
         // Validate path is within content directory
         let safe_path = safe_under(&content_base, path)
             .map_err(|e| anyhow::anyhow!("Invalid scene path: {}", e))?;
-        
+
         // Validate extension
         validate_extension(&safe_path, &["ron", "json", "toml"])
             .map_err(|e| anyhow::anyhow!("Invalid scene file extension: {}", e))?;
-        
+
         let ron_string = ron::ser::to_string_pretty(self, ron::ser::PrettyConfig::default())
             .context("Failed to serialize scene to RON")?;
 
@@ -137,7 +147,8 @@ impl SceneData {
                 .context(format!("Failed to create directory: {:?}", parent))?;
         }
 
-        fs::write(&safe_path, ron_string).context(format!("Failed to write scene to {:?}", safe_path))?;
+        fs::write(&safe_path, ron_string)
+            .context(format!("Failed to write scene to {:?}", safe_path))?;
 
         println!("💾 Saved scene to {:?}", safe_path);
         Ok(())
@@ -147,15 +158,15 @@ impl SceneData {
         // Security: Validate path is within content directory and has correct extension
         let base = std::env::current_dir().context("Failed to get current directory")?;
         let content_base = base.join("content");
-        
+
         // Validate path is within content directory
         let safe_path = safe_under(&content_base, path)
             .map_err(|e| anyhow::anyhow!("Invalid scene path: {}", e))?;
-        
+
         // Validate extension
         validate_extension(&safe_path, &["ron", "json", "toml"])
             .map_err(|e| anyhow::anyhow!("Invalid scene file extension: {}", e))?;
-        
+
         let contents = fs::read_to_string(&safe_path)
             .context(format!("Failed to read scene from {:?}", safe_path))?;
 
@@ -184,8 +195,20 @@ mod tests {
     #[test]
     fn test_scene_roundtrip() {
         let mut world = World::new();
-        let e1 = world.spawn("Player", IVec2 { x: 5, y: 10 }, astraweave_core::Team { id: 0 }, 100, 30);
-        let e2 = world.spawn("Enemy", IVec2 { x: 20, y: 15 }, astraweave_core::Team { id: 2 }, 50, 15);
+        let e1 = world.spawn(
+            "Player",
+            IVec2 { x: 5, y: 10 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let _enemy = world.spawn(
+            "Enemy",
+            IVec2 { x: 20, y: 15 },
+            astraweave_core::Team { id: 2 },
+            50,
+            15,
+        );
 
         world.obstacles.insert((10, 10));
         world.obstacles.insert((11, 10));
@@ -213,10 +236,17 @@ mod tests {
     #[test]
     fn test_scene_serialization() {
         let mut world = World::new();
-        world.spawn("TestEntity", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
+        world.spawn(
+            "TestEntity",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
 
         let scene = SceneData::from_world(&world);
-        let ron_string = ron::ser::to_string_pretty(&scene, ron::ser::PrettyConfig::default()).unwrap();
+        let ron_string =
+            ron::ser::to_string_pretty(&scene, ron::ser::PrettyConfig::default()).unwrap();
 
         assert!(ron_string.contains("version"));
         assert!(ron_string.contains("TestEntity"));
@@ -244,7 +274,7 @@ mod tests {
     #[test]
     fn test_scene_with_multiple_entities() {
         let mut world = World::new();
-        
+
         for i in 0..10 {
             world.spawn(
                 &format!("Entity{}", i),
@@ -259,13 +289,15 @@ mod tests {
         assert_eq!(scene.entities.len(), 10);
 
         let restored = scene.to_world();
-        assert_eq!(restored.entities().len(), 10);
+        let restored_entities = restored.entities();
+        assert_eq!(restored_entities.len(), 10);
 
         for i in 0..10 {
             let entity_name = format!("Entity{}", i);
-            let found = restored.entities().iter().find(|&&id| {
-                restored.name(id) == Some(entity_name.as_str())
-            });
+            let found = restored_entities
+                .iter()
+                .copied()
+                .find(|&id| restored.name(id) == Some(entity_name.as_str()));
             assert!(found.is_some(), "Entity {} should exist", i);
         }
     }
@@ -273,7 +305,13 @@ mod tests {
     #[test]
     fn test_scene_with_all_components() {
         let mut world = World::new();
-        let entity = world.spawn("CompleteEntity", IVec2 { x: 5, y: 10 }, astraweave_core::Team { id: 1 }, 75, 25);
+        let entity = world.spawn(
+            "CompleteEntity",
+            IVec2 { x: 5, y: 10 },
+            astraweave_core::Team { id: 1 },
+            75,
+            25,
+        );
 
         if let Some(pose) = world.pose_mut(entity) {
             pose.rotation = 3.14;
@@ -305,7 +343,7 @@ mod tests {
     #[test]
     fn test_scene_with_obstacles() {
         let mut world = World::new();
-        
+
         for x in 0..5 {
             for y in 0..5 {
                 world.obstacles.insert((x, y));
@@ -329,42 +367,67 @@ mod tests {
     fn test_scene_file_io() {
         use std::env;
         let mut world = World::new();
-        world.spawn("Player", IVec2 { x: 10, y: 20 }, astraweave_core::Team { id: 0 }, 100, 30);
+        world.spawn(
+            "Player",
+            IVec2 { x: 10, y: 20 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
         world.obstacles.insert((5, 5));
 
-        let temp_dir = env::temp_dir();
-        let test_path = temp_dir.join("aw_editor_test_scene.ron");
+        // Use relative path within content directory for security validation
+        let test_path = Path::new("test_scenes/aw_editor_test_scene.ron");
 
         let scene = SceneData::from_world(&world);
         scene.save_to_file(&test_path).unwrap();
 
-        assert!(test_path.exists());
+        // Construct full path for cleanup
+        let base = env::current_dir().unwrap();
+        let full_path = base.join("content").join(test_path);
+        assert!(full_path.exists());
 
         let loaded_scene = SceneData::load_from_file(&test_path).unwrap();
         assert_eq!(loaded_scene.entities.len(), 1);
         assert_eq!(loaded_scene.obstacles.len(), 1);
         assert_eq!(loaded_scene.entities[0].name, "Player");
 
-        fs::remove_file(&test_path).unwrap();
+        fs::remove_file(&full_path).unwrap();
     }
 
     #[test]
     fn test_save_and_load_scene() {
         use std::env;
         let mut world = World::new();
-        world.spawn("Entity1", IVec2 { x: 1, y: 2 }, astraweave_core::Team { id: 0 }, 100, 30);
-        world.spawn("Entity2", IVec2 { x: 3, y: 4 }, astraweave_core::Team { id: 1 }, 50, 15);
+        world.spawn(
+            "Entity1",
+            IVec2 { x: 1, y: 2 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        world.spawn(
+            "Entity2",
+            IVec2 { x: 3, y: 4 },
+            astraweave_core::Team { id: 1 },
+            50,
+            15,
+        );
 
-        let temp_dir = env::temp_dir();
-        let test_path = temp_dir.join("aw_editor_test_save_load.ron");
+        // Use relative path within content directory for security validation
+        let test_path = Path::new("test_scenes/aw_editor_test_save_load.ron");
 
         save_scene(&world, &test_path).unwrap();
-        assert!(test_path.exists());
+        
+        // Construct full path for assertions
+        let base = env::current_dir().unwrap();
+        let full_path = base.join("content").join(test_path);
+        assert!(full_path.exists());
 
         let loaded_world = load_scene(&test_path).unwrap();
         assert_eq!(loaded_world.entities().len(), 2);
 
-        fs::remove_file(&test_path).unwrap();
+        fs::remove_file(&full_path).unwrap();
     }
 
     #[test]
@@ -382,8 +445,20 @@ mod tests {
     #[test]
     fn test_scene_preserves_entity_ids() {
         let mut world = World::new();
-        let e1 = world.spawn("E1", IVec2 { x: 0, y: 0 }, astraweave_core::Team { id: 0 }, 100, 30);
-        let e2 = world.spawn("E2", IVec2 { x: 1, y: 1 }, astraweave_core::Team { id: 1 }, 50, 15);
+        let e1 = world.spawn(
+            "E1",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let e2 = world.spawn(
+            "E2",
+            IVec2 { x: 1, y: 1 },
+            astraweave_core::Team { id: 1 },
+            50,
+            15,
+        );
 
         let scene = SceneData::from_world(&world);
         let restored = scene.to_world();
@@ -392,5 +467,37 @@ mod tests {
         assert!(restored.pose(e2).is_some());
         assert_eq!(restored.name(e1), Some("E1"));
         assert_eq!(restored.name(e2), Some("E2"));
+    }
+
+    #[test]
+    fn test_scene_preserves_behavior_graphs() {
+        use astraweave_behavior::{BehaviorGraph, BehaviorNode};
+
+        let mut world = World::new();
+        let entity = world.spawn(
+            "Agent",
+            IVec2 { x: 0, y: 0 },
+            astraweave_core::Team { id: 0 },
+            100,
+            30,
+        );
+        let graph = BehaviorGraph::new(BehaviorNode::Sequence(vec![
+            BehaviorNode::Condition("has_target".into()),
+            BehaviorNode::Action("attack".into()),
+        ]));
+        world.set_behavior_graph(entity, graph.clone());
+
+        let scene = SceneData::from_world(&world);
+        assert_eq!(scene.entities.len(), 1);
+        assert!(scene.entities[0].behavior_graph.is_some());
+
+        let restored = scene.to_world();
+        let restored_graph = restored.behavior_graph(entity).expect("graph restored");
+        match &restored_graph.root {
+            BehaviorNode::Sequence(children) => {
+                assert_eq!(children.len(), 2);
+            }
+            other => panic!("unexpected node: {:?}", other),
+        }
     }
 }

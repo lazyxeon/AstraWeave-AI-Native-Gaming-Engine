@@ -4,10 +4,11 @@ pub mod ecs;
 pub mod goap;
 pub mod goap_cache; // Week 3 Action 9: GOAP plan caching with LRU eviction
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Node types for behavior trees and HTN
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BehaviorNode {
     Sequence(Vec<BehaviorNode>),
     Selector(Vec<BehaviorNode>),
@@ -17,7 +18,7 @@ pub enum BehaviorNode {
     Parallel(Vec<BehaviorNode>, usize), // children, success threshold
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DecoratorType {
     Inverter,
     Succeeder,
@@ -27,7 +28,7 @@ pub enum DecoratorType {
 }
 
 /// Behavior graph structure
-#[derive(Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BehaviorGraph {
     pub root: BehaviorNode,
 }

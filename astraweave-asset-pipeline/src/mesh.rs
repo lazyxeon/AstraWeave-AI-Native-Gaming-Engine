@@ -4,8 +4,8 @@
 
 use anyhow::{Context, Result};
 use bytemuck::cast_slice;
-use meshopt::optimize_vertex_cache;
 use meshopt::optimize_overdraw_in_place;
+use meshopt::optimize_vertex_cache;
 use meshopt::VertexDataAdapter;
 
 /// Mesh optimization statistics
@@ -236,7 +236,7 @@ fn optimize_overdraw_inplace(
     // positions are tightly packed f32 xyz, so stride is 3 * sizeof(f32) = 12 bytes
     let vertex_stride = std::mem::size_of::<f32>() * 3;
     let position_offset = 0; // positions start at byte 0
-    
+
     // Convert positions to bytes for VertexDataAdapter
     let positions_bytes: &[u8] = cast_slice(positions);
 

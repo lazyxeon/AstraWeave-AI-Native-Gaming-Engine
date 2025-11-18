@@ -16,6 +16,12 @@ pub struct PerfHud {
     pub event_log: EventLog,
 }
 
+impl Default for PerfHud {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PerfHud {
     pub fn new() -> Self {
         Self {
@@ -173,14 +179,12 @@ pub fn watch_reload_signal(
 ) -> Result<RecommendedWatcher> {
     let _signal_path = content_dir.join("reload.signal");
     let mut watcher = notify::recommended_watcher(move |res| {
-        if let Ok(event) = res {
-            if let notify::Event {
-                kind: notify::EventKind::Create(_) | notify::EventKind::Modify(_),
-                ..
-            } = event
-            {
-                on_reload();
-            }
+        if let Ok(notify::Event {
+            kind: notify::EventKind::Create(_) | notify::EventKind::Modify(_),
+            ..
+        }) = res
+        {
+            on_reload();
         }
     })?;
 

@@ -2,7 +2,7 @@
 //!
 //! Provides deterministic play/pause/stop functionality with snapshot-based state management.
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use astraweave_core::World;
 use std::time::Instant;
 
@@ -51,22 +51,22 @@ impl Default for RuntimeStats {
 pub struct EditorRuntime {
     /// Snapshot captured when entering play mode
     edit_snapshot: Option<SceneData>,
-    
+
     /// Active simulation world (Some when playing/paused)
     sim_world: Option<World>,
-    
+
     /// Current tick number (deterministic frame counter)
     tick_count: u64,
-    
+
     /// Runtime state
     state: RuntimeState,
-    
+
     /// Performance statistics
     stats: RuntimeStats,
-    
+
     /// Frame time tracking (last 60 frames)
     frame_times: Vec<f32>,
-    
+
     /// Last frame timestamp
     last_frame_time: Option<Instant>,
 }
@@ -103,7 +103,10 @@ impl EditorRuntime {
 
     /// Check if simulation is running
     pub fn is_playing(&self) -> bool {
-        matches!(self.state, RuntimeState::Playing | RuntimeState::SteppingOneFrame)
+        matches!(
+            self.state,
+            RuntimeState::Playing | RuntimeState::SteppingOneFrame
+        )
     }
 
     /// Check if simulation is paused
@@ -129,10 +132,10 @@ impl EditorRuntime {
 
         // Capture snapshot of edit state
         let snapshot = SceneData::from_world(world);
-        
+
         // Clone world for simulation via snapshot
         let sim_world = snapshot.to_world();
-        
+
         self.edit_snapshot = Some(snapshot);
         self.sim_world = Some(sim_world);
         self.tick_count = 0;
@@ -189,10 +192,10 @@ impl EditorRuntime {
         if let Some(world) = &mut self.sim_world {
             // Fixed 60Hz tick
             let fixed_dt = 1.0 / 60.0;
-            
+
             // Update world time
             world.t += fixed_dt;
-            
+
             self.tick_count += 1;
         }
 
@@ -248,7 +251,8 @@ impl EditorRuntime {
 
         // Calculate average frame time and FPS
         if !self.frame_times.is_empty() {
-            let avg_frame_time: f32 = self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
+            let avg_frame_time: f32 =
+                self.frame_times.iter().sum::<f32>() / self.frame_times.len() as f32;
             self.stats.frame_time_ms = avg_frame_time;
             self.stats.fps = if avg_frame_time > 0.0 {
                 1000.0 / avg_frame_time
@@ -357,10 +361,16 @@ mod tests {
         let entity = world.spawn("test", IVec2 { x: 5, y: 10 }, Team { id: 0 }, 100, 10);
 
         runtime.enter_play(&world).expect("enter play");
-        
+
         // Simulate modifications during play
         if let Some(sim) = runtime.sim_world_mut() {
-            sim.spawn("runtime_entity", IVec2 { x: 20, y: 30 }, Team { id: 1 }, 50, 5);
+            sim.spawn(
+                "runtime_entity",
+                IVec2 { x: 20, y: 30 },
+                Team { id: 1 },
+                50,
+                5,
+            );
         }
 
         let restored = runtime.exit_play().expect("exit play");

@@ -1,0 +1,26 @@
+    Checking aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+error[E0425]: cannot find value `prefab_manager` in this scope
+    --> tools\aw_editor\src\viewport\widget.rs:1055:17
+     |
+1055 |                 prefab_manager,
+     |                 ^^^^^^^^^^^^^^ not found in this scope
+
+warning: unused import: `HierarchyAction`
+  --> tools\aw_editor\src\panels\mod.rs:39:27
+   |
+39 | pub use hierarchy_panel::{HierarchyAction, HierarchyPanel};
+   |                           ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused variable: `prefab_manager`
+   --> tools\aw_editor\src\viewport\widget.rs:191:9
+    |
+191 |         prefab_manager: Option<&mut crate::prefab::PrefabManager>, // Phase 8.1 Week 5 Day 3: Auto-tracking
+    |         ^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_prefab_manager`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `aw_editor` (bin "aw_editor") generated 2 warnings
+error: could not compile `aw_editor` (bin "aw_editor") due to 1 previous error; 2 warnings emitted

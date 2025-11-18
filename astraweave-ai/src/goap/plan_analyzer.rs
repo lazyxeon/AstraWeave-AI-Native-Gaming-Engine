@@ -95,7 +95,7 @@ impl PlanAnalyzer {
                 let cost = action.calculate_cost(&current_state, history);
                 let success_prob = action.success_probability(&current_state, history);
                 let risk = 1.0 - success_prob;
-                
+
                 let stats = history.get_action_stats(action_name);
                 let duration = stats.map(|s| s.avg_duration).unwrap_or(1.0);
                 let executions = stats.map(|s| s.executions).unwrap_or(0);
@@ -121,10 +121,7 @@ impl PlanAnalyzer {
         }
 
         // Calculate overall success probability (product of individual probabilities)
-        let success_probability = action_breakdown
-            .values()
-            .map(|m| m.success_rate)
-            .product();
+        let success_probability = action_breakdown.values().map(|m| m.success_rate).product();
 
         // Identify bottlenecks
         let bottlenecks = Self::identify_bottlenecks(&action_breakdown);
@@ -148,12 +145,12 @@ impl PlanAnalyzer {
         let success_prob_diff = metrics2.success_probability - metrics1.success_probability;
 
         // Scoring: lower cost, risk, duration and higher success prob is better
-        let score1 = -metrics1.total_cost - metrics1.total_risk * 2.0 
-                     - metrics1.estimated_duration * 0.1 
-                     + metrics1.success_probability * 10.0;
-        let score2 = -metrics2.total_cost - metrics2.total_risk * 2.0 
-                     - metrics2.estimated_duration * 0.1 
-                     + metrics2.success_probability * 10.0;
+        let score1 =
+            -metrics1.total_cost - metrics1.total_risk * 2.0 - metrics1.estimated_duration * 0.1
+                + metrics1.success_probability * 10.0;
+        let score2 =
+            -metrics2.total_cost - metrics2.total_risk * 2.0 - metrics2.estimated_duration * 0.1
+                + metrics2.success_probability * 10.0;
 
         let better_plan = if (score1 - score2).abs() < 0.5 {
             PlanComparison::Similar
@@ -324,12 +321,15 @@ impl PlanAnalyzer {
         let mut bottlenecks = Vec::new();
 
         // Calculate averages
-        let avg_cost: f32 = action_breakdown.values().map(|m| m.cost).sum::<f32>() 
-                           / action_breakdown.len() as f32;
-        let avg_risk: f32 = action_breakdown.values().map(|m| m.risk).sum::<f32>() 
-                           / action_breakdown.len() as f32;
-        let avg_duration: f32 = action_breakdown.values().map(|m| m.avg_duration).sum::<f32>() 
-                               / action_breakdown.len() as f32;
+        let avg_cost: f32 =
+            action_breakdown.values().map(|m| m.cost).sum::<f32>() / action_breakdown.len() as f32;
+        let avg_risk: f32 =
+            action_breakdown.values().map(|m| m.risk).sum::<f32>() / action_breakdown.len() as f32;
+        let avg_duration: f32 = action_breakdown
+            .values()
+            .map(|m| m.avg_duration)
+            .sum::<f32>()
+            / action_breakdown.len() as f32;
 
         for (action_name, metrics) in action_breakdown {
             // Check for high cost (>2x average)
@@ -384,8 +384,14 @@ impl PlanAnalyzer {
         report.push_str(&format!("Total Actions: {}\n", metrics.action_count));
         report.push_str(&format!("Total Cost: {:.2}\n", metrics.total_cost));
         report.push_str(&format!("Total Risk: {:.2}\n", metrics.total_risk));
-        report.push_str(&format!("Estimated Duration: {:.1}s\n", metrics.estimated_duration));
-        report.push_str(&format!("Success Probability: {:.1}%\n", metrics.success_probability * 100.0));
+        report.push_str(&format!(
+            "Estimated Duration: {:.1}s\n",
+            metrics.estimated_duration
+        ));
+        report.push_str(&format!(
+            "Success Probability: {:.1}%\n",
+            metrics.success_probability * 100.0
+        ));
 
         if !metrics.bottlenecks.is_empty() {
             report.push_str("\n=== Bottlenecks ===\n");
@@ -450,7 +456,7 @@ mod tests {
     #[test]
     fn test_identify_high_cost_bottleneck() {
         let mut action_breakdown = HashMap::new();
-        
+
         action_breakdown.insert(
             "cheap".to_string(),
             ActionMetrics {
@@ -461,7 +467,7 @@ mod tests {
                 executions: 10,
             },
         );
-        
+
         action_breakdown.insert(
             "expensive".to_string(),
             ActionMetrics {
@@ -476,7 +482,7 @@ mod tests {
         action_breakdown.insert(
             "very_cheap".to_string(),
             ActionMetrics {
-                cost: 0.5,  // Add third action to bring avg down
+                cost: 0.5, // Add third action to bring avg down
                 risk: 0.1,
                 success_rate: 0.9,
                 avg_duration: 1.0,
@@ -489,7 +495,9 @@ mod tests {
         // avg = (1.0 + 20.0 + 0.5) / 3 = 7.17, 2x = 14.33
         // 20.0 > 14.33, so should identify bottleneck
         assert!(!bottlenecks.is_empty());
-        assert!(bottlenecks.iter().any(|b| b.reason == BottleneckReason::HighCost));
+        assert!(bottlenecks
+            .iter()
+            .any(|b| b.reason == BottleneckReason::HighCost));
     }
 
     #[test]
@@ -535,7 +543,9 @@ mod tests {
         let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
 
         assert!(!suggestions.is_empty());
-        assert!(suggestions.iter().any(|s| s.message.contains("high total cost")));
+        assert!(suggestions
+            .iter()
+            .any(|s| s.message.contains("high total cost")));
     }
 
     #[test]
@@ -553,7 +563,9 @@ mod tests {
         let suggestions = PlanAnalyzer::suggest_optimizations(&metrics);
 
         assert!(!suggestions.is_empty());
-        assert!(suggestions.iter().any(|s| s.priority == SuggestionPriority::Critical));
+        assert!(suggestions
+            .iter()
+            .any(|s| s.priority == SuggestionPriority::Critical));
     }
 
     #[test]
@@ -575,4 +587,3 @@ mod tests {
         assert!(report.contains("Total Cost"));
     }
 }
-

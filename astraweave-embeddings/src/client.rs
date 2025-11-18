@@ -50,6 +50,12 @@ pub struct MockEmbeddingClient {
     cache: Arc<RwLock<HashMap<String, Vec<f32>>>>,
 }
 
+impl Default for MockEmbeddingClient {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockEmbeddingClient {
     /// Create a new mock client with specified dimensions
     pub fn new() -> Self {
@@ -71,10 +77,10 @@ impl MockEmbeddingClient {
 
         let mut hasher = DefaultHasher::new();
         text.hash(&mut hasher);
-        let _seed = hasher.finish();
+        let seed = hasher.finish();
 
         // Use the hash as a seed for deterministic random generation
-        let mut rng = rand::rng();
+        let mut rng = SmallRng::seed_from_u64(seed);
 
         let mut embedding = Vec::with_capacity(self.dimensions);
         for _ in 0..self.dimensions {
@@ -93,11 +99,7 @@ impl MockEmbeddingClient {
     }
 }
 
-use rand::Rng;
-
-#[allow(unused_imports)]
-#[cfg(feature = "small_rng")]
-use rand::{rngs::SmallRng, SeedableRng};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 #[async_trait]
 impl EmbeddingClient for MockEmbeddingClient {
@@ -527,5 +529,105 @@ mod tests {
 
         assert_eq!(info.dimensions, 256);
         assert_eq!(info.name, "mock-embeddings");
+    }
+
+    // ============================================================================
+    // Determinism Validation Tests (Sprint 1 Day 1 - Phase 8.7)
+    // ============================================================================
+
+    #[tokio::test]
+    async fn test_mock_embedding_determinism_across_instances() {
+        // Create two separate client instances
+        let client1 = MockEmbeddingClient::new();
+        let client2 = MockEmbeddingClient::new();
+
+        let text = "Deterministic test text";
+
+        // Generate embeddings from both clients
+        let emb1 = client1.embed(text).await.unwrap();
+        let emb2 = client2.embed(text).await.unwrap();
+
+        // Should be identical (not relying on cache, separate instances)
+        assert_eq!(
+            emb1, emb2,
+            "Same text should produce identical embeddings across separate client instances"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_mock_embedding_determinism_batch_vs_single() {
+        let client = MockEmbeddingClient::new();
+
+        let text = "Batch determinism validation";
+
+        // Generate via single call
+        let single = client.embed(text).await.unwrap();
+
+        // Clear cache to force regeneration
+        client.cache.write().await.clear();
+
+        // Generate via batch call
+        let batch = client
+            .embed_batch(&[text.to_string()])
+            .await
+            .unwrap()
+            .into_iter()
+            .next()
+            .unwrap();
+
+        // Should be identical
+        assert_eq!(
+            single, batch,
+            "Same text should produce identical embeddings via single vs batch calls"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_mock_embedding_unit_length_normalization() {
+        let client = MockEmbeddingClient::new();
+
+        let texts = vec!["Normalize me", "Test vector", "Unit length validation"];
+
+        for text in texts {
+            let embedding = client.embed(&text).await.unwrap();
+
+            // Calculate magnitude
+            let magnitude: f32 = embedding.iter().map(|x| x * x).sum::<f32>().sqrt();
+
+            // Should be unit length (magnitude = 1.0)
+            assert!(
+                (magnitude - 1.0).abs() < 1e-5,
+                "Embedding for '{}' should be unit length, got magnitude {}",
+                text,
+                magnitude
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_mock_embedding_different_texts_different_embeddings() {
+        // Create two separate client instances (no shared cache)
+        let client1 = MockEmbeddingClient::new();
+        let client2 = MockEmbeddingClient::new();
+
+        let text_a = "This is text A";
+        let text_b = "This is text B";
+
+        // Generate from separate clients to avoid cache
+        let emb_a = client1.embed(text_a).await.unwrap();
+        let emb_b = client2.embed(text_b).await.unwrap();
+
+        // Different texts should produce different embeddings
+        assert_ne!(
+            emb_a, emb_b,
+            "Different texts should produce different embeddings (deterministically)"
+        );
+
+        // Verify consistency: same text from different clients should match
+        let emb_a2 = client2.embed(text_a).await.unwrap();
+        assert_eq!(
+            emb_a, emb_a2,
+            "Same text from different clients should match (determinism)"
+        );
     }
 }

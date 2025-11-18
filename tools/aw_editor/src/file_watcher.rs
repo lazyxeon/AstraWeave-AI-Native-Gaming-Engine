@@ -146,12 +146,10 @@ impl FileWatcher {
         // Add each path to debounce buffer
         for path in event.paths {
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-            
+
             if file_name.ends_with(".prefab.ron") {
                 let mut state = debounce_state.lock().unwrap();
-                state
-                    .buffer
-                    .insert(path.clone(), ReloadEvent::Prefab(path));
+                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path));
             } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy().to_lowercase();
 
@@ -175,9 +173,7 @@ impl FileWatcher {
                 // Model files
                 else if matches!(ext_str.as_str(), "glb" | "gltf") {
                     let mut state = debounce_state.lock().unwrap();
-                    state
-                        .buffer
-                        .insert(path.clone(), ReloadEvent::Model(path));
+                    state.buffer.insert(path.clone(), ReloadEvent::Model(path));
                 }
             }
         }
