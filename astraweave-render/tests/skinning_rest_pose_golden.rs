@@ -60,7 +60,7 @@ fn test_rest_pose_golden_baseline() {
     ];
 
     // Compute joint matrices
-    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
 
     // In rest pose, skinning matrices should be identity (world * inverse_bind = identity)
     assert_eq!(joint_matrices.len(), 3);
@@ -94,8 +94,8 @@ fn test_rest_pose_determinism() {
     ];
 
     // Compute matrices twice
-    let matrices1 = compute_joint_matrices(&skeleton, &rest_local_poses);
-    let matrices2 = compute_joint_matrices(&skeleton, &rest_local_poses);
+    let matrices1 = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
+    let matrices2 = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
 
     // Should be bit-exact (no randomness, no time-dependent ops)
     assert_eq!(matrices1.len(), matrices2.len());
@@ -129,7 +129,7 @@ fn test_rest_pose_single_joint() {
             ..Default::default()
         },
     ];
-    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
 
     // Vertex influenced only by joint 0 (root, identity)
     let position = Vec3::new(1.0, 0.0, 0.0);
@@ -168,7 +168,7 @@ fn test_rest_pose_zero_weights() {
             ..Default::default()
         },
     ];
-    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
 
     let position = Vec3::new(1.0, 2.0, 3.0);
     let normal = Vec3::new(0.5, 0.5, 0.707).normalize();
@@ -206,7 +206,7 @@ fn test_rest_pose_normalized_weights() {
             ..Default::default()
         },
     ];
-    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
 
     // Test with root joint (identity matrix)
     let position = Vec3::new(1.0, 0.0, 0.0);
@@ -244,7 +244,7 @@ fn test_rest_pose_blended_weights() {
             ..Default::default()
         },
     ];
-    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &rest_local_poses).unwrap();
 
     // Vertex influenced by root only (simplest test)
     let position = Vec3::new(2.0, 0.0, 0.0);

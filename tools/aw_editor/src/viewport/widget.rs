@@ -1283,6 +1283,9 @@ impl ViewportWidget {
             }));
         }
 
+        if self.staging_buffer.is_none() {
+            return Err(anyhow::anyhow!("Staging buffer not initialized"));
+        }
         let staging_buffer = self.staging_buffer.as_ref().unwrap();
 
         // Create command encoder for texture copy

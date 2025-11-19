@@ -37,6 +37,9 @@ pub mod gizmo {
     pub mod state;
     pub mod translate;
 
+    #[cfg(test)]
+    pub mod tests_gizmo_math;
+
     // Re-export commonly used types for convenience
     pub use constraints::apply_constraint;
     pub use input::NumericInput;

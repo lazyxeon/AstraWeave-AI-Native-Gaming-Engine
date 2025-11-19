@@ -89,7 +89,7 @@ impl StatusBar {
 
     fn show_undo_redo(ui: &mut Ui, undo_stack: &UndoStack) {
         if undo_stack.can_undo() {
-            let desc = undo_stack.undo_description().unwrap();
+            let desc = undo_stack.undo_description().unwrap_or_default();
             ui.label(format!("⏮️  Undo: {}", desc))
                 .on_hover_text("Ctrl+Z to undo");
         } else {
@@ -100,7 +100,7 @@ impl StatusBar {
         ui.add_space(8.0);
 
         if undo_stack.can_redo() {
-            let desc = undo_stack.redo_description().unwrap();
+            let desc = undo_stack.redo_description().unwrap_or_default();
             ui.label(format!("⏭️  Redo: {}", desc))
                 .on_hover_text("Ctrl+Y to redo");
         } else {

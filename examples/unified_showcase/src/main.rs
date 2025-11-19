@@ -1,16 +1,13 @@
 use glam::{Mat4, Quat, Vec3};
-use std::collections::HashMap;
 use std::sync::Arc;
 use wgpu::util::DeviceExt;
-/// AstraWeave Unified Showcase - CLEAN IMPLEMENTATION
-/// Built on proper foundations with correct texture/material handling
-///
-/// Architecture:
-/// - Each material gets its own texture binding (no atlas complexity)
-/// - GLTF models use their original UVs (no remapping needed)
-/// - Simple, straightforward rendering pipeline
-/// - Based on how Bevy/Godot actually handle materials
-use winit::{event::*, event_loop::EventLoop};
+use winit::{
+    application::ApplicationHandler,
+    event::*,
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
+};
 
 mod gltf_loader;
 
@@ -18,24 +15,23 @@ mod gltf_loader;
 // CORE DATA STRUCTURES
 // ============================================================================
 
-/// Vertex format with vertex colors (for Kenney models)
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
     position: [f32; 3],
     normal: [f32; 3],
     uv: [f32; 2],
-    color: [f32; 4],   // Vertex color (RGBA)
-    tangent: [f32; 4], // Tangent (xyz) + handedness (w)
+    color: [f32; 4],
+    tangent: [f32; 4],
 }
 
 impl Vertex {
     const ATTRIBS: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
-        0 => Float32x3, // position
-        1 => Float32x3, // normal
-        2 => Float32x2, // uv
-        3 => Float32x4, // color
-        4 => Float32x4, // tangent
+        0 => Float32x3,
+        1 => Float32x3,
+        2 => Float32x2,
+        3 => Float32x4,
+        4 => Float32x4,
     ];
 
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
@@ -47,7 +43,6 @@ impl Vertex {
     }
 }
 
-/// Camera uniforms
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct CameraUniforms {
@@ -56,7 +51,6 @@ struct CameraUniforms {
     _padding: f32,
 }
 
-/// Light uniforms for shadow mapping
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct LightUniforms {
@@ -67,34 +61,17 @@ struct LightUniforms {
     _padding2: f32,
 }
 
-/// Per-object uniforms (model matrix for positioning each object)
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 struct ModelUniforms {
     model: [[f32; 4]; 4],
 }
 
-/// Per-object instance data
-#[repr(C)]
-#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct InstanceData {
-    model_matrix: [[f32; 4]; 4],
-}
-
-/// Material - simple texture reference
-#[allow(dead_code)]
 struct Material {
     name: String,
-    albedo_texture: wgpu::Texture,
-    albedo_view: wgpu::TextureView,
-    normal_texture: Option<wgpu::Texture>,
-    normal_view: Option<wgpu::TextureView>,
-    roughness_texture: Option<wgpu::Texture>,
-    roughness_view: Option<wgpu::TextureView>,
     bind_group: wgpu::BindGroup,
 }
 
-/// Mesh - geometry with material index
 struct Mesh {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
@@ -102,8 +79,6 @@ struct Mesh {
     material_index: usize,
 }
 
-/// Scene object instance
-#[allow(dead_code)]
 struct SceneObject {
     mesh_index: usize,
     position: Vec3,
@@ -116,93 +91,74 @@ struct SceneObject {
 // APPLICATION STATE
 // ============================================================================
 
-#[allow(dead_code)]
 struct ShowcaseApp {
-    // GPU resources
+    window: Arc<Window>,
+    surface: wgpu::Surface<'static>,
     device: wgpu::Device,
     queue: wgpu::Queue,
-    surface: wgpu::Surface<'static>,
-    surface_config: wgpu::SurfaceConfiguration,
-
-    // Rendering pipeline
+    config: wgpu::SurfaceConfiguration,
+    
     render_pipeline: wgpu::RenderPipeline,
-    shadow_pipeline: wgpu::RenderPipeline, // New shadow pipeline
-    material_bind_group_layout: wgpu::BindGroupLayout,
-    model_bind_group_layout: wgpu::BindGroupLayout,
-    light_bind_group_layout: wgpu::BindGroupLayout, // New light layout
-
-    // Camera
+    sky_pipeline: wgpu::RenderPipeline,
+    
+    material_layout: wgpu::BindGroupLayout,
+    model_layout: wgpu::BindGroupLayout,
+    
+    depth_texture: wgpu::TextureView,
+    msaa_texture: wgpu::TextureView,
+    
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-    camera_position: Vec3,
+    camera_pos: Vec3,
     camera_yaw: f32,
     camera_pitch: f32,
-
-    // Lighting & Shadows
+    
     light_buffer: wgpu::Buffer,
     light_bind_group: wgpu::BindGroup,
-    light_uniform_bind_group: wgpu::BindGroup, // New: For shadow pass (no texture)
-    shadow_texture: wgpu::Texture,
-    shadow_view: wgpu::TextureView,
-    shadow_sampler: wgpu::Sampler,
-    light_position: Vec3,
-
-    // Scene data
+    
     materials: Vec<Material>,
     meshes: Vec<Mesh>,
     objects: Vec<SceneObject>,
-
-    // Shared resources
-    sampler: wgpu::Sampler,
-    depth_texture: wgpu::Texture,
-    depth_view: wgpu::TextureView,
     
-    // Default textures
-    default_normal_view: wgpu::TextureView,
-    default_mra_view: wgpu::TextureView,
+    sky_bind_group: wgpu::BindGroup,
+    sky_mesh_index: usize,
+    
+    mouse_pressed: bool,
 }
 
 impl ShowcaseApp {
-    async fn new(window: Arc<winit::window::Window>) -> Self {
+    async fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
-
-        // Create wgpu instance and surface
+        println!("Window size: {}x{}", size.width, size.height);
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
 
         let surface = instance.create_surface(window.clone()).unwrap();
+        let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }).await.unwrap();
 
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            })
-            .await
-            .unwrap();
-
-        let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                label: Some("Main Device"),
+        let (device, queue) = adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: Default::default(),
                 trace: wgpu::Trace::Off,
-            })
-            .await
-            .unwrap();
+            },
+        ).await.unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
-        let surface_format = surface_caps
-            .formats
-            .iter()
+        let surface_format = surface_caps.formats.iter()
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
-
-        let surface_config = wgpu::SurfaceConfiguration {
+            
+        let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
             width: size.width,
@@ -212,219 +168,88 @@ impl ShowcaseApp {
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
-        surface.configure(&device, &surface_config);
+        surface.configure(&device, &config);
 
-        println!("✅ GPU initialized: {}", adapter.get_info().name);
-
-        // Create depth texture
-        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Depth Texture"),
-            size: wgpu::Extent3d {
-                width: size.width,
-                height: size.height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-        let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        // Create sampler (use Repeat for individual textures - this works correctly!)
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Texture Sampler"),
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            ..Default::default()
+        // Layouts
+        let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Camera Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
         });
 
-        // ====================================================================
-        // SHADOW SETUP
-        // ====================================================================
-        let shadow_size = 4096;
-        let shadow_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Shadow Texture"),
-            size: wgpu::Extent3d {
-                width: shadow_size,
-                height: shadow_size,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
-        let shadow_view = shadow_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("Shadow Sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            compare: Some(wgpu::CompareFunction::LessEqual),
-            ..Default::default()
+        let light_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Light Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
         });
 
-        // Create shader (clean shader with optional normal mapping support)
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Clean Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
-
-        // Create bind group layouts
-        let camera_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Camera Bind Group Layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
+        let material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Material Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
                     },
                     count: None,
-                }],
-            });
-
-        let material_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Material Bind Group Layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                    // Normal map (optional)
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                    // Roughness/metallic/ao (packed) or roughness single channel
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                ],
-            });
-
-        // Model bind group layout (for per-object transforms)
-        let model_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Model Bind Group Layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
-                }],
-            });
-
-        // Light bind group layout
-        let light_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Light Bind Group Layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Depth,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
-                        count: None,
-                    },
-                ],
-            });
-
-        // Light uniform bind group layout (for shadow pass - no texture)
-        let light_uniform_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Light Uniform Bind Group Layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-
-        // Create pipeline layout
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Render Pipeline Layout"),
-            bind_group_layouts: &[
-                &camera_bind_group_layout,
-                &material_bind_group_layout,
-                &model_bind_group_layout,
-                &light_bind_group_layout,
+                },
             ],
+        });
+
+        let model_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Model Layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        // Pipelines
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Shader V2"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader_v2.wgsl").into()),
+        });
+
+        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Render Pipeline Layout"),
+            bind_group_layouts: &[&camera_layout, &light_layout, &material_layout, &model_layout],
             push_constant_ranges: &[],
         });
 
-        // Create render pipeline
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
-            layout: Some(&pipeline_layout),
+            layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
@@ -435,7 +260,7 @@ impl ShowcaseApp {
                 module: &shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: surface_config.format,
+                    format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -443,12 +268,9 @@ impl ShowcaseApp {
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
-                unclipped_depth: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false,
+                ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
@@ -457,346 +279,131 @@ impl ShowcaseApp {
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
-            multisample: wgpu::MultisampleState::default(),
+            multisample: wgpu::MultisampleState {
+                count: 4,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
             multiview: None,
             cache: None,
         });
 
-        // Create shadow pipeline layout (only needs light and model)
-        let shadow_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Shadow Pipeline Layout"),
-            bind_group_layouts: &[
-                &camera_bind_group_layout, // Not used but kept for compatibility if needed
-                &material_bind_group_layout, // Not used
-                &model_bind_group_layout,
-                &light_uniform_bind_group_layout, // Use the uniform-only layout
+        let sky_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Sky Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
+        });
+
+        let sky_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Sky Pipeline Layout"),
+            bind_group_layouts: &[&camera_layout, &sky_layout],
             push_constant_ranges: &[],
         });
 
-        // Create shadow pipeline
-        let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Shadow Pipeline"),
-            layout: Some(&shadow_pipeline_layout),
+        let sky_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Sky Pipeline"),
+            layout: Some(&sky_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: Some("vs_shadow"),
+                entry_point: Some("vs_skybox"),
                 buffers: &[Vertex::desc()],
                 compilation_options: Default::default(),
             },
-            fragment: None, // No fragment shader for shadow pass
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_skybox"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Front), // Front face culling for shadows to prevent acne
-                unclipped_depth: false,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                conservative: false,
+                cull_mode: None, // Disable culling for skybox to ensure visibility
+                ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::LessEqual,
                 stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState {
-                    constant: 2, // Small bias
-                    slope_scale: 2.0,
-                    clamp: 0.0,
-                },
+                bias: wgpu::DepthBiasState::default(),
             }),
-            multisample: wgpu::MultisampleState::default(),
+            multisample: wgpu::MultisampleState {
+                count: 4,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
             multiview: None,
             cache: None,
         });
 
-        // Create camera buffer
-        let camera_uniforms = CameraUniforms {
-            view_proj: Mat4::IDENTITY.to_cols_array_2d(),
-            camera_pos: [0.0, 0.0, 0.0],
-            _padding: 0.0,
-        };
+        // Buffers
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera_uniforms]),
+            contents: bytemuck::cast_slice(&[CameraUniforms {
+                view_proj: Mat4::IDENTITY.to_cols_array_2d(),
+                camera_pos: [0.0, 0.0, 0.0],
+                _padding: 0.0,
+            }]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Camera Bind Group"),
-            layout: &camera_bind_group_layout,
+            layout: &camera_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: camera_buffer.as_entire_binding(),
             }],
         });
 
-        // Create light buffer
-        let light_position = Vec3::new(50.0, 100.0, 50.0);
-        let light_uniforms = LightUniforms {
-            view_proj: Mat4::IDENTITY.to_cols_array_2d(),
-            position: light_position.to_array(),
-            _padding: 0.0,
-            color: [1.0, 1.0, 1.0],
-            _padding2: 0.0,
-        };
         let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Light Buffer"),
-            contents: bytemuck::cast_slice(&[light_uniforms]),
+            contents: bytemuck::cast_slice(&[LightUniforms {
+                view_proj: Mat4::IDENTITY.to_cols_array_2d(),
+                position: [50.0, 100.0, 50.0],
+                _padding: 0.0,
+                color: [1.2, 1.1, 1.0], // Warm sunlight
+                _padding2: 0.0,
+            }]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Light Bind Group"),
-            layout: &light_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: light_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&shadow_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&shadow_sampler),
-                },
-            ],
+            layout: &light_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: light_buffer.as_entire_binding(),
+            }],
         });
 
-        let light_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Light Uniform Bind Group"),
-            layout: &light_uniform_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: light_buffer.as_entire_binding(),
-                },
-            ],
-        });
-
-        // Create default textures
-        let default_normal_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Default Normal"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &default_normal_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &[128, 128, 255, 255],
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
-            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-        );
-        let default_normal_view = default_normal_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let default_mra_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Default MRA"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &default_mra_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &[255, 255, 0, 255], // R=1(AO), G=1(Rough), B=0(Metal)
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
-            wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
-        );
-        let default_mra_view = default_mra_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        println!("✅ Render pipeline created");
-
-        Self {
-            device,
-            queue,
-            surface,
-            surface_config,
-            render_pipeline,
-            shadow_pipeline,
-            material_bind_group_layout,
-            model_bind_group_layout,
-            light_bind_group_layout,
-            camera_buffer,
-            camera_bind_group,
-            camera_position: Vec3::new(0.0, 10.0, 20.0),
-            camera_yaw: 0.0,
-            camera_pitch: -20.0_f32.to_radians(),
-            light_buffer,
-            light_bind_group,
-            light_uniform_bind_group,
-            shadow_texture,
-            shadow_view,
-            shadow_sampler,
-            light_position,
-            materials: Vec::new(),
-            meshes: Vec::new(),
-            objects: Vec::new(),
-            sampler,
-            depth_texture,
-            depth_view,
-            default_normal_view,
-            default_mra_view,
-        }
-    }
-
-    // ========================================================================
-    // STEP 1: TEXTURE LOADING
-    // ========================================================================
-
-    /// Load a texture from file
-    fn load_texture(
-        &self,
-        path: &str,
-        is_srgb: bool,
-    ) -> Result<(wgpu::Texture, wgpu::TextureView), Box<dyn std::error::Error>> {
-        let img = image::open(path)?.to_rgba8();
-        let (width, height) = img.dimensions();
-
-        let format = if is_srgb {
-            wgpu::TextureFormat::Rgba8UnormSrgb
-        } else {
-            wgpu::TextureFormat::Rgba8Unorm
-        };
-
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some(path),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &img,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * width),
-                rows_per_image: Some(height),
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        println!("  ✅ Loaded texture: {} ({}×{})", path, width, height);
-        Ok((texture, view))
-    }
-
-    /// Create a material from a texture file
-    fn create_material(
-        &mut self,
-        name: &str,
-        texture_path: &str,
-    ) -> Result<usize, Box<dyn std::error::Error>> {
-        // Load albedo (sRGB)
-        let (texture, view) = self.load_texture(texture_path, true)?;
-
-        // Try to load normal map and roughness/mra maps using common suffixes
-        let p = std::path::Path::new(texture_path);
-        let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("texture");
-        let dir = p.parent().unwrap_or(std::path::Path::new(""));
-        let normal_path = dir.join(format!("{}_n.png", stem));
-        let roughness_path = dir.join(format!("{}_mra.png", stem));
-
-        let (normal_texture, normal_view) = if normal_path.exists() {
-            // Normal map (Linear)
-            let (t, v) = self.load_texture(normal_path.to_str().unwrap(), false)?;
-            (Some(t), Some(v))
-        } else {
-            (None, None)
-        };
-
-        let (roughness_texture, roughness_view) = if roughness_path.exists() {
-            // Roughness/MRA map (Linear)
-            let (t, v) = self.load_texture(roughness_path.to_str().unwrap(), false)?;
-            (Some(t), Some(v))
-        } else {
-            (None, None)
-        };
-
-        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(&format!("{} Bind Group", name)),
-            layout: &self.material_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
-                },
-                // Normal map (binding 2) if present, otherwise fallback to default normal
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(
-                        normal_view.as_ref().unwrap_or(&self.default_normal_view),
-                    ),
-                },
-                // Roughness/MRA map (binding 3) if present, otherwise fallback to default MRA
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: wgpu::BindingResource::TextureView(
-                        roughness_view.as_ref().unwrap_or(&self.default_mra_view),
-                    ),
-                },
-            ],
-        });
-
-        self.materials.push(Material {
-            name: name.to_string(),
-            albedo_texture: texture,
-            albedo_view: view,
-            normal_texture,
-            normal_view,
-            roughness_texture,
-            roughness_view,
-            bind_group,
-        });
-
-        println!("  📦 Created material: {}", name);
-        Ok(self.materials.len() - 1)
-    }
-
-    /// Create a fallback colored texture
-    fn create_fallback_texture(&self, color: [u8; 4]) -> (wgpu::Texture, wgpu::TextureView) {
-        // Create a simple 4x4 solid color texture
-        let img_data = vec![color; 16]; // 4x4 pixels
-        let flat_data: Vec<u8> = img_data.into_iter().flat_map(|c| c).collect();
-
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Fallback Texture"),
-            size: wgpu::Extent3d {
-                width: 4,
-                height: 4,
-                depth_or_array_layers: 1,
-            },
+        // Skybox Texture
+        let sky_img = image::open("assets/sky_equirect.png").expect("Missing sky_equirect.png").to_rgba8();
+        let sky_size = wgpu::Extent3d { width: sky_img.width(), height: sky_img.height(), depth_or_array_layers: 1 };
+        let sky_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Sky Texture"),
+            size: sky_size,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -804,963 +411,402 @@ impl ShowcaseApp {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-
-        self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &flat_data,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * 4), // 4 pixels × 4 bytes
-                rows_per_image: Some(4),    // 4 rows
-            },
-            wgpu::Extent3d {
-                width: 4,
-                height: 4,
-                depth_or_array_layers: 1,
-            },
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &sky_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &sky_img,
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * sky_img.width()), rows_per_image: Some(sky_img.height()) },
+            sky_size,
         );
-
-        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        (texture, view)
-    }
-
-    /// Create material with fallback
-    fn create_material_with_fallback(
-        &mut self,
-        name: &str,
-        texture_path: &str,
-        fallback_color: [u8; 4],
-    ) -> usize {
-        match self.create_material(name, texture_path) {
-            Ok(index) => index,
-            Err(e) => {
-                println!("  ⚠️  Failed to load {}: {}", texture_path, e);
-                println!("  🎨 Using fallback color for {}", name);
-
-                let (texture, view) = self.create_fallback_texture(fallback_color);
-
-                let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some(&format!("{} Fallback Bind Group", name)),
-                    layout: &self.material_bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(&view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&self.sampler),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::TextureView(&self.default_normal_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 3,
-                            resource: wgpu::BindingResource::TextureView(&self.default_mra_view),
-                        },
-                    ],
-                });
-
-                self.materials.push(Material {
-                    name: name.to_string(),
-                    albedo_texture: texture,
-                    albedo_view: view,
-                    normal_texture: None,
-                    normal_view: None,
-                    roughness_texture: None,
-                    roughness_view: None,
-                    bind_group,
-                });
-
-                self.materials.len() - 1
-            }
-        }
-    }
-
-    // ========================================================================
-    // STEP 2: GLTF MESH LOADING
-    // ========================================================================
-
-    /// Load a GLTF model (which may contain multiple meshes)
-    fn load_gltf_model(
-        &mut self,
-        path: &str,
-        material_map: &HashMap<String, usize>,
-        default_material_index: usize,
-    ) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
-        // Try to canonicalize path for better error messages
-        let path_buf = std::path::Path::new(path);
-        log::info!("Loading GLTF: {}", path);
-        let loaded_meshes = match gltf_loader::load_gltf(path_buf) {
-            Ok(l) => l,
-            Err(e) => {
-                // Try fallback: path relative to workspace 'assets' folder
-                let fallback = std::path::Path::new("assets")
-                    .join(path.strip_prefix("assets/").unwrap_or(path));
-                log::warn!(
-                    "Primary gltf import failed for '{}', trying fallback path: {}",
-                    path,
-                    fallback.display()
-                );
-                let res = gltf_loader::load_gltf(&fallback);
-                if res.is_err() {
-                    // Print detailed diagnostics before returning the original error
-                    // As a last resort, try to load from workspace 'assets' folder
-                    let canonical = std::fs::canonicalize(path)
-                        .unwrap_or_else(|_| std::path::PathBuf::from(path));
-                    log::warn!(
-                        "Canonical import failed, trying fallback path: {}",
-                        fallback.display()
-                    );
-                    let res2 = gltf_loader::load_gltf(&fallback);
-                    if res2.is_err() {
-                        log::error!(
-                            "Detailed GLTF load failure for '{}': {}\nCanonical: {}\nFallback: {}",
-                            path,
-                            e,
-                            canonical.display(),
-                            fallback.display()
-                        );
-                    }
-                }
-                res? // This will return the error or the loaded meshes
-            }
-        };
-
-        let mut mesh_indices = Vec::new();
-
-        for loaded in loaded_meshes {
-            println!(
-                "  ✅ Loaded Mesh '{}': {} vertices, {} triangles, material: {:?}",
-                loaded.name,
-                loaded.vertices.len(),
-                loaded.indices.len() / 3,
-                loaded.material_name
-            );
-
-            // Determine material index
-            let material_index = if let Some(mat_name) = &loaded.material_name {
-                *material_map.get(mat_name).unwrap_or(&default_material_index)
-            } else {
-                default_material_index
-            };
-
-            // Convert to our Vertex format (preserving vertex colors!)
-            let vertices: Vec<Vertex> = loaded
-                .vertices
-                .iter()
-                .map(|v| Vertex {
-                    position: v.position,
-                    normal: v.normal,
-                    uv: v.uv,
-                    color: v.color, // Preserve vertex colors from GLTF!
-                    tangent: v.tangent,
-                })
-                .collect();
-
-            let vertex_buffer = self
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&format!("{} Vertices", loaded.name)),
-                    contents: bytemuck::cast_slice(&vertices),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
-
-            let index_buffer = self
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&format!("{} Indices", loaded.name)),
-                    contents: bytemuck::cast_slice(&loaded.indices),
-                    usage: wgpu::BufferUsages::INDEX,
-                });
-
-            self.meshes.push(Mesh {
-                vertex_buffer,
-                index_buffer,
-                num_indices: loaded.indices.len() as u32,
-                material_index,
-            });
-
-            mesh_indices.push(self.meshes.len() - 1);
-        }
-
-        Ok(mesh_indices)
-    }
-
-    /// Load mesh with fallback to procedural cube
-    fn load_gltf_model_with_fallback(
-        &mut self,
-        path: &str,
-        material_map: &HashMap<String, usize>,
-        default_material_index: usize,
-    ) -> Vec<usize> {
-        match self.load_gltf_model(path, material_map, default_material_index) {
-            Ok(indices) => indices,
-            Err(e) => {
-                println!("  ⚠️  Failed to load {}: {}", path, e);
-                println!("  📦 Using fallback cube geometry");
-                vec![self.create_cube_mesh(default_material_index)]
-            }
-        }
-    }
-
-    /// Create a simple cube mesh as fallback
-    fn create_cube_mesh(&mut self, material_index: usize) -> usize {
-        let s = 1.0;
-        let white = [1.0, 1.0, 1.0, 1.0]; // White vertex color
-
-        let vertices = vec![
-            // Front face
-            Vertex {
-                position: [-s, -s, s],
-                normal: [0.0, 0.0, 1.0],
-                uv: [0.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, -s, s],
-                normal: [0.0, 0.0, 1.0],
-                uv: [1.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, s, s],
-                normal: [0.0, 0.0, 1.0],
-                uv: [1.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [-s, s, s],
-                normal: [0.0, 0.0, 1.0],
-                uv: [0.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            // Back face
-            Vertex {
-                position: [s, -s, -s],
-                normal: [0.0, 0.0, -1.0],
-                uv: [0.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [-s, -s, -s],
-                normal: [0.0, 0.0, -1.0],
-                uv: [1.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [-s, s, -s],
-                normal: [0.0, 0.0, -1.0],
-                uv: [1.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, s, -s],
-                normal: [0.0, 0.0, -1.0],
-                uv: [0.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            // Top face
-            Vertex {
-                position: [-s, s, s],
-                normal: [0.0, 1.0, 0.0],
-                uv: [0.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, s, s],
-                normal: [0.0, 1.0, 0.0],
-                uv: [1.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, s, -s],
-                normal: [0.0, 1.0, 0.0],
-                uv: [1.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [-s, s, -s],
-                normal: [0.0, 1.0, 0.0],
-                uv: [0.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            // Bottom face
-            Vertex {
-                position: [-s, -s, -s],
-                normal: [0.0, -1.0, 0.0],
-                uv: [0.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, -s, -s],
-                normal: [0.0, -1.0, 0.0],
-                uv: [1.0, 1.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [s, -s, s],
-                normal: [0.0, -1.0, 0.0],
-                uv: [1.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            Vertex {
-                position: [-s, -s, s],
-                normal: [0.0, -1.0, 0.0],
-                uv: [0.0, 0.0],
-                color: white,
-                tangent: [1.0, 0.0, 0.0, 1.0],
-            },
-            // Right face
-            Vertex {
-                position: [s, -s, s],
-                normal: [1.0, 0.0, 0.0],
-                uv: [0.0, 1.0],
-                color: white,
-                tangent: [0.0, 0.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [s, -s, -s],
-                normal: [1.0, 0.0, 0.0],
-                uv: [1.0, 1.0],
-                color: white,
-                tangent: [0.0, 0.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [s, s, -s],
-                normal: [1.0, 0.0, 0.0],
-                uv: [1.0, 0.0],
-                color: white,
-                tangent: [0.0, 0.0, 1.0, 1.0],
-            },
-            Vertex {
-                position: [s, s, s],
-                normal: [1.0, 0.0, 0.0],
-                uv: [0.0, 0.0],
-                color: white,
-                tangent: [0.0, 0.0, 1.0, 1.0],
-            },
-            // Left face
-            Vertex {
-                position: [-s, -s, -s],
-                normal: [-1.0, 0.0, 0.0],
-                uv: [0.0, 1.0],
-                color: white,
-                tangent: [0.0, 0.0, -1.0, 1.0],
-            },
-            Vertex {
-                position: [-s, -s, s],
-                normal: [-1.0, 0.0, 0.0],
-                uv: [1.0, 1.0],
-                color: white,
-                tangent: [0.0, 0.0, -1.0, 1.0],
-            },
-            Vertex {
-                position: [-s, s, s],
-                normal: [-1.0, 0.0, 0.0],
-                uv: [1.0, 0.0],
-                color: white,
-                tangent: [0.0, 0.0, -1.0, 1.0],
-            },
-            Vertex {
-                position: [-s, s, -s],
-                normal: [-1.0, 0.0, 0.0],
-                uv: [0.0, 0.0],
-                color: white,
-                tangent: [0.0, 0.0, -1.0, 1.0],
-            },
-        ];
-
-        let indices: Vec<u32> = vec![
-            0, 1, 2, 0, 2, 3, // Front
-            4, 5, 6, 4, 6, 7, // Back
-            8, 9, 10, 8, 10, 11, // Top
-            12, 13, 14, 12, 14, 15, // Bottom
-            16, 17, 18, 16, 18, 19, // Right
-            20, 21, 22, 20, 22, 23, // Left
-        ];
-
-        let vertex_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Cube Vertices"),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
-
-        let index_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Cube Indices"),
-                contents: bytemuck::cast_slice(&indices),
-                usage: wgpu::BufferUsages::INDEX,
-            });
-
-        self.meshes.push(Mesh {
-            vertex_buffer,
-            index_buffer,
-            num_indices: indices.len() as u32,
-            material_index,
+        let sky_view = sky_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sky_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+        
+        let sky_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Sky Bind Group"),
+            layout: &sky_layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&sky_view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sky_sampler) },
+            ],
         });
 
-        self.meshes.len() - 1
-    }
+        // Textures
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: wgpu::Extent3d { width: config.width, height: config.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        }).create_view(&wgpu::TextureViewDescriptor::default());
 
-    /// Create a floating island using modular assets
-    fn create_floating_island(
-        &mut self,
-        radius: i32,
-        grass_model: &[usize],
-        cliff_model: &[usize],
-        _cliff_corner_model: &[usize],
-    ) {
-        println!("  🏝️  Generating floating island (radius: {})...", radius);
-        
-        let tile_size = 1.0; // Kenney assets are 1m tiles
-        
-        for x in -radius..=radius {
-            for z in -radius..=radius {
-                let dist = ((x * x + z * z) as f32).sqrt();
-                
-                if dist <= radius as f32 {
-                    // Add slight height variation to break the grid look
-                    let height_offset = (x as f32 * 0.5).sin() * (z as f32 * 0.5).cos() * 0.2;
-                    let position = Vec3::new(x as f32 * tile_size, height_offset, z as f32 * tile_size);
-                    
-                    // Random rotation for grass to break uniformity
-                    let random_rot = (x * 3 + z * 7) as f32 * 0.1;
-                    let rotation = Quat::from_rotation_y(random_rot);
-                    
-                    // Slight overlap to prevent gaps
-                    let scale = Vec3::splat(1.01);
+        let msaa_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("MSAA Texture"),
+            size: wgpu::Extent3d { width: config.width, height: config.height, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: wgpu::TextureDimension::D2,
+            format: config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[],
+        }).create_view(&wgpu::TextureViewDescriptor::default());
 
-                    // Place grass on top
-                    for &mesh_index in grass_model {
-                        self.objects.push(SceneObject {
-                            mesh_index,
-                            position,
-                            rotation,
-                            scale,
-                            model_bind_group: self.create_model_bind_group(position, rotation, scale),
-                        });
-                    }
-
-                    // Place cliffs at the edge
-                    if dist > (radius as f32 - 1.5) {
-                        let angle = (z as f32).atan2(x as f32);
-                        let cliff_rot = Quat::from_rotation_y(-angle - std::f32::consts::FRAC_PI_2);
-                        let cliff_pos = position + Vec3::new(0.0, -2.0, 0.0); // Below grass
-                        
-                        for &mesh_index in cliff_model {
-                            self.objects.push(SceneObject {
-                                mesh_index,
-                                position: cliff_pos,
-                                rotation: cliff_rot,
-                                scale: Vec3::ONE,
-                                model_bind_group: self.create_model_bind_group(cliff_pos, cliff_rot, Vec3::ONE),
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // ========================================================================
-    // STEP 3: SCENE CREATION
-    // ========================================================================
-
-    /// Helper: Create a model bind group for an object's transform
-    fn create_model_bind_group(
-        &self,
-        position: Vec3,
-        rotation: Quat,
-        scale: Vec3,
-    ) -> wgpu::BindGroup {
-        // Build model matrix
-        let model_matrix = Mat4::from_scale_rotation_translation(scale, rotation, position);
-
-        let model_uniforms = ModelUniforms {
-            model: model_matrix.to_cols_array_2d(),
+        let mut app = Self {
+            window, surface, device, queue, config,
+            render_pipeline, sky_pipeline,
+            material_layout, model_layout,
+            depth_texture, msaa_texture,
+            camera_buffer, camera_bind_group,
+            camera_pos: Vec3::new(0.0, 5.0, 15.0), // Closer to ground
+            camera_yaw: 0.0, // Reset yaw
+            camera_pitch: -0.1, // Look slightly down
+            light_buffer, light_bind_group,
+            materials: Vec::new(),
+            meshes: Vec::new(),
+            objects: Vec::new(),
+            sky_bind_group,
+            sky_mesh_index: 0,
+            mouse_pressed: false,
         };
 
-        let model_buffer = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Model Buffer"),
-                contents: bytemuck::cast_slice(&[model_uniforms]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            });
+        app.init_scene();
+        app
+    }
+
+    fn init_scene(&mut self) {
+        println!("Initializing scene...");
+        self.sky_mesh_index = self.create_sphere_mesh(500.0, 32, 32);
+        println!("Sky mesh created.");
+
+        // Materials
+        let ground_mat = self.create_material_from_texture("Ground", "assets/grass.png");
+        let tower_mat = self.create_material_from_color("Tower", [0.7, 0.7, 0.7, 1.0]);
+        let leaves_mat = self.create_material_from_color("Leaves", [0.0, 0.8, 0.0, 1.0]);
+        let wood_mat = self.create_material_from_color("Wood", [0.4, 0.2, 0.1, 1.0]);
+        let rock_mat = self.create_material_from_color("Rock", [0.5, 0.5, 0.5, 1.0]);
+        let tent_mat = self.create_material_from_color("Tent", [0.8, 0.2, 0.2, 1.0]); // Red tent
+        println!("Materials created.");
+
+        // Ground
+        let ground_mesh = self.create_plane_mesh(100.0, ground_mat);
+        self.objects.push(SceneObject {
+            mesh_index: ground_mesh,
+            position: Vec3::ZERO,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+            model_bind_group: self.create_model_bind_group(Mat4::IDENTITY),
+        });
+        println!("Ground object added.");
+
+        // Helper to load model
+        let mut load_model = |path: &str, mat: usize, pos: Vec3, scale: f32, rot: Quat| {
+             if let Ok(indices) = self.load_gltf(path, mat) {
+                for idx in indices {
+                    self.objects.push(SceneObject {
+                        mesh_index: idx,
+                        position: pos,
+                        rotation: rot,
+                        scale: Vec3::splat(scale),
+                        model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(Vec3::splat(scale), rot, pos)),
+                    });
+                }
+             } else {
+                 println!("Failed to load {}", path);
+             }
+        };
+
+        // Tower
+        load_model("assets/models/tower.glb", tower_mat, Vec3::ZERO, 5.0, Quat::IDENTITY);
+
+        // Campfire
+        load_model("assets/models/campfire_logs.glb", wood_mat, Vec3::new(15.0, 0.0, 15.0), 5.0, Quat::IDENTITY);
+        
+        // Tent
+        load_model("assets/models/tent_smallOpen.glb", tent_mat, Vec3::new(25.0, 0.0, 15.0), 5.0, Quat::from_rotation_y(1.5));
+
+        // Rocks
+        load_model("assets/models/rock_largeA.glb", rock_mat, Vec3::new(-15.0, 0.0, 15.0), 5.0, Quat::from_rotation_y(0.5));
+        load_model("assets/models/rock_smallA.glb", rock_mat, Vec3::new(-12.0, 0.0, 18.0), 5.0, Quat::IDENTITY);
+
+        // Trees
+        let tree_positions = [
+             (Vec3::new(30.0, 0.0, 30.0), "assets/models/tree_default.glb"),
+             (Vec3::new(-30.0, 0.0, 30.0), "assets/models/tree_pineDefaultA.glb"),
+             (Vec3::new(30.0, 0.0, -30.0), "assets/models/tree_oak.glb"),
+             (Vec3::new(-45.0, 0.0, -15.0), "assets/models/tree_simple.glb"),
+             (Vec3::new(-24.0, 0.0, -36.0), "assets/models/tree_pineRoundA.glb"),
+        ];
+        
+        for (pos, path) in tree_positions {
+            load_model(path, leaves_mat, pos, 5.0, Quat::IDENTITY);
+        }
+
+        println!("Scene initialization complete.");
+    }
+
+    fn create_model_bind_group(&self, model_mat: Mat4) -> wgpu::BindGroup {
+        let buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Model Buffer"),
+            contents: bytemuck::cast_slice(&[ModelUniforms { model: model_mat.to_cols_array_2d() }]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
 
         self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Model Bind Group"),
-            layout: &self.model_bind_group_layout,
+            layout: &self.model_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: model_buffer.as_entire_binding(),
+                resource: buffer.as_entire_binding(),
             }],
         })
     }
 
-    fn load_scene(&mut self) {
-        println!("📦 Loading scene...");
-        println!();
-        println!("=== MATERIALS ===");
-
-        // Use high-resolution PBR textures from assets/ folder (2048-4096px)
-        let brown_mat = self.create_material_with_fallback(
-            "Tree Bark (PBR)",
-            "assets/tree_bark.png", // 4096×4096 high-res bark texture
-            [139, 90, 43, 255],     // Brown fallback
+    fn create_material_from_color(&mut self, name: &str, color: [f32; 4]) -> usize {
+        let size = wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 };
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(name),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        
+        let data = [
+            (color[0] * 255.0) as u8,
+            (color[1] * 255.0) as u8,
+            (color[2] * 255.0) as u8,
+            (color[3] * 255.0) as u8,
+        ];
+        
+        self.queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &data,
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4), rows_per_image: Some(1) },
+            size,
         );
-
-        let green_mat = self.create_material_with_fallback(
-            "Grass (PBR)",
-            "assets/grass.png", // 2048×2048 high-res grass texture
-            [76, 153, 51, 255], // Green fallback
-        );
-
-        let gray_mat = self.create_material_with_fallback(
-            "Stone (PBR)",
-            "assets/stone.png",   // 2048×2048 high-res stone texture
-            [128, 128, 128, 255], // Gray fallback
-        );
-
-        let skin_mat = self.create_material_with_fallback(
-            "Rock Slate (PBR)",
-            "assets/rock_slate.png", // 4096×4096 high-res rock texture
-            [218, 165, 132, 255],    // Fallback
-        );
-
-        // White material for vertex-colored models (characters)
-        // We use a 1x1 white texture so vertex colors show through purely
-        let (white_tex, white_view) = self.create_fallback_texture([255, 255, 255, 255]);
-        let white_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("White Material Bind Group"),
-            layout: &self.material_bind_group_layout,
+        
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+        
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(name),
+            layout: &self.material_layout,
             entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&white_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&self.sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&self.default_normal_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 3,
-                    resource: wgpu::BindingResource::TextureView(&self.default_mra_view),
-                },
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sampler) },
             ],
         });
-        self.materials.push(Material {
-            name: "White (Vertex Color)".to_string(),
-            albedo_texture: white_tex,
-            albedo_view: white_view,
-            normal_texture: None,
-            normal_view: None,
-            roughness_texture: None,
-            roughness_view: None,
-            bind_group: white_bind_group,
-        });
-        let white_mat = self.materials.len() - 1;
-
-        println!();
-        println!("=== MESHES ===");
-
-        // Material Maps
-        let mut tree_map = HashMap::new();
-        tree_map.insert("wood".to_string(), brown_mat);
-        tree_map.insert("woodBark".to_string(), brown_mat);
-        tree_map.insert("leaves".to_string(), green_mat);
-        tree_map.insert("leafsGreen".to_string(), green_mat);
-        tree_map.insert("leafsDark".to_string(), green_mat);
-        tree_map.insert("dark".to_string(), brown_mat);
-        tree_map.insert("light".to_string(), green_mat);
-
-        let mut rock_map = HashMap::new();
-        rock_map.insert("stone".to_string(), gray_mat);
-        rock_map.insert("stones".to_string(), gray_mat);
-        rock_map.insert("dirt".to_string(), gray_mat); // Use gray stone for dirt/rocks to avoid white look
-        rock_map.insert("grass".to_string(), green_mat);
-        rock_map.insert("bricks".to_string(), skin_mat); // Use reddish slate for bricks
-
-        let char_map = HashMap::new();
-        // Characters usually rely on vertex colors, so map everything to white
         
-        let mut ground_map = HashMap::new();
-        ground_map.insert("grass".to_string(), green_mat);
-        ground_map.insert("dirt".to_string(), skin_mat);
-        ground_map.insert("stone".to_string(), gray_mat);
-
-        // Load modular terrain assets
-        let ground_grass = self.load_gltf_model_with_fallback(
-            "assets/models/ground_grass.glb",
-            &ground_map,
-            green_mat,
-        );
-        let cliff_block = self.load_gltf_model_with_fallback(
-            "assets/models/cliff_block_stone.glb",
-            &ground_map,
-            gray_mat,
-        );
-        let cliff_corner = self.load_gltf_model_with_fallback(
-            "assets/models/cliff_corner_stone.glb",
-            &ground_map,
-            gray_mat,
-        );
-
-        // Load multiple tree variants (brown material for trunks)
-        let tree_default = self.load_gltf_model_with_fallback(
-            "assets/models/tree_default.glb",
-            &tree_map,
-            brown_mat,
-        );
-        let tree_oak =
-            self.load_gltf_model_with_fallback("assets/models/tree_oak.glb", &tree_map, brown_mat);
-        let tree_pine = self.load_gltf_model_with_fallback(
-            "assets/models/tree_pineDefaultA.glb",
-            &tree_map,
-            brown_mat,
-        );
-        let tree_models = vec![tree_default, tree_oak, tree_pine];
-
-        // Load multiple rock variants (gray material for stones)
-        let rock_large_a = self.load_gltf_model_with_fallback(
-            "assets/models/rock_largeA.glb",
-            &rock_map,
-            gray_mat,
-        );
-        let rock_large_b = self.load_gltf_model_with_fallback(
-            "assets/models/rock_largeB.glb",
-            &rock_map,
-            gray_mat,
-        );
-        let rock_small_a = self.load_gltf_model_with_fallback(
-            "assets/models/rock_smallA.glb",
-            &rock_map,
-            gray_mat,
-        );
-        let rock_models = vec![rock_large_a, rock_large_b, rock_small_a];
-
-        // Load Kenney character/NPC models (skin tone material)
-        println!("  🧍 Loading characters...");
-        let char_a = self.load_gltf_model_with_fallback(
-            "assets/models/character-a.glb",
-            &char_map,
-            white_mat,
-        );
-        let char_b = self.load_gltf_model_with_fallback(
-            "assets/models/character-b.glb",
-            &char_map,
-            white_mat,
-        );
-        let char_c = self.load_gltf_model_with_fallback(
-            "assets/models/character-c.glb",
-            &char_map,
-            white_mat,
-        );
-        let char_d = self.load_gltf_model_with_fallback(
-            "assets/models/character-d.glb",
-            &char_map,
-            white_mat,
-        );
-        let char_e = self.load_gltf_model_with_fallback(
-            "assets/models/character-e.glb",
-            &char_map,
-            white_mat,
-        );
-        let character_models = vec![char_a, char_b, char_c, char_d, char_e];
-
-        let building_model = self.load_gltf_model_with_fallback(
-            "assets/models/tower.glb",
-            &rock_map,
-            gray_mat,
-        );
-
-        println!();
-        println!("=== SCENE OBJECTS ===");
-
-        // Generate Floating Island
-        self.create_floating_island(20, &ground_grass, &cliff_block, &cliff_corner);
-
-        // Create scene objects - trees in a grid with variety
-        println!("  🌲 Placing trees...");
-        let mut tree_idx = 0;
-        for x in -3..=3 {
-            for z in -3..=3 {
-                if (x + z) % 2 == 0 {
-                    // Checkerboard pattern
-                    let position = Vec3::new(x as f32 * 8.0, 0.0, z as f32 * 8.0);
-                    let rotation = Quat::from_rotation_y((x * z) as f32 * 0.5);
-                    let scale = Vec3::splat(1.5);
-
-                    // Cycle through tree variants
-                    let model_meshes = &tree_models[tree_idx % tree_models.len()];
-                    tree_idx += 1;
-
-                    for &mesh_index in model_meshes {
-                        self.objects.push(SceneObject {
-                            mesh_index,
-                            position,
-                            rotation,
-                            scale,
-                            model_bind_group: self.create_model_bind_group(
-                                position, rotation, scale,
-                            ),
-                        });
-                    }
-                }
-            }
-        }
-
-        // Rocks scattered around with variety
-        println!("  🪨 Placing rocks...");
-        for i in 0..15 {
-            let angle = (i as f32 / 15.0) * std::f32::consts::TAU;
-            let radius = 20.0 + (i as f32 * 2.0);
-            let position = Vec3::new(angle.cos() * radius, 0.0, angle.sin() * radius);
-            let rotation = Quat::from_rotation_y(angle);
-            let scale = Vec3::splat(1.0 + (i as f32 * 0.1));
-
-            // Cycle through rock variants
-            let model_meshes = &rock_models[i % rock_models.len()];
-
-            for &mesh_index in model_meshes {
-                self.objects.push(SceneObject {
-                    mesh_index,
-                    position,
-                    rotation,
-                    scale,
-                    model_bind_group: self.create_model_bind_group(position, rotation, scale),
-                });
-            }
-        }
-
-        // Characters/NPCs scattered around the scene
-        println!("  🧍 Placing characters...");
-        for i in 0..10 {
-            let angle = (i as f32 / 10.0) * std::f32::consts::TAU;
-            let radius = 12.0 + (i as f32 * 1.5);
-            let position = Vec3::new(
-                angle.cos() * radius,
-                0.0, // Standing on ground
-                angle.sin() * radius,
-            );
-            let rotation = Quat::from_rotation_y(angle + std::f32::consts::PI); // Face center
-            let scale = Vec3::splat(1.0);
-
-            // Cycle through character variants
-            let model_meshes = &character_models[i % character_models.len()];
-
-            for &mesh_index in model_meshes {
-                self.objects.push(SceneObject {
-                    mesh_index,
-                    position,
-                    rotation,
-                    scale,
-                    model_bind_group: self.create_model_bind_group(position, rotation, scale),
-                });
-            }
-        }
-
-        // Buildings in corners
-        println!("  🏛️  Placing buildings...");
-        let building_positions = [
-            Vec3::new(-30.0, 0.0, -30.0),
-            Vec3::new(30.0, 0.0, -30.0),
-            Vec3::new(-30.0, 0.0, 30.0),
-            Vec3::new(30.0, 0.0, 30.0),
-        ];
-
-        for pos in building_positions {
-            let rotation = Quat::IDENTITY;
-            let scale = Vec3::new(2.0, 3.0, 2.0);
-
-            for &mesh_index in &building_model {
-                self.objects.push(SceneObject {
-                    mesh_index,
-                    position: pos,
-                    rotation,
-                    scale,
-                    model_bind_group: self.create_model_bind_group(pos, rotation, scale),
-                });
-            }
-        }
-
-        println!();
-        println!("✅ Scene loaded successfully!");
-        println!("  📊 Statistics:");
-        println!("     Materials: {}", self.materials.len());
-        println!("     Meshes: {}", self.meshes.len());
-        println!("     Objects: {}", self.objects.len());
-        println!();
+        self.materials.push(Material { name: name.to_string(), bind_group });
+        self.materials.len() - 1
     }
 
-    // ========================================================================
-    // STEP 4 & 5: UPDATE AND RENDER
-    // ========================================================================
-
-    fn update(&mut self, dt: f32) {
-        // Rotate camera around origin
-        self.camera_yaw += dt * 0.2;
-
-        let camera_distance = 50.0;
-        self.camera_position = Vec3::new(
-            self.camera_yaw.cos() * camera_distance,
-            25.0, // Higher camera for island view
-            self.camera_yaw.sin() * camera_distance,
-        );
-
-        // Update camera uniforms
-        let view = Mat4::look_at_rh(self.camera_position, Vec3::ZERO, Vec3::Y);
-
-        let proj = Mat4::perspective_rh(
-            60.0_f32.to_radians(),
-            self.surface_config.width as f32 / self.surface_config.height as f32,
-            0.1,
-            1000.0,
-        );
-
-        let camera_uniforms = CameraUniforms {
-            view_proj: (proj * view).to_cols_array_2d(),
-            camera_pos: self.camera_position.to_array(),
-            _padding: 0.0,
-        };
-
-        self.queue.write_buffer(
-            &self.camera_buffer,
-            0,
-            bytemuck::cast_slice(&[camera_uniforms]),
-        );
-
-        // Update light uniforms (rotate sun)
-        // Keep light position fixed relative to world for now, or rotate it
-        // Let's rotate it slowly to show off shadows
-        let light_angle = self.camera_yaw * 0.5; // Slower than camera
-        self.light_position = Vec3::new(
-            light_angle.cos() * 100.0,
-            100.0,
-            light_angle.sin() * 100.0,
-        );
-
-        // Light view-proj (Orthographic for directional light shadows)
-        let light_view = Mat4::look_at_rh(self.light_position, Vec3::ZERO, Vec3::Y);
-        let light_proj = Mat4::orthographic_rh(-60.0, 60.0, -60.0, 60.0, 1.0, 300.0);
+    fn create_material_from_texture(&mut self, name: &str, path: &str) -> usize {
+        let img = image::open(path).expect(&format!("Missing texture: {}", path)).to_rgba8();
+        let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(name),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
         
-        let light_uniforms = LightUniforms {
-            view_proj: (light_proj * light_view).to_cols_array_2d(),
-            position: self.light_position.to_array(),
-            _padding: 0.0,
-            color: [1.0, 0.95, 0.9], // Warm sun color
-            _padding2: 0.0,
-        };
-
-        self.queue.write_buffer(
-            &self.light_buffer,
-            0,
-            bytemuck::cast_slice(&[light_uniforms]),
+        self.queue.write_texture(
+            wgpu::TexelCopyTextureInfo { texture: &texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            &img,
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * img.width()), rows_per_image: Some(img.height()) },
+            size,
         );
+        
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            ..Default::default()
+        });
+        
+        let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some(name),
+            layout: &self.material_layout,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&sampler) },
+            ],
+        });
+        
+        self.materials.push(Material { name: name.to_string(), bind_group });
+        self.materials.len() - 1
+    }
+
+    fn create_sphere_mesh(&mut self, radius: f32, sectors: u32, stacks: u32) -> usize {
+        let mut vertices = Vec::new();
+        let mut indices = Vec::new();
+        
+        for i in 0..=stacks {
+            let v = i as f32 / stacks as f32;
+            let phi = v * std::f32::consts::PI;
+            
+            for j in 0..=sectors {
+                let u = j as f32 / sectors as f32;
+                let theta = u * 2.0 * std::f32::consts::PI;
+                
+                let x = radius * phi.sin() * theta.cos();
+                let y = radius * phi.cos();
+                let z = radius * phi.sin() * theta.sin();
+                
+                vertices.push(Vertex {
+                    position: [x, y, z],
+                    normal: [x/radius, y/radius, z/radius],
+                    uv: [u, v],
+                    color: [1.0, 1.0, 1.0, 1.0],
+                    tangent: [0.0; 4],
+                });
+            }
+        }
+        
+        for i in 0..stacks {
+            for j in 0..sectors {
+                let first = (i * (sectors + 1)) + j;
+                let second = first + sectors + 1;
+                indices.extend_from_slice(&[first, second, first + 1, second, second + 1, first + 1]);
+            }
+        }
+        
+        self.create_mesh_from_data(&vertices, &indices, 0)
+    }
+    
+    fn create_plane_mesh(&mut self, size: f32, mat_idx: usize) -> usize {
+        let s = size / 2.0;
+        let uv_scale = 50.0; // Increase tiling for better detail
+        let vertices = vec![
+            Vertex { position: [-s, 0.0, -s], normal: [0.0, 1.0, 0.0], uv: [0.0, 0.0], color: [1.0; 4], tangent: [1.0, 0.0, 0.0, 1.0] },
+            Vertex { position: [s, 0.0, -s], normal: [0.0, 1.0, 0.0], uv: [uv_scale, 0.0], color: [1.0; 4], tangent: [1.0, 0.0, 0.0, 1.0] },
+            Vertex { position: [s, 0.0, s], normal: [0.0, 1.0, 0.0], uv: [uv_scale, uv_scale], color: [1.0; 4], tangent: [1.0, 0.0, 0.0, 1.0] },
+            Vertex { position: [-s, 0.0, s], normal: [0.0, 1.0, 0.0], uv: [0.0, uv_scale], color: [1.0; 4], tangent: [1.0, 0.0, 0.0, 1.0] },
+        ];
+        // Flip indices to correct winding order (CCW for Up-facing normal)
+        let indices = vec![0, 2, 1, 0, 3, 2];
+        self.create_mesh_from_data(&vertices, &indices, mat_idx)
+    }
+    
+    fn create_cube_mesh(&mut self, size: f32, mat_idx: usize) -> usize {
+        let s = size / 2.0;
+        let mut vertices = Vec::new();
+        let mut indices = Vec::new();
+        
+        let mut add_face = |p: [Vec3; 4], n: Vec3| {
+            let base = vertices.len() as u32;
+            vertices.push(Vertex { position: p[0].to_array(), normal: n.to_array(), uv: [0.0, 1.0], color: [1.0; 4], tangent: [0.0; 4] });
+            vertices.push(Vertex { position: p[1].to_array(), normal: n.to_array(), uv: [1.0, 1.0], color: [1.0; 4], tangent: [0.0; 4] });
+            vertices.push(Vertex { position: p[2].to_array(), normal: n.to_array(), uv: [1.0, 0.0], color: [1.0; 4], tangent: [0.0; 4] });
+            vertices.push(Vertex { position: p[3].to_array(), normal: n.to_array(), uv: [0.0, 0.0], color: [1.0; 4], tangent: [0.0; 4] });
+            indices.extend_from_slice(&[base, base+1, base+2, base, base+2, base+3]);
+        };
+        
+        add_face([Vec3::new(-s,-s,s), Vec3::new(s,-s,s), Vec3::new(s,s,s), Vec3::new(-s,s,s)], Vec3::Z);
+        add_face([Vec3::new(s,-s,-s), Vec3::new(-s,-s,-s), Vec3::new(-s,s,-s), Vec3::new(s,s,-s)], -Vec3::Z);
+        add_face([Vec3::new(s,-s,s), Vec3::new(s,-s,-s), Vec3::new(s,s,-s), Vec3::new(s,s,s)], Vec3::X);
+        add_face([Vec3::new(-s,-s,-s), Vec3::new(-s,-s,s), Vec3::new(-s,s,s), Vec3::new(-s,s,-s)], -Vec3::X);
+        add_face([Vec3::new(-s,s,s), Vec3::new(s,s,s), Vec3::new(s,s,-s), Vec3::new(-s,s,-s)], Vec3::Y);
+        add_face([Vec3::new(-s,-s,-s), Vec3::new(s,-s,-s), Vec3::new(s,-s,s), Vec3::new(-s,-s,s)], -Vec3::Y);
+        
+        self.create_mesh_from_data(&vertices, &indices, mat_idx)
+    }
+
+    fn create_mesh_from_data(&mut self, vertices: &[Vertex], indices: &[u32], mat_idx: usize) -> usize {
+        let vertex_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(vertices),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let index_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(indices),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        
+        self.meshes.push(Mesh {
+            vertex_buffer,
+            index_buffer,
+            num_indices: indices.len() as u32,
+            material_index: mat_idx,
+        });
+        self.meshes.len() - 1
+    }
+
+    fn load_gltf(&mut self, path: &str, default_mat: usize) -> Result<Vec<usize>, Box<dyn std::error::Error>> {
+        let loaded = gltf_loader::load_gltf(std::path::Path::new(path))?;
+        let mut indices = Vec::new();
+        for mesh_data in loaded {
+            let vertices: Vec<Vertex> = mesh_data.vertices.iter().map(|v| Vertex {
+                position: v.position,
+                normal: v.normal,
+                uv: v.uv,
+                color: v.color,
+                tangent: v.tangent,
+            }).collect();
+            indices.push(self.create_mesh_from_data(&vertices, &mesh_data.indices, default_mat));
+        }
+        Ok(indices)
+    }
+
+    fn update(&mut self) {
+        let view = Mat4::look_at_rh(
+            self.camera_pos,
+            self.camera_pos + Quat::from_rotation_y(self.camera_yaw) * Quat::from_rotation_x(self.camera_pitch) * Vec3::NEG_Z, // Use NEG_Z
+            Vec3::Y,
+        );
+        // println!("Camera Pos: {:?}, Yaw: {}, Pitch: {}", self.camera_pos, self.camera_yaw, self.camera_pitch);
+        let proj = Mat4::perspective_rh(45.0_f32.to_radians(), self.config.width as f32 / self.config.height as f32, 0.1, 1000.0);
+        
+        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[CameraUniforms {
+            view_proj: (proj * view).to_cols_array_2d(),
+            camera_pos: self.camera_pos.to_array(),
+            _padding: 0.0,
+        }]));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        // println!("Render frame start");
         let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("Render Encoder"),
+        });
 
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
-
-        // 1. Shadow Pass
-        {
-            let mut shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Shadow Pass"),
-                color_attachments: &[],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.shadow_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            shadow_pass.set_pipeline(&self.shadow_pipeline);
-            // Bind camera group (required by pipeline layout even if unused by shader)
-            shadow_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            
-            // Bind a dummy material group (required by pipeline layout)
-            // We just use the first available material since the shadow shader doesn't read textures
-            if let Some(mat) = self.materials.first() {
-                shadow_pass.set_bind_group(1, &mat.bind_group, &[]);
-            }
-
-            // Bind light group (contains light view-proj)
-            shadow_pass.set_bind_group(3, &self.light_uniform_bind_group, &[]);
-
-            for object in &self.objects {
-                let mesh = &self.meshes[object.mesh_index];
-                
-                // Bind model transform
-                shadow_pass.set_bind_group(2, &object.model_bind_group, &[]);
-                
-                shadow_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                shadow_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                shadow_pass.draw_indexed(0..mesh.num_indices, 0, 0..1);
-            }
-        }
-
-        // 2. Main Pass
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
+                    view: &self.msaa_texture,
+                    resolve_target: Some(&view),
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.53,
-                            g: 0.81,
-                            b: 0.92,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.1, g: 0.1, b: 0.15, a: 1.0 }), // Dark Blue-Gray
                         store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.depth_view,
+                    view: &self.depth_texture,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,
@@ -1771,157 +817,154 @@ impl ShowcaseApp {
                 occlusion_query_set: None,
             });
 
+            render_pass.set_pipeline(&self.sky_pipeline);
+            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.sky_bind_group, &[]);
+            let sky_mesh = &self.meshes[self.sky_mesh_index];
+            render_pass.set_vertex_buffer(0, sky_mesh.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(sky_mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+            render_pass.draw_indexed(0..sky_mesh.num_indices, 0, 0..1);
+
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            render_pass.set_bind_group(3, &self.light_bind_group, &[]); // Bind light/shadows
+            render_pass.set_bind_group(1, &self.light_bind_group, &[]);
 
-            // Render all objects
-            for object in &self.objects {
-                let mesh = &self.meshes[object.mesh_index];
+            for obj in &self.objects {
+                let mesh = &self.meshes[obj.mesh_index];
                 let material = &self.materials[mesh.material_index];
-
-                // Set material bind group
-                render_pass.set_bind_group(1, &material.bind_group, &[]);
-
-                // Set model bind group (per-object transform)
-                render_pass.set_bind_group(2, &object.model_bind_group, &[]);
-
-                // Set mesh buffers
+                render_pass.set_bind_group(2, &material.bind_group, &[]);
+                render_pass.set_bind_group(3, &obj.model_bind_group, &[]);
                 render_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-                render_pass
-                    .set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-
-                // Draw
+                render_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                 render_pass.draw_indexed(0..mesh.num_indices, 0, 0..1);
             }
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
-
         Ok(())
     }
-
+    
+    fn handle_input(&mut self, event: &WindowEvent) -> bool {
+        match event {
+            WindowEvent::KeyboardInput { event: KeyEvent { physical_key: PhysicalKey::Code(key), state, .. }, .. } => {
+                let speed = 0.5;
+                if *state == ElementState::Pressed {
+                    match key {
+                        KeyCode::KeyW => self.camera_pos += Quat::from_rotation_y(self.camera_yaw) * Vec3::NEG_Z * speed,
+                        KeyCode::KeyS => self.camera_pos += Quat::from_rotation_y(self.camera_yaw) * Vec3::Z * speed,
+                        KeyCode::KeyA => self.camera_pos += Quat::from_rotation_y(self.camera_yaw) * Vec3::NEG_X * speed,
+                        KeyCode::KeyD => self.camera_pos += Quat::from_rotation_y(self.camera_yaw) * Vec3::X * speed,
+                        KeyCode::Space => self.camera_pos.y += speed,
+                        KeyCode::ShiftLeft => self.camera_pos.y -= speed,
+                        _ => {}
+                    }
+                }
+                true
+            }
+            WindowEvent::MouseInput { state, button: MouseButton::Right, .. } => {
+                self.mouse_pressed = *state == ElementState::Pressed;
+                true
+            }
+            _ => false,
+        }
+    }
+    
+    fn handle_mouse_motion(&mut self, delta: (f64, f64)) {
+        if self.mouse_pressed {
+            let sensitivity = 0.005;
+            self.camera_yaw += (delta.0 as f32) * sensitivity;
+            self.camera_pitch += (delta.1 as f32) * sensitivity;
+        }
+    }
+    
     fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
-            self.surface_config.width = new_size.width;
-            self.surface_config.height = new_size.height;
-            self.surface.configure(&self.device, &self.surface_config);
-
-            // Recreate depth texture
+            self.config.width = new_size.width;
+            self.config.height = new_size.height;
+            self.surface.configure(&self.device, &self.config);
+            
             self.depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Depth Texture"),
-                size: wgpu::Extent3d {
-                    width: new_size.width,
-                    height: new_size.height,
-                    depth_or_array_layers: 1,
-                },
+                size: wgpu::Extent3d { width: self.config.width, height: self.config.height, depth_or_array_layers: 1 },
                 mip_level_count: 1,
-                sample_count: 1,
+                sample_count: 4,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Depth32Float,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::TEXTURE_BINDING,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
                 view_formats: &[],
-            });
-            self.depth_view = self
-                .depth_texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
+            }).create_view(&wgpu::TextureViewDescriptor::default());
+
+            self.msaa_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("MSAA Texture"),
+                size: wgpu::Extent3d { width: self.config.width, height: self.config.height, depth_or_array_layers: 1 },
+                mip_level_count: 1,
+                sample_count: 4,
+                dimension: wgpu::TextureDimension::D2,
+                format: self.config.format,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[],
+            }).create_view(&wgpu::TextureViewDescriptor::default());
         }
     }
 }
 
-// ============================================================================
-// MAIN ENTRY POINT
-// ============================================================================
+struct App {
+    state: Option<ShowcaseApp>,
+}
+
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.state.is_none() {
+            let window_attrs = Window::default_attributes().with_title("AstraWeave Showcase V2");
+            let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
+            let state = pollster::block_on(ShowcaseApp::new(window));
+            self.state = Some(state);
+        }
+    }
+
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, id: WindowId, event: WindowEvent) {
+        if let Some(state) = &mut self.state {
+            if id == state.window.id() {
+                if !state.handle_input(&event) {
+                    match event {
+                        WindowEvent::CloseRequested => event_loop.exit(),
+                        WindowEvent::Resized(physical_size) => state.resize(physical_size),
+                        WindowEvent::RedrawRequested => {
+                            state.update();
+                            match state.render() {
+                                Ok(_) => {}
+                                Err(wgpu::SurfaceError::Lost) => state.resize(winit::dpi::PhysicalSize::new(state.config.width, state.config.height)), // Reconfigure
+                                Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+                                Err(e) => eprintln!("{:?}", e),
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    
+    fn device_event(&mut self, _event_loop: &ActiveEventLoop, _device_id: DeviceId, event: DeviceEvent) {
+        if let Some(state) = &mut self.state {
+            if let DeviceEvent::MouseMotion { delta } = event {
+                state.handle_mouse_motion(delta);
+            }
+        }
+    }
+    
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(state) = &mut self.state {
+            state.window.request_redraw();
+        }
+    }
+}
 
 fn main() {
     env_logger::init();
-
-    println!("🚀 AstraWeave Unified Showcase - Clean Implementation");
-    println!("   Built on solid foundations with proper texture handling");
-    println!();
-
     let event_loop = EventLoop::new().unwrap();
-    let window_attributes = winit::window::Window::default_attributes()
-        .with_title("AstraWeave Unified Showcase - Clean Implementation")
-        .with_inner_size(winit::dpi::LogicalSize::new(1280, 720));
-    let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-
-    let mut app = pollster::block_on(ShowcaseApp::new(window.clone()));
-    app.load_scene();
-
-    let mut last_time = std::time::Instant::now();
-    let mut frame_count = 0u32;
-    let mut fps_timer = 0.0f32;
-
-    let _ = event_loop
-        .run(move |event, elwt| {
-            match event {
-                Event::WindowEvent { event, .. } => match event {
-                    WindowEvent::CloseRequested => {
-                        println!();
-                        println!("👋 Goodbye!");
-                        elwt.exit();
-                    }
-                    WindowEvent::Resized(size) => {
-                        app.resize(size);
-                    }
-                    WindowEvent::RedrawRequested => {
-                        let now = std::time::Instant::now();
-                        let dt = (now - last_time).as_secs_f32();
-                        last_time = now;
-
-                        // FPS counter
-                        frame_count += 1;
-                        fps_timer += dt;
-                        if fps_timer >= 1.0 {
-                            println!(
-                                "📊 FPS: {} ({:.2} ms/frame)",
-                                frame_count,
-                                1000.0 / frame_count as f32
-                            );
-                            frame_count = 0;
-                            fps_timer = 0.0;
-                        }
-
-                        app.update(dt);
-                        match app.render() {
-                            Ok(_) => {}
-                            Err(wgpu::SurfaceError::Lost) => {
-                                println!("⚠️  Surface lost, recreating...");
-                                app.resize(window.inner_size());
-                            }
-                            Err(wgpu::SurfaceError::OutOfMemory) => {
-                                eprintln!("❌ Out of memory!");
-                                elwt.exit();
-                            }
-                            Err(e) => eprintln!("⚠️  Render error: {:?}", e),
-                        }
-
-                        // Request next frame
-                        window.request_redraw();
-                    }
-                    WindowEvent::KeyboardInput {
-                        event: key_event, ..
-                    } => {
-                        if key_event.state == ElementState::Pressed {
-                            if let Some(key) = key_event.logical_key.to_text() {
-                                match key {
-                                    "escape" => elwt.exit(),
-                                    _ => {}
-                                }
-                            }
-                        }
-                    }
-                    _ => {}
-                },
-                Event::AboutToWait => {
-                    // Request redraw on next iteration
-                    window.request_redraw();
-                }
-                _ => {}
-            }
-        })
-        .unwrap();
+    event_loop.set_control_flow(ControlFlow::Poll);
+    let mut app = App { state: None };
+    event_loop.run_app(&mut app).unwrap();
 }

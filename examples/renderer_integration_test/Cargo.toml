@@ -1,0 +1,17 @@
+[package]
+name = "renderer_integration_test"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+winit = { workspace = true }
+wgpu = { workspace = true }
+glam = { workspace = true }
+pollster = { workspace = true }
+env_logger = "0.11"
+log = "0.4"
+bytemuck = { workspace = true }
+astraweave-render = { path = "../../astraweave-render", features = ["postfx"] }
+astraweave-core = { path = "../../astraweave-core" }

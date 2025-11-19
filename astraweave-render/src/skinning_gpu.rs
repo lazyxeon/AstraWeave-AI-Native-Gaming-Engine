@@ -156,11 +156,11 @@ struct JointPalette {
 
 // Vertex input with skinning data
 struct SkinnedVertexInput {
-    @location(0) position: vec3<f32>,
-    @location(1) normal: vec3<f32>,
-    @location(12) tangent: vec4<f32>,
-    @location(10) joints: vec4<u32>,
-    @location(11) weights: vec4<f32>,
+    position: vec3<f32>,
+    normal: vec3<f32>,
+    tangent: vec4<f32>,
+    joints: vec4<u32>,
+    weights: vec4<f32>,
 }
 
 // Apply GPU skinning to position and normal

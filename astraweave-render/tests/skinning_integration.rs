@@ -70,11 +70,11 @@ fn test_cpu_skinning_deterministic() {
 
     // Compute poses at time 0.5
     let local_poses1 = clip.sample(0.5, &skeleton);
-    let matrices1 = compute_joint_matrices(&skeleton, &local_poses1);
+    let matrices1 = compute_joint_matrices(&skeleton, &local_poses1).unwrap();
 
     // Compute again - should be identical
     let local_poses2 = clip.sample(0.5, &skeleton);
-    let matrices2 = compute_joint_matrices(&skeleton, &local_poses2);
+    let matrices2 = compute_joint_matrices(&skeleton, &local_poses2).unwrap();
 
     assert_eq!(matrices1.len(), matrices2.len());
     for i in 0..matrices1.len() {
@@ -90,7 +90,7 @@ fn test_cpu_skinning_vertex() {
     let clip = create_test_animation();
 
     let local_poses = clip.sample(0.5, &skeleton);
-    let matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Test vertex at origin
     let position = Vec3::new(0.0, 1.0, 0.0);
@@ -115,7 +115,7 @@ fn test_joint_palette_conversion() {
     let clip = create_test_animation();
 
     let local_poses = clip.sample(1.0, &skeleton);
-    let matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Convert to GPU palette
     let palette = JointPalette::from_matrices(&matrices);
@@ -148,7 +148,7 @@ fn test_skinning_weighted_blend() {
     let clip = create_test_animation();
 
     let local_poses = clip.sample(0.5, &skeleton);
-    let matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     let position = Vec3::new(0.0, 1.5, 0.0);
     let normal = Vec3::Y;
@@ -203,7 +203,7 @@ fn test_hierarchical_transform_propagation() {
     let mut local_poses = vec![Transform::default(); 3];
     local_poses[0].rotation = Quat::from_rotation_z(std::f32::consts::PI / 2.0); // 90 degrees
 
-    let matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Child joints should inherit parent rotation
     // Verify by checking matrix components
@@ -248,7 +248,7 @@ fn test_golden_pose() {
 
     // Sample at exact keyframe time
     let poses = clip.sample(1.0, &skeleton);
-    let matrices = compute_joint_matrices(&skeleton, &poses);
+    let matrices = compute_joint_matrices(&skeleton, &poses).unwrap();
 
     // Joint 1 should have 45 degree rotation
     let joint1_matrix = matrices[1];
@@ -288,7 +288,7 @@ fn test_large_skeleton() {
         pose.translation = Vec3::new(0.0, 0.1, 0.0);
     }
 
-    let matrices = compute_joint_matrices(&skeleton, &poses);
+    let matrices = compute_joint_matrices(&skeleton, &poses).unwrap();
 
     assert_eq!(matrices.len(), 100);
 
