@@ -88,7 +88,7 @@ impl AnimatedEntity {
         let local_poses = self.clip.sample(self.current_time, &self.skeleton);
 
         // Compute joint matrices
-        self.joint_matrices = compute_joint_matrices(&self.skeleton, &local_poses);
+        self.joint_matrices = compute_joint_matrices(&self.skeleton, &local_poses).unwrap();
     }
 }
 

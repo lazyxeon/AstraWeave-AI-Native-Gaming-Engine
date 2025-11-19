@@ -179,7 +179,7 @@ fn test_cpu_skinning_rest_pose() {
 
     // Rest pose: use bind pose transforms
     let local_poses: Vec<Transform> = skeleton.joints.iter().map(|j| j.local_transform).collect();
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Skin vertices with CPU
     let skinned = skin_vertices_cpu(&vertices, &joint_matrices);
@@ -215,7 +215,7 @@ fn test_cpu_skinning_animated() {
 
     // Sample at t=0.5 (45° rotation midpoint)
     let local_poses = clip.sample(0.5, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Skin vertices with CPU
     let skinned = skin_vertices_cpu(&vertices, &joint_matrices);
@@ -244,7 +244,7 @@ fn test_parity_rest_pose() {
 
     // CPU skinning
     let local_poses: Vec<Transform> = skeleton.joints.iter().map(|j| j.local_transform).collect();
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
     let cpu_skinned = skin_vertices_cpu(&vertices, &joint_matrices);
 
     // GPU skinning (requires wgpu setup)
@@ -297,7 +297,7 @@ fn test_parity_animated_frame() {
 
     // CPU skinning at t=0.5
     let local_poses = clip.sample(0.5, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
     let cpu_skinned = skin_vertices_cpu(&vertices, &joint_matrices);
 
     // GPU skinning (requires wgpu setup)
@@ -357,7 +357,7 @@ fn test_parity_weighted_blending() {
 
     // CPU skinning at t=0.75
     let local_poses = clip.sample(0.75, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
     let cpu_skinned = skin_vertices_cpu(&vertices, &joint_matrices);
 
     // GPU skinning (placeholder)
