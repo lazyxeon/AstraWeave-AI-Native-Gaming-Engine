@@ -191,7 +191,7 @@ impl VectorStore {
         }
 
         // Sort by distance and take top k
-        results.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap());
+        results.sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(std::cmp::Ordering::Equal));
         results.truncate(k);
 
         Ok(results)
@@ -269,7 +269,7 @@ impl VectorStore {
         }
 
         // Sort by score (ascending, so lowest scores are first)
-        scored_vectors.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+        scored_vectors.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
         // Remove lowest-scoring vectors
         let to_remove = self.vectors.len() - target_count;

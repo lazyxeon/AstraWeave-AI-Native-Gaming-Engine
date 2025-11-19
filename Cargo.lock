@@ -5343,6 +5343,7 @@ dependencies = [
  "astraweave-ai",
  "astraweave-behavior",
  "astraweave-core",
+ "astraweave-ecs",
  "astraweave-llm",
  "chrono",
  "reqwest",

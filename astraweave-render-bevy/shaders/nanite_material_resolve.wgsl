@@ -73,6 +73,11 @@ fn unpack_visibility_id(packed: u32) -> vec2<u32> {
     return vec2<u32>(meshlet_id, triangle_id);
 }
 
+// Edge function for barycentric computation
+fn edge_function(a: vec2<f32>, b: vec2<f32>, c: vec2<f32>) -> f32 {
+    return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
+}
+
 // Compute screen-space barycentric coordinates
 fn compute_screen_barycentric(
     pixel_pos: vec2<f32>,
@@ -80,18 +85,14 @@ fn compute_screen_barycentric(
     v1_screen: vec2<f32>,
     v2_screen: vec2<f32>,
 ) -> vec3<f32> {
-    let edge = |a: vec2<f32>, b: vec2<f32>, c: vec2<f32>| -> f32 {
-        return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
-    };
-    
-    let area = edge(v0_screen, v1_screen, v2_screen);
+    let area = edge_function(v0_screen, v1_screen, v2_screen);
     if (abs(area) < 0.0001) {
         return vec3<f32>(1.0, 0.0, 0.0); // Degenerate, return vertex 0
     }
     
-    let w0 = edge(v1_screen, v2_screen, pixel_pos) / area;
-    let w1 = edge(v2_screen, v0_screen, pixel_pos) / area;
-    let w2 = edge(v0_screen, v1_screen, pixel_pos) / area;
+    let w0 = edge_function(v1_screen, v2_screen, pixel_pos) / area;
+    let w1 = edge_function(v2_screen, v0_screen, pixel_pos) / area;
+    let w2 = edge_function(v0_screen, v1_screen, pixel_pos) / area;
     
     return vec3<f32>(w0, w1, w2);
 }

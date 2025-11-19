@@ -6,6 +6,91 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+use crate::TemplateEngine;
+use handlebars::{Context, Handlebars, Helper, HelperResult, Output, RenderContext};
+
+/// Register default helpers to the template engine
+pub fn register_default_helpers(engine: &mut TemplateEngine) {
+    // JSON helper: serializes a variable to JSON
+    engine.register_helper(
+        "json",
+        Box::new(
+            |h: &Helper,
+             _: &Handlebars,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> HelperResult {
+                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                    "json", 0,
+                ))?;
+                let json = serde_json::to_string_pretty(param.value())
+                    .map_err(|e| handlebars::RenderErrorReason::Other(e.to_string()))?;
+                out.write(&json)?;
+                Ok(())
+            },
+        ),
+    );
+
+    // Trim helper: trims whitespace from the start and end of a string
+    engine.register_helper(
+        "trim",
+        Box::new(
+            |h: &Helper,
+             _: &Handlebars,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> HelperResult {
+                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                    "trim", 0,
+                ))?;
+                let value = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
+                    "Param must be a string".to_string(),
+                ))?;
+                out.write(value.trim())?;
+                Ok(())
+            },
+        ),
+    );
+
+    // Indent helper: indents text by a specified number of spaces (default 2)
+    engine.register_helper(
+        "indent",
+        Box::new(
+            |h: &Helper,
+             _: &Handlebars,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> HelperResult {
+                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                    "indent", 0,
+                ))?;
+                let text = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
+                    "Param must be a string".to_string(),
+                ))?;
+                
+                let spaces = if let Some(p1) = h.param(1) {
+                    p1.value().as_u64().unwrap_or(2) as usize
+                } else {
+                    2
+                };
+                
+                let indent_str = " ".repeat(spaces);
+                let indented = text
+                    .lines()
+                    .map(|line| format!("{}{}", indent_str, line))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                    
+                out.write(&indented)?;
+                Ok(())
+            },
+        ),
+    );
+}
+
 /// Prompt validation utilities
 pub struct PromptValidator;
 

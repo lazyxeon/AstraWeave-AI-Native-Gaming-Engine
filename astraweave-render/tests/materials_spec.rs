@@ -12,6 +12,7 @@ fn tmpdir(prefix: &str) -> tempfile::TempDir {
 }
 
 #[test]
+#[cfg(feature = "textures")]
 fn parses_materials_and_arrays_and_orders_layers() {
     let dir = tmpdir("materials_order");
     let base = dir.path().to_path_buf();
@@ -95,6 +96,7 @@ fn parses_materials_and_arrays_and_orders_layers() {
 }
 
 #[test]
+#[cfg(feature = "textures")]
 fn packs_mra_from_separate_planes_when_missing_mra() {
     let dir = tmpdir("materials_mra_pack");
     let base = dir.path().to_path_buf();
@@ -172,6 +174,7 @@ fn packs_mra_from_separate_planes_when_missing_mra() {
 }
 
 #[test]
+#[cfg(feature = "textures")]
 fn path_resolution_uses_base_dir_and_normalizes() {
     let dir = tmpdir("materials_paths");
     let base = dir.path().to_path_buf();

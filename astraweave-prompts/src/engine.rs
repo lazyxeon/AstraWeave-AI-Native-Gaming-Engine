@@ -3,18 +3,18 @@
 //! This module provides the core templating engine for AstraWeave prompt management.
 
 use crate::context::PromptContext;
-use crate::template::ProcessorConfig;
+use crate::helpers::register_default_helpers;
 use crate::template::PromptTemplate;
-use crate::template::TemplateProcessor;
 use anyhow::Result;
+use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::path::Path;
 
 /// Core prompt templating engine
 #[derive(Debug, Clone)]
 pub struct PromptEngine {
-    /// Template registry
-    templates: HashMap<String, String>,
+    /// Handlebars registry
+    registry: Handlebars<'static>,
     /// Configuration
     config: EngineConfig,
 }
@@ -40,8 +40,11 @@ impl Default for EngineConfig {
 impl PromptEngine {
     /// Create a new prompt engine
     pub fn new(config: EngineConfig) -> Self {
+        let mut registry = Handlebars::new();
+        registry.set_strict_mode(true);
+        
         Self {
-            templates: HashMap::new(),
+            registry,
             config,
         }
     }
@@ -56,18 +59,30 @@ impl PromptEngine {
             );
         }
 
-        self.templates.insert(name, template);
+        self.registry.register_template_string(&name, template)?;
         Ok(())
     }
 
-    /// Get a template by name
-    pub fn get_template(&self, name: &str) -> Option<&String> {
-        self.templates.get(name)
+    /// Register a partial
+    pub fn register_partial(&mut self, name: String, partial: String) -> Result<()> {
+        self.registry.register_partial(&name, partial)?;
+        Ok(())
     }
 
-    /// List all registered templates
-    pub fn list_templates(&self) -> Vec<&String> {
-        self.templates.keys().collect()
+    /// Register a helper
+    pub fn register_helper(
+        &mut self,
+        name: &str,
+        helper: Box<dyn handlebars::HelperDef + Send + Sync>,
+    ) {
+        self.registry.register_helper(name, helper);
+    }
+
+    /// Render a template
+    pub fn render(&self, name: &str, ctx: &PromptContext) -> Result<String> {
+        // Convert context to serde_json::Value for Handlebars
+        let vars = ctx.to_json();
+        Ok(self.registry.render(name, &vars)?)
     }
 }
 
@@ -79,25 +94,40 @@ pub struct TemplateEngine {
 
 impl TemplateEngine {
     pub fn new() -> Self {
-        Self {
+        let mut engine = Self {
             inner: PromptEngine::new(EngineConfig::default()),
-        }
+        };
+        register_default_helpers(&mut engine);
+        engine
     }
 
     pub fn register_template(&mut self, name: &str, template: PromptTemplate) -> Result<()> {
-        let _ = self
-            .inner
-            .register_template(name.to_string(), template.template);
+        self.inner
+            .register_template(name.to_string(), template.template)
+    }
+
+    pub fn register_partial(&mut self, name: &str, partial: &str) -> Result<()> {
+        self.inner.register_partial(name.to_string(), partial.to_string())
+    }
+
+    pub fn register_helper(
+        &mut self,
+        name: &str,
+        helper: Box<dyn handlebars::HelperDef + Send + Sync>,
+    ) {
+        self.inner.register_helper(name, helper);
+    }
+
+    pub fn load_templates_from_dir<P: AsRef<Path>>(&mut self, dir: P) -> Result<()> {
+        let loader = crate::loader::PromptLoader::new();
+        let templates = loader.load_from_dir(dir)?;
+        for template in templates {
+            self.register_template(&template.id.clone(), template)?;
+        }
         Ok(())
     }
 
     pub fn render(&self, name: &str, ctx: &PromptContext) -> Result<String> {
-        if let Some(t) = self.inner.get_template(name) {
-            let vars = ctx.to_string_map();
-            let proc = TemplateProcessor::new(ProcessorConfig::default());
-            proc.process(t, &vars)
-        } else {
-            anyhow::bail!("template not found: {}", name)
-        }
+        self.inner.render(name, ctx)
     }
 }

@@ -5,18 +5,21 @@ use astraweave_gameplay::quests::QuestLog;
 use astraweave_gameplay::stats::Stats;
 use astraweave_gameplay::{Inventory, RecipeBook};
 
+use crate::menu::{MenuAction, MenuManager};
 use crate::{Accessibility, UiFlags};
 use astraweave_cinematics as awc;
 
 #[derive(Default)]
 pub struct UiResult {
     pub crafted: Option<String>, // name
+    pub menu_action: Option<MenuAction>,
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn draw_ui(
     ctx: &egui::Context,
     flags: &mut UiFlags,
+    menu_manager: &mut MenuManager,
     acc: &mut Accessibility,
     player_stats: &Stats,
     player_pos: Vec3,
@@ -26,11 +29,18 @@ pub fn draw_ui(
 ) -> UiResult {
     let mut out = UiResult::default();
 
+    // Menu System Integration
+    let action = menu_manager.show(ctx);
+    if action != MenuAction::None {
+        menu_manager.handle_action(action);
+        out.menu_action = Some(action);
+    }
+
     // Top bar – Menu toggles
     egui::TopBottomPanel::top("top_bar").show(ctx, |ui| {
         ui.horizontal_wrapped(|ui| {
             if ui.button("Menu").clicked() {
-                flags.show_menu = !flags.show_menu;
+                menu_manager.toggle_pause();
             }
             if ui.button("Inventory (I)").clicked() {
                 flags.show_inventory = !flags.show_inventory;
@@ -75,17 +85,6 @@ pub fn draw_ui(
             }
         });
     });
-
-    if flags.show_menu {
-        egui::Window::new("Main Menu")
-            .resizable(true)
-            .show(ctx, |ui| {
-                ui.label("Pause / Save / Exit – (placeholder)");
-                if ui.button("Close").clicked() {
-                    flags.show_menu = false;
-                }
-            });
-    }
 
     if flags.show_inventory {
         egui::Window::new("Inventory")

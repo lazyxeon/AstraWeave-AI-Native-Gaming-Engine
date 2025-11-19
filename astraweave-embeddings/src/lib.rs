@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
     // Embed and store text
     let text = "The player approached the mysterious door";
     let embedding = client.embed(text).await?;
-    store.insert("memory_1", embedding, text.to_string())?;
+    store.insert("memory_1".to_string(), embedding, text.to_string())?;
 
     // Search for similar memories
     let query_embedding = client.embed("The player walked to a door").await?;

@@ -12,7 +12,7 @@ Retrieval Augmented Generation (RAG) pipeline for AI-native gaming. This crate p
 ## Quick Start
 
 ```rust
-use astraweave_rag::{RagPipeline, RagConfig};
+use astraweave_rag::{RagPipeline, RagConfig, VectorStoreWrapper};
 use astraweave_embeddings::{MockEmbeddingClient, VectorStore};
 use astraweave_llm::MockLlm;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ use std::sync::Arc;
 async fn main() -> anyhow::Result<()> {
     // Create components
     let embedding_client = Arc::new(MockEmbeddingClient::new());
-    let vector_store = Arc::new(VectorStore::new(384));
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
     let llm_client = Arc::new(MockLlm);
 
     // Create RAG pipeline
@@ -142,7 +142,7 @@ impl Default for ConsolidationConfig {
 }
 
 /// Strategies for memory consolidation
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum ConsolidationStrategy {
     /// Consolidate based on importance scores
     Importance,
@@ -222,7 +222,7 @@ impl Default for InjectionConfig {
 }
 
 /// Strategies for ordering retrieved memories
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum OrderingStrategy {
     /// Order by similarity (highest first)
     SimilarityDesc,
@@ -268,7 +268,7 @@ impl Default for DiversityConfig {
 }
 
 /// Strategies for ensuring diversity in retrieval
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum DiversityStrategy {
     /// Semantic diversity (different topics)
     Semantic,
@@ -351,7 +351,7 @@ pub struct RetrievalMetadata {
 }
 
 /// Methods used for memory retrieval
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum RetrievalMethod {
     /// Semantic similarity search
     SemanticSearch,
@@ -435,7 +435,7 @@ pub struct InjectionMetadata {
 }
 
 /// Strategies for injecting context into prompts
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum InjectionStrategy {
     /// Prepend memories before the prompt
     Prepend,

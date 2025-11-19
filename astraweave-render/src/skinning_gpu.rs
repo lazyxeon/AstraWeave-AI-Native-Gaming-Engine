@@ -37,7 +37,7 @@ impl JointPaletteManager {
             label: Some("joint_palette_bind_group_layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
@@ -149,7 +149,7 @@ struct JointMatrix {
 struct JointPalette {
     joints: array<JointMatrix, 256>,
     joint_count: u32,
-    _padding: vec3<u32>,
+    _padding: array<u32, 3>,
 }
 
 @group(4) @binding(0) var<storage, read> joint_palette: JointPalette;

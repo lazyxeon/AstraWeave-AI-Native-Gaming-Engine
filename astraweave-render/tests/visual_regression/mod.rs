@@ -139,7 +139,7 @@ impl VisualTestContext {
                 // Parse PNG
                 let decoder = png::Decoder::new(std::io::Cursor::new(&data));
                 let mut reader = decoder.read_info().expect("Failed to read PNG info");
-                let mut buf = vec![0; reader.output_buffer_size()];
+                let mut buf = vec![0; reader.output_buffer_size().unwrap()];
                 let info = reader.next_frame(&mut buf).expect("Failed to decode PNG");
                 buf.truncate(info.buffer_size());
                 buf

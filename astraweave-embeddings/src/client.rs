@@ -72,14 +72,18 @@ impl MockEmbeddingClient {
 
     /// Generate a deterministic embedding from text hash
     fn generate_mock_embedding(&self, text: &str) -> Vec<f32> {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        let mut hasher = DefaultHasher::new();
-        text.hash(&mut hasher);
-        let seed = hasher.finish();
+        // Use a simple deterministic hash (FNV-1a) to ensure consistency across runs
+        // DefaultHasher is randomized per process and cannot be used for deterministic tests
+        let mut hash: u64 = 0xcbf29ce484222325;
+        for byte in text.bytes() {
+            hash ^= byte as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+        let seed = hash;
 
         // Use the hash as a seed for deterministic random generation
+        // Note: SmallRng must be imported or fully qualified
+        use rand::{rngs::SmallRng, Rng, SeedableRng};
         let mut rng = SmallRng::seed_from_u64(seed);
 
         let mut embedding = Vec::with_capacity(self.dimensions);
@@ -98,8 +102,6 @@ impl MockEmbeddingClient {
         embedding
     }
 }
-
-use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 #[async_trait]
 impl EmbeddingClient for MockEmbeddingClient {
