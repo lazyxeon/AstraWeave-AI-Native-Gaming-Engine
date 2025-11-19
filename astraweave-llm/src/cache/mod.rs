@@ -125,10 +125,8 @@ impl PromptCache {
                             best_match = Some((cached_plan.clone(), similarity));
                         }
                     }
-                } else {
-                    if let Some(cached_plan) = self.cache.get(cached_key) {
-                        best_match = Some((cached_plan.clone(), similarity));
-                    }
+                } else if let Some(cached_plan) = self.cache.get(cached_key) {
+                    best_match = Some((cached_plan.clone(), similarity));
                 }
             }
         }

@@ -54,9 +54,9 @@ pub fn anchor_decay_system(
 }
 
 /// Apply combat stress to anchors within 20m of combat event
-fn apply_combat_stress_to_nearby_anchors(anchors: &mut [&mut Anchor], event_pos: (f32, f32, f32)) {
-    const STRESS_RADIUS: f32 = 20.0;
-    const STRESS_RADIUS_SQ: f32 = STRESS_RADIUS * STRESS_RADIUS;
+fn apply_combat_stress_to_nearby_anchors(anchors: &mut [&mut Anchor], _event_pos: (f32, f32, f32)) {
+    const _STRESS_RADIUS: f32 = 20.0;
+    const _STRESS_RADIUS_SQ: f32 = _STRESS_RADIUS * _STRESS_RADIUS;
 
     for anchor in anchors.iter_mut() {
         // Note: In real ECS, would query Position component

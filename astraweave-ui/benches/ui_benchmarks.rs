@@ -14,12 +14,12 @@
 
 use astraweave_ui::{
     load_settings, save_settings, AudioSettings, ControlsSettings, DamageNumber, DamageType,
-    DialogueChoice, DialogueNode, EnemyData, EnemyFaction, GraphicsSettings, HudManager, HudState,
-    MenuAction, MenuManager, MenuState, Objective, PlayerStats, PoiMarker, PoiType, Quest,
+    DialogueChoice, DialogueNode, EnemyData, EnemyFaction, GraphicsSettings, HudManager,
+    MenuManager, MenuState, Objective, PlayerStats, PoiMarker, PoiType, Quest,
     TooltipData,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use std::collections::HashMap;
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
 
 // ============================================================================
 // Benchmark 1: Menu Manager Operations

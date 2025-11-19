@@ -1,4 +1,4 @@
-use crate::mesh::CpuMesh;
+use crate::mesh::{compute_tangents, CpuMesh, MeshVertex};
 use anyhow::{anyhow, Result};
 
 pub struct GltfOptions {

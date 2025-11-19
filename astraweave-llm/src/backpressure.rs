@@ -546,7 +546,7 @@ impl BackpressureManager {
         let concurrent_capacity = metrics.adaptive_concurrency_limit;
 
         if concurrent_capacity > 0 {
-            let estimated_cycles = (position + concurrent_capacity - 1) / concurrent_capacity;
+            let estimated_cycles = position.div_ceil(concurrent_capacity);
             avg_processing_time * estimated_cycles as u32
         } else {
             Duration::from_secs(60) // Fallback estimate

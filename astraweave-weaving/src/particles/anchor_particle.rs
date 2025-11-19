@@ -10,6 +10,7 @@ use std::collections::VecDeque;
 const MAX_PARTICLES_PER_ANCHOR: usize = 500;
 
 /// Particle lifetime cap (auto-despawn after this duration)
+#[allow(dead_code)]
 const MAX_PARTICLE_LIFETIME: f32 = 3.0;
 
 // ============================================================================

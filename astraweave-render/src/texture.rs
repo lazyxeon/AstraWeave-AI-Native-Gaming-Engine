@@ -688,18 +688,15 @@ mod tests {
         pollster::block_on(async {
             let (device, queue) = create_test_device().await;
 
-            // Create a simple 2x2 PNG in memory (red pixel)
-            let png_data = vec![
-                0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-                0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
-                0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x02, // 2x2 dimensions
-                0x08, 0x02, 0x00, 0x00, 0x00, 0xFD, 0xD4, 0x9A, // RGB, no interlace
-                0x73, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, // IDAT chunk
-                0x54, 0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, // Compressed data
-                0x00, 0x03, 0x01, 0x01, 0x00, 0x18, 0xDD, 0x8D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-                0x45, 0x4E, // IEND
-                0x44, 0xAE, 0x42, 0x60, 0x82,
-            ];
+            // Create a simple 2x2 PNG in memory using image crate
+            let mut img = image::RgbaImage::new(2, 2);
+            img.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
+            let mut png_data = Vec::new();
+            img.write_to(
+                &mut std::io::Cursor::new(&mut png_data),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
 
             let result = Texture::from_bytes(&device, &queue, &png_data, "test_png");
             assert!(result.is_ok(), "Should load PNG from bytes");

@@ -516,7 +516,7 @@ mod tests {
         let plan = PlanIntent {
             plan_id: "test".to_string(),
             steps: vec![
-                ActionStep::MoveTo { x: 10, y: 5 },
+                ActionStep::MoveTo { x: 10, y: 5, speed: None },
                 ActionStep::CoverFire {
                     target_id: 99,
                     duration: 2.0,

@@ -526,7 +526,10 @@ mod gpu_tests {
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("test_device"),
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
+                required_limits: wgpu::Limits {
+                    max_bind_groups: 8,
+                    ..wgpu::Limits::default()
+                },
                 memory_hints: wgpu::MemoryHints::default(),
                 trace: wgpu::Trace::Off,
             })

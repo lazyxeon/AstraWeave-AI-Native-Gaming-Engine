@@ -340,7 +340,7 @@ pub mod gltf_loader {
                 decode_image_bytes(data)
             }
             gltf::image::Source::Uri { uri, .. } => {
-                let bytes = load_uri_bytes(&uri)?;
+                let bytes = load_uri_bytes(uri)?;
                 decode_image_bytes(&bytes)
             }
         }
@@ -527,8 +527,7 @@ pub mod gltf_loader {
                             let idx = base + (row * 4 + col) * 4;
                             if idx + 4 <= buffer_data.len() {
                                 let bytes = &buffer_data[idx..idx + 4];
-                                matrix[col][row] =
-                                    f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                                matrix[col][row] = f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
                             }
                         }
                     }
@@ -1277,6 +1276,9 @@ impl<T> AssetCache<T> {
     pub fn len(&self) -> usize {
         self.map.len()
     }
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
 }
 
 #[cfg(test)]
@@ -1429,6 +1431,12 @@ pub struct AssetDatabase {
     pub hot_reload_rx: watch::Receiver<()>,
 }
 
+impl Default for AssetDatabase {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AssetDatabase {
     pub fn new() -> Self {
         let (tx, rx) = watch::channel(());
@@ -1478,11 +1486,11 @@ impl AssetDatabase {
         for dep_guid in &dependencies {
             self.reverse_deps
                 .entry(guid.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(dep_guid.clone());
             self.dependency_graph
                 .entry(dep_guid.clone())
-                .or_insert(HashSet::new())
+                .or_default()
                 .insert(guid.clone());
         }
 
@@ -1557,11 +1565,11 @@ impl AssetDatabase {
             for dep in &meta.dependencies {
                 self.reverse_deps
                     .entry(guid.clone())
-                    .or_insert(HashSet::new())
+                    .or_default()
                     .insert(dep.clone());
                 self.dependency_graph
                     .entry(dep.clone())
-                    .or_insert(HashSet::new())
+                    .or_default()
                     .insert(guid.clone());
             }
         }

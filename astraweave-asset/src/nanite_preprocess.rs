@@ -361,9 +361,9 @@ pub fn generate_meshlets(
                 if meshlet_indices.is_empty() || distance < 10.0 {
                     // Add vertices to meshlet
                     for &idx in &[i0, i1, i2] {
-                        if !vertex_map.contains_key(&idx) {
+                        if let std::collections::hash_map::Entry::Vacant(e) = vertex_map.entry(idx) {
                             let local_idx = meshlet_vertices.len() as u8;
-                            vertex_map.insert(idx, local_idx);
+                            e.insert(local_idx);
                             meshlet_vertices.push(idx);
                         }
                     }
@@ -502,14 +502,14 @@ impl Eq for EdgeCollapse {}
 
 impl PartialOrd for EdgeCollapse {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        // Reverse ordering for min-heap (lower error = higher priority)
-        other.error.partial_cmp(&self.error)
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for EdgeCollapse {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap_or(std::cmp::Ordering::Equal)
+        // Reverse ordering for min-heap (lower error = higher priority)
+        other.error.partial_cmp(&self.error).unwrap_or(std::cmp::Ordering::Equal)
     }
 }
 
@@ -521,13 +521,7 @@ fn simplify_mesh(
     uvs: &[[f32; 2]],
     indices: &[u32],
     target_triangle_count: usize,
-) -> Result<(
-    Vec<[f32; 3]>,
-    Vec<[f32; 3]>,
-    Vec<[f32; 4]>,
-    Vec<[f32; 2]>,
-    Vec<u32>,
-)> {
+) -> Result<(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>)> {
     use std::collections::{BinaryHeap, HashMap, HashSet};
 
     let current_triangle_count = indices.len() / 3;
@@ -574,15 +568,15 @@ fn simplify_mesh(
         // Track which faces use each vertex
         vertex_faces
             .entry(v0)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(face_idx);
         vertex_faces
             .entry(v1)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(face_idx);
         vertex_faces
             .entry(v2)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(face_idx);
     }
 
@@ -658,7 +652,7 @@ fn simplify_mesh(
 
                 // Update vertex_faces (transfer v1's faces to v0, except shared ones)
                 if let Some(v1_faces_owned) = vertex_faces.remove(&v1) {
-                    let v0_faces_mut = vertex_faces.entry(v0).or_insert_with(HashSet::new);
+                    let v0_faces_mut = vertex_faces.entry(v0).or_default();
                     for face_idx in v1_faces_owned {
                         if !shared_faces.contains(&face_idx) {
                             v0_faces_mut.insert(face_idx);

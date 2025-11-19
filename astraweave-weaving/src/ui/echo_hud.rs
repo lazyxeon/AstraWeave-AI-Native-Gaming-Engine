@@ -124,7 +124,8 @@ impl EchoHud {
     }
 
     /// Render HUD using egui (call from game UI system)
-    #[cfg(feature = "egui")]
+    #[cfg(any())] // Disabled: egui not in dependencies
+    #[allow(dead_code)]
     pub fn render(&self, ctx: &egui::Context) {
         // Top-right corner Echo counter
         egui::Area::new("echo_hud")
@@ -175,11 +176,7 @@ impl EchoHud {
         }
     }
 
-    /// Render HUD (no-op when egui feature is disabled)
-    #[cfg(not(feature = "egui"))]
-    pub fn render(&self, _ctx: &()) {
-        // No-op: egui not available
-    }
+
 }
 
 impl Default for EchoHud {

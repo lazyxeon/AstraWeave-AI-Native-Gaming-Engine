@@ -8,7 +8,7 @@ use astraweave_render::{BloomConfig, BloomPipeline};
 #[cfg(feature = "bloom")]
 fn test_bloom_pipeline_creation() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -17,7 +17,7 @@ fn test_bloom_pipeline_creation() {
             .await
             .expect("no adapter");
         let (device, _queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -59,7 +59,7 @@ fn test_bloom_config_validation() {
 #[cfg(feature = "bloom")]
 fn test_bloom_execute() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -68,7 +68,7 @@ fn test_bloom_execute() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -108,7 +108,7 @@ fn test_bloom_execute() {
 #[cfg(feature = "bloom")]
 fn test_bloom_mip_clamp() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -117,7 +117,7 @@ fn test_bloom_mip_clamp() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
