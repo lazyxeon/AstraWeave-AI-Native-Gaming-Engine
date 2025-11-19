@@ -86,7 +86,7 @@ pub struct TextureStreamingManager {
     current_memory_bytes: usize,
     /// Camera position for distance-based residency
     camera_position: Vec3,
-    
+
     /// Channel for receiving async load results
     result_rx: mpsc::Receiver<LoadResult>,
     /// Sender to clone for async tasks
@@ -130,20 +130,22 @@ impl TextureStreamingManager {
         priority: u32,
         distance: f32,
     ) -> Option<TextureHandle> {
-        // Check current state
-        if let Some(state) = self.assets.get(&id) {
-            match state {
-                AssetState::Resident(handle) => {
-                    // Touch for LRU
-                    self.touch_texture(&id);
-                    return Some(handle.clone());
-                }
-                AssetState::Loading => return None, // Already loading
-                AssetState::Failed(_) => return None, // Failed previously
+        // Check if resident
+        if let Some(AssetState::Resident(handle)) = self.assets.get(&id) {
+            // Update LRU (move to back)
+            if let Some(pos) = self.lru_queue.iter().position(|x| x == &id) {
+                self.lru_queue.remove(pos);
+                self.lru_queue.push_back(id.clone());
             }
+            return Some(handle.clone());
         }
 
-        // Not tracked yet, queue for loading
+        // Check if already loading or failed
+        if self.assets.contains_key(&id) {
+            return None;
+        }
+
+        // Queue for load
         self.load_queue.push(LoadRequest {
             id,
             priority,
@@ -153,9 +155,7 @@ impl TextureStreamingManager {
         None
     }
 
-    /// Process pending loads and update state
-    ///
-    /// This should be called periodically (e.g., every frame).
+    /// Process the next load request from the queue
     ///
     /// # Arguments
     /// * `device` - WGPU device for loading
@@ -169,7 +169,8 @@ impl TextureStreamingManager {
                     let height = texture.texture.size().height;
                     let mip_levels = texture.texture.mip_level_count();
                     // Approximate memory: width * height * 4 bytes * 1.33 for mips
-                    let memory_bytes = (width * height * 4) as usize + ((width * height * 4) as usize / 3);
+                    let memory_bytes =
+                        (width * height * 4) as usize + ((width * height * 4) as usize / 3);
 
                     // Check budget before committing
                     while self.current_memory_bytes + memory_bytes > self.max_memory_bytes {
@@ -190,8 +191,12 @@ impl TextureStreamingManager {
 
                     self.current_memory_bytes += memory_bytes;
                     self.assets.insert(id.clone(), AssetState::Resident(handle));
-                    self.lru_queue.push_back(id);
-                    debug!("Texture loaded: {} ({} MB)", id, memory_bytes as f32 / 1024.0 / 1024.0);
+                    self.lru_queue.push_back(id.clone());
+                    debug!(
+                        "Texture loaded: {} ({} MB)",
+                        id,
+                        memory_bytes as f32 / 1024.0 / 1024.0
+                    );
                 }
                 Err((id, err)) => {
                     error!("Texture load failed for {}: {}", id, err);
@@ -219,8 +224,9 @@ impl TextureStreamingManager {
             let path = request.id.clone(); // Assuming ID is path
 
             tokio::task::spawn(async move {
-                let result = Texture::load_texture_async(&device, &queue, &path, TextureUsage::Albedo).await;
-                
+                let result =
+                    Texture::load_texture_async(&device, &queue, &path, TextureUsage::Albedo).await;
+
                 match result {
                     Ok(texture) => {
                         let _ = tx.send(Ok((id, texture))).await;
@@ -271,11 +277,17 @@ impl TextureStreamingManager {
 
     /// Get current memory usage statistics
     pub fn get_stats(&self) -> TextureStreamingStats {
-        let loaded_count = self.assets.values()
+        let loaded_count = self
+            .assets
+            .values()
             .filter(|s| matches!(s, AssetState::Resident(_)))
             .count();
-        let pending_count = self.load_queue.len() + 
-            self.assets.values().filter(|s| matches!(s, AssetState::Loading)).count();
+        let pending_count = self.load_queue.len()
+            + self
+                .assets
+                .values()
+                .filter(|s| matches!(s, AssetState::Loading))
+                .count();
 
         TextureStreamingStats {
             loaded_count,

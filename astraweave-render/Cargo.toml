@@ -5,7 +5,7 @@ edition = "2021"
 license.workspace = true
 
 [features]
-default = ["postfx"]
+default = ["postfx", "textures"]
 postfx = []
 gpu-tests = []
 textures = ["image"]
@@ -54,7 +54,7 @@ texture2ddecoder = "0.1"
 serde = { workspace = true }
 serde_json = "1"
 rand = { workspace = true }
-tokio = { version = "1", features = ["sync"] }
+tokio = { version = "1", features = ["sync", "fs", "rt"] }
 
 [dev-dependencies]
 criterion = { workspace = true }
