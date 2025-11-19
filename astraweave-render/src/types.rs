@@ -52,6 +52,7 @@ pub struct SkinnedVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
     pub tangent: [f32; 4],
+    pub uv: [f32; 2],
     pub joints: [u16; 4],
     pub weights: [f32; 4],
 }
@@ -81,15 +82,21 @@ impl SkinnedVertex {
                     shader_location: 12,
                     format: wgpu::VertexFormat::Float32x4,
                 },
-                // joints
+                // uv
                 wgpu::VertexAttribute {
                     offset: 40,
+                    shader_location: 13,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                // joints
+                wgpu::VertexAttribute {
+                    offset: 48,
                     shader_location: 10,
                     format: wgpu::VertexFormat::Uint16x4,
                 },
                 // weights
                 wgpu::VertexAttribute {
-                    offset: 48,
+                    offset: 56,
                     shader_location: 11,
                     format: wgpu::VertexFormat::Float32x4,
                 },
@@ -161,7 +168,7 @@ impl InstanceRaw {
                 // material_id (uint)
                 wgpu::VertexAttribute {
                     offset: 116,
-                    shader_location: 10,
+                    shader_location: 14,
                     format: wgpu::VertexFormat::Uint32,
                 },
             ],

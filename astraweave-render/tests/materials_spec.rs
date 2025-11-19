@@ -51,7 +51,7 @@ fn parses_materials_and_arrays_and_orders_layers() {
     );
 
     // Headless WGPU
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::LowPower,
         compatible_surface: None,
@@ -64,9 +64,8 @@ fn parses_materials_and_arrays_and_orders_layers() {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
             memory_hints: wgpu::MemoryHints::default(),
-            trace: None,
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))
     .expect("device");
 
@@ -142,7 +141,7 @@ fn packs_mra_from_separate_planes_when_missing_mra() {
     );
 
     // WGPU headless
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter =
         pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
             .expect("adapter");
@@ -152,9 +151,8 @@ fn packs_mra_from_separate_planes_when_missing_mra() {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
             memory_hints: wgpu::MemoryHints::default(),
-            trace: None,
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))
     .expect("device");
 
@@ -204,7 +202,7 @@ fn path_resolution_uses_base_dir_and_normalizes() {
     "#,
     );
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter =
         pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions::default()))
             .expect("adapter");
@@ -214,9 +212,8 @@ fn path_resolution_uses_base_dir_and_normalizes() {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
             memory_hints: wgpu::MemoryHints::default(),
-            trace: None,
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))
     .expect("device");
 

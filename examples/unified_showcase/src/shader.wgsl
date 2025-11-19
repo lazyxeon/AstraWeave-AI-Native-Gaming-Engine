@@ -140,12 +140,15 @@ fn fetch_shadow(shadow_pos: vec4<f32>, normal: vec3<f32>, light_dir: vec3<f32>) 
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let texture_color = textureSample(albedo_texture, texture_sampler, in.uv).rgb;
+    let texture_color = textureSample(albedo_texture, texture_sampler, in.uv);
+    if (texture_color.a < 0.5) {
+        discard;
+    }
+    let albedo = in.color.rgb * texture_color.rgb;
+    
     let normal_sample = textureSample(normal_texture, texture_sampler, in.uv).rgb;
     // Roughness is in Green channel for glTF MRA workflow (Red=Occlusion, Green=Roughness, Blue=Metalness)
     let roughness_sample = textureSample(roughness_texture, texture_sampler, in.uv).g;
-    
-    let albedo = in.color.rgb * texture_color;
     
     // Normal mapping
     let n_sample = normal_sample * 2.0 - vec3<f32>(1.0, 1.0, 1.0);
@@ -180,6 +183,50 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Tone mapping (Reinhard)
     let mapped = lighting / (lighting + vec3<f32>(1.0));
     // Gamma correction
+    let gamma = pow(mapped, vec3<f32>(1.0 / 2.2));
+    
+    return vec4<f32>(gamma, in.color.a);
+}
+
+// ========================================================================
+// SKYBOX SHADER
+// ========================================================================
+
+struct SkyOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) world_pos: vec3<f32>,
+};
+
+@group(1) @binding(0)
+var sky_texture: texture_2d<f32>;
+@group(1) @binding(1)
+var sky_sampler: sampler;
+
+@vertex
+fn vs_sky(in: VertexInput) -> SkyOutput {
+    var out: SkyOutput;
+    // Center the skybox on the camera
+    let world_pos = in.position * 500.0 + camera.camera_pos;
+    out.clip_position = camera.view_proj * vec4<f32>(world_pos, 1.0);
+    // Force z to be at the far plane (1.0)
+    out.clip_position.z = out.clip_position.w; 
+    out.world_pos = in.position;
+    return out;
+}
+
+@fragment
+fn fs_sky(in: SkyOutput) -> @location(0) vec4<f32> {
+    let dir = normalize(in.world_pos);
+    // Equirectangular mapping
+    // atan2(z, x) gives angle in [-PI, PI]
+    // We map to [0, 1]
+    let u = 0.5 + atan2(dir.z, dir.x) / (2.0 * 3.14159265);
+    let v = 0.5 - asin(dir.y) / 3.14159265;
+    
+    let color = textureSample(sky_texture, sky_sampler, vec2<f32>(u, v));
+    
+    // Apply simple tone mapping to match the scene
+    let mapped = color.rgb / (color.rgb + vec3<f32>(1.0));
     let gamma = pow(mapped, vec3<f32>(1.0 / 2.2));
     
     return vec4<f32>(gamma, 1.0);

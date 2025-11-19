@@ -67,6 +67,7 @@ bytes = "1"
 approx = "0.5"
 naga = { version = "25.0.1", features = ["wgsl-in"] }
 glob = "0.3"
+image = "0.25"
 
 [[bench]]
 name = "mesh_optimization"
