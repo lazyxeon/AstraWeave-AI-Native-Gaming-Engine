@@ -1,0 +1,121 @@
+    Checking astraweave-render v0.1.0 (C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+warning: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.
+    --> astraweave-render\src\renderer.rs:2596:19
+     |
+2596 |             wgpu::ImageCopyTexture {
+     |                   ^^^^^^^^^^^^^^^^
+     |
+     = note: `#[warn(deprecated)]` on by default
+
+warning: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.
+    --> astraweave-render\src\renderer.rs:2603:19
+     |
+2603 |             wgpu::ImageDataLayout {
+     |                   ^^^^^^^^^^^^^^^
+
+warning: unused variable: `fallback_view`
+    --> astraweave-render\src\renderer.rs:1915:13
+     |
+1915 |         let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
+     |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fallback_view`
+     |
+     = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `fallback_sampler`
+    --> astraweave-render\src\renderer.rs:1916:13
+     |
+1916 |         let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+     |             ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fallback_sampler`
+
+warning: unused variable: `debug_quad_pipeline`
+    --> astraweave-render\src\renderer.rs:1961:13
+     |
+1961 |         let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+     |             ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_debug_quad_pipeline`
+
+warning: unused variable: `fallback_view`
+    --> astraweave-render\src\renderer.rs:2404:13
+     |
+2404 |         let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
+     |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fallback_view`
+
+warning: unused variable: `fallback_sampler`
+    --> astraweave-render\src\renderer.rs:2405:13
+     |
+2405 |         let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+     |             ^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fallback_sampler`
+
+warning: unused variable: `debug_quad_pipeline`
+    --> astraweave-render\src\renderer.rs:2450:13
+     |
+2450 |         let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+     |             ^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_debug_quad_pipeline`
+
+error[E0592]: duplicate definitions with name `load_texture_async`
+   --> astraweave-render\src\texture.rs:509:5
+    |
+321 | /     pub async fn load_texture_async(
+322 | |         device: &wgpu::Device,
+323 | |         queue: &wgpu::Queue,
+324 | |         path: &str,
+325 | |         usage: TextureUsage,
+326 | |     ) -> Result<Self> {
+    | |_____________________- other definition for `load_texture_async`
+...
+509 | /     pub async fn load_texture_async(
+510 | |         device: &wgpu::Device,
+511 | |         queue: &wgpu::Queue,
+512 | |         path: &str,
+513 | |         usage: TextureUsage,
+514 | |     ) -> Result<Self> {
+    | |_____________________^ duplicate definitions for `load_texture_async`
+
+error[E0599]: no method named `request_texture` found for struct `TextureStreamingManager` in the current scope
+    --> astraweave-render\src\renderer.rs:3228:53
+     |
+3228 |             let tex_handle = self.texture_streaming.request_texture(id.clone(), 100, 0.0);
+     |                                                     ^^^^^^^^^^^^^^^ method not found in `TextureStreamingManager`
+     |
+    ::: astraweave-render\src\texture_streaming.rs:76:1
+     |
+76   | pub struct TextureStreamingManager {
+     | ---------------------------------- method `request_texture` not found for this struct
+
+error[E0599]: no method named `request_texture` found for struct `TextureStreamingManager` in the current scope
+    --> astraweave-render\src\renderer.rs:3690:18
+     |
+3688 |               let handle_opt = self
+     |  ______________________________-
+3689 | |                 .texture_streaming
+3690 | |                 .request_texture(tex_path.to_string(), 100, 1.0);
+     | |                 -^^^^^^^^^^^^^^^ method not found in `TextureStreamingManager`
+     | |_________________|
+     |
+     |
+    ::: astraweave-render\src\texture_streaming.rs:76:1
+     |
+76   |   pub struct TextureStreamingManager {
+     |   ---------------------------------- method `request_texture` not found for this struct
+
+error[E0382]: borrow of moved value: `id`
+   --> astraweave-render\src\texture_streaming.rs:164:25
+    |
+134 |                 Ok((id, texture)) => {
+    |                     -- move occurs because `id` has type `std::string::String`, which does not implement the `Copy` trait
+...
+161 |                     self.lru_queue.push_back(id);
+    |                                              -- value moved here
+...
+164 |                         id,
+    |                         ^^ value borrowed here after move
+    |
+    = note: this error originates in the macro `$crate::__private_api::format_args` which comes from the expansion of the macro `debug` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider cloning the value if the performance cost is acceptable
+    |
+161 |                     self.lru_queue.push_back(id.clone());
+    |                                                ++++++++
+
+Some errors have detailed explanations: E0382, E0592, E0599.
+For more information about an error, try `rustc --explain E0382`.
+warning: `astraweave-render` (lib) generated 8 warnings
+error: could not compile `astraweave-render` (lib) due to 4 previous errors; 8 warnings emitted

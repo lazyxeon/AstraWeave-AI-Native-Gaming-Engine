@@ -1,4 +1,4 @@
-   Compiling astraweave-render v0.1.0 (C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+    Checking astraweave-render v0.1.0 (C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
 warning: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.
     --> astraweave-render\src\renderer.rs:2596:19
      |
@@ -87,35 +87,4 @@ warning: method `touch_texture` is never used
     |        ^^^^^^^^^^^^^
 
 warning: `astraweave-render` (lib) generated 11 warnings
-   Compiling renderer_integration_test v0.1.0 (C:\Users\pv2br\Documents\GitHub\AstraWeave-AI-Native-Gaming-Engine\examples\renderer_integration_test)
-warning: unused import: `Mat4`
- --> examples\renderer_integration_test\src\main.rs:4:12
-  |
-4 | use glam::{Mat4, Vec3};
-  |            ^^^^
-  |
-  = note: `#[warn(unused_imports)]` on by default
-
-warning: use of deprecated method `winit::event_loop::EventLoop::<T>::run`: use `EventLoop::run_app` instead
-   --> examples\renderer_integration_test\src\main.rs:161:16
-    |
-161 |     event_loop.run(move |event, elwt| match event {
-    |                ^^^
-    |
-    = note: `#[warn(deprecated)]` on by default
-
-warning: `renderer_integration_test` (bin "renderer_integration_test") generated 2 warnings (run `cargo fix --bin "renderer_integration_test"` to apply 1 suggestion)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 18.33s
-     Running `target\debug\renderer_integration_test.exe`
-[2025-11-19T22:18:46Z ERROR wgpu::backend::wgpu_core] Handling wgpu errors as fatal by default
-
-thread 'main' panicked at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\backend\wgpu_core.rs:1051:30:
-wgpu error: Validation Error
-
-Caused by:
-  In Device::create_shader_module, label = 'basic shader'
-    Shader global ResourceBinding { group: 4, binding: 0 } uses a group index 4 that exceeds the max_bind_groups limit of 4.
-
-
-note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
-error: process didn't exit successfully: `target\debug\renderer_integration_test.exe` (exit code: 101)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.24s

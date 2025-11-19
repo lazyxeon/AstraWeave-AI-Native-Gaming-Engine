@@ -15,20 +15,20 @@ use astraweave_profiling::{plot, span};
 use crate::camera::Camera;
 use crate::clustered::CpuLight;
 use crate::clustered_forward::{ClusterConfig, ClusteredForwardRenderer};
-use crate::gi::vxgi::{VxgiConfig, VxgiRenderer};
+use crate::debug_quad::create_screen_quad;
 use crate::depth::Depth;
+use crate::gi::vxgi::{VxgiConfig, VxgiRenderer};
+use crate::texture_streaming::TextureStreamingManager;
 use crate::types::SkinnedVertex;
 use crate::types::{Instance, InstanceRaw, Mesh};
 use astraweave_cinematics as awc;
-use crate::texture_streaming::TextureStreamingManager;
+use astraweave_materials::MaterialPackage;
 
 const PBR_SRC: &str = include_str!("../shaders/pbr.wgsl");
 const CLUSTERED_LIGHTING_SRC: &str = include_str!("../shaders/clustered_lighting.wgsl");
+const DEBUG_QUAD_SRC: &str = include_str!("shaders/debug_shader.wgsl");
 
 const POST_SHADER: &str = include_str!("../shaders/post_basic.wgsl");
-
-#[cfg(feature = "postfx")]
-const POST_SHADER_FX: &str = include_str!("../shaders/post_fx.wgsl");
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -159,13 +159,14 @@ pub struct Renderer {
     mr_tex: wgpu::Texture,
     mr_view: wgpu::TextureView,
     mr_sampler: wgpu::Sampler,
-    
+
     // Fallback texture and sampler (Magenta 1x1)
     fallback_tex: wgpu::Texture,
     fallback_view: wgpu::TextureView,
     fallback_sampler: wgpu::Sampler,
     debug_quad_pipeline: wgpu::RenderPipeline,
     debug_quad_bg_layout: wgpu::BindGroupLayout,
+    debug_quad_buf: wgpu::Buffer,
 
     // Normal map texture and sampler
     normal_tex: wgpu::Texture,
@@ -224,6 +225,9 @@ pub struct Renderer {
     _residency_manager: crate::residency::ResidencyManager,
 
     bind_groups_invalidated: bool,
+
+    // Smoke test
+    smoke_test_asset_id: Option<String>,
 }
 
 impl Renderer {
@@ -330,7 +334,12 @@ impl Renderer {
         let depth = crate::depth::Depth::create(&device, &config);
 
         // Shaders / pipeline
-        let shader_source = format!("{}\n{}\n{}", CLUSTERED_LIGHTING_SRC, crate::gi::vxgi::CONE_TRACING_SHADER, PBR_SRC);
+        let shader_source = format!(
+            "{}\n{}\n{}",
+            CLUSTERED_LIGHTING_SRC,
+            crate::gi::vxgi::CONE_TRACING_SHADER,
+            PBR_SRC
+        );
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("basic shader"),
             source: wgpu::ShaderSource::Wgsl(Cow::Owned(shader_source)),
@@ -791,7 +800,7 @@ impl Renderer {
         #[cfg(feature = "postfx")]
         let post_fx_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("post fx shader"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER_FX)),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER)),
         });
         #[cfg(feature = "postfx")]
         let post_fx_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -1882,7 +1891,7 @@ fn vs(input: VSIn) -> VSOut {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &fallback_tex,
@@ -1902,7 +1911,7 @@ fn vs(input: VSIn) -> VSOut {
                 depth_or_array_layers: 1,
             },
         );
-        
+
         let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("fallback sampler"),
@@ -1914,49 +1923,53 @@ fn vs(input: VSIn) -> VSOut {
         // Debug Quad Pipeline
         let debug_quad_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Debug Quad Shader"),
-            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("../shaders/debug_quad.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                "../shaders/debug_quad.wgsl"
+            ))),
         });
 
-        let debug_quad_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("debug_quad_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+        let debug_quad_bg_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("debug_quad_bind_group_layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
 
-        let debug_quad_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("debug_quad_pipeline_layout"),
-            bind_group_layouts: &[&debug_quad_bg_layout],
-            push_constant_ranges: &[],
-        });
+        let debug_quad_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("debug_quad_pipeline_layout"),
+                bind_group_layouts: &[&debug_quad_bg_layout],
+                push_constant_ranges: &[],
+            });
 
         let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("debug_quad_pipeline"),
             layout: Some(&debug_quad_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &debug_quad_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[crate::debug_quad::DebugQuadVertex::desc()],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &debug_quad_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -2367,7 +2380,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-        
+
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &fallback_tex,
@@ -2387,7 +2400,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 depth_or_array_layers: 1,
             },
         );
-        
+
         let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("fallback sampler"),
@@ -2399,49 +2412,53 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // Debug Quad Pipeline
         let debug_quad_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Debug Quad Shader"),
-            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("../shaders/debug_quad.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                "../shaders/debug_quad.wgsl"
+            ))),
         });
 
-        let debug_quad_bg_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("debug_quad_bind_group_layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+        let debug_quad_bg_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("debug_quad_bind_group_layout"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
                     },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        });
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
 
-        let debug_quad_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("debug_quad_pipeline_layout"),
-            bind_group_layouts: &[&debug_quad_bg_layout],
-            push_constant_ranges: &[],
-        });
+        let debug_quad_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("debug_quad_pipeline_layout"),
+                bind_group_layouts: &[&debug_quad_bg_layout],
+                push_constant_ranges: &[],
+            });
 
         let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("debug_quad_pipeline"),
             layout: Some(&debug_quad_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &debug_quad_shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
                 buffers: &[crate::debug_quad::DebugQuadVertex::desc()],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &debug_quad_shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -2548,7 +2565,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         });
         // Clustered initialization moved up
 
-
         // Create overlay resources now while `device` and `config` are still available.
         let overlay = crate::overlay::OverlayFx::new(&device, config.format);
         let overlay_params = crate::overlay::OverlayParams {
@@ -2556,6 +2572,119 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             letterbox: 0.0,
             _pad: [0.0; 2],
         };
+
+        // ========================================
+        // Debug Quad Infrastructure
+        // ========================================
+        // 1. Fallback Texture (Magenta 1x1)
+        let fallback_size = wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        };
+        let fallback_tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("fallback_tex"),
+            size: fallback_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &fallback_tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &[255, 0, 255, 255], // Magenta
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4),
+                rows_per_image: Some(1),
+            },
+            fallback_size,
+        );
+        let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("fallback_sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        // 2. Debug Quad Pipeline
+        let debug_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("debug_shader"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(DEBUG_QUAD_SRC)),
+        });
+        let debug_quad_bg_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("debug_quad_bgl"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            multisampled: false,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+            });
+        let debug_quad_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("debug_quad_pl"),
+                bind_group_layouts: &[&debug_quad_bg_layout],
+                push_constant_ranges: &[],
+            });
+        let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("debug_quad_pipeline"),
+            layout: Some(&debug_quad_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &debug_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[crate::debug_quad::DebugQuadVertex::desc()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &debug_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
+        // 3. Debug Quad Buffer
+        let quad_verts = create_screen_quad();
+        let debug_quad_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("debug_quad_buf"),
+            contents: bytemuck::cast_slice(&quad_verts),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
 
         Ok(Self {
             surface,
@@ -2654,6 +2783,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             normal_tex,
             normal_view,
             normal_sampler,
+            fallback_tex,
+            fallback_view,
+            fallback_sampler,
+            debug_quad_pipeline,
+            debug_quad_bg_layout,
+            debug_quad_buf,
+            smoke_test_asset_id: None,
             // combined tex_bgl/tex_bg used
             camera_ubo: CameraUBO {
                 view_proj: Mat4::IDENTITY.to_cols_array_2d(),
@@ -2806,7 +2942,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     pub fn update_streaming(&mut self) {
-        self.texture_streaming.process_next_load(&self.device, &self.queue);
+        self.texture_streaming
+            .process_next_load(&self.device, &self.queue);
     }
 
     pub fn update_camera(&mut self, camera: &Camera) {
@@ -2822,7 +2959,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let f = camera.zfar.max(n + 0.1);
         let c = 4.0; // cascades count
         let lambda = self.cascade_lambda.clamp(0.0, 1.0);
-        
+
         for i in 1..4 {
             let fi = i as f32;
             let u = n + (f - n) * (fi / c);
@@ -2885,7 +3022,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // Padding to 288 bytes (72 floats)
         data.push(0.0);
         data.push(0.0);
-        
+
         self.queue
             .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
     }
@@ -3062,6 +3199,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.sky.set_config(cfg);
     }
 
+    pub fn set_smoke_test_texture(&mut self, id: &str) {
+        self.smoke_test_asset_id = Some(id.to_string());
+    }
+
     pub fn render(&mut self) -> Result<()> {
         #[cfg(feature = "profiling")]
         span!("Render::Frame");
@@ -3079,6 +3220,59 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("encoder"),
             });
+
+        // Visual Smoke Test: Debug Quad Overlay
+        if let Some(id) = &self.smoke_test_asset_id {
+            // Check status via request (returns None if loading/failed/not resident)
+            // We use a high priority to ensure it loads if not already
+            let tex_handle = self.texture_streaming.request_texture(id.clone(), 100, 0.0);
+
+            let (tex_view, tex_sampler) = if let Some(handle) = &tex_handle {
+                (&handle.texture.view, &handle.texture.sampler)
+            } else {
+                (&self.fallback_view, &self.fallback_sampler)
+            };
+
+            let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("debug_quad_bg"),
+                layout: &self.debug_quad_bg_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(tex_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(tex_sampler),
+                    },
+                ],
+            });
+
+            {
+                let mut rpass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("debug quad pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+                rpass.set_pipeline(&self.debug_quad_pipeline);
+                rpass.set_bind_group(0, &bg, &[]);
+                rpass.set_vertex_buffer(0, self.debug_quad_buf.slice(..));
+                rpass.draw(0..6, 0..1);
+            }
+
+            self.queue.submit(Some(enc.finish()));
+            frame.present();
+            return Ok(());
+        }
 
         // Create plane buffer before render pass
         // Slightly lower the ground plane to avoid z-fighting with terrain at y=0
@@ -3135,14 +3329,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 });
             }
             // Convert CpuLight to GpuLight
-            let gpu_lights: Vec<crate::clustered_forward::GpuLight> = self.point_lights.iter().map(|l| {
-                crate::clustered_forward::GpuLight::new(
-                    l.pos,
-                    l.radius,
-                    glam::Vec3::new(1.0, 1.0, 1.0), // Default white color
-                    1.0 // Default intensity
-                )
-            }).collect();
+            let gpu_lights: Vec<crate::clustered_forward::GpuLight> = self
+                .point_lights
+                .iter()
+                .map(|l| {
+                    crate::clustered_forward::GpuLight::new(
+                        l.pos,
+                        l.radius,
+                        glam::Vec3::new(1.0, 1.0, 1.0), // Default white color
+                        1.0,                            // Default intensity
+                    )
+                })
+                .collect();
 
             // Update lights and build clusters using the new renderer
             self.clustered_forward.update_lights(gpu_lights);
@@ -3485,52 +3683,54 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
         // DEBUG QUAD SMOKE TEST
         {
-             let tex_path = "assets/test_texture.png";
-             // Request texture (priority 100, dist 1.0)
-             let handle_opt = self.texture_streaming.request_texture(tex_path.to_string(), 100, 1.0);
-             
-             let (view_ref, sampler_ref) = if let Some(handle) = handle_opt {
-                 (&handle.texture.view, &handle.texture.sampler)
-             } else {
-                 (&self.fallback_view, &self.fallback_sampler)
-             };
-             
-             let debug_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                 label: Some("Debug Quad Bind Group"),
-                 layout: &self.debug_quad_bg_layout,
-                 entries: &[
-                     wgpu::BindGroupEntry {
-                         binding: 0,
-                         resource: wgpu::BindingResource::TextureView(view_ref),
-                     },
-                     wgpu::BindGroupEntry {
-                         binding: 1,
-                         resource: wgpu::BindingResource::Sampler(sampler_ref),
-                     },
-                 ],
-             });
-             
-             let vertex_buf = crate::debug_quad::create_screen_quad(&self.device);
-             
-             let mut debug_pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                 label: Some("Debug Quad Pass"),
-                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                     view: &view, 
-                     resolve_target: None,
-                     ops: wgpu::Operations {
-                         load: wgpu::LoadOp::Load, 
-                         store: wgpu::StoreOp::Store,
-                     },
-                 })],
-                 depth_stencil_attachment: None,
-                 timestamp_writes: None,
-                 occlusion_query_set: None,
-             });
-             
-             debug_pass.set_pipeline(&self.debug_quad_pipeline);
-             debug_pass.set_bind_group(0, &debug_bg, &[]);
-             debug_pass.set_vertex_buffer(0, vertex_buf.slice(..));
-             debug_pass.draw(0..4, 0..1);
+            let tex_path = "assets/test_texture.png";
+            // Request texture (priority 100, dist 1.0)
+            let handle_opt = self
+                .texture_streaming
+                .request_texture(tex_path.to_string(), 100, 1.0);
+
+            let (view_ref, sampler_ref) = if let Some(handle) = &handle_opt {
+                (&handle.texture.view, &handle.texture.sampler)
+            } else {
+                (&self.fallback_view, &self.fallback_sampler)
+            };
+
+            let debug_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Debug Quad Bind Group"),
+                layout: &self.debug_quad_bg_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(view_ref),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(sampler_ref),
+                    },
+                ],
+            });
+
+            // vertex_buf is already in self.debug_quad_buf
+
+            let mut debug_pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Debug Quad Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            debug_pass.set_pipeline(&self.debug_quad_pipeline);
+            debug_pass.set_bind_group(0, &debug_bg, &[]);
+            debug_pass.set_vertex_buffer(0, self.debug_quad_buf.slice(..));
+            debug_pass.draw(0..6, 0..1);
         }
 
         #[cfg(feature = "profiling")]
@@ -3703,19 +3903,21 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 radius: 5.0,
             });
         }
-        
+
         // Convert lights to GPU format and update clustered renderer
         let glights: Vec<crate::clustered_forward::GpuLight> = self
             .point_lights
             .iter()
-            .map(|l| crate::clustered_forward::GpuLight::new(
-                l.pos,
-                l.radius,
-                glam::Vec3::ONE, // Default white color
-                1.0, // Default intensity
-            ))
+            .map(|l| {
+                crate::clustered_forward::GpuLight::new(
+                    l.pos,
+                    l.radius,
+                    glam::Vec3::ONE, // Default white color
+                    1.0,             // Default intensity
+                )
+            })
             .collect();
-            
+
         self.clustered_forward.update_lights(glights);
         self.clustered_forward.build_clusters(
             &self.queue,

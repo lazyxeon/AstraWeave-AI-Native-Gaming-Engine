@@ -49,6 +49,7 @@ impl TextureUsage {
 }
 
 /// A loaded texture with its GPU resources
+#[derive(Debug)]
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
