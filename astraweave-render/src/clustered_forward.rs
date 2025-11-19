@@ -76,7 +76,8 @@ pub struct GpuCluster {
     pub _padding: [u32; 2],
 }
 
-/// Clustered forward renderer
+/// Clustered forward renderer implementation
+#[allow(dead_code)]
 pub struct ClusteredForwardRenderer {
     config: ClusterConfig,
 

@@ -26,19 +26,6 @@ impl FrameBudget {
     pub const TARGET_FPS: f32 = 60.0;
     pub const FRAME_TIME_MS: f32 = 16.67; // 1000ms / 60fps
 
-    /// Create default budget allocation
-    pub fn default() -> Self {
-        Self {
-            ecs: 2.7,
-            physics: 3.0,
-            rendering: 8.0,
-            ai: 1.0,
-            audio: 0.5,
-            ui: 0.5,
-            headroom: 1.0,
-        }
-    }
-
     /// Create empty budget (all zeros)
     pub fn zero() -> Self {
         Self {
@@ -51,6 +38,24 @@ impl FrameBudget {
             headroom: 0.0,
         }
     }
+}
+
+impl Default for FrameBudget {
+    /// Create default budget allocation
+    fn default() -> Self {
+        Self {
+            ecs: 2.7,
+            physics: 3.0,
+            rendering: 8.0,
+            ai: 1.0,
+            audio: 0.5,
+            ui: 0.5,
+            headroom: 1.0,
+        }
+    }
+}
+
+impl FrameBudget {
 
     /// Total time used (excluding headroom)
     pub fn total_used(&self) -> f32 {

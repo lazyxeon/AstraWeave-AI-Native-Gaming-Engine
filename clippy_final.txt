@@ -1,0 +1,39 @@
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: a `Vec` of `Range` that is only one element[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset\src\nanite_preprocess.rs:414:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut lod_ranges = vec![0..all_meshlets.len()];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#single_range_in_vec_init[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::single_range_in_vec_init)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: if you wanted a `Vec` that contains the entire range, try[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[38;5;9m- [0m[0m    let mut lod_ranges = [0m[0m[38;5;9mvec![0..all_meshlets.len()][0m[0m;[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[38;5;10m+ [0m[0m    let mut lod_ranges = [0m[0m[38;5;10m(0..all_meshlets.len()).collect::<std::vec::Vec<usize>>()[0m[0m;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: very complex type used. Consider factoring parts into `type` definitions[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset\src\nanite_preprocess.rs:524:6[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m524[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m) -> Result<(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>)> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m      [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::type_complexity)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the loop variable `col` is used to index `matrix`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset\src\lib.rs:526:36[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m526[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        for col in 0..4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                    [0m[0m[1m[38;5;11m^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_range_loop)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider using an iterator and enumerate()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m526[0m[0m [0m[0m[38;5;9m- [0m[0m                        for [0m[0m[38;5;9mcol[0m[0m in [0m[0m[38;5;9m0..4[0m[0m {[0m
+[0m[1m[38;5;14m526[0m[0m [0m[0m[38;5;10m+ [0m[0m                        for [0m[0m[38;5;10m(col, <item>)[0m[0m in [0m[0m[38;5;10mmatrix.iter_mut().enumerate()[0m[0m {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-asset` (lib) generated 3 warnings
+[1m[32m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 1.29s

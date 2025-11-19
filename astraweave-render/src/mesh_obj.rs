@@ -1,7 +1,8 @@
 #[allow(unused_imports)]
 use anyhow::{anyhow, Result};
 
-use crate::mesh::CpuMesh;
+use crate::mesh::{CpuMesh, MeshVertex};
+use glam::{Vec2, Vec3, Vec4};
 
 #[cfg(feature = "obj-assets")]
 pub fn load_obj(path: &std::path::Path) -> Result<Vec<CpuMesh>> {

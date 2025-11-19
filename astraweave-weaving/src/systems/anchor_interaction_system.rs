@@ -10,20 +10,13 @@
 use crate::anchor::Anchor;
 
 /// Input state for interaction (simplified for testing)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct InputState {
     pub e_pressed: bool,
     pub e_just_pressed: bool,
 }
 
 impl InputState {
-    pub fn new() -> Self {
-        Self {
-            e_pressed: false,
-            e_just_pressed: false,
-        }
-    }
-
     pub fn press_e(&mut self) {
         self.e_pressed = true;
         self.e_just_pressed = true;
@@ -102,7 +95,7 @@ mod tests {
         let anchor = Anchor::new(0.7, 5, Some(AbilityType::EchoDash));
         let anchors = vec![(1, &anchor)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
         input.press_e();
 
         let event = anchor_interaction_system(Some(1), &anchors, &input);
@@ -124,7 +117,7 @@ mod tests {
         let anchor = Anchor::new(1.0, 10, None);
         let anchors = vec![(1, &anchor)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
         input.press_e();
 
         let event = anchor_interaction_system(None, &anchors, &input);
@@ -137,7 +130,7 @@ mod tests {
         let anchor = Anchor::new(0.5, 3, Some(AbilityType::BarricadeDeploy));
         let anchors = vec![(1, &anchor)];
 
-        let input = InputState::new(); // E not pressed
+        let input = InputState::default(); // E not pressed
 
         let event = anchor_interaction_system(Some(1), &anchors, &input);
 
@@ -151,7 +144,7 @@ mod tests {
 
         let anchors = vec![(1, &anchor)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
         input.press_e();
 
         let event = anchor_interaction_system(Some(1), &anchors, &input);
@@ -167,7 +160,7 @@ mod tests {
         let anchor2 = Anchor::new(0.5, 5, Some(AbilityType::BarricadeDeploy));
         let anchors = vec![(1, &anchor1), (2, &anchor2)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
         input.press_e();
 
         // Proximity system would return closest (2 in this case)
@@ -182,7 +175,7 @@ mod tests {
         let anchor = Anchor::new(0.0, 1, None); // Broken anchor
         let anchors = vec![(1, &anchor)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
         input.press_e();
 
         let event = anchor_interaction_system(Some(1), &anchors, &input);
@@ -198,7 +191,7 @@ mod tests {
         let anchor = Anchor::new(1.0, 0, None); // Perfect, no repair cost
         let anchors = vec![(1, &anchor)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
         input.press_e();
 
         let event = anchor_interaction_system(Some(1), &anchors, &input);
@@ -215,7 +208,7 @@ mod tests {
         let anchor = Anchor::new(0.7, 5, None);
         let anchors = vec![(1, &anchor)];
 
-        let mut input = InputState::new();
+        let mut input = InputState::default();
 
         // Frame 1: Press E
         input.press_e();

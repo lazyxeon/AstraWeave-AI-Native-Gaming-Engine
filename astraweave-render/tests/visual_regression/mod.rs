@@ -2,7 +2,6 @@
 //!
 //! Provides utilities for rendering to buffers and comparing against golden images.
 
-use pollster;
 use wgpu;
 
 pub struct VisualTestContext {
@@ -90,15 +89,15 @@ impl VisualTestContext {
             });
 
         encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
-            wgpu::ImageCopyBuffer {
+            wgpu::TexelCopyBufferInfo {
                 buffer: &buffer,
-                layout: wgpu::ImageDataLayout {
+                layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(self.width * 4),
                     rows_per_image: Some(self.height),

@@ -576,7 +576,7 @@ impl LlmClient for OllamaChatClient {
                                         if let Some(choices) =
                                             v.get("choices").and_then(|c| c.as_array())
                                         {
-                                            if let Some(first) = choices.get(0) {
+                                            if let Some(first) = choices.first() {
                                                 if let Some(msg) = first.get("message") {
                                                     if let Some(content) =
                                                         msg.get("content").and_then(|c| c.as_str())
@@ -775,7 +775,7 @@ impl LlmClient for OllamaChatClient {
 
             // 3) { "choices": [ { "message": { "content": "..." } } ] }
             if let Some(choices) = v.get("choices").and_then(|c| c.as_array()) {
-                if let Some(first) = choices.get(0) {
+                if let Some(first) = choices.first() {
                     if let Some(msg) = first.get("message") {
                         if let Some(content) = msg.get("content").and_then(|c| c.as_str()) {
                             return Ok(content.to_string());
@@ -1181,15 +1181,13 @@ fn extract_json_object(s: &str) -> Option<String> {
                 start = Some(i);
             }
             depth += 1;
-        } else if b == b'}' {
-            if depth > 0 {
-                depth -= 1;
-                if depth == 0 {
-                    if let Some(s_idx) = start {
-                        // safe to slice because indices are on byte boundaries for UTF-8 ASCII braces
-                        if let Ok(sub) = std::str::from_utf8(&bytes[s_idx..=i]) {
-                            return Some(sub.to_string());
-                        }
+        } else if b == b'}' && depth > 0 {
+            depth -= 1;
+            if depth == 0 {
+                if let Some(s_idx) = start {
+                    // safe to slice because indices are on byte boundaries for UTF-8 ASCII braces
+                    if let Ok(sub) = std::str::from_utf8(&bytes[s_idx..=i]) {
+                        return Some(sub.to_string());
                     }
                 }
             }
@@ -1210,15 +1208,13 @@ fn extract_last_json_object(s: &str) -> Option<String> {
                 start = Some(i);
             }
             depth += 1;
-        } else if b == b'}' {
-            if depth > 0 {
-                depth -= 1;
-                if depth == 0 {
-                    if let Some(s_idx) = start {
-                        last_range = Some((s_idx, i));
-                        // continue scanning to prefer the last complete object
-                        start = None;
-                    }
+        } else if b == b'}' && depth > 0 {
+            depth -= 1;
+            if depth == 0 {
+                if let Some(s_idx) = start {
+                    last_range = Some((s_idx, i));
+                    // continue scanning to prefer the last complete object
+                    start = None;
                 }
             }
         }

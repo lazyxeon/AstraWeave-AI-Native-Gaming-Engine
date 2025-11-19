@@ -81,6 +81,7 @@ impl GpuCamera {
 }
 
 /// Complete Nanite GPU culling and rendering pipeline
+#[allow(dead_code)]
 pub struct NaniteCullingPipeline {
     // Hi-Z pyramid builder
     hiz_pyramid_pipeline: wgpu::ComputePipeline,

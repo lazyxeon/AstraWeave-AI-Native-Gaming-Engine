@@ -85,7 +85,7 @@ pub fn anchor_repair_system(
         }
 
         // Apply repair
-        let ability_before = anchor.unlocks_ability().map(|a| format!("{:?}", a));
+        let _ability_before = anchor.unlocks_ability().map(|a| format!("{:?}", a));
         let was_broken = anchor.stability() < 0.7;
         anchor.repair();
 

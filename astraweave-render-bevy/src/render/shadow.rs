@@ -1,4 +1,4 @@
-// Shadow module - CSM implementation (hybrid: custom algorithm + Bevy quality)
+﻿// Shadow module - CSM implementation (hybrid: custom algorithm + Bevy quality)
 // Day 3 implementation - PRODUCTION READY
 
 //! Cascade shadow maps (proven quality)
@@ -238,10 +238,10 @@ impl ShadowRenderer {
         split_distances[0] = camera_near;
         split_distances[CASCADE_COUNT] = camera_far;
 
-        for i in 1..CASCADE_COUNT {
+        for (i, split_distance) in split_distances.iter_mut().enumerate().take(CASCADE_COUNT).skip(1) {
             let ratio = i as f32 / CASCADE_COUNT as f32;
             // Logarithmic distribution (better quality near camera)
-            split_distances[i] = camera_near * (camera_far / camera_near).powf(ratio);
+            *split_distance = camera_near * (camera_far / camera_near).powf(ratio);
         }
 
         // Precompute frustum corners for full camera frustum (clip space z in [0, 1])

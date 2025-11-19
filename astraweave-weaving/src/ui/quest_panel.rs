@@ -137,7 +137,7 @@ impl QuestPanel {
             output.push_str("╠═══════════════════════════════════════╣\n");
 
             // Objectives
-            for (idx, obj) in q.objectives.iter().enumerate() {
+            for (_idx, obj) in q.objectives.iter().enumerate() {
                 let status = if obj.is_complete() { "✓" } else { " " };
                 let desc = obj.description();
                 let desc_display = if desc.len() > 33 {

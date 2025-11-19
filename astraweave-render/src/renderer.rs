@@ -26,7 +26,6 @@ use astraweave_materials::MaterialPackage;
 
 const PBR_SRC: &str = include_str!("../shaders/pbr.wgsl");
 const CLUSTERED_LIGHTING_SRC: &str = include_str!("../shaders/clustered_lighting.wgsl");
-const DEBUG_QUAD_SRC: &str = include_str!("shaders/debug_shader.wgsl");
 
 const POST_SHADER: &str = include_str!("../shaders/post_basic.wgsl");
 
@@ -161,6 +160,7 @@ pub struct Renderer {
     mr_sampler: wgpu::Sampler,
 
     // Fallback texture and sampler (Magenta 1x1)
+#[allow(dead_code)]
     fallback_tex: wgpu::Texture,
     fallback_view: wgpu::TextureView,
     fallback_sampler: wgpu::Sampler,
@@ -212,8 +212,10 @@ pub struct Renderer {
     vxgi: VxgiRenderer,
     point_lights: Vec<CpuLight>,
     #[cfg(feature = "gpu-tests")]
+    #[allow(dead_code)]
     timestamp_query_set: wgpu::QuerySet,
     #[cfg(feature = "gpu-tests")]
+    #[allow(dead_code)]
     timestamp_buf: wgpu::Buffer,
 
     // Cinematics integration
@@ -1805,7 +1807,8 @@ fn vs(input: VSIn) -> VSOut {
             mapped_at_creation: false,
         });
 
-        // Default extra textures (create MR and normal before building combined bind group)
+
+        // Default extra textures
         let mr_tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("mr tex"),
             size: wgpu::Extent3d {
@@ -1875,126 +1878,6 @@ fn vs(input: VSIn) -> VSOut {
             address_mode_w: wgpu::AddressMode::Repeat,
             ..Default::default()
         });
-
-        // Fallback texture (Magenta 1x1)
-        let fallback_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("fallback tex"),
-            size: wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &fallback_tex,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &[255, 0, 255, 255], // Magenta
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4),
-                rows_per_image: Some(1),
-            },
-            wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
-        let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("fallback sampler"),
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        // Debug Quad Pipeline
-        let debug_quad_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Debug Quad Shader"),
-            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
-                "../shaders/debug_quad.wgsl"
-            ))),
-        });
-
-        let debug_quad_bg_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("debug_quad_bind_group_layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-            });
-
-        let debug_quad_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("debug_quad_pipeline_layout"),
-                bind_group_layouts: &[&debug_quad_bg_layout],
-                push_constant_ranges: &[],
-            });
-
-        let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("debug_quad_pipeline"),
-            layout: Some(&debug_quad_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &debug_quad_shader,
-                entry_point: Some("vs_main"),
-                buffers: &[crate::debug_quad::DebugQuadVertex::desc()],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &debug_quad_shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
-            },
-            multiview: None,
-            cache: None,
-        });
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: &normal_tex,
@@ -2051,13 +1934,6 @@ fn vs(input: VSIn) -> VSOut {
             ],
         });
 
-        // Skin palette storage buffer (max 64 bones)
-        let skin_palette_buf = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("skin palette"),
-            size: (64 * 64) as u64, // 64 mat4 (16 floats * 4 bytes) = 1024 bytes; allocate 4096 (rounded)
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
         let skin_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("skin bgl"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -2294,76 +2170,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             cache: None,
         });
 
-        // Default extra textures
-        let mr_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("mr tex"),
-            size: wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        let mr_view = mr_tex.create_view(&wgpu::TextureViewDescriptor::default());
-        let mr_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("mr samp"),
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            ..Default::default()
-        });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &mr_tex,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &[0u8, 255u8, 0u8, 255u8],
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4),
-                rows_per_image: Some(1),
-            },
-            wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-        );
-        let normal_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("normal tex"),
-            size: wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        let normal_view = normal_tex.create_view(&wgpu::TextureViewDescriptor::default());
-        let normal_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("normal samp"),
-            mag_filter: wgpu::FilterMode::Linear,
-            min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Linear,
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            ..Default::default()
-        });
 
         // Fallback texture (Magenta 1x1)
         let fallback_tex = device.create_texture(&wgpu::TextureDescriptor {
@@ -2484,25 +2290,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             multiview: None,
             cache: None,
         });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &normal_tex,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &[128u8, 128u8, 255u8, 255u8],
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4),
-                rows_per_image: Some(1),
-            },
-            wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-        );
         // extra_tex_bg removed; MR/normal are in combined tex_bg
 
         // Clustered resources default allocs
@@ -2576,108 +2363,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // ========================================
         // Debug Quad Infrastructure
         // ========================================
-        // 1. Fallback Texture (Magenta 1x1)
-        let fallback_size = wgpu::Extent3d {
-            width: 1,
-            height: 1,
-            depth_or_array_layers: 1,
-        };
-        let fallback_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("fallback_tex"),
-            size: fallback_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        queue.write_texture(
-            wgpu::ImageCopyTexture {
-                texture: &fallback_tex,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            &[255, 0, 255, 255], // Magenta
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(4),
-                rows_per_image: Some(1),
-            },
-            fallback_size,
-        );
-        let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
-        let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("fallback_sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        // 2. Debug Quad Pipeline
-        let debug_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("debug_shader"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(DEBUG_QUAD_SRC)),
-        });
-        let debug_quad_bg_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("debug_quad_bgl"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-            });
-        let debug_quad_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("debug_quad_pl"),
-                bind_group_layouts: &[&debug_quad_bg_layout],
-                push_constant_ranges: &[],
-            });
-        let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("debug_quad_pipeline"),
-            layout: Some(&debug_quad_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &debug_shader,
-                entry_point: Some("vs_main"),
-                buffers: &[crate::debug_quad::DebugQuadVertex::desc()],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &debug_shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-            cache: None,
-        });
-
         // 3. Debug Quad Buffer
         let quad_verts = create_screen_quad();
         let debug_quad_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

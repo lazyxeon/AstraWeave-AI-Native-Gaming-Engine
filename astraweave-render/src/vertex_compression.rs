@@ -57,6 +57,8 @@ impl OctahedralEncoder {
     ///
     /// # Example
     /// ```
+    /// use glam::Vec3;
+    /// use astraweave_render::vertex_compression::OctahedralEncoder;
     /// let normal = Vec3::new(0.0, 1.0, 0.0); // Up vector
     /// let encoded = OctahedralEncoder::encode(normal);
     /// ```
@@ -93,6 +95,8 @@ impl OctahedralEncoder {
     ///
     /// # Example
     /// ```
+    /// use glam::Vec3;
+    /// use astraweave_render::vertex_compression::OctahedralEncoder;
     /// let encoded = [0, 32767]; // Encoded up vector
     /// let decoded = OctahedralEncoder::decode(encoded);
     /// assert!((decoded - Vec3::Y).length() < 0.01); // Close to (0, 1, 0)
@@ -156,6 +160,7 @@ impl HalfFloatEncoder {
     ///
     /// # Example
     /// ```
+    /// use astraweave_render::vertex_compression::HalfFloatEncoder;
     /// let uv_x = 0.5_f32;
     /// let encoded = HalfFloatEncoder::encode(uv_x);
     /// let decoded = HalfFloatEncoder::decode(encoded);

@@ -4,11 +4,13 @@
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::nanite_gpu_culling::{CullStats, GpuCamera, NaniteCullingPipeline};
+    use crate::nanite_visibility::GpuMeshlet;
     use glam::{Mat4, Vec3};
 
     /// Create test GPU device for unit tests
     async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
@@ -19,7 +21,10 @@ mod tests {
             .expect("Failed to find adapter");
 
         adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor {
+                required_features: wgpu::Features::TEXTURE_ADAPTER_SPECIFIC_FORMAT_FEATURES,
+                ..Default::default()
+            })
             .await
             .expect("Failed to create device")
     }
@@ -85,11 +90,12 @@ mod tests {
     #[tokio::test]
     async fn test_gpu_meshlet_size() {
         // Verify GpuMeshlet struct size matches shader expectations
-        assert_eq!(std::mem::size_of::<GpuMeshlet>(), 64); // 16 floats + 8 u32s
+        // 20 u32/f32 fields * 4 bytes = 80 bytes
+        assert_eq!(std::mem::size_of::<GpuMeshlet>(), 80);
 
         let meshlet = create_test_meshlets(1)[0];
         let bytes = bytemuck::bytes_of(&meshlet);
-        assert_eq!(bytes.len(), 64);
+        assert_eq!(bytes.len(), 80);
     }
 
     #[tokio::test]
@@ -207,8 +213,9 @@ mod tests {
     #[test]
     fn test_edge_function() {
         // Test edge function for triangle rasterization
+        // Returns positive value for points to the left of the edge (CCW winding)
         let edge_fn = |a: (f32, f32), b: (f32, f32), c: (f32, f32)| -> f32 {
-            (c.0 - a.0) * (b.1 - a.1) - (c.1 - a.1) * (b.0 - a.0)
+            (b.0 - a.0) * (c.1 - a.1) - (b.1 - a.1) * (c.0 - a.0)
         };
 
         // CCW triangle

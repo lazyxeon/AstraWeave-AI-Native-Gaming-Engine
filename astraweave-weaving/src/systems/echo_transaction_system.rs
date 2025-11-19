@@ -20,6 +20,7 @@ pub struct TransactionStats {
 }
 
 impl TransactionStats {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             total_gained: 0,

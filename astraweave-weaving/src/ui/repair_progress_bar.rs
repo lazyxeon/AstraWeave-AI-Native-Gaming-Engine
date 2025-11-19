@@ -87,7 +87,8 @@ impl RepairProgressBar {
     /// let anchor_screen_pos = camera.world_to_screen(anchor.position);
     /// progress_bar.render_world_space(anchor_screen_pos.x, anchor_screen_pos.y, &egui_ctx);
     /// ```
-    #[cfg(feature = "egui")]
+    #[cfg(any())] // Disabled: egui not in dependencies
+    #[allow(dead_code)]
     pub fn render_world_space(&self, screen_x: f32, screen_y: f32, ctx: &egui::Context) {
         if !self.is_visible() {
             return;
@@ -133,11 +134,7 @@ impl RepairProgressBar {
         });
     }
 
-    /// Render progress bar (no-op when egui feature is disabled)
-    #[cfg(not(feature = "egui"))]
-    pub fn render_world_space(&self, _screen_x: f32, _screen_y: f32, _ctx: &()) {
-        // No-op: egui not available
-    }
+
 }
 
 impl Default for RepairProgressBar {

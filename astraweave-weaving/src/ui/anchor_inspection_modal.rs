@@ -119,7 +119,8 @@ impl AnchorInspectionModal {
     }
 
     /// Render modal using egui (call from game UI system)
-    #[cfg(feature = "egui")]
+    #[cfg(any())] // Disabled: egui not in dependencies
+    #[allow(dead_code)]
     pub fn render(&mut self, ctx: &egui::Context) {
         if !self.visible {
             return;
@@ -232,11 +233,7 @@ impl AnchorInspectionModal {
         }
     }
 
-    /// Render modal (no-op when egui feature is disabled)
-    #[cfg(not(feature = "egui"))]
-    pub fn render(&mut self, _ctx: &()) {
-        // No-op: egui not available
-    }
+
 }
 
 impl Default for AnchorInspectionModal {

@@ -29,7 +29,7 @@ pub struct TextureHandle {
 enum AssetState {
     Loading,
     Resident(TextureHandle),
-    Failed(String),
+    Failed(#[allow(dead_code)] String),
 }
 
 /// Texture load request with priority
@@ -262,6 +262,7 @@ impl TextureStreamingManager {
     }
 
     /// Mark a texture as recently used (moves to end of LRU queue)
+    #[allow(dead_code)]
     fn touch_texture(&mut self, id: &AssetId) {
         if let Some(pos) = self.lru_queue.iter().position(|x| x == id) {
             self.lru_queue.remove(pos);

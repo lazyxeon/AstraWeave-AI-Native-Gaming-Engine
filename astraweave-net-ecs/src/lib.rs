@@ -91,8 +91,8 @@ pub fn client_input_system(world: &mut World) {
     let mut clients_to_update = Vec::new();
 
     {
-        let mut q = Query::<CNetworkClient>::new(world);
-        while let Some((entity, client)) = q.next() {
+        let q = Query::<CNetworkClient>::new(world);
+        for (entity, client) in q {
             if let Some(prediction) = world.get::<CClientPrediction>(entity) {
                 clients_to_update.push((entity, client.clone(), prediction.clone()));
             }
@@ -122,8 +122,8 @@ pub fn client_reconciliation_system(world: &mut World) {
     let mut clients_to_reconcile = Vec::new();
 
     {
-        let mut q = Query::<CNetworkClient>::new(world);
-        while let Some((entity, client)) = q.next() {
+        let q = Query::<CNetworkClient>::new(world);
+        for (entity, client) in q {
             if let Some(prediction) = world.get::<CClientPrediction>(entity) {
                 clients_to_reconcile.push((entity, client.clone(), prediction.clone()));
             }
@@ -158,8 +158,8 @@ pub fn server_snapshot_system(world: &mut World) {
     let mut authorities_to_update = Vec::new();
 
     {
-        let mut q = Query::<CNetworkAuthority>::new(world);
-        while let Some((entity, authority)) = q.next() {
+        let q = Query::<CNetworkAuthority>::new(world);
+        for (entity, authority) in q {
             authorities_to_update.push((entity, authority.clone()));
         }
     }
@@ -174,7 +174,7 @@ pub fn server_snapshot_system(world: &mut World) {
         };
 
         // Broadcast to connected clients (simplified)
-        for (_client_id, sender) in &authority.connected_clients {
+        for sender in authority.connected_clients.values() {
             let payload = aw_net_proto::encode_msg(Codec::Bincode, &snapshot);
             let server_snapshot = ServerToClient::Snapshot {
                 id: authority.authoritative_tick as u32,

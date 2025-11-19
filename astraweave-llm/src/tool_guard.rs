@@ -148,7 +148,7 @@ impl ToolGuard {
         F: Fn(&ActionStep) -> bool,
     {
         let action_name = Self::action_name(action);
-        let policy = self.get_policy(&action_name);
+        let policy = self.get_policy(action_name);
 
         let result = match policy {
             ToolPolicy::Denied => {

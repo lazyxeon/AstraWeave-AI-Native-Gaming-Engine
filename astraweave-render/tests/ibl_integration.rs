@@ -8,7 +8,7 @@ use astraweave_render::{IblManager, IblQuality};
 #[cfg(feature = "ibl")]
 fn test_ibl_manager_creation() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -17,7 +17,7 @@ fn test_ibl_manager_creation() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -37,7 +37,7 @@ fn test_ibl_manager_creation() {
 #[cfg(feature = "ibl")]
 fn test_ibl_bake_environment() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -46,7 +46,7 @@ fn test_ibl_bake_environment() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -68,7 +68,7 @@ fn test_ibl_bake_environment() {
 #[cfg(feature = "ibl")]
 fn test_ibl_ensure_brdf_lut() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -77,7 +77,7 @@ fn test_ibl_ensure_brdf_lut() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -93,7 +93,7 @@ fn test_ibl_ensure_brdf_lut() {
 #[cfg(feature = "ibl")]
 fn test_ibl_ensure_irradiance() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -102,7 +102,7 @@ fn test_ibl_ensure_irradiance() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -118,7 +118,7 @@ fn test_ibl_ensure_irradiance() {
 #[cfg(feature = "ibl")]
 fn test_ibl_ensure_prefiltered_env() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -127,7 +127,7 @@ fn test_ibl_ensure_prefiltered_env() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 
@@ -146,7 +146,7 @@ fn test_ibl_ensure_prefiltered_env() {
 #[cfg(feature = "ibl")]
 fn test_ibl_bind_group_creation() {
     pollster::block_on(async {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -155,7 +155,7 @@ fn test_ibl_bind_group_creation() {
             .await
             .expect("no adapter");
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default(), None)
+            .request_device(&wgpu::DeviceDescriptor::default())
             .await
             .expect("no device");
 

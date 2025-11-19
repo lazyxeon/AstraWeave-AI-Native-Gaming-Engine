@@ -27,6 +27,15 @@ pub enum BarChartMode {
     Stacked,
 }
 
+struct BarDrawParams {
+    bar_x: f32,
+    bar_width: f32,
+    value: f64,
+    color: Color32,
+    min_y: f64,
+    max_y: f64,
+}
+
 /// A bar chart widget for visualizing categorical data.
 ///
 /// # Example
@@ -283,8 +292,16 @@ impl BarChart {
                     for (bar_idx, bar) in group.bars.iter().enumerate() {
                         let bar_x = group_x + bar_idx as f32 * bar_width;
                         self.draw_single_bar(
-                            painter, data_rect, bar_x, bar_width, bar.value, bar.color, min_y,
-                            max_y,
+                            painter,
+                            data_rect,
+                            BarDrawParams {
+                                bar_x,
+                                bar_width,
+                                value: bar.value,
+                                color: bar.color,
+                                min_y,
+                                max_y,
+                            },
                         );
                     }
                 }
@@ -321,22 +338,17 @@ impl BarChart {
         &self,
         painter: &egui::Painter,
         data_rect: Rect,
-        bar_x: f32,
-        bar_width: f32,
-        value: f64,
-        color: Color32,
-        min_y: f64,
-        max_y: f64,
+        params: BarDrawParams,
     ) {
-        let value_ratio = ((value - min_y) / (max_y - min_y)) as f32;
+        let value_ratio = ((params.value - params.min_y) / (params.max_y - params.min_y)) as f32;
         let bar_height = value_ratio.clamp(0.0, 1.0) * data_rect.height();
 
         let bar_rect = Rect::from_min_size(
-            Pos2::new(bar_x, data_rect.max.y - bar_height),
-            Vec2::new(bar_width, bar_height),
+            Pos2::new(params.bar_x, data_rect.max.y - bar_height),
+            Vec2::new(params.bar_width, bar_height),
         );
 
-        painter.rect_filled(bar_rect, 2.0, color);
+        painter.rect_filled(bar_rect, 2.0, params.color);
         painter.rect_stroke(
             bar_rect,
             2.0,
@@ -347,9 +359,9 @@ impl BarChart {
         // Value label
         if self.show_values && bar_height > 15.0 {
             painter.text(
-                Pos2::new(bar_x + bar_width / 2.0, bar_rect.min.y - 5.0),
+                Pos2::new(params.bar_x + params.bar_width / 2.0, bar_rect.min.y - 5.0),
                 egui::Align2::CENTER_BOTTOM,
-                format!("{:.1}", value),
+                format!("{:.1}", params.value),
                 egui::FontId::proportional(9.0),
                 self.style.text_color,
             );

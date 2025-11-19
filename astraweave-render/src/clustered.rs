@@ -151,7 +151,7 @@ pub fn bin_lights_cpu(
 
 pub const WGSL_CLUSTER_BIN: &str = r#"
 struct Light { pos_radius: vec4<f32> };
-struct Params { screen: vec2<u32>, clusters: vec3<u32>, near: f32, far: f32, fov_y: f32 };
+struct Params { screen: vec4<u32>, clusters: vec4<u32>, val: vec4<f32> };
 @group(0) @binding(0) var<storage, read> lights: array<Light>;
 @group(0) @binding(1) var<uniform> params: Params;
 // Offsets: length = clusters+1 (exclusive scan). Counts: length = clusters. Indices: variable length
@@ -159,7 +159,7 @@ struct Params { screen: vec2<u32>, clusters: vec3<u32>, near: f32, far: f32, fov
 @group(0) @binding(3) var<storage, read_write> counts: array<atomic<u32>>;
 @group(0) @binding(4) var<storage, read_write> indices: array<u32>;
 
-fn cluster_index(ix: u32, iy: u32, iz: u32, dims: vec3<u32>) -> u32 {
+fn cluster_index(ix: u32, iy: u32, iz: u32, dims: vec4<u32>) -> u32 {
     return ix + iy * dims.x + iz * (dims.x * dims.y);
 }
 
@@ -173,11 +173,14 @@ fn cs_main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let radius = L.w;
     let width = f32(params.screen.x);
     let height = f32(params.screen.y);
+    let near = params.val.x;
+    let far = params.val.y;
+    let fov_y = params.val.z;
     let aspect = width / max(height, 1.0);
-    let fy = 1.0 / tan(0.5 * params.fov_y);
+    let fy = 1.0 / tan(0.5 * fov_y);
     let fx = fy / aspect;
-    let z = max(pos.z, params.near + 1e-4);
-    if (z - radius > params.far) { return; }
+    let z = max(pos.z, near + 1e-4);
+    if (z - radius > far) { return; }
     let ndc_x = (pos.x / z) * fx;
     let ndc_y = (pos.y / z) * fy;
     let px = (ndc_x * 0.5 + 0.5) * width;
@@ -194,11 +197,11 @@ fn cs_main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ix1 = u32(clamp(max_px / tile_w, 0.0, f32(params.clusters.x - 1u)));
     let iy0 = u32(clamp(min_py / tile_h, 0.0, f32(params.clusters.y - 1u)));
     let iy1 = u32(clamp(max_py / tile_h, 0.0, f32(params.clusters.y - 1u)));
-    let zmin = max(z - radius, params.near);
-    let zmax = min(z + radius, params.far);
+    let zmin = max(z - radius, near);
+    let zmax = min(z + radius, far);
     if (zmin >= zmax) { return; }
-    let iz0 = u32(clamp(floor(((zmin - params.near) / (params.far - params.near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
-    let iz1 = u32(clamp(floor(((zmax - params.near) / (params.far - params.near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
+    let iz0 = u32(clamp(floor(((zmin - near) / (far - near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
+    let iz1 = u32(clamp(floor(((zmax - near) / (far - near)) * f32(params.clusters.z)), 0.0, f32(params.clusters.z - 1u)));
     for (var iz: u32 = iz0; iz <= iz1; iz = iz + 1u) {
         for (var iy: u32 = iy0; iy <= iy1; iy = iy + 1u) {
             for (var ix: u32 = ix0; ix <= ix1; ix = ix + 1u) {
@@ -352,7 +355,7 @@ mod tests {
         let indices_zero = vec![0u32; n_indices];
 
         // WGPU setup
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::LowPower,
             compatible_surface: None,
@@ -365,9 +368,8 @@ mod tests {
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: wgpu::MemoryHints::default(),
-                trace: None,
-            },
-            None,
+                trace: wgpu::Trace::Off,
+            }
         ))
         .expect("device");
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -440,6 +442,7 @@ mod tests {
             module: &shader,
             entry_point: Some("cs_main"),
             compilation_options: wgpu::PipelineCompilationOptions::default(),
+            cache: None,
         });
 
         // Buffers
