@@ -69,9 +69,9 @@
 
 ---
 
-## Sprint 1: Foundations (Week 1, 5 days)
+### Sprint 1: Foundations (Week 1, 5 days)
 
-### Day 1: Fix Determinism Bug (4 hours)
+### Day 1: Fix Determinism Bug (4 hours) - ✅ COMPLETE
 
 **Critical Fix**: MockEmbeddingClient determinism
 
@@ -103,7 +103,7 @@
 
 ---
 
-### Day 2-3: Context Core Tests (2 days, ~8 hours)
+### Day 2-3: Context Core Tests (2 days, ~8 hours) - ✅ COMPLETE
 
 **Focus**: ConversationHistory & ContextWindow (27 tests)
 
@@ -146,7 +146,7 @@
 
 ---
 
-### Day 4-5: RAG Core Tests (2 days, ~8 hours)
+### Day 4-5: RAG Core Tests (2 days, ~8 hours) - ✅ COMPLETE
 
 **Focus**: RagPipeline & Retrieval (32 tests)
 

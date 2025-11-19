@@ -76,7 +76,7 @@ fn golden_postfx_compose_matches_cpu() {
     let w = 64u32;
     let h = 32u32;
     // Init wgpu (headless)
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::LowPower,
         compatible_surface: None,
@@ -89,9 +89,8 @@ fn golden_postfx_compose_matches_cpu() {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
             memory_hints: wgpu::MemoryHints::default(),
-            trace: None,
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))
     .expect("device");
 

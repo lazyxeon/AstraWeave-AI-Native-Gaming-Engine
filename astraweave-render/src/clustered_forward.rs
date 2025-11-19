@@ -10,7 +10,8 @@ use glam::{Mat4, Vec3};
 use crate::clustered_megalights::MegaLightsRenderer;
 
 /// Configuration for clustered rendering
-#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ClusterConfig {
     /// Number of clusters in X dimension (screen width)
     pub cluster_x: u32,
@@ -22,16 +23,19 @@ pub struct ClusterConfig {
     pub near: f32,
     /// Far plane distance
     pub far: f32,
+    /// Padding for 16-byte alignment (total 32 bytes)
+    pub _pad: [u32; 3],
 }
 
 impl Default for ClusterConfig {
     fn default() -> Self {
         Self {
             cluster_x: 16,
-            cluster_y: 16,
-            cluster_z: 32,
+            cluster_y: 9, // 16:9 aspect ratio approximation
+            cluster_z: 24,
             near: 0.1,
-            far: 1000.0,
+            far: 100.0,
+            _pad: [0; 3],
         }
     }
 }
@@ -80,6 +84,8 @@ pub struct ClusteredForwardRenderer {
     light_buffer: wgpu::Buffer,
     cluster_buffer: wgpu::Buffer,
     light_indices_buffer: wgpu::Buffer,
+    #[allow(dead_code)]
+    config_buffer: wgpu::Buffer,
 
     // MegaLights GPU culling buffers
     #[cfg(feature = "megalights")]
@@ -140,6 +146,16 @@ impl ClusteredForwardRenderer {
             mapped_at_creation: false,
         });
 
+        let config_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Cluster Config Buffer"),
+            size: std::mem::size_of::<ClusterConfig>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: true,
+        });
+        
+        config_buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::bytes_of(&config));
+        config_buffer.unmap();
+
         // Create bind group layout
         let cluster_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -175,6 +191,16 @@ impl ClusteredForwardRenderer {
                         },
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
                 ],
             });
 
@@ -194,6 +220,10 @@ impl ClusteredForwardRenderer {
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: light_indices_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: config_buffer.as_entire_binding(),
                 },
             ],
         });
@@ -268,6 +298,7 @@ impl ClusteredForwardRenderer {
             light_buffer,
             cluster_buffer,
             light_indices_buffer,
+            config_buffer,
 
             #[cfg(feature = "megalights")]
             light_counts_buffer,
@@ -685,8 +716,8 @@ mod tests {
     fn test_cluster_config_default() {
         let config = ClusterConfig::default();
         assert_eq!(config.cluster_x, 16);
-        assert_eq!(config.cluster_y, 16);
-        assert_eq!(config.cluster_z, 32);
+        assert_eq!(config.cluster_y, 9);
+        assert_eq!(config.cluster_z, 24);
     }
 
     #[test]

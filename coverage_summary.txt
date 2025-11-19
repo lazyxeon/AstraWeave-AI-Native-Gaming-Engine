@@ -1,0 +1,50 @@
+info: cargo-llvm-cov currently setting cfg(coverage); you can opt-out it by passing --no-cfg-coverage
+[1m[32m   Compiling[0m astraweave-ecs v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs)
+[1m[32m   Compiling[0m astraweave-nav v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-nav)
+[1m[32m   Compiling[0m astraweave-asset v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-asset)
+[1m[32m   Compiling[0m astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+[1m[32m   Compiling[0m astraweave-input v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-input)
+[1m[32m   Compiling[0m astraweave-cinematics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-cinematics)
+[1m[32m   Compiling[0m asset_signing v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\asset_signing)
+[1m[32m   Compiling[0m astraweave-materials v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-materials)
+[1m[32m   Compiling[0m astraweave-behavior v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior)
+[1m[32m   Compiling[0m astraweave-observability v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-observability)
+[1m[32m   Compiling[0m astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+[1m[32m   Compiling[0m astraweave-embeddings v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-embeddings)
+LLVM Profile Warning: Unable to merge profile data: source profile file is not compatible.
+LLVM Profile Error: Profile Merging of file C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target\AstraWeave-AI-Native-Gaming-Engine-55896-12103954006152691870_0.profraw failed: File exists
+LLVM Profile Error: Failed to write file "C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target\AstraWeave-AI-Native-Gaming-Engine-55896-12103954006152691870_0.profraw": File exists
+[1m[32m   Compiling[0m astract-macro v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\crates\astract\astract-macro)
+[1m[32m   Compiling[0m astraweave-scene v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scene)
+[1m[32m   Compiling[0m astraweave-llm v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm)
+[1m[32m   Compiling[0m astraweave-gameplay v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-gameplay)
+[1m[32m   Compiling[0m aw_asset_cli v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_asset_cli)
+[1m[32m   Compiling[0m astraweave-terrain v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-terrain)
+[1m[32m   Compiling[0m astraweave-audio v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-audio)
+[1m[32m   Compiling[0m astraweave-ai v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai)
+[1m[32m   Compiling[0m astraweave-context v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-context)
+[1m[32m   Compiling[0m astraweave-prompts v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-prompts)
+[1m[32m   Compiling[0m astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: this file contains an unclosed delimiter[0m
+[0m    [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\renderer.rs:5034:18[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m476[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl Renderer {[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m               [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14munclosed delimiter[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m506[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub async fn new(window: std::sync::Arc<winit::window::Window>) -> Result<Self> {[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                                                                                     [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14munclosed delimiter[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m2174[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let skinned_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor{[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                                                         [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14munclosed delimiter[0m[0m         [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14munclosed delimiter[0m
+[0m[1m[38;5;14m2175[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            label: Some("skinned shader"),[0m
+[0m[1m[38;5;14m2176[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(r#"[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                                             [0m[0m[1m[38;5;14m-[0m[0m             [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14manother 11 unclosed delimiters begin from here[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                                             [0m[0m[1m[38;5;14m|[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                                             [0m[0m[1m[38;5;14munclosed delimiter[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m5034[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            label[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^[0m
+
+[1m[31merror[0m[1m:[0m could not compile `astraweave-render` (lib) due to 1 previous error
+[1m[33mwarning[0m[1m:[0m build failed, waiting for other jobs to finish...
+error: process didn't exit successfully: `C:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\bin\cargo.exe test --tests --manifest-path C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\Cargo.toml --target-dir C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\target\llvm-cov-target --workspace` (exit code: 101)

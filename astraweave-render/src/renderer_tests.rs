@@ -1473,10 +1473,10 @@ mod tests {
 
         let config = ClusterConfig::default();
         assert_eq!(config.cluster_x, 16);
-        assert_eq!(config.cluster_y, 16);
-        assert_eq!(config.cluster_z, 32);
+        assert_eq!(config.cluster_y, 9);
+        assert_eq!(config.cluster_z, 24);
         assert_eq!(config.near, 0.1);
-        assert_eq!(config.far, 1000.0);
+        assert_eq!(config.far, 100.0);
     }
 
     #[test]

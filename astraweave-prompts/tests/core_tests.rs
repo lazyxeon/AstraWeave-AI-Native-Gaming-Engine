@@ -27,7 +27,7 @@ fn test_template_new() {
 
 #[test]
 fn test_template_render() {
-    let template = PromptTemplate::new("test", "Hello {name}!");
+    let template = PromptTemplate::new("test", "Hello {{name}}!");
     let mut ctx = PromptContext::new();
     ctx.set("name".to_string(), "World".into());
     
@@ -45,7 +45,7 @@ fn test_engine_register() {
 #[test]
 fn test_engine_render() {
     let mut engine = TemplateEngine::new();
-    engine.register_template("test", PromptTemplate::new("1", "Hello {x}!")).unwrap();
+    engine.register_template("test", PromptTemplate::new("1", "Hello {{x}}!")).unwrap();
     
     let mut ctx = PromptContext::new();
     ctx.set("x".to_string(), "There".into());
@@ -57,14 +57,14 @@ fn test_engine_render() {
 #[test]
 fn test_processor_validate() {
     let processor = TemplateProcessor::new(ProcessorConfig::default());
-    assert!(processor.validate_template("{var}").is_ok());
-    assert!(processor.validate_template("{unclosed").is_err());
+    assert!(processor.validate_template("{{var}}").is_ok());
+    assert!(processor.validate_template("{{unclosed").is_err());
 }
 
 #[test]
 fn test_processor_extract_vars() {
     let processor = TemplateProcessor::new(ProcessorConfig::default());
-    let vars = processor.extract_variables("{a} and {b}");
+    let vars = processor.extract_variables("{{a}} and {{b}}");
     assert!(vars.len() >= 2);
 }
 
@@ -79,7 +79,7 @@ fn test_context_scopes() {
 
 #[test]
 fn test_template_map_render() {
-    let template = PromptTemplate::new("test", "{key}");
+    let template = PromptTemplate::new("test", "{{key}}");
     let mut map = HashMap::new();
     map.insert("key".to_string(), "value".to_string());
     let result = template.render_map(&map).unwrap();

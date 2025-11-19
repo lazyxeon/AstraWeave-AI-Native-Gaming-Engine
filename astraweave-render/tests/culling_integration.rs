@@ -6,7 +6,7 @@ use glam::{Mat4, Vec3};
 
 /// Helper to create a test wgpu device
 fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::LowPower,
         compatible_surface: None,
@@ -20,9 +20,8 @@ fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
             required_features: wgpu::Features::empty(),
             required_limits: wgpu::Limits::downlevel_defaults(),
             memory_hints: wgpu::MemoryHints::default(),
-            trace: None,
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))
     .expect("Failed to create device")
 }

@@ -11,7 +11,7 @@ use astraweave_physics::PhysicsWorld;
 use astraweave_render::{Camera, CameraController, Instance, Renderer};
 
 use astraweave_input::{BindingSet, InputContext, InputManager};
-use astraweave_ui::{draw_ui, Accessibility, UiData, UiFlags, UiLayer};
+use astraweave_ui::{draw_ui, Accessibility, MenuManager, UiData, UiFlags, UiLayer};
 
 use astraweave_gameplay::crafting::{CraftCost, CraftRecipe, RecipeBook};
 use astraweave_gameplay::quests::QuestLog;
@@ -97,6 +97,7 @@ fn main() -> anyhow::Result<()> {
     // Demo data
     let mut flags = UiFlags::default();
     let mut acc = Accessibility::default();
+    let mut menu_manager = MenuManager::default();
 
     let player_stats = Stats::new(120);
     let mut inventory = Inventory::default();
@@ -149,7 +150,7 @@ fn main() -> anyhow::Result<()> {
                                     flags.show_quests = !flags.show_quests;
                                 }
                                 KeyCode::Escape => {
-                                    flags.show_menu = !flags.show_menu;
+                                    menu_manager.toggle_pause();
                                 }
                                 _ => {}
                             }
@@ -194,6 +195,7 @@ fn main() -> anyhow::Result<()> {
                 let _ui_out = draw_ui(
                     ui.ctx(),
                     &mut flags,
+                    &mut menu_manager,
                     &mut acc,
                     ui_data.player_stats,
                     ui_data.player_pos,
@@ -201,6 +203,7 @@ fn main() -> anyhow::Result<()> {
                     ui_data.recipe_book,
                     ui_data.quest_log.as_deref_mut(),
                 );
+
 
                 // Draw scene instances (simple markers)
                 instances.clear();

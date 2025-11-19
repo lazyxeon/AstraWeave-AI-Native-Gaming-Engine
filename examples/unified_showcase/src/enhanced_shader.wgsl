@@ -1,5 +1,6 @@
 // Enhanced shader for unified_showcase with improved PBR lighting, normal mapping, and texture blending
 // Includes Phase PBR-E advanced materials support
+// #define PARTIAL_SHADER - Skip standalone validation as this requires pbr_lib.wgsl concatenation
 
 // WGSL Module System Note:
 // Native WGSL imports are not yet supported by wgpu as of 0.19.
@@ -100,9 +101,12 @@ struct VsOut {
 // Calculate tangent and bitangent for normal mapping
 fn compute_tangent_basis(normal: vec3<f32>) -> vec3<f32> {
     // Find least significant component to avoid numerical issues
-    let c = abs(normal.x) > abs(normal.z) ? 
-        vec3<f32>(0.0, 0.0, 1.0) : 
-        vec3<f32>(1.0, 0.0, 0.0);
+    var c: vec3<f32>;
+    if (abs(normal.x) > abs(normal.z)) {
+        c = vec3<f32>(0.0, 0.0, 1.0);
+    } else {
+        c = vec3<f32>(1.0, 0.0, 0.0);
+    }
     
     // Compute tangent using cross product
     let tangent = normalize(cross(c, normal));

@@ -123,6 +123,42 @@ fn sys_bridge_sync(world: &mut ecs::World) {
     // removal support.
 }
 
+fn sys_sync_to_legacy(world: &mut ecs::World) {
+    // Sync ECS state back to legacy World resource
+    // This allows legacy systems (like build_snapshot) to see ECS updates
+    let mut updates = Vec::new();
+
+    // Iterate all entities with CLegacyId
+    let q = ecs::Query::<crate::CLegacyId>::new(&*world);
+    for (e, legacy_id) in q {
+        let pos = world.get::<CPos>(e).map(|p| p.pos);
+        let hp = world.get::<CHealth>(e).map(|h| h.hp);
+        let ammo = world.get::<CAmmo>(e).map(|a| a.rounds);
+
+        updates.push((legacy_id.id, pos, hp, ammo));
+    }
+
+    if let Some(w) = world.get_resource_mut::<World>() {
+        for (id, pos, hp, ammo) in updates {
+            if let Some(p) = pos {
+                if let Some(pose) = w.pose_mut(id) {
+                    pose.pos = p;
+                }
+            }
+            if let Some(h) = hp {
+                if let Some(health) = w.health_mut(id) {
+                    health.hp = h;
+                }
+            }
+            if let Some(a) = ammo {
+                if let Some(am) = w.ammo_mut(id) {
+                    am.rounds = a;
+                }
+            }
+        }
+    }
+}
+
 // EntityBridge is defined in `crate::ecs_bridge` for cross-crate access.
 
 /// Build a minimal ECS app with stages and a single simulation system that
@@ -180,6 +216,8 @@ pub fn build_app(legacy_world: World, dt: f32) -> ecs::App {
     app.add_system("simulation", sys_move as ecs::SystemFn);
     // Bridge sync runs after simulation so mappings are reflected into components
     app.add_system("sync", sys_bridge_sync as ecs::SystemFn);
+    // Sync back to legacy world so legacy systems see updates
+    app.add_system("sync", sys_sync_to_legacy as ecs::SystemFn);
     // AI planning system is registered from astraweave-ai crate to avoid a dependency cycle.
     app.add_system("perception", sys_refresh_los as ecs::SystemFn);
     app

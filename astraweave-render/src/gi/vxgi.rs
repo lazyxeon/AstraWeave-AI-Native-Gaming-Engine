@@ -5,7 +5,8 @@
 //! radiance field built from the terrain SVO.
 
 /// Configuration for VXGI
-#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+#[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct VxgiConfig {
     /// Voxel grid resolution (power of 2)
     pub voxel_resolution: u32,
@@ -17,6 +18,8 @@ pub struct VxgiConfig {
     pub max_trace_distance: f32,
     /// Cone aperture angle in radians
     pub cone_aperture: f32,
+    /// Padding for 16-byte alignment (total 32 bytes)
+    pub _pad: [u32; 3],
 }
 
 impl Default for VxgiConfig {
@@ -27,6 +30,7 @@ impl Default for VxgiConfig {
             cone_count: 6,
             max_trace_distance: 100.0,
             cone_aperture: 0.577, // ~33 degrees
+            _pad: [0; 3],
         }
     }
 }
@@ -47,6 +51,7 @@ pub struct VxgiRenderer {
     _voxel_texture: wgpu::Texture,
     _voxel_texture_view: wgpu::TextureView,
     _voxel_sampler: wgpu::Sampler,
+    _config_buffer: wgpu::Buffer,
 
     // Bind groups
     vxgi_bind_group_layout: wgpu::BindGroupLayout,
@@ -103,6 +108,16 @@ impl VxgiRenderer {
             ..Default::default()
         });
 
+        // Config Uniform Buffer
+        let config_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("VXGI Config Buffer"),
+            size: std::mem::size_of::<VxgiConfig>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: true,
+        });
+        config_buffer.slice(..).get_mapped_range_mut().copy_from_slice(bytemuck::bytes_of(&config));
+        config_buffer.unmap();
+
         // Create bind group layout
         let vxgi_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -124,6 +139,16 @@ impl VxgiRenderer {
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
                 ],
             });
 
@@ -138,6 +163,10 @@ impl VxgiRenderer {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::Sampler(&voxel_sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: config_buffer.as_entire_binding(),
                 },
             ],
         });
@@ -163,6 +192,7 @@ impl VxgiRenderer {
             _voxel_texture: voxel_texture,
             _voxel_texture_view: voxel_texture_view,
             _voxel_sampler: voxel_sampler,
+            _config_buffer: config_buffer,
             vxgi_bind_group_layout,
             vxgi_bind_group,
             voxelization_pipeline,
@@ -240,10 +270,12 @@ struct VxgiConfig {
     cone_count: u32,
     max_trace_distance: f32,
     cone_aperture: f32,
+    _pad: vec3<u32>,
 }
 
-@group(3) @binding(0) var voxel_texture: texture_3d<f32>;
-@group(3) @binding(1) var voxel_sampler: sampler;
+@group(5) @binding(0) var voxel_texture: texture_3d<f32>;
+@group(5) @binding(1) var voxel_sampler: sampler;
+@group(5) @binding(2) var<uniform> uVxgi: VxgiConfig;
 
 // Cone directions for diffuse sampling (6 cones)
 const CONE_DIRECTIONS = array<vec3<f32>, 6>(
@@ -301,13 +333,12 @@ fn trace_cone(
 
 fn calculate_vxgi_lighting(
     world_pos: vec3<f32>,
-    normal: vec3<f32>,
-    config: VxgiConfig
+    normal: vec3<f32>
 ) -> vec3<f32> {
     var total_radiance = vec3<f32>(0.0);
     
     // Trace multiple cones for diffuse indirect lighting
-    for (var i = 0u; i < config.cone_count; i = i + 1u) {
+    for (var i = 0u; i < uVxgi.cone_count; i = i + 1u) {
         // Transform cone direction to world space aligned with normal
         let cone_dir = normalize(CONE_DIRECTIONS[i]);
         
@@ -322,15 +353,15 @@ fn calculate_vxgi_lighting(
         let cone_result = trace_cone(
             world_pos + normal * 0.1, // Offset to avoid self-intersection
             world_cone_dir,
-            config.cone_aperture,
-            config
+            uVxgi.cone_aperture,
+            uVxgi
         );
         
         total_radiance = total_radiance + cone_result.rgb;
     }
     
     // Average over all cones
-    return total_radiance / f32(config.cone_count);
+    return total_radiance / f32(uVxgi.cone_count);
 }
 "#;
 

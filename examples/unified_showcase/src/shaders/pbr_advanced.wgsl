@@ -460,9 +460,8 @@ fn evaluate_pbr_advanced(
 // This would integrate with the material sampling from pbr_lib.wgsl (Phase PBR-D)
 // Extended to handle clearcoat normals and thickness maps
 fn sample_material_extended(
-    material_id: u32,
+    material_in: MaterialGpuExtended,
     uv: vec2<f32>,
-    materials: ptr<storage, array<MaterialGpuExtended>>,
     albedo_tex: texture_2d_array<f32>,
     normal_tex: texture_2d_array<f32>,
     orm_tex: texture_2d_array<f32>,
@@ -470,8 +469,8 @@ fn sample_material_extended(
     thickness_tex: texture_2d_array<f32>,
     sampler_linear: sampler
 ) -> MaterialGpuExtended {
-    // Lookup base material definition
-    var material = (*materials)[material_id];
+    // Use local copy of material
+    var material = material_in;
     
     // Sample base PBR textures
     let albedo_layer = i32(material.albedo_index);
@@ -483,10 +482,10 @@ fn sample_material_extended(
     let orm_sample = textureSample(orm_tex, sampler_linear, uv, orm_layer);
     
     // Apply texture values to material factors
-    material.base_color_factor *= albedo_sample;
-    material.metallic_factor *= orm_sample.b; // Blue channel = metallic
-    material.roughness_factor *= orm_sample.g; // Green channel = roughness
-    material.occlusion_strength *= orm_sample.r; // Red channel = occlusion
+    material.base_color_factor = material.base_color_factor * albedo_sample;
+    material.metallic_factor = material.metallic_factor * orm_sample.b; // Blue channel = metallic
+    material.roughness_factor = material.roughness_factor * orm_sample.g; // Green channel = roughness
+    material.occlusion_strength = material.occlusion_strength * orm_sample.r; // Red channel = occlusion
     
     // Sample extended textures if features are enabled
     if (has_feature(material, MATERIAL_FLAG_CLEARCOAT)) {
@@ -499,7 +498,7 @@ fn sample_material_extended(
         let thickness_layer = i32(material.thickness_index);
         let thickness_sample = textureSample(thickness_tex, sampler_linear, uv, thickness_layer);
         // Modulate transmission/subsurface based on thickness
-        material.transmission_factor *= thickness_sample.r;
+        material.transmission_factor = material.transmission_factor * thickness_sample.r;
     }
     
     return material;

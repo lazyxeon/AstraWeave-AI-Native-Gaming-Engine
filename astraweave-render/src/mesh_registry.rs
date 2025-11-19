@@ -1,6 +1,7 @@
 use anyhow::Result;
 use glam::Vec3;
 use std::collections::HashMap;
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::{Buffer, BufferUsages, Device, Queue};
 
@@ -15,7 +16,7 @@ pub struct MeshHandle(pub u32);
 pub struct MeshRegistry {
     next_id: u32,
     map: HashMap<MeshKey, MeshHandle>,
-    uploads: HashMap<MeshHandle, GpuMesh>,
+    uploads: HashMap<MeshHandle, Arc<GpuMesh>>,
 }
 
 #[cfg(test)]
@@ -216,11 +217,41 @@ impl MeshRegistry {
             aabb: mesh.aabb(),
         };
         self.map.insert(key, handle);
-        self.uploads.insert(handle, gpu);
+        self.uploads.insert(handle, Arc::new(gpu));
         Ok(handle)
     }
 
     pub fn get_gpu(&self, handle: MeshHandle) -> Option<&GpuMesh> {
-        self.uploads.get(&handle)
+        self.uploads.get(&handle).map(|arc| &**arc)
+    }
+
+    pub fn get_mesh(&self, handle: MeshHandle) -> Option<Arc<GpuMesh>> {
+        self.uploads.get(&handle).cloned()
+    }
+
+    /// Removes meshes that are only held by the registry.
+    /// Returns the number of meshes unloaded.
+    pub fn prune(&mut self) -> usize {
+        let mut to_remove = Vec::new();
+
+        // Identify handles to remove
+        for (handle, mesh_arc) in &self.uploads {
+            // strong_count is 1 implies only the registry holds it
+            if Arc::strong_count(mesh_arc) == 1 {
+                to_remove.push(*handle);
+            }
+        }
+
+        // Remove from uploads and map
+        let count = to_remove.len();
+        for handle in to_remove {
+            self.uploads.remove(&handle);
+            // We also need to remove the key mapping for this handle
+            // This is O(N) scan of the map, but typically prune is infrequent.
+            // For better performance, we might want a reverse map.
+            // Given constraints, linear scan is acceptable for Phase 1 fix.
+            self.map.retain(|_, h| *h != handle);
+        }
+        count
     }
 }
