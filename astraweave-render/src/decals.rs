@@ -291,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_gpu_decal_size() {
-        assert_eq!(std::mem::size_of::<GpuDecal>(), 96);
+        assert_eq!(std::mem::size_of::<GpuDecal>(), 112);
     }
 
     #[test]

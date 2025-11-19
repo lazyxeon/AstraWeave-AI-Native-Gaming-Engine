@@ -21,6 +21,31 @@ pub struct CellGpuResources {
     pub index_buffers: HashMap<AssetId, Buffer>,
     /// Textures mapped by asset ID
     pub textures: HashMap<AssetId, Texture>,
+    /// Tracks the memory size of each asset (vertex + index + texture combined, or separate?)
+    /// Since AssetId is unique per asset, but here we have separate maps.
+    /// AssetId usually refers to a specific resource (e.g., a mesh's vertex buffer has an AssetId, or the mesh has an AssetId?)
+    /// The current code uses `AssetId` as key for all maps.
+    /// This implies `AssetId` collision if a vertex buffer and texture share the same ID.
+    /// Assuming AssetId is unique globally per resource type or per resource instance.
+    /// To be safe, we should track sizes per map or assume AssetId uniqueness across types if that's the design.
+    /// Looking at the code: `upload_vertex_buffer(..., asset_id, ...)`
+    /// If an AssetId refers to a "Mesh", it might have both vertex and index buffers.
+    /// If so, `vertex_buffers.insert(id, ...)` and `index_buffers.insert(id, ...)` would work.
+    /// So we should track sizes for each category.
+    /// Or, just subtract the old buffer size using the `old` value returned by `insert`.
+    /// Ah! `Buffer` has a `size()` method. `Texture` has `width/height` etc.
+    /// But `wgpu::Texture` struct doesn't expose `size()` in all versions easily without keeping track.
+    /// So I will track sizes in a HashMap.
+    /// But if I have 3 maps, I need 3 size maps? Or one map `(AssetId, ResourceType) -> size`?
+    /// Simpler: Just calculate the size of the *removed* item if `insert` returns Some.
+    /// For Buffer: `old_buffer.size()` is available in wgpu.
+    /// For Texture: `wgpu::Texture` does not easily give size back in standard wgpu without storing it.
+    /// So I will add `texture_sizes: HashMap<AssetId, usize>` specifically.
+    /// Buffers can report their own size.
+    
+    /// Sizes of textures mapped by asset ID (since Texture doesn't expose size easily)
+    pub texture_sizes: HashMap<AssetId, usize>,
+    
     /// Current memory usage in bytes
     pub memory_usage: usize,
 }
@@ -32,6 +57,7 @@ impl CellGpuResources {
             vertex_buffers: HashMap::new(),
             index_buffers: HashMap::new(),
             textures: HashMap::new(),
+            texture_sizes: HashMap::new(),
             memory_usage: 0,
         }
     }
@@ -53,7 +79,12 @@ impl CellGpuResources {
         });
 
         let buffer_size = vertices.len();
-        self.vertex_buffers.insert(asset_id, vertex_buffer);
+        
+        // Fix: Subtract old size if exists
+        if let Some(old_buf) = self.vertex_buffers.insert(asset_id, vertex_buffer) {
+            self.memory_usage = self.memory_usage.saturating_sub(old_buf.size() as usize);
+        }
+        
         self.memory_usage += buffer_size;
 
         Ok(())
@@ -76,7 +107,12 @@ impl CellGpuResources {
         });
 
         let buffer_size = indices.len();
-        self.index_buffers.insert(asset_id, index_buffer);
+        
+        // Fix: Subtract old size if exists
+        if let Some(old_buf) = self.index_buffers.insert(asset_id, index_buffer) {
+            self.memory_usage = self.memory_usage.saturating_sub(old_buf.size() as usize);
+        }
+        
         self.memory_usage += buffer_size;
 
         Ok(())
@@ -130,7 +166,14 @@ impl CellGpuResources {
         );
 
         let texture_size = (width * height * 4) as usize; // RGBA8
+        
         self.textures.insert(asset_id, texture);
+        
+        // Fix: Subtract old size if exists
+        if let Some(old_size) = self.texture_sizes.insert(asset_id, texture_size) {
+             self.memory_usage = self.memory_usage.saturating_sub(old_size);
+        }
+        
         self.memory_usage += texture_size;
 
         Ok(())
@@ -142,6 +185,7 @@ impl CellGpuResources {
         self.vertex_buffers.clear();
         self.index_buffers.clear();
         self.textures.clear();
+        self.texture_sizes.clear();
         self.memory_usage = 0;
     }
 

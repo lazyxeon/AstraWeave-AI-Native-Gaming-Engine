@@ -64,12 +64,17 @@ fn clamp_voxel_coord(coord: vec3<i32>) -> vec3<i32> {
 // CONSERVATIVE RASTERIZATION
 // ============================================================================
 
+struct AABB {
+    min: vec3<i32>,
+    max: vec3<i32>,
+}
+
 /// Calculate AABB (axis-aligned bounding box) for a triangle in voxel space
 fn calculate_triangle_aabb(
     v0: vec3<f32>,
     v1: vec3<f32>,
     v2: vec3<f32>
-) -> vec4<vec3<i32>> {  // Returns (min, max) as vec4 for packing
+) -> AABB {
     let min_f = min(min(v0, v1), v2);
     let max_f = max(max(v0, v1), v2);
     
@@ -81,7 +86,7 @@ fn calculate_triangle_aabb(
     let clamped_min = clamp_voxel_coord(min_voxel);
     let clamped_max = clamp_voxel_coord(max_voxel);
     
-    return vec4<vec3<i32>>(clamped_min, clamped_max);
+    return AABB(clamped_min, clamped_max);
 }
 
 /// Test if a voxel (AABB) intersects with a triangle
@@ -309,8 +314,8 @@ fn voxelize(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Calculate triangle AABB in voxel space
     let aabb = calculate_triangle_aabb(v0_voxel, v1_voxel, v2_voxel);
-    let min_voxel = aabb[0];
-    let max_voxel = aabb[1];
+    let min_voxel = aabb.min;
+    let max_voxel = aabb.max;
     
     // Load material (assume one material per mesh for simplicity)
     let material = materials[0];
