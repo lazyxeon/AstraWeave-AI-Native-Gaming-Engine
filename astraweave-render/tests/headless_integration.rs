@@ -3,9 +3,10 @@
 use std::path::PathBuf;
 
 #[test]
+#[cfg(feature = "textures")]
 fn headless_biome_pack_and_pipeline_compat() {
     // Headless device
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::LowPower,
         compatible_surface: None,
@@ -20,8 +21,9 @@ fn headless_biome_pack_and_pipeline_compat() {
             label: Some("headless-device"),
             required_features: wgpu::Features::empty(),
             required_limits: limits,
+            memory_hints: wgpu::MemoryHints::default(),
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))
     .expect("device");
 

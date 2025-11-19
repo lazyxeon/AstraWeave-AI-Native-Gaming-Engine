@@ -12,29 +12,28 @@ Advanced prompt templating and engineering for AI-native gaming. This crate prov
 ## Quick Start
 
 ```rust
-use astraweave_prompts::{PromptTemplate, TemplateEngine, TemplateContext};
+use astraweave_prompts::{PromptTemplate, TemplateEngine, PromptContext};
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     // Create template engine
     let mut engine = TemplateEngine::new();
 
     // Register a template
     let template = PromptTemplate::new(
-        "dialogue".to_string(),
-        "You are {{character.name}}, a {{character.role}}. \
-         Your personality is {{character.personality}}. \
-         Respond to: {{user_input}}".to_string()
+        "dialogue",
+        "You are {{character_name}}, a {{character_role}}. \
+         Your personality is {{character_personality}}. \
+         Respond to: {{user_input}}"
     );
 
     engine.register_template("dialogue", template)?;
 
     // Create context with variables
-    let mut context = TemplateContext::new();
-    context.set("character.name", "Elena");
-    context.set("character.role", "wise mage");
-    context.set("character.personality", "mysterious and helpful");
-    context.set("user_input", "What magic can you teach me?");
+    let mut context = PromptContext::new();
+    context.set("character_name".to_string(), "Elena".into());
+    context.set("character_role".to_string(), "wise mage".into());
+    context.set("character_personality".to_string(), "mysterious and helpful".into());
+    context.set("user_input".to_string(), "What magic can you teach me?".into());
 
     // Render the prompt
     let prompt = engine.render("dialogue", &context)?;
@@ -49,6 +48,7 @@ pub mod context;
 pub mod engine;
 pub mod helpers;
 pub mod library;
+pub mod loader;
 pub mod optimization;
 pub mod template;
 
@@ -56,6 +56,7 @@ pub use context::*;
 pub use engine::*;
 pub use helpers::*;
 pub use library::*;
+pub use loader::*;
 pub use optimization::*;
 pub use template::*;
 
@@ -159,44 +160,58 @@ impl Default for ValidationConfig {
 }
 
 /// Template metadata for categorization and management
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TemplateMetadata {
     /// Template name/identifier
     pub name: String,
 
     /// Human-readable description
+    #[serde(default)]
     pub description: String,
 
     /// Template category
+    #[serde(default)]
     pub category: TemplateCategory,
 
     /// Author information
+    #[serde(default)]
     pub author: Option<String>,
 
     /// Template version
+    #[serde(default = "default_version")]
     pub version: String,
 
     /// Creation timestamp
+    #[serde(default = "current_timestamp")]
     pub created_at: u64,
 
     /// Last modified timestamp
+    #[serde(default = "current_timestamp")]
     pub updated_at: u64,
 
     /// Tags for searching and filtering
+    #[serde(default)]
     pub tags: Vec<String>,
 
     /// Required variables
+    #[serde(default)]
     pub required_variables: Vec<String>,
 
     /// Optional variables with defaults
+    #[serde(default)]
     pub optional_variables: HashMap<String, serde_json::Value>,
 
     /// Template usage statistics
+    #[serde(default)]
     pub usage_stats: UsageStats,
 }
 
+fn default_version() -> String {
+    "0.1.0".to_string()
+}
+
 /// Categories for organizing templates
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq)]
 pub enum TemplateCategory {
     /// Character dialogue templates
     Dialogue,
@@ -220,6 +235,7 @@ pub enum TemplateCategory {
     WorldBuilding,
 
     /// Custom category
+    #[default]
     Custom,
 }
 

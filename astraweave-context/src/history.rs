@@ -137,6 +137,22 @@ impl ConversationHistory {
         messages.iter().rev().take(limit).rev().cloned().collect()
     }
 
+    /// Get a specific message by ID
+    pub fn get_message(&self, id: &str) -> Option<Message> {
+        let messages = self.messages.read();
+        messages.iter().find(|m| m.id == id).cloned()
+    }
+
+    /// Get messages within a time range
+    pub fn get_messages_by_time_range(&self, start: u64, end: u64) -> Vec<Message> {
+        let messages = self.messages.read();
+        messages
+            .iter()
+            .filter(|m| m.timestamp >= start && m.timestamp <= end)
+            .cloned()
+            .collect()
+    }
+
     /// Get messages by role
     pub fn get_messages_by_role(&self, role: Role) -> Vec<Message> {
         let messages = self.messages.read();

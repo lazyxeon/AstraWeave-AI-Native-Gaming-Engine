@@ -7,7 +7,9 @@
 //! Run locally with: `cargo test -p astraweave-render --tests --features skinning-gpu -- --ignored`
 
 use astraweave_render::animation::*;
+use astraweave_render::skinning_gpu::{JointPaletteManager, SKINNING_GPU_SHADER};
 use glam::{Mat4, Quat, Vec3};
+use wgpu::util::DeviceExt;
 
 /// Create a test skeleton for parity validation
 fn create_parity_test_skeleton() -> Skeleton {
@@ -171,6 +173,237 @@ fn assert_vertices_close(
     );
 }
 
+/// Helper to run GPU skinning via compute shader for parity testing
+#[cfg(feature = "skinning-gpu")]
+async fn run_gpu_skinning(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    vertices: &[(Vec3, Vec3, [u16; 4], [f32; 4])],
+    joint_matrices: &[Mat4],
+) -> Vec<(Vec3, Vec3)> {
+    // 1. Create Joint Palette
+    let mut palette_manager = JointPaletteManager::new(device, queue);
+    let handle = palette_manager.allocate();
+    palette_manager
+        .upload_matrices(handle, joint_matrices)
+        .unwrap();
+    let palette_bind_group = palette_manager.get_bind_group(handle).unwrap();
+
+    // 2. Create Vertex Buffer
+    #[repr(C)]
+    #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+    struct GpuVertex {
+        pos: [f32; 3],
+        _pad1: f32, // alignment
+        normal: [f32; 3],
+        _pad2: f32,
+        tangent: [f32; 4],
+        joints: [u32; 4],
+        weights: [f32; 4],
+    }
+
+    let gpu_vertices: Vec<GpuVertex> = vertices
+        .iter()
+        .map(|(p, n, j, w)| GpuVertex {
+            pos: p.to_array(),
+            _pad1: 0.0,
+            normal: n.to_array(),
+            _pad2: 0.0,
+            tangent: [0.0; 4],
+            joints: [j[0] as u32, j[1] as u32, j[2] as u32, j[3] as u32],
+            weights: *w,
+        })
+        .collect();
+
+    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Input Vertex Buffer"),
+        contents: bytemuck::cast_slice(&gpu_vertices),
+        usage: wgpu::BufferUsages::STORAGE,
+    });
+
+    // 3. Create Output Buffer
+    #[repr(C)]
+    #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+    struct GpuOutput {
+        pos: [f32; 4],
+        normal: [f32; 4],
+    }
+
+    let output_size = (std::mem::size_of::<GpuOutput>() * vertices.len()) as u64;
+    let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Output Buffer"),
+        size: output_size,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+        mapped_at_creation: false,
+    });
+
+    // 4. Create Compute Shader
+    let compute_src = format!(
+        "{}\n{}",
+        SKINNING_GPU_SHADER.replace("@group(4)", "@group(1)"),
+        r#"
+        struct VertexInput {
+            pos: vec3<f32>,
+            _pad1: f32,
+            normal: vec3<f32>,
+            _pad2: f32,
+            tangent: vec4<f32>,
+            joints: vec4<u32>,
+            weights: vec4<f32>,
+        }
+        
+        struct VertexBuffer {
+            vertices: array<VertexInput>,
+        }
+
+        struct OutputItem {
+            pos: vec4<f32>,
+            normal: vec4<f32>,
+        }
+
+        struct OutputBuffer {
+            items: array<OutputItem>,
+        }
+
+        @group(0) @binding(0) var<storage, read> input_buffer: VertexBuffer;
+        @group(0) @binding(1) var<storage, read_write> output_buffer: OutputBuffer;
+
+        @compute @workgroup_size(64)
+        fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+            let index = global_id.x;
+            if (index >= arrayLength(&input_buffer.vertices)) {
+                return;
+            }
+            
+            let v_in = input_buffer.vertices[index];
+            
+            // Map to SkinnedVertexInput expected by library function
+            var input: SkinnedVertexInput;
+            input.position = v_in.pos;
+            input.normal = v_in.normal;
+            input.tangent = v_in.tangent;
+            input.joints = v_in.joints;
+            input.weights = v_in.weights;
+            
+            let pos = apply_skinning(input);
+            let nrm = apply_skinning_normal(input);
+            
+            output_buffer.items[index].pos = pos;
+            output_buffer.items[index].normal = vec4<f32>(nrm, 0.0);
+        }
+        "#
+    );
+
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("Skinning Compute Shader"),
+        source: wgpu::ShaderSource::Wgsl(compute_src.into()),
+    });
+
+    // 5. Create Pipeline
+    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Compute Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
+    });
+
+    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        label: Some("Compute Pipeline Layout"),
+        bind_group_layouts: &[&bind_group_layout, &palette_manager.bind_group_layout],
+        push_constant_ranges: &[],
+    });
+
+    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some("Skinning Pipeline"),
+        layout: Some(&pipeline_layout),
+        module: &shader,
+        entry_point: Some("main"),
+        compilation_options: Default::default(),
+        cache: None,
+    });
+
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("Compute Bind Group"),
+        layout: &bind_group_layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: vertex_buffer.as_entire_binding(),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: output_buffer.as_entire_binding(),
+            },
+        ],
+    });
+
+    // 6. Dispatch
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    {
+        let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+            label: Some("Skinning Pass"),
+            timestamp_writes: None,
+        });
+        cpass.set_pipeline(&pipeline);
+        cpass.set_bind_group(0, &bind_group, &[]);
+        cpass.set_bind_group(1, palette_bind_group, &[]);
+        let workgroups = (vertices.len() as f32 / 64.0).ceil() as u32;
+        cpass.dispatch_workgroups(workgroups, 1, 1);
+    }
+
+    // 7. Readback
+    let staging_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Staging Buffer"),
+        size: output_size,
+        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    encoder.copy_buffer_to_buffer(&output_buffer, 0, &staging_buffer, 0, output_size);
+    queue.submit(Some(encoder.finish()));
+
+    let buffer_slice = staging_buffer.slice(..);
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+    let _ = device.poll(wgpu::MaintainBase::Wait);
+    receiver.await.unwrap().unwrap();
+
+    let data = buffer_slice.get_mapped_range();
+    let result: &[GpuOutput] = bytemuck::cast_slice(&data);
+
+    let mut output = Vec::new();
+    for item in result {
+        output.push((
+            Vec3::new(item.pos[0], item.pos[1], item.pos[2]),
+            Vec3::new(item.normal[0], item.normal[1], item.normal[2]),
+        ));
+    }
+
+    drop(data);
+    staging_buffer.unmap();
+
+    output
+}
+
 /// Test: CPU skinning at t=0 (rest pose)
 #[test]
 fn test_cpu_skinning_rest_pose() {
@@ -179,7 +412,7 @@ fn test_cpu_skinning_rest_pose() {
 
     // Rest pose: use bind pose transforms
     let local_poses: Vec<Transform> = skeleton.joints.iter().map(|j| j.local_transform).collect();
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Skin vertices with CPU
     let skinned = skin_vertices_cpu(&vertices, &joint_matrices);
@@ -215,7 +448,7 @@ fn test_cpu_skinning_animated() {
 
     // Sample at t=0.5 (45° rotation midpoint)
     let local_poses = clip.sample(0.5, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Skin vertices with CPU
     let skinned = skin_vertices_cpu(&vertices, &joint_matrices);
@@ -244,7 +477,7 @@ fn test_parity_rest_pose() {
 
     // CPU skinning
     let local_poses: Vec<Transform> = skeleton.joints.iter().map(|j| j.local_transform).collect();
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
     let cpu_skinned = skin_vertices_cpu(&vertices, &joint_matrices);
 
     // GPU skinning (requires wgpu setup)
@@ -266,18 +499,15 @@ fn test_parity_rest_pose() {
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::default(),
-                    trace: None,
+                    trace: wgpu::Trace::Off,
                 },
-                None,
             )
             .await
             .expect("Failed to create device")
     }
     .block_on();
 
-    // TODO: Implement GPU skinning path when skinning_gpu.rs has the API
-    // For now, compare CPU against itself (placeholder)
-    let gpu_skinned = cpu_skinned.clone();
+    let gpu_skinned = run_gpu_skinning(&device, &queue, &vertices, &joint_matrices).block_on();
 
     // Compare with tight tolerance (should be near-identical for rest pose)
     assert_vertices_close(&cpu_skinned, &gpu_skinned, 0.001, 0.001);
@@ -297,7 +527,7 @@ fn test_parity_animated_frame() {
 
     // CPU skinning at t=0.5
     let local_poses = clip.sample(0.5, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
     let cpu_skinned = skin_vertices_cpu(&vertices, &joint_matrices);
 
     // GPU skinning (requires wgpu setup)
@@ -319,18 +549,15 @@ fn test_parity_animated_frame() {
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::default(),
-                    trace: None,
+                    trace: wgpu::Trace::Off,
                 },
-                None,
             )
             .await
             .expect("Failed to create device")
     }
     .block_on();
 
-    // TODO: Implement GPU skinning path
-    // For now, compare CPU against itself (placeholder)
-    let gpu_skinned = cpu_skinned.clone();
+    let gpu_skinned = run_gpu_skinning(&device, &queue, &vertices, &joint_matrices).block_on();
 
     // Wider tolerance for animated frame (accumulates float errors)
     assert_vertices_close(&cpu_skinned, &gpu_skinned, 0.01, 0.01);
@@ -357,7 +584,7 @@ fn test_parity_weighted_blending() {
 
     // CPU skinning at t=0.75
     let local_poses = clip.sample(0.75, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
     let cpu_skinned = skin_vertices_cpu(&vertices, &joint_matrices);
 
     // GPU skinning (placeholder)
@@ -379,17 +606,15 @@ fn test_parity_weighted_blending() {
                     required_features: wgpu::Features::empty(),
                     required_limits: wgpu::Limits::default(),
                     memory_hints: wgpu::MemoryHints::default(),
-                    trace: None,
+                    trace: wgpu::Trace::Off,
                 },
-                None,
             )
             .await
             .expect("Failed to create device")
     }
     .block_on();
 
-    // TODO: GPU skinning implementation
-    let gpu_skinned = cpu_skinned.clone();
+    let gpu_skinned = run_gpu_skinning(&device, &queue, &vertices, &joint_matrices).block_on();
 
     // Tolerance for weighted blending
     assert_vertices_close(&cpu_skinned, &gpu_skinned, 0.01, 0.01);

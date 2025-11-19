@@ -1,7 +1,7 @@
 # AstraWeave: Master Strategic Roadmap
 
- **Version**: 1.23  
-**Last Updated**: November 12, 2025 (🎉 **RENDERING SYSTEM WORLD-CLASS** - Phases 1-8 ALL COMPLETE: 36 tasks, rendering PRODUCTION-READY ⭐⭐⭐⭐⭐)  
+ **Version**: 1.25  
+**Last Updated**: November 13, 2025 (🎉 **SPRINT 2 DAY 6-7 PROMPTS CORE TESTS COMPLETE**)  
 **Status**: ✅ Authoritative Source  
 **Maintainer**: Core Team
 
@@ -37,6 +37,12 @@ This document is the **single authoritative source** for AstraWeave's strategic 
 - **✨ LATEST: Determinism integration tests** (Gap 2/3 complete, 7/7 passing, 0 warnings, 100-frame replay + seed variation + component updates validated)
 - **🎉 LATEST: Performance integration tests** (Gap 3/3 complete, 5/5 passing, 0 warnings, **103,500 entity capacity @ 60 FPS proven!**)
 - **🎉 LATEST: PHASE 4 COMPLETE** (All 3 gaps filled, 20 tests added, 1,714 LOC, 3.5h total, **3.1× faster than estimate!**)
+- **✨ NEW: Sprint 2 Day 6-7 Prompts Core Tests COMPLETE** (Nov 13, 2025)
+  - **Comprehensive Test Suite**: 3 new test files (engine, template, context), 29/29 tests passing.
+  - **Engine Upgrade**: Refactored `TemplateProcessor` to use production-grade `handlebars` (v6.3).
+  - **Critical Fixes**: Fixed `PromptContext` scoping bugs, enabled strict validation.
+  - **Documentation**: Fixed doc tests and examples in `astraweave-prompts`.
+  - **Status**: Phase 8.7 Sprint 2 In Progress.
 - **✨ NEW: Phase 1 & 2 Rendering Fixes COMPLETE** (6 critical bugs fixed, Nov 12, 2025)
   - **Visual quality**: 100% improvement (depth resize, terrain tiling, roughness, sRGB all fixed)
   - **Performance**: 30-50% improvement (back-face culling enabled, ~40% gain)
@@ -44,6 +50,11 @@ This document is the **single authoritative source** for AstraWeave's strategic 
   - **Code quality**: Production-ready rendering pipeline
   - Files: main_bevy_v2.rs, pbr_shader.wgsl (6 fixes total)
   - Commits: 54d6014 (Phase 1 & 2 fixes), 9df2b0d (progress report)
+- **✨ NEW: Clustered Lighting Phase 2 Integration COMPLETE** (Nov 12, 2025)
+  - **Refactored ClusteredForwardRenderer**: Clean CPU-based binning, Uniform buffer config.
+  - **Shader Integration**: Updated `clustered_lighting.wgsl` and `pbr.wgsl` to use new system.
+  - **Legacy Cleanup**: Removed broken compute-shader binning code from `renderer.rs`.
+  - **Verification**: `astraweave-render` and `hello_companion` compile cleanly.
 - **✨ NEW: Option 3 Determinism Validation COMPLETE** (31/32 tests passing, 96.9%, **10-16× faster than estimate!**)
   - **32 determinism tests** across 4 crates (core 7, AI 5, ECS 15, physics 5)
   - **4/5 roadmap requirements** met (ECS ordering, RNG seeding, capture/replay, 3-run validation)
@@ -708,6 +719,8 @@ This merges the existing Phase A-C with a detailed 15-phase extension for full c
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
+| **1.25** | **Nov 13, 2025** | **✅ SPRINT 2 DAY 6-7 PROMPTS CORE TESTS COMPLETE**: Completed core testing for `astraweave-prompts`. **Achievements**: Created 3 new test files (`engine_tests.rs`, `template_tests.rs`, `context_tests.rs`) with 29/29 tests passing. **Upgrades**: Refactored `TemplateProcessor` to use `handlebars` crate (v6.3) for robust templating. **Fixes**: Resolved `PromptContext` scoping bugs and fixed documentation examples. **Status**: Phase 8.7 Sprint 2 In Progress. | AI Team |
+| **1.24** | **Nov 12, 2025** | **✅ CLUSTERED LIGHTING PHASE 2 INTEGRATION COMPLETE**: Successfully integrated the Clustered Forward Rendering system into the main renderer. **Refactored ClusteredForwardRenderer**: Clean CPU-based binning, Uniform buffer config. **Shader Integration**: Updated `clustered_lighting.wgsl` and `pbr.wgsl` to use new system. **Legacy Cleanup**: Removed broken compute-shader binning code from `renderer.rs`. **Verification**: `astraweave-render` and `hello_companion` compile cleanly. | AI Team |
 | **1.21** | **Nov 12, 2025** | **✅ PHASE 1 & 2 RENDERING FIXES COMPLETE - 6 CRITICAL BUGS FIXED!**: Completed critical rendering bug fixes and performance optimizations. **Phase 1 Fixes (4 bugs)**: (1) Depth texture resize bug (window minimize/resize crashes eliminated), (2) Terrain sampler tiling configuration corrected, (3) Roughness channel mismatch fixed (MRA packing), (4) sRGB swapchain format configured. **Phase 2 Fixes (2 high-priority)**: (1) Back-face culling enabled (~40% performance gain), (2) Robust surface error handling implemented. **Impact**: Visual quality 100% improvement, Performance 30-50% improvement, Stability zero crashes on resize/minimize, Code quality production-ready. **Files Modified**: examples/unified_showcase/src/main_bevy_v2.rs (6 fixes), examples/unified_showcase/src/pbr_shader.wgsl (back-face culling). **Commits**: 54d6014 (Phase 1 & 2 fixes), 9df2b0d (progress report). **Documentation**: Updated MASTER_ROADMAP.md Phase 1 status to "CRITICAL FIXES COMPLETE", updated Current State section with rendering achievements. **Next**: Phase 1 remaining tasks (shadows, post-processing, Nanite enhancements). | AI Team |
 | **1.18** | **Nov 3, 2025** | **✅ ASTRACT DAY 7 COMPLETE - ADVANCED WIDGETS LIBRARY (9× FASTER!)**: Delivered comprehensive advanced widget library with **3 production-ready widgets** in 40 minutes (vs 6h planned). **Deliverables**: (1) ColorPicker (400 LOC, HSV/RGB/hex/alpha, 11 tests), (2) TreeView (350 LOC, hierarchical data with icons, 9 tests), (3) RangeSlider (400 LOC, dual handles with step support, 9 tests), (4) AdvancedWidgetsPanel (350 LOC, game use cases in aw_editor, 6 tests), (5) **1,550 total LOC** production code. **Tests**: 41/41 passing (35 widget + 6 integration), zero compilation errors. **Integration**: aw_editor compiles cleanly, AdvancedWidgetsPanel demonstrates real-world game scenarios (lighting colors, scene hierarchy 15 nodes, asset browser 16 nodes, LOD/matchmaking/EQ ranges). **Technical achievements**: Builder/getter naming pattern (`with_*` for builders), RGB↔HSV conversion algorithms (industry-standard, <0.1% error), HashMap O(1) tree lookup, public helper APIs (`format_value()`). **Cumulative (Days 1-7)**: 9.2h / 42h planned (**4.6× faster**), 123 tests passing, ~3,310 LOC (1,550 advanced + 1,760 charts + Astract framework). **Comparison**: Exceeds Unreal Slate (ColorPicker has hex+presets vs RGB-only), matches Unity UIElements (feature parity, better performance). **Documentation**: ASTRACT_GIZMO_DAY_7_COMPLETE.md (comprehensive 20k-word report). **Next**: Day 8 graph visualization (node graph editor, force-directed layout). | AI Team |
 | **1.17** | **Nov 3, 2025** | **✅ ASTRACT DAY 6 COMPLETE - CHART WIDGETS LIBRARY (4× FASTER!)**: Delivered comprehensive chart visualization library with **3 production-ready widgets** in 2 hours (vs 8h planned). **Deliverables**: (1) LineChart (390 LOC, multi-series, auto-scaling), (2) BarChart (420 LOC, grouped/stacked modes), (3) ScatterPlot (450 LOC, 4 shapes, clustering), (4) ChartsPanel (260 LOC, live demo in aw_editor), (5) **1,760 total LOC** production code. **Tests**: 15/15 unit tests passing (100%), zero compilation errors. **Integration**: aw_editor compiles cleanly, ChartsPanel displays realistic game metrics (frame timing, entity distribution, spatial positions) @ 60 FPS. **Technical achievements**: Fixed egui 0.32 API changes (rect_stroke 4-arg), nice bounds algorithm (auto-scale to human-friendly values), coordinate transform (data→screen with Y-flip), 4 point shapes (circle/square/triangle/diamond). **Cumulative (Days 1-6)**: 8.5h / 36h planned (**4.2× faster**), 65 tests passing, ~1,760 chart LOC + Astract framework complete. **Documentation**: ASTRACT_GIZMO_DAY_6_COMPLETE.md (comprehensive 15k-word report). **Next**: Day 7 advanced widgets (color picker, file browser, code editor). | AI Team |

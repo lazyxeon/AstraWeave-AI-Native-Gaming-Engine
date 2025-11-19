@@ -36,6 +36,10 @@ use astraweave_core::{
     build_snapshot, step, validate_and_execute, IVec2, PerceptionConfig, PlanIntent, SimConfig,
     Team, ValidateCfg, World, WorldSnapshot,
 };
+use astraweave_core::ecs_adapter::build_app;
+use astraweave_core::ecs_bridge::EntityBridge;
+use astraweave_core::{CCooldowns, CAmmo, CHealth, CPos};
+use astraweave_ecs as ecs;
 
 #[cfg(feature = "llm")]
 use astraweave_core::{ActionStep, ToolRegistry};
@@ -255,12 +259,55 @@ fn main() -> Result<()> {
 // SINGLE DEMO RUN
 // ============================================================================
 
+// Helper to sync legacy world changes to ECS
+fn update_ecs_from_legacy(world: &mut ecs::World, legacy_id: u32) {
+    // Get ECS entity from bridge
+    let ecs_entity = if let Some(bridge) = world.get_resource::<EntityBridge>() {
+        bridge.get_by_legacy(&legacy_id)
+    } else {
+        None
+    };
+
+    if let Some(e) = ecs_entity {
+        // Get legacy world
+        let (pos, hp, ammo, cooldowns) = if let Some(w) = world.get_resource::<World>() {
+            let pos = w.pose(legacy_id).map(|p| p.pos);
+            let hp = w.health(legacy_id).map(|h| h.hp);
+            let ammo = w.ammo(legacy_id).map(|a| a.rounds);
+            let cooldowns = w.cooldowns(legacy_id).map(|cds| cds.map.clone());
+            (pos, hp, ammo, cooldowns)
+        } else {
+            (None, None, None, None)
+        };
+
+        if let Some(p) = pos {
+            world.insert(e, CPos { pos: p });
+        }
+        if let Some(h) = hp {
+            world.insert(e, CHealth { hp: h });
+        }
+        if let Some(a) = ammo {
+            world.insert(e, CAmmo { rounds: a });
+        }
+        if let Some(cds) = cooldowns {
+            let map: astraweave_core::cooldowns::Map = cds
+                .iter()
+                .map(|(k, v)| (astraweave_core::cooldowns::CooldownKey::from(k.as_str()), *v))
+                .collect();
+            world.insert(e, CCooldowns { map });
+        }
+    }
+}
+
 #[cfg(feature = "metrics")]
 fn run_single_demo(mode: AIMode) -> Result<AIMetrics> {
     use std::time::Instant;
 
     // Setup world
-    let (mut w, _player, comp, enemy, snap) = setup_world()?;
+    let (w, _player, comp, enemy, snap) = setup_world()?;
+
+    // Build ECS App
+    let mut app = build_app(w, 0.25);
 
     // Generate plan with timing
     let start = Instant::now();
@@ -297,17 +344,23 @@ fn run_single_demo(mode: AIMode) -> Result<AIMetrics> {
         println!("   {}", line);
     };
 
-    println!("\n--- Executing Plan @ t={:.2} ---", w.t);
-    if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
-        println!("⚠️  Execution failed: {}. Continuing...", e);
+    {
+        let mut w = app.world.get_resource_mut::<World>().unwrap();
+        println!("\n--- Executing Plan @ t={:.2} ---", w.t);
+        if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+            println!("⚠️  Execution failed: {}. Continuing...", e);
+        }
     }
 
-    // Simulate time passage
-    let s_cfg = SimConfig { dt: 0.25 };
+    // Sync legacy changes to ECS
+    update_ecs_from_legacy(&mut app.world, comp);
+
+    // Simulate time passage using ECS
     for _ in 0..20 {
-        step(&mut w, &s_cfg);
+        app = app.run_fixed(1);
     }
 
+    let w = app.world.get_resource::<World>().unwrap();
     println!("\n--- Post-execution State @ t={:.2} ---", w.t);
     if let Some(comp_pos) = w.pos_of(comp) {
         println!("Companion: {:?}", comp_pos);
@@ -332,7 +385,10 @@ fn run_single_demo(mode: AIMode) -> Result<AIMetrics> {
 fn run_single_demo(mode: AIMode) -> Result<()> {
     use std::time::Instant;
 
-    let (mut w, _player, comp, enemy, snap) = setup_world()?;
+    let (w, _player, comp, enemy, snap) = setup_world()?;
+
+    // Build ECS App
+    let mut app = build_app(w, 0.25);
 
     let start = Instant::now();
     let plan = generate_plan(&snap, mode)?;
@@ -352,16 +408,23 @@ fn run_single_demo(mode: AIMode) -> Result<()> {
         println!("   {}", line);
     };
 
-    println!("\n--- Executing Plan @ t={:.2} ---", w.t);
-    if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
-        println!("⚠️  Execution failed: {}. Continuing...", e);
+    {
+        let mut w = app.world.get_resource_mut::<World>().unwrap();
+        println!("\n--- Executing Plan @ t={:.2} ---", w.t);
+        if let Err(e) = validate_and_execute(&mut w, comp, &plan, &v_cfg, &mut log) {
+            println!("⚠️  Execution failed: {}. Continuing...", e);
+        }
     }
 
-    let s_cfg = SimConfig { dt: 0.25 };
+    // Sync legacy changes to ECS
+    update_ecs_from_legacy(&mut app.world, comp);
+
+    // Simulate time passage using ECS
     for _ in 0..20 {
-        step(&mut w, &s_cfg);
+        app = app.run_fixed(1);
     }
 
+    let w = app.world.get_resource::<World>().unwrap();
     println!("\n--- Post-execution State @ t={:.2} ---", w.t);
     if let Some(comp_pos) = w.pos_of(comp) {
         println!("Companion: {:?}", comp_pos);

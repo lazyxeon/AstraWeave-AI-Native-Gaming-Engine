@@ -49,6 +49,7 @@ pub struct RagPipeline {
 pub trait VectorStoreInterface: Send + Sync {
     async fn search(&self, query_vector: &[f32], k: usize) -> Result<Vec<SearchResult>>;
     async fn insert(&self, id: String, vector: Vec<f32>, text: String) -> Result<()>;
+    async fn insert_memory(&self, memory: Memory, vector: Vec<f32>) -> Result<()>;
     async fn get(&self, id: &str) -> Option<Memory>;
     async fn remove(&self, id: &str) -> Option<Memory>;
     fn len(&self) -> usize;
@@ -76,17 +77,56 @@ impl VectorStoreInterface for VectorStoreWrapper {
         self.inner.insert(id, vector, text)
     }
 
+    async fn insert_memory(&self, memory: Memory, vector: Vec<f32>) -> Result<()> {
+        let mut metadata = HashMap::new();
+        metadata.insert("entities".to_string(), serde_json::to_string(&memory.entities)?);
+        metadata.insert("category".to_string(), serde_json::to_string(&memory.category)?);
+        metadata.insert("valence".to_string(), memory.valence.to_string());
+        
+        for (k, v) in memory.context {
+            metadata.insert(format!("ctx_{}", k), v);
+        }
+
+        self.inner.insert_with_metadata(
+            memory.id,
+            vector,
+            memory.text,
+            memory.importance,
+            metadata,
+        )
+    }
+
     async fn get(&self, id: &str) -> Option<Memory> {
-        // Convert StoredVector to Memory (simplified conversion)
-        self.inner.get(id).map(|stored| Memory {
-            id: stored.id,
-            text: stored.text,
-            timestamp: stored.timestamp,
-            importance: stored.importance,
-            valence: 0.0,                       // Default neutral valence
-            category: MemoryCategory::Gameplay, // Default category
-            entities: vec![],
-            context: HashMap::new(),
+        self.inner.get(id).map(|stored| {
+            let entities: Vec<String> = stored.metadata.get("entities")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default();
+            
+            let category: MemoryCategory = stored.metadata.get("category")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or(MemoryCategory::Gameplay);
+                
+            let valence: f32 = stored.metadata.get("valence")
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0.0);
+                
+            let mut context = HashMap::new();
+            for (k, v) in &stored.metadata {
+                if let Some(key) = k.strip_prefix("ctx_") {
+                    context.insert(key.to_string(), v.clone());
+                }
+            }
+
+            Memory {
+                id: stored.id,
+                text: stored.text,
+                timestamp: stored.timestamp,
+                importance: stored.importance,
+                valence,
+                category,
+                entities,
+                context,
+            }
         })
     }
 
@@ -149,7 +189,11 @@ impl RagPipeline {
             config,
             metrics: Arc::new(RwLock::new(RagMetrics::default())),
             cache: Arc::new(DashMap::new()),
-            consolidation_state: Arc::new(RwLock::new(ConsolidationState::default())),
+            consolidation_state: Arc::new(RwLock::new(ConsolidationState {
+                last_consolidation: current_timestamp(),
+                memories_since_consolidation: 0,
+                consolidation_in_progress: false,
+            })),
         }
     }
 
@@ -178,7 +222,7 @@ impl RagPipeline {
 
         // Store in vector store
         self.vector_store
-            .insert(memory.id.clone(), embedding, memory.text.clone())
+            .insert_memory(memory.clone(), embedding)
             .await?;
 
         // Update consolidation state
@@ -235,16 +279,35 @@ impl RagPipeline {
         // Convert to RetrievedMemory and apply filters
         let mut retrieved_memories = Vec::new();
         for (rank, result) in search_results.into_iter().enumerate() {
-            // Convert SearchResult to Memory (simplified)
+            // Convert SearchResult to Memory
+            let entities: Vec<String> = result.vector.metadata.get("entities")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default();
+            
+            let category: MemoryCategory = result.vector.metadata.get("category")
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or(MemoryCategory::Gameplay);
+                
+            let valence: f32 = result.vector.metadata.get("valence")
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0.0);
+                
+            let mut context = HashMap::new();
+            for (k, v) in &result.vector.metadata {
+                if let Some(key) = k.strip_prefix("ctx_") {
+                    context.insert(key.to_string(), v.clone());
+                }
+            }
+
             let memory = Memory {
                 id: result.vector.id,
                 text: result.vector.text,
                 timestamp: result.vector.timestamp,
                 importance: result.vector.importance,
-                valence: 0.0,
-                category: MemoryCategory::Gameplay,
-                entities: vec![],
-                context: HashMap::new(),
+                valence,
+                category,
+                entities,
+                context,
             };
 
             // Apply filters
@@ -479,7 +542,7 @@ impl RagPipeline {
 
         // Store in vector store
         self.vector_store
-            .insert(memory.id.clone(), embedding, memory.text.clone())
+            .insert_memory(memory.clone(), embedding)
             .await?;
 
         // Update consolidation state (synchronous lock, dropped immediately)

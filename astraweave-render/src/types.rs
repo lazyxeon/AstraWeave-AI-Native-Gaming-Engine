@@ -52,6 +52,7 @@ pub struct SkinnedVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
     pub tangent: [f32; 4],
+    pub uv: [f32; 2],
     pub joints: [u16; 4],
     pub weights: [f32; 4],
 }
@@ -81,15 +82,21 @@ impl SkinnedVertex {
                     shader_location: 12,
                     format: wgpu::VertexFormat::Float32x4,
                 },
-                // joints
+                // uv
                 wgpu::VertexAttribute {
                     offset: 40,
+                    shader_location: 13,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                // joints
+                wgpu::VertexAttribute {
+                    offset: 48,
                     shader_location: 10,
                     format: wgpu::VertexFormat::Uint16x4,
                 },
                 // weights
                 wgpu::VertexAttribute {
-                    offset: 48,
+                    offset: 56,
                     shader_location: 11,
                     format: wgpu::VertexFormat::Float32x4,
                 },
@@ -161,7 +168,7 @@ impl InstanceRaw {
                 // material_id (uint)
                 wgpu::VertexAttribute {
                     offset: 116,
-                    shader_location: 10,
+                    shader_location: 14,
                     format: wgpu::VertexFormat::Uint32,
                 },
             ],
@@ -291,22 +298,23 @@ mod tests {
     #[test]
     fn test_skinned_vertex_layout_attributes() {
         let layout = SkinnedVertex::layout();
-        // 5 attributes: position, normal, tangent, joints, weights
-        assert_eq!(layout.attributes.len(), 5);
+        // 6 attributes: position, normal, tangent, uv, joints, weights
+        assert_eq!(layout.attributes.len(), 6);
         // Verify shader locations
         assert_eq!(layout.attributes[0].shader_location, 0); // position
         assert_eq!(layout.attributes[1].shader_location, 1); // normal
         assert_eq!(layout.attributes[2].shader_location, 12); // tangent
-        assert_eq!(layout.attributes[3].shader_location, 10); // joints
-        assert_eq!(layout.attributes[4].shader_location, 11); // weights
+        assert_eq!(layout.attributes[3].shader_location, 13); // uv
+        assert_eq!(layout.attributes[4].shader_location, 10); // joints
+        assert_eq!(layout.attributes[5].shader_location, 11); // weights
     }
 
     #[test]
     fn test_skinned_vertex_layout_stride() {
         let layout = SkinnedVertex::layout();
-        // 3f32 (pos) + 3f32 (norm) + 4f32 (tan) + 4u16 (joints) + 4f32 (weights)
-        // = 12+12+16+8+16 = 64 bytes
-        assert_eq!(layout.array_stride, 64);
+        // 3f32 (pos) + 3f32 (norm) + 4f32 (tan) + 2f32 (uv) + 4u16 (joints) + 4f32 (weights)
+        // = 12+12+16+8+8+16 = 72 bytes
+        assert_eq!(layout.array_stride, 72);
         assert_eq!(layout.step_mode, wgpu::VertexStepMode::Vertex);
     }
 

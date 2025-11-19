@@ -2,6 +2,7 @@
 //!
 //! This module provides template management capabilities.
 
+use crate::TemplateMetadata;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -13,6 +14,8 @@ pub struct PromptTemplate {
     pub template: String,
     #[serde(default)]
     pub variables: Vec<String>,
+    #[serde(default)]
+    pub metadata: Option<TemplateMetadata>,
 }
 
 impl PromptTemplate {
@@ -24,6 +27,7 @@ impl PromptTemplate {
             id: id.into(),
             template: template_s,
             variables: vars,
+            metadata: None,
         }
     }
 
@@ -56,19 +60,6 @@ impl PromptTemplate {
     pub fn template(&self) -> &str {
         &self.template
     }
-}
-
-/// Template metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TemplateMetadata {
-    /// Template name
-    pub name: String,
-    /// Template version
-    pub version: String,
-    /// Template description
-    pub description: String,
-    /// Template variables
-    pub variables: Vec<String>,
 }
 
 /// Template processor
@@ -105,66 +96,41 @@ impl TemplateProcessor {
 
     /// Process a template with variables
     pub fn process(&self, template: &str, variables: &HashMap<String, String>) -> Result<String> {
-        // Simple variable substitution for now
-        let mut result = template.to_string();
-
-        for (key, value) in variables {
-            let placeholder = format!("{{{}}}", key);
-            result = result.replace(&placeholder, value);
-        }
-
-        Ok(result)
+        let mut reg = handlebars::Handlebars::new();
+        reg.set_strict_mode(self.config.validate_variables);
+        
+        // Handlebars renders {{var}}. 
+        // If the input template uses {var} (single brace), we might need to convert or support both?
+        // The lib.rs example uses {{var}}.
+        // The tests used {var}.
+        
+        // Let's assume we are moving to Handlebars standard {{var}}.
+        Ok(reg.render_template(template, variables)?)
     }
 
     /// Validate template syntax
     pub fn validate_template(&self, template: &str) -> Result<()> {
-        // Basic validation - check for balanced braces
-        let mut brace_count = 0;
-        for char in template.chars() {
-            match char {
-                '{' => brace_count += 1,
-                '}' => brace_count -= 1,
-                _ => {}
-            }
-            if brace_count < 0 {
-                anyhow::bail!("Unbalanced braces in template");
-            }
-        }
-
-        if brace_count != 0 {
-            anyhow::bail!("Unbalanced braces in template");
-        }
-
+        let mut reg = handlebars::Handlebars::new();
+        reg.register_template_string("temp", template)?;
         Ok(())
     }
 
     /// Extract variables from template
     pub fn extract_variables(&self, template: &str) -> Vec<String> {
+        // Simple regex extraction for Handlebars variables {{var}}
+        // This is an approximation.
+        let re = regex::Regex::new(r"\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}").unwrap();
         let mut variables = Vec::new();
-        let mut chars = template.chars().peekable();
-
-        while let Some(char) = chars.next() {
-            if char == '{' {
-                if chars.peek() == Some(&'{') {
-                    // Skip double braces
-                    chars.next();
-                    continue;
-                }
-
-                let mut var_name = String::new();
-                while let Some(char) = chars.next() {
-                    if char == '}' {
-                        break;
-                    }
-                    var_name.push(char);
-                }
-
-                if !var_name.is_empty() && !variables.contains(&var_name) {
-                    variables.push(var_name);
+        
+        for cap in re.captures_iter(template) {
+            if let Some(m) = cap.get(1) {
+                let var = m.as_str().to_string();
+                if !variables.contains(&var) {
+                    variables.push(var);
                 }
             }
         }
-
+        
         variables
     }
 }

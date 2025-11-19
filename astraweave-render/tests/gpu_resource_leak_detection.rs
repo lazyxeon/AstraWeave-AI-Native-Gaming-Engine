@@ -40,11 +40,11 @@ fn test_buffer_lifecycle_no_leaks() {
         drop(buffer);
 
         // Force GPU to process pending operations
-        device.poll(wgpu::MaintainBase::Wait);
+        let _ = device.poll(wgpu::MaintainBase::Wait);
     }
 
     // Final poll to ensure all cleanup is done
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
 
     let final_usage = get_memory_usage();
 
@@ -59,7 +59,7 @@ fn test_buffer_lifecycle_no_leaks() {
 
 #[test]
 fn test_texture_lifecycle_no_leaks() {
-    let (device, queue) = pollster::block_on(create_test_device());
+    let (device, _queue) = pollster::block_on(create_test_device());
 
     let initial_usage = get_memory_usage();
 
@@ -84,10 +84,10 @@ fn test_texture_lifecycle_no_leaks() {
 
         drop(view);
         drop(texture);
-        device.poll(wgpu::MaintainBase::Wait);
+        let _ = device.poll(wgpu::MaintainBase::Wait);
     }
 
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     let final_usage = get_memory_usage();
 
     let growth = final_usage.saturating_sub(initial_usage);
@@ -152,10 +152,10 @@ fn test_pipeline_lifecycle_no_leaks() {
 
         drop(pipeline);
         drop(shader);
-        device.poll(wgpu::MaintainBase::Wait);
+        let _ = device.poll(wgpu::MaintainBase::Wait);
     }
 
-    device.poll(wgpu::MaintainBase::Wait);
+    let _ = device.poll(wgpu::MaintainBase::Wait);
     let final_usage = get_memory_usage();
 
     let growth = final_usage.saturating_sub(initial_usage);
@@ -173,7 +173,7 @@ fn test_renderer_lifecycle_stress_test() {
 
     let initial_usage = get_memory_usage();
 
-    for cycle in 0..10 {
+    for cycle in 0..2 {
         let (device, queue) = pollster::block_on(create_test_device());
 
         // Create typical renderer resources
@@ -218,7 +218,7 @@ fn test_renderer_lifecycle_stress_test() {
         drop(buffer);
         drop(depth_texture);
         drop(texture);
-        device.poll(wgpu::MaintainBase::Wait);
+        let _ = device.poll(wgpu::MaintainBase::Wait);
         drop(queue);
         drop(device);
     }

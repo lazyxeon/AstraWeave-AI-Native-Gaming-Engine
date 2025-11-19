@@ -140,7 +140,7 @@ fn test_animated_pose_joint_matrices_t1() {
     let local_poses = clip.sample(1.0, &skeleton);
 
     // Compute joint matrices
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     assert_eq!(joint_matrices.len(), 3);
 
@@ -172,7 +172,7 @@ fn test_animated_pose_vertex_skinning_t1() {
     let clip = create_test_animation_clip();
 
     let local_poses = clip.sample(1.0, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Vertex ABOVE joint 1 position - at (0, 2, 0) in mesh space
     // Joint 1 is at (0, 1, 0), so this vertex is +1 unit above it
@@ -306,7 +306,7 @@ fn test_animated_pose_hierarchical_propagation() {
     let clip = create_test_animation_clip();
 
     let local_poses = clip.sample(1.0, &skeleton);
-    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses);
+    let joint_matrices = compute_joint_matrices(&skeleton, &local_poses).unwrap();
 
     // Joint 2 (child of joint 1) should inherit rotation
     // Check by verifying translation is rotated
