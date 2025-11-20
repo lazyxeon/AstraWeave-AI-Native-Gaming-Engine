@@ -11,6 +11,31 @@ use winit::{
 
 mod gltf_loader;
 
+// Shadow Shader - Vertex only for depth rendering
+const SHADOW_SHADER: &str = r#"
+struct LightUniforms {
+    view_proj: mat4x4<f32>,
+    position: vec3<f32>,
+    color: vec3<f32>,
+}
+
+struct ModelUniforms {
+    model: mat4x4<f32>,
+}
+
+@group(0) @binding(0) var<uniform> light: LightUniforms;
+@group(1) @binding(0) var<uniform> model: ModelUniforms;
+
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+}
+
+@vertex
+fn vs_main(in: VertexInput) -> @builtin(position) vec4<f32> {
+    return light.view_proj * model.model * vec4<f32>(in.position, 1.0);
+}
+"#;
+
 // ============================================================================
 // CORE DATA STRUCTURES
 // ============================================================================
@@ -105,6 +130,7 @@ struct ShowcaseApp {
     render_pipeline: wgpu::RenderPipeline,
     sky_pipeline: wgpu::RenderPipeline,
     terrain_pipeline: wgpu::RenderPipeline,
+    shadow_pipeline: wgpu::RenderPipeline,
     
     material_layout: wgpu::BindGroupLayout,
     model_layout: wgpu::BindGroupLayout,
@@ -112,6 +138,9 @@ struct ShowcaseApp {
     
     depth_texture: wgpu::TextureView,
     msaa_texture: wgpu::TextureView,
+    _shadow_texture: wgpu::Texture,
+    shadow_view: wgpu::TextureView,
+    _shadow_sampler: wgpu::Sampler,
     
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
@@ -122,6 +151,7 @@ struct ShowcaseApp {
     #[allow(dead_code)]
     light_buffer: wgpu::Buffer,
     light_bind_group: wgpu::BindGroup,
+    shadow_bind_group: wgpu::BindGroup,
     
     materials: Vec<Material>,
     meshes: Vec<Mesh>,
@@ -197,16 +227,50 @@ impl ShowcaseApp {
 
         let light_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Light Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Depth,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
+                    count: None,
+                },
+            ],
+        });
+
+        let shadow_uniforms_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Shadow Uniforms Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
         });
 
         let material_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -394,6 +458,46 @@ impl ShowcaseApp {
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 6,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
@@ -452,6 +556,80 @@ impl ShowcaseApp {
             cache: None,
         });
 
+        // Shadow Texture
+        let shadow_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Shadow Texture"),
+            size: wgpu::Extent3d {
+                width: 2048,
+                height: 2048,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+
+        let shadow_view = shadow_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+        let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("Shadow Sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            compare: Some(wgpu::CompareFunction::Less),
+            ..Default::default()
+        });
+
+        // Shadow Pipeline
+        let shadow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Shadow Shader"),
+            source: wgpu::ShaderSource::Wgsl(SHADOW_SHADER.into()),
+        });
+
+        let shadow_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Shadow Pipeline Layout"),
+            bind_group_layouts: &[&shadow_uniforms_layout, &model_layout],
+            push_constant_ranges: &[],
+        });
+
+        let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Shadow Pipeline"),
+            layout: Some(&shadow_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shadow_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[Vertex::desc()],
+                compilation_options: Default::default(),
+            },
+            fragment: None,
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState {
+                    constant: 2,
+                    slope_scale: 2.0,
+                    clamp: 0.0,
+                },
+            }),
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
         // Buffers
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
@@ -487,10 +665,31 @@ impl ShowcaseApp {
         let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Light Bind Group"),
             layout: &light_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: light_buffer.as_entire_binding(),
-            }],
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: light_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&shadow_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&shadow_sampler),
+                },
+            ],
+        });
+
+        let shadow_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Shadow Bind Group"),
+            layout: &shadow_uniforms_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: light_buffer.as_entire_binding(),
+                },
+            ],
         });
 
         // Skybox Texture - Try HDR first, fallback to PNG
@@ -580,46 +779,36 @@ impl ShowcaseApp {
             view_formats: &[],
         }).create_view(&wgpu::TextureViewDescriptor::default());
 
-        // Load placeholder grass texture for terrain bind group initialization
-        let placeholder_grass_img = image::open("assets/grass.png").expect("Missing grass.png").to_rgba8();
-        let placeholder_grass_size = wgpu::Extent3d { width: placeholder_grass_img.width(), height: placeholder_grass_img.height(), depth_or_array_layers: 1 };
-        let placeholder_grass_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Placeholder Grass"),
-            size: placeholder_grass_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &placeholder_grass_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &placeholder_grass_img,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * placeholder_grass_img.width()), rows_per_image: Some(placeholder_grass_img.height()) },
-            placeholder_grass_size,
-        );
-        let placeholder_grass_view = placeholder_grass_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        // Load placeholder terrain textures for terrain bind group initialization
+        // Helper macro to load and create texture
+        let load_texture = |path: &str, label: &str| {
+            let img = image::open(path).expect(&format!("Missing {}", path)).to_rgba8();
+            let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
+            let texture = device.create_texture(&wgpu::TextureDescriptor {
+                label: Some(label),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+            queue.write_texture(
+                wgpu::TexelCopyTextureInfo { texture: &texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+                &img,
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * img.width()), rows_per_image: Some(img.height()) },
+                size,
+            );
+            texture.create_view(&wgpu::TextureViewDescriptor::default())
+        };
         
-        let placeholder_rock_img = image::open("assets/rock_lichen.png").expect("Missing rock_lichen.png").to_rgba8();
-        let placeholder_rock_size = wgpu::Extent3d { width: placeholder_rock_img.width(), height: placeholder_rock_img.height(), depth_or_array_layers: 1 };
-        let placeholder_rock_texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Placeholder Rock"),
-            size: placeholder_rock_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &placeholder_rock_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &placeholder_rock_img,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * placeholder_rock_img.width()), rows_per_image: Some(placeholder_rock_img.height()) },
-            placeholder_rock_size,
-        );
-        let placeholder_rock_view = placeholder_rock_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let placeholder_grass_diff_view = load_texture("assets/textures/pine forest textures/forest_ground_04_diff.png", "Placeholder Grass Diff");
+        let placeholder_grass_norm_view = load_texture("assets/textures/pine forest textures/forest_ground_04_nor_gl.png", "Placeholder Grass Norm");
+        let placeholder_grass_rough_view = load_texture("assets/textures/pine forest textures/forest_ground_04_rough.png", "Placeholder Grass Rough");
+        let placeholder_rock_diff_view = load_texture("assets/textures/pine forest textures/rocky_trail_diff.png", "Placeholder Rock Diff");
+        let placeholder_rock_norm_view = load_texture("assets/textures/pine forest textures/rocky_trail_nor_gl.png", "Placeholder Rock Norm");
+        let placeholder_rock_rough_view = load_texture("assets/textures/pine forest textures/rocky_trail_rough.png", "Placeholder Rock Rough");
         
         let placeholder_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
@@ -634,22 +823,27 @@ impl ShowcaseApp {
             label: Some("Placeholder Terrain Bind Group"),
             layout: &terrain_layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&placeholder_grass_view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&placeholder_rock_view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&placeholder_sampler) },
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&placeholder_grass_diff_view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&placeholder_grass_norm_view) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&placeholder_grass_rough_view) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&placeholder_rock_diff_view) },
+                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&placeholder_rock_norm_view) },
+                wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(&placeholder_rock_rough_view) },
+                wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(&placeholder_sampler) },
             ],
         });
 
         let mut app = Self {
             window, surface, device, queue, config,
-            render_pipeline, sky_pipeline, terrain_pipeline,
+            render_pipeline, sky_pipeline, terrain_pipeline, shadow_pipeline,
             material_layout, model_layout, terrain_layout,
             depth_texture, msaa_texture,
+            _shadow_texture: shadow_texture, shadow_view, _shadow_sampler: shadow_sampler,
             camera_buffer, camera_bind_group,
             camera_pos: Vec3::new(0.0, 25.0, 60.0), // Elevated spawn point
             camera_yaw: 0.0, // Reset yaw
             camera_pitch: -0.1, // Look slightly down
-            light_buffer, light_bind_group,
+            light_buffer, light_bind_group, shadow_bind_group,
             materials: Vec::new(),
             meshes: Vec::new(),
             objects: Vec::new(),
@@ -673,8 +867,8 @@ impl ShowcaseApp {
         
         // 1. Materials
         println!("Loading materials...");
-        let grass_mat = self.create_material_from_texture("Grass", "assets/grass.png");
-        let rock_mat = self.create_material_from_texture("Rock", "assets/rock_lichen.png");
+        let grass_mat = self.create_material_from_texture("Grass", "assets/textures/pine forest textures/forest_ground_04_diff.png");
+        let _rock_mat = self.create_material_from_texture("Rock", "assets/textures/pine forest textures/rocky_trail_diff.png");
         let water_mat = self.create_material_from_color("Water", [0.2, 0.4, 0.8, 0.6]); // Translucent blue
         
         // 2. Floating Island Terrain (unified mesh for terrain pipeline)
@@ -682,46 +876,35 @@ impl ShowcaseApp {
         let terrain_mesh_idx = self.create_floating_island_terrain(50.0, 40.0, 64);
         self.terrain_mesh_index = terrain_mesh_idx;
         
-        // Create terrain bind group with grass and rock textures
-        let grass_img = image::open("assets/grass.png").expect("Missing grass.png").to_rgba8();
-        let grass_size = wgpu::Extent3d { width: grass_img.width(), height: grass_img.height(), depth_or_array_layers: 1 };
-        let grass_texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Terrain Grass Texture"),
-            size: grass_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &grass_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &grass_img,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * grass_img.width()), rows_per_image: Some(grass_img.height()) },
-            grass_size,
-        );
-        let grass_view = grass_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        // Create terrain bind group with all textures (diffuse, normal, roughness for grass and rock)
+        let load_terrain_texture = |path: &str, label: &str| {
+            let img = image::open(path).expect(&format!("Missing {}", path)).to_rgba8();
+            let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
+            let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some(label),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            });
+            self.queue.write_texture(
+                wgpu::TexelCopyTextureInfo { texture: &texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+                &img,
+                wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * img.width()), rows_per_image: Some(img.height()) },
+                size,
+            );
+            texture.create_view(&wgpu::TextureViewDescriptor::default())
+        };
         
-        let rock_img = image::open("assets/rock_lichen.png").expect("Missing rock_lichen.png").to_rgba8();
-        let rock_size = wgpu::Extent3d { width: rock_img.width(), height: rock_img.height(), depth_or_array_layers: 1 };
-        let rock_texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Terrain Rock Texture"),
-            size: rock_size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &rock_texture, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            &rock_img,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(4 * rock_img.width()), rows_per_image: Some(rock_img.height()) },
-            rock_size,
-        );
-        let rock_view = rock_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let grass_diff_view = load_terrain_texture("assets/textures/pine forest textures/forest_ground_04_diff.png", "Terrain Grass Diff");
+        let grass_norm_view = load_terrain_texture("assets/textures/pine forest textures/forest_ground_04_nor_gl.png", "Terrain Grass Norm");
+        let grass_rough_view = load_terrain_texture("assets/textures/pine forest textures/forest_ground_04_rough.png", "Terrain Grass Rough");
+        let rock_diff_view = load_terrain_texture("assets/textures/pine forest textures/rocky_trail_diff.png", "Terrain Rock Diff");
+        let rock_norm_view = load_terrain_texture("assets/textures/pine forest textures/rocky_trail_nor_gl.png", "Terrain Rock Norm");
+        let rock_rough_view = load_terrain_texture("assets/textures/pine forest textures/rocky_trail_rough.png", "Terrain Rock Rough");
         
         let terrain_sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
@@ -736,9 +919,13 @@ impl ShowcaseApp {
             label: Some("Terrain Bind Group"),
             layout: &self.terrain_layout,
             entries: &[
-                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&grass_view) },
-                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&rock_view) },
-                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&terrain_sampler) },
+                wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&grass_diff_view) },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&grass_norm_view) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::TextureView(&grass_rough_view) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&rock_diff_view) },
+                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::TextureView(&rock_norm_view) },
+                wgpu::BindGroupEntry { binding: 5, resource: wgpu::BindingResource::TextureView(&rock_rough_view) },
+                wgpu::BindGroupEntry { binding: 6, resource: wgpu::BindingResource::Sampler(&terrain_sampler) },
             ],
         });
         
@@ -756,10 +943,9 @@ impl ShowcaseApp {
         // 4. Tree Variations
         println!("Placing trees...");
         let tree_models = [
-            "../../assets/models/tree_default.glb",
-            "../../assets/models/tree_oak.glb",
-            "../../assets/models/tree_pineDefaultA.glb",
-            "../../assets/models/tree_detailed.glb",
+            "assets/models/tree_pineDefaultA.glb",
+            "assets/models/tree_pineTallA.glb",
+            "assets/models/tree_pineRoundA.glb",
         ];
         
         // Helper for noise
@@ -836,65 +1022,6 @@ impl ShowcaseApp {
             }
         }
         println!("Placed {} tree models.", tree_count);
-        
-        // 5. Town Structures (Tents/Houses in town center)
-        println!("Placing town structures...");
-        let tent_models = [
-            "../../assets/models/tent_detailedClosed.glb",
-            "../../assets/models/tent_detailedOpen.glb",
-        ];
-        
-        let tent_positions = [
-            Vec3::new(20.0, 0.0, 20.0),
-            Vec3::new(-20.0, 0.0, 20.0),
-            Vec3::new(20.0, 0.0, -20.0),
-            Vec3::new(-20.0, 0.0, -20.0),
-        ];
-        
-        for (i, tent_pos) in tent_positions.iter().enumerate() {
-            let tent_idx = i % tent_models.len();
-            let tent_path = tent_models[tent_idx];
-            
-            let rot_y = (i as f32 * 1.7).sin() * std::f32::consts::TAU;
-            
-            let h = self.calculate_terrain_height(tent_pos.x, tent_pos.z);
-            let pos = Vec3::new(tent_pos.x, h, tent_pos.z);
-            
-            if let Ok(indices) = self.load_gltf(tent_path, rock_mat) {
-                for idx in indices {
-                    self.objects.push(SceneObject {
-                        mesh_index: idx,
-                        position: pos,
-                        rotation: Quat::from_rotation_y(rot_y),
-                        scale: Vec3::splat(20.0),
-                        model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
-                            Vec3::splat(20.0), Quat::from_rotation_y(rot_y), pos
-                        )),
-                    });
-                }
-            }
-        }
-        println!("Placed {} tent structures.", tent_positions.len());
-        
-        // 6. Tower at Peak
-        println!("Placing tower at peak...");
-        let peak_height = self.calculate_terrain_height(0.0, 0.0);
-        if let Ok(indices) = self.load_gltf("../../assets/models/tower.glb", rock_mat) {
-            for idx in indices {
-                self.objects.push(SceneObject {
-                    mesh_index: idx,
-                    position: Vec3::new(0.0, peak_height, 0.0),
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::splat(5.0), // Reduced scale from 20.0 to 5.0
-                    model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
-                        Vec3::splat(5.0), Quat::IDENTITY, Vec3::new(0.0, peak_height, 0.0)
-                    )),
-                });
-            }
-            println!("Tower placed.");
-        } else {
-            println!("Failed to load tower model.");
-        }
         
         // 7. Skybox
         println!("Creating skybox...");
@@ -1253,9 +1380,11 @@ impl ShowcaseApp {
             let mountain_factor = (((-z - 10.0) / 20.0).min(1.0)).max(0.0);
             height += mountain_factor * 25.0;
         }
-        // River Bed carving
+        // River Bed carving - flatten terrain along river path
         let river_path = (x * 0.1).sin() * 20.0; 
         let dist_river = (z - river_path).abs();
+        let river_mask = (dist_river / 15.0).clamp(0.0, 1.0);
+        height = height * river_mask;
         if dist_river < 5.0 {
             height -= (5.0 - dist_river) * 2.0;
         }
@@ -1280,15 +1409,8 @@ impl ShowcaseApp {
             let x = min_x + i as f32 * step_size;
             let z_center = (x * 0.1).sin() * 20.0;
             
-            // Calculate base height (same as terrain FBM)
-            let base_height = self.calculate_terrain_height(x, z_center);
-            
-            // Water level: slightly below base height (river bed is carved down 10.0 max)
-            // The river bed formula is: height -= (5.0 - dist_river) * 2.0;
-            // At center (dist_river=0), modification is -10.0.
-            // We want water to be, say, 2.0 units below the "banks" (undug terrain), or filling the bed?
-            // If we put it at base_height - 2.0, it is 8.0 units above the bottom.
-            let water_level = base_height + 8.0;
+            // Water level: constant height
+            let water_level = -3.0;
             
             let half_width = 4.5;
             
@@ -1415,7 +1537,21 @@ impl ShowcaseApp {
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
-        // println!("Render frame start");
+        // Update light view_proj for shadow mapping
+        let light_pos = Vec3::new(50.0, 100.0, 50.0);
+        let light_view = Mat4::look_at_rh(light_pos, Vec3::ZERO, Vec3::Y);
+        let light_proj = Mat4::orthographic_rh(-50.0, 50.0, -50.0, 50.0, -50.0, 50.0);
+        let light_view_proj = light_proj * light_view;
+        
+        // Update light uniforms with shadow view_proj
+        self.queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[LightUniforms {
+            view_proj: light_view_proj.to_cols_array_2d(),
+            position: light_pos.to_array(),
+            _padding: 0.0,
+            color: [1.2, 1.1, 1.0],
+            _padding2: 0.0,
+        }]));
+        
         let output = self.surface.get_current_texture()?;
         let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
         
@@ -1423,6 +1559,37 @@ impl ShowcaseApp {
             label: Some("Render Encoder"),
         });
 
+        // Shadow Pass
+        {
+            let mut shadow_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Shadow Pass"),
+                color_attachments: &[],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.shadow_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            shadow_pass.set_pipeline(&self.shadow_pipeline);
+            shadow_pass.set_bind_group(0, &self.shadow_bind_group, &[]);
+
+            // Render objects
+            for obj in &self.objects {
+                let mesh = &self.meshes[obj.mesh_index];
+                shadow_pass.set_bind_group(1, &obj.model_bind_group, &[]);
+                shadow_pass.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+                shadow_pass.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                shadow_pass.draw_indexed(0..mesh.num_indices, 0, 0..1);
+            }
+        }
+
+        // Main Pass
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
