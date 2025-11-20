@@ -99,7 +99,7 @@ fn move_system(world: &mut ecs::World) {
 
 fn print_entities(world: &ecs::World) {
     println!("Entities:");
-    for (entity, pos) in ecs::query!(world, CPos) {
+    for (entity, pos) in ecs::Query::<CPos>::new(world) {
         let team = world.get::<CTeam>(entity).map(|t| t.id).unwrap_or(255);
         let hp = world.get::<CHealth>(entity).map(|h| h.hp).unwrap_or(0);
         println!(

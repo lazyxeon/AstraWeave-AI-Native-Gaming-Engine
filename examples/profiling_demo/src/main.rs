@@ -132,6 +132,7 @@ enum AgentState {
 /// Physics body marker
 #[derive(Debug, Clone, Copy)]
 struct RigidBody {
+    #[allow(dead_code)]
     mass: f32,
 }
 
@@ -151,15 +152,18 @@ struct SystemTimings {
     collision_detection_us: u64,
     cleanup_us: u64,
     rendering_us: u64,
+    #[allow(dead_code)]
     total_us: u64,
 }
 
 /// Game state
 struct GameState {
     app: App,
+    #[allow(dead_code)]
     entity_count: usize,
     frame_count: u64,
     start_time: Instant,
+    #[allow(dead_code)]
     timings: SystemTimings,
 }
 
@@ -421,8 +425,8 @@ fn physics_system(world: &mut World) {
     let timer_start = Instant::now();
     span!("physics");
 
-    let mut collision_checks = 0;
-    let mut collisions = 0;
+    let mut _collision_checks = 0;
+    let mut _collisions = 0;
     let collision_start = Instant::now();
 
     // Spatial hash collision detection (optimized)
@@ -462,11 +466,11 @@ fn physics_system(world: &mut World) {
                     if let Some(&(j, candidate_pos)) = entity_map.get(&(candidate_id as u64)) {
                         // Only check each pair once (i < j)
                         if i < j {
-                            collision_checks += 1;
+                            _collision_checks += 1;
 
                             let dist = pos.distance(candidate_pos);
                             if dist < 1.0 {
-                                collisions += 1;
+                                _collisions += 1;
                             }
                         }
                     }
@@ -477,8 +481,8 @@ fn physics_system(world: &mut World) {
 
     let collision_elapsed = collision_start.elapsed().as_micros() as u64;
 
-    plot!("Physics.CollisionChecks", collision_checks as f64);
-    plot!("Physics.Collisions", collisions as f64);
+    plot!("Physics.CollisionChecks", _collision_checks as f64);
+    plot!("Physics.Collisions", _collisions as f64);
 
     // Record timing
     if let Ok(mut timings) = SYSTEM_TIMINGS.lock() {

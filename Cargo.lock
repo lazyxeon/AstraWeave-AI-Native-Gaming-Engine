@@ -10921,6 +10921,7 @@ name = "veilweaver_slice_loader"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-gameplay",
  "astraweave-scene",
  "glam 0.30.8",
  "tokio",

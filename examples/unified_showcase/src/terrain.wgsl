@@ -1,4 +1,4 @@
-// Shader V2 - Clean PBR + Skybox
+// Terrain Shader with Triplanar Mapping
 
 struct CameraUniforms {
     view_proj: mat4x4<f32>,
@@ -17,8 +17,9 @@ struct ModelUniforms {
 
 @group(0) @binding(0) var<uniform> camera: CameraUniforms;
 @group(1) @binding(0) var<uniform> light: LightUniforms;
-@group(2) @binding(0) var t_diffuse: texture_2d<f32>;
-@group(2) @binding(1) var s_diffuse: sampler;
+@group(2) @binding(0) var t_grass: texture_2d<f32>;
+@group(2) @binding(1) var t_rock: texture_2d<f32>;
+@group(2) @binding(2) var s_sampler: sampler;
 @group(3) @binding(0) var<uniform> model: ModelUniforms;
 
 struct VertexInput {
@@ -52,11 +53,46 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     return out;
 }
 
+// Triplanar mapping function
+fn triplanar_sample(pos: vec3<f32>, normal: vec3<f32>, tex_grass: texture_2d<f32>, tex_rock: texture_2d<f32>, s: sampler) -> vec4<f32> {
+    // Blend weights based on world normal
+    let blend = abs(normal);
+    let blend_normalized = blend / (blend.x + blend.y + blend.z);
+    
+    // UV scale for triplanar - explicit tiling factor multiplied with world position
+    let uv_scale = 0.5; // Tiling factor: smaller = more tiling/repeats
+    
+    // Slope detection: use Y component of normal to determine grass vs rock
+    let slope = abs(normal.y);
+    let grass_weight = smoothstep(0.6, 0.8, slope); // Flat areas = grass
+    
+    // Sample each axis for grass
+    let sample_x_grass = textureSample(tex_grass, s, pos.yz * uv_scale);
+    let sample_y_grass = textureSample(tex_grass, s, pos.xz * uv_scale);
+    let sample_z_grass = textureSample(tex_grass, s, pos.xy * uv_scale);
+    let grass_color = sample_x_grass * blend_normalized.x + 
+                      sample_y_grass * blend_normalized.y + 
+                      sample_z_grass * blend_normalized.z;
+    
+    // Sample each axis for rock
+    let sample_x_rock = textureSample(tex_rock, s, pos.yz * uv_scale);
+    let sample_y_rock = textureSample(tex_rock, s, pos.xz * uv_scale);
+    let sample_z_rock = textureSample(tex_rock, s, pos.xy * uv_scale);
+    let rock_color = sample_x_rock * blend_normalized.x + 
+                     sample_y_rock * blend_normalized.y + 
+                     sample_z_rock * blend_normalized.z;
+    
+    // Blend between grass and rock based on slope
+    return mix(rock_color, grass_color, grass_weight);
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let object_color = textureSample(t_diffuse, s_diffuse, in.uv) * in.color;
+    // Triplanar sample
+    let object_color = triplanar_sample(in.world_position, in.world_normal, t_grass, t_rock, s_sampler) * in.color;
     
-    let ambient_strength = 0.5; // Increased ambient for better visibility
+    // Lighting (from shader_v2.wgsl)
+    let ambient_strength = 0.5;
     let ambient = ambient_strength * light.color;
     
     let norm = normalize(in.world_normal);
@@ -76,49 +112,4 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let gamma = pow(mapped, vec3<f32>(1.0 / 2.2));
     
     return vec4<f32>(gamma, object_color.a);
-}
-
-// Skybox Shader
-@group(1) @binding(0) var t_sky: texture_2d<f32>;
-@group(1) @binding(1) var s_sky: sampler;
-
-struct SkyboxOutput {
-    @builtin(position) clip_position: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-}
-
-@vertex
-fn vs_skybox(in: VertexInput) -> SkyboxOutput {
-    var out: SkyboxOutput;
-    // Remove translation from view matrix for skybox
-    let view_rot = mat4x4<f32>(
-        camera.view_proj[0],
-        camera.view_proj[1],
-        camera.view_proj[2],
-        vec4<f32>(0.0, 0.0, 0.0, 1.0) // Reset translation
-    );
-    
-    // We use the position directly as it's a sphere centered at 0,0,0
-    // But we need to apply the camera projection and rotation
-    // Actually, simpler: Just render the sphere at camera position
-    let world_pos = vec4<f32>(in.position + camera.camera_pos, 1.0);
-    out.clip_position = camera.view_proj * world_pos;
-    
-    // Equirectangular mapping
-    // Normal is inverted in mesh generation, so we use it to find UV
-    let n = normalize(in.position);
-    let u = 0.5 + atan2(n.z, n.x) / (2.0 * 3.14159);
-    let v = 0.5 - asin(n.y) / 3.14159;
-    
-    out.uv = vec2<f32>(u, v);
-    return out;
-}
-
-@fragment
-fn fs_skybox(in: SkyboxOutput) -> @location(0) vec4<f32> {
-    // Equirectangular mapping using atan2(z, x) and asin(y)
-    // in.uv already contains correct UV from vertex shader
-    let color = textureSample(t_sky, s_sky, in.uv).rgb;
-    // No lighting on skybox
-    return vec4<f32>(color, 1.0);
 }

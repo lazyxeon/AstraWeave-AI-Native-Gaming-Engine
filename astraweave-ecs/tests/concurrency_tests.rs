@@ -7,13 +7,13 @@
 //!
 //! Note: Loom tests are slow (exponential in thread count) but exhaustive.
 
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 use loom::{sync::Arc, thread};
 
-#[cfg(not(loom))]
+#[cfg(not(feature = "loom"))]
 use std::{sync::Arc, thread};
 
-use astraweave_ecs::{Component, World};
+use astraweave_ecs::World;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Position {
@@ -32,7 +32,7 @@ struct Velocity {
 // ============================================================================
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_entity_spawn() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -63,7 +63,7 @@ fn concurrent_entity_spawn() {
 }
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_spawn_despawn() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -97,7 +97,7 @@ fn concurrent_spawn_despawn() {
 }
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_spawn_many() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -139,7 +139,7 @@ fn concurrent_spawn_many() {
 // ============================================================================
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_component_insert() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -171,7 +171,7 @@ fn concurrent_component_insert() {
 }
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_component_read() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -205,7 +205,7 @@ fn concurrent_component_read() {
 }
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_insert_remove() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -243,7 +243,7 @@ fn concurrent_insert_remove() {
 // ============================================================================
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_query_and_modify() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -284,7 +284,7 @@ fn concurrent_query_and_modify() {
 }
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_multi_component_access() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -327,7 +327,7 @@ fn concurrent_multi_component_access() {
 // ============================================================================
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_archetype_transition() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -366,7 +366,7 @@ fn concurrent_archetype_transition() {
 // ============================================================================
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_is_alive_check() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -399,7 +399,7 @@ fn concurrent_is_alive_check() {
 }
 
 #[test]
-#[cfg(loom)]
+#[cfg(feature = "loom")]
 fn concurrent_double_despawn() {
     loom::model(|| {
         let world = Arc::new(std::sync::Mutex::new(World::new()));
@@ -438,7 +438,7 @@ fn concurrent_double_despawn() {
 // They don't provide exhaustive checking but validate basic thread-safety
 
 #[test]
-#[cfg(not(loom))]
+#[cfg(not(feature = "loom"))]
 fn std_concurrent_entity_spawn() {
     let world = Arc::new(std::sync::Mutex::new(World::new()));
     let mut handles = vec![];
@@ -466,7 +466,7 @@ fn std_concurrent_entity_spawn() {
 }
 
 #[test]
-#[cfg(not(loom))]
+#[cfg(not(feature = "loom"))]
 fn std_concurrent_component_operations() {
     let world = Arc::new(std::sync::Mutex::new(World::new()));
     let entity = {

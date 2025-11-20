@@ -25,7 +25,11 @@ impl App {
         let plan = Some(PlanIntent {
             plan_id: "viz".into(),
             steps: vec![
-                ActionStep::MoveTo { x: 4, y: 2 },
+                ActionStep::MoveTo {
+                    x: 4,
+                    y: 2,
+                    speed: None,
+                },
                 ActionStep::Throw {
                     item: "smoke".into(),
                     x: 7,
@@ -112,7 +116,7 @@ impl eframe::App for App {
                 let mut cur = c;
                 for step in &plan.steps {
                     match step {
-                        ActionStep::MoveTo { x, y } => {
+                        ActionStep::MoveTo { x, y, .. } => {
                             let nxt = IVec2 { x: *x, y: *y };
                             shapes.push(egui::Shape::line_segment(
                                 [to_screen(cur), to_screen(nxt)],

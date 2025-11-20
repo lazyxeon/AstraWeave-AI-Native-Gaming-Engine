@@ -1,33 +1,279 @@
 #[cfg(feature = "postfx")]
-use crate::post::{
-    BLOOM_COMPOSITE_WGSL, BLOOM_DOWNSAMPLE_WGSL, BLOOM_THRESHOLD_WGSL, BLOOM_UPSAMPLE_WGSL,
-    WGSL_SSAO, WGSL_SSR,
-};
+use crate::post::{WGSL_SSAO, WGSL_SSGI, WGSL_SSR};
 use anyhow::Result;
+use anyhow::Context;
+use crate::texture::Texture;
 use glam::Vec4Swizzles;
 use glam::{vec3, Mat4};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
 
-#[cfg(feature = "profiling")]
-use astraweave_profiling::{plot, span};
-
 use crate::camera::Camera;
-use crate::clustered::CpuLight;
-use crate::clustered_forward::{ClusterConfig, ClusteredForwardRenderer};
-use crate::debug_quad::create_screen_quad;
+use crate::clustered::{bin_lights_cpu, ClusterDims, CpuLight, WGSL_CLUSTER_BIN};
 use crate::depth::Depth;
-use crate::gi::vxgi::{VxgiConfig, VxgiRenderer};
-use crate::texture_streaming::TextureStreamingManager;
 use crate::types::SkinnedVertex;
 use crate::types::{Instance, InstanceRaw, Mesh};
 use astraweave_cinematics as awc;
 use astraweave_materials::MaterialPackage;
 
-const PBR_SRC: &str = include_str!("../shaders/pbr.wgsl");
-const CLUSTERED_LIGHTING_SRC: &str = include_str!("../shaders/clustered_lighting.wgsl");
+const SHADER_SRC: &str = r#"
+struct VSIn {
+    @location(0) position: vec3<f32>,
+    @location(1) normal:   vec3<f32>,
+    @location(12) tangent:  vec4<f32>,
+    @location(13) uv:       vec2<f32>,
+  @location(2) m0: vec4<f32>,
+  @location(3) m1: vec4<f32>,
+  @location(4) m2: vec4<f32>,
+  @location(5) m3: vec4<f32>,
+  @location(6) n0: vec3<f32>,
+  @location(7) n1: vec3<f32>,
+  @location(8) n2: vec3<f32>,
+  @location(9) color: vec4<f32>,
+};
 
-const POST_SHADER: &str = include_str!("../shaders/post_basic.wgsl");
+struct VSOut {
+  @builtin(position) pos: vec4<f32>,
+  @location(0) world_pos: vec3<f32>,
+  @location(1) normal: vec3<f32>,
+    @location(3) tbn0: vec3<f32>,
+    @location(4) tbn1: vec3<f32>,
+    @location(5) tbn2: vec3<f32>,
+    @location(6) uv: vec2<f32>,
+  @location(2) color: vec4<f32>,
+};
+
+struct Camera {
+  view_proj: mat4x4<f32>,
+  light_dir: vec3<f32>,
+  _pad: f32,
+};
+
+@group(0) @binding(0) var<uniform> uCamera: Camera;
+
+struct MaterialUbo {
+    base_color: vec4<f32>,
+    metallic: f32,
+    roughness: f32,
+    _pad: vec2<f32>,
+};
+
+@group(1) @binding(0) var<uniform> uMaterial: MaterialUbo;
+
+struct MainLightUbo {
+    view_proj0: mat4x4<f32>,
+    view_proj1: mat4x4<f32>,
+    splits: vec2<f32>,
+    extras: vec2<f32>, // x: pcf_radius_px, y: depth_bias; z: slope_scale in skinned path extras.x reused; keep 2 vec2s for alignment
+};
+@group(2) @binding(0) var<uniform> uLight: MainLightUbo;
+@group(2) @binding(1) var shadow_tex: texture_depth_2d_array;
+@group(2) @binding(2) var shadow_sampler: sampler_comparison;
+
+@group(3) @binding(0) var albedo_tex: texture_2d<f32>;
+@group(3) @binding(1) var albedo_samp: sampler;
+@group(3) @binding(2) var mr_tex: texture_2d<f32>;      // R: metallic, G: roughness
+@group(3) @binding(3) var mr_samp: sampler;
+@group(3) @binding(4) var normal_tex: texture_2d<f32>;  // tangent-space normal in RGB
+@group(3) @binding(5) var normal_samp: sampler;
+
+
+
+@vertex
+fn vs(input: VSIn) -> VSOut {
+  let model = mat4x4<f32>(input.m0, input.m1, input.m2, input.m3);
+  let world = model * vec4<f32>(input.position, 1.0);
+  var out: VSOut;
+  out.pos = uCamera.view_proj * world;
+    // normal matrix simplified (assuming uniform scale); for accuracy pass and use 3x3
+    let Nw = normalize((model * vec4<f32>(input.normal, 0.0)).xyz);
+    let Tw = normalize((model * vec4<f32>(input.tangent.xyz, 0.0)).xyz);
+    let Bw = normalize(cross(Nw, Tw)) * input.tangent.w;
+    out.normal = Nw;
+  out.world_pos = world.xyz;
+    out.tbn0 = Tw; out.tbn1 = Bw; out.tbn2 = Nw;
+    out.uv = input.uv;
+    out.color = input.color;
+    return out;
+}
+
+// Simple Cook-Torrance PBR with single directional light, no IBL
+fn fresnel_schlick(cos_theta: f32, F0: vec3<f32>) -> vec3<f32> {
+    return F0 + (vec3<f32>(1.0,1.0,1.0) - F0) * pow(1.0 - cos_theta, 5.0);
+}
+
+fn distribution_ggx(N: vec3<f32>, H: vec3<f32>, roughness: f32) -> f32 {
+    let a = roughness * roughness;
+    let a2 = a * a;
+    let NdotH = max(dot(N, H), 0.0);
+    let NdotH2 = NdotH * NdotH;
+    let denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    return a2 / (3.14159 * denom * denom + 1e-5);
+}
+
+fn geometry_smith(N: vec3<f32>, V: vec3<f32>, L: vec3<f32>, roughness: f32) -> f32 {
+    let r = (roughness + 1.0);
+    let k = (r * r) / 8.0;
+    let NdotV = max(dot(N, V), 0.0);
+    let NdotL = max(dot(N, L), 0.0);
+    let ggx1 = NdotV / (NdotV * (1.0 - k) + k + 1e-5);
+    let ggx2 = NdotL / (NdotL * (1.0 - k) + k + 1e-5);
+    return ggx1 * ggx2;
+}
+
+@fragment
+fn fs(input: VSOut) -> @location(0) vec4<f32> {
+    let V = normalize(-input.world_pos); // fake view dir from origin camera
+    let L = normalize(-uCamera.light_dir);
+    let H = normalize(V + L);
+    // Base normal from geometry
+    var N = normalize(input.normal);
+    // Normal map sample using real UVs and TBN
+    let nrm_rgb = textureSample(normal_tex, normal_samp, input.uv).rgb;
+    let nrm_ts = normalize(nrm_rgb * 2.0 - vec3<f32>(1.0,1.0,1.0));
+    let T = input.tbn0; let B = input.tbn1; let NN = input.tbn2;
+    N = normalize(T * nrm_ts.x + B * nrm_ts.y + NN * nrm_ts.z);
+    let NdotL = max(dot(N, L), 0.0);
+
+    var base_color = (uMaterial.base_color.rgb * input.color.rgb);
+    let tex = textureSample(albedo_tex, albedo_samp, input.uv);
+    base_color = base_color * tex.rgb;
+    var metallic = clamp(uMaterial.metallic, 0.0, 1.0);
+    var roughness = clamp(uMaterial.roughness, 0.04, 1.0);
+    let mr = textureSample(mr_tex, mr_samp, input.uv);
+    metallic = clamp(max(metallic, mr.r), 0.0, 1.0);
+    roughness = clamp(min(roughness, max(mr.g, 0.04)), 0.04, 1.0);
+
+    let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
+    let F = fresnel_schlick(max(dot(H, V), 0.0), F0);
+    let D = distribution_ggx(N, H, roughness);
+    let G = geometry_smith(N, V, L, roughness);
+
+    let numerator = D * G * F;
+    let denom = 4.0 * max(dot(N, V), 0.0) * NdotL + 1e-5;
+    let specular = numerator / denom;
+
+    let kd = (vec3<f32>(1.0,1.0,1.0) - F) * (1.0 - metallic);
+    let diffuse = kd * base_color / 3.14159;
+
+    let radiance = vec3<f32>(1.0, 0.98, 0.9); // dir light color
+        // Shadow sampling
+        // Cascaded shadow mapping (2 cascades)
+    let dist = length(input.world_pos);
+    let use_c0 = dist < uLight.splits.x;
+    var lvp: mat4x4<f32>;
+    if (use_c0) { lvp = uLight.view_proj0; } else { lvp = uLight.view_proj1; }
+        let lp = lvp * vec4<f32>(input.world_pos, 1.0);
+    let ndc_shadow = lp.xyz / lp.w;
+    let uv = ndc_shadow.xy * 0.5 + vec2<f32>(0.5, 0.5);
+    let depth = ndc_shadow.z;
+    let slope = max(0.0, 1.0 - dot(N, L));
+    let base_bias = uLight.extras.y;
+    let bias = max(base_bias /* + slope_scale * slope */ , 0.00001);
+        var shadow: f32 = 1.0;
+        if (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) {
+            var layer: i32;
+            if (use_c0) { layer = 0; } else { layer = 1; }
+            // PCF 3x3 (scaled by pcf radius in texels from extras.x)
+            let dims = vec2<f32>(textureDimensions(shadow_tex).xy);
+            let texel = 1.0 / dims;
+            let r = max(0.0, uLight.extras.x);
+            var sum = 0.0;
+            for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
+                for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
+                    let o = vec2<f32>(f32(dx), f32(dy)) * texel * r;
+                    sum = sum + textureSampleCompare(shadow_tex, shadow_sampler, uv + o, layer, depth - bias);
+                }
+            }
+            shadow = sum / 9.0;
+        }
+        // Optional debug visualization: use uMaterial._pad.x > 0.5 to tint by cascade
+        if (uMaterial._pad.x > 0.5) {
+            var tint: vec3<f32>;
+            if (use_c0) { tint = vec3<f32>(1.0, 0.3, 0.0); } else { tint = vec3<f32>(0.0, 0.2, 1.0); }
+            base_color = mix(base_color, tint, 0.35);
+        }
+    // Add a modest ambient lift to avoid overly dark scene when sun is low
+    var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.08;
+        // Clustered point lights accumulation (Lambert + simple attenuation)
+    // Clustered lighting disabled for this example build; use lit_color directly
+    return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
+}
+"#;
+
+const POST_SHADER: &str = r#"
+struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
+    var pos = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -3.0),
+        vec2<f32>( 3.0,  1.0),
+        vec2<f32>(-1.0,  1.0)
+    );
+    var out: VSOut;
+    out.pos = vec4<f32>(pos[vid], 0.0, 1.0);
+    out.uv = (pos[vid] + vec2<f32>(1.0,1.0)) * 0.5;
+    return out;
+}
+
+@group(0) @binding(0) var hdr_tex: texture_2d<f32>;
+@group(0) @binding(1) var samp: sampler;
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@fragment
+fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
+    let hdr = textureSampleLevel(hdr_tex, samp, in.uv, 0.0);
+    let mapped = aces_tonemap(vec3<f32>(hdr.r, hdr.g, hdr.b));
+    return vec4<f32>(mapped, 1.0);
+}
+"#;
+
+#[cfg(feature = "postfx")]
+const POST_SHADER_FX: &str = r#"
+struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32> };
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VSOut {
+    var pos = array<vec2<f32>, 3>(
+        vec2<f32>(-1.0, -3.0),
+        vec2<f32>( 3.0,  1.0),
+        vec2<f32>(-1.0,  1.0)
+    );
+    var out: VSOut;
+    out.pos = vec4<f32>(pos[vid], 0.0, 1.0);
+    out.uv = (pos[vid] + vec2<f32>(1.0,1.0)) * 0.5;
+    return out;
+}
+
+@group(0) @binding(0) var hdr_tex: texture_2d<f32>;
+@group(0) @binding(1) var ao_tex: texture_2d<f32>;
+@group(0) @binding(2) var gi_tex: texture_2d<f32>;
+@group(0) @binding(3) var samp: sampler;
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+@fragment
+fn fs_main(in: VSOut) -> @location(0) vec4<f32> {
+    let hdr = textureSampleLevel(hdr_tex, samp, in.uv, 0.0).rgb;
+    let ao = textureSampleLevel(ao_tex, samp, in.uv, 0.0).r;
+    let gi = textureSampleLevel(gi_tex, samp, in.uv, 0.0).rgb;
+    let ao_strength = 0.6;
+    let gi_strength = 0.2;
+    let comp = hdr * (1.0 - ao * ao_strength) + gi * gi_strength;
+    let mapped = aces_tonemap(comp);
+    return vec4<f32>(mapped, 1.0);
+}
+"#;
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -38,8 +284,8 @@ struct CameraUBO {
 
 pub struct Renderer {
     surface: wgpu::Surface<'static>,
-    device: std::sync::Arc<wgpu::Device>,
-    queue: std::sync::Arc<wgpu::Queue>,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
     depth: Depth,
 
@@ -48,7 +294,6 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     material_buf: wgpu::Buffer,
     material_bg: wgpu::BindGroup,
-    #[allow(dead_code)]
     post_pipeline: wgpu::RenderPipeline,
     post_bind_group: wgpu::BindGroup,
     #[allow(dead_code)]
@@ -56,70 +301,12 @@ pub struct Renderer {
     hdr_tex: wgpu::Texture,
     hdr_view: wgpu::TextureView,
     hdr_sampler: wgpu::Sampler,
-    // Post-FX auxiliary textures and pipeline
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    hdr_aux_tex: wgpu::Texture,
-    #[cfg(feature = "postfx")]
-    hdr_aux_view: wgpu::TextureView,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    fx_gi_tex: wgpu::Texture,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    fx_gi_view: wgpu::TextureView,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    fx_ao_tex: wgpu::Texture,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    fx_ao_view: wgpu::TextureView,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    post_fx_bgl: wgpu::BindGroupLayout,
-    #[cfg(feature = "postfx")]
-    post_fx_bind_group: wgpu::BindGroup,
-    #[cfg(feature = "postfx")]
-    post_fx_pipeline: wgpu::RenderPipeline,
-    // Bloom pipeline infrastructure (5-mip pyramid)
-    #[cfg(feature = "postfx")]
-    bloom_threshold_pipeline: wgpu::RenderPipeline,
-    #[cfg(feature = "postfx")]
-    bloom_downsample_pipeline: wgpu::RenderPipeline,
-    #[cfg(feature = "postfx")]
-    bloom_upsample_pipeline: wgpu::RenderPipeline,
-    #[cfg(feature = "postfx")]
-    bloom_composite_pipeline: wgpu::RenderPipeline,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    bloom_mip_textures: Vec<wgpu::Texture>,
-    #[cfg(feature = "postfx")]
-    bloom_mip_views: Vec<wgpu::TextureView>,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    bloom_threshold_buf: wgpu::Buffer,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    bloom_intensity_buf: wgpu::Buffer,
-    #[cfg(feature = "postfx")]
-    #[allow(dead_code)]
-    bloom_bgl: wgpu::BindGroupLayout,
-    #[cfg(feature = "postfx")]
-    bloom_bind_groups_down: Vec<wgpu::BindGroup>,
-    #[cfg(feature = "postfx")]
-    bloom_bind_groups_up: Vec<wgpu::BindGroup>,
-    #[cfg(feature = "postfx")]
-    bloom_threshold_bg: wgpu::BindGroup,
-    #[cfg(feature = "postfx")]
-    bloom_composite_bg: wgpu::BindGroup,
     #[allow(dead_code)]
     shadow_tex: wgpu::Texture,
     #[allow(dead_code)]
     shadow_view: wgpu::TextureView, // array view for sampling
     shadow_layer0_view: wgpu::TextureView,
     shadow_layer1_view: wgpu::TextureView,
-    shadow_layer2_view: wgpu::TextureView,
-    shadow_layer3_view: wgpu::TextureView,
     #[allow(dead_code)]
     shadow_sampler: wgpu::Sampler,
     shadow_pipeline: wgpu::RenderPipeline,
@@ -133,12 +320,8 @@ pub struct Renderer {
     // Cascade data cached on CPU for shadow passes
     cascade0: glam::Mat4,
     cascade1: glam::Mat4,
-    cascade2: glam::Mat4,
-    cascade3: glam::Mat4,
     split0: f32,
     split1: f32,
-    split2: f32,
-    split3: f32,
     // Tunable cascade ortho extents (half-width/height)
     cascade0_extent: f32,
     cascade1_extent: f32,
@@ -158,16 +341,6 @@ pub struct Renderer {
     mr_tex: wgpu::Texture,
     mr_view: wgpu::TextureView,
     mr_sampler: wgpu::Sampler,
-
-    // Fallback texture and sampler (Magenta 1x1)
-#[allow(dead_code)]
-    fallback_tex: wgpu::Texture,
-    fallback_view: wgpu::TextureView,
-    fallback_sampler: wgpu::Sampler,
-    debug_quad_pipeline: wgpu::RenderPipeline,
-    debug_quad_bg_layout: wgpu::BindGroupLayout,
-    debug_quad_buf: wgpu::Buffer,
-
     // Normal map texture and sampler
     normal_tex: wgpu::Texture,
     normal_view: wgpu::TextureView,
@@ -177,7 +350,6 @@ pub struct Renderer {
     camera_ubo: CameraUBO,
     camera_buf: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-    view_matrix: glam::Mat4,
 
     #[allow(dead_code)]
     mesh_cube: Mesh,
@@ -195,9 +367,6 @@ pub struct Renderer {
     // Environment & sky
     sky: crate::environment::SkyRenderer,
 
-    // Asset streaming manager
-    pub texture_streaming: TextureStreamingManager,
-
     // Skinning (v0)
     #[allow(dead_code)]
     skin_bgl: wgpu::BindGroupLayout,
@@ -208,28 +377,31 @@ pub struct Renderer {
     skinned_mesh: Option<(wgpu::Buffer, wgpu::Buffer, u32)>, // (vbuf, ibuf, index_count)
 
     // Clustered lighting resources
-    clustered_forward: ClusteredForwardRenderer,
-    vxgi: VxgiRenderer,
+    clustered_dims: ClusterDims,
+    clustered_params_buf: wgpu::Buffer,
+    clustered_lights_buf: wgpu::Buffer,
+    clustered_offsets_buf: wgpu::Buffer,
+    clustered_counts_buf: wgpu::Buffer,
+    #[allow(dead_code)]
+    clustered_indices_buf: wgpu::Buffer,
+    #[allow(dead_code)]
+    clustered_bgl: wgpu::BindGroupLayout,
+    #[allow(dead_code)]
+    clustered_bg: wgpu::BindGroup,
+    #[allow(dead_code)]
+    clustered_comp_bgl: wgpu::BindGroupLayout,
+    clustered_comp_bg: wgpu::BindGroup,
+    clustered_comp_pipeline: wgpu::ComputePipeline,
     point_lights: Vec<CpuLight>,
     #[cfg(feature = "gpu-tests")]
-    #[allow(dead_code)]
     timestamp_query_set: wgpu::QuerySet,
     #[cfg(feature = "gpu-tests")]
-    #[allow(dead_code)]
     timestamp_buf: wgpu::Buffer,
 
     // Cinematics integration
     cin_tl: Option<awc::Timeline>,
     cin_seq: awc::Sequencer,
     cin_playing: bool,
-
-    // Asset streaming and residency management
-    _residency_manager: crate::residency::ResidencyManager,
-
-    bind_groups_invalidated: bool,
-
-    // Smoke test
-    smoke_test_asset_id: Option<String>,
 }
 
 impl Renderer {
@@ -272,30 +444,26 @@ impl Renderer {
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
-            .await?;
+            .await
+            .context("No adapter")?;
 
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor {
-                label: Some("device"),
-                required_features: {
-                    let _f = wgpu::Features::empty();
-                    #[cfg(feature = "gpu-tests")]
-                    {
-                        wgpu::Features::TIMESTAMP_QUERY
-                    }
-                    #[cfg(not(feature = "gpu-tests"))]
-                    {
-                        _f
-                    }
-                },
-                required_limits: wgpu::Limits::default(),
-                memory_hints: wgpu::MemoryHints::default(),
-                trace: wgpu::Trace::Off,
-            })
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some("device"),
+                    required_features: {
+                        let f = wgpu::Features::empty();
+                        #[cfg(feature = "gpu-tests")]
+                        {
+                            wgpu::Features::TIMESTAMP_QUERY
+                        }
+                        #[cfg(not(feature = "gpu-tests"))]
+                        {
+                            f
+                        }
+                    },
+                    required_limits: wgpu::Limits::default(), memory_hints: Default::default(), trace: Default::default(), }, )
             .await?;
-
-        let device = std::sync::Arc::new(device);
-        let queue = std::sync::Arc::new(queue);
 
         // Surface config
         let caps = surface.get_capabilities(&adapter);
@@ -336,15 +504,9 @@ impl Renderer {
         let depth = crate::depth::Depth::create(&device, &config);
 
         // Shaders / pipeline
-        let shader_source = format!(
-            "{}\n{}\n{}",
-            CLUSTERED_LIGHTING_SRC,
-            crate::gi::vxgi::CONE_TRACING_SHADER,
-            PBR_SRC
-        );
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("basic shader"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Owned(shader_source)),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(SHADER_SRC)),
         });
 
         let camera_buf = device.create_buffer(&wgpu::BufferDescriptor {
@@ -453,7 +615,7 @@ impl Renderer {
             view_formats: &[],
         });
         #[cfg(feature = "postfx")]
-        let hdr_aux_view = hdr_aux.create_view(&wgpu::TextureViewDescriptor::default());
+        let hdr_view = hdr_aux.create_view(&wgpu::TextureViewDescriptor::default());
         #[cfg(feature = "postfx")]
         let fx_gi = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("fx gi tex"),
@@ -470,7 +632,7 @@ impl Renderer {
             view_formats: &[],
         });
         #[cfg(feature = "postfx")]
-        let fx_gi_view = fx_gi.create_view(&wgpu::TextureViewDescriptor::default());
+        let hdr_view = fx_gi.create_view(&wgpu::TextureViewDescriptor::default());
         #[cfg(feature = "postfx")]
         let fx_ao = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("fx ao tex"),
@@ -487,7 +649,7 @@ impl Renderer {
             view_formats: &[],
         });
         #[cfg(feature = "postfx")]
-        let fx_ao_view = fx_ao.create_view(&wgpu::TextureViewDescriptor::default());
+        let hdr_view = fx_ao.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Postprocess pipeline
         let post_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -527,7 +689,7 @@ impl Renderer {
                 #[cfg(feature = "postfx")]
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&hdr_aux_view),
+                    resource: wgpu::BindingResource::TextureView(&hdr_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
@@ -578,7 +740,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let _ssr_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssr bg"),
             layout: &ssr_bgl,
             entries: &[
@@ -596,6 +758,19 @@ impl Renderer {
                 },
             ],
         });
+                // Create a placeholder normal view for postfx initialization to avoid use-before-def
+        let placeholder_normal_tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("placeholder normal"),
+            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let normal_view = placeholder_normal_tex.create_view(&wgpu::TextureViewDescriptor::default());
+
         #[cfg(feature = "postfx")]
         let ssr_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("ssr layout"),
@@ -603,7 +778,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _ssr_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("ssr pipeline"),
             layout: Some(&ssr_pl),
             vertex: wgpu::VertexState {
@@ -626,7 +801,6 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
 
         // SSAO
@@ -658,7 +832,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let _ssao_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssao bg"),
             layout: &ssao_bgl,
             entries: &[
@@ -679,7 +853,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _ssao_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("ssao pipeline"),
             layout: Some(&ssao_pl),
             vertex: wgpu::VertexState {
@@ -702,12 +876,9 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
 
-        // SSGI - requires normal_view which isn't created yet at this point
-        // TODO: Move this creation after normal_tex is created, or refactor postfx init
-        /*
+        // SSGI
         #[cfg(feature = "postfx")]
         let ssgi_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("ssgi shader"),
@@ -746,7 +917,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let ssgi_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssgi bg"),
             layout: &ssgi_bgl,
             entries: &[
@@ -771,7 +942,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let ssgi_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("ssgi pipeline"),
             layout: Some(&ssgi_pl),
             vertex: wgpu::VertexState {
@@ -794,15 +965,13 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
-        */
 
         // Post-fx composition pipeline
         #[cfg(feature = "postfx")]
         let post_fx_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("post fx shader"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER)),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(POST_SHADER_FX)),
         });
         #[cfg(feature = "postfx")]
         let post_fx_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -847,21 +1016,21 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let post_fx_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("post fx bg"),
             layout: &post_fx_bgl,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&hdr_aux_view),
+                    resource: wgpu::BindingResource::TextureView(&hdr_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&fx_ao_view),
+                    resource: wgpu::BindingResource::TextureView(&hdr_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&fx_gi_view),
+                    resource: wgpu::BindingResource::TextureView(&hdr_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
@@ -876,7 +1045,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let post_fx_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("post fx pipeline"),
             layout: Some(&post_fx_pl),
             vertex: wgpu::VertexState {
@@ -899,446 +1068,7 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
-
-        // ========================================
-        // Bloom Pipeline Infrastructure (5-mip pyramid)
-        // ========================================
-        #[cfg(feature = "postfx")]
-        let (
-            bloom_threshold_pipeline,
-            bloom_downsample_pipeline,
-            bloom_upsample_pipeline,
-            bloom_composite_pipeline,
-            bloom_mip_textures,
-            bloom_mip_views,
-            bloom_threshold_buf,
-            bloom_intensity_buf,
-            bloom_bgl,
-            bloom_bind_groups_down,
-            bloom_bind_groups_up,
-            bloom_threshold_bg,
-            bloom_composite_bg,
-        ) = {
-            // Bloom configuration
-            const MIP_COUNT: u32 = 5;
-            let bloom_threshold = 1.0f32;
-            let bloom_intensity = 0.1f32;
-
-            // Create uniform buffers
-            let bloom_threshold_buf =
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("bloom threshold buf"),
-                    contents: bytemuck::cast_slice(&[bloom_threshold, 0.0f32, 0.0f32, 0.0f32]),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                });
-
-            let bloom_intensity_buf =
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("bloom intensity buf"),
-                    contents: bytemuck::cast_slice(&[bloom_intensity, 0.0f32, 0.0f32, 0.0f32]),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                });
-
-            // Create mip chain textures (half resolution each level)
-            let mut mip_textures = Vec::with_capacity(MIP_COUNT as usize);
-            let mut mip_views = Vec::with_capacity(MIP_COUNT as usize);
-
-            for i in 0..MIP_COUNT {
-                let divisor = 1 << (i + 1); // 2, 4, 8, 16, 32
-                let mip_width = (config.width / divisor).max(1);
-                let mip_height = (config.height / divisor).max(1);
-
-                let tex = device.create_texture(&wgpu::TextureDescriptor {
-                    label: Some(&format!("bloom mip {}", i)),
-                    size: wgpu::Extent3d {
-                        width: mip_width,
-                        height: mip_height,
-                        depth_or_array_layers: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Rgba16Float,
-                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                        | wgpu::TextureUsages::TEXTURE_BINDING,
-                    view_formats: &[],
-                });
-
-                let view = tex.create_view(&wgpu::TextureViewDescriptor::default());
-                mip_textures.push(tex);
-                mip_views.push(view);
-            }
-
-            // Bind group layout for bloom passes
-            let bloom_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("bloom bgl"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            multisampled: false,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-            });
-
-            // Threshold bind group layout (adds uniform buffer)
-            let bloom_threshold_bgl =
-                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: Some("bloom threshold bgl"),
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                multisampled: false,
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 2,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        },
-                    ],
-                });
-
-            // Composite bind group layout (2 textures + sampler + intensity uniform)
-            let bloom_composite_bgl =
-                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: Some("bloom composite bgl"),
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                multisampled: false,
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                multisampled: false,
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 2,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 3,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
-                                has_dynamic_offset: false,
-                                min_binding_size: None,
-                            },
-                            count: None,
-                        },
-                    ],
-                });
-
-            // Create shader modules
-            let threshold_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("bloom threshold shader"),
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_THRESHOLD_WGSL)),
-            });
-
-            let downsample_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("bloom downsample shader"),
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_DOWNSAMPLE_WGSL)),
-            });
-
-            let upsample_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("bloom upsample shader"),
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_UPSAMPLE_WGSL)),
-            });
-
-            let composite_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("bloom composite shader"),
-                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(BLOOM_COMPOSITE_WGSL)),
-            });
-
-            // Create pipelines
-            let threshold_pl_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("bloom threshold layout"),
-                    bind_group_layouts: &[&bloom_threshold_bgl],
-                    push_constant_ranges: &[],
-                });
-
-            let bloom_threshold_pipeline =
-                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("bloom threshold pipeline"),
-                    layout: Some(&threshold_pl_layout),
-                    vertex: wgpu::VertexState {
-                        module: &threshold_shader,
-                        entry_point: Some("vs"),
-                        buffers: &[],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &threshold_shader,
-                        entry_point: Some("fs"),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu::TextureFormat::Rgba16Float,
-                            blend: Some(wgpu::BlendState::REPLACE),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    }),
-                    primitive: wgpu::PrimitiveState::default(),
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState::default(),
-                    multiview: None,
-                    cache: None,
-                });
-
-            let downsample_pl_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("bloom downsample layout"),
-                    bind_group_layouts: &[&bloom_bgl],
-                    push_constant_ranges: &[],
-                });
-
-            let bloom_downsample_pipeline =
-                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("bloom downsample pipeline"),
-                    layout: Some(&downsample_pl_layout),
-                    vertex: wgpu::VertexState {
-                        module: &downsample_shader,
-                        entry_point: Some("vs"),
-                        buffers: &[],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &downsample_shader,
-                        entry_point: Some("fs"),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu::TextureFormat::Rgba16Float,
-                            blend: Some(wgpu::BlendState::REPLACE),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    }),
-                    primitive: wgpu::PrimitiveState::default(),
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState::default(),
-                    multiview: None,
-                    cache: None,
-                });
-
-            let upsample_pl_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("bloom upsample layout"),
-                    bind_group_layouts: &[&bloom_bgl],
-                    push_constant_ranges: &[],
-                });
-
-            let bloom_upsample_pipeline =
-                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("bloom upsample pipeline"),
-                    layout: Some(&upsample_pl_layout),
-                    vertex: wgpu::VertexState {
-                        module: &upsample_shader,
-                        entry_point: Some("vs"),
-                        buffers: &[],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &upsample_shader,
-                        entry_point: Some("fs"),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu::TextureFormat::Rgba16Float,
-                            blend: Some(wgpu::BlendState::ALPHA_BLENDING), // Additive blending for upsampling
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    }),
-                    primitive: wgpu::PrimitiveState::default(),
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState::default(),
-                    multiview: None,
-                    cache: None,
-                });
-
-            let composite_pl_layout =
-                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("bloom composite layout"),
-                    bind_group_layouts: &[&bloom_composite_bgl],
-                    push_constant_ranges: &[],
-                });
-
-            let bloom_composite_pipeline =
-                device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("bloom composite pipeline"),
-                    layout: Some(&composite_pl_layout),
-                    vertex: wgpu::VertexState {
-                        module: &composite_shader,
-                        entry_point: Some("vs"),
-                        buffers: &[],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module: &composite_shader,
-                        entry_point: Some("fs"),
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu::TextureFormat::Rgba16Float,
-                            blend: Some(wgpu::BlendState::REPLACE),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                        compilation_options: wgpu::PipelineCompilationOptions::default(),
-                    }),
-                    primitive: wgpu::PrimitiveState::default(),
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState::default(),
-                    multiview: None,
-                    cache: None,
-                });
-
-            // Create bind groups
-            // Threshold bind group: HDR input + sampler + threshold uniform
-            let bloom_threshold_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("bloom threshold bg"),
-                layout: &bloom_threshold_bgl,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&hdr_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&hdr_sampler),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: bloom_threshold_buf.as_entire_binding(),
-                    },
-                ],
-            });
-
-            // Downsample bind groups (chain: mip0 -> mip1 -> mip2 -> mip3 -> mip4)
-            let mut bloom_bind_groups_down = Vec::with_capacity(MIP_COUNT as usize);
-            for i in 0..MIP_COUNT {
-                let src_view = if i == 0 {
-                    &mip_views[0] // First downsample from threshold output (mip0)
-                } else {
-                    &mip_views[i as usize - 1]
-                };
-
-                let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some(&format!("bloom downsample bg {}", i)),
-                    layout: &bloom_bgl,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(src_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&hdr_sampler),
-                        },
-                    ],
-                });
-                bloom_bind_groups_down.push(bg);
-            }
-
-            // Upsample bind groups (chain: mip4 -> mip3 -> mip2 -> mip1 -> mip0)
-            let mut bloom_bind_groups_up = Vec::with_capacity(MIP_COUNT as usize);
-            for i in (0..MIP_COUNT).rev() {
-                let src_view = &mip_views[i as usize];
-
-                let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some(&format!("bloom upsample bg {}", i)),
-                    layout: &bloom_bgl,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(src_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: wgpu::BindingResource::Sampler(&hdr_sampler),
-                        },
-                    ],
-                });
-                bloom_bind_groups_up.push(bg);
-            }
-
-            // Composite bind group: original HDR + bloom mip0 + sampler + intensity uniform
-            let bloom_composite_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("bloom composite bg"),
-                layout: &bloom_composite_bgl,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&hdr_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::TextureView(&mip_views[0]),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::Sampler(&hdr_sampler),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: bloom_intensity_buf.as_entire_binding(),
-                    },
-                ],
-            });
-
-            (
-                bloom_threshold_pipeline,
-                bloom_downsample_pipeline,
-                bloom_upsample_pipeline,
-                bloom_composite_pipeline,
-                mip_textures,
-                mip_views,
-                bloom_threshold_buf,
-                bloom_intensity_buf,
-                bloom_bgl,
-                bloom_bind_groups_down,
-                bloom_bind_groups_up,
-                bloom_threshold_bg,
-                bloom_composite_bg,
-            )
-        };
 
         // Shadow bind group layout (declared early so we can include it in main pipeline layout)
         let shadow_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -1445,36 +1175,29 @@ impl Renderer {
 
         // extra_tex_bgl is no longer needed; MR and normal are merged into tex_bgl
 
-        // Initialize ClusteredForwardRenderer
-        let cluster_config = ClusterConfig {
-            cluster_x: 16,
-            cluster_y: 9,
-            cluster_z: 24,
-            near: 0.1,
-            far: 200.0,
-            _pad: [0; 3],
-        };
-        let clustered_forward = ClusteredForwardRenderer::new(&device, cluster_config);
-
-        // Initialize VXGI
-        let vxgi_config = VxgiConfig::default();
-        let vxgi = VxgiRenderer::new(&device, vxgi_config);
+        // Clustered lighting bind group layout (fragment reads)
+        let clustered_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("clustered bgl (frag)"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 4,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("pipeline layout"),
-            // Group indices: 0: camera, 1: material, 2: shadow/light, 3: combined textures + skin, 4: clustered, 5: vxgi
-            bind_group_layouts: &[
-                &bind_layout,
-                &material_bgl,
-                &shadow_bgl,
-                &tex_bgl,
-                clustered_forward.bind_group_layout(),
-                vxgi.bind_group_layout(),
-            ],
+            // Group indices: 0: camera, 1: material, 2: shadow/light, 3: combined textures + skin
+            bind_group_layouts: &[&bind_layout, &material_bgl, &shadow_bgl, &tex_bgl],
             push_constant_ranges: &[],
         });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -1511,7 +1234,6 @@ impl Renderer {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
         // after instance_buf creation
         let weather = crate::effects::WeatherFx::new(&device, 800);
@@ -1526,7 +1248,7 @@ impl Renderer {
             bind_group_layouts: &[&post_bgl],
             push_constant_ranges: &[],
         });
-        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("post pipeline"),
             layout: Some(&post_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -1549,7 +1271,6 @@ impl Renderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
 
         // Shadow map resources (2-layer array for CSM)
@@ -1559,7 +1280,7 @@ impl Renderer {
             size: wgpu::Extent3d {
                 width: shadow_size,
                 height: shadow_size,
-                depth_or_array_layers: 4,
+                depth_or_array_layers: 2,
             },
             mip_level_count: 1,
             sample_count: 1,
@@ -1569,8 +1290,7 @@ impl Renderer {
             view_formats: &[],
         });
         // Array view for sampling
-        let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
+        let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor { usage: None,
             label: Some("shadow array view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
@@ -1581,8 +1301,7 @@ impl Renderer {
             array_layer_count: None,
         });
         // Per-layer views for rendering
-        let shadow_layer0_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
+        let shadow_layer0_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor { usage: None,
             label: Some("shadow layer0 view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -1592,8 +1311,7 @@ impl Renderer {
             base_array_layer: 0,
             array_layer_count: Some(1),
         });
-        let shadow_layer1_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
+        let shadow_layer1_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor { usage: None,
             label: Some("shadow layer1 view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -1601,28 +1319,6 @@ impl Renderer {
             base_mip_level: 0,
             mip_level_count: None,
             base_array_layer: 1,
-            array_layer_count: Some(1),
-        });
-        let shadow_layer2_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
-            label: Some("shadow layer2 view"),
-            format: Some(wgpu::TextureFormat::Depth32Float),
-            dimension: Some(wgpu::TextureViewDimension::D2),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 2,
-            array_layer_count: Some(1),
-        });
-        let shadow_layer3_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
-            usage: None,
-            label: Some("shadow layer3 view"),
-            format: Some(wgpu::TextureFormat::Depth32Float),
-            dimension: Some(wgpu::TextureViewDimension::D2),
-            aspect: wgpu::TextureAspect::All,
-            base_mip_level: 0,
-            mip_level_count: None,
-            base_array_layer: 3,
             array_layer_count: Some(1),
         });
         let shadow_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -1636,8 +1332,8 @@ impl Renderer {
         // shadow_bgl already created above
         let light_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("light ubo"),
-            // 4 mat4 (256 bytes) + vec4 splits + pad (16 bytes) + extras => 272; round to 288
-            size: 288,
+            // 2 mat4 (128 bytes) + vec2 splits + pad (16 bytes) => 144; round to 160
+            size: 160,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -1720,7 +1416,7 @@ fn vs(input: VSIn) -> VSOut {
                 bind_group_layouts: &[&shadow_bgl_light],
                 push_constant_ranges: &[],
             });
-        let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("shadow pipeline"),
             layout: Some(&shadow_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -1750,7 +1446,6 @@ fn vs(input: VSIn) -> VSOut {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
 
         // Default 1x1 white albedo
@@ -1781,14 +1476,14 @@ fn vs(input: VSIn) -> VSOut {
         });
         // Initialize albedo with a 1x1 white texel so sampling yields visible color
         queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture: &albedo_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[255u8, 255u8, 255u8, 255u8],
-            wgpu::TexelCopyBufferLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1807,8 +1502,7 @@ fn vs(input: VSIn) -> VSOut {
             mapped_at_creation: false,
         });
 
-
-        // Default extra textures
+        // Default extra textures (create MR and normal before building combined bind group)
         let mr_tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("mr tex"),
             size: wgpu::Extent3d {
@@ -1835,14 +1529,14 @@ fn vs(input: VSIn) -> VSOut {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture: &mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[0u8, 255u8, 0u8, 255u8],
-            wgpu::TexelCopyBufferLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1879,14 +1573,14 @@ fn vs(input: VSIn) -> VSOut {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture: &normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[128u8, 128u8, 255u8, 255u8],
-            wgpu::TexelCopyBufferLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1934,6 +1628,13 @@ fn vs(input: VSIn) -> VSOut {
             ],
         });
 
+        // Skin palette storage buffer (max 64 bones)
+        let skin_palette_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("skin palette"),
+            size: (64 * 64) as u64, // 64 mat4 (16 floats * 4 bytes) = 1024 bytes; allocate 4096 (rounded)
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
         let skin_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("skin bgl"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -1970,7 +1671,6 @@ struct VSIn {
   @location(0) position: vec3<f32>,
   @location(1) normal:   vec3<f32>,
     @location(12) tangent:  vec4<f32>,
-    @location(13) uv:       vec2<f32>,
   @location(10) joints:  vec4<u32>,
   @location(11) weights: vec4<f32>,
   @location(2) m0: vec4<f32>,
@@ -1990,7 +1690,6 @@ struct VSOut {
     @location(3) tbn0: vec3<f32>,
     @location(4) tbn1: vec3<f32>,
     @location(5) tbn2: vec3<f32>,
-    @location(6) uv: vec2<f32>,
   @location(2) color: vec4<f32>,
 };
 
@@ -2042,7 +1741,6 @@ fn vs(input: VSIn) -> VSOut {
     out.tbn0 = Tw;
     out.tbn1 = Bw;
     out.tbn2 = Nw;
-    out.uv = input.uv;
   out.color = input.color;
   return out;
 }
@@ -2074,20 +1772,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     let L = normalize(-uCamera.light_dir);
     let H = normalize(V + L);
     var N = normalize(input.normal);
-    // Apply normal mapping using TBN from skinned vertex shader
-    let nrm_rgb = textureSample(normal_tex, normal_samp, input.uv).rgb;
-    let nrm_ts = normalize(nrm_rgb * 2.0 - vec3<f32>(1.0,1.0,1.0));
-    let T = input.tbn0; let B = input.tbn1; let NN = input.tbn2;
-    N = normalize(T * nrm_ts.x + B * nrm_ts.y + NN * nrm_ts.z);
+    // Normal mapping disabled in skinned path for now; use vertex normal transformed to world.
     let NdotL = max(dot(N, L), 0.0);
     var base_color = (uMaterial.base_color.rgb * input.color.rgb);
-    let tex = textureSample(albedo_tex, albedo_samp, input.uv);
-    base_color = base_color * tex.rgb;
     var metallic = clamp(uMaterial.metallic, 0.0, 1.0);
     var roughness = clamp(uMaterial.roughness, 0.04, 1.0);
-    let mr = textureSample(mr_tex, mr_samp, input.uv);
-    metallic = clamp(max(metallic, mr.r), 0.0, 1.0);
-    roughness = clamp(min(roughness, max(mr.g, 0.04)), 0.04, 1.0);
     let F0 = mix(vec3<f32>(0.04, 0.04, 0.04), base_color, metallic);
     let F = fresnel_schlick(max(dot(H, V), 0.0), F0);
     let D = distribution_ggx(N, H, roughness);
@@ -2130,7 +1819,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 }
 "#)),
         });
-        let skinned_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let skinned_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("skinned pipeline"),
             layout: Some(&skinned_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -2167,13 +1856,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
 
-
-        // Fallback texture (Magenta 1x1)
-        let fallback_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("fallback tex"),
+        // Default extra textures
+        let mr_tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("mr tex"),
             size: wgpu::Extent3d {
                 width: 1,
                 height: 1,
@@ -2182,20 +1869,30 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: wgpu::TextureFormat::Rgba8Unorm,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
-
+        let mr_view = mr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let mr_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("mr samp"),
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            ..Default::default()
+        });
         queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                texture: &fallback_tex,
+            wgpu::ImageCopyTexture {
+                texture: &mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
-            &[255, 0, 255, 255], // Magenta
-            wgpu::TexelCopyBufferLayout {
+            &[0u8, 255u8, 0u8, 255u8],
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -2206,90 +1903,50 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 depth_or_array_layers: 1,
             },
         );
-
-        let fallback_view = fallback_tex.create_view(&wgpu::TextureViewDescriptor::default());
-        let fallback_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("fallback sampler"),
-            mag_filter: wgpu::FilterMode::Nearest,
-            min_filter: wgpu::FilterMode::Nearest,
+        let normal_tex = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("normal tex"),
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let normal_view = normal_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let normal_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("normal samp"),
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
             ..Default::default()
         });
-
-        // Debug Quad Pipeline
-        let debug_quad_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Debug Quad Shader"),
-            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
-                "../shaders/debug_quad.wgsl"
-            ))),
-        });
-
-        let debug_quad_bg_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("debug_quad_bind_group_layout"),
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                        count: None,
-                    },
-                ],
-            });
-
-        let debug_quad_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("debug_quad_pipeline_layout"),
-                bind_group_layouts: &[&debug_quad_bg_layout],
-                push_constant_ranges: &[],
-            });
-
-        let debug_quad_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("debug_quad_pipeline"),
-            layout: Some(&debug_quad_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &debug_quad_shader,
-                entry_point: Some("vs_main"),
-                buffers: &[crate::debug_quad::DebugQuadVertex::desc()],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
+        queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &normal_tex,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
             },
-            fragment: Some(wgpu::FragmentState {
-                module: &debug_quad_shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false,
+            &[128u8, 128u8, 255u8, 255u8],
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(4),
+                rows_per_image: Some(1),
             },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false,
+            wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
             },
-            multiview: None,
-            cache: None,
-        });
+        );
         // extra_tex_bg removed; MR/normal are in combined tex_bg
 
         // Clustered resources default allocs
@@ -2350,7 +2007,161 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             usage: wgpu::BufferUsages::VERTEX,
             mapped_at_creation: false,
         });
-        // Clustered initialization moved up
+        let clustered_dims = ClusterDims { x: 8, y: 4, z: 8 };
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        // Use explicit 16-byte slots to match WGSL uniform layout: three vec4-sized slots = 48 bytes
+        struct CParams {
+            screen: [u32; 4],
+            clusters: [u32; 4],
+            params: [f32; 4],
+        }
+        let cparams_init = CParams {
+            screen: [config.width.max(1), config.height.max(1), 0, 0],
+            clusters: [clustered_dims.x, clustered_dims.y, clustered_dims.z, 0],
+            params: [0.1, 200.0, std::f32::consts::FRAC_PI_3, 0.0],
+        };
+        let clustered_params_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("cparams"),
+            contents: bytemuck::bytes_of(&cparams_init),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let clustered_lights_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("clights"),
+            size: 64 * 16,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let clusters_total = (clustered_dims.x * clustered_dims.y * clustered_dims.z) as usize;
+        let clustered_offsets_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("coffsets"),
+            size: ((clusters_total + 1) * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let clustered_counts_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("ccounts"),
+            size: (clusters_total * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        // Reserve indices buffer capacity: lights * 64 as an upper bound placeholder
+        let clustered_indices_buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("cindices"),
+            size: (64 * 64 * 4) as u64,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        // Fragment path doesn't use clustered data in this build; create a minimal bind group matching the layout (binding 4 as uniform).
+        let clustered_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("clustered bg"),
+            layout: &clustered_bgl,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 4,
+                resource: clustered_params_buf.as_entire_binding(),
+            }],
+        });
+
+        // Compute pipeline for clustered binning
+        let clustered_comp_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("clustered comp"),
+            source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(WGSL_CLUSTER_BIN)),
+        });
+        let clustered_comp_bgl =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("clustered comp bgl"),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+        let clustered_comp_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("clustered comp pl"),
+            bind_group_layouts: &[&clustered_comp_bgl],
+            push_constant_ranges: &[],
+        });
+        let clustered_comp_pipeline =
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor { cache: None,
+                label: Some("clustered comp pipeline"),
+                layout: Some(&clustered_comp_pl),
+                module: &clustered_comp_shader,
+                entry_point: Some("cs_main"),
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            });
+        let clustered_comp_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("clustered comp bg"),
+            layout: &clustered_comp_bgl,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: clustered_lights_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: clustered_params_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: clustered_offsets_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: clustered_counts_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: clustered_indices_buf.as_entire_binding(),
+                },
+            ],
+        });
 
         // Create overlay resources now while `device` and `config` are still available.
         let overlay = crate::overlay::OverlayFx::new(&device, config.format);
@@ -2359,17 +2170,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             letterbox: 0.0,
             _pad: [0.0; 2],
         };
-
-        // ========================================
-        // Debug Quad Infrastructure
-        // ========================================
-        // 3. Debug Quad Buffer
-        let quad_verts = create_screen_quad();
-        let debug_quad_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("debug_quad_buf"),
-            contents: bytemuck::cast_slice(&quad_verts),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
 
         Ok(Self {
             surface,
@@ -2387,56 +2187,10 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             hdr_tex,
             hdr_view,
             hdr_sampler,
-            #[cfg(feature = "postfx")]
-            hdr_aux_tex: hdr_aux,
-            #[cfg(feature = "postfx")]
-            hdr_aux_view,
-            #[cfg(feature = "postfx")]
-            fx_gi_tex: fx_gi,
-            #[cfg(feature = "postfx")]
-            fx_gi_view,
-            #[cfg(feature = "postfx")]
-            fx_ao_tex: fx_ao,
-            #[cfg(feature = "postfx")]
-            fx_ao_view,
-            #[cfg(feature = "postfx")]
-            post_fx_bgl,
-            #[cfg(feature = "postfx")]
-            post_fx_bind_group,
-            #[cfg(feature = "postfx")]
-            post_fx_pipeline,
-            #[cfg(feature = "postfx")]
-            bloom_threshold_pipeline,
-            #[cfg(feature = "postfx")]
-            bloom_downsample_pipeline,
-            #[cfg(feature = "postfx")]
-            bloom_upsample_pipeline,
-            #[cfg(feature = "postfx")]
-            bloom_composite_pipeline,
-            #[cfg(feature = "postfx")]
-            bloom_mip_textures,
-            #[cfg(feature = "postfx")]
-            bloom_mip_views,
-            #[cfg(feature = "postfx")]
-            bloom_threshold_buf,
-            #[cfg(feature = "postfx")]
-            bloom_intensity_buf,
-            #[cfg(feature = "postfx")]
-            bloom_bgl,
-            #[cfg(feature = "postfx")]
-            bloom_bind_groups_down,
-            #[cfg(feature = "postfx")]
-            bloom_bind_groups_up,
-            #[cfg(feature = "postfx")]
-            bloom_threshold_bg,
-            #[cfg(feature = "postfx")]
-            bloom_composite_bg,
             shadow_tex,
             shadow_view,
             shadow_layer0_view,
             shadow_layer1_view,
-            shadow_layer2_view,
-            shadow_layer3_view,
             shadow_sampler,
             shadow_pipeline,
             light_buf,
@@ -2445,12 +2199,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             light_bg_shadow,
             cascade0: glam::Mat4::IDENTITY,
             cascade1: glam::Mat4::IDENTITY,
-            cascade2: glam::Mat4::IDENTITY,
-            cascade3: glam::Mat4::IDENTITY,
-            split0: 10.0,
-            split1: 25.0,
-            split2: 50.0,
-            split3: 100.0,
+            split0: 60.0,
+            split1: 120.0,
             cascade0_extent: 40.0,
             cascade1_extent: 80.0,
             cascade_lambda: 0.5,
@@ -2468,13 +2218,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             normal_tex,
             normal_view,
             normal_sampler,
-            fallback_tex,
-            fallback_view,
-            fallback_sampler,
-            debug_quad_pipeline,
-            debug_quad_bg_layout,
-            debug_quad_buf,
-            smoke_test_asset_id: None,
             // combined tex_bgl/tex_bg used
             camera_ubo: CameraUBO {
                 view_proj: Mat4::IDENTITY.to_cols_array_2d(),
@@ -2482,7 +2225,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             },
             camera_buf,
             camera_bind_group,
-            view_matrix: glam::Mat4::IDENTITY,
             mesh_cube,
             mesh_sphere,
             mesh_plane,
@@ -2493,14 +2235,22 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             overlay_params,
             weather,
             sky,
-            texture_streaming: TextureStreamingManager::new(512),
             skin_bgl,
             skin_bg,
             skin_palette_buf,
             skinned_pipeline,
             skinned_mesh: None,
-            clustered_forward,
-            vxgi,
+            clustered_dims,
+            clustered_params_buf,
+            clustered_lights_buf,
+            clustered_offsets_buf,
+            clustered_counts_buf,
+            clustered_indices_buf,
+            clustered_bgl,
+            clustered_bg,
+            clustered_comp_bgl,
+            clustered_comp_bg,
+            clustered_comp_pipeline,
             point_lights: Vec::new(),
             #[cfg(feature = "gpu-tests")]
             timestamp_query_set,
@@ -2509,11 +2259,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             cin_tl: None,
             cin_seq: awc::Sequencer::new(),
             cin_playing: false,
-            _residency_manager: crate::residency::ResidencyManager::new(
-                std::sync::Arc::new(std::sync::Mutex::new(astraweave_asset::AssetDatabase::new())),
-                512, // 512 MB default max memory
-            ),
-            bind_groups_invalidated: false,
         })
     }
 
@@ -2624,16 +2369,30 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 },
             ],
         });
-    }
-
-    pub fn update_streaming(&mut self) {
-        self.texture_streaming
-            .process_next_load(&self.device, &self.queue);
+        // Update clustered params screen size
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        struct CParams {
+            screen: [u32; 4],
+            clusters: [u32; 4],
+            params: [f32; 4],
+        }
+        let data: CParams = CParams {
+            screen: [new_w.max(1), new_h.max(1), 0, 0],
+            clusters: [
+                self.clustered_dims.x,
+                self.clustered_dims.y,
+                self.clustered_dims.z,
+                0,
+            ],
+            params: [0.1, 200.0, std::f32::consts::FRAC_PI_3, 0.0],
+        };
+        self.queue
+            .write_buffer(&self.clustered_params_buf, 0, bytemuck::bytes_of(&data));
     }
 
     pub fn update_camera(&mut self, camera: &Camera) {
         self.camera_ubo.view_proj = camera.vp().to_cols_array_2d();
-        self.view_matrix = camera.view_matrix();
         // Update light dir from time-of-day system (simple linkage for Phase 0)
         let light_dir = self.sky.time_of_day().get_light_direction();
         self.camera_ubo.light_dir_pad = [light_dir.x, light_dir.y, light_dir.z, 0.0];
@@ -2642,72 +2401,56 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // Compute splits from camera frustum with lambda blend
         let n = camera.znear.max(0.01);
         let f = camera.zfar.max(n + 0.1);
-        let c = 4.0; // cascades count
+        let c = 2.0; // cascades count (fixed to 2)
+        let i = 1.0f32; // boundary between 0 and 1
+        let u = n + (f - n) * (i / c);
+        let l = n * (f / n).powf(i / c);
         let lambda = self.cascade_lambda.clamp(0.0, 1.0);
-
-        for i in 1..4 {
-            let fi = i as f32;
-            let u = n + (f - n) * (fi / c);
-            let l = n * (f / n).powf(fi / c);
-            let split = l * lambda + u * (1.0 - lambda);
-            match i {
-                1 => self.split0 = split,
-                2 => self.split1 = split,
-                3 => self.split2 = split,
-                _ => {}
-            }
-        }
-        self.split3 = f;
+        let split = l * lambda + u * (1.0 - lambda);
+        self.split0 = split;
+        self.split1 = f;
 
         // Build frustum corners per range in world space
         let frustum0 = frustum_corners_ws(camera, n, self.split0);
-        let frustum1 = frustum_corners_ws(camera, self.split0, self.split1);
-        let frustum2 = frustum_corners_ws(camera, self.split1, self.split2);
-        let frustum3 = frustum_corners_ws(camera, self.split2, self.split3);
-
+        let frustum1 = frustum_corners_ws(camera, self.split0, f);
         // Build a light view looking towards the cascade centers
         let up = glam::Vec3::Y;
+        let center0 = frustum_center(&frustum0);
+        let center1 = frustum_center(&frustum1);
         let light_dist = 80.0f32;
+        let view0 = glam::Mat4::look_to_rh(center0 - light_dir * light_dist, light_dir, up);
+        let view1 = glam::Mat4::look_to_rh(center1 - light_dir * light_dist, light_dir, up);
+        // Fit orthographic bounds to cascade frusta in light space
+        let (min0, max0) = aabb_in_view_space(&view0, &frustum0);
+        let (min1, max1) = aabb_in_view_space(&view1, &frustum1);
         let margin = 5.0f32;
-
-        let create_cascade = |frustum: &[glam::Vec3; 8], light_dir: glam::Vec3| -> glam::Mat4 {
-            let center = frustum_center(frustum);
-            let view = glam::Mat4::look_to_rh(center - light_dir * light_dist, light_dir, up);
-            let (min, max) = aabb_in_view_space(&view, frustum);
-            let proj = glam::Mat4::orthographic_rh(
-                min.x - margin,
-                max.x + margin,
-                min.y - margin,
-                max.y + margin,
-                (-max.z + 0.1).max(0.1),
-                (-min.z + margin + 0.1).max(1.0),
-            );
-            proj * view
-        };
-
-        self.cascade0 = create_cascade(&frustum0, light_dir);
-        self.cascade1 = create_cascade(&frustum1, light_dir);
-        self.cascade2 = create_cascade(&frustum2, light_dir);
-        self.cascade3 = create_cascade(&frustum3, light_dir);
-
-        // Pack data for main pass buffer: [mat0, mat1, mat2, mat3, vec4(splits), vec2(extras)]
-        // 4*16 + 4 + 2 = 70 floats. Padded to 72 floats (288 bytes).
-        let mut data: Vec<f32> = Vec::with_capacity(72);
+        let proj0 = glam::Mat4::orthographic_rh(
+            min0.x - margin,
+            max0.x + margin,
+            min0.y - margin,
+            max0.y + margin,
+            (-max0.z + 0.1).max(0.1),
+            (-min0.z + margin + 0.1).max(1.0),
+        );
+        let proj1 = glam::Mat4::orthographic_rh(
+            min1.x - margin,
+            max1.x + margin,
+            min1.y - margin,
+            max1.y + margin,
+            (-max1.z + 0.1).max(0.1),
+            (-min1.z + margin + 0.1).max(1.0),
+        );
+        self.cascade0 = proj0 * view0;
+        self.cascade1 = proj1 * view1;
+        // Pack data for main pass buffer: [mat0, mat1, vec2(splits), vec2(extras)]
+        let mut data: Vec<f32> = Vec::with_capacity(36);
         data.extend_from_slice(&self.cascade0.to_cols_array());
         data.extend_from_slice(&self.cascade1.to_cols_array());
-        data.extend_from_slice(&self.cascade2.to_cols_array());
-        data.extend_from_slice(&self.cascade3.to_cols_array());
         data.push(self.split0);
         data.push(self.split1);
-        data.push(self.split2);
-        data.push(self.split3);
         // extras: pack pcf radius in x, depth_bias in y
         data.push(self.shadow_pcf_radius_px);
         data.push(self.shadow_depth_bias);
-        // Padding to 288 bytes (72 floats)
-        data.push(0.0);
-        data.push(0.0);
-
         self.queue
             .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
     }
@@ -2753,9 +2496,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         normals: &[[f32; 3]],
         indices: &[u32],
     ) -> Mesh {
-        #[cfg(feature = "profiling")]
-        span!("Render::MeshUpload");
-
         // Interleave into Vertex, derive simple defaults for tangent (+X) and uv (planar XZ)
         let verts: Vec<crate::types::Vertex> = vertices
             .iter()
@@ -2796,9 +2536,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         uvs: &[[f32; 2]],
         indices: &[u32],
     ) -> Mesh {
-        #[cfg(feature = "profiling")]
-        span!("Render::MeshUpload::Full");
-
         assert!(
             positions.len() == normals.len()
                 && positions.len() == tangents.len()
@@ -2884,17 +2621,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.sky.set_config(cfg);
     }
 
-    pub fn set_smoke_test_texture(&mut self, id: &str) {
-        self.smoke_test_asset_id = Some(id.to_string());
-    }
-
     pub fn render(&mut self) -> Result<()> {
-        #[cfg(feature = "profiling")]
-        span!("Render::Frame");
-
-        // Advance streaming state at frame start
-        self.update_streaming();
-
         let frame = self.surface.get_current_texture()?;
         let view = frame
             .texture
@@ -2906,67 +2633,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 label: Some("encoder"),
             });
 
-        // Visual Smoke Test: Debug Quad Overlay
-        if let Some(id) = &self.smoke_test_asset_id {
-            // Check status via request (returns None if loading/failed/not resident)
-            // We use a high priority to ensure it loads if not already
-            let tex_handle = self.texture_streaming.request_texture(id.clone(), 100, 0.0);
-
-            let (tex_view, tex_sampler) = if let Some(handle) = &tex_handle {
-                (&handle.texture.view, &handle.texture.sampler)
-            } else {
-                (&self.fallback_view, &self.fallback_sampler)
-            };
-
-            let bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("debug_quad_bg"),
-                layout: &self.debug_quad_bg_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(tex_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(tex_sampler),
-                    },
-                ],
-            });
-
-            {
-                let mut rpass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("debug quad pass"),
-                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        view: &view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })],
-                    depth_stencil_attachment: None,
-                    timestamp_writes: None,
-                    occlusion_query_set: None,
-                });
-                rpass.set_pipeline(&self.debug_quad_pipeline);
-                rpass.set_bind_group(0, &bg, &[]);
-                rpass.set_vertex_buffer(0, self.debug_quad_buf.slice(..));
-                rpass.draw(0..6, 0..1);
-            }
-
-            self.queue.submit(Some(enc.finish()));
-            frame.present();
-            return Ok(());
-        }
-
         // Create plane buffer before render pass
         // Slightly lower the ground plane to avoid z-fighting with terrain at y=0
         let plane_xform = glam::Mat4::from_translation(vec3(0.0, -0.2, 0.0))
             * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
             transform: plane_xform,
-            color: [0.1, 0.12, 0.14, 1.0],
-            material_id: 0,
+            color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
         }
         .raw();
         let plane_buf = self
@@ -2981,27 +2654,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // TODO: Replace with the correct color target view for sky rendering (e.g., main color target or postprocess output)
         // self.sky.render(&mut enc, &self.main_color_view, &self.depth.view, Mat4::from_cols_array_2d(&self.camera_ubo.view_proj), &self.queue)?;
 
-        // Replace with:
-        let sky_color_target = &self.hdr_view; // Use HDR view as the main color target for sky
-        self.sky.render(
-            &mut enc,
-            sky_color_target,
-            &self.depth.view,
-            Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
-            &self.queue,
-        )?;
-
-        // Ensure bind groups are properly recreated or updated if needed to avoid corruption
-        // Add safety check before render pass
-        if self.bind_groups_invalidated {
-            self.recreate_bind_groups();
-            self.bind_groups_invalidated = false;
-        }
-
         {
-            #[cfg(feature = "profiling")]
-            span!("Render::ClusteredLighting");
-
             // Prepare clustered lighting for this frame: simple demo lights around origin
             if self.point_lights.is_empty() {
                 self.point_lights.push(CpuLight {
@@ -3013,35 +2666,73 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                     radius: 5.0,
                 });
             }
-            // Convert CpuLight to GpuLight
-            let gpu_lights: Vec<crate::clustered_forward::GpuLight> = self
+            // CPU pre-pass builds offsets array (exclusive scan) we share to GPU
+            let (_counts_cpu, _indices_cpu, offsets_cpu) = bin_lights_cpu(
+                &self.point_lights,
+                self.clustered_dims,
+                (self.config.width, self.config.height),
+                0.1,
+                200.0,
+                std::f32::consts::FRAC_PI_3,
+            );
+            // Upload lights and offsets; zero counts and indices
+            #[repr(C)]
+            #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+            struct GpuLight {
+                pos_radius: [f32; 4],
+            }
+            let glights: Vec<GpuLight> = self
                 .point_lights
                 .iter()
-                .map(|l| {
-                    crate::clustered_forward::GpuLight::new(
-                        l.pos,
-                        l.radius,
-                        glam::Vec3::new(1.0, 1.0, 1.0), // Default white color
-                        1.0,                            // Default intensity
-                    )
+                .map(|l| GpuLight {
+                    pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius],
                 })
                 .collect();
-
-            // Update lights and build clusters using the new renderer
-            self.clustered_forward.update_lights(gpu_lights);
-            self.clustered_forward.build_clusters(
-                &self.queue,
-                self.view_matrix,
-                glam::Mat4::IDENTITY, // Proj matrix not used in CPU path currently
-                (self.config.width, self.config.height),
+            if !glights.is_empty() {
+                self.queue.write_buffer(
+                    &self.clustered_lights_buf,
+                    0,
+                    bytemuck::cast_slice(&glights),
+                );
+            }
+            self.queue.write_buffer(
+                &self.clustered_offsets_buf,
+                0,
+                bytemuck::cast_slice(&offsets_cpu),
             );
+            // Zero counts
+            let clusters =
+                (self.clustered_dims.x * self.clustered_dims.y * self.clustered_dims.z) as usize;
+            let zero_counts = vec![0u32; clusters];
+            self.queue.write_buffer(
+                &self.clustered_counts_buf,
+                0,
+                bytemuck::cast_slice(&zero_counts),
+            );
+            // Run compute to fill counts/indices
+            #[cfg(feature = "gpu-tests")]
+            {
+                enc.write_timestamp(&self.timestamp_query_set, 0);
+            }
+            let mut cpass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("cluster bin"),
+                timestamp_writes: None,
+            });
+            cpass.set_pipeline(&self.clustered_comp_pipeline);
+            cpass.set_bind_group(0, &self.clustered_comp_bg, &[]);
+            cpass.dispatch_workgroups(glights.len() as u32, 1, 1);
+            drop(cpass);
+            #[cfg(feature = "gpu-tests")]
+            {
+                enc.write_timestamp(&self.timestamp_query_set, 1);
+                enc.resolve_query_set(&self.timestamp_query_set, 0..2, &self.timestamp_buf, 0);
+            }
         }
         // Prepare external mesh single-instance buffer if needed
         let ext_ibuf: Option<wgpu::Buffer> = if self.mesh_external.is_some() {
             let inst = Instance {
                 transform: Mat4::IDENTITY,
-                color: [1.0, 1.0, 1.0, 1.0],
-                material_id: 0,
+                color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
             }
             .raw();
             Some(
@@ -3058,34 +2749,19 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         // Frustum cull instances
         let (vis_raws, vis_count) = self.build_visible_instances();
         if vis_count > 0 {
-            #[cfg(feature = "profiling")]
-            {
-                span!("Render::BufferWrite::Instances");
-                plot!("Render::visible_instances", vis_count as u64);
-            }
             self.queue
                 .write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&vis_raws));
         }
         // Shadow passes (depth only) - one per cascade layer
         // Write cascade0 matrix, render to layer0; then cascade1, render to layer1
-        #[cfg(feature = "profiling")]
-        span!("Render::ShadowMaps");
-
-        for (idx, layer_view) in [
-            &self.shadow_layer0_view,
-            &self.shadow_layer1_view,
-            &self.shadow_layer2_view,
-            &self.shadow_layer3_view,
-        ]
-        .iter()
-        .enumerate()
+        for (idx, layer_view) in [&self.shadow_layer0_view, &self.shadow_layer1_view]
+            .iter()
+            .enumerate()
         {
-            let mat = match idx {
-                0 => self.cascade0,
-                1 => self.cascade1,
-                2 => self.cascade2,
-                3 => self.cascade3,
-                _ => unreachable!(),
+            let mat = if idx == 0 {
+                self.cascade0
+            } else {
+                self.cascade1
             };
             let arr = mat.to_cols_array();
             self.queue
@@ -3137,28 +2813,18 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         // After rendering shadow layers, restore full light buffer for main pass usage
         {
-            let mut data: Vec<f32> = Vec::with_capacity(72);
+            let mut data: Vec<f32> = Vec::with_capacity(36);
             data.extend_from_slice(&self.cascade0.to_cols_array());
             data.extend_from_slice(&self.cascade1.to_cols_array());
-            data.extend_from_slice(&self.cascade2.to_cols_array());
-            data.extend_from_slice(&self.cascade3.to_cols_array());
             data.push(self.split0);
             data.push(self.split1);
-            data.push(self.split2);
-            data.push(self.split3);
             data.push(self.shadow_pcf_radius_px);
             data.push(self.shadow_depth_bias);
-            // Padding
-            data.push(0.0);
-            data.push(0.0);
             self.queue
                 .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
         }
 
         // Render sky first into HDR target so we can layer geometry on top
-        #[cfg(feature = "profiling")]
-        span!("Render::Sky");
-
         self.sky.render(
             &mut enc,
             &self.hdr_view,
@@ -3167,13 +2833,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             &self.queue,
         )?;
 
-        // Update VXGI voxel field (compute pass)
-        self.vxgi.update_voxel_field(&mut enc);
-
         {
-            #[cfg(feature = "profiling")]
-            span!("Render::MainPass");
-
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("main pass"),
                 // Render the main scene into the HDR color target; a post-pass will tonemap to the surface.
@@ -3203,11 +2863,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(1, &self.material_bg, &[]);
             rp.set_bind_group(2, &self.light_bg, &[]);
             rp.set_bind_group(3, &self.tex_bg, &[]);
-            rp.set_bind_group(4, self.clustered_forward.bind_group(), &[]);
-            rp.set_bind_group(5, self.vxgi.bind_group(), &[]);
-
-            #[cfg(feature = "profiling")]
-            let mut draw_calls = 0u64;
 
             // Ground plane (scaled)
             rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
@@ -3217,10 +2872,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             );
             rp.set_vertex_buffer(1, plane_buf.slice(..));
             rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
-            #[cfg(feature = "profiling")]
-            {
-                draw_calls += 1;
-            }
 
             // Tokens as lit spheres (instances)
             rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
@@ -3232,10 +2883,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             let inst_count = vis_count as u32;
             if inst_count > 0 {
                 rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
-                #[cfg(feature = "profiling")]
-                {
-                    draw_calls += 1;
-                }
             }
 
             // External mesh if present
@@ -3244,32 +2891,16 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 rp.set_vertex_buffer(1, ibuf.slice(..));
                 rp.draw_indexed(0..mesh.index_count, 0, 0..1);
-                #[cfg(feature = "profiling")]
-                {
-                    draw_calls += 1;
-                }
             }
-
-            #[cfg(feature = "profiling")]
-            plot!("Render::draw_calls", draw_calls);
         }
 
         // Optional feature-gated post chain
-        // NOTE: Post-processing infrastructure exists (bloom pipelines at lines 336-364)
-        // but SSR/SSAO pipelines are not yet implemented in the Renderer struct.
-        // To enable:
-        // 1. Add ssr_pipeline, ssr_bind_group fields to Renderer struct
-        // 2. Add ssao_pipeline, ssao_bind_group fields to Renderer struct
-        // 3. Initialize them in new() using WGSL_SSR and WGSL_SSAO from post.rs
-        // 4. Uncomment and wire the render passes below
-        // 5. Bloom is partially implemented; see bloom_* fields in struct
-        /*
         #[cfg(feature = "postfx")]
         {
             let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("ssr pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_aux_view,
+                    view: &self.hdr_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3280,15 +2911,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            ssp.set_pipeline(&self.ssr_pipeline);
-            ssp.set_bind_group(0, &self.ssr_bind_group, &[]);
+            ssp.set_pipeline(&self.post_pipeline);
+            ssp.set_bind_group(0, &self.post_bind_group, &[]);
             ssp.draw(0..3, 0..1);
             drop(ssp);
             // SSAO
             let mut ao = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("ssao pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.fx_ao_view,
+                    view: &self.hdr_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3299,15 +2930,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            ao.set_pipeline(&self.ssao_pipeline);
-            ao.set_bind_group(0, &self.ssao_bind_group, &[]);
+            ao.set_pipeline(&self.post_pipeline);
+            ao.set_bind_group(0, &self.post_bind_group, &[]);
             ao.draw(0..3, 0..1);
             drop(ao);
             // SSGI
             let mut gi = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("ssgi pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.fx_gi_view,
+                    view: &self.hdr_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3318,27 +2949,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            gi.set_pipeline(&self.ssgi_pipeline);
-            gi.set_bind_group(0, &self.ssgi_bind_group, &[]);
+            gi.set_pipeline(&self.post_pipeline);
+            gi.set_bind_group(0, &self.post_bind_group, &[]);
             gi.draw(0..3, 0..1);
             drop(gi);
-        }
-        */
-
-        // Bloom effect (threshold → downsample → upsample → composite)
-        #[cfg(feature = "postfx")]
-        {
-            #[cfg(feature = "profiling")]
-            span!("Render::Bloom");
-
-            self.render_bloom(&mut enc);
         }
 
         // Postprocess HDR to surface
         {
-            #[cfg(feature = "profiling")]
-            span!("Render::Postprocess");
-
             let mut pp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("post pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -3355,8 +2973,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             });
             #[cfg(feature = "postfx")]
             {
-                pp.set_pipeline(&self.post_fx_pipeline);
-                pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+                pp.set_pipeline(&self.post_pipeline);
+                pp.set_bind_group(0, &self.post_bind_group, &[]);
             }
             #[cfg(not(feature = "postfx"))]
             {
@@ -3366,163 +2984,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             pp.draw(0..3, 0..1);
         }
 
-        // DEBUG QUAD SMOKE TEST
-        {
-            let tex_path = "assets/test_texture.png";
-            // Request texture (priority 100, dist 1.0)
-            let handle_opt = self
-                .texture_streaming
-                .request_texture(tex_path.to_string(), 100, 1.0);
-
-            let (view_ref, sampler_ref) = if let Some(handle) = &handle_opt {
-                (&handle.texture.view, &handle.texture.sampler)
-            } else {
-                (&self.fallback_view, &self.fallback_sampler)
-            };
-
-            let debug_bg = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Debug Quad Bind Group"),
-                layout: &self.debug_quad_bg_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(view_ref),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(sampler_ref),
-                    },
-                ],
-            });
-
-            // vertex_buf is already in self.debug_quad_buf
-
-            let mut debug_pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Debug Quad Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-
-            debug_pass.set_pipeline(&self.debug_quad_pipeline);
-            debug_pass.set_bind_group(0, &debug_bg, &[]);
-            debug_pass.set_vertex_buffer(0, self.debug_quad_buf.slice(..));
-            debug_pass.draw(0..6, 0..1);
-        }
-
-        #[cfg(feature = "profiling")]
-        {
-            span!("Render::QueueSubmit");
-            self.queue.submit(Some(enc.finish()));
-        }
-        #[cfg(not(feature = "profiling"))]
         self.queue.submit(Some(enc.finish()));
-
-        #[cfg(feature = "profiling")]
-        {
-            span!("Render::Present");
-            frame.present();
-        }
-        #[cfg(not(feature = "profiling"))]
         frame.present();
-
         Ok(())
-    }
-
-    /// Render bloom effect: threshold → downsample pyramid → upsample with blending → composite
-    #[cfg(feature = "postfx")]
-    fn render_bloom(&self, enc: &mut wgpu::CommandEncoder) {
-        // Step 1: Threshold pass (HDR → mip0)
-        {
-            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("bloom threshold pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.bloom_mip_views[0],
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            pass.set_pipeline(&self.bloom_threshold_pipeline);
-            pass.set_bind_group(0, &self.bloom_threshold_bg, &[]);
-            pass.draw(0..3, 0..1);
-        }
-
-        // Step 2: Downsample pyramid (mip0 → mip1 → mip2 → mip3 → mip4)
-        for i in 1..self.bloom_mip_views.len() {
-            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some(&format!("bloom downsample pass {}", i)),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.bloom_mip_views[i],
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            pass.set_pipeline(&self.bloom_downsample_pipeline);
-            pass.set_bind_group(0, &self.bloom_bind_groups_down[i], &[]);
-            pass.draw(0..3, 0..1);
-        }
-
-        // Step 3: Upsample pyramid (mip4 → mip3 → mip2 → mip1 → mip0) with additive blending
-        for i in (0..self.bloom_mip_views.len() - 1).rev() {
-            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some(&format!("bloom upsample pass {}", i)),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.bloom_mip_views[i],
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load, // Preserve existing content for additive blending
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            pass.set_pipeline(&self.bloom_upsample_pipeline);
-            pass.set_bind_group(0, &self.bloom_bind_groups_up[i + 1], &[]);
-            pass.draw(0..3, 0..1);
-        }
-
-        // Step 4: Composite bloom result with original HDR (result written to hdr_aux)
-        {
-            let mut pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("bloom composite pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_aux_view, // Output to auxiliary HDR buffer
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            pass.set_pipeline(&self.bloom_composite_pipeline);
-            pass.set_bind_group(0, &self.bloom_composite_bg, &[]);
-            pass.draw(0..3, 0..1);
-        }
     }
 
     pub fn draw_into(
@@ -3544,8 +3008,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
             transform: plane_xform,
-            color: [0.1, 0.12, 0.14, 1.0],
-            material_id: 0,
+            color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
         }
         .raw();
         let plane_buf = self
@@ -3561,8 +3024,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let ext_ibuf: Option<wgpu::Buffer> = if self.mesh_external.is_some() {
             let inst = Instance {
                 transform: Mat4::IDENTITY,
-                color: [1.0, 1.0, 1.0, 1.0],
-                material_id: 0,
+                color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
             }
             .raw();
             Some(
@@ -3588,28 +3050,55 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 radius: 5.0,
             });
         }
-
-        // Convert lights to GPU format and update clustered renderer
-        let glights: Vec<crate::clustered_forward::GpuLight> = self
+        let (_counts_cpu, _indices_cpu, offsets_cpu) = bin_lights_cpu(
+            &self.point_lights,
+            self.clustered_dims,
+            (self.config.width, self.config.height),
+            0.1,
+            200.0,
+            std::f32::consts::FRAC_PI_3,
+        );
+        #[repr(C)]
+        #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+        struct GpuLight {
+            pos_radius: [f32; 4],
+        }
+        let glights: Vec<GpuLight> = self
             .point_lights
             .iter()
-            .map(|l| {
-                crate::clustered_forward::GpuLight::new(
-                    l.pos,
-                    l.radius,
-                    glam::Vec3::ONE, // Default white color
-                    1.0,             // Default intensity
-                )
+            .map(|l| GpuLight {
+                pos_radius: [l.pos.x, l.pos.y, l.pos.z, l.radius],
             })
             .collect();
-
-        self.clustered_forward.update_lights(glights);
-        self.clustered_forward.build_clusters(
-            &self.queue,
-            self.view_matrix,
-            glam::Mat4::IDENTITY,
-            (self.config.width, self.config.height),
+        if !glights.is_empty() {
+            self.queue.write_buffer(
+                &self.clustered_lights_buf,
+                0,
+                bytemuck::cast_slice(&glights),
+            );
+        }
+        self.queue.write_buffer(
+            &self.clustered_offsets_buf,
+            0,
+            bytemuck::cast_slice(&offsets_cpu),
         );
+        let clusters =
+            (self.clustered_dims.x * self.clustered_dims.y * self.clustered_dims.z) as usize;
+        let zero_counts = vec![0u32; clusters];
+        self.queue.write_buffer(
+            &self.clustered_counts_buf,
+            0,
+            bytemuck::cast_slice(&zero_counts),
+        );
+        {
+            let mut cpass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Some("cluster bin"),
+                timestamp_writes: None,
+            });
+            cpass.set_pipeline(&self.clustered_comp_pipeline);
+            cpass.set_bind_group(0, &self.clustered_comp_bg, &[]);
+            cpass.dispatch_workgroups(glights.len() as u32, 1, 1);
+        }
 
         // Frustum cull
         let (vis_raws, vis_count) = self.build_visible_instances();
@@ -3619,21 +3108,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
 
         // Shadow passes (depth only) - one per cascade layer
-        for (idx, layer_view) in [
-            &self.shadow_layer0_view,
-            &self.shadow_layer1_view,
-            &self.shadow_layer2_view,
-            &self.shadow_layer3_view,
-        ]
-        .iter()
-        .enumerate()
+        for (idx, layer_view) in [&self.shadow_layer0_view, &self.shadow_layer1_view]
+            .iter()
+            .enumerate()
         {
-            let mat = match idx {
-                0 => self.cascade0,
-                1 => self.cascade1,
-                2 => self.cascade2,
-                3 => self.cascade3,
-                _ => unreachable!(),
+            let mat = if idx == 0 {
+                self.cascade0
+            } else {
+                self.cascade1
             };
             let arr = mat.to_cols_array();
             self.queue
@@ -3681,19 +3163,13 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         // Restore full light buffer for main pass
         {
-            let mut data: Vec<f32> = Vec::with_capacity(72);
+            let mut data: Vec<f32> = Vec::with_capacity(36);
             data.extend_from_slice(&self.cascade0.to_cols_array());
             data.extend_from_slice(&self.cascade1.to_cols_array());
-            data.extend_from_slice(&self.cascade2.to_cols_array());
-            data.extend_from_slice(&self.cascade3.to_cols_array());
             data.push(self.split0);
             data.push(self.split1);
-            data.push(self.split2);
-            data.push(self.split3);
             data.push(self.shadow_pcf_radius_px);
             data.push(self.shadow_depth_bias);
-            data.push(0.0);
-            data.push(0.0);
             self.queue
                 .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
         }
@@ -3702,8 +3178,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let sk_inst_buf: Option<wgpu::Buffer> = if self.skinned_mesh.is_some() {
             let inst = Instance {
                 transform: Mat4::IDENTITY,
-                color: [1.0, 1.0, 1.0, 1.0],
-                material_id: 0,
+                color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
             }
             .raw();
             Some(
@@ -3790,15 +3265,12 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         drop(rp);
 
         // Optional postfx chain
-        // NOTE: Same as render() - post-processing infrastructure partially exists
-        // SSR/SSAO pipelines need to be added to Renderer struct before uncommenting
-        /*
         #[cfg(feature = "postfx")]
         {
             let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("ssr pass (external)"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_aux_view,
+                    view: &self.hdr_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3809,14 +3281,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            ssp.set_pipeline(&self.ssr_pipeline);
-            ssp.set_bind_group(0, &self.ssr_bind_group, &[]);
+            ssp.set_pipeline(&self.post_pipeline);
+            ssp.set_bind_group(0, &self.post_bind_group, &[]);
             ssp.draw(0..3, 0..1);
             drop(ssp);
             let mut ao = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("ssao pass (external)"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.fx_ao_view,
+                    view: &self.hdr_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3827,14 +3299,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            ao.set_pipeline(&self.ssao_pipeline);
-            ao.set_bind_group(0, &self.ssao_bind_group, &[]);
+            ao.set_pipeline(&self.post_pipeline);
+            ao.set_bind_group(0, &self.post_bind_group, &[]);
             ao.draw(0..3, 0..1);
             drop(ao);
             let mut gi = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("ssgi pass (external)"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.fx_gi_view,
+                    view: &self.hdr_view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -3845,12 +3317,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            gi.set_pipeline(&self.ssgi_pipeline);
-            gi.set_bind_group(0, &self.ssgi_bind_group, &[]);
+            gi.set_pipeline(&self.post_pipeline);
+            gi.set_bind_group(0, &self.post_bind_group, &[]);
             gi.draw(0..3, 0..1);
             drop(gi);
         }
-        */
 
         // Post to surface view provided
         let mut pp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -3869,8 +3340,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         });
         #[cfg(feature = "postfx")]
         {
-            pp.set_pipeline(&self.post_fx_pipeline);
-            pp.set_bind_group(0, &self.post_fx_bind_group, &[]);
+            pp.set_pipeline(&self.post_pipeline);
+            pp.set_bind_group(0, &self.post_bind_group, &[]);
         }
         #[cfg(not(feature = "postfx"))]
         {
@@ -3886,8 +3357,20 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         (self.config.width, self.config.height)
     }
 
-    pub fn device(&self) -> &wgpu::Device {
+        pub fn device(&self) -> &wgpu::Device {
         &self.device
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        &self.queue
+    }
+
+    pub fn surface(&self) -> &wgpu::Surface {
+        &self.surface
+    }
+
+    pub fn config(&self) -> &wgpu::SurfaceConfiguration {
+        &self.config
     }
 
     pub fn surface_format(&self) -> wgpu::TextureFormat {
@@ -3978,7 +3461,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 push_constant_ranges: &[],
             });
         self.device
-            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
                 label: Some("material preview pipeline"),
                 layout: Some(&layout),
                 vertex: wgpu::VertexState {
@@ -4001,7 +3484,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState::default(),
                 multiview: None,
-                cache: None,
             })
     }
 
@@ -4066,14 +3548,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .albedo_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture: &self.albedo_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::TexelCopyBufferLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -4141,14 +3623,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .mr_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture: &self.mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::TexelCopyBufferLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -4216,14 +3698,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .normal_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
+            wgpu::ImageCopyTexture {
                 texture: &self.normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::TexelCopyBufferLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -4299,17 +3781,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         }
         self.queue
             .write_buffer(&self.skin_palette_buf, 0, bytemuck::cast_slice(&data));
-    }
-
-    /// Recreate bind groups that may be invalidated on resize or context changes
-    fn recreate_bind_groups(&mut self) {
-        // For now, primarily handle sky/environment bind groups
-        // Camera, material, light bind groups are typically stable
-        // Future: Add comprehensive bind group recreation if needed
-
-        // Sky renderer has its own internal bind groups that may need recreation
-        // This is a placeholder for future sky bind group management
-        log::debug!("Bind groups marked for recreation (sky/environment)");
     }
 }
 
@@ -4426,3 +3897,4 @@ fn aabb_in_view_space(view: &glam::Mat4, corners_ws: &[glam::Vec3; 8]) -> (glam:
 }
 
 // End of file
+

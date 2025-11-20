@@ -10,7 +10,7 @@
 //!
 //! **Total**: 27 tests targeting +52pp coverage gain
 
-use astraweave_ecs::{Component, Query, Query2, Query2Mut, World};
+use astraweave_ecs::{Query, Query2, Query2Mut, World};
 
 // Test components
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -29,9 +29,6 @@ struct Velocity {
 struct Health {
     hp: i32,
 }
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Tag;
 
 // ============================================================================
 // Query<T> Tests - Single-component read-only queries

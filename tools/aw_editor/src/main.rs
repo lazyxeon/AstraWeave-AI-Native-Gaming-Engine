@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[derive(Clone, Serialize, Deserialize, Default)]
 struct DialogueDoc {
     title: String,
@@ -1724,7 +1726,7 @@ impl eframe::App for EditorApp {
                         self.request_pause();
                     }
 
-                    let step_enabled = !self.editor_mode.is_editing();
+                    let step_enabled = self.editor_mode.is_paused();
                     if ui
                         .add_enabled(step_enabled, egui::Button::new("⏭️ Step (F8)"))
                         .clicked()

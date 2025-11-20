@@ -1,5 +1,6 @@
 use astraweave_math::simd_quat::*;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use glam::Quat;
 
 fn bench_quat_multiply(c: &mut Criterion) {

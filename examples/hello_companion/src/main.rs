@@ -33,7 +33,7 @@ use astraweave_ai::{Orchestrator, RuleOrchestrator};
 use astraweave_ai::GoapOrchestrator;
 
 use astraweave_core::{
-    build_snapshot, step, validate_and_execute, IVec2, PerceptionConfig, PlanIntent, SimConfig,
+    build_snapshot, validate_and_execute, IVec2, PerceptionConfig, PlanIntent,
     Team, ValidateCfg, World, WorldSnapshot,
 };
 use astraweave_core::ecs_adapter::build_app;
@@ -50,7 +50,7 @@ use astraweave_llm::{plan_from_llm, PlanSource};
 #[cfg(feature = "ollama")]
 use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 // ============================================================================
 // AI MODE SELECTION
@@ -372,13 +372,21 @@ fn run_single_demo(mode: AIMode) -> Result<AIMetrics> {
         println!("Enemy HP:  {}", enemy_hp.hp);
     }
 
-    Ok(AIMetrics::new(
+    let mut metrics = AIMetrics::new(
         &mode.to_string(),
         plan.steps.len(),
         latency_ms,
         success,
         error,
-    ))
+    );
+
+    #[cfg(feature = "llm")]
+    {
+        let tools = extract_tools_used(&plan);
+        metrics = metrics.with_phase7_data(tools, None, None, None);
+    }
+
+    Ok(metrics)
 }
 
 #[cfg(not(feature = "metrics"))]

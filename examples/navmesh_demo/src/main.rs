@@ -3,102 +3,138 @@ use astraweave_render::{Camera, CameraController, Instance, Renderer};
 use glam::{vec3, Vec2};
 use std::sync::Arc;
 use winit::{
+    application::ApplicationHandler,
     dpi::PhysicalSize,
-    event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
-    event_loop::EventLoop,
-    keyboard::PhysicalKey,
+    event::{ElementState, KeyEvent, MouseButton, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
 };
 
-fn main() -> anyhow::Result<()> {
-    let event_loop = EventLoop::new()?;
-    let window = Arc::new(
-        winit::window::WindowBuilder::new()
-            .with_title("NavMesh Demo")
-            .with_inner_size(PhysicalSize::new(1280, 720))
-            .build(&event_loop)?,
-    );
-    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
-    let mut camera = Camera {
-        position: vec3(0.0, 10.0, 16.0),
-        yaw: -3.14 / 2.0,
-        pitch: -0.5,
-        fovy: 60f32.to_radians(),
-        aspect: 16.0 / 9.0,
-        znear: 0.1,
-        zfar: 500.0,
-    };
-    let mut cam_ctl = CameraController::new(10.0, 0.005);
+struct App {
+    window: Option<Arc<Window>>,
+    renderer: Option<Renderer>,
+    camera: Camera,
+    cam_ctl: CameraController,
+    instances: Vec<Instance>,
+}
 
-    // Make a small "heightfield" of walkable tris with a ramp:
-    let tris = vec![
-        tri(
-            vec3(-4.0, 0.0, -4.0),
-            vec3(4.0, 0.0, -4.0),
-            vec3(4.0, 0.0, 4.0),
-        ),
-        tri(
-            vec3(-4.0, 0.0, -4.0),
-            vec3(4.0, 0.0, 4.0),
-            vec3(-4.0, 0.0, 4.0),
-        ),
-        // ramp up
-        tri(
-            vec3(4.0, 0.0, -1.0),
-            vec3(8.0, 0.8, -1.0),
-            vec3(8.0, 0.8, 1.0),
-        ),
-        tri(
-            vec3(4.0, 0.0, -1.0),
-            vec3(8.0, 0.8, 1.0),
-            vec3(4.0, 0.0, 1.0),
-        ),
-        // plateau
-        tri(
-            vec3(8.0, 0.8, -1.0),
-            vec3(12.0, 0.8, -1.0),
-            vec3(12.0, 0.8, 1.0),
-        ),
-        tri(
-            vec3(8.0, 0.8, -1.0),
-            vec3(12.0, 0.8, 1.0),
-            vec3(8.0, 0.8, 1.0),
-        ),
-    ];
-    let nav = NavMesh::bake(&tris, 0.4, 50.0); // 50° slope allowed
+impl App {
+    fn new() -> Self {
+        let camera = Camera {
+            position: vec3(0.0, 10.0, 16.0),
+            yaw: -3.14 / 2.0,
+            pitch: -0.5,
+            fovy: 60f32.to_radians(),
+            aspect: 16.0 / 9.0,
+            znear: 0.1,
+            zfar: 500.0,
+        };
+        let cam_ctl = CameraController::new(10.0, 0.005);
 
-    let start = vec3(-3.5, 0.0, -3.5);
-    let goal = vec3(11.5, 0.8, 0.0);
-    let path = nav.find_path(start, goal);
+        // Make a small "heightfield" of walkable tris with a ramp:
+        let tris = vec![
+            tri(
+                vec3(-4.0, 0.0, -4.0),
+                vec3(4.0, 0.0, -4.0),
+                vec3(4.0, 0.0, 4.0),
+            ),
+            tri(
+                vec3(-4.0, 0.0, -4.0),
+                vec3(4.0, 0.0, 4.0),
+                vec3(-4.0, 0.0, 4.0),
+            ),
+            // ramp up
+            tri(
+                vec3(4.0, 0.0, -1.0),
+                vec3(8.0, 0.8, -1.0),
+                vec3(8.0, 0.8, 1.0),
+            ),
+            tri(
+                vec3(4.0, 0.0, -1.0),
+                vec3(8.0, 0.8, 1.0),
+                vec3(4.0, 0.0, 1.0),
+            ),
+            // plateau
+            tri(
+                vec3(8.0, 0.8, -1.0),
+                vec3(12.0, 0.8, -1.0),
+                vec3(12.0, 0.8, 1.0),
+            ),
+            tri(
+                vec3(8.0, 0.8, -1.0),
+                vec3(12.0, 0.8, 1.0),
+                vec3(8.0, 0.8, 1.0),
+            ),
+        ];
+        let nav = NavMesh::bake(&tris, 0.4, 50.0); // 50° slope allowed
 
-    let mut instances = vec![];
+        let start = vec3(-3.5, 0.0, -3.5);
+        let goal = vec3(11.5, 0.8, 0.0);
+        let path = nav.find_path(start, goal);
 
-    // visualize tri centers
-    for t in &nav.tris {
-        instances.push(Instance::from_pos_scale_color(
-            t.center + vec3(0.0, 0.05, 0.0),
-            vec3(0.1, 0.1, 0.1),
-            [0.7, 0.7, 0.3, 1.0],
-        ));
+        let mut instances = vec![];
+
+        // visualize tri centers
+        for t in &nav.tris {
+            instances.push(Instance::from_pos_scale_color(
+                t.center + vec3(0.0, 0.05, 0.0),
+                vec3(0.1, 0.1, 0.1),
+                [0.7, 0.7, 0.3, 1.0],
+            ));
+        }
+        // visualize path
+        for p in &path {
+            instances.push(Instance::from_pos_scale_color(
+                *p + vec3(0.0, 0.08, 0.0),
+                vec3(0.12, 0.12, 0.12),
+                [0.2, 1.0, 0.4, 1.0],
+            ));
+        }
+
+        Self {
+            window: None,
+            renderer: None,
+            camera,
+            cam_ctl,
+            instances,
+        }
     }
-    // visualize path
-    for p in &path {
-        instances.push(Instance::from_pos_scale_color(
-            *p + vec3(0.0, 0.08, 0.0),
-            vec3(0.12, 0.12, 0.12),
-            [0.2, 1.0, 0.4, 1.0],
-        ));
+}
+
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = Window::default_attributes()
+                .with_title("NavMesh Demo")
+                .with_inner_size(PhysicalSize::new(1280, 720));
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
+
+            let mut renderer = pollster::block_on(Renderer::new(window.clone())).unwrap();
+            renderer.update_instances(&self.instances);
+            renderer.update_camera(&self.camera);
+            self.renderer = Some(renderer);
+        }
     }
 
-    renderer.update_instances(&instances);
-    renderer.update_camera(&camera);
-
-    event_loop.run(move |event, elwt| match event {
-        Event::WindowEvent { event, .. } => match event {
-            WindowEvent::Resized(s) => {
-                renderer.resize(s.width, s.height);
-                camera.aspect = s.width as f32 / s.height.max(1) as f32;
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if self.window.is_none() {
+            return;
+        }
+        match event {
+            WindowEvent::Resized(size) => {
+                if let Some(renderer) = self.renderer.as_mut() {
+                    renderer.resize(size.width, size.height);
+                }
+                self.camera.aspect = size.width as f32 / size.height.max(1) as f32;
             }
-            WindowEvent::CloseRequested => elwt.exit(),
+            WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::KeyboardInput {
                 event:
                     KeyEvent {
@@ -108,32 +144,48 @@ fn main() -> anyhow::Result<()> {
                     },
                 ..
             } => {
-                cam_ctl.process_keyboard(code, state == ElementState::Pressed);
+                if code == KeyCode::Escape {
+                    event_loop.exit();
+                }
+                self.cam_ctl.process_keyboard(code, state == ElementState::Pressed);
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 if button == MouseButton::Right {
-                    cam_ctl
+                    self.cam_ctl
                         .process_mouse_button(MouseButton::Right, state == ElementState::Pressed);
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
-                cam_ctl.process_mouse_move(
-                    &mut camera,
+                self.cam_ctl.process_mouse_move(
+                    &mut self.camera,
                     Vec2::new(position.x as f32, position.y as f32),
                 );
             }
-            _ => {}
-        },
-        Event::AboutToWait => {
-            cam_ctl.update_camera(&mut camera, 1.0 / 60.0);
-            renderer.update_camera(&camera);
-            if let Err(e) = renderer.render() {
-                eprintln!("{e:?}");
+            WindowEvent::RedrawRequested => {
+                if let Some(renderer) = self.renderer.as_mut() {
+                    self.cam_ctl.update_camera(&mut self.camera, 1.0 / 60.0);
+                    renderer.update_camera(&self.camera);
+                    if let Err(e) = renderer.render() {
+                        eprintln!("{e:?}");
+                    }
+                }
+                self.window.as_ref().unwrap().request_redraw();
             }
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = self.window.as_ref() {
             window.request_redraw();
         }
-        _ => {}
-    })?;
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let event_loop = EventLoop::new()?;
+    let mut app = App::new();
+    event_loop.run_app(&mut app)?;
     Ok(())
 }
 

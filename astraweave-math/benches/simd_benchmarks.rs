@@ -15,7 +15,8 @@ cargo bench -p astraweave-math --bench simd_benchmarks -- --quick
 */
 
 use astraweave_math::simd_vec::{cross_simd, dot_simd, length_simd, normalize_simd};
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use std::hint::black_box;
 use glam::Vec3;
 
 // ============================================================================

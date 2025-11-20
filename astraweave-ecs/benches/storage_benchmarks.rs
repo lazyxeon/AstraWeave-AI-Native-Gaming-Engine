@@ -10,9 +10,10 @@ use astraweave_ecs::{
     sparse_set::{SparseSet, SparseSetData},
     Entity,
 };
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::any::Any;
 use std::collections::BTreeMap;
+use std::hint::black_box;
 
 #[derive(Clone, Copy, Debug)]
 struct Position {
@@ -22,6 +23,7 @@ struct Position {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -36,7 +38,7 @@ fn bench_blobvec_vs_boxed_push(c: &mut Criterion) {
         // BlobVec approach
         group.bench_with_input(BenchmarkId::new("BlobVec", count), &count, |b, &count| {
             b.iter(|| {
-                let mut blob = unsafe { BlobVec::new::<Position>() };
+                let mut blob = BlobVec::new::<Position>();
                 for i in 0..count {
                     let pos = Position {
                         x: i as f32,
@@ -77,7 +79,7 @@ fn bench_blobvec_vs_boxed_iteration(c: &mut Criterion) {
 
     for count in [100, 1000, 10000] {
         // Setup BlobVec
-        let mut blob = unsafe { BlobVec::new::<Position>() };
+        let mut blob = BlobVec::new::<Position>();
         for i in 0..count {
             let pos = Position {
                 x: i as f32,
@@ -137,7 +139,7 @@ fn bench_blobvec_vs_boxed_mutation(c: &mut Criterion) {
 
     for count in [100, 1000, 10000] {
         // Setup BlobVec
-        let mut blob = unsafe { BlobVec::new::<Position>() };
+        let mut blob = BlobVec::new::<Position>();
         for i in 0..count {
             let pos = Position {
                 x: i as f32,

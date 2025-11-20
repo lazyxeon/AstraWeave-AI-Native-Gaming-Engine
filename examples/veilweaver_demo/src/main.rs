@@ -2,9 +2,9 @@
 // Demonstrates: Phi-3 LLM integration, telemetry, 60 FPS headless simulation
 
 use anyhow::{Context, Result};
-use astraweave_ecs::{App, Entity, World};
+use astraweave_ecs::{App, Entity};
 use astraweave_llm::phi3_ollama::Phi3Ollama;
-use glam::{Quat, Vec3};
+use glam::Vec3;
 use std::time::{Duration, Instant};
 use tracing::info;
 
@@ -157,12 +157,12 @@ fn main() -> Result<()> {
         game_state.frame_count += 1;
 
         // Check encounter state (simple victory/defeat logic)
-        let mut player_alive = false;
+        let mut _player_alive = false;
         let mut enemies_alive = 0;
 
         if let Some(player_entity) = game_state.player_entity {
             if let Some(health) = app.world.get::<Health>(player_entity) {
-                player_alive = health.is_alive();
+                _player_alive = health.is_alive();
             }
         }
 

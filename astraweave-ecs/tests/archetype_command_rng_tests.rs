@@ -5,7 +5,7 @@
 // - command_buffer.rs: 91.67% → 95%+ (4 lines uncovered)
 // - rng.rs: 74.07% → 85%+ (7 lines uncovered)
 
-use astraweave_ecs::{CommandBuffer, Entity, World};
+use astraweave_ecs::{CommandBuffer, World};
 use std::any::TypeId;
 
 // Test components
@@ -23,9 +23,6 @@ struct Velocity {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct Health(i32);
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Armor(i32);
 
 // ========== Archetype Tests ==========
 
