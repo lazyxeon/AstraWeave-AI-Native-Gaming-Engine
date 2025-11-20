@@ -16,6 +16,8 @@ struct ModelUniforms {
 
 @group(0) @binding(0) var<uniform> camera: CameraUniforms;
 @group(1) @binding(0) var<uniform> light: LightUniforms;
+@group(1) @binding(1) var t_shadow: texture_depth_2d;
+@group(1) @binding(2) var s_shadow: sampler_comparison;
 @group(2) @binding(0) var t_sky: texture_2d<f32>;
 @group(2) @binding(1) var s_sky: sampler;
 @group(3) @binding(0) var<uniform> model: ModelUniforms;

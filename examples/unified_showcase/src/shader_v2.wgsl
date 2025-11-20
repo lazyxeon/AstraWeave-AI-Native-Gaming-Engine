@@ -17,6 +17,8 @@ struct ModelUniforms {
 
 @group(0) @binding(0) var<uniform> camera: CameraUniforms;
 @group(1) @binding(0) var<uniform> light: LightUniforms;
+@group(1) @binding(1) var t_shadow: texture_depth_2d;
+@group(1) @binding(2) var s_shadow: sampler_comparison;
 @group(2) @binding(0) var t_diffuse: texture_2d<f32>;
 @group(2) @binding(1) var s_diffuse: sampler;
 @group(3) @binding(0) var<uniform> model: ModelUniforms;
@@ -35,6 +37,7 @@ struct VertexOutput {
     @location(1) world_position: vec3<f32>,
     @location(2) uv: vec2<f32>,
     @location(3) color: vec4<f32>,
+    @location(4) light_space_pos: vec4<f32>,
 }
 
 @vertex
@@ -49,6 +52,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     
     out.uv = in.uv;
     out.color = in.color;
+    out.light_space_pos = light.view_proj * world_pos;
     return out;
 }
 
@@ -56,18 +60,31 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let object_color = textureSample(t_diffuse, s_diffuse, in.uv) * in.color;
     
+    // Shadow calculation
+    let shadow_coords = in.light_space_pos.xyz / in.light_space_pos.w;
+    let shadow_uv = shadow_coords.xy * 0.5 + 0.5;
+    let shadow_uv_flipped = vec2<f32>(shadow_uv.x, 1.0 - shadow_uv.y);
+    var shadow = 0.0;
+    if shadow_uv_flipped.x >= 0.0 && shadow_uv_flipped.x <= 1.0 && 
+       shadow_uv_flipped.y >= 0.0 && shadow_uv_flipped.y <= 1.0 &&
+       shadow_coords.z >= 0.0 && shadow_coords.z <= 1.0 {
+        shadow = textureSampleCompare(t_shadow, s_shadow, shadow_uv_flipped, shadow_coords.z);
+    } else {
+        shadow = 1.0;
+    }
+    
     let ambient_strength = 0.5; // Increased ambient for better visibility
     let ambient = ambient_strength * light.color;
     
     let norm = normalize(in.world_normal);
     let light_dir = normalize(light.position - in.world_position);
     let diff = max(dot(norm, light_dir), 0.0);
-    let diffuse = diff * light.color;
+    let diffuse = diff * light.color * shadow;
     
     let view_dir = normalize(camera.camera_pos - in.world_position);
     let reflect_dir = reflect(-light_dir, norm);
     let spec = pow(max(dot(view_dir, reflect_dir), 0.0), 32.0);
-    let specular = 0.5 * spec * light.color;
+    let specular = 0.5 * spec * light.color * shadow;
     
     let result = (ambient + diffuse + specular) * object_color.rgb;
     
@@ -85,11 +102,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 struct SkyboxOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv: vec2<f32>,
+    @location(1) world_pos: vec3<f32>,
 }
 
 @vertex
 fn vs_skybox(in: VertexInput) -> SkyboxOutput {
     var out: SkyboxOutput;
+    out.world_pos = in.position;
+    
     // Remove translation from view matrix for skybox
     let view_rot = mat4x4<f32>(
         camera.view_proj[0],
@@ -116,9 +136,12 @@ fn vs_skybox(in: VertexInput) -> SkyboxOutput {
 
 @fragment
 fn fs_skybox(in: SkyboxOutput) -> @location(0) vec4<f32> {
-    // Equirectangular mapping using atan2(z, x) and asin(y)
-    // in.uv already contains correct UV from vertex shader
-    let color = textureSample(t_sky, s_sky, in.uv).rgb;
+    // Equirectangular mapping using world position
+    let n = normalize(in.world_pos);
+    let u = 0.5 + atan2(n.z, n.x) / (2.0 * 3.14159);
+    let v = 0.5 - asin(n.y) / 3.14159;
+    
+    let color = textureSample(t_sky, s_sky, vec2<f32>(u, v)).rgb;
     // No lighting on skybox
     return vec4<f32>(color, 1.0);
 }
