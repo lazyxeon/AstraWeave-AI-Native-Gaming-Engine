@@ -172,8 +172,8 @@ fn main() -> Result<()> {
     // Parse command-line arguments
     let args: Vec<String> = std::env::args().collect();
     let demo_all = args.contains(&"--demo-all".to_string());
-    let show_metrics = args.contains(&"--metrics".to_string());
-    let export_metrics = args.contains(&"--export-metrics".to_string());
+    let _show_metrics = args.contains(&"--metrics".to_string());
+    let _export_metrics = args.contains(&"--export-metrics".to_string());
 
     #[cfg(feature = "metrics")]
     let mut all_metrics: Vec<AIMetrics> = Vec::new();
