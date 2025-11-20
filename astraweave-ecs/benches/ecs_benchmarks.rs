@@ -23,6 +23,7 @@ use std::hint::black_box;
 
 // Test components
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct Position {
     x: f32,
     y: f32,
@@ -30,6 +31,7 @@ struct Position {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct Velocity {
     x: f32,
     y: f32,
@@ -37,12 +39,14 @@ struct Velocity {
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct Health {
     current: i32,
     max: i32,
 }
 
 #[derive(Clone, Copy, Debug)]
+#[allow(dead_code)]
 struct Armor {
     value: i32,
 }

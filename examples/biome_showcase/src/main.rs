@@ -10,13 +10,14 @@ use clap::Parser;
 use glam::Vec3;
 use std::time::Instant;
 use winit::{
-    event::{ElementState, Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    application::ApplicationHandler,
+    event::{ElementState, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    window::Window,
+    window::{Window, WindowId},
 };
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(name = "biome_showcase")]
 #[command(about = "AstraWeave Comprehensive Biome Showcase")]
 struct Args {
@@ -392,6 +393,85 @@ fn parse_weather_type(s: &str) -> Option<WeatherType> {
     }
 }
 
+struct App {
+    args: Args,
+    showcase: Option<BiomeShowcase>,
+    window: Option<Window>,
+    last_frame: Instant,
+}
+
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = Window::default_attributes()
+                .with_title("AstraWeave Biome Showcase")
+                .with_inner_size(winit::dpi::LogicalSize::new(1280, 720));
+            let window = event_loop.create_window(window_attributes).unwrap();
+            self.window = Some(window);
+
+            // Initialize showcase if not already done
+            if self.showcase.is_none() {
+                match BiomeShowcase::new(&self.args) {
+                    Ok(mut showcase) => {
+                        if let Err(e) = showcase.generate_world(self.args.grid_size) {
+                            eprintln!("Failed to generate world: {}", e);
+                        }
+                        if self.args.export {
+                            if let Err(e) = showcase.export_data("biome_showcase") {
+                                eprintln!("Failed to export data: {}", e);
+                            }
+                        }
+                        self.showcase = Some(showcase);
+                    }
+                    Err(e) => eprintln!("Failed to create showcase: {}", e),
+                }
+            }
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        match event {
+            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::KeyboardInput { event, .. } => {
+                if let PhysicalKey::Code(key_code) = event.physical_key {
+                    if key_code == KeyCode::Escape && event.state == ElementState::Pressed {
+                        event_loop.exit();
+                    } else if let Some(showcase) = &mut self.showcase {
+                        showcase.handle_keyboard(key_code, event.state);
+                    }
+                }
+            }
+            WindowEvent::RedrawRequested => {
+                let now = Instant::now();
+                let delta_time = (now - self.last_frame).as_secs_f32();
+                self.last_frame = now;
+
+                if let Some(showcase) = &mut self.showcase {
+                    showcase.update(delta_time);
+                }
+
+                // Rendering code would go here
+
+                if let Some(window) = &self.window {
+                    window.request_redraw();
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -408,18 +488,17 @@ fn main() -> Result<()> {
     println!("  Headless: {}", args.headless);
     println!();
 
-    // Create the showcase application
-    let mut showcase = BiomeShowcase::new(&args)?;
-
-    // Generate the world
-    showcase.generate_world(args.grid_size)?;
-
-    // Export data if requested
-    if args.export {
-        showcase.export_data("biome_showcase")?;
-    }
-
     if args.headless {
+        // Create the showcase application
+        let mut showcase = BiomeShowcase::new(&args)?;
+
+        // Generate the world
+        showcase.generate_world(args.grid_size)?;
+
+        // Export data if requested
+        if args.export {
+            showcase.export_data("biome_showcase")?;
+        }
         println!("Running in headless mode. Generation complete!");
         return Ok(());
     }
@@ -435,52 +514,16 @@ fn main() -> Result<()> {
     println!();
 
     let event_loop = EventLoop::new()?;
-    let window_attributes = Window::default_attributes()
-        .with_title("AstraWeave Biome Showcase")
-        .with_inner_size(winit::dpi::LogicalSize::new(1280, 720));
-    let window = event_loop.create_window(window_attributes)?;
+    event_loop.set_control_flow(ControlFlow::Poll);
 
-    // Initialize rendering (this would require implementing the actual graphics setup)
-    // For now, we'll run a simple event loop to demonstrate the structure
+    let mut app = App {
+        args,
+        showcase: None,
+        window: None,
+        last_frame: Instant::now(),
+    };
 
-    let mut last_frame = Instant::now();
-
-    // Use the event loop run closure. (Note: winit 0.30 encourages run_app but
-    // using run here keeps the example simple and compatible.)
-    event_loop.run(move |event, elwt| {
-        elwt.set_control_flow(ControlFlow::Poll);
-
-        match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => elwt.exit(),
-                WindowEvent::KeyboardInput { event, .. } => {
-                    if let PhysicalKey::Code(key_code) = event.physical_key {
-                        if key_code == KeyCode::Escape && event.state == ElementState::Pressed {
-                            elwt.exit();
-                        } else {
-                            showcase.handle_keyboard(key_code, event.state);
-                        }
-                    }
-                }
-                WindowEvent::RedrawRequested => {
-                    let now = Instant::now();
-                    let delta_time = (now - last_frame).as_secs_f32();
-                    last_frame = now;
-
-                    showcase.update(delta_time);
-
-                    // Rendering code would go here
-
-                    window.request_redraw();
-                }
-                _ => {}
-            },
-            Event::AboutToWait => {
-                window.request_redraw();
-            }
-            _ => {}
-        }
-    })?;
+    event_loop.run_app(&mut app)?;
 
     Ok(())
 }

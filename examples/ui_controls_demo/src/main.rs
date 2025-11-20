@@ -1,10 +1,12 @@
 use glam::{vec3, Vec2};
 use std::time::Instant;
 use winit::{
+    application::ApplicationHandler,
     dpi::PhysicalSize,
-    event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
-    event_loop::EventLoop,
+    event::{ElementState, KeyEvent, MouseButton, WindowEvent},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
 };
 
 use astraweave_physics::PhysicsWorld;
@@ -57,176 +59,235 @@ fn build_sample_recipe_book() -> RecipeBook {
     }
 }
 
-fn main() -> anyhow::Result<()> {
-    // Window + renderer
-    let event_loop = EventLoop::new()?;
-    let window = winit::window::WindowBuilder::new()
-        .with_title("UI & Controls Demo")
-        .with_inner_size(PhysicalSize::new(1280, 720))
-        .build(&event_loop)?;
-    let window = std::sync::Arc::new(window);
-    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
-    let mut camera = Camera {
-        position: vec3(0.0, 6.0, 14.0),
-        yaw: -1.57,
-        pitch: -0.35,
-        fovy: 60f32.to_radians(),
-        aspect: 16.0 / 9.0,
-        znear: 0.1,
-        zfar: 300.0,
-    };
-    let mut cam_ctl = CameraController::new(12.0, 0.005);
+struct App {
+    window: Option<std::sync::Arc<Window>>,
+    renderer: Option<Renderer>,
+    ui: Option<UiLayer>,
+    camera: Camera,
+    cam_ctl: CameraController,
+    
+    // Game state
+    input: InputManager,
+    flags: UiFlags,
+    acc: Accessibility,
+    menu_manager: MenuManager,
+    player_stats: Stats,
+    inventory: Inventory,
+    recipes: RecipeBook,
+    quest_log: QuestLog,
+    last: Instant,
+    instances: Vec<Instance>,
+    #[allow(dead_code)]
+    phys: PhysicsWorld,
+}
 
-    // Physics (for ground plane visual)
-    let mut phys = PhysicsWorld::new(vec3(0.0, -9.81, 0.0));
-    phys.create_ground_plane(vec3(100.0, 0.0, 100.0), 1.0);
+impl App {
+    fn new() -> Self {
+        // Physics (for ground plane visual)
+        let mut phys = PhysicsWorld::new(vec3(0.0, -9.81, 0.0));
+        phys.create_ground_plane(vec3(100.0, 0.0, 100.0), 1.0);
 
-    // Input system
-    let bindings = BindingSet::default();
-    let mut input = InputManager::new(InputContext::Gameplay, bindings);
+        // Input system
+        let bindings = BindingSet::default();
+        let input = InputManager::new(InputContext::Gameplay, bindings);
 
-    // UI layer
+        // Demo data
+        let flags = UiFlags::default();
+        let acc = Accessibility::default();
+        let menu_manager = MenuManager::default();
 
-    let mut ui = UiLayer::new(&window, renderer.device(), renderer.surface_format());
-    // NOTE: Replace the above with actual format from renderer; if you kept it private, expose a getter for format.
-    // For clarity in this snippet, we’ll assume you’ve added:
-    //   pub fn surface_format(&self) -> wgpu::TextureFormat
-    // and then:
-    // let mut ui = UiLayer::new(&window, renderer.device(), renderer.surface_format());
+        let player_stats = Stats::new(120);
+        let mut inventory = Inventory::default();
+        inventory.add_resource(ResourceKind::Ore, 3);
+        inventory.add_resource(ResourceKind::Crystal, 2);
+        inventory.add_resource(ResourceKind::Essence, 1);
+        inventory.add_resource(ResourceKind::Fiber, 3);
 
-    // Demo data
-    let mut flags = UiFlags::default();
-    let mut acc = Accessibility::default();
-    let mut menu_manager = MenuManager::default();
+        let recipes = build_sample_recipe_book();
+        let quest_log = QuestLog::default();
 
-    let player_stats = Stats::new(120);
-    let mut inventory = Inventory::default();
-    inventory.add_resource(ResourceKind::Ore, 3);
-    inventory.add_resource(ResourceKind::Crystal, 2);
-    inventory.add_resource(ResourceKind::Essence, 1);
-    inventory.add_resource(ResourceKind::Fiber, 3);
+        let last = Instant::now();
+        let instances: Vec<Instance> = vec![];
+        
+        let camera = Camera {
+            position: vec3(0.0, 6.0, 14.0),
+            yaw: -1.57,
+            pitch: -0.35,
+            fovy: 60f32.to_radians(),
+            aspect: 16.0 / 9.0,
+            znear: 0.1,
+            zfar: 300.0,
+        };
+        let cam_ctl = CameraController::new(12.0, 0.005);
 
-    let recipes = build_sample_recipe_book();
-    let mut quest_log = QuestLog::default();
+        Self {
+            window: None,
+            renderer: None,
+            ui: None,
+            camera,
+            cam_ctl,
+            input,
+            flags,
+            acc,
+            menu_manager,
+            player_stats,
+            inventory,
+            recipes,
+            quest_log,
+            last,
+            instances,
+            phys,
+        }
+    }
+}
 
-    let mut last = Instant::now();
-    let mut instances: Vec<Instance> = vec![];
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let win = std::sync::Arc::new(
+                event_loop.create_window(
+                    Window::default_attributes()
+                        .with_title("UI & Controls Demo")
+                        .with_inner_size(PhysicalSize::new(1280, 720))
+                ).unwrap()
+            );
+            self.window = Some(win.clone());
 
-    event_loop.run(move |event, elwt| {
-        match event {
-            Event::WindowEvent { event, .. } => {
-                let _consumed_by_ui = ui.on_event(&window, &event);
-                input.process_window_event(&event);
+            let r = pollster::block_on(Renderer::new(win.clone())).unwrap();
+            let u = UiLayer::new(&win, r.device(), r.surface_format());
+            
+            self.renderer = Some(r);
+            self.ui = Some(u);
+        }
+    }
 
-                match event {
-                    WindowEvent::CloseRequested => elwt.exit(),
-                    WindowEvent::Resized(s) => {
-                        renderer.resize(s.width, s.height);
-                        camera.aspect = s.width as f32 / s.height.max(1) as f32;
-                    }
-                    WindowEvent::KeyboardInput {
-                        event:
-                            KeyEvent {
-                                state,
-                                physical_key: PhysicalKey::Code(code),
-                                ..
-                            },
-                        ..
-                    } => {
-                        // Camera + toggles
-                        cam_ctl.process_keyboard(code, state == ElementState::Pressed);
-                        if state == ElementState::Pressed {
-                            match code {
-                                KeyCode::KeyI => {
-                                    flags.show_inventory = !flags.show_inventory;
-                                }
-                                KeyCode::KeyC => {
-                                    flags.show_crafting = !flags.show_crafting;
-                                }
-                                KeyCode::KeyM => {
-                                    flags.show_map = !flags.show_map;
-                                }
-                                KeyCode::KeyJ => {
-                                    flags.show_quests = !flags.show_quests;
-                                }
-                                KeyCode::Escape => {
-                                    menu_manager.toggle_pause();
-                                }
-                                _ => {}
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
+        if let (Some(window), Some(ui), Some(renderer)) = 
+            (&self.window, &mut self.ui, &mut self.renderer) 
+        {
+            let _consumed_by_ui = ui.on_event(window, &event);
+            self.input.process_window_event(&event);
+
+            match event {
+                WindowEvent::CloseRequested => event_loop.exit(),
+                WindowEvent::Resized(s) => {
+                    renderer.resize(s.width, s.height);
+                    self.camera.aspect = s.width as f32 / s.height.max(1) as f32;
+                }
+                WindowEvent::KeyboardInput {
+                    event:
+                        KeyEvent {
+                            state,
+                            physical_key: PhysicalKey::Code(code),
+                            ..
+                        },
+                    ..
+                } => {
+                    // Camera + toggles
+                    self.cam_ctl.process_keyboard(code, state == ElementState::Pressed);
+                    if state == ElementState::Pressed {
+                        match code {
+                            KeyCode::KeyI => {
+                                self.flags.show_inventory = !self.flags.show_inventory;
                             }
+                            KeyCode::KeyC => {
+                                self.flags.show_crafting = !self.flags.show_crafting;
+                            }
+                            KeyCode::KeyM => {
+                                self.flags.show_map = !self.flags.show_map;
+                            }
+                            KeyCode::KeyJ => {
+                                self.flags.show_quests = !self.flags.show_quests;
+                            }
+                            KeyCode::Escape => {
+                                self.menu_manager.toggle_pause();
+                            }
+                            _ => {}
                         }
                     }
-                    WindowEvent::MouseInput { state, button, .. } => {
-                        if button == MouseButton::Right {
-                            cam_ctl.process_mouse_button(
-                                MouseButton::Right,
-                                state == ElementState::Pressed,
-                            );
-                        }
-                    }
-                    WindowEvent::CursorMoved { position, .. } => {
-                        cam_ctl.process_mouse_move(
-                            &mut camera,
-                            Vec2::new(position.x as f32, position.y as f32),
+                }
+                WindowEvent::MouseInput { state, button, .. } => {
+                    if button == MouseButton::Right {
+                        self.cam_ctl.process_mouse_button(
+                            MouseButton::Right,
+                            state == ElementState::Pressed,
                         );
                     }
-                    _ => {}
                 }
-            }
-            Event::AboutToWait => {
-                let dt = (Instant::now() - last).as_secs_f32();
-                last = Instant::now();
-                input.clear_frame();
-                input.poll_gamepads();
-
-                cam_ctl.update_camera(&mut camera, dt);
-                renderer.update_camera(&camera);
-
-                // Build UI frame
-                ui.begin(&window);
-
-                let mut ui_data = UiData {
-                    player_stats: &player_stats,
-                    player_pos: camera.position,
-                    inventory: &mut inventory,
-                    recipe_book: Some(&recipes),
-                    quest_log: Some(&mut quest_log),
-                };
-                let _ui_out = draw_ui(
-                    ui.ctx(),
-                    &mut flags,
-                    &mut menu_manager,
-                    &mut acc,
-                    ui_data.player_stats,
-                    ui_data.player_pos,
-                    ui_data.inventory,
-                    ui_data.recipe_book,
-                    ui_data.quest_log.as_deref_mut(),
-                );
-
-
-                // Draw scene instances (simple markers)
-                instances.clear();
-                // Add a couple of cubes to show something on screen
-                for z in -3..=3 {
-                    instances.push(Instance::from_pos_scale_color(
-                        vec3(z as f32 * 1.5, 0.5, 0.0),
-                        vec3(0.6, 1.0, 0.6),
-                        [0.6, 0.7, 0.9, 1.0],
-                    ));
+                WindowEvent::CursorMoved { position, .. } => {
+                    self.cam_ctl.process_mouse_move(
+                        &mut self.camera,
+                        Vec2::new(position.x as f32, position.y as f32),
+                    );
                 }
-                renderer.update_instances(&instances);
+                WindowEvent::RedrawRequested => {
+                    let dt = (Instant::now() - self.last).as_secs_f32();
+                    self.last = Instant::now();
+                    self.input.clear_frame();
+                    self.input.poll_gamepads();
 
-                // Render 3D + UI
-                let _size = renderer.surface_size();
-                let _ = renderer.render_with(|view, enc, dev, queue, size| {
-                    ui.end_and_paint(&window, view, enc, dev, queue, size);
-                });
+                    self.cam_ctl.update_camera(&mut self.camera, dt);
+                    renderer.update_camera(&self.camera);
 
-                window.request_redraw();
+                    // Build UI frame
+                    ui.begin(window);
+
+                    let mut ui_data = UiData {
+                        player_stats: &self.player_stats,
+                        player_pos: self.camera.position,
+                        inventory: &mut self.inventory,
+                        recipe_book: Some(&self.recipes),
+                        quest_log: Some(&mut self.quest_log),
+                    };
+                    let _ui_out = draw_ui(
+                        ui.ctx(),
+                        &mut self.flags,
+                        &mut self.menu_manager,
+                        &mut self.acc,
+                        ui_data.player_stats,
+                        ui_data.player_pos,
+                        ui_data.inventory,
+                        ui_data.recipe_book,
+                        ui_data.quest_log.as_deref_mut(),
+                    );
+
+
+                    // Draw scene instances (simple markers)
+                    self.instances.clear();
+                    // Add a couple of cubes to show something on screen
+                    for z in -3..=3 {
+                        self.instances.push(Instance::from_pos_scale_color(
+                            vec3(z as f32 * 1.5, 0.5, 0.0),
+                            vec3(0.6, 1.0, 0.6),
+                            [0.6, 0.7, 0.9, 1.0],
+                        ));
+                    }
+                    renderer.update_instances(&self.instances);
+
+                    // Render 3D + UI
+                    let _size = renderer.surface_size();
+                    let _ = renderer.render_with(|view, enc, dev, queue, size| {
+                        ui.end_and_paint(window, view, enc, dev, queue, size);
+                    });
+
+                    window.request_redraw();
+                }
+                _ => {}
             }
-            _ => {}
         }
-    })?;
+    }
+    
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let event_loop = EventLoop::new()?;
+    event_loop.set_control_flow(ControlFlow::Poll);
+    let mut app = App::new();
+    event_loop.run_app(&mut app)?;
     Ok(())
 }

@@ -1,5 +1,6 @@
 use astraweave_math::simd_mat::*;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 use glam::{Mat4, Vec3};
 
 fn bench_mat4_multiply(c: &mut Criterion) {

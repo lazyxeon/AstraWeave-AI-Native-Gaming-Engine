@@ -1,6 +1,7 @@
 use anyhow::Result;
 #[cfg(feature = "textures")]
 use image::{DynamicImage, GenericImageView};
+// #[cfg(feature = "textures")]
 #[cfg(feature = "textures")]
 use std::path::Path;
 

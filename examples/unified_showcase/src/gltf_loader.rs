@@ -19,7 +19,9 @@ pub struct GltfVertex {
 pub struct LoadedMesh {
     pub vertices: Vec<GltfVertex>,
     pub indices: Vec<u32>,
+    #[allow(dead_code)]
     pub name: String,
+    #[allow(dead_code)]
     pub material_name: Option<String>,
 }
 

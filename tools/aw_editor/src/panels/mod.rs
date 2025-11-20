@@ -36,7 +36,7 @@ pub use asset_browser::AssetBrowser;
 pub use charts_panel::ChartsPanel;
 pub use entity_panel::{EntityPanel, PrefabAction};
 pub use graph_panel::GraphPanel;
-pub use hierarchy_panel::{HierarchyAction, HierarchyPanel};
+pub use hierarchy_panel::HierarchyPanel;
 pub use performance_panel::PerformancePanel;
 pub use transform_panel::TransformPanel;
 pub use world_panel::WorldPanel;

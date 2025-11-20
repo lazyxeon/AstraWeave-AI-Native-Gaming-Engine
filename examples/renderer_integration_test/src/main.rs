@@ -1,13 +1,14 @@
 use anyhow::Result;
 use astraweave_render::camera::Camera;
 use astraweave_render::Renderer;
-use glam::{Mat4, Vec3};
+use glam::Vec3;
 use std::sync::Arc;
 use winit::{
+    application::ApplicationHandler,
     event::*,
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
-    window::Window,
+    window::{Window, WindowId},
 };
 
 struct App {
@@ -150,66 +151,90 @@ impl App {
     }
 }
 
+struct TestApp {
+    app: Option<App>,
+    window: Option<Arc<Window>>,
+}
+
+impl ApplicationHandler for TestApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = Window::default_attributes()
+                .with_title("Renderer Integration Test")
+                .with_inner_size(winit::dpi::LogicalSize::new(1280, 720));
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
+
+            match pollster::block_on(App::new(window)) {
+                Ok(app) => {
+                    self.app = Some(app);
+                }
+                Err(e) => {
+                    eprintln!("Failed to create app: {}", e);
+                    event_loop.exit();
+                }
+            }
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if Some(window_id) != self.window.as_ref().map(|w| w.id()) {
+            return;
+        }
+
+        if let Some(app) = &mut self.app {
+            if !app.input(&event) {
+                match event {
+                    WindowEvent::CloseRequested => event_loop.exit(),
+                    WindowEvent::Resized(physical_size) => app.resize(physical_size),
+                    WindowEvent::RedrawRequested => {
+                        app.update();
+                        if let Err(wgpu::SurfaceError::OutOfMemory) = app.render() {
+                            event_loop.exit();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: winit::event::DeviceId,
+        event: DeviceEvent,
+    ) {
+        if let DeviceEvent::MouseMotion { delta } = event {
+            if let Some(app) = &mut self.app {
+                app.mouse_motion(delta);
+            }
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
 fn main() -> Result<()> {
     env_logger::init();
     let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    let mut app_state: Option<App> = None;
-    let mut window: Option<Arc<Window>> = None;
+    let mut test_app = TestApp {
+        app: None,
+        window: None,
+    };
 
-    event_loop.run(move |event, elwt| match event {
-        Event::Resumed => {
-            if window.is_none() {
-                let win = Arc::new(
-                    elwt.create_window(
-                        Window::default_attributes()
-                            .with_title("Renderer Integration Test")
-                            .with_inner_size(winit::dpi::LogicalSize::new(1280, 720)),
-                    )
-                    .unwrap(),
-                );
-
-                let app = pollster::block_on(App::new(win.clone())).unwrap();
-                window = Some(win);
-                app_state = Some(app);
-            }
-        }
-        Event::WindowEvent {
-            window_id,
-            event: ref win_event,
-        } if Some(window_id) == window.as_ref().map(|w| w.id()) => {
-            if let Some(app) = app_state.as_mut() {
-                if !app.input(win_event) {
-                    match win_event {
-                        WindowEvent::CloseRequested => elwt.exit(),
-                        WindowEvent::Resized(physical_size) => app.resize(*physical_size),
-                        WindowEvent::RedrawRequested => {
-                            app.update();
-                            if let Err(wgpu::SurfaceError::OutOfMemory) = app.render() {
-                                elwt.exit();
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            }
-        }
-        Event::DeviceEvent {
-            event: DeviceEvent::MouseMotion { delta },
-            ..
-        } => {
-            if let Some(app) = app_state.as_mut() {
-                app.mouse_motion(delta);
-            }
-        }
-        Event::AboutToWait => {
-            if let Some(win) = window.as_ref() {
-                win.request_redraw();
-            }
-        }
-        _ => {}
-    })?;
+    event_loop.run_app(&mut test_app)?;
 
     Ok(())
 }

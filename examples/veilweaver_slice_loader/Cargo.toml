@@ -8,4 +8,5 @@ anyhow = { workspace = true }
 tokio = { workspace = true, features = ["rt", "macros", "time"] }
 glam = { workspace = true }
 astraweave-scene = { path = "../../astraweave-scene" }
+astraweave-gameplay = { path = "../../astraweave-gameplay" }
 

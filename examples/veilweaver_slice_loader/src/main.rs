@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
         let center = coord.to_world_center(grid_config.cell_size);
         scene
             .manager
-            .update_streaming(Vec3::new(center.x, 5.0, center.z))
+            .update(Vec3::new(center.x, 5.0, center.z))
             .await?;
     }
 

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use anyhow::{anyhow, Context, Result};
 use asset_signing::KeyStore;
 use astraweave_asset::{AssetDatabase, AssetKind};

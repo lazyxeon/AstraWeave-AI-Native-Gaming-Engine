@@ -9,3 +9,6 @@ anyhow = { workspace = true }
 serde_json = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-director = { path = "../../astraweave-director" }
+
+[features]
+veilweaver_slice = []

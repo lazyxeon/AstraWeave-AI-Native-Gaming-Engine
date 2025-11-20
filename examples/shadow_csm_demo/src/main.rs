@@ -13,7 +13,8 @@
 
 use anyhow::Result;
 use astraweave_render::shadow_csm::CsmRenderer;
-use glam::{Mat4, Vec3, Vec4};
+use glam::{Mat4, Vec3};
+use std::sync::Arc;
 use std::time::Instant;
 use wgpu::util::DeviceExt;
 use winit::{
@@ -21,7 +22,7 @@ use winit::{
     event::*,
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
     keyboard::*,
-    window::Window,
+    window::{Window, WindowId},
 };
 
 #[repr(C)]
@@ -256,7 +257,7 @@ struct App {
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 
-    light_buffer: wgpu::Buffer,
+    _light_buffer: wgpu::Buffer,
     light_bind_group: wgpu::BindGroup,
 
     settings_buffer: wgpu::Buffer,
@@ -526,7 +527,7 @@ impl App {
             camera,
             camera_buffer,
             camera_bind_group,
-            light_buffer,
+            _light_buffer: light_buffer,
             light_bind_group,
             settings_buffer,
             settings_bind_group,
@@ -1046,87 +1047,100 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 "#;
 
+struct DemoApp {
+    app: Option<App>,
+    window: Option<Arc<Window>>,
+}
+
+impl ApplicationHandler for DemoApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = Window::default_attributes()
+                .with_title("CSM Shadow Demo - WASD+Mouse to move, C=Cascades, S=Shadows")
+                .with_inner_size(winit::dpi::LogicalSize::new(1280, 720));
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
+
+            match App::new(window) {
+                Ok(app) => {
+                    println!("CSM Demo Controls:");
+                    println!("  WASD + Mouse: Camera movement");
+                    println!("  C: Toggle cascade visualization");
+                    println!("  S: Toggle shadows on/off");
+                    self.app = Some(app);
+                }
+                Err(e) => {
+                    eprintln!("Failed to create app: {}", e);
+                    event_loop.exit();
+                }
+            }
+        }
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
+        if Some(window_id) != self.window.as_ref().map(|w| w.id()) {
+            return;
+        }
+
+        if let Some(app) = &mut self.app {
+            if !app.input(&event) {
+                match event {
+                    WindowEvent::CloseRequested => event_loop.exit(),
+                    WindowEvent::Resized(physical_size) => {
+                        app.resize(physical_size);
+                    }
+                    WindowEvent::RedrawRequested => {
+                        app.update();
+                        match app.render() {
+                            Ok(_) => {}
+                            Err(wgpu::SurfaceError::Lost) => app.resize(app.size),
+                            Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+                            Err(e) => eprintln!("Render error: {:?}", e),
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: winit::event::DeviceId,
+        event: DeviceEvent,
+    ) {
+        if let DeviceEvent::MouseMotion { delta } = event {
+            if let Some(app) = &mut self.app {
+                app.mouse_motion(delta);
+            }
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
 fn main() -> Result<()> {
     env_logger::init();
 
     let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    let mut app_state: Option<App> = None;
-    let mut window: Option<std::sync::Arc<Window>> = None;
+    let mut demo_app = DemoApp {
+        app: None,
+        window: None,
+    };
 
-    event_loop.run(move |event, elwt| {
-        match event {
-            winit::event::Event::Resumed => {
-                if window.is_none() {
-                    let win = std::sync::Arc::new(
-                        elwt.create_window(
-                            Window::default_attributes()
-                                .with_title(
-                                    "CSM Shadow Demo - WASD+Mouse to move, C=Cascades, S=Shadows",
-                                )
-                                .with_inner_size(winit::dpi::LogicalSize::new(1280, 720)),
-                        )
-                        .unwrap(),
-                    );
-
-                    // Create app
-                    let app = App::new(win.clone()).unwrap();
-
-                    println!("CSM Demo Controls:");
-                    println!("  WASD + Mouse: Camera movement");
-                    println!("  C: Toggle cascade visualization");
-                    println!("  S: Toggle shadows on/off");
-
-                    window = Some(win);
-                    app_state = Some(app);
-                }
-            }
-
-            winit::event::Event::WindowEvent {
-                window_id,
-                event: ref win_event,
-            } if Some(window_id) == window.as_ref().map(|w| w.id()) => {
-                if let Some(ref mut app) = app_state {
-                    if !app.input(win_event) {
-                        match win_event {
-                            WindowEvent::CloseRequested => elwt.exit(),
-                            WindowEvent::Resized(physical_size) => {
-                                app.resize(*physical_size);
-                            }
-                            WindowEvent::RedrawRequested => {
-                                app.update();
-                                match app.render() {
-                                    Ok(_) => {}
-                                    Err(wgpu::SurfaceError::Lost) => app.resize(app.size),
-                                    Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
-                                    Err(e) => eprintln!("Render error: {:?}", e),
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-            }
-
-            winit::event::Event::DeviceEvent {
-                event: DeviceEvent::MouseMotion { delta },
-                ..
-            } => {
-                if let Some(ref mut app) = app_state {
-                    app.mouse_motion(delta);
-                }
-            }
-
-            winit::event::Event::AboutToWait => {
-                if let Some(ref win) = window {
-                    win.request_redraw();
-                }
-            }
-
-            _ => {}
-        }
-    })?;
+    event_loop.run_app(&mut demo_app)?;
 
     Ok(())
 }

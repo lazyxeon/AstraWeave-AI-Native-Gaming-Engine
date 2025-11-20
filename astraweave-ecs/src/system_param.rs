@@ -329,11 +329,6 @@ mod tests {
         max: i32,
     }
 
-    #[derive(Debug, Clone, PartialEq)]
-    struct Name {
-        value: String,
-    }
-
     // ====================
     // Day 1: Query Tests (Single Component)
     // ====================

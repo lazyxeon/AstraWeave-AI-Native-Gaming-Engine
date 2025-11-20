@@ -51,20 +51,27 @@ enum PersonalityTrait {
 #[derive(Debug, Clone)]
 enum Mood {
     Curious,
+    #[allow(dead_code)]
     Neutral,
 }
 
 #[derive(Debug, Clone)]
 struct Companion {
+    #[allow(dead_code)]
     id: String,
     name: String,
     description: String,
     personality_traits: Vec<PersonalityTrait>,
     current_mood: Mood,
+    #[allow(dead_code)]
     background: Option<String>,
+    #[allow(dead_code)]
     goals: Vec<String>,
+    #[allow(dead_code)]
     relationships: HashMap<String, String>,
+    #[allow(dead_code)]
     memory_keywords: Vec<String>,
+    #[allow(dead_code)]
     behavior_modifiers: HashMap<String, String>,
 }
 

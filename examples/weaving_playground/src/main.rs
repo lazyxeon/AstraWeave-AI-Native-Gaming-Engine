@@ -1,7 +1,7 @@
 use astraweave_core::{IVec2, Team, World};
 use astraweave_gameplay::biome::generate_island_room;
 use astraweave_gameplay::*;
-use astraweave_nav::NavMesh;
+use astraweave_nav::{NavMesh, Triangle};
 use astraweave_physics::PhysicsWorld;
 use astraweave_render::TerrainRenderer as RenderTerrainRenderer; // rename to avoid conflict
 use astraweave_render::{Camera, CameraController, Instance, Renderer};
@@ -10,127 +10,167 @@ use glam::{vec3, Vec2};
 use std::sync::Arc;
 use std::time::Instant;
 use winit::{
+    application::ApplicationHandler,
     dpi::PhysicalSize,
-    event::{ElementState, Event, KeyEvent, MouseButton, WindowEvent},
-    event_loop::EventLoop,
+    event::{ElementState, KeyEvent, MouseButton, WindowEvent},
+    event_loop::{ActiveEventLoop, EventLoop},
     keyboard::{KeyCode, PhysicalKey},
+    window::{Window, WindowId},
 };
 
-fn main() -> anyhow::Result<()> {
-    let event_loop = EventLoop::new()?;
-    let window = Arc::new(
-        winit::window::WindowBuilder::new()
-            .with_title("Weaving Playground")
-            .with_inner_size(PhysicalSize::new(1280, 720))
-            .build(&event_loop)?,
-    );
+struct WeavingApp {
+    window: Option<Arc<Window>>,
+    renderer: Option<Renderer>,
+    camera: Camera,
+    cam_ctl: CameraController,
+    speed_scale: f32,
+    world: World,
+    phys: PhysicsWorld,
+    tris: Vec<Triangle>,
+    terr_renderer: RenderTerrainRenderer,
+    current_chunk: Option<TerrainChunk>,
+    budget: WeaveBudget,
+    instances: Vec<Instance>,
+    last_time: Instant,
+    terr_cfg: WorldConfig,
+}
 
-    // 3D renderer
-    let mut renderer = pollster::block_on(Renderer::new(window.clone()))?;
-    // Ensure a bright sun angle for clarity (late morning)
-    renderer.time_of_day_mut().current_time = 10.0;
-    renderer.time_of_day_mut().time_scale = 0.0; // stop auto time advance for predictable lighting
-    let mut camera = Camera {
-        position: vec3(-4.0, 7.0, 12.0),
-        yaw: -3.14 / 2.1,
-        pitch: -0.55,
-        fovy: 60f32.to_radians(),
-        aspect: 16.0 / 9.0,
-        // Lower near to reduce clipping artifacts when close to geometry
-        znear: 0.01,
-        zfar: 400.0,
-    };
-    // Reduce translation speed; smoothing in controller will further stabilize motion
-    let base_cam_speed = 3.0f32;
-    let mut cam_ctl = CameraController::new(base_cam_speed, 0.0015);
-    let mut speed_scale = 1.0f32; // adjustable at runtime with +/- keys
+impl WeavingApp {
+    fn new() -> Self {
+        let camera = Camera {
+            position: vec3(-4.0, 7.0, 12.0),
+            yaw: -3.14 / 2.1,
+            pitch: -0.55,
+            fovy: 60f32.to_radians(),
+            aspect: 16.0 / 9.0,
+            znear: 0.01,
+            zfar: 400.0,
+        };
+        let base_cam_speed = 3.0f32;
+        let cam_ctl = CameraController::new(base_cam_speed, 0.0015);
+        let speed_scale = 1.0f32;
 
-    // Core world & physics
-    let mut w = World::new();
-    let mut phys = PhysicsWorld::new(vec3(0.0, -9.81, 0.0));
+        let mut w = World::new();
+        let phys = PhysicsWorld::new(vec3(0.0, -9.81, 0.0));
 
-    // Spawn some tokens to visualize
-    let _player = w.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
-    let _comp = w.spawn("Comp", IVec2 { x: 3, y: 2 }, Team { id: 1 }, 80, 30);
-    let _enemy = w.spawn("Enemy", IVec2 { x: 10, y: 2 }, Team { id: 2 }, 60, 0);
+        let _player = w.spawn("Player", IVec2 { x: 2, y: 2 }, Team { id: 0 }, 100, 0);
+        let _comp = w.spawn("Comp", IVec2 { x: 3, y: 2 }, Team { id: 1 }, 80, 30);
+        let _enemy = w.spawn("Enemy", IVec2 { x: 10, y: 2 }, Team { id: 2 }, 60, 0);
 
-    // Simple island triangles (for nav + visual anchors)
-    let tris = generate_island_room();
-    let _nav = NavMesh::bake(&tris, 0.5, 55.0);
+        let tris = generate_island_room();
+        let _nav = NavMesh::bake(&tris, 0.5, 55.0);
 
-    // Terrain: build a single central chunk and upload as an external mesh to the renderer
-    let mut terr_cfg = WorldConfig::default();
-    terr_cfg.chunk_size = 128.0;
-    terr_cfg.heightmap_resolution = 64;
-    let mut terr_renderer = RenderTerrainRenderer::new(terr_cfg.clone());
-    let center_chunk_id = ChunkId::new(0, 0);
-    // Generate chunk and mesh
-    let chunk = terr_renderer
-        .world_generator_mut()
-        .generate_chunk(center_chunk_id)?;
+        let mut terr_cfg = WorldConfig::default();
+        terr_cfg.chunk_size = 128.0;
+        terr_cfg.heightmap_resolution = 64;
+        let terr_renderer = RenderTerrainRenderer::new(terr_cfg.clone());
+        
+        let budget = WeaveBudget {
+            terrain_edits: 3,
+            weather_ops: 2,
+        };
 
-    // Build GPU mesh for the chunk and set it on the renderer
-    let (_terrain_mesh, terrain_gpu_init) =
-        build_and_upload_terrain_mesh(&mut terr_renderer, &chunk, &renderer)?;
-    renderer.set_external_mesh(terrain_gpu_init);
+        Self {
+            window: None,
+            renderer: None,
+            camera,
+            cam_ctl,
+            speed_scale,
+            world: w,
+            phys,
+            tris,
+            terr_renderer,
+            current_chunk: None,
+            budget,
+            instances: vec![],
+            last_time: Instant::now(),
+            terr_cfg,
+        }
+    }
+}
 
-    // Track current editable chunk in scope for weave edits
-    let mut current_chunk = chunk;
+impl ApplicationHandler for WeavingApp {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.window.is_none() {
+            let window_attributes = Window::default_attributes()
+                .with_title("Weaving Playground")
+                .with_inner_size(PhysicalSize::new(1280, 720));
+            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            self.window = Some(window.clone());
 
-    // Weave budget
-    let mut budget = WeaveBudget {
-        terrain_edits: 3,
-        weather_ops: 2,
-    };
+            let mut renderer = pollster::block_on(Renderer::new(window.clone())).unwrap();
+            renderer.time_of_day_mut().current_time = 10.0;
+            renderer.time_of_day_mut().time_scale = 0.0;
+            
+            // Generate chunk and mesh
+            let center_chunk_id = ChunkId::new(0, 0);
+            let chunk = self.terr_renderer
+                .world_generator_mut()
+                .generate_chunk(center_chunk_id)
+                .unwrap();
+            
+            let (_terrain_mesh, terrain_gpu_init) =
+                build_and_upload_terrain_mesh(&mut self.terr_renderer, &chunk, &renderer).unwrap();
+            renderer.set_external_mesh(terrain_gpu_init);
+            
+            self.current_chunk = Some(chunk);
+            self.renderer = Some(renderer);
+            self.last_time = Instant::now();
+        }
+    }
 
-    let mut instances: Vec<Instance> = vec![];
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
+        let renderer = match self.renderer.as_mut() {
+            Some(r) => r,
+            None => return,
+        };
+        let _window = match self.window.as_ref() {
+            Some(w) => w,
+            None => return,
+        };
 
-    let mut last = Instant::now();
-    event_loop.run(move |event, elwt| {
         match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => elwt.exit(),
-                WindowEvent::Resized(s) => {
-                    renderer.resize(s.width, s.height);
-                    camera.aspect = s.width as f32 / s.height.max(1) as f32;
-                }
-                WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state,
-                            physical_key: PhysicalKey::Code(code),
-                            ..
-                        },
-                    ..
-                } => {
-                    let down = state == ElementState::Pressed;
-                    cam_ctl.process_keyboard(code, down);
-                    if down {
-                        let mut log = |s: String| println!("{}", s);
-                        match code {
-                            // Time of day tweaks for troubleshooting lighting
-                            KeyCode::BracketLeft => {
-                                renderer.time_of_day_mut().current_time =
-                                    (renderer.time_of_day_mut().current_time - 0.5 + 24.0) % 24.0;
-                                println!("Time: {:.2}h", renderer.time_of_day_mut().current_time);
-                            }
-                            KeyCode::BracketRight => {
-                                renderer.time_of_day_mut().current_time =
-                                    (renderer.time_of_day_mut().current_time + 0.5) % 24.0;
-                                println!("Time: {:.2}h", renderer.time_of_day_mut().current_time);
-                            }
-                            // Runtime camera speed adjust: - to slow down, =/+ to speed up
-                            KeyCode::Minus => {
-                                speed_scale = (speed_scale * 0.9).max(0.05);
-                                cam_ctl.speed = base_cam_speed * speed_scale;
-                                println!("Speed: {:.2}", cam_ctl.speed);
-                            }
-                            KeyCode::Equal => {
-                                speed_scale = (speed_scale * 1.1).min(20.0);
-                                cam_ctl.speed = base_cam_speed * speed_scale;
-                                println!("Speed: {:.2}", cam_ctl.speed);
-                            }
-                            KeyCode::Digit1 => {
+            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::Resized(s) => {
+                renderer.resize(s.width, s.height);
+                self.camera.aspect = s.width as f32 / s.height.max(1) as f32;
+            }
+            WindowEvent::KeyboardInput {
+                event:
+                    KeyEvent {
+                        state,
+                        physical_key: PhysicalKey::Code(code),
+                        ..
+                    },
+                ..
+            } => {
+                let down = state == ElementState::Pressed;
+                self.cam_ctl.process_keyboard(code, down);
+                if down {
+                    let mut log = |s: String| println!("{}", s);
+                    match code {
+                        KeyCode::BracketLeft => {
+                            renderer.time_of_day_mut().current_time =
+                                (renderer.time_of_day_mut().current_time - 0.5 + 24.0) % 24.0;
+                            println!("Time: {:.2}h", renderer.time_of_day_mut().current_time);
+                        }
+                        KeyCode::BracketRight => {
+                            renderer.time_of_day_mut().current_time =
+                                (renderer.time_of_day_mut().current_time + 0.5) % 24.0;
+                            println!("Time: {:.2}h", renderer.time_of_day_mut().current_time);
+                        }
+                        KeyCode::Minus => {
+                            self.speed_scale = (self.speed_scale * 0.9).max(0.05);
+                            self.cam_ctl.speed = 3.0 * self.speed_scale;
+                            println!("Speed: {:.2}", self.cam_ctl.speed);
+                        }
+                        KeyCode::Equal => {
+                            self.speed_scale = (self.speed_scale * 1.1).min(20.0);
+                            self.cam_ctl.speed = 3.0 * self.speed_scale;
+                            println!("Speed: {:.2}", self.cam_ctl.speed);
+                        }
+                        KeyCode::Digit1 => {
+                            if let Some(ref mut current_chunk) = self.current_chunk {
                                 let op = WeaveOp {
                                     kind: WeaveOpKind::ReinforcePath,
                                     a: vec3(2.0, 0.0, 2.0),
@@ -138,10 +178,10 @@ fn main() -> anyhow::Result<()> {
                                     budget_cost: 1,
                                 };
                                 if let Ok(cons) = apply_weave_op(
-                                    &mut w,
-                                    &mut phys,
-                                    &tris,
-                                    &mut budget,
+                                    &mut self.world,
+                                    &mut self.phys,
+                                    &self.tris,
+                                    &mut self.budget,
                                     &op,
                                     &mut log,
                                 ) {
@@ -149,19 +189,17 @@ fn main() -> anyhow::Result<()> {
                                         "Consequence: drop x{}, faction {}",
                                         cons.drop_multiplier, cons.faction_disposition
                                     );
-                                    // Visual: raise/smooth terrain locally around point A
                                     apply_height_edit(
-                                        &mut current_chunk,
+                                        current_chunk,
                                         op.a,
                                         3.0,
                                         1.5,
-                                        terr_cfg.chunk_size,
+                                        self.terr_cfg.chunk_size,
                                     );
-                                    // Rebuild GPU mesh
                                     match build_and_upload_terrain_mesh(
-                                        &mut terr_renderer,
-                                        &current_chunk,
-                                        &renderer,
+                                        &mut self.terr_renderer,
+                                        current_chunk,
+                                        renderer,
                                     ) {
                                         Ok((_cpu, mesh_gpu)) => {
                                             renderer.set_external_mesh(mesh_gpu)
@@ -170,7 +208,9 @@ fn main() -> anyhow::Result<()> {
                                     }
                                 }
                             }
-                            KeyCode::Digit2 => {
+                        }
+                        KeyCode::Digit2 => {
+                            if let Some(ref mut current_chunk) = self.current_chunk {
                                 let op = WeaveOp {
                                     kind: WeaveOpKind::CollapseBridge,
                                     a: vec3(1.0, 0.0, -1.0),
@@ -178,27 +218,26 @@ fn main() -> anyhow::Result<()> {
                                     budget_cost: 1,
                                 };
                                 let _ = apply_weave_op(
-                                    &mut w,
-                                    &mut phys,
-                                    &tris,
-                                    &mut budget,
+                                    &mut self.world,
+                                    &mut self.phys,
+                                    &self.tris,
+                                    &mut self.budget,
                                     &op,
                                     &mut log,
                                 );
-                                // Visual: lower a line between A -> B
                                 if let Some(b) = op.b {
                                     apply_line_height_edit(
-                                        &mut current_chunk,
+                                        current_chunk,
                                         op.a,
                                         b,
                                         2.0,
                                         -1.2,
-                                        terr_cfg.chunk_size,
+                                        self.terr_cfg.chunk_size,
                                     );
                                     match build_and_upload_terrain_mesh(
-                                        &mut terr_renderer,
-                                        &current_chunk,
-                                        &renderer,
+                                        &mut self.terr_renderer,
+                                        current_chunk,
+                                        renderer,
                                     ) {
                                         Ok((_cpu, mesh_gpu)) => {
                                             renderer.set_external_mesh(mesh_gpu)
@@ -207,23 +246,26 @@ fn main() -> anyhow::Result<()> {
                                     }
                                 }
                             }
-                            KeyCode::Digit3 => {
-                                let op = WeaveOp {
-                                    kind: WeaveOpKind::RedirectWind,
-                                    a: vec3(0.0, 0.0, 0.0),
-                                    b: Some(vec3(1.0, 0.0, 0.2)),
-                                    budget_cost: 1,
-                                };
-                                let _ = apply_weave_op(
-                                    &mut w,
-                                    &mut phys,
-                                    &tris,
-                                    &mut budget,
-                                    &op,
-                                    &mut log,
-                                );
-                            }
-                            KeyCode::Digit4 => {
+                        }
+                        KeyCode::Digit3 => {
+                            let op = WeaveOp {
+                                kind: WeaveOpKind::RedirectWind,
+                                a: vec3(0.0, 0.0, 0.0),
+                                b: Some(vec3(1.0, 0.0, 0.2)),
+                                budget_cost: 1,
+                            };
+                            let mut log = |s: String| println!("{}", s);
+                            let _ = apply_weave_op(
+                                &mut self.world,
+                                &mut self.phys,
+                                &self.tris,
+                                &mut self.budget,
+                                &op,
+                                &mut log,
+                            );
+                        }
+                        KeyCode::Digit4 => {
+                            if let Some(ref mut current_chunk) = self.current_chunk {
                                 let op = WeaveOp {
                                     kind: WeaveOpKind::LowerWater,
                                     a: vec3(0.0, 0.0, 0.0),
@@ -231,130 +273,137 @@ fn main() -> anyhow::Result<()> {
                                     budget_cost: 1,
                                 };
                                 let _ = apply_weave_op(
-                                    &mut w,
-                                    &mut phys,
-                                    &tris,
-                                    &mut budget,
+                                    &mut self.world,
+                                    &mut self.phys,
+                                    &self.tris,
+                                    &mut self.budget,
                                     &op,
                                     &mut log,
                                 );
-                                // Visual: slightly lower center basin
                                 apply_height_edit(
-                                    &mut current_chunk,
+                                    current_chunk,
                                     op.a,
                                     5.0,
                                     -1.0,
-                                    terr_cfg.chunk_size,
+                                    self.terr_cfg.chunk_size,
                                 );
                                 match build_and_upload_terrain_mesh(
-                                    &mut terr_renderer,
-                                    &current_chunk,
-                                    &renderer,
+                                    &mut self.terr_renderer,
+                                    current_chunk,
+                                    renderer,
                                 ) {
                                     Ok((_cpu, mesh_gpu)) => renderer.set_external_mesh(mesh_gpu),
                                     Err(e) => eprintln!("terrain rebuild failed: {}", e),
                                 }
                             }
-                            _ => {}
                         }
+                        _ => {}
                     }
                 }
-                WindowEvent::MouseInput { state, button, .. } => {
-                    if button == MouseButton::Right {
-                        let pressed = state == ElementState::Pressed;
-                        cam_ctl.process_mouse_button(MouseButton::Right, pressed);
-                        // Toggle cursor grab for raw input to avoid drift
-                        if pressed {
-                            let _ = window.set_cursor_grab(winit::window::CursorGrabMode::Confined);
-                            window.set_cursor_visible(false);
-                        } else {
-                            let _ = window.set_cursor_grab(winit::window::CursorGrabMode::None);
-                            window.set_cursor_visible(true);
-                        }
+            }
+            WindowEvent::MouseInput { state, button, .. } => {
+                if button == MouseButton::Right {
+                    let pressed = state == ElementState::Pressed;
+                    self.cam_ctl.process_mouse_button(MouseButton::Right, pressed);
+                    if pressed {
+                        let _ = _window.set_cursor_grab(winit::window::CursorGrabMode::Confined);
+                        _window.set_cursor_visible(false);
+                    } else {
+                        let _ = _window.set_cursor_grab(winit::window::CursorGrabMode::None);
+                        _window.set_cursor_visible(true);
                     }
                 }
-                // Prefer raw mouse motion to avoid pointer acceleration and noise
-                WindowEvent::MouseWheel { delta, .. } => {
-                    // Keep existing scroll functionality
-                    let scroll = match delta {
-                        winit::event::MouseScrollDelta::LineDelta(_, y) => y,
-                        winit::event::MouseScrollDelta::PixelDelta(p) => {
-                            (p.y as f32 / 120.0) as f32
-                        }
-                    };
-                    cam_ctl.process_scroll(&mut camera, scroll);
-                }
-                WindowEvent::CursorMoved { position, .. } => {
-                    // Only apply absolute motion when not receiving raw deltas
-                    if !cam_ctl.is_dragging() {
-                        cam_ctl.process_mouse_move(
-                            &mut camera,
-                            Vec2::new(position.x as f32, position.y as f32),
-                        );
+            }
+            WindowEvent::MouseWheel { delta, .. } => {
+                let scroll = match delta {
+                    winit::event::MouseScrollDelta::LineDelta(_, y) => y,
+                    winit::event::MouseScrollDelta::PixelDelta(p) => {
+                        (p.y as f32 / 120.0) as f32
                     }
-                }
-                _ => {}
-            },
-            // Use DeviceEvent for raw deltas when available
-            Event::DeviceEvent { event, .. } => {
-                if let winit::event::DeviceEvent::MouseMotion { delta } = event {
-                    cam_ctl.process_mouse_delta(
-                        &mut camera,
-                        Vec2::new(delta.0 as f32, delta.1 as f32),
+                };
+                self.cam_ctl.process_scroll(&mut self.camera, scroll);
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                if !self.cam_ctl.is_dragging() {
+                    self.cam_ctl.process_mouse_move(
+                        &mut self.camera,
+                        Vec2::new(position.x as f32, position.y as f32),
                     );
                 }
             }
-            Event::AboutToWait => {
-                // Reset per-frame input flags before applying updates
-                cam_ctl.begin_frame();
-                let dt_raw = (Instant::now() - last).as_secs_f32();
-                // Clamp dt to avoid large jumps when the app stalls or the window regains focus
-                let dt = dt_raw.clamp(0.0, 0.04);
-                last += std::time::Duration::from_secs_f32(dt);
-                cam_ctl.update_camera(&mut camera, dt);
-                phys.step();
-
-                // Rebuild instances (simple viz)
-                instances.clear();
-                for (x, y) in w.obstacles.iter() {
-                    instances.push(Instance::from_pos_scale_color(
-                        glam::vec3(*x as f32, 0.5, *y as f32),
-                        glam::vec3(0.9, 1.0, 0.9),
-                        [0.45, 0.45, 0.45, 1.0],
-                    ));
-                }
-                for e in w.all_of_team(0) {
-                    let p = w.pos_of(e).unwrap();
-                    instances.push(Instance::from_pos_scale_color(
-                        glam::vec3(p.x as f32, 0.5, p.y as f32),
-                        glam::vec3(0.7, 1.0, 0.7),
-                        [0.2, 0.4, 1.0, 1.0],
-                    ));
-                }
-                for e in w.all_of_team(1) {
-                    let p = w.pos_of(e).unwrap();
-                    instances.push(Instance::from_pos_scale_color(
-                        glam::vec3(p.x as f32, 0.5, p.y as f32),
-                        glam::vec3(0.7, 1.0, 0.7),
-                        [0.2, 1.0, 0.4, 1.0],
-                    ));
-                }
-                for e in w.all_of_team(2) {
-                    let p = w.pos_of(e).unwrap();
-                    instances.push(Instance::from_pos_scale_color(
-                        glam::vec3(p.x as f32, 0.5, p.y as f32),
-                        glam::vec3(0.7, 1.0, 0.7),
-                        [1.0, 0.2, 0.2, 1.0],
-                    ));
-                }
-                renderer.update_instances(&instances);
-                renderer.update_camera(&camera);
-                let _ = renderer.render();
-                window.request_redraw();
-            }
             _ => {}
         }
-    })?;
+    }
+
+    fn device_event(&mut self, _event_loop: &ActiveEventLoop, _device_id: winit::event::DeviceId, event: winit::event::DeviceEvent) {
+        if let winit::event::DeviceEvent::MouseMotion { delta } = event {
+            self.cam_ctl.process_mouse_delta(
+                &mut self.camera,
+                Vec2::new(delta.0 as f32, delta.1 as f32),
+            );
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        let renderer = match self.renderer.as_mut() {
+            Some(r) => r,
+            None => return,
+        };
+        let window = match self.window.as_ref() {
+            Some(w) => w,
+            None => return,
+        };
+
+        self.cam_ctl.begin_frame();
+        let dt_raw = (Instant::now() - self.last_time).as_secs_f32();
+        let dt = dt_raw.clamp(0.0, 0.04);
+        self.last_time += std::time::Duration::from_secs_f32(dt);
+        self.cam_ctl.update_camera(&mut self.camera, dt);
+        self.phys.step();
+
+        self.instances.clear();
+        for (x, y) in self.world.obstacles.iter() {
+            self.instances.push(Instance::from_pos_scale_color(
+                glam::vec3(*x as f32, 0.5, *y as f32),
+                glam::vec3(0.9, 1.0, 0.9),
+                [0.45, 0.45, 0.45, 1.0],
+            ));
+        }
+        for e in self.world.all_of_team(0) {
+            let p = self.world.pos_of(e).unwrap();
+            self.instances.push(Instance::from_pos_scale_color(
+                glam::vec3(p.x as f32, 0.5, p.y as f32),
+                glam::vec3(0.7, 1.0, 0.7),
+                [0.2, 0.4, 1.0, 1.0],
+            ));
+        }
+        for e in self.world.all_of_team(1) {
+            let p = self.world.pos_of(e).unwrap();
+            self.instances.push(Instance::from_pos_scale_color(
+                glam::vec3(p.x as f32, 0.5, p.y as f32),
+                glam::vec3(0.7, 1.0, 0.7),
+                [0.2, 1.0, 0.4, 1.0],
+            ));
+        }
+        for e in self.world.all_of_team(2) {
+            let p = self.world.pos_of(e).unwrap();
+            self.instances.push(Instance::from_pos_scale_color(
+                glam::vec3(p.x as f32, 0.5, p.y as f32),
+                glam::vec3(0.7, 1.0, 0.7),
+                [1.0, 0.2, 0.2, 1.0],
+            ));
+        }
+        renderer.update_instances(&self.instances);
+        renderer.update_camera(&self.camera);
+        let _ = renderer.render();
+        window.request_redraw();
+    }
+}
+
+fn main() -> anyhow::Result<()> {
+    let event_loop = EventLoop::new()?;
+    let mut app = WeavingApp::new();
+    event_loop.run_app(&mut app)?;
     Ok(())
 }
 

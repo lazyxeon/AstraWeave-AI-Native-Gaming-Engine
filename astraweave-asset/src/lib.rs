@@ -376,6 +376,7 @@ pub mod gltf_loader {
         pub position: [f32; 3],
         pub normal: [f32; 3],
         pub tangent: [f32; 4],
+        pub uv: [f32; 2],
         pub joints: [u16; 4],
         pub weights: [f32; 4],
     }
@@ -861,6 +862,10 @@ pub mod gltf_loader {
             Some(it) => it.collect(),
             None => vec![[1.0, 0.0, 0.0, 1.0]; positions.len()],
         };
+        let texcoords: Vec<[f32; 2]> = match reader.read_tex_coords(0) {
+            Some(c) => c.into_f32().collect(),
+            None => vec![[0.0, 0.0]; positions.len()],
+        };
         let indices_read = reader
             .read_indices()
             .ok_or_else(|| anyhow!("Indices missing"))?;
@@ -911,6 +916,7 @@ pub mod gltf_loader {
             || positions.len() != joints0.len()
             || positions.len() != weights0.len()
             || positions.len() != tangents.len()
+            || positions.len() != texcoords.len()
         {
             bail!("Attribute count mismatch for skinned vertex data");
         }
@@ -921,6 +927,7 @@ pub mod gltf_loader {
                 position: positions[i],
                 normal: normals[i],
                 tangent: tangents[i],
+                uv: texcoords[i],
                 joints: joints0[i],
                 weights: weights0[i],
             });
@@ -1042,6 +1049,10 @@ pub mod gltf_loader {
             Some(it) => it.collect(),
             None => vec![[1.0, 0.0, 0.0, 1.0]; positions.len()],
         };
+        let texcoords: Vec<[f32; 2]> = match reader.read_tex_coords(0) {
+            Some(c) => c.into_f32().collect(),
+            None => vec![[0.0, 0.0]; positions.len()],
+        };
         let indices_read = reader
             .read_indices()
             .ok_or_else(|| anyhow!("Indices missing"))?;
@@ -1092,6 +1103,7 @@ pub mod gltf_loader {
             || positions.len() != joints0.len()
             || positions.len() != weights0.len()
             || positions.len() != tangents.len()
+            || positions.len() != texcoords.len()
         {
             bail!("Attribute count mismatch for skinned vertex data");
         }
@@ -1102,6 +1114,7 @@ pub mod gltf_loader {
                 position: positions[i],
                 normal: normals[i],
                 tangent: tangents[i],
+                uv: texcoords[i],
                 joints: joints0[i],
                 weights: weights0[i],
             });

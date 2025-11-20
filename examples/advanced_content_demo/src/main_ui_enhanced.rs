@@ -84,7 +84,7 @@ fn demo_scenario_1_escort_quest_with_ui() {
     // Wait for dash cooldown (1.5s more)
     player.ability_manager.update(1.5);
 
-    if let Ok(()) = player.use_dash() {
+    if let Ok((_pos, _dmg)) = player.use_dash() {
         println!("{}", play_audio_effect("dash_whoosh"));
         println!("{}", render_particle_effect("dash_trail", player.position));
         player.position += player.forward * 10.0; // Dash forward
@@ -98,7 +98,7 @@ fn demo_scenario_1_escort_quest_with_ui() {
 
     // Simulate NPC reaching waypoint
     if let ObjectiveType::Escort { ref mut npc } = quest.objectives[0] {
-        npc.current_position = Vec3::new(50.0, 0.0, 0.0); // Halfway
+        npc.position = Vec3::new(50.0, 0.0, 0.0); // Halfway
         npc.health = 85.0; // Took some damage
         println!(
             "🚶 Merchant reached waypoint! Health: {} / {}",
@@ -116,11 +116,11 @@ fn demo_scenario_1_escort_quest_with_ui() {
     println!("\n📺 Frame 180: Quest Complete! (1s later)");
 
     if let ObjectiveType::Escort { ref mut npc } = quest.objectives[0] {
-        npc.current_position = npc.destination; // Reached destination
+        npc.position = npc.destination; // Reached destination
         println!("🎯 Merchant reached safe zone!");
     }
 
-    quest.state = QuestState::Complete;
+    quest.state = QuestState::Completed;
     println!("{}", play_audio_effect("quest_complete"));
     println!(
         "{}",
@@ -144,11 +144,13 @@ fn demo_scenario_2_defend_quest_with_ui() {
     player.echo_currency = 150;
     player.forward = Vec3::new(0.0, 0.0, 1.0);
 
-    let defend_anchor = quest_types::DefendAnchor::new(
+    let defend_anchor = quest_types::DefendObjective::new(
         "Village",
         Vec3::new(50.0, 0.0, 50.0),
         100.0,
+        100.0, // Health
         180.0, // 3 minutes
+        3, // Total waves
     );
 
     let mut quest = Quest::new(
@@ -157,14 +159,15 @@ fn demo_scenario_2_defend_quest_with_ui() {
         "Defend the village from enemy waves.",
     )
     .with_objective(ObjectiveType::Defend {
-        anchor: defend_anchor,
+        objective: defend_anchor,
+        required_waves: 3,
     })
     .with_reward(QuestReward::EchoCurrency(100));
 
     quest.state = QuestState::Active;
 
-    let mut spawner = EnemySpawner::new(Vec3::new(30.0, 0.0, 30.0));
-    spawner.current_wave = 1;
+    let mut spawner = EnemySpawner::new();
+    spawner.add_spawn_point(Vec3::new(30.0, 0.0, 30.0), 5.0, None);
 
     // === FRAME 0: Defense starts ===
     println!("\n📺 Frame 0: Defense Begins");
@@ -172,11 +175,15 @@ fn demo_scenario_2_defend_quest_with_ui() {
 
     // === WAVE 1: Standard enemies ===
     println!("\n📺 Wave 1: Standard Enemies (15 enemies)");
-    spawner.enemies_this_wave = 15;
+    
+    // Use force_spawn_wave to simulate wave spawn
+    let anchor = Anchor::new(1.0, 100, None);
+    let anchors = vec![(0, &anchor)];
+    let requests = spawner.force_spawn_wave(&anchors);
 
-    for i in 0..3 {
-        let archetype = spawner.determine_archetype();
-        let spawn_pos = spawner.spawn_point + Vec3::new(i as f32 * 5.0, 0.0, 0.0);
+    for (_i, req) in requests.iter().enumerate().take(3) {
+        let archetype = req.archetype;
+        let spawn_pos = req.position;
 
         println!("{}", render_particle_effect("spawn_portal", spawn_pos));
         println!("{}", play_audio_effect("spawn_portal"));
@@ -189,7 +196,7 @@ fn demo_scenario_2_defend_quest_with_ui() {
     // Simulate combat (use abilities)
     println!("\n⚔️  Combat simulation: Dash + Shield combo");
 
-    if let Ok(()) = player.use_dash() {
+    if let Ok((_pos, _dmg)) = player.use_dash() {
         println!("{}", render_particle_effect("dash_trail", player.position));
         player.position += player.forward * 10.0;
     }
@@ -213,14 +220,12 @@ fn demo_scenario_2_defend_quest_with_ui() {
 
     // === WAVE 2: Riftstalkers appear ===
     println!("\n📺 Wave 2: Riftstalkers Appear! (Wave 6)");
-    spawner.current_wave = 6;
-    spawner.enemies_this_wave = 12;
-
-    let archetype = spawner.determine_archetype();
+    
+    let archetype = crate::enemy_types::EnemyArchetype::Riftstalker;
     println!("⚠️  Advanced enemy type: {:?}", archetype);
 
     for i in 0..2 {
-        let spawn_pos = spawner.spawn_point + Vec3::new(i as f32 * 10.0, 0.0, 0.0);
+        let spawn_pos = Vec3::new(30.0, 0.0, 30.0) + Vec3::new(i as f32 * 10.0, 0.0, 0.0);
         println!("{}", render_particle_effect("spawn_portal", spawn_pos));
     }
 
@@ -233,13 +238,13 @@ fn demo_scenario_2_defend_quest_with_ui() {
     // === WAVE 3: Victory! ===
     println!("\n📺 Wave 3 Complete: Defense Successful!");
 
-    if let ObjectiveType::Defend { ref mut anchor } = quest.objectives[0] {
-        anchor.health = 75.0; // Took some damage
-        anchor.time_remaining = 0.0; // Timer expired (success)
-        println!("🏰 Village Health: {} / 100.0", anchor.health);
+    if let ObjectiveType::Defend { objective: ref mut anchor, .. } = quest.objectives[0] {
+        anchor.current_health = 75.0; // Took some damage
+        anchor.elapsed_seconds = 180.0; // Timer expired (success)
+        println!("🏰 Village Health: {} / 100.0", anchor.current_health);
     }
 
-    quest.state = QuestState::Complete;
+    quest.state = QuestState::Completed;
     println!("{}", play_audio_effect("quest_complete"));
     println!(
         "{}",
@@ -261,9 +266,12 @@ fn demo_scenario_3_boss_fight_with_ui() {
     player.echo_currency = 200;
     player.forward = Vec3::new(1.0, 0.0, 0.0);
 
-    let void_boss = enemy_types::VoidBoss::new(
-        Vec3::new(50.0, 0.0, 0.0),
+    let void_boss = quest_types::BossObjective::new(
+        "Void Boss",
         1000.0, // High HP
+        Vec3::new(50.0, 0.0, 0.0),
+        Vec3::ZERO,
+        20.0,
     );
 
     let mut quest = Quest::new(
@@ -271,7 +279,7 @@ fn demo_scenario_3_boss_fight_with_ui() {
         "Shatter the Void",
         "Defeat the Void Boss to restore reality.",
     )
-    .with_objective(ObjectiveType::Boss { boss: void_boss })
+    .with_objective(ObjectiveType::Boss { objective: void_boss })
     .with_reward(QuestReward::EchoCurrency(250));
 
     quest.state = QuestState::Active;
@@ -312,7 +320,7 @@ fn demo_scenario_3_boss_fight_with_ui() {
 
     // Turn 1: Dash to avoid AOE
     println!("\n🌀 Boss charging Void Rift AOE! Use Dash to dodge...");
-    if let Ok(()) = player.use_dash() {
+    if let Ok((_pos, _dmg)) = player.use_dash() {
         println!("{}", render_particle_effect("dash_trail", player.position));
         player.position += player.forward * 15.0;
         println!("✅ Dodged! Echo: {}", player.echo_currency);
@@ -333,8 +341,8 @@ fn demo_scenario_3_boss_fight_with_ui() {
     }
 
     // Damage to boss (simulated)
-    if let ObjectiveType::Boss { ref mut boss } = quest.objectives[0] {
-        boss.health -= 300.0;
+    if let ObjectiveType::Boss { objective: ref mut boss } = quest.objectives[0] {
+        boss.boss_health -= 300.0;
         println!("\n⚔️  Player deals 300 damage!");
         println!(
             "{}👹 Void Boss HP: {}{}████████████░░░░{} {} / 1000{}",
@@ -342,7 +350,7 @@ fn demo_scenario_3_boss_fight_with_ui() {
             colors::RED,
             colors::BG_RED,
             colors::RESET,
-            boss.health as i32,
+            boss.boss_health as i32,
             colors::RESET
         );
     }
@@ -354,9 +362,9 @@ fn demo_scenario_3_boss_fight_with_ui() {
     // === PHASE 2: Boss enrage ===
     println!("\n📺 Phase 2: Boss Enraged! (HP < 50%)");
 
-    if let ObjectiveType::Boss { ref mut boss } = quest.objectives[0] {
-        boss.phase = 2;
-        boss.health = 400.0;
+    if let ObjectiveType::Boss { objective: ref mut boss } = quest.objectives[0] {
+        boss.current_phase = quest_types::BossPhase::Phase2;
+        boss.boss_health = 400.0;
         println!("⚠️  Boss entered Phase 2! Attack speed increased!");
         println!(
             "{}👹 Void Boss (ENRAGED) HP: {}{}██████░░░░░░░░░░{} {} / 1000{}",
@@ -364,7 +372,7 @@ fn demo_scenario_3_boss_fight_with_ui() {
             colors::RED,
             colors::BG_RED,
             colors::RESET,
-            boss.health as i32,
+            boss.boss_health as i32,
             colors::RESET
         );
     }
@@ -373,7 +381,7 @@ fn demo_scenario_3_boss_fight_with_ui() {
     player.ability_manager.update(2.0);
     println!("\n🔥 Final combo: Dash → Attack → Shield!");
 
-    if let Ok(()) = player.use_dash() {
+    if let Ok((_pos, _dmg)) = player.use_dash() {
         println!("{}", render_particle_effect("dash_trail", player.position));
     }
 
@@ -389,9 +397,9 @@ fn demo_scenario_3_boss_fight_with_ui() {
     // === Victory! ===
     println!("\n📺 Final Strike: Boss Defeated!");
 
-    if let ObjectiveType::Boss { ref mut boss } = quest.objectives[0] {
-        boss.health = 0.0;
-        boss.phase = 3; // Defeated
+    if let ObjectiveType::Boss { objective: ref mut boss } = quest.objectives[0] {
+        boss.boss_health = 0.0;
+        boss.current_phase = quest_types::BossPhase::Phase3; // Defeated
         println!("💀 Void Boss shattered!");
         println!(
             "{}👹 Void Boss HP: {}{}░░░░░░░░░░░░░░░░{} 0 / 1000 (DEFEATED){}",
@@ -403,7 +411,7 @@ fn demo_scenario_3_boss_fight_with_ui() {
         );
     }
 
-    quest.state = QuestState::Complete;
+    quest.state = QuestState::Completed;
     println!("{}", play_audio_effect("quest_complete"));
     println!(
         "{}",

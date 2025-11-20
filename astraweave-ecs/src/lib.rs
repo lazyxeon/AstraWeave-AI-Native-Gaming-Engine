@@ -69,7 +69,7 @@ use std::collections::HashMap;
 use archetype::{ArchetypeSignature, ArchetypeStorage};
 pub use command_buffer::CommandBuffer;
 pub use entity_allocator::{Entity, EntityAllocator};
-pub use events::{Event, EventReader};
+pub use events::{Event, EventReader, Events};
 pub use rng::Rng;
 pub use system_param::{Query, Query2, Query2Mut, SystemParam};
 pub use type_registry::TypeRegistry;

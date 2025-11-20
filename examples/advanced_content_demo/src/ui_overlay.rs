@@ -22,6 +22,7 @@ pub mod colors {
     pub const CYAN: &str = "\x1b[36m";
     pub const WHITE: &str = "\x1b[37m";
 
+    #[allow(dead_code)]
     pub const BG_BLACK: &str = "\x1b[40m";
     pub const BG_RED: &str = "\x1b[41m";
     pub const BG_GREEN: &str = "\x1b[42m";
@@ -85,7 +86,7 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
         colors::CYAN,
         "📋",
         quest.title,
-        quest.state.symbol(),
+        get_quest_state_symbol(quest.state),
         colors::RESET
     ));
 
@@ -109,7 +110,7 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
         let desc = obj.description();
 
         lines.push(format!(
-            "   {} {}. {} {}({})",
+            "   {} {}. {} {}({}){}",
             checkbox,
             i + 1,
             desc,
@@ -120,7 +121,8 @@ pub fn render_quest_progress(quest: &Quest) -> Vec<String> {
     }
 
     // Rewards
-    if let Some(reward_text) = quest.reward_description() {
+    if !quest.rewards.is_empty() {
+        let reward_text = quest.rewards.iter().map(|r| format!("{:?}", r)).collect::<Vec<_>>().join(", ");
         lines.push(format!(
             "   {}Reward: {}{}{}",
             colors::DIM,
@@ -146,8 +148,8 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
     ));
 
     // Dash ability
-    let dash = &player.ability_manager.dash;
-    let dash_ready = player.ability_manager.can_use_dash();
+    let dash = &player.ability_manager.echo_dash;
+    let dash_ready = dash.can_use(player.echo_currency as u32);
     let dash_status = if dash_ready {
         format!("{}READY{}", colors::GREEN, colors::RESET)
     } else {
@@ -158,20 +160,20 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
         "  {}[D]{} Dash ({}⚡) - {}",
         colors::CYAN,
         colors::RESET,
-        dash.echo_cost,
+        dash.state.echo_cost,
         dash_status
     ));
 
     if !dash_ready {
         lines.push(format!(
             "     {}",
-            render_cooldown_bar("Cooldown", dash.cooldown_current, dash.cooldown_max, 20)
+            render_cooldown_bar("Cooldown", dash.state.remaining_cooldown(), dash.state.cooldown_seconds, 20)
         ));
     }
 
     // Shield ability
-    let shield = &player.ability_manager.shield;
-    let shield_ready = player.ability_manager.can_use_shield();
+    let shield = &player.ability_manager.echo_shield;
+    let shield_ready = shield.can_use(player.echo_currency as u32);
     let shield_status = if shield_ready {
         format!("{}READY{}", colors::GREEN, colors::RESET)
     } else {
@@ -182,14 +184,14 @@ pub fn render_ability_panel(player: &Player) -> Vec<String> {
         "  {}[S]{} Shield ({}⚡) - {}",
         colors::CYAN,
         colors::RESET,
-        shield.echo_cost,
+        shield.state.echo_cost,
         shield_status
     ));
 
     if !shield_ready {
         lines.push(format!(
             "     {}",
-            render_cooldown_bar("Cooldown", shield.cooldown_current, shield.cooldown_max, 20)
+            render_cooldown_bar("Cooldown", shield.state.remaining_cooldown(), shield.state.cooldown_seconds, 20)
         ));
     }
 
@@ -248,14 +250,12 @@ pub fn render_notification(title: &str, message: &str, icon: &str) -> String {
 }
 
 /// Helper: QuestState symbol for UI display
-impl QuestState {
-    pub fn symbol(&self) -> &'static str {
-        match self {
-            QuestState::NotStarted => "⭕",
-            QuestState::Active => "🔄",
-            QuestState::Complete => "✅",
-            QuestState::Failed => "❌",
-        }
+pub fn get_quest_state_symbol(state: QuestState) -> &'static str {
+    match state {
+        QuestState::Inactive => "⭕",
+        QuestState::Active => "🔄",
+        QuestState::Completed => "✅",
+        QuestState::Failed => "❌",
     }
 }
 

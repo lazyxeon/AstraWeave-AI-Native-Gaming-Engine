@@ -1,7 +1,10 @@
 #[allow(unused_imports)]
 use anyhow::{anyhow, Result};
 
-use crate::mesh::{CpuMesh, MeshVertex};
+use crate::mesh::CpuMesh;
+#[cfg(feature = "obj-assets")]
+use crate::mesh::MeshVertex;
+#[cfg(feature = "obj-assets")]
 use glam::{Vec2, Vec3, Vec4};
 
 #[cfg(feature = "obj-assets")]

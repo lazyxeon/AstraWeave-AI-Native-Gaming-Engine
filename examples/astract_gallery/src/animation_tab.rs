@@ -6,6 +6,7 @@ use astract::prelude::{egui::*, *};
 pub struct AnimationTab {
     // Tween demo
     bounce_tween: Tween<f32>,
+    #[allow(dead_code)]
     fade_tween: Tween<f32>,
     color_tween: Tween<Color32>,
 

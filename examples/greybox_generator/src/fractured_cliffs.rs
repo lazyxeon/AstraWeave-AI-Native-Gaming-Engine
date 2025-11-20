@@ -136,7 +136,7 @@ fn create_cliff_wall(
     thickness: f32,
 ) {
     let b = vertices.len() as u16;
-    let ht = thickness / 2.0;
+    let _ht = thickness / 2.0;
 
     // Single tall wall face (front facing inward toward path)
     let normal = if x_offset < 0.0 {

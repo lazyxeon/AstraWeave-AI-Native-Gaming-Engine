@@ -1,9 +1,9 @@
 At line:1 char:53
-+ $PSDefaultParameterValues['*:Encoding'] = 'utf8'; if exist .github (d ...
++ $PSDefaultParameterValues['*:Encoding'] = 'utf8'; if exist assets (di ...
 +                                                     ~
 Missing '(' after 'if' in if statement.
-At line:1 char:131
-+ ... ithub (dir /s /b .github\*.md else (echo .github directory not found)
+At line:1 char:165
++ ... s\*.jpg assets\*.hdr assets\*.exr else echo No assets directory found
 +                                                                          ~
 Missing closing ')' in expression.
     + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException

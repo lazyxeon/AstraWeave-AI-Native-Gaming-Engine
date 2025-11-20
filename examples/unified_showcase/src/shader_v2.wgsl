@@ -116,6 +116,8 @@ fn vs_skybox(in: VertexInput) -> SkyboxOutput {
 
 @fragment
 fn fs_skybox(in: SkyboxOutput) -> @location(0) vec4<f32> {
+    // Equirectangular mapping using atan2(z, x) and asin(y)
+    // in.uv already contains correct UV from vertex shader
     let color = textureSample(t_sky, s_sky, in.uv).rgb;
     // No lighting on skybox
     return vec4<f32>(color, 1.0);

@@ -24,7 +24,7 @@ async fn test_client_creation_success() {
 #[tokio::test]
 async fn test_client_has_user_agent() {
     // Test that client is configured with proper user agent
-    let client = PolyHavenClient::new().unwrap();
+    let _client = PolyHavenClient::new().unwrap();
 
     // Client should be configured (we can't directly inspect reqwest::Client,
     // but we can verify it was created without errors)
