@@ -742,9 +742,9 @@ impl ShowcaseApp {
             ],
         });
         
-        // 3. Water Plane
-        println!("Adding water plane...");
-        let water_mesh = self.create_plane_mesh(100.0, water_mat);
+        // 3. Water Plane (Replaced with River Mesh)
+        println!("Adding water (river) mesh...");
+        let water_mesh = self.create_river_mesh(water_mat);
         self.objects.push(SceneObject {
             mesh_index: water_mesh,
             position: Vec3::new(0.0, 0.0, 0.0),
@@ -756,10 +756,10 @@ impl ShowcaseApp {
         // 4. Tree Variations
         println!("Placing trees...");
         let tree_models = [
-            "assets/models/tree_default.glb",
-            "assets/models/tree_oak.glb",
-            "assets/models/tree_pineDefaultA.glb",
-            "assets/models/tree_detailed.glb",
+            "../../assets/models/tree_default.glb",
+            "../../assets/models/tree_oak.glb",
+            "../../assets/models/tree_pineDefaultA.glb",
+            "../../assets/models/tree_detailed.glb",
         ];
         
         // Helper for noise
@@ -767,57 +767,6 @@ impl ShowcaseApp {
             (x * 0.05).sin() * (z * 0.05).cos() + 
             (x * 0.15).sin() * 0.5 + 
             (z * 0.08).cos() * 0.5
-        };
-        
-        // Helper to calculate island height and normal at a position
-        // Must match the FBM noise applied in create_floating_island_terrain
-        let get_height_fbm = |x: f32, z: f32| -> f32 {
-            let mut height = 0.0;
-            // Layer 1: Hills
-            height += (x * 0.05).sin() * (z * 0.05).cos() * 6.0;
-            // Layer 2: Details
-            height += (x * 0.2).sin() * (z * 0.15).cos() * 2.0;
-            // Layer 3: Mountain Peak (z < -10.0)
-            if z < -10.0 {
-                let mountain_factor = (((-z - 10.0) / 20.0).min(1.0)).max(0.0);
-                height += mountain_factor * 25.0;
-            }
-            // River Bed carving
-            let river_path = (x * 0.1).sin() * 20.0; // Meandering X
-            let dist_river = (z - river_path).abs();
-            if dist_river < 5.0 {
-                height -= (5.0 - dist_river) * 2.0;
-            }
-            // Town Plateau flattening
-            let dist_center = (x*x + z*z).sqrt();
-            if dist_center < 15.0 {
-                // Blend to flat 5.0
-                let blend = (dist_center / 15.0).powf(2.0);
-                height = height * blend + 5.0 * (1.0 - blend);
-            }
-            height
-        };
-        
-        let get_island_height_and_normal = |x: f32, z: f32| -> (f32, Vec3) {
-            let dist = (x * x + z * z).sqrt();
-            let radius = 50.0; // Matches terrain generation radius
-            
-            if dist > radius {
-                return (0.0, Vec3::Y); // Default
-            }
-            
-            let height = get_height_fbm(x, z);
-            
-            // Calculate normal by sampling nearby points
-            let epsilon = 0.5;
-            let hx1 = get_height_fbm(x + epsilon, z);
-            let hz1 = get_height_fbm(x, z + epsilon);
-            
-            let v1 = Vec3::new(epsilon, hx1 - height, 0.0);
-            let v2 = Vec3::new(0.0, hz1 - height, epsilon);
-            let normal = v1.cross(v2).normalize();
-            
-            (height, normal)
         };
         
         let mut tree_count = 0;
@@ -830,18 +779,27 @@ impl ShowcaseApp {
                 if dist > 48.0 { continue; } // Island edge
                 
                 // Calculate height and normal
-                let (height, normal) = get_island_height_and_normal(fx, fz);
+                let height = self.calculate_terrain_height(fx, fz);
+                
+                let epsilon = 0.5;
+                let hx1 = self.calculate_terrain_height(fx + epsilon, fz);
+                let hz1 = self.calculate_terrain_height(fx, fz + epsilon);
+                let v1 = Vec3::new(epsilon, hx1 - height, 0.0);
+                let v2 = Vec3::new(0.0, hz1 - height, epsilon);
+                let normal = v1.cross(v2).normalize();
                 
                 // Filter out:
-                // - River Bed (height < 0.0)
-                // - Town area (dist < 15.0)
-                // - Steep slopes (angle > 45 deg, i.e., normal.dot(Y) < cos(45) = 0.707)
-                if height < 0.0 { continue; } // River bed
+                // - River Bed: height is already carved. But to filter OUT river bed, we need to know if we are IN it.
+                // The river path is:
+                let river_path = (fx * 0.1).sin() * 20.0;
+                let dist_river = (fz - river_path).abs();
+                if dist_river < 6.0 { continue; } // River bed (5.0 + margin)
+                
                 if dist < 15.0 { continue; } // Town plateau
                 if normal.dot(Vec3::Y) < 0.707 { continue; } // Too steep (>45 degrees)
                 
                 let density = noise(fx, fz);
-                if density > 0.3 {
+                if density > 0.1 { // Increased density threshold
                     // Random tree selection
                     let tree_idx = ((fx + fz).abs() as usize) % tree_models.len();
                     let tree_path = tree_models[tree_idx];
@@ -850,12 +808,15 @@ impl ShowcaseApp {
                     let jitter_x = (fx * 12.9898).sin() * 2.0;
                     let jitter_z = (fz * 78.233).cos() * 2.0;
                     
-                    // Use calculated height from helper function
-                    let pos = Vec3::new(fx + jitter_x, height, fz + jitter_z);
+                    // Use calculated height from helper function (recalc for jittered pos)
+                    let pos_x = fx + jitter_x;
+                    let pos_z = fz + jitter_z;
+                    let pos_y = self.calculate_terrain_height(pos_x, pos_z);
+                    let pos = Vec3::new(pos_x, pos_y, pos_z);
                     
                     // Random rotation and scale
                     let rot_y = (fx * fz * 0.1).sin() * std::f32::consts::TAU;
-                    let scale = (0.8 + ((fx + fz) * 0.1).sin().abs() * 0.4) * 20.0; // x20 scale
+                    let scale = (0.8 + ((fx + fz) * 0.1).sin().abs() * 0.4) * 2.0; // x2.0 scale
                     
                     if let Ok(indices) = self.load_gltf(tree_path, grass_mat) {
                         for idx in indices {
@@ -879,34 +840,35 @@ impl ShowcaseApp {
         // 5. Town Structures (Tents/Houses in town center)
         println!("Placing town structures...");
         let tent_models = [
-            "assets/models/tent_detailedClosed.glb",
-            "assets/models/tent_detailedOpen.glb",
+            "../../assets/models/tent_detailedClosed.glb",
+            "../../assets/models/tent_detailedOpen.glb",
         ];
         
-        let town_center = Vec3::new(0.0, 5.0, 0.0); // Town is at Y=5.0 (flattened plateau)
         let tent_positions = [
-            Vec3::new(5.0, 5.0, 5.0),
-            Vec3::new(-6.0, 5.0, 3.0),
-            Vec3::new(2.0, 5.0, -7.0),
-            Vec3::new(-4.0, 5.0, -5.0),
+            Vec3::new(20.0, 0.0, 20.0),
+            Vec3::new(-20.0, 0.0, 20.0),
+            Vec3::new(20.0, 0.0, -20.0),
+            Vec3::new(-20.0, 0.0, -20.0),
         ];
         
         for (i, tent_pos) in tent_positions.iter().enumerate() {
             let tent_idx = i % tent_models.len();
             let tent_path = tent_models[tent_idx];
             
-            // Random rotation
             let rot_y = (i as f32 * 1.7).sin() * std::f32::consts::TAU;
+            
+            let h = self.calculate_terrain_height(tent_pos.x, tent_pos.z);
+            let pos = Vec3::new(tent_pos.x, h, tent_pos.z);
             
             if let Ok(indices) = self.load_gltf(tent_path, rock_mat) {
                 for idx in indices {
                     self.objects.push(SceneObject {
                         mesh_index: idx,
-                        position: *tent_pos,
+                        position: pos,
                         rotation: Quat::from_rotation_y(rot_y),
-                        scale: Vec3::splat(20.0), // x20 scale
+                        scale: Vec3::splat(20.0),
                         model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
-                            Vec3::splat(20.0), Quat::from_rotation_y(rot_y), *tent_pos
+                            Vec3::splat(20.0), Quat::from_rotation_y(rot_y), pos
                         )),
                     });
                 }
@@ -916,16 +878,16 @@ impl ShowcaseApp {
         
         // 6. Tower at Peak
         println!("Placing tower at peak...");
-        let (peak_height, _) = get_island_height_and_normal(0.0, 0.0);
-        if let Ok(indices) = self.load_gltf("assets/models/tower.glb", rock_mat) {
+        let peak_height = self.calculate_terrain_height(0.0, 0.0);
+        if let Ok(indices) = self.load_gltf("../../assets/models/tower.glb", rock_mat) {
             for idx in indices {
                 self.objects.push(SceneObject {
                     mesh_index: idx,
                     position: Vec3::new(0.0, peak_height, 0.0),
                     rotation: Quat::IDENTITY,
-                    scale: Vec3::splat(20.0), // x20 scale (matching tree scale)
+                    scale: Vec3::splat(5.0), // Reduced scale from 20.0 to 5.0
                     model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
-                        Vec3::splat(20.0), Quat::IDENTITY, Vec3::new(0.0, peak_height, 0.0)
+                        Vec3::splat(5.0), Quat::IDENTITY, Vec3::new(0.0, peak_height, 0.0)
                     )),
                 });
             }
@@ -1284,6 +1246,82 @@ impl ShowcaseApp {
         self.create_mesh_from_data(&vertices, &indices, mat_idx)
     }
     
+    fn calculate_terrain_height(&self, x: f32, z: f32) -> f32 {
+        let mut height = (x * 0.05).sin() * (z * 0.05).cos() * 6.0;
+        height += (x * 0.2).sin() * (z * 0.15).cos() * 2.0;
+        if z < -10.0 {
+            let mountain_factor = (((-z - 10.0) / 20.0).min(1.0)).max(0.0);
+            height += mountain_factor * 25.0;
+        }
+        // River Bed carving
+        let river_path = (x * 0.1).sin() * 20.0; 
+        let dist_river = (z - river_path).abs();
+        if dist_river < 5.0 {
+            height -= (5.0 - dist_river) * 2.0;
+        }
+        // Town Plateau logic
+        let dist_center = (x*x + z*z).sqrt();
+        if dist_center < 15.0 {
+            let blend = (dist_center / 15.0).powf(2.0);
+            height = height * blend + 5.0 * (1.0 - blend);
+        }
+        height
+    }
+
+    fn create_river_mesh(&mut self, mat_idx: usize) -> usize {
+        let mut vertices = Vec::new();
+        let mut indices = Vec::new();
+        let steps = 100;
+        let min_x = -48.0;
+        let max_x = 48.0;
+        let step_size = (max_x - min_x) / steps as f32;
+        
+        for i in 0..=steps {
+            let x = min_x + i as f32 * step_size;
+            let z_center = (x * 0.1).sin() * 20.0;
+            
+            // Calculate base height (same as terrain FBM)
+            let base_height = self.calculate_terrain_height(x, z_center);
+            
+            // Water level: slightly below base height (river bed is carved down 10.0 max)
+            // The river bed formula is: height -= (5.0 - dist_river) * 2.0;
+            // At center (dist_river=0), modification is -10.0.
+            // We want water to be, say, 2.0 units below the "banks" (undug terrain), or filling the bed?
+            // If we put it at base_height - 2.0, it is 8.0 units above the bottom.
+            let water_level = base_height + 8.0;
+            
+            let half_width = 4.5;
+            
+            // Left
+            vertices.push(Vertex {
+                position: [x, water_level, z_center - half_width],
+                normal: [0.0, 1.0, 0.0],
+                uv: [x / 50.0, (z_center - half_width) / 50.0],
+                color: [1.0; 4],
+                tangent: [1.0, 0.0, 0.0, 1.0],
+            });
+            
+            // Right
+            vertices.push(Vertex {
+                position: [x, water_level, z_center + half_width],
+                normal: [0.0, 1.0, 0.0],
+                uv: [x / 50.0, (z_center + half_width) / 50.0],
+                color: [1.0; 4],
+                tangent: [1.0, 0.0, 0.0, 1.0],
+            });
+        }
+        
+        for i in 0..steps {
+            let base = i * 2;
+            // Tri 1: 0, 2, 1
+            indices.extend_from_slice(&[base, base + 2, base + 1]);
+            // Tri 2: 1, 2, 3
+            indices.extend_from_slice(&[base + 1, base + 2, base + 3]);
+        }
+        
+        self.create_mesh_from_data(&vertices, &indices, mat_idx)
+    }
+
     fn create_plane_mesh(&mut self, size: f32, mat_idx: usize) -> usize {
         let s = size / 2.0;
         let uv_scale = 50.0; // Increase tiling for better detail

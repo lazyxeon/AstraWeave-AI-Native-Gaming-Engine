@@ -2,7 +2,6 @@
 use crate::post::{WGSL_SSAO, WGSL_SSGI, WGSL_SSR};
 use anyhow::Result;
 use anyhow::Context;
-use crate::texture::Texture;
 use glam::Vec4Swizzles;
 use glam::{vec3, Mat4};
 use std::borrow::Cow;
@@ -587,7 +586,7 @@ impl Renderer {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
-        let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let _hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let hdr_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("hdr sampler"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -615,7 +614,7 @@ impl Renderer {
             view_formats: &[],
         });
         #[cfg(feature = "postfx")]
-        let hdr_view = hdr_aux.create_view(&wgpu::TextureViewDescriptor::default());
+        let _hdr_view = hdr_aux.create_view(&wgpu::TextureViewDescriptor::default());
         #[cfg(feature = "postfx")]
         let fx_gi = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("fx gi tex"),
@@ -632,7 +631,7 @@ impl Renderer {
             view_formats: &[],
         });
         #[cfg(feature = "postfx")]
-        let hdr_view = fx_gi.create_view(&wgpu::TextureViewDescriptor::default());
+        let _hdr_view = fx_gi.create_view(&wgpu::TextureViewDescriptor::default());
         #[cfg(feature = "postfx")]
         let fx_ao = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("fx ao tex"),
@@ -677,7 +676,7 @@ impl Renderer {
                 },
             ],
         });
-        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("post bg"),
             layout: &post_bgl,
             entries: &[
@@ -740,7 +739,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _post_bind_group_ssr = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssr bg"),
             layout: &ssr_bgl,
             entries: &[
@@ -778,7 +777,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline_ssr = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("ssr pipeline"),
             layout: Some(&ssr_pl),
             vertex: wgpu::VertexState {
@@ -832,7 +831,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _post_bind_group_ssao = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssao bg"),
             layout: &ssao_bgl,
             entries: &[
@@ -853,7 +852,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline_ssao = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("ssao pipeline"),
             layout: Some(&ssao_pl),
             vertex: wgpu::VertexState {
@@ -917,7 +916,7 @@ impl Renderer {
             ],
         });
         #[cfg(feature = "postfx")]
-        let post_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        let _post_bind_group_ssgi = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("ssgi bg"),
             layout: &ssgi_bgl,
             entries: &[
@@ -942,7 +941,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline_ssgi = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("ssgi pipeline"),
             layout: Some(&ssgi_pl),
             vertex: wgpu::VertexState {
@@ -1045,7 +1044,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("post fx pipeline"),
             layout: Some(&post_fx_pl),
             vertex: wgpu::VertexState {
@@ -1476,14 +1475,14 @@ fn vs(input: VSIn) -> VSOut {
         });
         // Initialize albedo with a 1x1 white texel so sampling yields visible color
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &albedo_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[255u8, 255u8, 255u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1529,14 +1528,14 @@ fn vs(input: VSIn) -> VSOut {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[0u8, 255u8, 0u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1573,14 +1572,14 @@ fn vs(input: VSIn) -> VSOut {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[128u8, 128u8, 255u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1885,14 +1884,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[0u8, 255u8, 0u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -1929,14 +1928,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             ..Default::default()
         });
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             &[128u8, 128u8, 255u8, 255u8],
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4),
                 rows_per_image: Some(1),
@@ -3365,7 +3364,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         &self.queue
     }
 
-    pub fn surface(&self) -> &wgpu::Surface {
+    pub fn surface(&self) -> &wgpu::Surface<'_> {
         &self.surface
     }
 
@@ -3527,6 +3526,21 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         (out, count)
     }
 
+    pub fn set_smoke_test_texture(&mut self, path: &str) {
+        #[cfg(feature = "textures")]
+        {
+            use image::GenericImageView;
+            let img = image::open(path).expect("Failed to load smoke test texture");
+            let rgba = img.to_rgba8();
+            let (width, height) = img.dimensions();
+            self.set_albedo_from_rgba8(width, height, &rgba);
+        }
+        #[cfg(not(feature = "textures"))]
+        {
+            log::warn!("Textures feature disabled, ignoring set_smoke_test_texture");
+        }
+    }
+
     pub fn set_albedo_from_rgba8(&mut self, width: u32, height: u32, data: &[u8]) {
         assert_eq!(data.len() as u32, width * height * 4);
         // Recreate texture with provided dimensions
@@ -3548,14 +3562,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .albedo_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.albedo_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -3623,14 +3637,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .mr_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.mr_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),
@@ -3698,14 +3712,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             .normal_tex
             .create_view(&wgpu::TextureViewDescriptor::default());
         self.queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.normal_tex,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(width * 4),
                 rows_per_image: Some(height),

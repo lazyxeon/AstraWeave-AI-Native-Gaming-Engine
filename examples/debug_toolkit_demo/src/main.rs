@@ -289,7 +289,7 @@ impl ApplicationHandler for DemoApp {
                         }
 
                         // Render egui
-                        let screen_descriptor = egui_wgpu::ScreenDescriptor {
+                        let _screen_descriptor = egui_wgpu::ScreenDescriptor {
                             size_in_pixels: [width, height],
                             pixels_per_point: window.scale_factor() as f32,
                         };
@@ -305,7 +305,7 @@ impl ApplicationHandler for DemoApp {
                             });
 
                         let egui_output = egui_ctx.end_pass();
-                        let clipped_primitives =
+                        let _clipped_primitives =
                             egui_ctx.tessellate(egui_output.shapes, egui_output.pixels_per_point);
 
                         for (id, image_delta) in &egui_output.textures_delta.set {
@@ -313,7 +313,7 @@ impl ApplicationHandler for DemoApp {
                         }
 
                         {
-                            let mut render_pass =
+                            let mut _render_pass =
                                 encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                                     label: Some("Egui Render Pass"),
                                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
