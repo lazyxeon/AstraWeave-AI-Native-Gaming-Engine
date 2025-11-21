@@ -1,5 +1,24 @@
 // Terrain Shader with Triplanar Mapping
 
+// Helper function: 3x3 matrix inverse
+fn inverse_mat3(m: mat3x3<f32>) -> mat3x3<f32> {
+    let a00 = m[0][0]; let a01 = m[0][1]; let a02 = m[0][2];
+    let a10 = m[1][0]; let a11 = m[1][1]; let a12 = m[1][2];
+    let a20 = m[2][0]; let a21 = m[2][1]; let a22 = m[2][2];
+    
+    let b01 = a22 * a11 - a12 * a21;
+    let b11 = -a22 * a10 + a12 * a20;
+    let b21 = a21 * a10 - a11 * a20;
+    
+    let det = a00 * b01 + a01 * b11 + a02 * b21;
+    
+    return mat3x3<f32>(
+        vec3<f32>(b01, (-a22 * a01 + a02 * a21), (a12 * a01 - a02 * a11)) / det,
+        vec3<f32>(b11, (a22 * a00 - a02 * a20), (-a12 * a00 + a02 * a10)) / det,
+        vec3<f32>(b21, (-a21 * a00 + a01 * a20), (a11 * a00 - a01 * a10)) / det
+    );
+}
+
 struct CameraUniforms {
     view_proj: mat4x4<f32>,
     camera_pos: vec3<f32>,
@@ -52,7 +71,8 @@ fn vs_main(in: VertexInput) -> VertexOutput {
     out.clip_position = camera.view_proj * world_pos;
     out.world_position = world_pos.xyz;
     
-    let normal_matrix = mat3x3<f32>(model.model[0].xyz, model.model[1].xyz, model.model[2].xyz);
+    let model_mat3 = mat3x3<f32>(model.model[0].xyz, model.model[1].xyz, model.model[2].xyz);
+    let normal_matrix = transpose(inverse_mat3(model_mat3));
     out.world_normal = normalize(normal_matrix * in.normal);
     
     out.uv = in.uv;
@@ -65,7 +85,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 fn triplanar_sample(pos: vec3<f32>, normal: vec3<f32>, tex: texture_2d<f32>, s: sampler) -> vec4<f32> {
     let blend = abs(normal);
     let blend_normalized = blend / (blend.x + blend.y + blend.z);
-    let uv_scale = 0.5;
+    let uv_scale = 0.1;
     
     let sample_x = textureSample(tex, s, pos.yz * uv_scale);
     let sample_y = textureSample(tex, s, pos.xz * uv_scale);
@@ -80,7 +100,7 @@ fn triplanar_sample(pos: vec3<f32>, normal: vec3<f32>, tex: texture_2d<f32>, s: 
 fn triplanar_normal(pos: vec3<f32>, normal: vec3<f32>, tex: texture_2d<f32>, s: sampler) -> vec3<f32> {
     let blend = abs(normal);
     let blend_normalized = blend / (blend.x + blend.y + blend.z);
-    let uv_scale = 0.5;
+    let uv_scale = 0.1;
     
     // Sample normal maps
     let sample_x = textureSample(tex, s, pos.yz * uv_scale).xyz * 2.0 - 1.0;
@@ -98,9 +118,10 @@ fn triplanar_normal(pos: vec3<f32>, normal: vec3<f32>, tex: texture_2d<f32>, s: 
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // Slope detection for grass vs rock blending
+    // Slope detection for grass vs rock blending with noise variation
     let slope = abs(in.world_normal.y);
-    let grass_weight = smoothstep(0.6, 0.8, slope); // Flat areas = grass
+    let noise = sin(in.world_position.x * 0.1) * cos(in.world_position.z * 0.1) * 0.1;
+    let grass_weight = smoothstep(0.6 + noise, 0.8 + noise, slope); // Flat areas = grass with noise variation
     
     // Sample diffuse textures using triplanar
     let grass_color = triplanar_sample(in.world_position, in.world_normal, t_grass_diff, s_terrain);
