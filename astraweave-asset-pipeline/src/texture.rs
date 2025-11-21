@@ -75,9 +75,18 @@ pub fn compress_bc7(rgba: &RgbaImage) -> Result<Vec<u8>> {
         );
     }
 
-    // For now, implement simplified BC7 compression
-    // Production version would use intel-tex or basis-universal
-    let compressed = compress_bc7_simple(rgba)?;
+    // Use intel_tex for production-quality BC7 compression
+    let surface = intel_tex::RgbaSurface {
+        data: rgba.as_raw(),
+        width,
+        height,
+        stride: width * 4,
+    };
+    
+    // Use basic settings with alpha support (fast profile)
+    // For higher quality offline, use alpha_slow_settings()
+    let settings = intel_tex::bc7::alpha_basic_settings();
+    let compressed = intel_tex::bc7::compress_blocks(&settings, &surface);
 
     let elapsed = start.elapsed().as_millis() as u64;
     tracing::info!(

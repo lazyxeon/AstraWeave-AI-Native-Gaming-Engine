@@ -146,6 +146,7 @@ impl TextureStreamingManager {
         }
 
         // Queue for load
+        self.assets.insert(id.clone(), AssetState::Loading);
         self.load_queue.push(LoadRequest {
             id,
             priority,
@@ -176,7 +177,8 @@ impl TextureStreamingManager {
                     while self.current_memory_bytes + memory_bytes > self.max_memory_bytes {
                         if !self.evict_lru() {
                             warn!("Memory budget full, forcing eviction for {}", id);
-                            break;
+                            // Fix: Do not insert if budget is exceeded and eviction fails
+                            return;
                         }
                     }
 

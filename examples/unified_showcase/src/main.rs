@@ -823,12 +823,12 @@ impl ShowcaseApp {
             texture.create_view(&wgpu::TextureViewDescriptor::default())
         };
         
-        let placeholder_grass_diff_view = load_texture("assets/textures/pine forest textures/forest_ground_04_diff.png", "Placeholder Grass Diff");
-        let placeholder_grass_norm_view = load_texture("assets/textures/pine forest textures/forest_ground_04_nor_gl.png", "Placeholder Grass Norm");
-        let placeholder_grass_rough_view = load_texture("assets/textures/pine forest textures/forest_ground_04_rough.png", "Placeholder Grass Rough");
-        let placeholder_rock_diff_view = load_texture("assets/textures/pine forest textures/rocky_trail_diff.png", "Placeholder Rock Diff");
-        let placeholder_rock_norm_view = load_texture("assets/textures/pine forest textures/rocky_trail_nor_gl.png", "Placeholder Rock Norm");
-        let placeholder_rock_rough_view = load_texture("assets/textures/pine forest textures/rocky_trail_rough.png", "Placeholder Rock Rough");
+        let placeholder_grass_diff_view = load_texture("assets/textures/pine forest textures/grass_medium_01_diff.png", "Placeholder Grass Diff");
+        let placeholder_grass_norm_view = load_texture("assets/textures/pine forest textures/grass_medium_01_nor_gl.png", "Placeholder Grass Norm");
+        let placeholder_grass_rough_view = load_texture("assets/textures/pine forest textures/grass_medium_01_rough.png", "Placeholder Grass Rough");
+        let placeholder_rock_diff_view = load_texture("assets/textures/pine forest textures/rock_moss_set_01_diff.png", "Placeholder Rock Diff");
+        let placeholder_rock_norm_view = load_texture("assets/textures/pine forest textures/rock_moss_set_01_nor_gl.png", "Placeholder Rock Norm");
+        let placeholder_rock_rough_view = load_texture("assets/textures/pine forest textures/rock_moss_set_01_rough.png", "Placeholder Rock Rough");
         
         let placeholder_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
@@ -908,13 +908,13 @@ impl ShowcaseApp {
         println!("Loading materials...");
         println!("Loading Grass Mat...");
         std::io::stdout().flush().unwrap();
-        let _grass_mat = self.create_material_from_texture("Grass", "assets/textures/pine forest textures/forest_ground_04_diff.png");
+        let _grass_mat = self.create_material_from_texture("Grass", "assets/textures/pine forest textures/grass_medium_01_diff.png");
         println!("  -> Grass material index: {}", _grass_mat);
         println!("Loading Rock Mat...");
         std::io::stdout().flush().unwrap();
-        let _rock_mat = self.create_material_from_texture("Rock", "assets/textures/cobblestone.png");
+        let _rock_mat = self.create_material_from_texture("Rock", "assets/textures/pine forest textures/rock_moss_set_01_diff.png");
         println!("  -> Rock material index: {}", _rock_mat);
-        let water_mat = self.create_material_from_color("Water", [0.0, 0.5, 0.8, 0.9]); // Cyan translucent, high alpha
+        let water_mat = self.create_material_from_color("Water", [0.0, 0.3, 0.7, 0.6]); // Deep blue, more transparent
         println!("  -> Water material index: {}", water_mat);
         
         // Materials for GLTF models
@@ -976,12 +976,12 @@ impl ShowcaseApp {
             texture.create_view(&wgpu::TextureViewDescriptor::default())
         };
         
-        let grass_diff_view = load_terrain_texture("assets/textures/pine forest textures/forest_ground_04_diff.png", "Terrain Grass Diff");
-        let grass_norm_view = load_terrain_texture("assets/textures/pine forest textures/forest_ground_04_nor_gl.png", "Terrain Grass Norm");
-        let grass_rough_view = load_terrain_texture("assets/textures/pine forest textures/forest_ground_04_rough.png", "Terrain Grass Rough");
-        let rock_diff_view = load_terrain_texture("assets/textures/pine forest textures/rocky_trail_diff.png", "Terrain Rock Diff");
-        let rock_norm_view = load_terrain_texture("assets/textures/pine forest textures/rocky_trail_nor_gl.png", "Terrain Rock Norm");
-        let rock_rough_view = load_terrain_texture("assets/textures/pine forest textures/rocky_trail_rough.png", "Terrain Rock Rough");
+        let grass_diff_view = load_terrain_texture("assets/textures/pine forest textures/grass_medium_01_diff.png", "Terrain Grass Diff");
+        let grass_norm_view = load_terrain_texture("assets/textures/pine forest textures/grass_medium_01_nor_gl.png", "Terrain Grass Norm");
+        let grass_rough_view = load_terrain_texture("assets/textures/pine forest textures/grass_medium_01_rough.png", "Terrain Grass Rough");
+        let rock_diff_view = load_terrain_texture("assets/textures/pine forest textures/rock_moss_set_01_diff.png", "Terrain Rock Diff");
+        let rock_norm_view = load_terrain_texture("assets/textures/pine forest textures/rock_moss_set_01_nor_gl.png", "Terrain Rock Norm");
+        let rock_rough_view = load_terrain_texture("assets/textures/pine forest textures/rock_moss_set_01_rough.png", "Terrain Rock Rough");
         
         let terrain_sampler = self.device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
@@ -1104,7 +1104,7 @@ impl ShowcaseApp {
         // 6. Tents and Campfire
         println!("Placing tents and campfire...");
         // Tent
-        let tent_pos = Vec3::new(12.0, self.calculate_terrain_height(12.0, 12.0) + 0.15, 12.0);
+        let tent_pos = Vec3::new(20.0, self.calculate_terrain_height(20.0, 20.0) + 0.15, 20.0);
         if let Ok(indices) = self.load_gltf("assets/models/tent_smallOpen.glb", self.tower_wood_mat) {
             for idx in indices {
                 self.objects.push(SceneObject {
@@ -1120,7 +1120,7 @@ impl ShowcaseApp {
             println!("Tent placed at ({}, {}, {}).", tent_pos.x, tent_pos.y, tent_pos.z);
         }
         // Campfire
-        let camp_pos = Vec3::new(15.0, self.calculate_terrain_height(15.0, 10.0) - 0.05, 10.0);
+        let camp_pos = Vec3::new(23.0, self.calculate_terrain_height(23.0, 18.0) - 0.05, 18.0);
         if let Ok(indices) = self.load_gltf("assets/models/campfire_logs.glb", self.tower_wood_mat) {
             for idx in indices {
                 self.objects.push(SceneObject {
@@ -1138,8 +1138,8 @@ impl ShowcaseApp {
         
         // Structure
         println!("Placing structure...");
-        let peak_h = self.calculate_terrain_height(0.0, 0.0);
-        let struct_pos = Vec3::new(0.0, peak_h, 0.0);
+        let peak_h = self.calculate_terrain_height(10.0, 10.0); // Offset from center peak
+        let struct_pos = Vec3::new(10.0, peak_h, 10.0);
         if let Ok(indices) = self.load_gltf("assets/models/tent_detailedClosed.glb", self.tower_stone_mat) {
             for idx in indices {
                 self.objects.push(SceneObject {
@@ -1547,7 +1547,7 @@ impl ShowcaseApp {
             let z_center = (x * 0.1).sin() * 20.0;
             
             // Water level: above terrain
-            let water_level = 5.0;
+            let water_level = -2.0; // Lowered significantly to sit within the riverbed
             
             let half_width = 10.0;
             
@@ -1572,10 +1572,10 @@ impl ShowcaseApp {
         
         for i in 0..steps {
             let base = i * 2;
-            // Tri 1: 0, 2, 1
-            indices.extend_from_slice(&[base, base + 2, base + 1]);
-            // Tri 2: 1, 2, 3
-            indices.extend_from_slice(&[base + 1, base + 2, base + 3]);
+            // Tri 1: 0, 1, 2
+            indices.extend_from_slice(&[base, base + 1, base + 2]);
+            // Tri 2: 1, 3, 2
+            indices.extend_from_slice(&[base + 1, base + 3, base + 2]);
         }
         
         self.create_mesh_from_data(&vertices, &indices, mat_idx)
@@ -1658,7 +1658,7 @@ impl ShowcaseApp {
             let selected_mat = if mat_name.contains("bark") || mat_name.contains("trunk") || mat_name.contains("brown") || mat_name.contains("woodbark") {
                 println!("  DEBUG: Material '{}' matched BARK pattern -> index {}", mat_name, self.pine_bark_mat);
                 self.pine_bark_mat
-            } else if mat_name.contains("leaf") || mat_name.contains("twig") || mat_name.contains("green") || mat_name.contains("foliage") {
+            } else if mat_name.contains("leaf") || mat_name.contains("twig") || mat_name.contains("green") || mat_name.contains("foliage") || mat_name.contains("pine") || mat_name.contains("needle") {
                 println!("  DEBUG: Material '{}' matched LEAF pattern -> index {}", mat_name, self.pine_leaves_mat);
                 self.pine_leaves_mat
             } else if mat_name.contains("wood") && !mat_name.contains("woodbark") && !mat_name.contains("bark") {

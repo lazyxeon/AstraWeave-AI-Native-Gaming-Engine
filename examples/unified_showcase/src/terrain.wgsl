@@ -85,7 +85,7 @@ fn vs_main(in: VertexInput) -> VertexOutput {
 fn triplanar_sample(pos: vec3<f32>, normal: vec3<f32>, tex: texture_2d<f32>, s: sampler) -> vec4<f32> {
     let blend = abs(normal);
     let blend_normalized = blend / (blend.x + blend.y + blend.z);
-    let uv_scale = 0.1;
+    let uv_scale = 0.1; // Increased to 0.1 for proper detail scaling
     
     let sample_x = textureSample(tex, s, pos.yz * uv_scale);
     let sample_y = textureSample(tex, s, pos.xz * uv_scale);

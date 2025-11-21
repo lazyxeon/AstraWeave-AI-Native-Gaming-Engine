@@ -1,0 +1,16 @@
+[package]
+name = "fluids_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-render = { path = "../../astraweave-render" }
+astraweave-fluids = { path = "../../astraweave-fluids" }
+winit = { workspace = true }
+wgpu = { workspace = true }
+glam = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }
+env_logger = "0.11"
+log = "0.4"
