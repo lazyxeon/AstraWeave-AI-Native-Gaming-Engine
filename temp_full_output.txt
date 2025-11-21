@@ -10,7 +10,7 @@
 [0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
 
 [1m[33mwarning[0m[1m:[0m `unified_showcase` (bin "unified_showcase") generated 1 warning
-[1m[32m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 1.93s
+[1m[32m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 0.92s
 [1m[32m     Running[0m `target\debug\unified_showcase.exe`
 Window size: 800x600
 Loading HDR skybox: assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr
@@ -130,8 +130,8 @@ DEBUG MATCH: assets/models/campfire_logs.glb -> wood -> 5
 DEBUG MATCH: assets/models/campfire_logs.glb -> woodDark -> 5
 Campfire placed at (15, 2.3440325, 10).
 Placing structure...
-DEBUG MATCH: assets/models/structure.glb -> planks -> 6
+DEBUG MATCH: assets/models/tower.glb -> bricks -> 6
+DEBUG MATCH: assets/models/tower.glb -> stones -> 6
 Structure placed.
 Creating skybox...
-Floating island scene complete. Objects: 99
-[1m[31merror[0m[1m:[0m process didn't exit successfully: `target\debug\unified_showcase.exe` (exit code: 1)
+Floating island scene complete. Objects: 100

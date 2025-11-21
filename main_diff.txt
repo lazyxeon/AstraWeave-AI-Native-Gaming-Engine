@@ -1,0 +1,244 @@
+warning: in the working copy of 'examples/unified_showcase/src/main.rs', LF will be replaced by CRLF the next time Git touches it
+diff --git a/examples/unified_showcase/src/main.rs b/examples/unified_showcase/src/main.rs
+index 9ba246c..a99783a 100644
+--- a/examples/unified_showcase/src/main.rs
++++ b/examples/unified_showcase/src/main.rs
+@@ -1,4 +1,5 @@
+ use glam::{Mat4, Quat, Vec3};
++use std::io::Write;
+ use std::sync::Arc;
+ use wgpu::util::DeviceExt;
+ use winit::{
+@@ -163,6 +164,12 @@ struct ShowcaseApp {
+     terrain_bind_group: wgpu::BindGroup,
+     terrain_mesh_index: usize,
+     
++    // Material indices for GLTF models
++    pine_bark_mat: usize,
++    pine_leaves_mat: usize,
++    tower_wood_mat: usize,
++    tower_stone_mat: usize,
++    
+     mouse_pressed: bool,
+ }
+ 
+@@ -315,6 +322,11 @@ impl ShowcaseApp {
+             source: wgpu::ShaderSource::Wgsl(include_str!("shader_v2.wgsl").into()),
+         });
+ 
++        let sky_shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
++            label: Some("Skybox Shader"),
++            source: wgpu::ShaderSource::Wgsl(include_str!("skybox.wgsl").into()),
++        });
++
+         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+             label: Some("Render Pipeline Layout"),
+             bind_group_layouts: &[&camera_layout, &light_layout, &material_layout, &model_layout],
+@@ -394,13 +406,13 @@ impl ShowcaseApp {
+             label: Some("Sky Pipeline"),
+             layout: Some(&sky_pipeline_layout),
+             vertex: wgpu::VertexState {
+-                module: &shader,
++                module: &sky_shader_module,
+                 entry_point: Some("vs_skybox"),
+                 buffers: &[Vertex::desc()],
+                 compilation_options: Default::default(),
+             },
+             fragment: Some(wgpu::FragmentState {
+-                module: &shader,
++                module: &sky_shader_module,
+                 entry_point: Some("fs_skybox"),
+                 targets: &[Some(wgpu::ColorTargetState {
+                     format: config.format,
+@@ -851,6 +863,10 @@ impl ShowcaseApp {
+             sky_mesh_index: 0,
+             terrain_bind_group: placeholder_terrain_bind_group,
+             terrain_mesh_index: 0,
++            pine_bark_mat: 0,
++            pine_leaves_mat: 0,
++            tower_wood_mat: 0,
++            tower_stone_mat: 0,
+             mouse_pressed: false,
+         };
+ 
+@@ -867,16 +883,36 @@ impl ShowcaseApp {
+         
+         // 1. Materials
+         println!("Loading materials...");
+-        let grass_mat = self.create_material_from_texture("Grass", "assets/textures/pine forest textures/forest_ground_04_diff.png");
++        println!("Loading Grass Mat...");
++        std::io::stdout().flush().unwrap();
++        let _grass_mat = self.create_material_from_texture("Grass", "assets/textures/pine forest textures/forest_ground_04_diff.png");
++        println!("Loading Rock Mat...");
++        std::io::stdout().flush().unwrap();
+         let _rock_mat = self.create_material_from_texture("Rock", "assets/textures/pine forest textures/rocky_trail_diff.png");
+-        let water_mat = self.create_material_from_color("Water", [0.2, 0.4, 0.8, 0.6]); // Translucent blue
++        let water_mat = self.create_material_from_color("Water", [0.0, 0.8, 1.0, 0.8]); // Cyan translucent
++        
++        // Materials for GLTF models
++        println!("Loading PineBark Mat...");
++        std::io::stdout().flush().unwrap();
++        self.pine_bark_mat = self.create_material_from_texture("PineBark", "assets/textures/planks.png");
++        println!("Loading PineLeaves Mat...");
++        std::io::stdout().flush().unwrap();
++        self.pine_leaves_mat = self.create_material_from_texture("PineLeaves", "assets/textures/tree.png");
++        println!("Loading TowerWood Mat...");
++        std::io::stdout().flush().unwrap();
++        self.tower_wood_mat = self.create_material_from_texture("TowerWood", "assets/textures/planks.png");
++        println!("Loading TowerStone Mat...");
++        std::io::stdout().flush().unwrap();
++        self.tower_stone_mat = self.create_material_from_texture("TowerStone", "assets/textures/cobblestone.png");
+         
+         // 2. Floating Island Terrain (unified mesh for terrain pipeline)
+         println!("Generating floating island terrain...");
+-        let terrain_mesh_idx = self.create_floating_island_terrain(50.0, 40.0, 64);
++        let terrain_mesh_idx = self.create_floating_island_terrain(50.0, 40.0, 32);
++        println!("Terrain generation DONE");
+         self.terrain_mesh_index = terrain_mesh_idx;
+         
+         // Create terrain bind group with all textures (diffuse, normal, roughness for grass and rock)
++        println!("Starting Texture Load");
+         let load_terrain_texture = |path: &str, label: &str| {
+             let img = image::open(path).expect(&format!("Missing {}", path)).to_rgba8();
+             let size = wgpu::Extent3d { width: img.width(), height: img.height(), depth_or_array_layers: 1 };
+@@ -939,6 +975,7 @@ impl ShowcaseApp {
+             scale: Vec3::ONE,
+             model_bind_group: self.create_model_bind_group(Mat4::from_translation(Vec3::new(0.0, 0.0, 0.0))),
+         });
++        println!("Water mesh created with index: {}", water_mesh);
+         
+         // 4. Tree Variations
+         println!("Placing trees...");
+@@ -972,7 +1009,7 @@ impl ShowcaseApp {
+                 let hz1 = self.calculate_terrain_height(fx, fz + epsilon);
+                 let v1 = Vec3::new(epsilon, hx1 - height, 0.0);
+                 let v2 = Vec3::new(0.0, hz1 - height, epsilon);
+-                let normal = v1.cross(v2).normalize();
++                let normal = v2.cross(v1).normalize();
+                 
+                 // Filter out:
+                 // - River Bed: height is already carved. But to filter OUT river bed, we need to know if we are IN it.
+@@ -1004,7 +1041,7 @@ impl ShowcaseApp {
+                     let rot_y = (fx * fz * 0.1).sin() * std::f32::consts::TAU;
+                     let scale = (0.8 + ((fx + fz) * 0.1).sin().abs() * 0.4) * 2.0; // x2.0 scale
+                     
+-                    if let Ok(indices) = self.load_gltf(tree_path, grass_mat) {
++                    if let Ok(indices) = self.load_gltf(tree_path, self.pine_bark_mat) {
+                         for idx in indices {
+                             self.objects.push(SceneObject {
+                                 mesh_index: idx,
+@@ -1023,6 +1060,60 @@ impl ShowcaseApp {
+         }
+         println!("Placed {} tree models.", tree_count);
+         
++        // 6. Tents and Campfire
++        println!("Placing tents and campfire...");
++        // Tent
++        let tent_pos = Vec3::new(12.0, self.calculate_terrain_height(12.0, 12.0) + 0.15, 12.0);
++        if let Ok(indices) = self.load_gltf("assets/models/tent_smallOpen.glb", self.tower_wood_mat) {
++            for idx in indices {
++                self.objects.push(SceneObject {
++                    mesh_index: idx,
++                    position: tent_pos,
++                    rotation: Quat::from_rotation_y(0.7),
++                    scale: Vec3::splat(2.0),
++                    model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
++                        Vec3::splat(2.0), Quat::from_rotation_y(0.7), tent_pos
++                    )),
++                });
++            }
++            println!("Tent placed at ({}, {}, {}).", tent_pos.x, tent_pos.y, tent_pos.z);
++        }
++        // Campfire
++        let camp_pos = Vec3::new(15.0, self.calculate_terrain_height(15.0, 10.0) - 0.05, 10.0);
++        if let Ok(indices) = self.load_gltf("assets/models/campfire_logs.glb", self.tower_wood_mat) {
++            for idx in indices {
++                self.objects.push(SceneObject {
++                    mesh_index: idx,
++                    position: camp_pos,
++                    rotation: Quat::IDENTITY,
++                    scale: Vec3::splat(1.5),
++                    model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
++                        Vec3::splat(1.5), Quat::IDENTITY, camp_pos
++                    )),
++                });
++            }
++            println!("Campfire placed at ({}, {}, {}).", camp_pos.x, camp_pos.y, camp_pos.z);
++        }
++        
++        // Structure
++        println!("Placing structure...");
++        let peak_h = self.calculate_terrain_height(0.0, 0.0);
++        let struct_pos = Vec3::new(0.0, peak_h, 0.0);
++        if let Ok(indices) = self.load_gltf("assets/models/structure.glb", self.tower_stone_mat) {
++            for idx in indices {
++                self.objects.push(SceneObject {
++                    mesh_index: idx,
++                    position: struct_pos,
++                    rotation: Quat::IDENTITY,
++                    scale: Vec3::splat(3.0),
++                    model_bind_group: self.create_model_bind_group(Mat4::from_scale_rotation_translation(
++                        Vec3::splat(3.0), Quat::IDENTITY, struct_pos
++                    )),
++                });
++            }
++            println!("Structure placed.");
++        }
++        
+         // 7. Skybox
+         println!("Creating skybox...");
+         let sky_mat = 0; // Placeholder material index (not used in skybox rendering)
+@@ -1220,7 +1311,12 @@ impl ShowcaseApp {
+         }
+         
+         for (i, vertex) in vertices.iter_mut().enumerate() {
+-            let normal = new_normals[i].normalize();
++            let len_sq = new_normals[i].length_squared();
++            let normal = if len_sq > 0.0001 {
++                new_normals[i].normalize()
++            } else {
++                Vec3::Y // Default up
++            };
+             vertex.normal = normal.to_array();
+         }
+         
+@@ -1409,10 +1505,10 @@ impl ShowcaseApp {
+             let x = min_x + i as f32 * step_size;
+             let z_center = (x * 0.1).sin() * 20.0;
+             
+-            // Water level: constant height
+-            let water_level = -3.0;
++            // Water level: above terrain
++            let water_level = 1.0;
+             
+-            let half_width = 4.5;
++            let half_width = 6.0;
+             
+             // Left
+             vertices.push(Vertex {
+@@ -1515,7 +1611,24 @@ impl ShowcaseApp {
+                 color: v.color,
+                 tangent: v.tangent,
+             }).collect();
+-            indices.push(self.create_mesh_from_data(&vertices, &mesh_data.indices, default_mat));
++            
++            // Material name-based selection
++            let mat_name = mesh_data.material_name.as_deref().unwrap_or("default");
++            let selected_mat = if mat_name.contains("Bark") || mat_name.contains("Trunk") || mat_name.contains("Brown") {
++                self.pine_bark_mat
++            } else if mat_name.contains("Leaves") || mat_name.contains("Twig") || mat_name.contains("Green") {
++                self.pine_leaves_mat
++            } else if mat_name.contains("Wood") {
++                self.tower_wood_mat
++            } else if mat_name.contains("Stone") || mat_name.contains("Wall") {
++                self.tower_stone_mat
++            } else {
++                default_mat
++            };
++            
++            println!("DEBUG MATCH: {} -> {} -> {}", path, mat_name, selected_mat);
++            
++            indices.push(self.create_mesh_from_data(&vertices, &mesh_data.indices, selected_mat));
+         }
+         Ok(indices)
+     }
