@@ -1,6 +1,8 @@
 mod fluid_renderer;
+mod ocean_renderer;
 
 use fluid_renderer::FluidRenderer;
+use ocean_renderer::OceanRenderer;
 use astraweave_fluids::FluidSystem;
 use astraweave_physics::PhysicsWorld;
 use winit::{
@@ -30,6 +32,11 @@ impl Camera {
     }
 }
 
+enum RenderMode {
+    ParticleFluid,
+    InfiniteOcean,
+}
+
 struct State {
     surface: wgpu::Surface<'static>,
     device: wgpu::Device,
@@ -41,6 +48,9 @@ struct State {
     physics_world: PhysicsWorld,
     fluid_system: FluidSystem,
     fluid_renderer: FluidRenderer,
+    ocean_renderer: OceanRenderer,
+    
+    render_mode: RenderMode,
     
     camera: Camera,
     depth_texture: wgpu::Texture,
@@ -50,6 +60,19 @@ struct State {
 }
 
 impl State {
+    fn toggle_render_mode(&mut self) {
+        self.render_mode = match self.render_mode {
+            RenderMode::ParticleFluid => {
+                log::info!("Switching to Infinite Ocean mode");
+                RenderMode::InfiniteOcean
+            }
+            RenderMode::InfiniteOcean => {
+                log::info!("Switching to Particle Fluid mode");
+                RenderMode::ParticleFluid
+            }
+        };
+    }
+    
     async fn new(window: std::sync::Arc<winit::window::Window>) -> Self {
         let size = window.inner_size();
 
@@ -142,6 +165,9 @@ impl State {
         // Initialize fluid renderer
         let max_particles = particle_count;
         let fluid_renderer = FluidRenderer::init(&device, surface_format, max_particles);
+        
+        // Initialize ocean renderer
+        let ocean_renderer = OceanRenderer::new(&device, &queue, surface_format);
 
         // Setup camera
         let camera = Camera {
@@ -164,6 +190,8 @@ impl State {
             physics_world,
             fluid_system,
             fluid_renderer,
+            ocean_renderer,
+            render_mode: RenderMode::InfiniteOcean,
             camera,
             depth_texture,
             depth_view,
@@ -207,18 +235,27 @@ impl State {
         // Cap dt to avoid instability
         let dt = dt.min(0.016);
 
-        // Create encoder for fluid simulation
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Fluid Update Encoder"),
-        });
+        match self.render_mode {
+            RenderMode::ParticleFluid => {
+                // Create encoder for fluid simulation
+                let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Fluid Update Encoder"),
+                });
 
-        // Update fluid simulation
-        self.fluid_system.step(&mut encoder, &self.queue, dt);
-        
-        // Submit encoder
-        self.queue.submit(std::iter::once(encoder.finish()));
-        
-        log::debug!("Frame time: {:.3}ms, Particles: {}", dt * 1000.0, self.fluid_system.particle_count);
+                // Update fluid simulation
+                self.fluid_system.step(&mut encoder, &self.queue, dt);
+                
+                // Submit encoder
+                self.queue.submit(std::iter::once(encoder.finish()));
+                
+                log::debug!("Frame time: {:.3}ms, Particles: {}", dt * 1000.0, self.fluid_system.particle_count);
+            }
+            RenderMode::InfiniteOcean => {
+                // Update ocean
+                self.ocean_renderer.update(dt, self.camera.eye);
+                log::debug!("Ocean Frame time: {:.3}ms", dt * 1000.0);
+            }
+        }
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -263,19 +300,33 @@ impl State {
             });
         }
 
-        // Render fluids
+        // Render based on mode
         let view_proj = self.camera.build_view_projection_matrix();
-        let particle_buffer = self.fluid_system.get_particle_buffer();
         
-        self.fluid_renderer.render(
-            &mut encoder,
-            &view,
-            &self.depth_view,
-            &self.queue,
-            particle_buffer,
-            self.fluid_system.particle_count,
-            view_proj,
-        );
+        match self.render_mode {
+            RenderMode::ParticleFluid => {
+                let particle_buffer = self.fluid_system.get_particle_buffer();
+                
+                self.fluid_renderer.render(
+                    &mut encoder,
+                    &view,
+                    &self.depth_view,
+                    &self.queue,
+                    particle_buffer,
+                    self.fluid_system.particle_count,
+                    view_proj,
+                );
+            }
+            RenderMode::InfiniteOcean => {
+                self.ocean_renderer.render(
+                    &mut encoder,
+                    &view,
+                    &self.depth_view,
+                    &self.queue,
+                    view_proj,
+                );
+            }
+        }
 
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
@@ -312,6 +363,17 @@ fn main() {
                         },
                     ..
                 } => elwt.exit(),
+                WindowEvent::KeyboardInput {
+                    event:
+                        KeyEvent {
+                            state: ElementState::Pressed,
+                            physical_key: PhysicalKey::Code(KeyCode::Space),
+                            ..
+                        },
+                    ..
+                } => {
+                    state.toggle_render_mode();
+                }
                 WindowEvent::Resized(physical_size) => {
                     state.resize(*physical_size);
                 }

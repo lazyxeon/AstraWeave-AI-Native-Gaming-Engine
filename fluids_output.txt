@@ -1,0 +1,119 @@
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: fields `head_pointers` and `next_pointers` are never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-fluids\src\lib.rs:41:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct FluidSystem {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14mfields in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m41[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    head_pointers: wgpu::Buffer,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    next_pointers: wgpu::Buffer,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-fluids` (lib) generated 1 warning
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:430:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m430[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageCopyTexture {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(deprecated)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:437:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m437[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageDataLayout {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:494:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m494[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageCopyTexture {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:501:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m501[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageDataLayout {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated method `winit::event_loop::EventLoop::<T>::create_window`: use `ActiveEventLoop::create_window` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\main.rs:343:20[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m343[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        event_loop.create_window(Window::default_attributes()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated method `winit::event_loop::EventLoop::<T>::run`: use `EventLoop::run_app` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\main.rs:350:16[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m350[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    event_loop.run(move |event, elwt| {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                [0m[0m[1m[38;5;11m^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `wave_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:73:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m73[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (wave_texture, wave_view) = Self::generate_wave_texture(device,[0m[0m[1m[38;5;14m...[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_wave_texture`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `wave_bump_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:74:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m74[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (wave_bump_texture, wave_bump_view) = Self::generate_wave_bump_[0m[0m[1m[38;5;14m...[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_wave_bump_texture`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `normal_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:75:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m75[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (normal_texture, normal_view) = Self::generate_normal_texture(d[0m[0m[1m[38;5;14m...[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_normal_texture`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `normal2_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:76:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m76[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (normal2_texture, normal2_view) = Self::generate_normal_texture[0m[0m[1m[38;5;14m...[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_normal2_texture`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `physics_world` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\main.rs:48:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m40[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mstruct State {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;14m-----[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m48[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    physics_world: PhysicsWorld,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `transform` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:58:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m54[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mstruct OceanTile {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;14m---------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m58[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    transform: Mat4,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `fluids_demo` (bin "fluids_demo") generated 12 warnings
+[1m[32m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 1.28s
+[1m[32m     Running[0m `target\debug\fluids_demo.exe`
+[2025-11-21T23:50:40Z ERROR wgpu::backend::wgpu_core] Handling wgpu errors as fatal by default
+
+thread 'main' panicked at C:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\wgpu-25.0.2\src\backend\wgpu_core.rs:1051:30:
+wgpu error: Validation Error
+
+Caused by:
+  In Device::create_shader_module, label = 'Ocean Shader'
+    
+Shader validation error: Entry point vs_main at Vertex is invalid
+ = Uses operations forbidden at this stage
+
+
+      Entry point vs_main at Vertex is invalid
+        Uses operations forbidden at this stage
+
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+[1m[31merror[0m[1m:[0m process didn't exit successfully: `target\debug\fluids_demo.exe` (exit code: 101)
