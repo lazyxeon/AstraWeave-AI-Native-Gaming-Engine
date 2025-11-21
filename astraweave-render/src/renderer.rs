@@ -401,6 +401,10 @@ pub struct Renderer {
     cin_tl: Option<awc::Timeline>,
     cin_seq: awc::Sequencer,
     cin_playing: bool,
+
+    // Persistent instance buffers
+    pub plane_inst_buf: wgpu::Buffer,
+    pub ext_inst_buf: Option<wgpu::Buffer>,
 }
 
 impl Renderer {
@@ -2170,6 +2174,22 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             _pad: [0.0; 2],
         };
 
+        // Persistent buffers
+        let plane_xform = glam::Mat4::from_translation(glam::vec3(0.0, -0.2, 0.0))
+            * glam::Mat4::from_scale(glam::vec3(50.0, 1.0, 50.0));
+        let plane_inst = Instance {
+            transform: plane_xform,
+            color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
+        }
+        .raw();
+        let plane_inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("plane inst"),
+            contents: bytemuck::bytes_of(&plane_inst),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let ext_inst_buf = None;
+
         Ok(Self {
             surface,
             device,
@@ -2258,6 +2278,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             cin_tl: None,
             cin_seq: awc::Sequencer::new(),
             cin_playing: false,
+            plane_inst_buf,
+            ext_inst_buf,
         })
     }
 
@@ -2621,7 +2643,17 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     pub fn render(&mut self) -> Result<()> {
-        let frame = self.surface.get_current_texture()?;
+        let frame = match self.surface.get_current_texture() {
+            Ok(frame) => frame,
+            Err(wgpu::SurfaceError::Lost) => {
+                self.surface.configure(&self.device, &self.config);
+                return Ok(());
+            }
+            Err(wgpu::SurfaceError::OutOfMemory) => {
+                return Err(anyhow::anyhow!("Swapchain OutOfMemory"));
+            }
+            Err(e) => return Err(e.into()),
+        };
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -2632,22 +2664,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 label: Some("encoder"),
             });
 
-        // Create plane buffer before render pass
-        // Slightly lower the ground plane to avoid z-fighting with terrain at y=0
-        let plane_xform = glam::Mat4::from_translation(vec3(0.0, -0.2, 0.0))
-            * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
+        // Update plane buffer
+        let plane_xform = glam::Mat4::from_translation(glam::vec3(0.0, -0.2, 0.0))
+            * glam::Mat4::from_scale(glam::vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
             transform: plane_xform,
             color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
         }
         .raw();
-        let plane_buf = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("plane inst"),
-                contents: bytemuck::bytes_of(&plane_inst),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
+        self.queue.write_buffer(&self.plane_inst_buf, 0, bytemuck::bytes_of(&plane_inst));
 
         // Render sky first into HDR
         // TODO: Replace with the correct color target view for sky rendering (e.g., main color target or postprocess output)
@@ -2727,24 +2752,15 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 enc.resolve_query_set(&self.timestamp_query_set, 0..2, &self.timestamp_buf, 0);
             }
         }
-        // Prepare external mesh single-instance buffer if needed
-        let ext_ibuf: Option<wgpu::Buffer> = if self.mesh_external.is_some() {
+        // Update external mesh single-instance buffer if needed
+        if let Some(buf) = &self.ext_inst_buf {
             let inst = Instance {
-                transform: Mat4::IDENTITY,
+                transform: glam::Mat4::IDENTITY,
                 color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
             }
             .raw();
-            Some(
-                self.device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("ext inst"),
-                        contents: bytemuck::bytes_of(&inst),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    }),
-            )
-        } else {
-            None
-        };
+            self.queue.write_buffer(buf, 0, bytemuck::bytes_of(&inst));
+        }
         // Frustum cull instances
         let (vis_raws, vis_count) = self.build_visible_instances();
         if vis_count > 0 {
@@ -2789,7 +2805,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 self.mesh_plane.index_buf.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
-            sp.set_vertex_buffer(1, plane_buf.slice(..));
+            sp.set_vertex_buffer(1, self.plane_inst_buf.slice(..));
             sp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
             // Draw tokens as spheres in shadow pass
             sp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
@@ -2803,7 +2819,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 sp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
             }
             // External mesh
-            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, ext_ibuf.as_ref()) {
+            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, &self.ext_inst_buf) {
                 sp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
                 sp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 sp.set_vertex_buffer(1, ibuf.slice(..));
@@ -2869,7 +2885,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 self.mesh_plane.index_buf.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
-            rp.set_vertex_buffer(1, plane_buf.slice(..));
+            rp.set_vertex_buffer(1, self.plane_inst_buf.slice(..));
             rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
 
             // Tokens as lit spheres (instances)
@@ -2885,7 +2901,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             }
 
             // External mesh if present
-            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, ext_ibuf.as_ref()) {
+            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, &self.ext_inst_buf) {
                 rp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
                 rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 rp.set_vertex_buffer(1, ibuf.slice(..));
@@ -3141,7 +3157,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 self.mesh_plane.index_buf.slice(..),
                 wgpu::IndexFormat::Uint32,
             );
-            sp.set_vertex_buffer(1, plane_buf.slice(..));
+            sp.set_vertex_buffer(1, self.plane_inst_buf.slice(..));
             sp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
             sp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
             sp.set_index_buffer(

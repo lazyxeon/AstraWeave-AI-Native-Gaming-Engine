@@ -1,3 +1,5 @@
+    Blocking waiting for file lock on package cache
+   Compiling unified_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\unified_showcase)
 warning: method `create_plane_mesh` is never used
     --> examples\unified_showcase\src\main.rs:1584:8
      |
@@ -10,7 +12,7 @@ warning: method `create_plane_mesh` is never used
      = note: `#[warn(dead_code)]` on by default
 
 warning: `unified_showcase` (bin "unified_showcase") generated 1 warning
-    Finished `release` profile [optimized] target(s) in 0.88s
+    Finished `release` profile [optimized] target(s) in 1m 43s
      Running `target\release\unified_showcase.exe`
 Window size: 800x600
 Loading HDR skybox: assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr
@@ -232,12 +234,12 @@ DEBUG MATCH: assets/models/tent_smallOpen.glb -> colorred -> 5
 DEBUG MATCH: assets/models/tent_smallOpen.glb -> colorreddark -> 5
   DEBUG: Material 'wood' matched WOOD pattern -> index 5
 DEBUG MATCH: assets/models/tent_smallOpen.glb -> wood -> 5
-Tent placed at (12, 1.2520084, 12).
+Tent placed at (20, -5.7107735, 20).
   DEBUG: Material 'wood' matched WOOD pattern -> index 5
 DEBUG MATCH: assets/models/campfire_logs.glb -> wood -> 5
   DEBUG: Material 'wooddark' matched WOOD pattern -> index 5
 DEBUG MATCH: assets/models/campfire_logs.glb -> wooddark -> 5
-Campfire placed at (15, 2.3440325, 10).
+Campfire placed at (23, -2.8082187, 18).
 Placing structure...
   DEBUG: Material 'colorred' matched COLOR-RED pattern -> index 5
 DEBUG MATCH: assets/models/tent_detailedClosed.glb -> colorred -> 5

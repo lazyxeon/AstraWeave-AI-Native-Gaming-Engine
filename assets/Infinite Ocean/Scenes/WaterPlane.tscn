@@ -1,0 +1,83 @@
+[gd_scene load_steps=12 format=3 uid="uid://dbt5pfn1trdyj"]
+
+[ext_resource type="Shader" path="res://Shaders/Water.gdshader" id="1_w1tkc"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_gg3e2"]
+resource_local_to_scene = true
+size = Vector2(10.05, 10.05)
+subdivide_width = 199
+subdivide_depth = 199
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_avos1"]
+noise_type = 3
+frequency = 0.032
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_a5tqk"]
+seamless = true
+as_normal_map = true
+bump_strength = 1.6
+noise = SubResource("FastNoiseLite_avos1")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_77aww"]
+noise_type = 0
+seed = 22
+frequency = 0.003
+fractal_lacunarity = 1.6
+fractal_gain = 0.47
+fractal_weighted_strength = 0.53
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_nnc11"]
+seamless = true
+seamless_blend_skirt = 0.532
+as_normal_map = true
+bump_strength = 21.8
+noise = SubResource("FastNoiseLite_77aww")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_aaxb1"]
+noise_type = 4
+fractal_type = 2
+fractal_gain = 0.34
+fractal_weighted_strength = 0.6
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_h0chw"]
+seamless = true
+noise = SubResource("FastNoiseLite_aaxb1")
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_yilox"]
+noise_type = 4
+fractal_gain = 0.34
+fractal_weighted_strength = 0.6
+
+[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_xq016"]
+seamless = true
+as_normal_map = true
+noise = SubResource("FastNoiseLite_yilox")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ykp76"]
+render_priority = 0
+shader = ExtResource("1_w1tkc")
+shader_parameter/albedo = Color(0, 0.32, 0.43, 1)
+shader_parameter/albedo2 = Color(0, 0.47, 0.76, 1)
+shader_parameter/beers_law = 2.0
+shader_parameter/color_deep = Color(0.11, 0.29, 0.33, 1)
+shader_parameter/color_shallow = Color(0, 0.47, 0.76, 1)
+shader_parameter/depth_offset = 1.5
+shader_parameter/edge_color = Color(1, 1, 1, 1)
+shader_parameter/edge_scale = 0.3
+shader_parameter/far = 100.0
+shader_parameter/height_scale = 2.0
+shader_parameter/metallic = 0.0
+shader_parameter/near = 1.0
+shader_parameter/noise_scale = 20.0
+shader_parameter/roughness = 0.02
+shader_parameter/texture_normal = SubResource("NoiseTexture2D_a5tqk")
+shader_parameter/texture_normal2 = SubResource("NoiseTexture2D_nnc11")
+shader_parameter/time_scale = 0.2
+shader_parameter/wave = SubResource("NoiseTexture2D_h0chw")
+shader_parameter/wave_bump = SubResource("NoiseTexture2D_xq016")
+shader_parameter/wave_direction = Vector2(0.5, -0.2)
+shader_parameter/wave_direction2 = Vector2(-0.5, 0.5)
+
+[node name="WaterPlane" type="MeshInstance3D"]
+mesh = SubResource("PlaneMesh_gg3e2")
+surface_material_override/0 = SubResource("ShaderMaterial_ykp76")

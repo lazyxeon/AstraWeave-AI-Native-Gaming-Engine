@@ -96,11 +96,11 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Detect water (translucent materials with alpha < 1.0)
     var norm = normalize(in.world_normal);
     if object_color.a < 1.0 {
-        // Procedural water waves for normal perturbation
-        let wave1 = sin(in.world_position.x * 0.5 + in.world_position.z * 0.3);
-        let wave2 = cos(in.world_position.x * 0.3 + in.world_position.z * 0.5);
-        let wave3 = sin(in.world_position.x * 0.7 - in.world_position.z * 0.4);
-        let wave_offset = vec3<f32>(wave1 * 0.15, 0.0, wave2 * 0.15 + wave3 * 0.1);
+        // Procedural water waves for normal perturbation - STRONGER
+        let wave1 = sin(in.world_position.x * 1.0 + in.world_position.z * 0.6);
+        let wave2 = cos(in.world_position.x * 0.6 + in.world_position.z * 1.0);
+        let wave3 = sin(in.world_position.x * 1.4 - in.world_position.z * 0.8);
+        let wave_offset = vec3<f32>(wave1 * 0.3, 0.0, wave2 * 0.3 + wave3 * 0.2);
         norm = normalize(norm + wave_offset);
     }
     

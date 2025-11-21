@@ -28,6 +28,7 @@ image = "0.25"
 
 # Async support
 tokio = { version = "1.48", features = ["full"] }
+intel_tex = { version = "0.1", optional = true }
 
 # Logging
 tracing = "0.1"
@@ -37,6 +38,6 @@ tokio-test = "0.4"
 
 [features]
 default = ["bc7"]
-bc7 = [] # BC7 compression for desktop (will use basis-universal or custom impl)
+bc7 = ["dep:intel_tex"] # BC7 compression for desktop using intel_tex
 astc = ["basis-universal"] # ASTC compression for mobile
 all = ["bc7", "astc"]

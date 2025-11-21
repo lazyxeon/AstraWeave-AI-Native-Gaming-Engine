@@ -124,6 +124,8 @@ members = [
   "examples/bevy_shadow_demo",
   # Greybox generation tools
   "examples/greybox_generator",
+  "astraweave-fluids",
+  "examples/fluids_demo",
 ]
 exclude = [
   "astraweave-ecs/fuzz",  # Fuzz targets must be built separately

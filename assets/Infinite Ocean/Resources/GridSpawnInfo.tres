@@ -1,0 +1,9 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://cfmpxbi7lt5no"]
+
+[ext_resource type="Script" path="res://Resources/GridSpawnInfo.gd" id="1_nacj8"]
+
+[resource]
+script = ExtResource("1_nacj8")
+spawnPoints = [Vector2(0, 0), Vector2(-1, -1), Vector2(-1, 0), Vector2(-1, 1), Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(1, -1), Vector2(0, -1), Vector2(-3, -3), Vector2(-3, 0), Vector2(-3, 3), Vector2(0, 3), Vector2(3, 3), Vector2(3, 0), Vector2(3, -3), Vector2(0, -3)]
+subdivision = [199, 99, 99, 99, 99, 99, 99, 99, 99, 0, 0, 0, 0, 0, 0, 0, 0]
+scale = [1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 3, 3]

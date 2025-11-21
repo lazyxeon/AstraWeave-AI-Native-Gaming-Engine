@@ -1,8 +1,0 @@
-Get-ChildItem : Cannot bind parameter 'Depth'. Cannot convert value "astraweave-ai" to type "System.UInt32". Error: 
-"Input string was not in a correct format."
-At line:1 char:57
-+ ... ltParameterValues['*:Encoding'] = 'utf8'; ls -d astraweave-ai astrawe ...
-+                                                     ~~~~~~~~~~~~~
-    + CategoryInfo          : InvalidArgument: (:) [Get-ChildItem], ParameterBindingException
-    + FullyQualifiedErrorId : CannotConvertArgumentNoMessage,Microsoft.PowerShell.Commands.GetChildItemCommand
- 

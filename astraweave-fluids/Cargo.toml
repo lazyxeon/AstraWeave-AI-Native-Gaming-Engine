@@ -1,0 +1,14 @@
+[package]
+name = "astraweave-fluids"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = { workspace = true }
+glam = { workspace = true }
+bytemuck = { workspace = true, features = ["derive"] }
+[dev-dependencies]
+winit = { workspace = true }
+pollster = { workspace = true }
+env_logger = "0.11"
+
