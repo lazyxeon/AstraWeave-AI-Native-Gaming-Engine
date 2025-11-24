@@ -1,8 +1,10 @@
 mod fluid_renderer;
 mod ocean_renderer;
+mod skybox_renderer;
 
 use fluid_renderer::FluidRenderer;
 use ocean_renderer::OceanRenderer;
+use skybox_renderer::SkyboxRenderer;
 use astraweave_fluids::FluidSystem;
 use astraweave_physics::PhysicsWorld;
 use winit::{
@@ -49,6 +51,7 @@ struct State {
     fluid_system: FluidSystem,
     fluid_renderer: FluidRenderer,
     ocean_renderer: OceanRenderer,
+    skybox_renderer: SkyboxRenderer,
     
     render_mode: RenderMode,
     
@@ -162,6 +165,18 @@ impl State {
 
         log::info!("Initialized fluid system with {} particles", particle_count);
 
+        // Initialize skybox renderer
+        let skybox_path = "assets/hdri/polyhaven/kloppenheim_02_puresky_2k.hdr";
+        // Check if file exists, fallback if not
+        let skybox_path = if std::path::Path::new(skybox_path).exists() {
+            skybox_path
+        } else {
+            log::warn!("HDR file not found at {}, trying alternative...", skybox_path);
+            "assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr"
+        };
+        
+        let skybox_renderer = SkyboxRenderer::new(&device, &queue, surface_format, skybox_path);
+
         // Initialize fluid renderer
         let max_particles = particle_count;
         let fluid_renderer = FluidRenderer::init(&device, surface_format, max_particles);
@@ -191,6 +206,7 @@ impl State {
             fluid_system,
             fluid_renderer,
             ocean_renderer,
+            skybox_renderer,
             render_mode: RenderMode::InfiniteOcean,
             camera,
             depth_texture,
@@ -303,6 +319,16 @@ impl State {
         // Render based on mode
         let view_proj = self.camera.build_view_projection_matrix();
         
+        // Render skybox
+        self.skybox_renderer.render(
+            &mut encoder,
+            &view,
+            &self.depth_view,
+            &self.queue,
+            view_proj,
+            self.camera.eye,
+        );
+        
         match self.render_mode {
             RenderMode::ParticleFluid => {
                 let particle_buffer = self.fluid_system.get_particle_buffer();
@@ -311,10 +337,12 @@ impl State {
                     &mut encoder,
                     &view,
                     &self.depth_view,
+                    &self.device,
                     &self.queue,
                     particle_buffer,
                     self.fluid_system.particle_count,
                     view_proj,
+                    self.skybox_renderer.get_skybox_view(),
                 );
             }
             RenderMode::InfiniteOcean => {
