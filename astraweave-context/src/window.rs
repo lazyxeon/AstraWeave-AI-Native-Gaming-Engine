@@ -393,6 +393,40 @@ impl ContextWindow {
     pub fn get_stats(&self) -> ContextWindowStats {
         self.stats.clone()
     }
+
+    /// Export to serializable format
+    pub fn export(&self) -> SerializableContextWindow {
+        SerializableContextWindow {
+            config: self.config.clone(),
+            messages: self.messages.iter().cloned().collect(),
+            attention_weights: self.attention_weights.clone(),
+            stats: self.stats.clone(),
+        }
+    }
+
+    /// Import from serializable format
+    pub fn import(data: SerializableContextWindow) -> Self {
+        let token_counter = TokenCounter::new(&data.config.encoding_model);
+        let current_tokens = data.messages.iter().map(|m| m.token_count).sum();
+
+        Self {
+            config: data.config,
+            messages: data.messages.into(),
+            token_counter,
+            current_tokens,
+            attention_weights: data.attention_weights,
+            stats: data.stats,
+        }
+    }
+}
+
+/// Serializable representation of a context window
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SerializableContextWindow {
+    pub config: ContextWindowConfig,
+    pub messages: Vec<Message>,
+    pub attention_weights: HashMap<String, f32>,
+    pub stats: ContextWindowStats,
 }
 
 /// Multi-agent context manager

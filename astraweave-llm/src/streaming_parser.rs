@@ -126,7 +126,12 @@ impl StreamingBatchParser {
         let mut new_parsed = Vec::new();
 
         // Try to parse the entire buffer as a complete JSON array
-        let trimmed = self.buffer.trim();
+        let mut trimmed = self.buffer.trim();
+        
+        // Handle trailing code fence
+        if trimmed.ends_with("```") {
+            trimmed = trimmed.trim_end_matches('`').trim();
+        }
 
         // Check if we have a complete array (ends with ])
         if trimmed.ends_with(']') {

@@ -10,14 +10,24 @@ use std::collections::HashMap;
 /// Forgetting configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForgettingConfig {
-    /// Decay rate per hour (0.0 to 1.0)
-    pub decay_rate: f32,
-    /// Minimum strength threshold for retention
-    pub retention_threshold: f32,
+    /// Enable memory forgetting
+    pub enabled: bool,
+
+    /// Base decay rate per hour (0.0 to 1.0)
+    pub base_decay_rate: f32,
+
+    /// Importance factor (important memories decay slower)
+    pub importance_factor: f32,
+
+    /// Minimum importance threshold for retention
+    pub min_importance_threshold: f32,
+
     /// Maximum age in seconds before forced forgetting
-    pub max_age_seconds: u64,
-    /// Whether to enable automatic forgetting
-    pub auto_forget: bool,
+    pub max_memory_age: u64,
+
+    /// Memory cleanup interval (in seconds)
+    pub cleanup_interval: u64,
+
     /// Categories that should never be forgotten
     pub protected_categories: Vec<MemoryCategory>,
 }
@@ -25,11 +35,13 @@ pub struct ForgettingConfig {
 impl Default for ForgettingConfig {
     fn default() -> Self {
         Self {
-            decay_rate: 0.1,
-            retention_threshold: 0.2,
-            max_age_seconds: 2592000, // 30 days
-            auto_forget: true,
-            protected_categories: vec![MemoryCategory::Quest], // Protect important quest memories
+            enabled: true,
+            base_decay_rate: 0.1,
+            importance_factor: 2.0,
+            min_importance_threshold: 0.2,
+            max_memory_age: 2592000, // 30 days
+            cleanup_interval: 86400, // Daily
+            protected_categories: vec![MemoryCategory::Quest],
         }
     }
 }
@@ -116,13 +128,22 @@ impl ForgettingEngine {
                         let mut strength = MemoryStrength::default();
                         strength.protected =
                             self.config.protected_categories.contains(&memory.category);
+                        // Use memory timestamp as initial last_access
+                        strength.last_access = memory.timestamp as i64;
                         strength
                     });
 
                 // Calculate current strength based on time decay
                 let hours_since_access = (current_time - strength.last_access) as f32 / 3600.0;
+                
+                // Apply importance factor to decay
+                // Higher importance factor means slower decay for important memories
+                // We assume memory.importance is 0.0-1.0
+                let decay_modifier = 1.0 / (1.0 + self.config.importance_factor * memory.importance);
+                let effective_decay = self.config.base_decay_rate * decay_modifier;
+
                 strength.current_strength = (strength.initial_strength
-                    * (-self.config.decay_rate * hours_since_access).exp())
+                    * (-effective_decay * hours_since_access).exp())
                 .max(0.0);
 
                 // Check if memory should be forgotten
@@ -167,13 +188,13 @@ impl ForgettingEngine {
         }
 
         // Check strength threshold
-        if strength.current_strength < config.retention_threshold {
+        if strength.current_strength < config.min_importance_threshold {
             return true;
         }
 
         // Check maximum age
         let age_seconds = (current_time - memory.timestamp as i64) as u64;
-        if age_seconds > config.max_age_seconds {
+        if age_seconds > config.max_memory_age {
             return true;
         }
 
@@ -225,7 +246,7 @@ impl ForgettingEngine {
 
         for strength in self.memory_strengths.values() {
             strength_sum += strength.current_strength;
-            if strength.current_strength < self.config.retention_threshold {
+            if strength.current_strength < self.config.min_importance_threshold {
                 weak_memories += 1;
             }
         }

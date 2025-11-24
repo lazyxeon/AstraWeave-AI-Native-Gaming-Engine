@@ -5,8 +5,8 @@ Main RAG pipeline implementation combining retrieval, consolidation, and injecti
 */
 
 use crate::{
-    current_timestamp, InjectionResult, InjectionStrategy, MemoryQuery, RagConfig, RagMetrics,
-    RetrievalMethod, RetrievedMemory,
+    current_timestamp, ConsolidationEngine, ForgettingEngine, InjectionResult, InjectionStrategy,
+    MemoryQuery, RagConfig, RagMetrics, RetrievalMethod, RetrievedMemory,
 };
 use anyhow::{anyhow, Result};
 use astraweave_context::TokenCounter;
@@ -14,7 +14,7 @@ use astraweave_embeddings::{EmbeddingClient, Memory, MemoryCategory, SearchResul
 use astraweave_llm::LlmClient;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 /// Main RAG pipeline combining all components
@@ -42,6 +42,12 @@ pub struct RagPipeline {
 
     /// Memory consolidation state
     consolidation_state: Arc<RwLock<ConsolidationState>>,
+
+    /// Consolidation engine
+    consolidation_engine: Arc<RwLock<ConsolidationEngine>>,
+
+    /// Forgetting engine
+    forgetting_engine: Arc<RwLock<ForgettingEngine>>,
 }
 
 /// Trait for vector store operations (allows testing with different implementations)
@@ -180,6 +186,12 @@ impl RagPipeline {
         config: RagConfig,
     ) -> Self {
         let token_counter = TokenCounter::new("cl100k_base");
+        let consolidation_engine = Arc::new(RwLock::new(ConsolidationEngine::new(
+            config.consolidation.clone(),
+        )));
+        let forgetting_engine = Arc::new(RwLock::new(ForgettingEngine::new(
+            config.forgetting.clone(),
+        )));
 
         Self {
             embedding_client,
@@ -194,6 +206,8 @@ impl RagPipeline {
                 memories_since_consolidation: 0,
                 consolidation_in_progress: false,
             })),
+            consolidation_engine,
+            forgetting_engine,
         }
     }
 
@@ -224,6 +238,9 @@ impl RagPipeline {
         self.vector_store
             .insert_memory(memory.clone(), embedding)
             .await?;
+
+        // Clear cache to ensure new memory is retrievable
+        self.clear_cache();
 
         // Update consolidation state
         {
@@ -487,21 +504,46 @@ impl RagPipeline {
     }
 
     /// Trigger memory consolidation
-    async fn trigger_consolidation(&self) -> Result<()> {
+    pub async fn trigger_consolidation(&self) -> Result<()> {
         // Set consolidation in progress
         {
             let mut state = self.consolidation_state.write();
             state.consolidation_in_progress = true;
         }
 
-        // Perform consolidation (simplified implementation)
-        // In a full implementation, this would:
-        // 1. Identify similar memories
-        // 2. Merge or summarize them
-        // 3. Update the vector store
-        // 4. Clean up old memories
+        // Get all memories
+        let memories = self.vector_store.get_all_memories().await;
+        let original_ids: HashSet<String> = memories.iter().map(|m| m.id.clone()).collect();
 
-        // For now, just reset the counter
+        // Run consolidation
+        let (consolidated_memories, result) = {
+            let engine = self.consolidation_engine.read();
+            engine.consolidate(memories)?
+        };
+
+        // If changes occurred, update vector store
+        if result.merged_count > 0 || result.removed_count > 0 {
+            let new_ids: HashSet<String> =
+                consolidated_memories.iter().map(|m| m.id.clone()).collect();
+
+            // Remove memories that are no longer present
+            for id in &original_ids {
+                if !new_ids.contains(id) {
+                    self.vector_store.remove(id).await;
+                }
+            }
+
+            // Add new memories (merged results)
+            for memory in consolidated_memories {
+                if !original_ids.contains(&memory.id) {
+                    // New memory (merged result) - generate embedding and insert
+                    let embedding = self.embedding_client.embed(&memory.text).await?;
+                    self.vector_store.insert_memory(memory, embedding).await?;
+                }
+            }
+        }
+
+        // Reset state
         {
             let mut state = self.consolidation_state.write();
             state.last_consolidation = current_timestamp();
@@ -513,6 +555,40 @@ impl RagPipeline {
         {
             let mut metrics = self.metrics.write();
             metrics.consolidations_performed += 1;
+        }
+
+        Ok(())
+    }
+
+    /// Trigger memory forgetting
+    pub async fn trigger_forgetting(&self) -> Result<()> {
+        if !self.config.forgetting.enabled {
+            return Ok(());
+        }
+
+        let memories = self.vector_store.get_all_memories().await;
+        let original_ids: HashSet<String> = memories.iter().map(|m| m.id.clone()).collect();
+
+        let (retained_memories, result) = {
+            let mut engine = self.forgetting_engine.write();
+            engine.process_forgetting(memories)?
+        };
+
+        if result.forgotten_count > 0 {
+            let retained_ids: HashSet<String> =
+                retained_memories.iter().map(|m| m.id.clone()).collect();
+
+            for id in &original_ids {
+                if !retained_ids.contains(id) {
+                    self.vector_store.remove(id).await;
+                }
+            }
+
+            // Update metrics
+            {
+                let mut metrics = self.metrics.write();
+                metrics.memories_forgotten += result.forgotten_count as u64;
+            }
         }
 
         Ok(())

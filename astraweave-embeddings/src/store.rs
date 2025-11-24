@@ -287,6 +287,73 @@ impl VectorStore {
 
         Ok(removed_count)
     }
+    /// Insert a vector into the store, automatically pruning if at capacity
+    pub fn insert_with_auto_prune(&self, id: String, vector: Vec<f32>, text: String) -> Result<()> {
+        if self.vectors.len() >= self.config.max_vectors {
+            // Prune 10% of capacity to make room
+            let prune_target = (self.config.max_vectors as f32 * 0.9) as usize;
+            self.prune_vectors(prune_target)?;
+        }
+        self.insert(id, vector, text)
+    }
+
+    /// Insert a vector with metadata, automatically pruning if at capacity
+    pub fn insert_with_metadata_and_auto_prune(
+        &self,
+        id: String,
+        vector: Vec<f32>,
+        text: String,
+        importance: f32,
+        metadata: HashMap<String, String>,
+    ) -> Result<()> {
+        if self.vectors.len() >= self.config.max_vectors {
+            let prune_target = (self.config.max_vectors as f32 * 0.9) as usize;
+            self.prune_vectors(prune_target)?;
+        }
+        self.insert_with_metadata(id, vector, text, importance, metadata)
+    }
+
+    /// Serialize the store to a JSON string
+    pub fn to_json(&self) -> Result<String> {
+        let vectors_map: HashMap<String, StoredVector> = self
+            .vectors
+            .iter()
+            .map(|entry| (entry.key().clone(), entry.value().clone()))
+            .collect();
+
+        let snapshot = VectorStoreSnapshot {
+            config: self.config.clone(),
+            vectors: vectors_map,
+            metrics: self.metrics.read().clone(),
+        };
+
+        Ok(serde_json::to_string(&snapshot)?)
+    }
+
+    /// Deserialize the store from a JSON string
+    pub fn from_json(json: &str) -> Result<Self> {
+        let snapshot: VectorStoreSnapshot = serde_json::from_str(json)?;
+        
+        let vectors = DashMap::new();
+        for (k, v) in snapshot.vectors {
+            vectors.insert(k, v);
+        }
+
+        Ok(Self {
+            config: snapshot.config,
+            vectors: Arc::new(vectors),
+            next_index: Arc::new(parking_lot::Mutex::new(0)), // Reset index
+            metrics: Arc::new(RwLock::new(snapshot.metrics)),
+        })
+    }
+}
+
+/// Snapshot for serialization
+#[derive(Serialize, Deserialize)]
+struct VectorStoreSnapshot {
+    config: EmbeddingConfig,
+    vectors: HashMap<String, StoredVector>,
+    metrics: VectorStoreMetrics,
 }
 
 /// Distance functions for different metrics

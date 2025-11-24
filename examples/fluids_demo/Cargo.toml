@@ -14,3 +14,5 @@ pollster = { workspace = true }
 bytemuck = { workspace = true }
 env_logger = "0.11"
 log = "0.4"
+noise = "0.9"
+image = "0.25"

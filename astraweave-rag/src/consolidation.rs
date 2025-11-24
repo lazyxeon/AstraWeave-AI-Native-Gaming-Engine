@@ -14,22 +14,53 @@ use std::collections::HashMap;
 /// Consolidation configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConsolidationConfig {
-    /// Minimum similarity threshold for merging memories
-    pub merge_threshold: f32,
+    /// Enable automatic memory consolidation
+    pub enabled: bool,
+
+    /// Number of memories to trigger consolidation
+    pub trigger_threshold: usize,
+
+    /// Similarity threshold for merging memories
+    pub merge_similarity_threshold: f32,
+
+    /// Maximum memories to keep per consolidation
+    pub max_memories_per_batch: usize,
+
+    /// Consolidation strategy
+    pub strategy: ConsolidationStrategy,
+
+    /// How often to run consolidation (in seconds)
+    pub consolidation_interval: u64,
+
     /// Maximum age in seconds for memories to be considered for consolidation
     pub max_age_seconds: u64,
-    /// Whether to enable automatic consolidation
-    pub auto_consolidate: bool,
 }
 
 impl Default for ConsolidationConfig {
     fn default() -> Self {
         Self {
-            merge_threshold: 0.85,
-            max_age_seconds: 86400, // 24 hours
-            auto_consolidate: true,
+            enabled: true,
+            trigger_threshold: 100,
+            merge_similarity_threshold: 0.85,
+            max_memories_per_batch: 50,
+            strategy: ConsolidationStrategy::Importance,
+            consolidation_interval: 3600, // 1 hour
+            max_age_seconds: 86400,       // 24 hours
         }
     }
+}
+
+/// Strategies for memory consolidation
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum ConsolidationStrategy {
+    /// Consolidate based on importance scores
+    Importance,
+    /// Consolidate based on recency
+    Recency,
+    /// Consolidate similar memories together
+    Similarity,
+    /// Hybrid approach using multiple factors
+    Hybrid,
 }
 
 /// Result of a consolidation operation
@@ -118,7 +149,7 @@ impl ConsolidationEngine {
 
         // Similar content (simplified similarity check)
         let similarity = self.calculate_similarity(&memory1.text, &memory2.text);
-        similarity >= self.config.merge_threshold
+        similarity >= self.config.merge_similarity_threshold
     }
 
     /// Merge two memories into one

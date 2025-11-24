@@ -52,6 +52,25 @@ impl PromptContext {
         None
     }
 
+    /// Set a variable using dot notation for nested objects
+    pub fn set_path(&mut self, path: &str, value: ContextValue) {
+        let parts: Vec<&str> = path.split('.').collect();
+        if parts.is_empty() {
+            return;
+        }
+
+        let key = parts[0];
+        if parts.len() == 1 {
+            self.set(key.to_string(), value);
+        } else {
+            let entry = self
+                .variables
+                .entry(key.to_string())
+                .or_insert_with(|| ContextValue::Object(HashMap::new()));
+            entry.insert_path(&parts[1..], value);
+        }
+    }
+
     /// Push a new scope
     pub fn push_scope(&mut self) {
         let old_vars = std::mem::take(&mut self.variables);
@@ -65,6 +84,19 @@ impl PromptContext {
             Some(popped_vars)
         } else {
             None
+        }
+    }
+
+    /// Merge another context into this one
+    pub fn merge(&mut self, other: PromptContext) {
+        // Merge scopes
+        for scope in other.scopes {
+            self.scopes.push(scope);
+        }
+
+        // Merge variables
+        for (key, value) in other.variables {
+            self.variables.insert(key, value);
         }
     }
 
@@ -108,6 +140,41 @@ impl PromptContext {
 }
 
 impl ContextValue {
+    /// Insert a value at a nested path
+    pub fn insert_path(&mut self, path: &[&str], value: ContextValue) {
+        if path.is_empty() {
+            *self = value;
+            return;
+        }
+
+        match self {
+            ContextValue::Object(map) => {
+                let key = path[0];
+                if path.len() == 1 {
+                    map.insert(key.to_string(), value);
+                } else {
+                    let entry = map
+                        .entry(key.to_string())
+                        .or_insert_with(|| ContextValue::Object(HashMap::new()));
+                    entry.insert_path(&path[1..], value);
+                }
+            }
+            _ => {
+                // Overwrite non-object with object if we need to traverse
+                let mut map = HashMap::new();
+                let key = path[0];
+                if path.len() == 1 {
+                    map.insert(key.to_string(), value);
+                } else {
+                    let mut next = ContextValue::Object(HashMap::new());
+                    next.insert_path(&path[1..], value);
+                    map.insert(key.to_string(), next);
+                }
+                *self = ContextValue::Object(map);
+            }
+        }
+    }
+
     pub fn to_json(&self) -> serde_json::Value {
         match self {
             ContextValue::String(s) => serde_json::Value::String(s.clone()),

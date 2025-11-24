@@ -24,6 +24,31 @@ pub const COMPACT_SCHEMA: &str = r#"{plan_id:str,steps:[{act,args}]} ONLY JSON."
 pub struct PromptCompressor;
 
 impl PromptCompressor {
+    /// Create a new PromptCompressor instance
+    pub fn new() -> Self {
+        Self
+    }
+
+    /// Generic text compression (removes extra whitespace, newlines, and common stop words)
+    pub fn compress(&self, text: &str) -> String {
+        let stop_words = ["a", "an", "the", "is", "are", "was", "were", "that", "this", "of", "to", "in", "on", "at", "by", "for", "with"];
+
+        // 1. Remove stop words and join with single space
+        let mut compressed = text.split_whitespace()
+            .filter(|word| !stop_words.contains(&word.to_lowercase().as_str()))
+            .collect::<Vec<_>>()
+            .join(" ");
+        
+        // 2. Remove spaces around punctuation (simple heuristic)
+        compressed = compressed.replace(" ,", ",");
+        compressed = compressed.replace(" .", ".");
+        compressed = compressed.replace(" :", ":");
+        compressed = compressed.replace(" (", "(");
+        compressed = compressed.replace(") ", ")");
+        
+        compressed
+    }
+
     /// Compress a tactical AI prompt (25-30% reduction)
     pub fn compress_tactical_prompt() -> &'static str {
         r#"Tactical AI: Eliminate threats, minimize risk.

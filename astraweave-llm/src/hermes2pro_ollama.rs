@@ -36,9 +36,81 @@
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
+use futures_util::StreamExt;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::pin::Pin;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::LlmClient;
+
+/// Message in a chat conversation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChatMessage {
+    pub role: String,
+    pub content: String,
+}
+
+/// Stateful chat session for Hermes 2 Pro
+///
+/// Manages conversation history and context window automatically.
+pub struct ChatSession {
+    client: Hermes2ProOllama,
+    history: Arc<Mutex<Vec<ChatMessage>>>,
+}
+
+impl ChatSession {
+    /// Create a new chat session
+    pub fn new(client: Hermes2ProOllama) -> Self {
+        let history = if let Some(sys) = &client.system_prompt {
+            vec![ChatMessage {
+                role: "system".to_string(),
+                content: sys.clone(),
+            }]
+        } else {
+            Vec::new()
+        };
+
+        Self {
+            client,
+            history: Arc::new(Mutex::new(history)),
+        }
+    }
+
+    /// Send a message and get response (updates history)
+    pub async fn send(&self, message: &str) -> Result<String> {
+        let mut history = self.history.lock().await;
+        
+        // Add user message
+        history.push(ChatMessage {
+            role: "user".to_string(),
+            content: message.to_string(),
+        });
+
+        // Prepare request
+        let response = self.client.chat(&history).await?;
+
+        // Add assistant response
+        history.push(ChatMessage {
+            role: "assistant".to_string(),
+            content: response.clone(),
+        });
+
+        Ok(response)
+    }
+
+    /// Clear history (preserves system prompt)
+    pub async fn clear(&self) {
+        let mut history = self.history.lock().await;
+        history.retain(|m| m.role == "system");
+    }
+
+    /// Get current history
+    pub async fn get_history(&self) -> Vec<ChatMessage> {
+        self.history.lock().await.clone()
+    }
+}
 
 /// Hermes 2 Pro client using Ollama backend
 ///
@@ -161,6 +233,61 @@ impl Hermes2ProOllama {
         self
     }
 
+    /// Create a stateful chat session
+    pub fn create_session(&self) -> ChatSession {
+        ChatSession::new(self.clone())
+    }
+
+    /// Internal chat method using /api/chat
+    async fn chat(&self, messages: &[ChatMessage]) -> Result<String> {
+        // Use a static client with connection pooling for better performance
+        static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
+        let client = CLIENT.get_or_init(|| {
+            reqwest::Client::builder()
+                .pool_max_idle_per_host(10) // Keep connections alive
+                .pool_idle_timeout(std::time::Duration::from_secs(90))
+                .timeout(std::time::Duration::from_secs(120)) // 2 min timeout
+                .build()
+                .expect("Failed to create HTTP client")
+        });
+
+        let url = format!("{}/api/chat", self.url);
+
+        let body = json!({
+            "model": self.model,
+            "messages": messages,
+            "stream": false,
+            "options": {
+                "temperature": self.temperature,
+                "num_predict": self.max_tokens,
+                "num_ctx": 8192,
+            }
+        });
+
+        let response = client
+            .post(&url)
+            .json(&body)
+            .send()
+            .await
+            .context("Failed to send request to Ollama")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("Ollama returned error: {}", response.status());
+        }
+
+        let response_json: serde_json::Value = response
+            .json()
+            .await
+            .context("Failed to parse Ollama response")?;
+
+        let message = response_json["message"]["content"]
+            .as_str()
+            .context("Missing 'message.content' field in Ollama output")?
+            .to_string();
+
+        Ok(message)
+    }
+
     /// Check if Ollama server is running and model is available
     pub async fn health_check(&self) -> Result<HealthStatus> {
         let client = reqwest::Client::new();
@@ -261,18 +388,18 @@ impl LlmClient for Hermes2ProOllama {
                 .expect("Failed to create HTTP client")
         });
 
-        let url = format!("{}/api/generate", self.url);
+        let url = format!("{}/api/chat", self.url);
 
-        // Build request with system prompt if configured
-        let full_prompt = if let Some(ref system) = self.system_prompt {
-            format!("{}\n\n{}", system, prompt)
-        } else {
-            prompt.to_string()
-        };
+        // Build messages array
+        let mut messages = Vec::new();
+        if let Some(sys) = &self.system_prompt {
+            messages.push(json!({"role": "system", "content": sys}));
+        }
+        messages.push(json!({"role": "user", "content": prompt}));
 
         let body = json!({
             "model": self.model,
-            "prompt": full_prompt,
+            "messages": messages,
             "stream": false,
             "options": {
                 "temperature": self.temperature,
@@ -283,15 +410,15 @@ impl LlmClient for Hermes2ProOllama {
 
         // ═══ DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
-        eprintln!("║        PROMPT SENT TO HERMES 2 PRO (via Ollama)              ║");
+        eprintln!("║        PROMPT SENT TO HERMES 2 PRO (via Ollama /api/chat)    ║");
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
         eprintln!("Model: {}", self.model);
         eprintln!("Temperature: {}", self.temperature);
         eprintln!("Max Tokens: {}", self.max_tokens);
         eprintln!("Context Window: 8192 tokens");
-        eprintln!("Prompt Length: {} chars", full_prompt.len());
+        eprintln!("Prompt Length: {} chars", prompt.len());
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
-        eprintln!("{}", full_prompt);
+        eprintln!("{}", prompt);
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
 
         tracing::debug!("Sending request to Ollama: {}", self.model);
@@ -313,9 +440,9 @@ impl LlmClient for Hermes2ProOllama {
             .await
             .context("Failed to parse Ollama response")?;
 
-        let text = response_json["response"]
+        let text = response_json["message"]["content"]
             .as_str()
-            .context("Missing 'response' field in Ollama output")?
+            .context("Missing 'message.content' field in Ollama output")?
             .to_string();
 
         let duration = start.elapsed();
@@ -386,18 +513,18 @@ impl LlmClient for Hermes2ProOllama {
                 .expect("Failed to create HTTP client")
         });
 
-        let url = format!("{}/api/generate", self.url);
+        let url = format!("{}/api/chat", self.url);
 
-        // Build request with system prompt
-        let full_prompt = if let Some(ref system) = self.system_prompt {
-            format!("{}\n\n{}", system, prompt)
-        } else {
-            prompt.to_string()
-        };
+        // Build messages array
+        let mut messages = Vec::new();
+        if let Some(sys) = &self.system_prompt {
+            messages.push(json!({"role": "system", "content": sys}));
+        }
+        messages.push(json!({"role": "user", "content": prompt}));
 
         let body = json!({
             "model": self.model,
-            "prompt": full_prompt,
+            "messages": messages,
             "stream": true,  // ← Enable streaming!
             "options": {
                 "temperature": self.temperature,
@@ -408,13 +535,13 @@ impl LlmClient for Hermes2ProOllama {
 
         // ═══ DEBUG LOGGING ═══
         eprintln!("\n╔═══════════════════════════════════════════════════════════════╗");
-        eprintln!("║    STREAMING REQUEST TO HERMES 2 PRO (via Ollama)            ║");
+        eprintln!("║    STREAMING REQUEST TO HERMES 2 PRO (via Ollama /api/chat)  ║");
         eprintln!("╠═══════════════════════════════════════════════════════════════╣");
         eprintln!("Model: {}", self.model);
         eprintln!("Temperature: {}", self.temperature);
         eprintln!("Max Tokens: {}", self.max_tokens);
         eprintln!("Stream: ENABLED");
-        eprintln!("Prompt Length: {} chars", full_prompt.len());
+        eprintln!("Prompt Length: {} chars", prompt.len());
         eprintln!("╚═══════════════════════════════════════════════════════════════╝\n");
 
         tracing::debug!("Sending streaming request to Ollama: {}", self.model);
@@ -432,14 +559,13 @@ impl LlmClient for Hermes2ProOllama {
 
         // Convert bytes_stream to text chunk stream
         // Ollama streams NDJSON (newline-delimited JSON):
-        //   {"response": "text", "done": false}\n
-        //   {"response": "more", "done": false}\n
-        //   {"response": "", "done": true}\n
+        //   {"message": {"content": "text"}, "done": false}\n
         let byte_stream = response.bytes_stream();
 
         // Transform bytes → NDJSON lines → text chunks
+        // Uses a byte buffer to handle chunks that split UTF-8 characters or JSON lines
         let text_stream = byte_stream
-            .scan(String::new(), |buffer, chunk_result| {
+            .scan(Vec::<u8>::new(), |buffer, chunk_result| {
                 // Handle byte chunk errors
                 let chunk = match chunk_result {
                     Ok(bytes) => bytes,
@@ -452,47 +578,52 @@ impl LlmClient for Hermes2ProOllama {
                 };
 
                 // Append to buffer
-                let text = match String::from_utf8(chunk.to_vec()) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        return futures_util::future::ready(Some(vec![Err(anyhow::anyhow!(
-                            "UTF-8 decode error: {}",
-                            e
-                        ))]));
-                    }
-                };
-                buffer.push_str(&text);
+                buffer.extend_from_slice(&chunk);
 
-                // Extract complete JSON lines (separated by \n)
                 let mut results = Vec::new();
-                while let Some(newline_pos) = buffer.find('\n') {
-                    // Clone the line before draining to avoid borrow checker issues
-                    let line = buffer[..newline_pos].trim().to_string();
-                    buffer.drain(..=newline_pos);
+                
+                // Find the last newline character
+                // We only process up to the last newline to ensure we have complete JSON objects
+                if let Some(last_newline_pos) = buffer.iter().rposition(|&b| b == b'\n') {
+                    // Extract complete lines from buffer
+                    let complete_lines: Vec<u8> = buffer.drain(..=last_newline_pos).collect();
+                    
+                    // Parse extracted lines
+                    if let Ok(text) = String::from_utf8(complete_lines) {
+                        for line in text.lines() {
+                            if line.trim().is_empty() {
+                                continue;
+                            }
 
-                    if line.is_empty() {
-                        continue;
-                    }
+                            // Parse NDJSON line
+                            match serde_json::from_str::<serde_json::Value>(line) {
+                                Ok(json) => {
+                                    // Extract "message.content" field (Chat API format)
+                                    if let Some(content) = json["message"]["content"].as_str() {
+                                        if !content.is_empty() {
+                                            results.push(Ok(content.to_string()));
+                                        }
+                                    }
+                                    // Fallback for Generate API format (just in case)
+                                    else if let Some(response) = json["response"].as_str() {
+                                        if !response.is_empty() {
+                                            results.push(Ok(response.to_string()));
+                                        }
+                                    }
 
-                    // Parse NDJSON line
-                    match serde_json::from_str::<serde_json::Value>(&line) {
-                        Ok(json) => {
-                            // Extract "response" field
-                            if let Some(response_text) = json["response"].as_str() {
-                                if !response_text.is_empty() {
-                                    results.push(Ok(response_text.to_string()));
+                                    // Check if done
+                                    if json["done"].as_bool() == Some(true) {
+                                        tracing::debug!("Streaming complete (done: true)");
+                                    }
+                                }
+                                Err(e) => {
+                                    tracing::warn!("Failed to parse NDJSON line: {} | Line: {}", e, line);
                                 }
                             }
-
-                            // Check if done
-                            if json["done"].as_bool() == Some(true) {
-                                tracing::debug!("Streaming complete (done: true)");
-                            }
                         }
-                        Err(e) => {
-                            tracing::warn!("Failed to parse NDJSON line: {} | Line: {}", e, line);
-                            // Don't fail entire stream for one bad line
-                        }
+                    } else {
+                        // This should be rare if we split on newlines, but possible if invalid UTF-8
+                        results.push(Err(anyhow::anyhow!("UTF-8 decode error in stream")));
                     }
                 }
 

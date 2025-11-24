@@ -89,6 +89,76 @@ pub fn register_default_helpers(engine: &mut TemplateEngine) {
             },
         ),
     );
+
+    // Uppercase helper
+    engine.register_helper(
+        "uppercase",
+        Box::new(
+            |h: &Helper,
+             _: &Handlebars,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> HelperResult {
+                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                    "uppercase", 0,
+                ))?;
+                let value = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
+                    "Param must be a string".to_string(),
+                ))?;
+                out.write(&value.to_uppercase())?;
+                Ok(())
+            },
+        ),
+    );
+
+    // Lowercase helper
+    engine.register_helper(
+        "lowercase",
+        Box::new(
+            |h: &Helper,
+             _: &Handlebars,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> HelperResult {
+                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                    "lowercase", 0,
+                ))?;
+                let value = param.value().as_str().ok_or(handlebars::RenderErrorReason::Other(
+                    "Param must be a string".to_string(),
+                ))?;
+                out.write(&value.to_lowercase())?;
+                Ok(())
+            },
+        ),
+    );
+
+    // Length helper
+    engine.register_helper(
+        "length",
+        Box::new(
+            |h: &Helper,
+             _: &Handlebars,
+             _: &Context,
+             _: &mut RenderContext,
+             out: &mut dyn Output|
+             -> HelperResult {
+                let param = h.param(0).ok_or(handlebars::RenderErrorReason::ParamNotFoundForIndex(
+                    "length", 0,
+                ))?;
+                let len = if let Some(s) = param.value().as_str() {
+                    s.len()
+                } else if let Some(arr) = param.value().as_array() {
+                    arr.len()
+                } else {
+                    0
+                };
+                out.write(&len.to_string())?;
+                Ok(())
+            },
+        ),
+    );
 }
 
 /// Prompt validation utilities

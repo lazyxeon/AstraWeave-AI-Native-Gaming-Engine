@@ -13,5 +13,11 @@ anyhow = { workspace = true }
 tokio = { workspace = true }
 serde_json = { workspace = true }
 astraweave-core = { path = "../../astraweave-core" }
+astraweave-memory = { path = "../../astraweave-memory" }
 astraweave-llm = { path = "../../astraweave-llm" }
+astraweave-context = { path = "../../astraweave-context" }
+astraweave-rag = { path = "../../astraweave-rag" }
+astraweave-persona = { path = "../../astraweave-persona" }
+astraweave-prompts = { path = "../../astraweave-prompts" }
+astraweave-embeddings = { path = "../../astraweave-embeddings" }
 reqwest = { workspace = true }

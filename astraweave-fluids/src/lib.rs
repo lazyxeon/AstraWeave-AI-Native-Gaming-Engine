@@ -98,22 +98,22 @@ impl FluidSystem {
         let buf0 = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Buffer 0"),
             contents: bytemuck::cast_slice(&initial_particles),
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
         });
         
         let buf1 = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Buffer 1"),
             size: buffer_size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
 
         let particle_buffers = vec![buf0, buf1];
 
         // Grid parameters
-        let grid_width = 64u32;
-        let grid_height = 64u32;
-        let grid_depth = 64u32;
+        let grid_width = 128u32;
+        let grid_height = 128u32;
+        let grid_depth = 128u32;
         let cell_size = 1.2; // Slightly larger than smoothing_radius
         let grid_size = (grid_width * grid_height * grid_depth) as usize;
 

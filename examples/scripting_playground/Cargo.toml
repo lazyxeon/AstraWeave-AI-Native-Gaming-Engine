@@ -1,0 +1,12 @@
+[package]
+name = "scripting_playground"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-ecs = { path = "../../astraweave-ecs" }
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-scripting = { path = "../../astraweave-scripting" }
+glam = "0.30"
+tokio = { version = "1.32", features = ["full"] }

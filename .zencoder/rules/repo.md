@@ -2,6 +2,7 @@
 description: Repository Information Overview
 alwaysApply: true
 ---
+# **ALWAYS REFERENCE copilot-instructions.md FOR FULL ROLE AND RULES.**
 
 # AstraWeave AI-Native Gaming Engine
 

@@ -1,5 +1,5 @@
 use glam::{vec3, Mat4, Vec3};
-use rapier3d::prelude::*;
+pub use rapier3d::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(feature = "profiling")]
@@ -60,6 +60,9 @@ pub struct PhysicsWorld {
     pub narrow_phase: NarrowPhase,
     pub query_pipeline: QueryPipeline,
     pub ccd: CCDSolver,
+    pub event_handler: ChannelEventCollector,
+    pub collision_recv: rapier3d::crossbeam::channel::Receiver<CollisionEvent>,
+    pub contact_force_recv: rapier3d::crossbeam::channel::Receiver<ContactForceEvent>,
     body_ids: HashMap<RigidBodyHandle, BodyId>,
     body_kinds: HashMap<RigidBodyHandle, ActorKind>,
     next_body_id: BodyId,
@@ -72,6 +75,10 @@ pub struct PhysicsWorld {
 
 impl PhysicsWorld {
     pub fn new(gravity: Vec3) -> Self {
+        let (collision_send, collision_recv) = rapier3d::crossbeam::channel::unbounded();
+        let (contact_force_send, contact_force_recv) = rapier3d::crossbeam::channel::unbounded();
+        let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
+
         Self {
             bodies: RigidBodySet::new(),
             colliders: ColliderSet::new(),
@@ -85,6 +92,9 @@ impl PhysicsWorld {
             narrow_phase: NarrowPhase::new(),
             query_pipeline: QueryPipeline::new(),
             ccd: CCDSolver::new(),
+            event_handler,
+            collision_recv,
+            contact_force_recv,
             body_ids: HashMap::new(),
             body_kinds: HashMap::new(),
             next_body_id: 1,
@@ -163,7 +173,6 @@ impl PhysicsWorld {
             plot!("Physics::collider_count", self.colliders.len() as u64);
         }
 
-        let events = ();
         self.pipeline.step(
             &self.gravity,
             &self.integration,
@@ -176,8 +185,8 @@ impl PhysicsWorld {
             &mut self.multibody_joints,
             &mut self.ccd,
             Some(&mut self.query_pipeline),
-            &events,
             &(),
+            &self.event_handler,
         );
 
         // CRITICAL FIX (Week 2 Day 3): Update query pipeline after physics step
@@ -240,6 +249,7 @@ impl PhysicsWorld {
                 Group::ALL,
             ))
             .friction(0.8)
+            .active_events(ActiveEvents::COLLISION_EVENTS)
             .build();
         self.colliders.insert_with_parent(coll, h, &mut self.bodies);
         self.tag_body(h, ActorKind::Dynamic)
@@ -422,6 +432,14 @@ impl PhysicsWorld {
 
     #[allow(dead_code)]
     fn process_destructible_hits(&mut self) {}
+
+    pub fn set_body_position(&mut self, id: BodyId, pos: Vec3) {
+        if let Some(h) = self.handle_of(id) {
+            if let Some(rb) = self.bodies.get_mut(h) {
+                rb.set_translation(vector![pos.x, pos.y, pos.z], true);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

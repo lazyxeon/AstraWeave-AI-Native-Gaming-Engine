@@ -446,3 +446,65 @@ async fn test_no_llm_client_behavior() {
     // but we can ensure it doesn't panic)
     let _ = pipeline.inject_context("Prompt", "Test").await;
 }
+
+#[tokio::test]
+async fn test_forgetting_trigger() {
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(MockVectorStore::new());
+    let llm_client = Arc::new(MockLlm);
+    
+    let mut config = RagConfig::default();
+    config.forgetting.enabled = true;
+    config.forgetting.min_importance_threshold = 0.5;
+    
+    let mut pipeline = RagPipeline::new(embedding_client, vector_store, Some(llm_client), config);
+    
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+        
+    let old_timestamp = now - 360000; // 100 hours ago
+
+    // Add important memory (recent)
+    let important_mem = Memory {
+        id: "1".to_string(),
+        text: "Important".to_string(),
+        timestamp: now,
+        importance: 0.9,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    // Add unimportant memory (old)
+    let unimportant_mem = Memory {
+        id: "2".to_string(),
+        text: "Unimportant".to_string(),
+        timestamp: old_timestamp,
+        importance: 0.1,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    pipeline.add_memory_obj(important_mem).await.unwrap();
+    pipeline.add_memory_obj(unimportant_mem).await.unwrap();
+    
+    // Trigger forgetting
+    pipeline.trigger_forgetting().await.unwrap();
+    
+    let metrics = pipeline.get_metrics();
+    assert!(metrics.memories_forgotten > 0);
+    
+    // Verify unimportant memory is gone
+    let memories = pipeline.retrieve("Unimportant", 10).await.unwrap();
+    let found_unimportant = memories.iter().any(|m| m.memory.id == "2");
+    assert!(!found_unimportant, "Unimportant memory should have been forgotten");
+    
+    // Verify important memory is still there
+    let found_important = pipeline.retrieve("Important", 10).await.unwrap().iter().any(|m| m.memory.id == "1");
+    assert!(found_important, "Important memory should be retained");
+}
