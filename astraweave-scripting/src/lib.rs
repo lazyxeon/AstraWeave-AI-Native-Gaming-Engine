@@ -1,15 +1,18 @@
-use astraweave_ecs::{App, Plugin, SystemStage, World, Entity};
+use astraweave_ecs::{App, Plugin, SystemStage, World, Entity, Events};
 use astraweave_core::{CPos, IVec2, CHealth};
-use astraweave_physics::{PhysicsWorld, CollisionEvent, ContactForceEvent, Layers};
+use astraweave_physics::{PhysicsWorld, CollisionEvent, Layers};
+use astraweave_nav::NavMesh;
 use rhai::{Engine, Scope, AST, Dynamic};
 use std::collections::HashMap;
 use std::sync::Arc;
 use api::{ScriptCommands, ScriptCommand};
+use events::ScriptEvent;
 use glam::Vec3;
 use std::time::SystemTime;
 
 pub mod loader;
 pub mod api;
+pub mod events;
 
 #[derive(Clone, Copy, Debug)]
 pub struct CPhysicsBody {
@@ -99,6 +102,22 @@ pub fn script_system(world: &mut World) {
         return;
     };
 
+    // Get PhysicsWorld pointer (immutable borrow)
+    // Safety: We drop the borrow immediately, but keep the pointer.
+    // We must ensure we don't remove the resource during execution.
+    let physics_ptr = if let Some(physics) = world.get_resource::<PhysicsWorld>() {
+        physics as *const PhysicsWorld
+    } else {
+        std::ptr::null()
+    };
+
+    // Get NavMesh pointer (immutable borrow)
+    let nav_ptr = if let Some(nav) = world.get_resource::<NavMesh>() {
+        nav as *const NavMesh
+    } else {
+        std::ptr::null()
+    };
+
     // Take cache out to avoid borrow conflicts
     let mut cache = if let Some(c) = world.get_resource_mut::<ScriptCache>() {
         std::mem::take(c)
@@ -106,13 +125,26 @@ pub fn script_system(world: &mut World) {
         ScriptCache::default()
     };
 
+    // Build Body -> Entity map for PhysicsProxy
+    let mut body_to_entity_raw = HashMap::new();
+    for e in world.entities_with::<CPhysicsBody>() {
+        if let Some(body) = world.get::<CPhysicsBody>(e) {
+            body_to_entity_raw.insert(body.body_id, e.to_raw());
+        }
+    }
+    let body_map = Arc::new(body_to_entity_raw);
+
     let mut all_commands = Vec::new();
 
     // 2. Run Scripts (Main Body)
     let entities = world.entities_with::<CScript>();
     for entity in entities {
+        // Gather Read Data FIRST
+        let pos_data = world.get::<CPos>(entity).map(|p| Vec3::new(p.pos.x as f32, 0.0, p.pos.y as f32));
+        let health_data = world.get::<CHealth>(entity).map(|h| h.hp as i64);
+
         // We need to re-acquire the component mutably
-        if let Some(mut script) = world.get_mut::<CScript>(entity) {
+        if let Some(script) = world.get_mut::<CScript>(entity) {
             if !script.enabled { continue; }
 
             // Hot Reloading
@@ -183,6 +215,23 @@ pub fn script_system(world: &mut World) {
                 // Inject Entity ID (raw u64 cast to i64 for Rhai)
                 scope.push("entity_id", entity.to_raw() as i64);
                 
+                // Inject Read Data
+                if let Some(p) = pos_data {
+                    scope.push("position", p);
+                }
+                if let Some(h) = health_data {
+                    scope.push("health", h);
+                }
+                scope.push("delta_time", 0.01667 as f32);
+                
+                // Inject Physics
+                let physics_proxy = api::PhysicsProxy { ptr: physics_ptr, body_map: body_map.clone() };
+                scope.push("physics", physics_proxy);
+                
+                // Inject NavMesh
+                let nav_proxy = api::NavMeshProxy { ptr: nav_ptr };
+                scope.push("nav", nav_proxy);
+                
                 // Inject Commands
                 let commands = ScriptCommands::new();
                 scope.push("commands", commands);
@@ -195,6 +244,7 @@ pub fn script_system(world: &mut World) {
                 // Update state from scope
                 for (k, _, v) in scope.iter() {
                     if k == "commands" { continue; } // Don't save commands to state
+                    if k == "physics" { continue; } // Don't save physics proxy
                     script.script_state.insert(k.to_string(), v);
                 }
 
@@ -204,13 +254,20 @@ pub fn script_system(world: &mut World) {
                 }
             }
         }
-    }
-
-    // Put cache back
+    }    // Put cache back
     world.insert_resource(cache);
 
-    // 3. Process Physics Events
-    // Build BodyId -> Entity map
+    // 3. Process Events
+    let mut script_events = Vec::new();
+
+    // Read from Events resource
+    if let Some(events) = world.get_resource_mut::<Events>() {
+        for event in events.drain::<ScriptEvent>() {
+             script_events.push(event);
+        }
+    }
+
+    // Physics Events
     let mut body_to_entity = HashMap::new();
     for e in world.entities_with::<CPhysicsBody>() {
         if let Some(body) = world.get::<CPhysicsBody>(e) {
@@ -218,8 +275,6 @@ pub fn script_system(world: &mut World) {
         }
     }
 
-    // Collect events
-    let mut callbacks = Vec::new();
     if let Some(physics) = world.get_resource::<PhysicsWorld>() {
         while let Ok(event) = physics.collision_recv.try_recv() {
             match event {
@@ -232,8 +287,8 @@ pub fn script_system(world: &mut World) {
                     
                     if let (Some(bid1), Some(bid2)) = (id1, id2) {
                         if let (Some(e1), Some(e2)) = (body_to_entity.get(&bid1), body_to_entity.get(&bid2)) {
-                            callbacks.push((*e1, "on_collision", *e2));
-                            callbacks.push((*e2, "on_collision", *e1));
+                            script_events.push(ScriptEvent::OnCollision { entity: *e1, other: *e2 });
+                            script_events.push(ScriptEvent::OnCollision { entity: *e2, other: *e1 });
                         }
                     }
                 }
@@ -243,7 +298,18 @@ pub fn script_system(world: &mut World) {
     }
 
     // Execute callbacks
-    for (entity, callback, other) in callbacks {
+    for event in script_events {
+        let (entity, callback, args) = match event {
+            ScriptEvent::OnCollision { entity, other } => (entity, "on_collision", vec![Dynamic::from(other.to_raw() as i64)]),
+            ScriptEvent::OnTrigger { entity, trigger_name } => (entity, "on_trigger", vec![Dynamic::from(trigger_name)]),
+            ScriptEvent::OnDamage { entity, damage, source } => (entity, "on_damage", vec![Dynamic::from(damage), Dynamic::from(source.to_raw() as i64)]),
+            ScriptEvent::OnSpawn { entity } => (entity, "on_spawn", vec![]),
+        };
+
+        // Gather Read Data FIRST
+        let pos_data = world.get::<CPos>(entity).map(|p| Vec3::new(p.pos.x as f32, 0.0, p.pos.y as f32));
+        let health_data = world.get::<CHealth>(entity).map(|h| h.hp as i64);
+
         if let Some(script) = world.get_mut::<CScript>(entity) {
              if !script.enabled || script.cached_ast.is_none() { continue; }
              let ast = script.cached_ast.clone().unwrap();
@@ -251,18 +317,31 @@ pub fn script_system(world: &mut World) {
              let mut scope = Scope::new();
              for (k, v) in &script.script_state { scope.push_dynamic(k.clone(), v.clone()); }
              scope.push("entity_id", entity.to_raw() as i64);
-             scope.push("other_entity_id", other.to_raw() as i64);
+
+             // Inject Read Data
+             if let Some(p) = pos_data {
+                 scope.push("position", p);
+             }
+             if let Some(h) = health_data {
+                 scope.push("health", h);
+             }
+             scope.push("delta_time", 0.01667 as f32);
+
+             // Inject Physics
+             let physics_proxy = api::PhysicsProxy { ptr: physics_ptr, body_map: body_map.clone() };
+             scope.push("physics", physics_proxy);
+
+             // Inject NavMesh
+             let nav_proxy = api::NavMeshProxy { ptr: nav_ptr };
+             scope.push("nav", nav_proxy);
+
              scope.push("commands", ScriptCommands::new());
              
              // Call function
-             let other_id = other.to_raw() as i64;
-             let result: Result<Dynamic, _> = engine.call_fn(&mut scope, &ast, callback, (other_id,));
+             let result: Result<Dynamic, _> = engine.call_fn(&mut scope, &ast, callback, args);
              
-             if let Err(e) = result {
-                 // Only log if it's not a "function not found" error, which is common if script doesn't implement callback
-                 // But Rhai returns EvalAltResult::ErrorFunctionNotFound.
-                 // For now, we can just log everything as debug/info or ignore.
-                 // Let's ignore for now to avoid spam if script doesn't have on_collision.
+             if let Err(_) = result {
+                 // Ignore function not found
              }
              
              // Update state
@@ -282,7 +361,7 @@ pub fn script_system(world: &mut World) {
             ScriptCommand::Spawn { prefab, position } => {
                 let e = spawn_prefab(world, &prefab, position);
                 // Add physics body
-                if let Some(mut physics) = world.get_resource_mut::<PhysicsWorld>() {
+                if let Some(physics) = world.get_resource_mut::<PhysicsWorld>() {
                     let body_id = physics.add_dynamic_box(position, Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT);
                     world.insert(e, CPhysicsBody { body_id });
                 }
@@ -307,10 +386,25 @@ pub fn script_system(world: &mut World) {
                 // Update physics
                 let body_id = world.get::<CPhysicsBody>(e).map(|b| b.body_id);
                 if let Some(bid) = body_id {
-                    if let Some(mut physics) = world.get_resource_mut::<PhysicsWorld>() {
+                    if let Some(physics) = world.get_resource_mut::<PhysicsWorld>() {
                          physics.set_body_position(bid, position);
                     }
                 }
+            }
+            ScriptCommand::ApplyDamage { entity, amount } => {
+                let e = unsafe { Entity::from_raw(entity as u64) };
+                if let Some(health) = world.get_mut::<CHealth>(e) {
+                    health.hp = (health.hp as f32 - amount).max(0.0) as i32;
+                    println!("[ScriptSystem] Applied {} damage to {} (Health: {})", amount, e, health.hp);
+                }
+            }
+            ScriptCommand::PlaySound { path } => {
+                println!("[ScriptSystem] Playing sound: {}", path);
+                // TODO: Integrate with astraweave-audio
+            }
+            ScriptCommand::SpawnParticle { effect, position } => {
+                println!("[ScriptSystem] Spawning particle '{}' at {}", effect, position);
+                // TODO: Integrate with astraweave-render
             }
         }
     }
@@ -322,6 +416,9 @@ impl Plugin for ScriptingPlugin {
     fn build(&self, app: &mut App) {
         app.world.insert_resource(ScriptEngineResource::default());
         app.world.insert_resource(ScriptCache::default());
+        if app.world.get_resource::<Events>().is_none() {
+            app.world.insert_resource(Events::default());
+        }
         app.add_system(SystemStage::SIMULATION, script_system);
     }
 }
@@ -518,7 +615,7 @@ mod tests {
         app = app.add_plugin(ScriptingPlugin);
         
         // Add PhysicsWorld resource
-        let mut physics = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        let physics = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
         app.world.insert_resource(physics);
 
         // Spawn entity 1 (Listener)
@@ -538,7 +635,7 @@ mod tests {
         // We can't insert components while holding it.
         
         let body_id1 = {
-            let mut physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
+            let physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
             physics.add_dynamic_box(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT)
         };
         app.world.insert(e1, CPhysicsBody { body_id: body_id1 });
@@ -546,14 +643,14 @@ mod tests {
         // Spawn entity 2 (Collider)
         let e2 = app.world.spawn();
         let body_id2 = {
-            let mut physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
+            let physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
             physics.add_dynamic_box(Vec3::new(0.8, 0.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT)
         };
         app.world.insert(e2, CPhysicsBody { body_id: body_id2 });
 
         // Step physics to generate collision
         {
-            let mut physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
+            let physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
             for _ in 0..10 {
                 physics.step();
             }
@@ -569,5 +666,207 @@ mod tests {
         // e2 entity ID
         let e2_id = e2.to_raw() as i64;
         assert_eq!(collided_with, e2_id);
+    }
+
+    #[test]
+    fn test_damage_event_and_command() {
+        use astraweave_core::CHealth;
+        use crate::events::ScriptEvent;
+        use astraweave_ecs::Events;
+
+        let mut app = App::new();
+        app = app.add_plugin(ScriptingPlugin);
+
+        // Spawn victim
+        let victim = app.world.spawn();
+        app.world.insert(victim, CHealth { hp: 100 });
+        
+        // Script that listens for damage and heals if low
+        // Note: We don't have 'heal' command yet, but we can use 'apply_damage' with negative value or just check state
+        let script_source = r#"
+            fn on_damage(amount, source) {
+                // print("Took damage: " + amount);
+                last_damage = amount;
+                last_source = source;
+                
+                // If we took significant damage, counter attack!
+                if amount > 50.0 {
+                    commands.apply_damage(source, 10.0);
+                }
+            }
+        "#;
+        let mut script = CScript::new("victim.rhai", script_source);
+        script.script_state.insert("last_damage".to_string(), Dynamic::from(0.0));
+        script.script_state.insert("last_source".to_string(), Dynamic::from(0_i64));
+        app.world.insert(victim, script);
+
+        // Spawn attacker
+        let attacker = app.world.spawn();
+        app.world.insert(attacker, CHealth { hp: 100 });
+
+        // Trigger OnDamage event
+        if let Some(events) = app.world.get_resource_mut::<Events>() {
+            events.send(ScriptEvent::OnDamage { 
+                entity: victim, 
+                damage: 60.0, 
+                source: attacker 
+            });
+        }
+
+        // Run system
+        app.schedule.run(&mut app.world);
+
+        // Check victim state
+        let script = app.world.get::<CScript>(victim).unwrap();
+        let last_damage = script.script_state.get("last_damage").unwrap().as_float().unwrap();
+        let last_source = script.script_state.get("last_source").unwrap().as_int().unwrap();
+        
+        assert_eq!(last_damage, 60.0);
+        assert_eq!(last_source, attacker.to_raw() as i64);
+
+        // Check attacker health (should be damaged by counter attack)
+        // Note: The command is executed at the end of the frame.
+        // Wait, apply_damage command modifies CHealth directly in the same frame (step 4 of script_system).
+        let attacker_health = app.world.get::<CHealth>(attacker).unwrap().hp;
+        assert_eq!(attacker_health, 90); // 100 - 10
+    }
+
+    #[test]
+    fn test_raycast_api() {
+        use astraweave_physics::{PhysicsWorld, Layers};
+        use glam::Vec3;
+
+        let mut app = App::new();
+        app = app.add_plugin(ScriptingPlugin);
+        
+        // Add PhysicsWorld resource
+        let physics = PhysicsWorld::new(Vec3::new(0.0, -9.8, 0.0));
+        app.world.insert_resource(physics);
+
+        // Spawn an entity to hit
+        let target = app.world.spawn();
+        let body_id = {
+            let physics = app.world.get_resource_mut::<PhysicsWorld>().unwrap();
+            // Box at (5, 0, 0) size 1
+            physics.add_dynamic_box(Vec3::new(5.0, 0.0, 0.0), Vec3::new(0.5, 0.5, 0.5), 1.0, Layers::DEFAULT)
+        };
+        app.world.insert(target, CPhysicsBody { body_id });
+
+        // Update physics to build acceleration structure
+        if let Some(physics) = app.world.get_resource_mut::<PhysicsWorld>() {
+            physics.step();
+        }
+
+        // Spawn script entity
+        let e = app.world.spawn();
+        let script_source = r#"
+            let start = vec3(0.0, 0.0, 0.0);
+            let dir = vec3(1.0, 0.0, 0.0);
+            let hit = physics.raycast(start, dir, 100.0);
+            
+            if hit != () {
+                hit_entity = hit.entity_id;
+                hit_dist = hit.distance;
+            } else {
+                hit_entity = -1;
+            }
+        "#;
+        
+        let mut script = CScript::new("test_raycast.rhai", script_source);
+        script.script_state.insert("hit_entity".to_string(), Dynamic::from(0_i64));
+        script.script_state.insert("hit_dist".to_string(), Dynamic::from(0.0 as f32));
+        app.world.insert(e, script);
+        
+        // Run one tick
+        app.schedule.run(&mut app.world);
+        
+        // Check result
+        let script = app.world.get::<CScript>(e).unwrap();
+        let hit_entity = script.script_state.get("hit_entity").unwrap().as_int().unwrap();
+        let hit_dist = script.script_state.get("hit_dist").unwrap().as_float().unwrap();
+        
+        assert_eq!(hit_entity, target.to_raw() as i64);
+        // Distance should be 4.5 (5.0 center - 0.5 half extent)
+        assert!((hit_dist - 4.5 as f32).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_navmesh_api() {
+        use astraweave_nav::{NavMesh, Triangle};
+        use glam::Vec3;
+
+        let mut app = App::new();
+        app = app.add_plugin(ScriptingPlugin);
+        
+        // Create a simple NavMesh
+        let tris = vec![
+            Triangle {
+                a: Vec3::new(0.0, 0.0, 0.0),
+                b: Vec3::new(0.0, 0.0, 10.0),
+                c: Vec3::new(10.0, 0.0, 0.0),
+            }
+        ];
+        let nav = NavMesh::bake(&tris, 0.5, 60.0);
+        app.world.insert_resource(nav);
+
+        // Spawn script entity
+        let e = app.world.spawn();
+        let script_source = r#"
+            let start = vec3(1.0, 0.0, 1.0);
+            let goal = vec3(2.0, 0.0, 2.0);
+            let path = nav.find_path(start, goal);
+            
+            path_len = path.len();
+            if path_len > 0 {
+                first_pt = path[0];
+            }
+        "#;
+        
+        let mut script = CScript::new("test_nav.rhai", script_source);
+        script.script_state.insert("path_len".to_string(), Dynamic::from(0_i64));
+        script.script_state.insert("first_pt".to_string(), Dynamic::from(Vec3::ZERO));
+        app.world.insert(e, script);
+        
+        // Run one tick
+        app.schedule.run(&mut app.world);
+        
+        // Check result
+        let script = app.world.get::<CScript>(e).unwrap();
+        let path_len = script.script_state.get("path_len").unwrap().as_int().unwrap();
+        let first_pt = script.script_state.get("first_pt").unwrap().clone().cast::<Vec3>();
+        
+        assert!(path_len >= 2);
+        assert!((first_pt - Vec3::new(1.0, 0.0, 1.0)).length() < 0.1);
+    }
+
+    #[test]
+    fn test_sandboxing() {
+        let mut app = App::new();
+        app = app.add_plugin(ScriptingPlugin);
+        
+        // Test 1: Forbidden types (File)
+        let e = app.world.spawn();
+        let script_source = r#"
+            // This should fail because File is not registered
+            let f = File.open("test.txt");
+        "#;
+        
+        let script = CScript::new("test_sandbox_file.rhai", script_source);
+        app.world.insert(e, script);
+        
+        // Test 2: Infinite loop (Max operations)
+        let e_loop = app.world.spawn();
+        let script_source_loop = r#"
+            let x = 0;
+            loop {
+                x = x + 1;
+            }
+        "#;
+        let script_loop = CScript::new("test_sandbox_loop.rhai", script_source_loop);
+        app.world.insert(e_loop, script_loop);
+        
+        // Run one tick
+        // We expect runtime errors to be printed to stderr, but no crash.
+        app.schedule.run(&mut app.world);
     }
 }

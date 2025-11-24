@@ -66,9 +66,10 @@ use gizmo::snapping::SnappingConfig;
 use gizmo::state::GizmoMode;
 use material_inspector::MaterialInspector;
 use panels::{
-    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, ChartsPanel, EntityPanel, GraphPanel,
-    HierarchyPanel, Panel, PerformancePanel, PrefabAction, TransformPanel, WorldPanel,
+    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, BuildManagerPanel, ChartsPanel, EntityPanel, GraphPanel,
+    HierarchyPanel, Panel, PerformancePanel, PrefabAction, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
+mod plugin;
 use prefab::PrefabManager;
 use recent_files::RecentFilesManager;
 use runtime::{EditorRuntime, RuntimeState};
@@ -242,6 +243,13 @@ struct EditorApp {
     transform_panel: TransformPanel,
     asset_browser: AssetBrowser,
     hierarchy_panel: HierarchyPanel,
+    // Phase 5.2: Build Manager
+    build_manager_panel: BuildManagerPanel,
+    // Phase 5.3: Plugin System
+    plugin_manager: plugin::PluginManager,
+    plugin_panel: plugin::PluginManagerPanel,
+    // Phase 5.5: Theme & Layout Manager
+    theme_manager: ThemeManagerPanel,
     // 3D Viewport (Phase 1.1 - Babylon.js-style editor)
     viewport: Option<ViewportWidget>,
     // Phase 3.5: StatusBar tracking
@@ -361,6 +369,13 @@ impl Default for EditorApp {
             transform_panel: TransformPanel::new(),
             asset_browser: AssetBrowser::new(PathBuf::from("assets")),
             hierarchy_panel: HierarchyPanel::new(),
+            // Phase 5.2: Build Manager
+            build_manager_panel: BuildManagerPanel::new(),
+            // Phase 5.3: Plugin System
+            plugin_manager: plugin::PluginManager::default(),
+            plugin_panel: plugin::PluginManagerPanel::default(),
+            // Phase 5.5: Theme & Layout Manager
+            theme_manager: ThemeManagerPanel::new(),
             // Viewport initialized in new() method (requires CreationContext)
             viewport: None,
             // Phase 3.5: StatusBar state
@@ -2066,6 +2081,29 @@ impl eframe::App for EditorApp {
 
                         ui.collapsing("🎬 Animation", |_ui| {
                             self.animation_panel.show(ctx);
+                        });
+
+                        ui.add_space(10.0);
+
+                        // Phase 5.2: Build Manager
+                        ui.collapsing("🔨 Build Manager", |ui| {
+                            self.build_manager_panel.show(ui);
+                        });
+
+                        ui.add_space(10.0);
+
+                        // Phase 5.3: Plugin System
+                        ui.collapsing("🔌 Plugins", |ui| {
+                            self.plugin_panel.show(ui, &mut self.plugin_manager, ctx);
+                        });
+
+                        ui.add_space(10.0);
+
+                        // Phase 5.5: Theme & Layout
+                        ui.collapsing("🎨 Theme & Layout", |ui| {
+                            self.theme_manager.show(ui);
+                            // Apply theme changes immediately
+                            self.theme_manager.apply_theme(ctx);
                         });
                     });
             });

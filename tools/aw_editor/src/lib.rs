@@ -7,6 +7,7 @@ pub mod command;
 pub mod component_ui;
 pub mod editor_mode;
 pub mod entity_manager;
+pub mod plugin;
 pub mod prefab;
 pub mod runtime;
 pub mod scene_serialization;
@@ -18,6 +19,7 @@ pub use command::{
 };
 pub use editor_mode::EditorMode;
 pub use entity_manager::{EditorEntity, EntityId, EntityManager, SelectionSet};
+pub use plugin::{EditorPlugin, PluginContext, PluginError, PluginEvent, PluginManager, PluginMetadata};
 pub use prefab::{PrefabData, PrefabInstance, PrefabManager};
 pub use runtime::{EditorRuntime, RuntimeState, RuntimeStats};
 pub use scene_serialization::{EntityData, SceneData};
