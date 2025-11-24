@@ -730,6 +730,8 @@ impl AssetBrowser {
                                     let entry_path = entry.path.clone();
                                     let entry_name = entry.name.clone();
                                     let entry_asset_type = entry.asset_type;
+                                    let entry_texture_type = entry.texture_type;
+                                    let show_badges = self.show_texture_badges;
 
                                     let ctx = ui.ctx().clone();
                                     let thumbnail = if entry_asset_type == AssetType::Texture {
@@ -776,6 +778,29 @@ impl AssetBrowser {
                                                     egui::FontId::proportional(32.0),
                                                     entry_asset_type.color(),
                                                 );
+                                            }
+
+                                            // Draw texture type badge in bottom-right corner
+                                            if show_badges {
+                                                if let Some(tex_type) = entry_texture_type {
+                                                    let badge_size = 18.0;
+                                                    let badge_rect = egui::Rect::from_min_size(
+                                                        egui::pos2(rect.max.x - badge_size - 4.0, rect.max.y - badge_size - 4.0),
+                                                        egui::vec2(badge_size, badge_size),
+                                                    );
+                                                    ui.painter().rect_filled(
+                                                        badge_rect,
+                                                        3.0,
+                                                        tex_type.color(),
+                                                    );
+                                                    ui.painter().text(
+                                                        badge_rect.center(),
+                                                        egui::Align2::CENTER_CENTER,
+                                                        tex_type.icon(),
+                                                        egui::FontId::proportional(10.0),
+                                                        egui::Color32::WHITE,
+                                                    );
+                                                }
                                             }
                                         }
 

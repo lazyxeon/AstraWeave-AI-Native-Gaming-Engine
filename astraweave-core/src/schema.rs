@@ -608,6 +608,7 @@ mod tests {
             pois: vec![Poi::default()],
             obstacles: vec![IVec2 { x: 5, y: 5 }],
             objective: Some("Survive".to_string()),
+            physics_context: None,
         };
         assert_eq!(snapshot.t, 10.5);
         assert_eq!(snapshot.enemies.len(), 1);
