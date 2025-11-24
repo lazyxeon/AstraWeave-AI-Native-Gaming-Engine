@@ -478,7 +478,6 @@ dependencies = [
  "astraweave-behavior",
  "astraweave-core",
  "astraweave-ecs",
- "astraweave-embeddings",
  "astraweave-llm",
  "astraweave-nav",
  "astraweave-observability",
@@ -499,7 +498,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracy-client",
- "uuid",
 ]
 
 [[package]]
