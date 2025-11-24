@@ -1,9 +1,24 @@
 # Phase 9.2: Scripting Runtime Integration Plan
 
-**Date**: January 2026  
-**Duration**: 6-9 weeks  
-**Status**: 📋 **FUTURE PLANNING**  
+**Date**: November 22, 2025
+**Duration**: 6-9 weeks
+**Status**: 🏃 **IN PROGRESS**
 **Objective**: Complete sandboxed Rhai scripting system for modding and rapid prototyping
+
+---
+
+## Progress Update (Sprint 1 - Nov 22, 2025)
+
+**Achievements**:
+- ✅ **Phase 1 Complete**: `CScript` component, `script_system`, hot-reloading, and basic ECS integration.
+- ✅ **Phase 2 Started**: Collision events (`on_collision`) integrated with `astraweave-physics`.
+- ✅ **Phase 3 Started**: Basic API exposed (`spawn_prefab`, `despawn`, `set_position`).
+- ✅ **Security**: Limits configured (ops, depth, memory).
+
+**Next Steps**:
+- Complete Phase 2 (Triggers, Damage events).
+- Complete Phase 3 (Combat, Tactical, Utility APIs).
+- Start Phase 4 (Editor integration).
 
 ---
 

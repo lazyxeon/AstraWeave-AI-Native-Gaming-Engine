@@ -548,7 +548,7 @@ impl LlmPersonaManager {
             .await?;
 
         // 9. Update metrics
-        let duration = start_time.elapsed().as_millis() as f32;
+        let duration = start_time.elapsed().as_secs_f32() * 1000.0;
         {
             let mut metrics = self.metrics.write().await;
             metrics.total_interactions += 1;
@@ -585,36 +585,36 @@ impl LlmPersonaManager {
         let mut template_context = TemplateContext::new();
 
         // Basic persona info
-        template_context.set(
-            "persona.name".to_string(),
+        template_context.set_path(
+            "persona.name",
             persona.base.voice.clone().into(),
         ); // Using voice as name
-        template_context.set("persona.tone".to_string(), persona.base.tone.clone().into());
-        template_context.set(
-            "persona.humor".to_string(),
+        template_context.set_path("persona.tone", persona.base.tone.clone().into());
+        template_context.set_path(
+            "persona.humor",
             persona.base.humor.clone().into(),
         );
-        template_context.set("persona.risk".to_string(), persona.base.risk.clone().into());
-        template_context.set(
-            "persona.backstory".to_string(),
+        template_context.set_path("persona.risk", persona.base.risk.clone().into());
+        template_context.set_path(
+            "persona.backstory",
             persona.base.backstory.clone().into(),
         );
 
         // Personality state
-        template_context.set(
-            "state.mood".to_string(),
+        template_context.set_path(
+            "state.mood",
             format!("{:?}", persona.personality_state.emotional_state).into(),
         );
-        template_context.set(
-            "state.energy".to_string(),
+        template_context.set_path(
+            "state.energy",
             persona.personality_state.energy_level.to_string().into(),
         );
-        template_context.set(
-            "state.confidence".to_string(),
+        template_context.set_path(
+            "state.confidence",
             persona.personality_state.confidence.to_string().into(),
         );
-        template_context.set(
-            "state.trust".to_string(),
+        template_context.set_path(
+            "state.trust",
             persona.personality_state.trust_level.to_string().into(),
         );
 
@@ -714,6 +714,29 @@ impl LlmPersonaManager {
         persona.personality_state.current_mood =
             (persona.personality_state.current_mood + mood_change).clamp(-1.0, 1.0);
 
+        // Adjust energy level (decreases slightly with interaction, recovers with rest words)
+        let rest_words = ["rest", "sleep", "wait", "pause", "relax"];
+        let is_resting = rest_words.iter().any(|&w| input_lower.contains(w));
+        
+        if is_resting {
+            persona.personality_state.energy_level = (persona.personality_state.energy_level + 0.2).min(1.0);
+        } else {
+            persona.personality_state.energy_level = (persona.personality_state.energy_level - 0.01).max(0.0);
+        }
+
+        // Adjust confidence based on success
+        if positive_count > negative_count {
+            persona.personality_state.confidence = (persona.personality_state.confidence + 0.02).min(1.0);
+        } else if negative_count > positive_count {
+            persona.personality_state.confidence = (persona.personality_state.confidence - 0.02).max(0.0);
+        }
+
+        // Update emotional state based on mood and energy
+        persona.personality_state.emotional_state = Self::calculate_emotional_state(
+            persona.personality_state.current_mood,
+            persona.personality_state.energy_level
+        );
+
         // Adjust trust based on successful interaction
         persona.personality_state.trust_level =
             (persona.personality_state.trust_level + 0.01).min(1.0);
@@ -724,6 +747,36 @@ impl LlmPersonaManager {
         }
 
         Ok(())
+    }
+
+    /// Calculate emotional state from mood and energy
+    fn calculate_emotional_state(mood: f32, energy: f32) -> EmotionalState {
+        if mood >= 0.3 {
+            if energy >= 0.6 {
+                EmotionalState::Excited
+            } else if energy >= 0.3 {
+                EmotionalState::Joyful
+            } else {
+                EmotionalState::Calm
+            }
+        } else if mood <= -0.3 {
+            if energy >= 0.6 {
+                EmotionalState::Angry
+            } else if energy >= 0.3 {
+                EmotionalState::Frustrated
+            } else {
+                EmotionalState::Sad
+            }
+        } else {
+            // Neutral mood range
+            if energy >= 0.7 {
+                EmotionalState::Curious
+            } else if energy <= 0.3 {
+                EmotionalState::Thoughtful
+            } else {
+                EmotionalState::Neutral
+            }
+        }
     }
 
     /// Set up template engine with persona-specific templates
@@ -829,6 +882,29 @@ Respond as {{persona.name}} would, staying true to your personality, current sta
     /// Get performance metrics
     pub async fn get_metrics(&self) -> PersonaMetrics {
         self.metrics.read().await.clone()
+    }
+
+    /// Set persona state (useful for testing and restoration)
+    pub async fn set_persona_state(&self, state: LlmPersona) {
+        let mut persona = self.persona.write().await;
+        *persona = state;
+    }
+
+    /// Trigger maintenance tasks for the persona's memory (consolidation and forgetting)
+    pub async fn maintenance(&self) -> Result<()> {
+        let mut rag = self.rag_pipeline.write().await;
+        
+        // Trigger consolidation
+        if let Err(e) = rag.trigger_consolidation().await {
+            eprintln!("Consolidation error: {}", e);
+        }
+        
+        // Trigger forgetting
+        if let Err(e) = rag.trigger_forgetting().await {
+            eprintln!("Forgetting error: {}", e);
+        }
+        
+        Ok(())
     }
 }
 

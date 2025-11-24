@@ -103,6 +103,7 @@ members = [
   "astraweave-observability",
   "astraweave-profiling",
   "astraweave-secrets",
+  "astraweave-scripting",
   "examples/ecs_ai_demo",
   "examples/ecs_ai_showcase",
   # Phase 3 demos
@@ -162,7 +163,7 @@ sha2 = "0.10"
 ed25519-dalek = { version = "2", features = ["rand_core"] }
 hex = "0.4"
 semver = "1.0"
-rhai = { version = "1.23", features = ["sync"] }
+rhai = { version = "1.23", features = ["sync", "f32_float"] }
 tokio = { version = "1", features = ["full"] }
 futures-util = "0.3"
 tungstenite = "0.28"
@@ -198,10 +199,12 @@ astraweave-llm = { path = "astraweave-llm" }
 astraweave-physics = { path = "astraweave-physics" }
 astraweave-math = { path = "astraweave-math" }
 astraweave-render = { path = "astraweave-render" }
+astraweave-asset = { path = "astraweave-asset" }
 astraweave-net-ecs = { path = "astraweave-net-ecs" }
 astraweave-persistence-ecs = { path = "astraweave-persistence-ecs" }
 astraweave-stress-test = { path = "astraweave-stress-test" }
 astraweave-security = { path = "astraweave-security" }
 astraweave-observability = { path = "astraweave-observability" }
 astraweave-profiling = { path = "astraweave-profiling" }
+astraweave-scripting = { path = "astraweave-scripting" }
 

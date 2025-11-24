@@ -5,6 +5,12 @@ struct CameraUniform {
 @group(0) @binding(0)
 var<uniform> camera: CameraUniform;
 
+@group(0) @binding(1)
+var skybox_texture: texture_2d<f32>;
+
+@group(0) @binding(2)
+var skybox_sampler: sampler;
+
 struct VertexInput {
     @builtin(vertex_index) vertex_index: u32,
     @location(0) position: vec4<f32>,
@@ -13,6 +19,7 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv: vec2<f32>,
+    @location(1) world_pos: vec3<f32>,
 }
 
 @vertex
@@ -37,16 +44,28 @@ fn vs_main(in: VertexInput) -> VertexOutput {
         out.uv = vec2<f32>(1.0, 1.0);
     }
     
-    // Billboard size - increased by 2x for more overlap
-    let particle_size = 0.1;
+    // Billboard size
+    let particle_size = 0.8;
+    
+    // World position of particle
+    out.world_pos = in.position.xyz;
     
     // Create billboard in view space (use xyz from position)
     let view_pos = camera.view_proj * vec4<f32>(in.position.xyz, 1.0);
-    let billboard_pos = view_pos.xy + quad_offset * particle_size * view_pos.w;
+    let billboard_pos = view_pos.xy + quad_offset * particle_size;
     
     out.clip_position = vec4<f32>(billboard_pos, view_pos.z, view_pos.w);
     
     return out;
+}
+
+const PI: f32 = 3.14159265359;
+
+fn direction_to_equirectangular_uv(dir: vec3<f32>) -> vec2<f32> {
+    let normalized = normalize(dir);
+    let u = atan2(normalized.z, normalized.x) / (2.0 * PI) + 0.5;
+    let v = asin(normalized.y) / PI + 0.5;
+    return vec2<f32>(u, v);
 }
 
 @fragment
@@ -69,30 +88,42 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Light direction (hardcoded directional light)
     let light_dir = normalize(vec3<f32>(0.5, 0.8, 0.6));
     
-    // View direction (camera looking down -Z in view space)
-    let view_dir = vec3<f32>(0.0, 0.0, 1.0);
+    // View direction approximation (toward camera from world pos)
+    // For particles, we assume camera is above looking down
+    let view_dir = normalize(vec3<f32>(0.0, 1.0, 0.0));
+    
+    // Reflection direction for skybox sampling
+    let reflection_dir = reflect(-view_dir, normal);
+    let reflection_uv = direction_to_equirectangular_uv(reflection_dir);
+    let skybox_color = textureSample(skybox_texture, skybox_sampler, reflection_uv).rgb;
     
     // Diffuse lighting
     let diffuse = max(dot(normal, light_dir), 0.0);
     
     // Specular (Blinn-Phong)
     let half_dir = normalize(light_dir + view_dir);
-    let specular = pow(max(dot(normal, half_dir), 0.0), 64.0);
+    let specular = pow(max(dot(normal, half_dir), 0.0), 128.0);
     
-    // Blue fluid base color
-    let base_color = vec3<f32>(0.2, 0.4, 0.9);
+    // Water base color (cyan-blue)
+    let base_color = vec3<f32>(0.1, 0.3, 0.6);
+    
+    // Fresnel approximation
+    let fresnel = pow(1.0 - max(dot(normal, view_dir), 0.0), 3.0);
+    
+    // Mix base color with skybox reflection based on fresnel
+    let reflection_color = mix(base_color, skybox_color, fresnel * 0.7);
     
     // Combine lighting
-    let ambient = 0.3;
-    let final_color = base_color * (ambient + diffuse * 0.6) + vec3<f32>(1.0, 1.0, 1.0) * specular * 0.5;
+    let ambient = 0.2;
+    let final_color = reflection_color * (ambient + diffuse * 0.5) + vec3<f32>(1.0, 1.0, 1.0) * specular * 0.8;
     
-    // Sharper alpha falloff based on distance from center
+    // Alpha falloff based on distance from center
     let dist = sqrt(dist_sq);
-    let alpha = 1.0 - smoothstep(0.35, 0.5, dist);
+    let alpha = 1.0 - smoothstep(0.3, 0.5, dist);
     
     if (alpha < 0.01) {
         discard;
     }
     
-    return vec4<f32>(final_color, alpha * 0.9);
+    return vec4<f32>(final_color, alpha * 0.85);
 }

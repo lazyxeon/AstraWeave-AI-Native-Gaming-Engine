@@ -34,10 +34,10 @@ impl PromptTemplate {
     /// Render the template using a PromptContext (compat alias: TemplateContext)
     /// Returns the rendered string or an anyhow::Error
     pub fn render(&self, ctx: &crate::context::PromptContext) -> anyhow::Result<String> {
-        // Convert context to simple string map and use the processor for rendering
-        let vars = ctx.to_string_map();
+        // Use to_json to preserve structure (objects, arrays)
+        let vars = ctx.to_json();
         let processor = TemplateProcessor::new(ProcessorConfig::default());
-        let rendered = processor.process(&self.template, &vars)?;
+        let rendered = processor.process_json(&self.template, &vars)?;
         Ok(rendered)
     }
 
@@ -94,17 +94,17 @@ impl TemplateProcessor {
         Self { config }
     }
 
-    /// Process a template with variables
+    /// Process a template with variables (string map)
     pub fn process(&self, template: &str, variables: &HashMap<String, String>) -> Result<String> {
         let mut reg = handlebars::Handlebars::new();
         reg.set_strict_mode(self.config.validate_variables);
-        
-        // Handlebars renders {{var}}. 
-        // If the input template uses {var} (single brace), we might need to convert or support both?
-        // The lib.rs example uses {{var}}.
-        // The tests used {var}.
-        
-        // Let's assume we are moving to Handlebars standard {{var}}.
+        Ok(reg.render_template(template, variables)?)
+    }
+
+    /// Process a template with JSON variables (preserves structure)
+    pub fn process_json(&self, template: &str, variables: &serde_json::Value) -> Result<String> {
+        let mut reg = handlebars::Handlebars::new();
+        reg.set_strict_mode(self.config.validate_variables);
         Ok(reg.render_template(template, variables)?)
     }
 

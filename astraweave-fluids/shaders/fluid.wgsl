@@ -228,13 +228,16 @@ fn integrate(@builtin(global_invocation_id) global_id: vec3<u32>) {
     vel += accel * params.delta_time;
     pos += vel * params.delta_time;
 
-    let bounds = 20.0;
+    let bounds_x = 60.0;
+    let bounds_z = 30.0;
+    let bounds_y = 60.0;
     let damping = 0.1;
     if (pos.y < 0.0) { pos.y = 0.0; vel.y *= -damping; }
-    if (pos.x < -bounds) { pos.x = -bounds; vel.x *= -damping; }
-    if (pos.x > bounds) { pos.x = bounds; vel.x *= -damping; }
-    if (pos.z < -bounds) { pos.z = -bounds; vel.z *= -damping; }
-    if (pos.z > bounds) { pos.z = bounds; vel.z *= -damping; }
+    if (pos.y > bounds_y) { pos.y = bounds_y; vel.y *= -damping; }
+    if (pos.x < -bounds_x) { pos.x = -bounds_x; vel.x *= -damping; }
+    if (pos.x > bounds_x) { pos.x = bounds_x; vel.x *= -damping; }
+    if (pos.z < -bounds_z) { pos.z = -bounds_z; vel.z *= -damping; }
+    if (pos.z > bounds_z) { pos.z = bounds_z; vel.z *= -damping; }
 
     particles_dst[id].position = vec4<f32>(pos, 1.0);
     particles_dst[id].velocity = vec4<f32>(vel, 0.0);

@@ -84,6 +84,16 @@ impl PromptEngine {
         let vars = ctx.to_json();
         Ok(self.registry.render(name, &vars)?)
     }
+
+    /// List all registered templates
+    pub fn list_templates(&self) -> Vec<String> {
+        self.registry.get_templates().keys().cloned().collect()
+    }
+
+    /// Clear all registered templates
+    pub fn clear_templates(&mut self) {
+        self.registry.clear_templates();
+    }
 }
 
 /// Public TemplateEngine expected by consumers
@@ -129,5 +139,13 @@ impl TemplateEngine {
 
     pub fn render(&self, name: &str, ctx: &PromptContext) -> Result<String> {
         self.inner.render(name, ctx)
+    }
+
+    pub fn list_templates(&self) -> Vec<String> {
+        self.inner.list_templates()
+    }
+
+    pub fn clear_templates(&mut self) {
+        self.inner.clear_templates();
     }
 }

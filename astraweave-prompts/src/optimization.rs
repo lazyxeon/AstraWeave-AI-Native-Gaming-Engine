@@ -223,6 +223,65 @@ impl TemplateCache {
     }
 }
 
+/// A/B Testing Engine
+#[derive(Debug, Clone)]
+pub struct ABTestingEngine {
+    variants: HashMap<String, Vec<String>>,
+    metrics: HashMap<String, ABMetrics>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ABMetrics {
+    pub selections: HashMap<String, u64>,
+    pub successes: HashMap<String, u64>,
+}
+
+impl ABTestingEngine {
+    pub fn new() -> Self {
+        Self {
+            variants: HashMap::new(),
+            metrics: HashMap::new(),
+        }
+    }
+
+    pub fn register_variant(&mut self, test_name: String, variant_name: String) {
+        self.variants
+            .entry(test_name.clone())
+            .or_default()
+            .push(variant_name);
+        self.metrics.entry(test_name).or_default();
+    }
+
+    pub fn select_variant(&mut self, test_name: &str) -> Option<String> {
+        if let Some(variants) = self.variants.get(test_name) {
+            if variants.is_empty() {
+                return None;
+            }
+            // Simple round-robin or random selection
+            // For determinism in tests, we'll pick based on total selections
+            let metrics = self.metrics.get_mut(test_name).unwrap();
+            let total_selections: u64 = metrics.selections.values().sum();
+            let index = (total_selections as usize) % variants.len();
+            let selected = variants[index].clone();
+
+            *metrics.selections.entry(selected.clone()).or_default() += 1;
+            Some(selected)
+        } else {
+            None
+        }
+    }
+
+    pub fn record_success(&mut self, test_name: &str, variant_name: &str) {
+        if let Some(metrics) = self.metrics.get_mut(test_name) {
+            *metrics.successes.entry(variant_name.to_string()).or_default() += 1;
+        }
+    }
+
+    pub fn get_metrics(&self, test_name: &str) -> Option<&ABMetrics> {
+        self.metrics.get(test_name)
+    }
+}
+
 /// Cache statistics
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CacheStats {

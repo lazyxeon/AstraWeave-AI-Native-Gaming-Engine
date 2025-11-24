@@ -48,6 +48,16 @@ impl PromptLibrary {
             anyhow::bail!("template not found: {}", name)
         }
     }
+
+    /// Delete a template from the library
+    pub fn delete_template(&mut self, name: &str) -> Option<crate::template::PromptTemplate> {
+        self.templates.remove(name)
+    }
+
+    /// List all templates
+    pub fn list_templates(&self) -> Vec<String> {
+        self.templates.keys().cloned().collect()
+    }
 }
 
 /// Template collection
@@ -112,16 +122,48 @@ impl TemplateLibrary {
     }
 
     /// Load library from directory
-    pub fn load_from_directory(_path: PathBuf) -> Result<Self> {
-        // Stub implementation - would actually read from filesystem
-        let metadata = LibraryMetadata {
-            version: "1.0.0".to_string(),
-            description: "Loaded from directory".to_string(),
-            author: "AstraWeave".to_string(),
-            created_at: chrono::Utc::now().to_rfc3339(),
-        };
+    pub fn load_from_directory(path: PathBuf) -> Result<Self> {
+        let mut library = Self::new(
+            "default".to_string(),
+            LibraryMetadata {
+                version: "1.0.0".to_string(),
+                description: "Loaded from directory".to_string(),
+                author: "AstraWeave".to_string(),
+                created_at: chrono::Utc::now().to_rfc3339(),
+            },
+        );
 
-        Ok(Self::new("default".to_string(), metadata))
+        let mut default_collection = TemplateCollection::new(
+            "default".to_string(),
+            CollectionMetadata {
+                version: "1.0.0".to_string(),
+                description: "Default collection".to_string(),
+                tags: vec![],
+            },
+        );
+
+        if path.exists() && path.is_dir() {
+            for entry in std::fs::read_dir(path)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() {
+                    if let Some(ext) = path.extension() {
+                        if ext == "hbs" {
+                            let name = path
+                                .file_stem()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("unknown")
+                                .to_string();
+                            let content = std::fs::read_to_string(&path)?;
+                            default_collection.add_template(name, content);
+                        }
+                    }
+                }
+            }
+        }
+
+        library.add_collection(default_collection);
+        Ok(library)
     }
 
     /// Save library to directory

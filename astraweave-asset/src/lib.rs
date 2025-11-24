@@ -1431,6 +1431,7 @@ pub enum AssetKind {
     Dialogue,
     Material,
     Animation,
+    Script,
     Other,
 }
 
@@ -1598,6 +1599,7 @@ fn infer_asset_kind(path: &Path) -> AssetKind {
         Some("dialogue") | Some("dialogue.toml") => AssetKind::Dialogue,
         Some("material") | Some("material.toml") => AssetKind::Material,
         Some("anim") | Some("animation") => AssetKind::Animation,
+        Some("rhai") => AssetKind::Script,
         _ => AssetKind::Other,
     }
 }

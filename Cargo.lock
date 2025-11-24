@@ -478,6 +478,7 @@ dependencies = [
  "astraweave-behavior",
  "astraweave-core",
  "astraweave-ecs",
+ "astraweave-embeddings",
  "astraweave-llm",
  "astraweave-nav",
  "astraweave-observability",
@@ -498,6 +499,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracy-client",
+ "uuid",
 ]
 
 [[package]]
@@ -1200,6 +1202,27 @@ dependencies = [
  "serde",
  "tokio",
  "wgpu",
+]
+
+[[package]]
+name = "astraweave-scripting"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "astraweave-asset",
+ "astraweave-core",
+ "astraweave-ecs",
+ "astraweave-physics",
+ "astraweave-security",
+ "criterion 0.7.0",
+ "glam 0.30.8",
+ "hex",
+ "rhai",
+ "serde",
+ "sha2",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4399,7 +4422,9 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "glam 0.30.8",
+ "image",
  "log",
+ "noise",
  "pollster 0.4.0",
  "wgpu",
  "winit",
@@ -6311,8 +6336,14 @@ name = "llm_integration"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-context",
  "astraweave-core",
+ "astraweave-embeddings",
  "astraweave-llm",
+ "astraweave-memory",
+ "astraweave-persona",
+ "astraweave-prompts",
+ "astraweave-rag",
  "reqwest",
  "serde_json",
  "tokio",

@@ -304,6 +304,44 @@ impl SimilarityMetrics {
             intersection as f32 / union as f32
         }
     }
+
+    /// Calculate Euclidean distance between two vectors
+    pub fn euclidean_distance(a: &[f32], b: &[f32]) -> f32 {
+        if a.len() != b.len() {
+            return f32::MAX;
+        }
+        a.iter()
+            .zip(b.iter())
+            .map(|(x, y)| (x - y).powi(2))
+            .sum::<f32>()
+            .sqrt()
+    }
+
+    /// Calculate Manhattan distance between two vectors
+    pub fn manhattan_distance(a: &[f32], b: &[f32]) -> f32 {
+        if a.len() != b.len() {
+            return f32::MAX;
+        }
+        a.iter().zip(b.iter()).map(|(x, y)| (x - y).abs()).sum()
+    }
+
+    /// Calculate dot product between two vectors
+    pub fn dot_product(a: &[f32], b: &[f32]) -> f32 {
+        if a.len() != b.len() {
+            return 0.0;
+        }
+        a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
+    }
+
+    /// Normalize a vector to unit length (L2 norm)
+    pub fn normalize_vector(v: &mut [f32]) {
+        let magnitude: f32 = v.iter().map(|x| x * x).sum::<f32>().sqrt();
+        if magnitude > 0.0 {
+            for x in v.iter_mut() {
+                *x /= magnitude;
+            }
+        }
+    }
 }
 
 /// Batch processing utilities

@@ -1,0 +1,1583 @@
+Folder PATH listing for volume Windows
+Volume serial number is 1A4F-A1CE
+C:\USERS\PV2BR\ASTRAWEAVE-AI-NATIVE-GAMING-ENGINE\ASSETS
+|   AnimationLibrary_Godot_Standard.glb
+|   arrow.fbx
+|   asset_manifest.toml
+|   Astraweave_logo.jpg
+|   box.fbx
+|   cloth.png
+|   cloth_mra.png
+|   cloth_n.png
+|   coast_sand_01_1k.glb
+|   coin.fbx
+|   cone.fbx
+|   cone1.fbx
+|   cone2.fbx
+|   cone3.fbx
+|   cone4.fbx
+|   cube.fbx
+|   cube4.fbx
+|   cube5.fbx
+|   cube6.fbx
+|   cube7.fbx
+|   cube8.fbx
+|   cube9.fbx
+|   cylinder.fbx
+|   cylinder1.fbx
+|   cylinder2.fbx
+|   cylinder3.fbx
+|   cylinder4.fbx
+|   cylinder5.fbx
+|   default_mra.png
+|   default_n.png
+|   demo_plane.gltf
+|   dialogue_audio_map.toml
+|   dialogue_intro.toml
+|   dirt.ktx2
+|   dirt.png
+|   dirt_e.png
+|   dirt_mra.png
+|   dirt_n.png
+|   door.fbx
+|   door1.fbx
+|   door2.fbx
+|   door3.fbx
+|   echoes.toml
+|   fence edge.fbx
+|   fence wood.fbx
+|   fence.fbx
+|   fence2.fbx
+|   fence3.fbx
+|   forest_floor.png
+|   forest_floor_e.png
+|   forest_floor_mra.png
+|   forest_floor_n.png
+|   grass.ktx2
+|   grass.png
+|   grass_e.png
+|   grass_mra.png
+|   grass_n.png
+|   ground corner.fbx
+|   ground.fbx
+|   ground1.fbx
+|   house1.glb
+|   house1_tex1.png
+|   house1_tex2.png
+|   house1_tex3.png
+|   house2.glb
+|   house2_tex1.png
+|   house2_tex2.png
+|   house2_tex3.png
+|   house3.glb
+|   house3_tex1.png
+|   house3_tex2.png
+|   house3_tex3.png
+|   house4.glb
+|   house4_tex1.png
+|   house4_tex2.png
+|   house4_tex3.png
+|   house5.glb
+|   house5_tex1.png
+|   house5_tex2.png
+|   house5_tex3.png
+|   kenney_manifest.toml
+|   key.fbx
+|   ladder.fbx
+|   ladder1.fbx
+|   manifest.json
+|   pillar.fbx
+|   pillar1.fbx
+|   pillar2.fbx
+|   pillar3.fbx
+|   pillar4.fbx
+|   plaster.png
+|   plaster_mra.png
+|   plaster_n.png
+|   polyhaven_manifest.toml
+|   polypizza_manifest.toml
+|   quaternius_manifest.toml
+|   quests_main.toml
+|   railing edge.fbx
+|   railing.fbx
+|   ramp.fbx
+|   ramp1.fbx
+|   README.md
+|   recipes.toml
+|   rock_lichen.png
+|   rock_lichen_mra.png
+|   rock_lichen_n.png
+|   rock_slate.png
+|   rock_slate_mra.png
+|   rock_slate_n.png
+|   roof_tile.png
+|   roof_tile_mra.png
+|   roof_tile_n.png
+|   sand.png
+|   sand_e.png
+|   sand_mra.png
+|   sand_n.png
+|   sky_equirect.png
+|   sphere.fbx
+|   sphere1.fbx
+|   sphere2.fbx
+|   spike.fbx
+|   spikes big.fbx
+|   spikes small.fbx
+|   stairs corner.fbx
+|   stairs corner1.fbx
+|   stairs.fbx
+|   stairs1.fbx
+|   stairs2.fbx
+|   stone.ktx2
+|   stone.png
+|   stone_e.png
+|   stone_mra.png
+|   stone_n.png
+|   test_texture.png
+|   toggle switch.fbx
+|   torus.fbx
+|   tree_bark.png
+|   tree_bark_mra.png
+|   tree_bark_n.png
+|   tree_leaves.png
+|   tree_leaves_mra.png
+|   tree_leaves_n.png
+|   voices.toml
+|   wall corner bottom.fbx
+|   wall corner bottom1.fbx
+|   wall corner bottom2.fbx
+|   wall corner top.fbx
+|   wall corner top1.fbx
+|   wall corner.fbx
+|   wall corner1.fbx
+|   wall corner4.fbx
+|   wall door.fbx
+|   wall door1.fbx
+|   wall door2.fbx
+|   wall window.fbx
+|   wall window1.fbx
+|   wall.fbx
+|   wall1.fbx
+|   window.fbx
+|   window1.fbx
+|   
++---audio__files
+|   +---loadless_WATER_mp3_mono
+|   |   \---loadless_WATER_mp3_mono
+|   |           Mono DRAIN (light, metal, birds).mp3
+|   |           Mono FLUSH (toilet).mp3
+|   |           Mono OCEAN (heavy waves, wind).mp3
+|   |           Mono OCEAN (heavy waves, wind, outside boat).mp3
+|   |           Mono OCEAN (light waves, outside boat).mp3
+|   |           Mono OCEAN (light waves, wind) 2.mp3
+|   |           Mono OCEAN (light waves, wind) 3.mp3
+|   |           Mono OCEAN (medium waves, wind) 2.mp3
+|   |           Mono OCEAN (medium waves, wind).mp3
+|   |           Mono OCEAN (squall, creaks, boat, wind).mp3
+|   |           Mono OCEAN (squall, wind).mp3
+|   |           Mono RAIN (heavy, roof) 2.mp3
+|   |           Mono RAIN (heavy, roof).mp3
+|   |           Mono RAIN (light, blackbird).mp3
+|   |           Mono RAIN (light, drip).mp3
+|   |           Mono RAIN (light, slushy, hail, sparrow).mp3
+|   |           Mono RAIN (medium, constant).mp3
+|   |           Mono RAIN (medium, drip, roof) 2.mp3
+|   |           Mono RAIN (medium, drip, roof).mp3
+|   |           Mono RAIN (medium, sleet, wind).mp3
+|   |           Mono RAIN (medium, thunder).mp3
+|   |           Mono RAIN (medium, wind, constant).mp3
+|   |           Mono RIVER (deep, stream).mp3
+|   |           Mono RIVER (large, river).mp3
+|   |           Mono RIVER (large, river, waterfall).mp3
+|   |           Mono RIVER (large, stream, insects).mp3
+|   |           Mono RIVER (large, waterfall).mp3
+|   |           Mono RIVER (light, stream, forest, birds).mp3
+|   |           Mono RIVER (medium, stream).mp3
+|   |           Mono RIVER (tunnel).mp3
+|   |           Mono STORM (hail, thunder).mp3
+|   |           Mono STORM (heavy, hail).mp3
+|   |           Mono STORM (heavy, hail, thunder).mp3
+|   |           Mono TAPS (porcerlain, sink).mp3
+|   |           Mono TIDE (light, beach, seagulls) 2.mp3
+|   |           Mono TIDE (light, beach, seagulls) 3.mp3
+|   |           Mono TIDE (light, stones, seagulls, basshorn).mp3
+|   |           Mono TIDE (medium, beach, insects).mp3
+|   |           Mono TIDE (medium, shore, beach).mp3
+|   |           Mono TIDE (shore, beach, seagulls).mp3
+|   |           Mono TIDE (shore, stone beach, heavy waves).mp3
+|   |           Mono WASHED UP (shore, beach, raft).mp3
+|   |           
+|   +---loadless_WATER_mp3_stereo
+|   |       Stereo DRAIN (light, metal, birds).mp3
+|   |       Stereo FLUSH (toilet).mp3
+|   |       Stereo OCEAN (heavy waves, wind).mp3
+|   |       Stereo OCEAN (heavy waves, wind, outside boat).mp3
+|   |       Stereo OCEAN (light waves, outside boat).mp3
+|   |       Stereo OCEAN (light waves, wind) 2.mp3
+|   |       Stereo OCEAN (light waves, wind) 3.mp3
+|   |       Stereo OCEAN (medium waves, wind) 2.mp3
+|   |       Stereo OCEAN (medium waves, wind).mp3
+|   |       Stereo OCEAN (squall, creaks, boat, wind).mp3
+|   |       Stereo OCEAN (squall, wind).mp3
+|   |       Stereo RAIN (heavy, roof) 2.mp3
+|   |       Stereo RAIN (heavy, roof).mp3
+|   |       Stereo RAIN (light, blackbird).mp3
+|   |       Stereo RAIN (light, drip).mp3
+|   |       Stereo RAIN (light, slushy, hail, sparrow).mp3
+|   |       Stereo RAIN (medium, constant).mp3
+|   |       Stereo RAIN (medium, drip, roof) 2.mp3
+|   |       Stereo RAIN (medium, drip, roof).mp3
+|   |       Stereo RAIN (medium, sleet, wind).mp3
+|   |       Stereo RAIN (medium, thunder).mp3
+|   |       Stereo RAIN (medium, wind, constant).mp3
+|   |       Stereo RIVER (deep, stream).mp3
+|   |       Stereo RIVER (large, river).mp3
+|   |       Stereo RIVER (large, river, waterfall).mp3
+|   |       Stereo RIVER (large, stream, insects).mp3
+|   |       Stereo RIVER (large, waterfall).mp3
+|   |       Stereo RIVER (light, stream, forest, birds).mp3
+|   |       Stereo RIVER (medium, stream).mp3
+|   |       Stereo RIVER (tunnel).mp3
+|   |       Stereo STORM (hail, thunder).mp3
+|   |       Stereo STORM (heavy, hail).mp3
+|   |       Stereo STORM (heavy, hail, thunder).mp3
+|   |       Stereo TAPS (porcerlain, sink).mp3
+|   |       Stereo TIDE (light, beach, seagulls) 2.mp3
+|   |       Stereo TIDE (light, beach, seagulls) 3.mp3
+|   |       Stereo TIDE (light, stones, seagulls, basshorn).mp3
+|   |       Stereo TIDE (medium, beach, insects).mp3
+|   |       Stereo TIDE (medium, shore, beach).mp3
+|   |       Stereo TIDE (shore, beach, seagulls).mp3
+|   |       Stereo TIDE (shore, stone beach, heavy waves).mp3
+|   |       Stereo WASHED UP (shore, beach, raft).mp3
+|   |       
+|   +---loadless_WATER_wav_mono
+|   |       Mono DRAIN (light, metal, birds).wav
+|   |       Mono FLUSH (toilet).wav
+|   |       Mono OCEAN (heavy waves, wind).wav
+|   |       Mono OCEAN (heavy waves, wind, outside boat).wav
+|   |       Mono OCEAN (light waves, outside boat).wav
+|   |       Mono OCEAN (light waves, wind) 2.wav
+|   |       Mono OCEAN (light waves, wind) 3.wav
+|   |       Mono OCEAN (medium waves, wind) 2.wav
+|   |       Mono OCEAN (medium waves, wind).wav
+|   |       Mono OCEAN (squall, creaks, boat, wind).wav
+|   |       Mono OCEAN (squall, wind).wav
+|   |       Mono RAIN (heavy, roof) 2.wav
+|   |       Mono RAIN (heavy, roof).wav
+|   |       Mono RAIN (light, blackbird).wav
+|   |       Mono RAIN (light, drip).wav
+|   |       Mono RAIN (light, slushy, hail, sparrow).wav
+|   |       Mono RAIN (medium, constant).wav
+|   |       Mono RAIN (medium, drip, roof) 2.wav
+|   |       Mono RAIN (medium, drip, roof).wav
+|   |       Mono RAIN (medium, sleet, wind).wav
+|   |       Mono RAIN (medium, thunder).wav
+|   |       Mono RAIN (medium, wind, constant).wav
+|   |       Mono RIVER (deep, stream).wav
+|   |       Mono RIVER (large, river).wav
+|   |       Mono RIVER (large, river, waterfall).wav
+|   |       Mono RIVER (large, stream, insects).wav
+|   |       Mono RIVER (large, waterfall).wav
+|   |       Mono RIVER (light, stream, forest, birds).wav
+|   |       Mono RIVER (medium, stream).wav
+|   |       Mono RIVER (tunnel).wav
+|   |       Mono STORM (hail, thunder).wav
+|   |       Mono STORM (heavy, hail).wav
+|   |       Mono STORM (heavy, hail, thunder).wav
+|   |       Mono TAPS (porcerlain, sink).wav
+|   |       Mono TIDE (light, beach, seagulls) 2.wav
+|   |       Mono TIDE (light, beach, seagulls) 3.wav
+|   |       Mono TIDE (light, stones, seagulls, basshorn).wav
+|   |       Mono TIDE (medium, beach, insects).wav
+|   |       Mono TIDE (medium, shore, beach).wav
+|   |       Mono TIDE (shore, beach, seagulls).wav
+|   |       Mono TIDE (shore, stone beach, heavy waves).wav
+|   |       Mono WASHED UP (shore, beach, raft).wav
+|   |       
+|   +---loadless_WATER_wav_stereo(1-2)
+|   |       Stereo DRAIN (light, metal, birds).wav
+|   |       Stereo FLUSH (toilet).wav
+|   |       Stereo RAIN (heavy, roof) 2.wav
+|   |       Stereo RAIN (heavy, roof).wav
+|   |       Stereo RAIN (light, blackbird).wav
+|   |       Stereo RAIN (light, drip).wav
+|   |       Stereo RAIN (light, slushy, hail, sparrow).wav
+|   |       Stereo RAIN (medium, constant).wav
+|   |       Stereo RAIN (medium, drip, roof) 2.wav
+|   |       Stereo RAIN (medium, drip, roof).wav
+|   |       Stereo RAIN (medium, sleet, wind).wav
+|   |       Stereo RAIN (medium, thunder).wav
+|   |       Stereo RAIN (medium, wind, constant).wav
+|   |       Stereo RIVER (deep, stream).wav
+|   |       Stereo RIVER (large, river).wav
+|   |       Stereo RIVER (large, river, waterfall).wav
+|   |       Stereo RIVER (large, stream, insects).wav
+|   |       Stereo RIVER (large, waterfall).wav
+|   |       Stereo RIVER (light, stream, forest, birds).wav
+|   |       Stereo RIVER (medium, stream).wav
+|   |       Stereo RIVER (tunnel).wav
+|   |       Stereo STORM (hail, thunder).wav
+|   |       Stereo STORM (heavy, hail).wav
+|   |       Stereo STORM (heavy, hail, thunder).wav
+|   |       Stereo TAPS (porcerlain, sink).wav
+|   |       Stereo WASHED UP (shore, beach, raft).wav
+|   |       
+|   +---loadless_WATER_wav_stereo(2-2)
+|   |       Stereo OCEAN (heavy waves, wind).wav
+|   |       Stereo OCEAN (heavy waves, wind, outside boat).wav
+|   |       Stereo OCEAN (light waves, outside boat).wav
+|   |       Stereo OCEAN (light waves, wind) 2.wav
+|   |       Stereo OCEAN (light waves, wind) 3.wav
+|   |       Stereo OCEAN (medium waves, wind) 2.wav
+|   |       Stereo OCEAN (medium waves, wind).wav
+|   |       Stereo OCEAN (squall, creaks, boat, wind).wav
+|   |       Stereo OCEAN (squall, wind).wav
+|   |       Stereo TIDE (light, beach, seagulls) 2.wav
+|   |       Stereo TIDE (light, beach, seagulls) 3.wav
+|   |       Stereo TIDE (light, stones, seagulls, basshorn).wav
+|   |       Stereo TIDE (medium, beach, insects).wav
+|   |       Stereo TIDE (medium, shore, beach).wav
+|   |       Stereo TIDE (shore, beach, seagulls).wav
+|   |       Stereo TIDE (shore, stone beach, heavy waves).wav
+|   |       
+|   +---Loops
+|   |   |   AlkaKrab Music License Info.pdf
+|   |   |   
+|   |   +---mp3
+|   |   |       1. Moonspire.mp3
+|   |   |       10. Elven Dawn.mp3
+|   |   |       2. Winds of Valor.mp3
+|   |   |       3. Darkwood Path.mp3
+|   |   |       4. Frostbound.mp3
+|   |   |       5. Emberlight.mp3
+|   |   |       6. Silverbrook.mp3
+|   |   |       7. Mystic Grove.mp3
+|   |   |       8. Throne of Storms.mp3
+|   |   |       9. Sorrow’s Edge.mp3
+|   |   |       
+|   |   +---ogg
+|   |   |       1. Moonspire.ogg
+|   |   |       10. Elven Dawn.ogg
+|   |   |       2. Winds of Valor.ogg
+|   |   |       3. Darkwood Path.ogg
+|   |   |       4. Frostbound.ogg
+|   |   |       5. Emberlight.ogg
+|   |   |       6. Silverbrook.ogg
+|   |   |       7. Mystic Grove.ogg
+|   |   |       8. Throne of Storms.ogg
+|   |   |       9. Sorrow’s Edge.ogg
+|   |   |       AlkaKrab Music License Info.pdf
+|   |   |       
+|   |   \---wav
+|   |           1. Moonspire.wav
+|   |           10. Elven Dawn.wav
+|   |           2. Winds of Valor.wav
+|   |           3. Darkwood Path.wav
+|   |           4. Frostbound.wav
+|   |           5. Emberlight.wav
+|   |           6. Silverbrook.wav
+|   |           7. Mystic Grove.wav
+|   |           8. Throne of Storms.wav
+|   |           9. Sorrow’s Edge.wav
+|   |           
+|   \---Tracks
+|       |   AlkaKrab Music License Info.pdf
+|       |   
+|       +---mp3
+|       |       1. Moonspire.mp3
+|       |       10. Elven Dawn  .mp3
+|       |       2. Winds of Valor.mp3
+|       |       3. Darkwood Path.mp3
+|       |       4. Frostbound.mp3
+|       |       5. Emberlight .mp3
+|       |       6. Silverbrook .mp3
+|       |       7. Mystic Grove .mp3
+|       |       8. Throne of Storms .mp3
+|       |       9. Sorrow’s Edge  .mp3
+|       |       
+|       +---ogg
+|       |       1. Moonspire.ogg
+|       |       10. Elven Dawn  .ogg
+|       |       2. Winds of Valor.ogg
+|       |       3. Darkwood Path.ogg
+|       |       4. Frostbound.ogg
+|       |       5. Emberlight .ogg
+|       |       6. Silverbrook .ogg
+|       |       7. Mystic Grove .ogg
+|       |       8. Throne of Storms .ogg
+|       |       9. Sorrow’s Edge  .ogg
+|       |       
+|       \---wav
+|               1. Moonspire.wav
+|               10. Elven Dawn  .wav
+|               2. Winds of Valor.wav
+|               3. Darkwood Path.wav
+|               4. Frostbound.wav
+|               5. Emberlight .wav
+|               6. Silverbrook .wav
+|               7. Mystic Grove .wav
+|               8. Throne of Storms .wav
+|               9. Sorrow’s Edge  .wav
+|               
++---castles_forts_asset_pack
+|       Castles_and_Forts.glb
+|       Iron.png
+|       Walls.png
+|       Window_1.png
+|       Window_iron.png
+|       
++---cells
+|       0_0_0.ron
+|       0_0_1.ron
+|       100_0_0.ron
+|       101_0_0.ron
+|       102_0_0.ron
+|       102_1_0.ron
+|       103_0_0.ron
+|       104_0_0.ron
+|       1_0_0.ron
+|       Z0_loomspire_sanctum.ron
+|       Z1_echo_grove.ron
+|       Z2_fractured_cliffs.ron
+|       
++---cinematics
+|       guided_approach.ron
+|       loom_awakening.ron
+|       vista_pan.ron
+|       
++---exemplars
+|       README.md
+|       
++---hdri
+|   \---polyhaven
+|       |   kloppenheim_02_puresky_2k.hdr
+|       |   qwantani_moonrise_puresky_2k.hdr
+|       |   rogland_clear_night_2k.hdr
+|       |   
+|       +---kloppenheim
+|       |       kloppenheim_06_puresky_2k.hdr
+|       |       README.md
+|       |       
+|       +---spruit_sunrise
+|       |       README.md
+|       |       spruit_sunrise_2k.hdr
+|       |       
+|       \---venice_sunset
+|               README.md
+|               venice_sunset_2k.hdr
+|               
++---Infinite Ocean
+|   |   .gitattributes
+|   |   .gitignore
+|   |   icon.svg
+|   |   icon.svg.import
+|   |   project.godot
+|   |   
+|   +---Resources
+|   |       AllSkyFree_Sky_EpicBlueSunset_Equirect.png
+|   |       AllSkyFree_Sky_EpicBlueSunset_Equirect.png.import
+|   |       AllSkyFree_Sky_MoonBurst_Equirect.png
+|   |       AllSkyFree_Sky_MoonBurst_Equirect.png.import
+|   |       GridSpawnInfo.gd
+|   |       GridSpawnInfo.tres
+|   |       
+|   +---Scenes
+|   |       3Dpawn.gd
+|   |       3Dpawn.tscn
+|   |       Ocean.gd
+|   |       Ocean.tscn
+|   |       OceanMap.tscn
+|   |       WaterPlane.tscn
+|   |       
+|   \---Shaders
+|           Water.gdshader
+|           
++---materials
+|   |   cloth.ktx2
+|   |   cloth.ktx2.meta.json
+|   |   cloth.png
+|   |   cloth_mra.ktx2
+|   |   cloth_mra.ktx2.meta.json
+|   |   cloth_mra.png
+|   |   cloth_n.ktx2
+|   |   cloth_n.ktx2.meta.json
+|   |   cloth_n.png
+|   |   dirt.ktx2
+|   |   dirt.ktx2.meta.json
+|   |   dirt.png
+|   |   dirt_mra.ktx2
+|   |   dirt_mra.ktx2.meta.json
+|   |   dirt_mra.png
+|   |   dirt_n.ktx2
+|   |   dirt_n.ktx2.meta.json
+|   |   dirt_n.png
+|   |   forest_floor.ktx2
+|   |   forest_floor.ktx2.meta.json
+|   |   forest_floor.png
+|   |   forest_floor_mra.ktx2
+|   |   forest_floor_mra.ktx2.meta.json
+|   |   forest_floor_mra.png
+|   |   forest_floor_n.ktx2
+|   |   forest_floor_n.ktx2.meta.json
+|   |   forest_floor_n.png
+|   |   grass.ktx2
+|   |   grass.ktx2.meta.json
+|   |   grass.png
+|   |   grass_mra.ktx2
+|   |   grass_mra.ktx2.meta.json
+|   |   grass_mra.png
+|   |   grass_n.ktx2
+|   |   grass_n.ktx2.meta.json
+|   |   grass_n.png
+|   |   plaster.ktx2
+|   |   plaster.ktx2.meta.json
+|   |   plaster.png
+|   |   plaster_mra.ktx2
+|   |   plaster_mra.ktx2.meta.json
+|   |   plaster_mra.png
+|   |   plaster_n.ktx2
+|   |   plaster_n.ktx2.meta.json
+|   |   plaster_n.png
+|   |   rock_lichen.ktx2
+|   |   rock_lichen.ktx2.meta.json
+|   |   rock_lichen.png
+|   |   rock_lichen_mra.ktx2
+|   |   rock_lichen_mra.ktx2.meta.json
+|   |   rock_lichen_mra.png
+|   |   rock_lichen_n.ktx2
+|   |   rock_lichen_n.ktx2.meta.json
+|   |   rock_lichen_n.png
+|   |   rock_slate.ktx2
+|   |   rock_slate.ktx2.meta.json
+|   |   rock_slate.png
+|   |   rock_slate_mra.ktx2
+|   |   rock_slate_mra.ktx2.meta.json
+|   |   rock_slate_mra.png
+|   |   rock_slate_n.ktx2
+|   |   rock_slate_n.ktx2.meta.json
+|   |   rock_slate_n.png
+|   |   roof_tile.ktx2
+|   |   roof_tile.ktx2.meta.json
+|   |   roof_tile.png
+|   |   roof_tile_mra.ktx2
+|   |   roof_tile_mra.ktx2.meta.json
+|   |   roof_tile_mra.png
+|   |   roof_tile_n.ktx2
+|   |   roof_tile_n.ktx2.meta.json
+|   |   roof_tile_n.png
+|   |   sand.ktx2
+|   |   sand.ktx2.meta.json
+|   |   sand.png
+|   |   sand_mra.ktx2
+|   |   sand_mra.ktx2.meta.json
+|   |   sand_mra.png
+|   |   sand_n.ktx2
+|   |   sand_n.ktx2.meta.json
+|   |   sand_n.png
+|   |   stone.ktx2
+|   |   stone.ktx2.meta.json
+|   |   stone.png
+|   |   stone_mra.ktx2
+|   |   stone_mra.ktx2.meta.json
+|   |   stone_mra.png
+|   |   stone_n.ktx2
+|   |   stone_n.ktx2.meta.json
+|   |   stone_n.png
+|   |   tree_bark.ktx2
+|   |   tree_bark.ktx2.meta.json
+|   |   tree_bark.png
+|   |   tree_bark_mra.ktx2
+|   |   tree_bark_mra.ktx2.meta.json
+|   |   tree_bark_mra.png
+|   |   tree_bark_n.ktx2
+|   |   tree_bark_n.ktx2.meta.json
+|   |   tree_bark_n.png
+|   |   tree_leaves.ktx2
+|   |   tree_leaves.ktx2.meta.json
+|   |   tree_leaves.png
+|   |   tree_leaves_mra.ktx2
+|   |   tree_leaves_mra.ktx2.meta.json
+|   |   tree_leaves_mra.png
+|   |   tree_leaves_n.ktx2
+|   |   tree_leaves_n.ktx2.meta.json
+|   |   tree_leaves_n.png
+|   |   
+|   +---baked
+|   |       cloth.ktx2
+|   |       cloth.ktx2.meta.json
+|   |       cloth_mra.ktx2
+|   |       cloth_mra.ktx2.meta.json
+|   |       cloth_n.ktx2
+|   |       cloth_n.ktx2.meta.json
+|   |       dirt.ktx2
+|   |       dirt.ktx2.meta.json
+|   |       dirt_mra.ktx2
+|   |       dirt_mra.ktx2.meta.json
+|   |       dirt_n.ktx2
+|   |       dirt_n.ktx2.meta.json
+|   |       forest_floor.ktx2
+|   |       forest_floor.ktx2.meta.json
+|   |       forest_floor_mra.ktx2
+|   |       forest_floor_mra.ktx2.meta.json
+|   |       forest_floor_n.ktx2
+|   |       forest_floor_n.ktx2.meta.json
+|   |       grass.ktx2
+|   |       grass.ktx2.meta.json
+|   |       grass_mra.ktx2
+|   |       grass_mra.ktx2.meta.json
+|   |       grass_n.ktx2
+|   |       grass_n.ktx2.meta.json
+|   |       plaster.ktx2
+|   |       plaster.ktx2.meta.json
+|   |       plaster_mra.ktx2
+|   |       plaster_mra.ktx2.meta.json
+|   |       plaster_n.ktx2
+|   |       plaster_n.ktx2.meta.json
+|   |       rock_lichen.ktx2
+|   |       rock_lichen.ktx2.meta.json
+|   |       rock_lichen_mra.ktx2
+|   |       rock_lichen_mra.ktx2.meta.json
+|   |       rock_lichen_n.ktx2
+|   |       rock_lichen_n.ktx2.meta.json
+|   |       rock_slate.ktx2
+|   |       rock_slate.ktx2.meta.json
+|   |       rock_slate_mra.ktx2
+|   |       rock_slate_mra.ktx2.meta.json
+|   |       rock_slate_n.ktx2
+|   |       rock_slate_n.ktx2.meta.json
+|   |       roof_tile.ktx2
+|   |       roof_tile.ktx2.meta.json
+|   |       roof_tile_mra.ktx2
+|   |       roof_tile_mra.ktx2.meta.json
+|   |       roof_tile_n.ktx2
+|   |       roof_tile_n.ktx2.meta.json
+|   |       sand.ktx2
+|   |       sand.ktx2.meta.json
+|   |       sand_mra.ktx2
+|   |       sand_mra.ktx2.meta.json
+|   |       sand_n.ktx2
+|   |       sand_n.ktx2.meta.json
+|   |       stone.ktx2
+|   |       stone.ktx2.meta.json
+|   |       stone_mra.ktx2
+|   |       stone_mra.ktx2.meta.json
+|   |       stone_n.ktx2
+|   |       stone_n.ktx2.meta.json
+|   |       tree_bark.ktx2
+|   |       tree_bark.ktx2.meta.json
+|   |       tree_bark_mra.ktx2
+|   |       tree_bark_mra.ktx2.meta.json
+|   |       tree_bark_n.ktx2
+|   |       tree_bark_n.ktx2.meta.json
+|   |       tree_leaves.ktx2
+|   |       tree_leaves.ktx2.meta.json
+|   |       tree_leaves_mra.ktx2
+|   |       tree_leaves_mra.ktx2.meta.json
+|   |       tree_leaves_n.ktx2
+|   |       tree_leaves_n.ktx2.meta.json
+|   |       
+|   +---baked_backup
+|   |       cloth.ktx2
+|   |       cloth.ktx2.meta.json
+|   |       cloth_mra.ktx2
+|   |       cloth_mra.ktx2.meta.json
+|   |       cloth_n.ktx2
+|   |       cloth_n.ktx2.meta.json
+|   |       dirt.ktx2
+|   |       dirt.ktx2.meta.json
+|   |       dirt_mra.ktx2
+|   |       dirt_mra.ktx2.meta.json
+|   |       dirt_n.ktx2
+|   |       dirt_n.ktx2.meta.json
+|   |       forest_floor.ktx2
+|   |       forest_floor.ktx2.meta.json
+|   |       forest_floor_mra.ktx2
+|   |       forest_floor_mra.ktx2.meta.json
+|   |       forest_floor_n.ktx2
+|   |       forest_floor_n.ktx2.meta.json
+|   |       grass.ktx2
+|   |       grass.ktx2.meta.json
+|   |       grass_mra.ktx2
+|   |       grass_mra.ktx2.meta.json
+|   |       grass_n.ktx2
+|   |       grass_n.ktx2.meta.json
+|   |       plaster.ktx2
+|   |       plaster.ktx2.meta.json
+|   |       plaster_mra.ktx2
+|   |       plaster_mra.ktx2.meta.json
+|   |       plaster_n.ktx2
+|   |       plaster_n.ktx2.meta.json
+|   |       rock_lichen.ktx2
+|   |       rock_lichen.ktx2.meta.json
+|   |       rock_lichen_mra.ktx2
+|   |       rock_lichen_mra.ktx2.meta.json
+|   |       rock_lichen_n.ktx2
+|   |       rock_lichen_n.ktx2.meta.json
+|   |       rock_slate.ktx2
+|   |       rock_slate.ktx2.meta.json
+|   |       rock_slate_mra.ktx2
+|   |       rock_slate_mra.ktx2.meta.json
+|   |       rock_slate_n.ktx2
+|   |       rock_slate_n.ktx2.meta.json
+|   |       roof_tile.ktx2
+|   |       roof_tile.ktx2.meta.json
+|   |       roof_tile_mra.ktx2
+|   |       roof_tile_mra.ktx2.meta.json
+|   |       roof_tile_n.ktx2
+|   |       roof_tile_n.ktx2.meta.json
+|   |       sand.ktx2
+|   |       sand.ktx2.meta.json
+|   |       sand_mra.ktx2
+|   |       sand_mra.ktx2.meta.json
+|   |       sand_n.ktx2
+|   |       sand_n.ktx2.meta.json
+|   |       stone.ktx2
+|   |       stone.ktx2.meta.json
+|   |       stone_mra.ktx2
+|   |       stone_mra.ktx2.meta.json
+|   |       stone_n.ktx2
+|   |       stone_n.ktx2.meta.json
+|   |       tree_bark.ktx2
+|   |       tree_bark.ktx2.meta.json
+|   |       tree_bark_mra.ktx2
+|   |       tree_bark_mra.ktx2.meta.json
+|   |       tree_bark_n.ktx2
+|   |       tree_bark_n.ktx2.meta.json
+|   |       tree_leaves.ktx2
+|   |       tree_leaves.ktx2.meta.json
+|   |       tree_leaves_mra.ktx2
+|   |       tree_leaves_mra.ktx2.meta.json
+|   |       tree_leaves_n.ktx2
+|   |       tree_leaves_n.ktx2.meta.json
+|   |       
+|   +---baked_test
+|   |       materials.toml
+|   |       
+|   +---desert
+|   |       arrays.toml
+|   |       materials.toml
+|   |       
+|   +---forest
+|   |       arrays.toml
+|   |       materials.toml
+|   |       
+|   +---grassland
+|   |       arrays.toml
+|   |       materials.toml
+|   |       
+|   +---polyhaven
+|   |   |   arrays.toml
+|   |   |   materials.toml
+|   |   |   README.md
+|   |   |   
+|   |   +---cobblestone
+|   |   |       README.md
+|   |   |       
+|   |   +---metal_plate
+|   |   |       README.md
+|   |   |       
+|   |   +---plastered_wall
+|   |   |       README.md
+|   |   |       
+|   |   \---wood_floor
+|   |           README.md
+|   |           
+|   \---terrain
+|           desert_demo.toml
+|           grassland_demo.toml
+|           mountain_demo.toml
+|           
++---materials_baked
+|       cloth.ktx2
+|       cloth.ktx2.meta.json
+|       cloth_mra.ktx2
+|       cloth_mra.ktx2.meta.json
+|       cloth_n.ktx2
+|       cloth_n.ktx2.meta.json
+|       dirt.ktx2
+|       dirt.ktx2.meta.json
+|       dirt_mra.ktx2
+|       dirt_mra.ktx2.meta.json
+|       dirt_n.ktx2
+|       dirt_n.ktx2.meta.json
+|       forest_floor.ktx2
+|       forest_floor.ktx2.meta.json
+|       forest_floor_mra.ktx2
+|       forest_floor_mra.ktx2.meta.json
+|       forest_floor_n.ktx2
+|       forest_floor_n.ktx2.meta.json
+|       grass.ktx2
+|       grass.ktx2.meta.json
+|       grass_mra.ktx2
+|       grass_mra.ktx2.meta.json
+|       grass_n.ktx2
+|       grass_n.ktx2.meta.json
+|       plaster.ktx2
+|       plaster.ktx2.meta.json
+|       plaster_mra.ktx2
+|       plaster_mra.ktx2.meta.json
+|       plaster_n.ktx2
+|       plaster_n.ktx2.meta.json
+|       rock_lichen.ktx2
+|       rock_lichen.ktx2.meta.json
+|       rock_lichen_mra.ktx2
+|       rock_lichen_mra.ktx2.meta.json
+|       rock_lichen_n.ktx2
+|       rock_lichen_n.ktx2.meta.json
+|       rock_slate.ktx2
+|       rock_slate.ktx2.meta.json
+|       
++---models
+|   |   arrow.fbx
+|   |   barrels.glb
+|   |   battlement-corner-inner.glb
+|   |   battlement-corner-outer.glb
+|   |   battlement-half.glb
+|   |   battlement.glb
+|   |   bed.glb
+|   |   bed_floor.glb
+|   |   box.fbx
+|   |   bricks.glb
+|   |   bridge_center_stone.glb
+|   |   bridge_center_stoneRound.glb
+|   |   bridge_center_wood.glb
+|   |   bridge_center_woodRound.glb
+|   |   bridge_side_stone.glb
+|   |   bridge_side_stoneRound.glb
+|   |   bridge_side_wood.glb
+|   |   bridge_side_woodRound.glb
+|   |   bridge_stone.glb
+|   |   bridge_stoneNarrow.glb
+|   |   bridge_stoneRound.glb
+|   |   bridge_stoneRoundNarrow.glb
+|   |   bridge_wood.glb
+|   |   bridge_woodNarrow.glb
+|   |   bridge_woodRound.glb
+|   |   bridge_woodRoundNarrow.glb
+|   |   cactus_short.glb
+|   |   cactus_tall.glb
+|   |   campfire_bricks.glb
+|   |   campfire_logs.glb
+|   |   campfire_planks.glb
+|   |   campfire_stones.glb
+|   |   canoe.glb
+|   |   canoe_paddle.glb
+|   |   character-a.glb
+|   |   character-b.glb
+|   |   character-c.glb
+|   |   character-d.glb
+|   |   character-e.glb
+|   |   character-f.glb
+|   |   character-g.glb
+|   |   character-h.glb
+|   |   character-i.glb
+|   |   character-j.glb
+|   |   character-k.glb
+|   |   character-l.glb
+|   |   character-m.glb
+|   |   character-n.glb
+|   |   character-o.glb
+|   |   character-p.glb
+|   |   character-q.glb
+|   |   character-r.glb
+|   |   cliff_blockCave_rock.glb
+|   |   cliff_blockCave_stone.glb
+|   |   cliff_blockDiagonal_rock.glb
+|   |   cliff_blockDiagonal_stone.glb
+|   |   cliff_blockHalf_rock.glb
+|   |   cliff_blockHalf_stone.glb
+|   |   cliff_blockQuarter_rock.glb
+|   |   cliff_blockQuarter_stone.glb
+|   |   cliff_blockSlopeHalfWalls_rock.glb
+|   |   cliff_blockSlopeHalfWalls_stone.glb
+|   |   cliff_blockSlopeWalls_rock.glb
+|   |   cliff_blockSlopeWalls_stone.glb
+|   |   cliff_blockSlope_rock.glb
+|   |   cliff_blockSlope_stone.glb
+|   |   cliff_block_rock.glb
+|   |   cliff_block_stone.glb
+|   |   cliff_cave_rock.glb
+|   |   cliff_cave_stone.glb
+|   |   cliff_cornerInnerLarge_rock.glb
+|   |   cliff_cornerInnerLarge_stone.glb
+|   |   cliff_cornerInnerTop_rock.glb
+|   |   cliff_cornerInnerTop_stone.glb
+|   |   cliff_cornerInner_rock.glb
+|   |   cliff_cornerInner_stone.glb
+|   |   cliff_cornerLarge_rock.glb
+|   |   cliff_cornerLarge_stone.glb
+|   |   cliff_cornerTop_rock.glb
+|   |   cliff_cornerTop_stone.glb
+|   |   cliff_corner_rock.glb
+|   |   cliff_corner_stone.glb
+|   |   cliff_diagonal_rock.glb
+|   |   cliff_diagonal_stone.glb
+|   |   cliff_halfCornerInner_rock.glb
+|   |   cliff_halfCornerInner_stone.glb
+|   |   cliff_halfCorner_rock.glb
+|   |   cliff_halfCorner_stone.glb
+|   |   cliff_half_rock.glb
+|   |   cliff_half_stone.glb
+|   |   cliff_large_rock.glb
+|   |   cliff_large_stone.glb
+|   |   cliff_rock.glb
+|   |   cliff_stepsCornerInner_rock.glb
+|   |   cliff_stepsCornerInner_stone.glb
+|   |   cliff_stepsCorner_rock.glb
+|   |   cliff_stepsCorner_stone.glb
+|   |   cliff_steps_rock.glb
+|   |   cliff_steps_stone.glb
+|   |   cliff_stone.glb
+|   |   cliff_topDiagonal_rock.glb
+|   |   cliff_topDiagonal_stone.glb
+|   |   cliff_top_rock.glb
+|   |   cliff_top_stone.glb
+|   |   cliff_waterfallTop_rock.glb
+|   |   cliff_waterfallTop_stone.glb
+|   |   cliff_waterfall_rock.glb
+|   |   cliff_waterfall_stone.glb
+|   |   coin.fbx
+|   |   column-damaged.glb
+|   |   column-paint-damaged.glb
+|   |   column-paint.glb
+|   |   column-wood.glb
+|   |   column.glb
+|   |   cone.fbx
+|   |   cone1.fbx
+|   |   cone2.fbx
+|   |   cone3.fbx
+|   |   cone4.fbx
+|   |   crops_bambooStageA.glb
+|   |   crops_bambooStageB.glb
+|   |   crops_cornStageA.glb
+|   |   crops_cornStageB.glb
+|   |   crops_cornStageC.glb
+|   |   crops_cornStageD.glb
+|   |   crops_dirtDoubleRow.glb
+|   |   crops_dirtDoubleRowCorner.glb
+|   |   crops_dirtDoubleRowEnd.glb
+|   |   crops_dirtRow.glb
+|   |   crops_dirtRowCorner.glb
+|   |   crops_dirtRowEnd.glb
+|   |   crops_dirtSingle.glb
+|   |   crops_leafsStageA.glb
+|   |   crops_leafsStageB.glb
+|   |   crops_wheatStageA.glb
+|   |   crops_wheatStageB.glb
+|   |   crop_carrot.glb
+|   |   crop_melon.glb
+|   |   crop_pumpkin.glb
+|   |   crop_turnip.glb
+|   |   cube.fbx
+|   |   cube4.fbx
+|   |   cube5.fbx
+|   |   cube6.fbx
+|   |   cube7.fbx
+|   |   cube8.fbx
+|   |   cube9.fbx
+|   |   cylinder.fbx
+|   |   cylinder1.fbx
+|   |   cylinder2.fbx
+|   |   cylinder3.fbx
+|   |   cylinder4.fbx
+|   |   cylinder5.fbx
+|   |   detail-barrel.glb
+|   |   detail-crate-ropes.glb
+|   |   detail-crate-small.glb
+|   |   detail-crate.glb
+|   |   dock-corner.glb
+|   |   dock-side.glb
+|   |   door.fbx
+|   |   door1.fbx
+|   |   door2.fbx
+|   |   door3.fbx
+|   |   fence edge.fbx
+|   |   fence wood.fbx
+|   |   fence-top.glb
+|   |   fence-wood.glb
+|   |   fence.fbx
+|   |   fence.glb
+|   |   fence2.fbx
+|   |   fence3.fbx
+|   |   fence_bend.glb
+|   |   fence_bendCenter.glb
+|   |   fence_corner.glb
+|   |   fence_gate.glb
+|   |   fence_planks.glb
+|   |   fence_planksDouble.glb
+|   |   fence_simple.glb
+|   |   fence_simpleCenter.glb
+|   |   fence_simpleDiagonal.glb
+|   |   fence_simpleDiagonalCenter.glb
+|   |   fence_simpleHigh.glb
+|   |   fence_simpleLow.glb
+|   |   floor-flat.glb
+|   |   floor-stairs-corner-inner.glb
+|   |   floor-stairs-corner-outer.glb
+|   |   floor-stairs.glb
+|   |   floor-steps-corner-inner.glb
+|   |   floor-steps-corner-outer.glb
+|   |   floor-steps.glb
+|   |   floor.glb
+|   |   flower_purpleA.glb
+|   |   flower_purpleB.glb
+|   |   flower_purpleC.glb
+|   |   flower_redA.glb
+|   |   flower_redB.glb
+|   |   flower_redC.glb
+|   |   flower_yellowA.glb
+|   |   flower_yellowB.glb
+|   |   flower_yellowC.glb
+|   |   grass.glb
+|   |   grass_large.glb
+|   |   grass_leafs.glb
+|   |   grass_leafsLarge.glb
+|   |   ground corner.fbx
+|   |   ground.fbx
+|   |   ground1.fbx
+|   |   ground_grass.glb
+|   |   ground_pathBend.glb
+|   |   ground_pathBendBank.glb
+|   |   ground_pathCorner.glb
+|   |   ground_pathCornerSmall.glb
+|   |   ground_pathCross.glb
+|   |   ground_pathEnd.glb
+|   |   ground_pathEndClosed.glb
+|   |   ground_pathOpen.glb
+|   |   ground_pathRocks.glb
+|   |   ground_pathSide.glb
+|   |   ground_pathSideOpen.glb
+|   |   ground_pathSplit.glb
+|   |   ground_pathStraight.glb
+|   |   ground_pathTile.glb
+|   |   ground_riverBend.glb
+|   |   ground_riverBendBank.glb
+|   |   ground_riverCorner.glb
+|   |   ground_riverCornerSmall.glb
+|   |   ground_riverCross.glb
+|   |   ground_riverEnd.glb
+|   |   ground_riverEndClosed.glb
+|   |   ground_riverOpen.glb
+|   |   ground_riverRocks.glb
+|   |   ground_riverSide.glb
+|   |   ground_riverSideOpen.glb
+|   |   ground_riverSplit.glb
+|   |   ground_riverStraight.glb
+|   |   ground_riverTile.glb
+|   |   hanging_moss.glb
+|   |   key.fbx
+|   |   ladder.fbx
+|   |   ladder.glb
+|   |   ladder1.fbx
+|   |   lily_large.glb
+|   |   lily_small.glb
+|   |   log.glb
+|   |   log_large.glb
+|   |   log_stack.glb
+|   |   log_stackLarge.glb
+|   |   mushroom_red.glb
+|   |   mushroom_redGroup.glb
+|   |   mushroom_redTall.glb
+|   |   mushroom_tan.glb
+|   |   mushroom_tanGroup.glb
+|   |   mushroom_tanTall.glb
+|   |   overhang-fence.glb
+|   |   overhang-round-railing.glb
+|   |   overhang-round.glb
+|   |   overhang.glb
+|   |   path_stone.glb
+|   |   path_stoneCircle.glb
+|   |   path_stoneCorner.glb
+|   |   path_stoneEnd.glb
+|   |   path_wood.glb
+|   |   path_woodCorner.glb
+|   |   path_woodEnd.glb
+|   |   pillar.fbx
+|   |   pillar1.fbx
+|   |   pillar2.fbx
+|   |   pillar3.fbx
+|   |   pillar4.fbx
+|   |   plant_bush.glb
+|   |   plant_bushDetailed.glb
+|   |   plant_bushLarge.glb
+|   |   plant_bushLargeTriangle.glb
+|   |   plant_bushSmall.glb
+|   |   plant_bushTriangle.glb
+|   |   plant_flatShort.glb
+|   |   plant_flatTall.glb
+|   |   platform_beach.glb
+|   |   platform_grass.glb
+|   |   platform_stone.glb
+|   |   pot_large.glb
+|   |   pot_small.glb
+|   |   pulley-crate.glb
+|   |   pulley.glb
+|   |   railing edge.fbx
+|   |   railing.fbx
+|   |   ramp.fbx
+|   |   ramp1.fbx
+|   |   README.md
+|   |   rock_largeA.glb
+|   |   rock_largeB.glb
+|   |   rock_largeC.glb
+|   |   rock_largeD.glb
+|   |   rock_largeE.glb
+|   |   rock_largeF.glb
+|   |   rock_smallA.glb
+|   |   rock_smallB.glb
+|   |   rock_smallC.glb
+|   |   rock_smallD.glb
+|   |   rock_smallE.glb
+|   |   rock_smallF.glb
+|   |   rock_smallFlatA.glb
+|   |   rock_smallFlatB.glb
+|   |   rock_smallFlatC.glb
+|   |   rock_smallG.glb
+|   |   rock_smallH.glb
+|   |   rock_smallI.glb
+|   |   rock_smallTopA.glb
+|   |   rock_smallTopB.glb
+|   |   rock_tallA.glb
+|   |   rock_tallB.glb
+|   |   rock_tallC.glb
+|   |   rock_tallD.glb
+|   |   rock_tallE.glb
+|   |   rock_tallF.glb
+|   |   rock_tallG.glb
+|   |   rock_tallH.glb
+|   |   rock_tallI.glb
+|   |   rock_tallJ.glb
+|   |   roof-corner.glb
+|   |   roof-edge.glb
+|   |   roof-high-side-corner-inner.glb
+|   |   roof-high-side-corner.glb
+|   |   roof-high-side.glb
+|   |   roof-side-corner-inner.glb
+|   |   roof-side-corner.glb
+|   |   roof-side.glb
+|   |   roof.glb
+|   |   sign.glb
+|   |   sphere.fbx
+|   |   sphere1.fbx
+|   |   sphere2.fbx
+|   |   spike.fbx
+|   |   spikes big.fbx
+|   |   spikes small.fbx
+|   |   stairs corner.fbx
+|   |   stairs corner1.fbx
+|   |   stairs-corner.glb
+|   |   stairs-stone.glb
+|   |   stairs-wood.glb
+|   |   stairs.fbx
+|   |   stairs1.fbx
+|   |   stairs2.fbx
+|   |   statue_block.glb
+|   |   statue_column.glb
+|   |   statue_columnDamaged.glb
+|   |   statue_head.glb
+|   |   statue_obelisk.glb
+|   |   statue_ring.glb
+|   |   stone_largeA.glb
+|   |   stone_largeB.glb
+|   |   stone_largeC.glb
+|   |   stone_largeD.glb
+|   |   stone_largeE.glb
+|   |   stone_largeF.glb
+|   |   stone_smallA.glb
+|   |   stone_smallB.glb
+|   |   stone_smallC.glb
+|   |   stone_smallD.glb
+|   |   stone_smallE.glb
+|   |   stone_smallF.glb
+|   |   stone_smallFlatA.glb
+|   |   stone_smallFlatB.glb
+|   |   stone_smallFlatC.glb
+|   |   stone_smallG.glb
+|   |   stone_smallH.glb
+|   |   stone_smallI.glb
+|   |   stone_smallTopA.glb
+|   |   stone_smallTopB.glb
+|   |   stone_tallA.glb
+|   |   stone_tallB.glb
+|   |   stone_tallC.glb
+|   |   stone_tallD.glb
+|   |   stone_tallE.glb
+|   |   stone_tallF.glb
+|   |   stone_tallG.glb
+|   |   stone_tallH.glb
+|   |   stone_tallI.glb
+|   |   stone_tallJ.glb
+|   |   structure-cross.glb
+|   |   structure-pole.glb
+|   |   structure-poles.glb
+|   |   structure-wall-cross.glb
+|   |   structure-wall.glb
+|   |   structure.glb
+|   |   stump_old.glb
+|   |   stump_oldTall.glb
+|   |   stump_round.glb
+|   |   stump_roundDetailed.glb
+|   |   stump_square.glb
+|   |   stump_squareDetailed.glb
+|   |   stump_squareDetailedWide.glb
+|   |   tent_detailedClosed.glb
+|   |   tent_detailedOpen.glb
+|   |   tent_smallClosed.glb
+|   |   tent_smallOpen.glb
+|   |   toggle switch.fbx
+|   |   torus.fbx
+|   |   tower-base.glb
+|   |   tower-edge.glb
+|   |   tower-paint-base.glb
+|   |   tower-paint.glb
+|   |   tower-top.glb
+|   |   tower.glb
+|   |   tree-large.glb
+|   |   tree-shrub.glb
+|   |   tree_blocks.glb
+|   |   tree_blocks_dark.glb
+|   |   tree_blocks_fall.glb
+|   |   tree_cone.glb
+|   |   tree_cone_dark.glb
+|   |   tree_cone_fall.glb
+|   |   tree_default.glb
+|   |   tree_default_dark.glb
+|   |   tree_default_fall.glb
+|   |   tree_detailed.glb
+|   |   tree_detailed_dark.glb
+|   |   tree_detailed_fall.glb
+|   |   tree_fat.glb
+|   |   tree_fat_darkh.glb
+|   |   tree_fat_fall.glb
+|   |   tree_oak.glb
+|   |   tree_oak_dark.glb
+|   |   tree_oak_fall.glb
+|   |   tree_palm.glb
+|   |   tree_palmBend.glb
+|   |   tree_palmDetailedShort.glb
+|   |   tree_palmDetailedTall.glb
+|   |   tree_palmShort.glb
+|   |   tree_palmTall.glb
+|   |   tree_pineDefaultA.glb
+|   |   tree_pineDefaultB.glb
+|   |   tree_pineGroundA.glb
+|   |   tree_pineGroundB.glb
+|   |   tree_pineRoundA.glb
+|   |   tree_pineRoundB.glb
+|   |   tree_pineRoundC.glb
+|   |   tree_pineRoundD.glb
+|   |   tree_pineRoundE.glb
+|   |   tree_pineRoundF.glb
+|   |   tree_pineSmallA.glb
+|   |   tree_pineSmallB.glb
+|   |   tree_pineSmallC.glb
+|   |   tree_pineSmallD.glb
+|   |   tree_pineTallA.glb
+|   |   tree_pineTallA_detailed.glb
+|   |   tree_pineTallB.glb
+|   |   tree_pineTallB_detailed.glb
+|   |   tree_pineTallC.glb
+|   |   tree_pineTallC_detailed.glb
+|   |   tree_pineTallD.glb
+|   |   tree_pineTallD_detailed.glb
+|   |   tree_plateau.glb
+|   |   tree_plateau_dark.glb
+|   |   tree_plateau_fall.glb
+|   |   tree_simple.glb
+|   |   tree_simple_dark.glb
+|   |   tree_simple_fall.glb
+|   |   tree_small.glb
+|   |   tree_small_dark.glb
+|   |   tree_small_fall.glb
+|   |   tree_tall.glb
+|   |   tree_tall_dark.glb
+|   |   tree_tall_fall.glb
+|   |   tree_thin.glb
+|   |   tree_thin_dark.glb
+|   |   tree_thin_fall.glb
+|   |   wall corner bottom.fbx
+|   |   wall corner bottom1.fbx
+|   |   wall corner bottom2.fbx
+|   |   wall corner top.fbx
+|   |   wall corner top1.fbx
+|   |   wall corner.fbx
+|   |   wall corner1.fbx
+|   |   wall corner4.fbx
+|   |   wall door.fbx
+|   |   wall door1.fbx
+|   |   wall door2.fbx
+|   |   wall window.fbx
+|   |   wall window1.fbx
+|   |   wall-detail.glb
+|   |   wall-door.glb
+|   |   wall-flat-gate.glb
+|   |   wall-fortified-door.glb
+|   |   wall-fortified-gate-half.glb
+|   |   wall-fortified-gate.glb
+|   |   wall-fortified-half.glb
+|   |   wall-fortified-paint-door.glb
+|   |   wall-fortified-paint-gate.glb
+|   |   wall-fortified-paint-half.glb
+|   |   wall-fortified-paint-window.glb
+|   |   wall-fortified-paint.glb
+|   |   wall-fortified-window.glb
+|   |   wall-fortified.glb
+|   |   wall-gate-half.glb
+|   |   wall-gate.glb
+|   |   wall-half.glb
+|   |   wall-low.glb
+|   |   wall-paint-detail.glb
+|   |   wall-paint-door.glb
+|   |   wall-paint-flat.glb
+|   |   wall-paint-gate.glb
+|   |   wall-paint-half.glb
+|   |   wall-paint-window.glb
+|   |   wall-paint.glb
+|   |   wall-pane-door.glb
+|   |   wall-pane-paint-door.glb
+|   |   wall-pane-paint-window.glb
+|   |   wall-pane-paint.glb
+|   |   wall-pane-painted-wood-door.glb
+|   |   wall-pane-painted-wood-window.glb
+|   |   wall-pane-painted-wood.glb
+|   |   wall-pane-window.glb
+|   |   wall-pane-wood-door.glb
+|   |   wall-pane-wood-window.glb
+|   |   wall-pane-wood.glb
+|   |   wall-pane.glb
+|   |   wall-window.glb
+|   |   wall.fbx
+|   |   wall.glb
+|   |   wall1.fbx
+|   |   water.glb
+|   |   window.fbx
+|   |   window1.fbx
+|   |   wood-floor-half.glb
+|   |   wood-floor-quarter.glb
+|   |   wood-floor-railing.glb
+|   |   wood-floor.glb
+|   |   
+|   \---greybox
+|           echo_grove_greybox.gltf
+|           fractured_cliffs_greybox.gltf
+|           loomspire_sanctum_greybox.gltf
+|           
++---npc
+|       merchant.toml
+|       
++---screenshots
+|       unified_showcase_biome.png
+|       unified_showcase_desert.png
+|       unified_showcase_enhanced.png
+|       unified_showcase_final.png
+|       unified_showcase_skybox.png
+|       unified_showcase_startup.png
+|       
++---tests
+|   \---biome
+|           materials.toml
+|           
+\---textures
+    |   atlas_config.toml
+    |   barrel.png
+    |   cobblestone.png
+    |   cobblestoneAlternative.png
+    |   cobblestonePainted.png
+    |   details.png
+    |   fence.png
+    |   planks.png
+    |   README.md
+    |   roof.png
+    |   texture-a.png
+    |   texture-b.png
+    |   texture-c.png
+    |   texture-d.png
+    |   texture-e.png
+    |   texture-f.png
+    |   texture-g.png
+    |   texture-h.png
+    |   texture-i.png
+    |   texture-j.png
+    |   texture-k.png
+    |   texture-l.png
+    |   texture-m.png
+    |   texture-n.png
+    |   texture-o.png
+    |   texture-p.png
+    |   texture-q.png
+    |   texture-r.png
+    |   tree.png
+    |   water.png
+    |   
+    +---demo
+    |       materials.toml
+    |       
+    +---desert
+    |       materials.toml
+    |       
+    +---Fabrics
+    |       fabric_leather_01_diff_1k.jpg
+    |       fabric_leather_01_disp_1k.png
+    |       fabric_leather_01_nor_gl_1k.exr
+    |       fabric_leather_01_rough_1k.jpg
+    |       rough_linen_1k.glb
+    |       rough_linen_anisotropy_rotation_1k.png
+    |       rough_linen_anisotropy_strength_1k.png
+    |       rough_linen_diff_1k.jpg
+    |       rough_linen_disp_1k.png
+    |       rough_linen_mask_1k.png
+    |       rough_linen_metal_1k.exr
+    |       rough_linen_nor_gl_1k.exr
+    |       rough_linen_rough_1k.exr
+    |       rough_linen_spec_ior_1k.png
+    |       
+    +---forest
+    |       materials.toml
+    |       
+    +---Grass HD texture
+    |       grass
+    |       grass_medium_01_alpha_4k.png
+    |       grass_medium_01_diff_4k.jpg
+    |       grass_medium_01_dry_diff_4k.png
+    |       grass_medium_01_rough_4k.exr
+    |       
+    +---grassland
+    |       materials.toml
+    |       
+    \---pine forest textures
+            aerial_rocks_04_1k.glb
+            aerial_rocks_04_diff_1k.jpg
+            aerial_rocks_04_disp_1k.png
+            aerial_rocks_04_nor_gl_1k.exr
+            aerial_rocks_04_rough_1k.jpg
+            dead_tree_diff.png
+            dead_tree_disp.png
+            dead_tree_nor_gl.png
+            dead_tree_rough.png
+            dead_tree_tiled_diff.png
+            dead_tree_tiled_disp.png
+            dead_tree_tiled_nor_gl.png
+            dead_tree_tiled_rough.png
+            dry_branches_medium_01_diff.png
+            dry_branches_medium_01_nor_gl.png
+            dry_branches_medium_01_rough.png
+            evening_road_01_puresky_8k.exr
+            fern_02_alpha.png
+            fern_02_diff.png
+            fern_02_nor_gl.png
+            fern_02_rough.png
+            fir_bark_diff.png
+            fir_bark_disp.png
+            fir_bark_nor_gl.png
+            fir_bark_rough.png
+            fir_trunk_01_diff.png
+            fir_trunk_01_nor_gl.png
+            fir_trunk_01_rough.png
+            fir_trunk_03_diff.png
+            fir_trunk_03_nor_gl.png
+            fir_trunk_03_rough.png
+            fir_twig_alpha.png
+            fir_twig_diff.png
+            fir_twig_mask01.png
+            fir_twig_nor_gl.png
+            fir_twig_rough.png
+            forest_ground_04_diff.png
+            forest_ground_04_disp.png
+            forest_ground_04_nor_gl.png
+            forest_ground_04_rough.png
+            forest_leaves_04_diff.png
+            forest_leaves_04_disp.png
+            forest_leaves_04_nor_gl.png
+            forest_leaves_04_rough.png
+            forrest_ground_01_1k.glb
+            forrest_ground_01_diff_1k.jpg
+            forrest_ground_01_disp_1k.png
+            forrest_ground_01_nor_gl_1k.exr
+            forrest_ground_01_rough_1k.jpg
+            ganges_river_pebbles_1k.glb
+            ganges_river_pebbles_diff_1k.jpg
+            ganges_river_pebbles_disp_1k.png
+            ganges_river_pebbles_nor_gl_1k.exr
+            ganges_river_pebbles_rough_1k.exr
+            grass_medium_01_1k.glb
+            grass_medium_01_alpha.png
+            grass_medium_01_alpha_1k.png
+            grass_medium_01_diff.png
+            grass_medium_01_diff_1k.jpg
+            grass_medium_01_dry_diff.png
+            grass_medium_01_dry_diff_1k.png
+            grass_medium_01_nor_gl.png
+            grass_medium_01_nor_gl_1k.exr
+            grass_medium_01_rough.png
+            grass_medium_01_rough_1k.exr
+            gravel_road_1k.glb
+            gravel_road_diff_1k.jpg
+            gravel_road_disp_1k.png
+            gravel_road_nor_gl_1k.exr
+            gravel_road_rough_1k.exr
+            montaigle_ruins_01_diff.jpg
+            montaigle_ruins_01_nor_gl.jpg
+            montaigle_ruins_01_rough.jpg
+            montaigle_ruins_02_diff.jpg
+            montaigle_ruins_02_nor_gl.jpg
+            montaigle_ruins_02_rough.jpg
+            montaigle_ruins_03_diff.jpg
+            montaigle_ruins_03_nor_gl.jpg
+            montaigle_ruins_03_rough.jpg
+            moss_diff.png
+            moss_mask.png
+            moss_rough.png
+            namaqualand_cliff_02_1k.glb
+            namaqualand_cliff_02_diff_1k.jpg
+            namaqualand_cliff_02_nor_gl_1k.exr
+            namaqualand_cliff_02_rough_1k.exr
+            pine_bark_diff.png
+            pine_bark_disp.png
+            pine_bark_nor_gl.png
+            pine_bark_rough.png
+            pine_cover_01_diffuse.png
+            pine_cover_01_diffuse_normal.png
+            pine_cover_01_mask.png
+            pine_cover_01_rough.png
+            pine_trunk_01_diff.png
+            pine_trunk_01_nor_gl.png
+            pine_trunk_01_rough.png
+            pine_trunk_02_diff.png
+            pine_trunk_02_nor_gl.png
+            pine_trunk_02_rough.png
+            pine_trunk_03_diff.png
+            pine_trunk_03_nor_gl.png
+            pine_trunk_03_rough.png
+            pine_twig_alpha.png
+            pine_twig_diff.png
+            pine_twig_mask.png
+            pine_twig_nor_gl.png
+            pine_twig_rough.png
+            rocky_trail_diff.png
+            rocky_trail_disp.png
+            rocky_trail_nor_gl.png
+            rocky_trail_rough.png
+            rock_face_03_1k.glb
+            rock_face_03_diff_1k.jpg
+            rock_face_03_disp_1k.png
+            rock_face_03_nor_gl_1k.exr
+            rock_face_03_rough_1k.exr
+            rock_moss_set_01_diff.png
+            rock_moss_set_01_nor_gl.png
+            rock_moss_set_01_rough.png
+            rock_moss_set_02_diff.png
+            rock_moss_set_02_nor_gl.png
+            rock_moss_set_02_rough.png
+            tree_roots_01_diff.png
+            tree_roots_01_nor_gl.png
+            tree_roots_01_rough.png
+            tree_roots_02_diff.png
+            tree_roots_02_nor_gl.png
+            tree_roots_02_rough.png
+            tree_trunk_diff.png
+            tree_trunk_disp.png
+            tree_trunk_nor_gl.png
+            tree_trunk_rough.png
+            

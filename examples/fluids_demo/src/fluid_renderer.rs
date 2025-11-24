@@ -10,7 +10,7 @@ struct CameraUniform {
 pub struct FluidRenderer {
     pipeline: wgpu::RenderPipeline,
     camera_buffer: wgpu::Buffer,
-    camera_bind_group: wgpu::BindGroup,
+    camera_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl FluidRenderer {
@@ -41,16 +41,21 @@ impl FluidRenderer {
                     },
                     count: None,
                 },
-            ],
-        });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Camera Bind Group"),
-            layout: &camera_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: camera_buffer.as_entire_binding(),
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
                 },
             ],
         });
@@ -116,7 +121,7 @@ impl FluidRenderer {
         Self {
             pipeline,
             camera_buffer,
-            camera_bind_group,
+            camera_bind_group_layout,
         }
     }
 
@@ -125,16 +130,49 @@ impl FluidRenderer {
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
         depth_view: &wgpu::TextureView,
+        device: &wgpu::Device,
         queue: &wgpu::Queue,
         particle_buffer: &wgpu::Buffer,
         particle_count: u32,
         view_proj: Mat4,
+        skybox_view: &wgpu::TextureView,
     ) {
         // Update camera uniform
         let camera_uniform = CameraUniform {
             view_proj: view_proj.to_cols_array_2d(),
         };
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera_uniform]));
+
+        // Create sampler for skybox
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
+
+        // Create bind group with skybox
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Fluid Bind Group with Skybox"),
+            layout: &self.camera_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.camera_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(skybox_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+        });
 
         if particle_count > 0 {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -160,7 +198,7 @@ impl FluidRenderer {
             });
 
             render_pass.set_pipeline(&self.pipeline);
-            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(0, &bind_group, &[]);
             render_pass.set_vertex_buffer(0, particle_buffer.slice(..));
             
             // Draw 4 vertices per instance (quad as triangle strip), N instances (particles)
