@@ -10,8 +10,7 @@ use astraweave_net::{apply_delta, build_snapshot, diff_snapshots, FullInterest};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-mod common;
-use common::*;
+use crate::common::*;
 
 // ============================================================================
 // BASELINE TESTS (5 tests)

@@ -1,7 +1,7 @@
 # AstraWeave: Master Strategic Roadmap
 
- **Version**: 1.29  
-**Last Updated**: November 23, 2025 (✅ **PHASE 8.7 SPRINT 4 COMPLETE**)  
+ **Version**: 1.30  
+**Last Updated**: November 23, 2025 (✅ **PHASE 9.2 SPRINT 2 COMPLETE**)  
 **Status**: ✅ Authoritative Source  
 **Maintainer**: Core Team
 
@@ -44,11 +44,10 @@ This document is the **single authoritative source** for AstraWeave's strategic 
    - **Documentation**: `PHASE_8_7_RAG_INTEGRATION_COMPLETE.md` created.
 
 - 🚀 **Phase 9.2 Scripting Runtime Integration IN PROGRESS** (Nov 23, 2025)
-   - **Foundation**: `astraweave-scripting` crate created and integrated into workspace.
-   - **Core Engine**: Rhai v1.23 integration with `CScript` component and `ScriptEngineResource`.
-   - **ECS Integration**: `script_system` implemented for state synchronization and execution.
-   - **Verification**: Unit tests passing (`test_script_execution`).
-   - **Status**: Foundation complete, moving to API exposure.
+   - **Sprint 1 (Foundation) COMPLETE**: `astraweave-scripting` crate, Rhai v1.23 integration, `CScript` component.
+   - **Sprint 2 (Events & API) COMPLETE**: Event system (`ScriptEvent`), API expansion (`apply_damage`, `set_position`), borrow-checker compliant `script_system`.
+   - **Verification**: 8/8 tests passing, including event callbacks and command execution.
+   - **Status**: Sprint 2 Complete, moving to Advanced API.
 
 - **✨ NEW: Phase 2 Hardening COMPLETE** (Nov 22, 2025)
   - **GOAP Planner Hardened**: Fixed infinite loops (recursion limits, time budgets) and risk ignorance (cost caching).
@@ -733,6 +732,7 @@ This merges the existing Phase A-C with a detailed 15-phase extension for full c
 
 | Version | Date | Changes | Author |
 |---------|------|---------|--------|
+| **1.30** | **Nov 23, 2025** | **✅ PHASE 9.2 SPRINT 2 COMPLETE**: Event System & API Expansion. **New Features**: `ScriptEvent` enum, `apply_damage`, `set_position` commands. **Refactor**: Borrow-checker compliant `script_system`. **Tests**: 8/8 passing. **Status**: Sprint 2 Complete. | AI Team |
 | **1.29** | **Nov 23, 2025** | **🚀 PHASE 9.2 STARTED**: Scripting Runtime Integration. **New Crate**: `astraweave-scripting`. **Core**: Rhai v1.23 integration, `CScript` component, `script_system`. **Status**: Foundation complete, tests passing. | AI Team |
 | **1.28** | **Nov 23, 2025** | **✅ PHASE 8.7 SPRINT 4 COMPLETE**: Full Stack Integration (Persona + RAG + LLM + Parser) validated. **New Crate**: `examples/llm_integration`. **Tests**: End-to-end flow passing (100%). **API Alignment**: Resolved drift in Persona/RAG APIs. **Status**: Phase 8.7 Complete. | AI Team |
 | **1.27** | **Nov 22, 2025** | **✅ PHASE 8.7 RAG INTEGRATION COMPLETE**: Completed RAG integration for Persona system. **Lifecycle Management**: Added `maintenance()` to `LlmPersonaManager`. **Immediate Consistency**: Fixed race condition in `RagPipeline` by clearing cache on memory insertion. **Verification**: Full lifecycle test (`test_rag_integration_lifecycle`) passing (20/20 tests). **Documentation**: `PHASE_8_7_RAG_INTEGRATION_COMPLETE.md` created. | AI Team |

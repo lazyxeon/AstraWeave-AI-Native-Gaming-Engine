@@ -1,0 +1,1942 @@
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `std::pin::Pin`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\hermes2pro_ollama.rs:42:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse std::pin::Pin;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `futures_util::StreamExt`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\hermes2pro_ollama.rs:39:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m39[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse futures_util::StreamExt;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-llm` (lib) generated 2 warnings (run `cargo fix --lib -p astraweave-llm` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variable does not need to be mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-persona\src\llm_persona.rs:895:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m895[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut rag = self.rag_pipeline.write().await;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;14m----[0m[0m[1m[38;5;11m^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;14mhelp: remove this `mut`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_mut)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-persona` (lib) generated 1 warning (run `cargo fix --lib -p astraweave-persona` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: fields `head_pointers` and `next_pointers` are never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-fluids\src\lib.rs:41:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct FluidSystem {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14mfields in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m41[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    head_pointers: wgpu::Buffer,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    next_pointers: wgpu::Buffer,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-fluids` (lib) generated 1 warning
+[1m[32m    Checking[0m astraweave-scripting v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-scripting)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:430:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m430[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageCopyTexture {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(deprecated)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:437:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m437[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageDataLayout {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:494:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m494[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageCopyTexture {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:501:19[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m501[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageDataLayout {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageCopyTexture`: This has been renamed to `TexelCopyTextureInfo`, and will be removed in 25.0.0.[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\skybox_renderer.rs:75:19[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m75[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageCopyTexture {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated type alias `wgpu::ImageDataLayout`: This has been renamed to `TexelCopyBufferLayout`, and will be removed in 25.0.0.[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\skybox_renderer.rs:82:19[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m82[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            wgpu::ImageDataLayout {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated method `winit::event_loop::EventLoop::<T>::create_window`: use `ActiveEventLoop::create_window` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\main.rs:371:20[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m371[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        event_loop.create_window(Window::default_attributes()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated method `winit::event_loop::EventLoop::<T>::run`: use `EventLoop::run_app` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\main.rs:378:16[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m378[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    event_loop.run(move |event, elwt| {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                [0m[0m[1m[38;5;11m^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `wave_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:73:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m73[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (wave_texture, wave_view) = Self::generate_wave_texture(device, queue, 512);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_wave_texture`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `wave_bump_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:74:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m74[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (wave_bump_texture, wave_bump_view) = Self::generate_wave_bump_texture(device, queue, 512);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_wave_bump_texture`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `normal_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:75:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m75[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (normal_texture, normal_view) = Self::generate_normal_texture(device, queue, 512);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_normal_texture`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `normal2_texture`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:76:14[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m76[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let (normal2_texture, normal2_view) = Self::generate_normal_texture(device, queue, 512);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_normal2_texture`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `physics_world` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\main.rs:50:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mstruct State {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;14m-----[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m50[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    physics_world: PhysicsWorld,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field `transform` is never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\fluids_demo\src\ocean_renderer.rs:58:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m54[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mstruct OceanTile {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;14m---------[0m[0m [0m[0m[1m[38;5;14mfield in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m58[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    transform: Mat4,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `fluids_demo` (bin "fluids_demo" test) generated 14 warnings
+[1m[33mwarning[0m[1m:[0m `fluids_demo` (bin "fluids_demo") generated 14 warnings (14 duplicates)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `compress_bc7_simple` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset-pipeline\src\texture.rs:139:4[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m139[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mfn compress_bc7_simple(rgba: &RgbaImage) -> Result<Vec<u8>> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m    [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `encode_bc7_block` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset-pipeline\src\texture.rs:181:4[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m181[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mfn encode_bc7_block(pixels: &[[u8; 4]; 16], output: &mut [u8]) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m    [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-asset-pipeline` (lib test) generated 2 warnings
+[1m[33mwarning[0m[1m:[0m `astraweave-asset-pipeline` (lib) generated 2 warnings (2 duplicates)
+[1m[32m    Checking[0m astraweave-net v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-net)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:7:17[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m7[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(deprecated)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:22:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&mut positions),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:23:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m23[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&velocities),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:24:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(dt),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:32:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&mut positions),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:33:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&velocities),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\benches\simd_movement.rs:34:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(dt),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-math` (bench "simd_movement") generated 7 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `create_plane_mesh` is never used[0m
+[0m    [0m[0m[1m[38;5;14m--> [0m[0mexamples\unified_showcase\src\main.rs:1584:8[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m177[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mimpl ShowcaseApp {[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m----------------[0m[0m [0m[0m[1m[38;5;14mmethod in this implementation[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m1584[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn create_plane_mesh(&mut self, size: f32, mat_idx: usize) -> usize {[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[1m[32m    Checking[0m unified_showcase v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\unified_showcase)
+[1m[33mwarning[0m[1m:[0m `unified_showcase` (bin "unified_showcase" test) generated 1 warning
+[1m[33mwarning[0m[1m:[0m `unified_showcase` (bin "unified_showcase") generated 1 warning (1 duplicate)
+[1m[32m    Checking[0m aw_editor v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_editor)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `Entity`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-persistence-ecs\benches\persistence_ecs_benchmarks.rs:1:22[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m1[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse astraweave_ecs::{Entity, World};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;11m^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused imports: `SaveMetadata`, `calculate_world_hash`, `deserialize_ecs_world`, and `serialize_ecs_world`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-persistence-ecs\benches\persistence_ecs_benchmarks.rs:3:5[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    calculate_world_hash, deserialize_ecs_world, serialize_ecs_world, CPersistenceManager,[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^[0m[0m  [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m[0m  [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m4[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    CReplayState, SaveMetadata,[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variable does not need to be mutable[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\play_mode.rs:60:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m60[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut world = sample_world();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m----[0m[0m[1m[38;5;11m^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mhelp: remove this `mut`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_mut)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-persistence-ecs` (bench "persistence_ecs_benchmarks") generated 2 warnings (run `cargo fix --bench "persistence_ecs_benchmarks"` to apply 2 suggestions)
+[1m[33mwarning[0m[1m:[0m `aw_editor` (test "play_mode") generated 1 warning (run `cargo fix --test "play_mode"` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `super::*`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\viewport\renderer.rs:342:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m342[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    use super::*;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_editor` (bin "aw_editor" test) generated 1 warning (run `cargo fix --bin "aw_editor" --tests` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `temp_dir`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-persistence-ecs\tests\corruption_recovery_tests.rs:64:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m64[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let temp_dir = tempdir().expect("create temp dir");[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_temp_dir`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-persistence-ecs` (test "corruption_recovery_tests") generated 1 warning
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `aw_editor_lib::gizmo::snapping::SnappingConfig`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\grid_render.rs:2:5[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse aw_editor_lib::gizmo::snapping::SnappingConfig;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_editor` (test "grid_render") generated 1 warning (run `cargo fix --test "grid_render"` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variable does not need to be mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\integration_tests.rs:301:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m301[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut world = create_test_world();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m----[0m[0m[1m[38;5;11m^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mhelp: remove this `mut`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_mut)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_editor` (test "integration_tests") generated 1 warning (run `cargo fix --test "integration_tests"` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `original_hash`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-persistence-ecs\tests\large_world_tests.rs:311:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m311[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let original_hash = calculate_world_hash(&world);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_original_hash`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-persistence-ecs` (test "large_world_tests") generated 1 warning
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:2:17[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(deprecated)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:24:39[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        player.update(black_box(0.016)); // 60 FPS delta[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                       [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:46:13[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m46[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(result);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:59:13[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(result);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:132:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m132[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        let _ = black_box(quest.objectives[0].is_complete());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:133:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m133[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        let _ = black_box(quest.objectives[0].progress());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:134:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m134[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        let _ = black_box(quest.objectives[0].description());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:163:51[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m163[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    let requests = spawner.update(black_box(0.016), &[]);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                   [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:164:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m164[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(requests);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:215:39[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m215[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        player.update(black_box(0.016));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                       [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:219:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m219[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        let _ = black_box(quest.objectives[0].is_complete());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:220:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m220[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        let _ = black_box(quest.objectives[0].progress());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:223:57[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m223[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    let spawn_requests = spawner.update(black_box(0.016), &[]);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                         [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:224:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m224[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(spawn_requests);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused `Result` that must be used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:46:13[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m46[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(result);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: this `Result` may be an `Err` variant, which should be handled[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_must_use)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: use `let _ = ...` to ignore the resulting value[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m46[0m[0m [0m[0m[1m[38;5;14m| [0m[0m            [0m[0m[38;5;10mlet _ = [0m[0mblack_box(result);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[38;5;10m+++++++[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused `Result` that must be used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\benches\integration_benchmarks.rs:59:13[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(result);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: this `Result` may be an `Err` variant, which should be handled[0m
+[0m[1m[38;5;14mhelp[0m[0m: use `let _ = ...` to ignore the resulting value[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[1m[38;5;14m| [0m[0m            [0m[0m[38;5;10mlet _ = [0m[0mblack_box(result);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[38;5;10m+++++++[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-weaving` (bench "integration_benchmarks") generated 16 warnings
+[1m[32m    Checking[0m astraweave-ui v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_test_metrics` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:51:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m51[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_test_metrics([0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `hash_adjudicator_state` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:96:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m96[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn hash_adjudicator_state(adjudicator: &WeaveAdjudicator) -> u64 {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_low_health_detector` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:103:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m103[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_low_health_detector() -> LowHealthClusterDetector {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_resource_scarcity_detector` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:111:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m111[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_resource_scarcity_detector() -> ResourceScarcityDetector {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_faction_conflict_detector` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:116:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m116[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_faction_conflict_detector() -> FactionConflictDetector {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_combat_intensity_detector` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:121:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m121[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_combat_intensity_detector() -> CombatIntensityDetector {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-weaving` (test "thread_manipulation_tests") generated 6 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `center`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\tests_gizmo_math.rs:41:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m41[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let center = Vec3::ZERO;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_center`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `ray_origin`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\src\gizmo\tests_gizmo_math.rs:43:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m43[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let ray_origin = Vec3::new(0.0, 0.0, 10.0);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_ray_origin`[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_editor` (lib test) generated 2 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `test_enemy` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\tests\fixtures\mod.rs:27:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m27[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn test_enemy(id: u32) -> EnemyData {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `advance_time` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\tests\fixtures\mod.rs:37:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m37[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn advance_time(hud: &mut HudManager, dt: f32) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-ui` (test "hud_logic_tests") generated 2 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `rng`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\determinism_tests.rs:267:44[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m267[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    assert_deterministic_behavior(111111, |rng| {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                            [0m[0m[1m[38;5;11m^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_rng`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_faction_conflict_detector` is never used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:116:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m116[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_faction_conflict_detector() -> FactionConflictDetector {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-weaving` (test "determinism_tests") generated 2 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `LevelStats`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\veilweaver_quest_demo\src\main.rs:11:26[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse astraweave_weaving::{LevelStats, VeilweaverLevel};[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `veilweaver_quest_demo` (bin "veilweaver_quest_demo") generated 1 warning (run `cargo fix --bin "veilweaver_quest_demo"` to apply 1 suggestion)
+[1m[33mwarning[0m[1m:[0m `veilweaver_quest_demo` (bin "veilweaver_quest_demo" test) generated 1 warning (1 duplicate)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_test_adjudicator` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:41:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m41[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_test_adjudicator() -> WeaveAdjudicator {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_test_intent` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\tests\common\mod.rs:46:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m46[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn create_test_intent(id: &str, priority: f32, cost: u32) -> WeaveIntent {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-weaving` (test "pattern_detection_edge_tests") generated 3 warnings (1 duplicate)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `crate::AbilityType`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\spawner.rs:458:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m458[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    use crate::AbilityType;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `anchors`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\integration_tests.rs:226:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m226[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let anchors = vec![(0, &mut perfect), (1, &mut broken)];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_anchors`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `anchors`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\integration_tests.rs:347:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m347[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let anchors = vec![(0, &mut anchor)];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_anchors`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `anchors`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\integration_tests.rs:372:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m372[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let anchors = vec![(0, &mut anchor)];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_anchors`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: comparison is useless due to type limits[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\audio\anchor_audio.rs:442:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m442[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        assert!(commands.len() >= 0); // May be 0 if no transitions[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_comparisons)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-weaving` (lib test) generated 5 warnings (run `cargo fix --lib -p astraweave-weaving --tests` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `MusicTrack`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-audio\tests\audio_engine_tests.rs:12:51[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m12[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse astraweave_audio::{AudioEngine, ListenerPose, MusicTrack, PanMode};[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                                   [0m[0m[1m[38;5;11m^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-audio` (test "audio_engine_tests") generated 1 warning (run `cargo fix --test "audio_engine_tests"` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variable does not need to be mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-audio\tests\dialogue_file_tests.rs:365:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m365[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut state = astraweave_gameplay::dialogue::DialogueState::new(&dialogue);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m----[0m[0m[1m[38;5;11m^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mhelp: remove this `mut`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_mut)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: variable does not need to be mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-audio\tests\dialogue_file_tests.rs:731:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m731[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut state = astraweave_gameplay::dialogue::DialogueState::new(&dialogue);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m----[0m[0m[1m[38;5;11m^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mhelp: remove this `mut`[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-audio` (test "dialogue_file_tests") generated 2 warnings (run `cargo fix --test "dialogue_file_tests"` to apply 2 suggestions)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:8:17[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(deprecated)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:63:54[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m63[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                chart.add_series("Data".to_string(), black_box(points.clone()), Color32::BLUE);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                                      [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:64:17[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m64[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                black_box(chart);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:85:29[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m85[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   black_box(points.clone()),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:89:21[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m89[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(chart);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:108:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m108[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    for grp in black_box(groups.clone()) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:111:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m111[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(chart);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:130:36[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m130[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    for cluster in black_box(clusters.clone()) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                    [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:133:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m133[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(scatter);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:161:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m161[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(graph);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:195:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m195[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(graph);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:223:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m223[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(tree);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:253:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m253[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                black_box(tree);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:270:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m270[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(picker);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:279:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m279[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(slider);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:294:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m294[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            tween.update(black_box(0.016)); // 60 FPS[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:295:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m295[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(tween.value());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:316:34[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m316[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    tween.update(black_box(0.016));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                  [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:317:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m317[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(tween.value());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:331:27[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m331[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            spring.update(black_box(0.016)); // 60 FPS[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                           [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:332:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m332[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(spring.position());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:352:35[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m352[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    spring.update(black_box(0.016));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                   [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:353:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m353[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(spring.position());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:382:39[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m382[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    controller.update(black_box(0.016));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                       [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:383:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m383[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(controller.active_count());[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:401:50[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m401[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            chart.add_series("Data".to_string(), black_box(points.clone()), Color32::BLUE);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                  [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:402:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m402[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(chart);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: use of deprecated function `criterion::black_box`: use `std::hint::black_box()` instead[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\benches\widget_benchmarks.rs:415:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m415[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                black_box(cloned);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m:[0m `astract` (bench "widget_benchmarks") generated 28 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused return value of `egui::Ui::button` that must be used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\src\lib.rs:58:17[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m58[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                rsx!(<Button text="Click Me" />);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: You should check if the user clicked this with `if ui.button(…).clicked() { … } [0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_must_use)]` on by default[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: this warning originates in the macro `rsx` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused return value of `egui::Ui::button` that must be used[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astract\src\lib.rs:113:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m113[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                rsx!(<VStack>[0m
+[0m[1m[38;5;14m114[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    <Label text="Title" />[0m
+[0m[1m[38;5;14m115[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    <HStack>[0m
+[0m[1m[38;5;14m116[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        <Button text="Cancel" />[0m
+[0m[1m[38;5;14m117[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        <Button text="OK" />[0m
+[0m[1m[38;5;14m118[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    </HStack>[0m
+[0m[1m[38;5;14m119[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                </VStack>);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|__________________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: You should check if the user clicked this with `if ui.button(…).clicked() { … } [0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: this warning originates in the macro `rsx` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+
+[1m[33mwarning[0m[1m:[0m `astract` (lib test) generated 2 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused variable: `detector`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-security\tests\anticheat_tests.rs:137:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m137[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let detector = SpeedHackDetector::new(10.0);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: if this is intentional, prefix it with an underscore: `_detector`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_variables)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-security` (test "anticheat_tests") generated 1 warning
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: function `create_strict_sandbox` is never used[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-security\tests\sandbox_tests.rs:32:4[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mfn create_strict_sandbox() -> ScriptSandbox {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m    [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-security` (test "sandbox_tests") generated 1 warning
+[0m[1m[38;5;9merror[E0583][0m[0m[1m[38;5;15m: file not found for module `common`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:13:1[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m13[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mmod common;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: to create the module `common`, create file "astraweave-net\tests\integration\common.rs" or "astraweave-net\tests\integration\common\mod.rs"[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: if there is a `mod common` elsewhere in the crate already, import it with `use crate::...` instead[0m
+
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of unresolved module or unlinked crate `rapier3d`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scripting\src\api.rs:4:5[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m4[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse rapier3d::prelude::{Ray, QueryFilter};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9muse of unresolved module or unlinked crate `rapier3d`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: if you wanted to use a crate named `rapier3d`, use `cargo add rapier3d` to add it to your `Cargo.toml`[0m
+
+[0m[1m[38;5;9merror[E0432][0m[0m[1m[38;5;15m: unresolved imports `main_src::load_biome_toml`, `main_src::pack_mra_from_planes`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mexamples\unified_showcase\tests\materials_loading.rs:5:16[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m5[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse main_src::{load_biome_toml, pack_mra_from_planes};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^[0m[0m  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mno `pack_mra_from_planes` in `main_src`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                [0m[0m[1m[38;5;9m|[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                [0m[0m[1m[38;5;9mno `load_biome_toml` in `main_src`[0m
+
+[0m[1m[38;5;9merror[E0432][0m[0m[1m[38;5;15m: unresolved import `main_src::stats_for_biome_loading`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mexamples\unified_showcase\tests\biome_fallbacks.rs:3:5[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse main_src::stats_for_biome_loading;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mno `stats_for_biome_loading` in `main_src`[0m
+
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of unresolved module or unlinked crate `rapier3d`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scripting\src\api.rs:77:13[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m77[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            rapier3d::na::Point3::new(origin.x, origin.y, origin.z),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9muse of unresolved module or unlinked crate `rapier3d`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: if you wanted to use a crate named `rapier3d`, use `cargo add rapier3d` to add it to your `Cargo.toml`[0m
+
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of unresolved module or unlinked crate `rapier3d`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scripting\src\api.rs:78:13[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m78[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            rapier3d::na::Vector3::new(dir.x, dir.y, dir.z),[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9muse of unresolved module or unlinked crate `rapier3d`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: if you wanted to use a crate named `rapier3d`, use `cargo add rapier3d` to add it to your `Cargo.toml`[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `init_logging_for_tests` in module `main_src`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mexamples\unified_showcase\tests\biome_fallbacks.rs:28:15[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m28[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    main_src::init_logging_for_tests();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m               [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in `main_src`[0m
+
+[0m[1m[38;5;9merror[E0432][0m[0m[1m[38;5;15m: unresolved import `aw_editor_lib::command::PrefabSpawnCommand`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:14:30[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m14[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse aw_editor_lib::command::{PrefabSpawnCommand, EditorCommand};[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mno `PrefabSpawnCommand` in `command`[0m
+
+[0m[1m[38;5;9merror[E0432][0m[0m[1m[38;5;15m: unresolved imports `aw_editor_lib::command::spawn_prefab_with_undo`, `aw_editor_lib::command::PrefabApplyOverridesCommand`, `aw_editor_lib::command::PrefabRevertOverridesCommand`, `aw_editor_lib::command::PrefabSpawnCommand`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\prefab_workflow.rs:3:5[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    spawn_prefab_with_undo, PrefabApplyOverridesCommand, PrefabRevertOverridesCommand,[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^[0m[0m  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mno `PrefabRevertOverridesCommand` in `command`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m|[0m[0m                       [0m[0m[1m[38;5;9m|[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m|[0m[0m                       [0m[0m[1m[38;5;9mno `PrefabApplyOverridesCommand` in `command`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9mno `spawn_prefab_with_undo` in `command`[0m
+[0m[1m[38;5;14m4[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    PrefabSpawnCommand, UndoStack,[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mno `PrefabSpawnCommand` in `command`[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `Team`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\prefab_workflow.rs:1:30[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m1[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse astraweave_core::{IVec2, Team, World};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;11m^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no variant or associated item named `Paused` found for enum `astraweave_ui::MenuState` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:42:24[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            MenuState::Paused,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;9m^^^^^^[0m[0m [0m[0m[1m[38;5;9mvariant or associated item not found in `astraweave_ui::MenuState`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no variant or associated item named `Settings` found for enum `astraweave_ui::MenuState` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:43:24[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m43[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            MenuState::Settings,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mvariant or associated item not found in `astraweave_ui::MenuState`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no variant or associated item named `InGame` found for enum `astraweave_ui::MenuState` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:44:24[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m44[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            MenuState::InGame,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;9m^^^^^^[0m[0m [0m[0m[1m[38;5;9mvariant or associated item not found in `astraweave_ui::MenuState`[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:180:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m180[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:180:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m180[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:183:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m183[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:183:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m183[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:186:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m186[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:186:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m186[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:190:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m190[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:190:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m190[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:193:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m193[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:193:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m193[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:196:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m196[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:196:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m196[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:287:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m287[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:287:35[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m287[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        harness.undo_stack().undo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;9merror[E0596][0m[0m[1m[38;5;15m: cannot borrow data in a `&` reference as mutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:294:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m294[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mcannot borrow as mutable[0m
+
+[0m[1m[38;5;9merror[E0502][0m[0m[1m[38;5;15m: cannot borrow `harness` as mutable because it is also borrowed as immutable[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\comprehensive_smoke_tests.rs:294:35[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m294[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        harness.undo_stack().redo(harness.world_mut()).unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m-------[0m[0m              [0m[0m[1m[38;5;14m----[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmutable borrow occurs here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14mimmutable borrow later used by call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14mimmutable borrow occurs here[0m
+
+[0m[1m[38;5;15mSome errors have detailed explanations: E0432, E0502, E0596.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0432`.[0m
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `set_state` found for struct `MenuManager` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:48:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m48[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            manager.set_state(black_box(states[state_idx % 4]));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;9m^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: there is a method `current_state` with a similar name, but with different arguments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui\src\menu.rs:312:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m312[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn current_state(&self) -> MenuState {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `point` on type `parry3d::query::ray::ray::RayIntersection`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scripting\src\api.rs:102:41[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m102[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                position: Vec3::new(hit.point.x, hit.point.y, hit.point.z),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                         [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `time_of_impact`, `normal`, `feature`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `point` on type `parry3d::query::ray::ray::RayIntersection`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scripting\src\api.rs:102:54[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m102[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                position: Vec3::new(hit.point.x, hit.point.y, hit.point.z),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                      [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `time_of_impact`, `normal`, `feature`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `point` on type `parry3d::query::ray::ray::RayIntersection`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scripting\src\api.rs:102:67[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m102[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                position: Vec3::new(hit.point.x, hit.point.y, hit.point.z),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                                   [0m[0m[1m[38;5;9m^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `time_of_impact`, `normal`, `feature`[0m
+
+[1m[31merror[0m[1m:[0m could not compile `aw_editor` (test "comprehensive_smoke_tests") due to 17 previous errors
+[1m[33mwarning[0m[1m:[0m build failed, waiting for other jobs to finish...
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:22:18[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.0).await.unwrap();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m  [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:47:18[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m47[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.0).await.unwrap();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m  [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:68:18[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m68[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.0).await.unwrap();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m  [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:99:18[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m99[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.0).await.unwrap();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m  [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:120:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m120[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.0).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:148:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m148[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.05).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:165:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m165[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.05).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:191:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m191[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.05).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:218:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m218[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.05).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:238:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m238[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.05).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:256:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m256[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:273:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m273[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:299:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m299[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `handles` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:318:46[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m318[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let ids = futures_util::future::join_all(handles).await;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                              [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:339:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m339[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:365:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m365[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:409:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m409[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.50).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:426:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m426[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.50).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:457:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m457[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.50).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:481:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m481[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.50).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:502:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m502[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.50).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:538:22[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m538[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let server = spawn_test_server_with_packet_loss(loss_rate)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:561:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m561[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.30).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:589:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m589[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.25).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:631:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m631[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.30).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `spawn_test_server_with_packet_loss` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:664:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m664[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this function[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m   [0m[0m[38;5;10m+ use crate::common::spawn_test_server_with_packet_loss;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `handles` in this scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:683:46[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m683[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let ids = futures_util::future::join_all(handles).await;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                              [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `build_snapshot`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:9:35[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m9[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse astraweave_net::{apply_delta, build_snapshot, diff_snapshots, FullInterest};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `common::*`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:14:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m14[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse common::*;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `set_state` found for struct `MenuManager` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:56:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m56[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        manager.set_state(MenuState::Settings);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: there is a method `current_state` with a similar name, but with different arguments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui\src\menu.rs:312:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m312[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn current_state(&self) -> MenuState {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;14m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\common\mod.rs:81:36[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m81[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        self.ws.send(Message::Text(json)).await?;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;14m-------------[0m[0m [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mexpected `Utf8Bytes`, found `String`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;14marguments to this enum variant are incorrect[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: tuple variant defined here[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tungstenite-0.28.0\src\protocol\message.rs:159:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m159[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    Text(Utf8Bytes),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;10m^^^^[0m
+[0m[1m[38;5;14mhelp[0m[0m: call `Into::into` on this expression to convert `std::string::String` into `Utf8Bytes`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m81[0m[0m  [0m[0m[1m[38;5;14m| [0m[0m        self.ws.send(Message::Text(json[0m[0m[38;5;10m.into()[0m[0m)).await?;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                        [0m[0m[38;5;10m+++++++[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no variant or associated item named `Settings` found for enum `astraweave_ui::MenuState` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:56:38[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m56[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        manager.set_state(MenuState::Settings);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                      [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mvariant or associated item not found in `astraweave_ui::MenuState`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `is_terminated` found for struct `WebSocketStream` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\common\mod.rs:102:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m102[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        !self.ws.is_terminated()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m::: [0m[0mC:\Users\pv2br\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\futures-core-0.3.31\src\stream.rs:148:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m148[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn is_terminated(&self) -> bool;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;14m-------------[0m[0m [0m[0m[1m[38;5;14mthe method is available for `WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>` here[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: items from traits can only be used if the trait is in scope[0m
+[0m[1m[38;5;14mhelp[0m[0m: trait `FusedStream` which provides `is_terminated` is implemented but not in scope; perhaps you want to import it[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m   [0m[0m[38;5;10m+ use futures_util::stream::FusedStream;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0063][0m[0m[1m[38;5;15m: missing field `speed` in initializer of `ActionStep`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-net\tests\integration\packet_loss_tests.rs:32:25[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            steps: vec![ActionStep::MoveTo { x: (i % 10) as i32,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmissing `speed`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `get_settings_state` found for struct `MenuManager` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:59:31[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(manager.get_settings_state());[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `MenuManager`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `resolution_x` on type `GraphicsSettings`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:85:22[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m85[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            settings.resolution_x = if toggle { 1920 } else { 2560 };[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m85[0m[0m [0m[0m[38;5;9m- [0m[0m            settings.[0m[0m[38;5;9mresolution_x[0m[0m = if toggle { 1920 } else { 2560 };[0m
+[0m[1m[38;5;14m85[0m[0m [0m[0m[38;5;10m+ [0m[0m            settings.[0m[0m[38;5;10mresolution[0m[0m = if toggle { 1920 } else { 2560 };[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `resolution_y` on type `GraphicsSettings`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:86:22[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m86[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            settings.resolution_y = if toggle { 1080 } else { 1440 };[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m86[0m[0m [0m[0m[38;5;9m- [0m[0m            settings.[0m[0m[38;5;9mresolution_y[0m[0m = if toggle { 1080 } else { 1440 };[0m
+[0m[1m[38;5;14m86[0m[0m [0m[0m[38;5;10m+ [0m[0m            settings.[0m[0m[38;5;10mresolution[0m[0m = if toggle { 1080 } else { 1440 };[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `key_forward` on type `ControlsSettings`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:155:22[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m155[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            settings.key_forward = if toggle {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `move_forward`, `move_backward`, `move_left`, `move_right`, `jump` ... and 7 others[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:197:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m197[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                health: hp,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;9m^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:198:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m198[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                max_health: 100,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                             [0m[0m[1m[38;5;9m^^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m198[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                max_health: 100[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:199:23[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m199[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                mana: 50,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;9m^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m199[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                mana: 50[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:200:27[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m200[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                max_mana: 100,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                           [0m[0m[1m[38;5;9m^^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m200[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                max_mana: 100[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;15mSome errors have detailed explanations: E0433, E0609.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0433`.[0m
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:201:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m201[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                stamina: 75,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;9m^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m201[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                stamina: 75[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                            [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;9merror[E0063][0m[0m[1m[38;5;15m: missing field `health_animation` in initializer of `PlayerStats`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:196:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m196[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            let stats = PlayerStats {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmissing `health_animation`[0m
+
+[0m[1m[38;5;15mFor more information about this error, try `rustc --explain E0432`.[0m
+[0m[1m[38;5;15mSome errors have detailed explanations: E0425, E0432.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0425`.[0m
+[1m[31merror[0m[1m:[0m could not compile `astraweave-scripting` (lib) due to 6 previous errors
+[0m[1m[38;5;15mSome errors have detailed explanations: E0063, E0308, E0425, E0583, E0599.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0063`.[0m
+[1m[31merror[0m[1m:[0m could not compile `unified_showcase` (test "materials_loading") due to 1 previous error
+[1m[31merror[0m[1m:[0m could not compile `unified_showcase` (test "biome_fallbacks") due to 2 previous errors
+[1m[33mwarning[0m[1m:[0m `astraweave-net` (test "integration_tests") generated 2 warnings
+[1m[31merror[0m[1m:[0m could not compile `astraweave-net` (test "integration_tests") due to 31 previous errors; 2 warnings emitted
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `update_player_stats` found for struct `HudManager` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:204:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m204[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            hud.update_player_stats(stats);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `HudManager`[0m
+
+[1m[31merror[0m[1m:[0m could not compile `astraweave-scripting` (lib test) due to 6 previous errors
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:221:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m221[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   id: i as u64,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                           [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mexpected `u32`, found `u64`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `EnemyData` has no field named `position`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:222:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m222[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   position: (100.0 + i as f32 * 10.0, 50.0, 0.0).into(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`EnemyData` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `world_pos`, `health_animation`[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:223:37[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m223[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   health: 80,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;9m^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m223[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                            health: 80[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                       [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:224:41[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m224[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   max_health: 100,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                   [0m[0m[1m[38;5;9m^^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m224[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                            max_health: 100[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                            [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `EnemyData` has no field named `is_elite`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:230:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m230[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   is_elite: i % 5 == 0,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`EnemyData` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `world_pos`, `health_animation`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `update_enemies` found for struct `HudManager` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:233:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m233[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    hud.update_enemies(enemies);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `HudManager`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DamageNumber` has no field named `position`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:254:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m254[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                position: (100.0, 100.0).into(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`DamageNumber` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `spawn_time`, `world_pos`, `velocity_x`, `velocity_y`, `gravity` ... and 3 others[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DamageNumber` has no field named `time_alive`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:255:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m255[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                time_alive: 0.0,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`DamageNumber` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `spawn_time`, `world_pos`, `velocity_x`, `velocity_y`, `gravity` ... and 3 others[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `spawn_damage_number` found for struct `HudManager` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:257:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m257[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            hud.spawn_damage_number(damage_num);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: there is a method `spawn_damage` with a similar name, but with different arguments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui\src\hud.rs:929:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m929[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m/[0m[0m [0m[0m    pub fn spawn_damage([0m
+[0m[1m[38;5;14m930[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        &mut self,[0m
+[0m[1m[38;5;14m931[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        value: i32,[0m
+[0m[1m[38;5;14m932[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        world_pos: (f32, f32, f32),[0m
+[0m[1m[38;5;14m933[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        damage_type: DamageType,[0m
+[0m[1m[38;5;14m934[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    ) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|_____^[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `astraweave_ui::Objective` has no field named `current`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:281:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m281[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    current: 0,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`astraweave_ui::Objective` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `astraweave_ui::Objective` has no field named `required`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:282:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m282[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    required: 100,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`astraweave_ui::Objective` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `astraweave_ui::Objective` has no field named `current`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:297:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m297[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                current: 0,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`astraweave_ui::Objective` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `astraweave_ui::Objective` has no field named `required`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:298:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m298[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                required: 100,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`astraweave_ui::Objective` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `current` on type `astraweave_ui::Objective`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:304:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m304[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            quest.objectives[0].current = (quest.objectives[0].current + 1) % 100;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `description`, `completed`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `current` on type `astraweave_ui::Objective`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:304:64[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m304[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            quest.objectives[0].current = (quest.objectives[0].current + 1) % 100;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                                [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `description`, `completed`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `current` on type `astraweave_ui::Objective`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:306:37[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m306[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                quest.objectives[0].current >= quest.objectives[0].required;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                     [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `description`, `completed`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `required` on type `astraweave_ui::Objective`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:306:68[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m306[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                quest.objectives[0].current >= quest.objectives[0].required;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                                    [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `id`, `description`, `completed`, `progress`[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:331:33[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m331[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   id: i as u64,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                           [0m[0m[1m[38;5;9m^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mexpected `u32`, found `u64`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `PoiMarker` has no field named `world_position`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:332:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m332[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   world_position: (i as f32 * 10.0, 0.0, 0.0).into(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`PoiMarker` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `world_pos`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no variant or associated item named `Collectible` found for enum `PoiType` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:336:42[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m336[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   PoiType::Collectible[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mvariant or associated item not found in `PoiType`[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:338:36[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m338[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m...[0m[0m                   label: format!("POI {}", i),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mexpected `Option<String>`, found `String`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: expected enum `[0m[0m[1m[35mOption<[0m[0mString[0m[0m[1m[35m>[0m[0m`[0m
+[0m             found struct `String`[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: this error originates in the macro `format` (in Nightly builds, run with -Z macro-backtrace for more info)[0m
+[0m[1m[38;5;14mhelp[0m[0m: call `Into::into` on this expression to convert `String` into `Option<String>`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m338[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                            label: format!("POI {}", i)[0m[0m[38;5;10m.into()[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                        [0m[0m[38;5;10m+++++++[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueNode` has no field named `speaker`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:362:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m362[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                speaker: "NPC".to_string(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`DialogueNode` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `speaker_name`, `portrait_id`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueChoice` has no field named `next_node_id`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:367:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m367[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        next_node_id: Some(2),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m367[0m[0m [0m[0m[38;5;9m- [0m[0m                        [0m[0m[38;5;9mnext_node_id[0m[0m: Some(2),[0m
+[0m[1m[38;5;14m367[0m[0m [0m[0m[38;5;10m+ [0m[0m                        [0m[0m[38;5;10mnext_node[0m[0m: Some(2),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueChoice` has no field named `next_node_id`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:371:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m371[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        next_node_id: None,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m371[0m[0m [0m[0m[38;5;9m- [0m[0m                        [0m[0m[38;5;9mnext_node_id[0m[0m: None,[0m
+[0m[1m[38;5;14m371[0m[0m [0m[0m[38;5;10m+ [0m[0m                        [0m[0m[38;5;10mnext_node[0m[0m: None,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueNode` has no field named `speaker`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:383:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m383[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                speaker: "NPC".to_string(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`DialogueNode` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `speaker_name`, `portrait_id`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueChoice` has no field named `next_node_id`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:387:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m387[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    next_node_id: Some(2),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m387[0m[0m [0m[0m[38;5;9m- [0m[0m                    [0m[0m[38;5;9mnext_node_id[0m[0m: Some(2),[0m
+[0m[1m[38;5;14m387[0m[0m [0m[0m[38;5;10m+ [0m[0m                    [0m[0m[38;5;10mnext_node[0m[0m: Some(2),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueNode` has no field named `speaker`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:392:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m392[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                speaker: "NPC".to_string(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`DialogueNode` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `speaker_name`, `portrait_id`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueChoice` has no field named `next_node_id`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:396:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m396[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    next_node_id: Some(3),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m396[0m[0m [0m[0m[38;5;9m- [0m[0m                    [0m[0m[38;5;9mnext_node_id[0m[0m: Some(3),[0m
+[0m[1m[38;5;14m396[0m[0m [0m[0m[38;5;10m+ [0m[0m                    [0m[0m[38;5;10mnext_node[0m[0m: Some(3),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueNode` has no field named `speaker`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:401:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m401[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                speaker: "NPC".to_string(),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9m`DialogueNode` does not have this field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: available fields are: `speaker_name`, `portrait_id`[0m
+
+[0m[1m[38;5;9merror[E0560][0m[0m[1m[38;5;15m: struct `DialogueChoice` has no field named `next_node_id`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:405:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m405[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    next_node_id: None,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m405[0m[0m [0m[0m[38;5;9m- [0m[0m                    [0m[0m[38;5;9mnext_node_id[0m[0m: None,[0m
+[0m[1m[38;5;14m405[0m[0m [0m[0m[38;5;10m+ [0m[0m                    [0m[0m[38;5;10mnext_node[0m[0m: None,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0609][0m[0m[1m[38;5;15m: no field `next_node_id` on type `&DialogueChoice`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:415:55[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m415[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        if let Some(next_id) = choice.next_node_id {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                       [0m[0m[1m[38;5;9m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9munknown field[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a field with a similar name exists[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m415[0m[0m [0m[0m[38;5;9m- [0m[0m                        if let Some(next_id) = choice.[0m[0m[38;5;9mnext_node_id[0m[0m {[0m
+[0m[1m[38;5;14m415[0m[0m [0m[0m[38;5;10m+ [0m[0m                        if let Some(next_id) = choice.[0m[0m[38;5;10mnext_node[0m[0m {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0063][0m[0m[1m[38;5;15m: missing field `flavor_text` in initializer of `TooltipData`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:438:23[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m438[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(TooltipData {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmissing `flavor_text`[0m
+
+[0m[1m[38;5;9merror[E0063][0m[0m[1m[38;5;15m: missing field `flavor_text` in initializer of `TooltipData`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:460:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m460[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(TooltipData {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmissing `flavor_text`[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:489:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m489[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&graphics),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14m---------[0m[0m [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mexpected `&SettingsState`, found `&GraphicsSettings`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14marguments to this function are incorrect[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: expected reference `&[0m[0m[1m[35mSettingsState[0m[0m`[0m
+[0m               found reference `&[0m[0m[1m[35mGraphicsSettings[0m[0m`[0m
+[0m[1m[38;5;14mhelp[0m[0m: the return type of this call is `&GraphicsSettings` due to the type of the argument passed[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:489:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m489[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&graphics),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14m^^^^^^^^^^[0m[0m[1m[38;5;14m---------[0m[0m[1m[38;5;14m^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;14mthis argument influences the return type of `black_box`[0m
+[0m[1m[38;5;10mnote[0m[0m: function defined here[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\.rustup\toolchains\1.89.0-x86_64-pc-windows-msvc\lib/rustlib/src/rust\library\core\src\hint.rs:481:14[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m481[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub const fn black_box<T>(dummy: T) -> T {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m              [0m[0m[1m[38;5;10m^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0061][0m[0m[1m[38;5;15m: this function takes 1 argument but 3 arguments were supplied[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:488:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m488[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                save_settings([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;9m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m489[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&graphics),[0m
+[0m[1m[38;5;14m490[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&audio),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14m-----------------[0m[0m [0m[0m[1m[38;5;14munexpected argument #2 of type `&AudioSettings`[0m
+[0m[1m[38;5;14m491[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                    black_box(&controls),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14m--------------------[0m[0m [0m[0m[1m[38;5;14munexpected argument #3 of type `&ControlsSettings`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: function defined here[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui\src\persistence.rs:38:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m38[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn save_settings(settings: &SettingsState) -> Result<()> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;10m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14mhelp[0m[0m: remove the extra arguments[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m489[0m[0m [0m[0m[38;5;9m- [0m[0m                    black_box(&graphi[0m[0m[38;5;9mc[0m[0ms)[0m[0m[38;5;9m,[0m
+[0m[1m[38;5;14m490[0m[0m [0m[0m[38;5;9m-                     black_box(&audio),[0m
+[0m[1m[38;5;14m489[0m[0m [0m[0m[38;5;10m+ [0m[0m                    black_box(&graphics),[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0061][0m[0m[1m[38;5;15m: this function takes 1 argument but 3 arguments were supplied[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:504:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m504[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        save_settings(&graphics, &audio, &controls).ok();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;9m^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;14m---------[0m[0m  [0m[0m[1m[38;5;14m------[0m[0m  [0m[0m[1m[38;5;14m---------[0m[0m [0m[0m[1m[38;5;14munexpected argument #3 of type `&ControlsSettings`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;14m|[0m[0m          [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;14m|[0m[0m          [0m[0m[1m[38;5;14munexpected argument #2 of type `&AudioSettings`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;14mexpected `&SettingsState`, found `&GraphicsSettings`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: expected reference `&[0m[0m[1m[35mSettingsState[0m[0m`[0m
+[0m               found reference `&[0m[0m[1m[35mGraphicsSettings[0m[0m`[0m
+[0m[1m[38;5;10mnote[0m[0m: function defined here[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mC:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ui\src\persistence.rs:38:8[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m38[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub fn save_settings(settings: &SettingsState) -> Result<()> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;10m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14mhelp[0m[0m: remove the extra arguments[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m504[0m[0m [0m[0m[38;5;9m- [0m[0m        save_settings([0m[0m[38;5;9m&graphics, &audio, &controls[0m[0m).ok();[0m
+[0m[1m[38;5;14m504[0m[0m [0m[0m[38;5;10m+ [0m[0m        save_settings([0m[0m[38;5;10m/* &SettingsState */[0m[0m).ok();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `ok` found for struct `SettingsState` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:506:45[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m506[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        b.iter(|| black_box(load_settings().ok()))[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                             [0m[0m[1m[38;5;9m^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `SettingsState`[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: captured variable cannot escape `FnMut` closure body[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:129:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m120[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut settings = AudioSettings::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;14m------------[0m[0m [0m[0m[1m[38;5;14mvariable defined here[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m123[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        b.iter(|| {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;14m-[0m[0m [0m[0m[1m[38;5;14minferred to be a `FnMut` closure[0m
+[0m[1m[38;5;14m124[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            volume = (volume + 0.05) % 1.0;[0m
+[0m[1m[38;5;14m125[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            settings.master_volume = volume;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;14m--------[0m[0m [0m[0m[1m[38;5;14mvariable captured here[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m129[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            black_box(&settings)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mreturns a reference to a captured variable which escapes the closure body[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `FnMut` closures only have access to their captured variables while they are executing...[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: ...therefore, they cannot allow references to captured variables to escape[0m
+
+[0m[1m[38;5;9merror[E0308][0m[0m[1m[38;5;15m: mismatched types[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ui\benches\ui_benchmarks.rs:202:30[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m202[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                max_stamina: 100,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;9m^^^[0m[0m [0m[0m[1m[38;5;9mexpected `f32`, found integer[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: use a float literal[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m202[0m[0m [0m[0m[1m[38;5;14m| [0m[0m                max_stamina: 100[0m[0m[38;5;10m.0[0m[0m,[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                 [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;15mSome errors have detailed explanations: E0061, E0063, E0308, E0560, E0599, E0609.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0061`.[0m
+[1m[31merror[0m[1m:[0m could not compile `astraweave-ui` (bench "ui_benchmarks") due to 56 previous errors
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `capture_snapshot` found for struct `MutexGuard<'_, PrefabManager>` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\prefab_workflow.rs:130:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m130[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mgr.capture_snapshot(&world, root)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `MutexGuard<'_, PrefabManager>`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `track_override_snapshot` found for struct `MutexGuard<'_, PrefabManager>` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_editor\tests\prefab_workflow.rs:200:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m200[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mgr.track_override_snapshot(root, pose, health);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `MutexGuard<'_, PrefabManager>`[0m
+
+[0m[1m[38;5;15mSome errors have detailed explanations: E0432, E0599.[0m
+[1m[33mwarning[0m[1m:[0m `aw_editor` (test "prefab_workflow") generated 1 warning
+[1m[31merror[0m[1m:[0m could not compile `aw_editor` (test "prefab_workflow") due to 3 previous errors; 1 warning emitted

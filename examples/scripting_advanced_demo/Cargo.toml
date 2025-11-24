@@ -1,0 +1,14 @@
+[package]
+name = "scripting_advanced_demo"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+astraweave-ecs = { path = "../../astraweave-ecs" }
+astraweave-core = { path = "../../astraweave-core" }
+astraweave-physics = { path = "../../astraweave-physics" }
+astraweave-nav = { path = "../../astraweave-nav" }
+astraweave-scripting = { path = "../../astraweave-scripting" }
+rhai = { workspace = true }
+glam = { workspace = true }
+tokio = { workspace = true }

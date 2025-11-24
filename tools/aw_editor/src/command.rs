@@ -20,9 +20,11 @@
 //!
 //! # Example
 //!
-//! ```rust
-//! use aw_editor::command::{EditorCommand, UndoStack};
+//! ```ignore
+//! use aw_editor::command::{EditorCommand, UndoStack, MoveEntityCommand};
+//! use astraweave_core::{World, IVec2};
 //!
+//! let mut world = World::new();
 //! let mut undo_stack = UndoStack::new(100);
 //!
 //! // Execute a command

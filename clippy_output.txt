@@ -1,0 +1,1515 @@
+[1m[36m    Blocking[0m waiting for file lock on package cache
+[1m[36m    Blocking[0m waiting for file lock on package cache
+[1m[36m    Blocking[0m waiting for file lock on package cache
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `std::pin::Pin`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\hermes2pro_ollama.rs:42:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse std::pin::Pin;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `futures_util::StreamExt`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\hermes2pro_ollama.rs:39:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m39[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse futures_util::StreamExt;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this expression creates a reference which is immediately dereferenced by the compiler[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\lib.rs:719:59[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m719[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                } else if let Ok(s) = std::str::from_utf8(&buf.as_bytes()) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                           [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: change this to: `buf.as_bytes()`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrow[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_borrow)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unneeded `return` statement[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\production_hardening.rs:436:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m436[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                        return Err(anyhow!([0m
+[0m[1m[38;5;14m437[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            "Request queued: position {}, wait time: {:?}",[0m
+[0m[1m[38;5;14m438[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            position,[0m
+[0m[1m[38;5;14m439[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            estimated_wait[0m
+[0m[1m[38;5;14m440[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        ));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|__________________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_return[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_return)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: remove `return`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m436[0m[0m [0m[0m[38;5;10m~ [0m[0m                        [0m[0m[38;5;10mErr(anyhow!([0m
+[0m[1m[38;5;14m437[0m[0m [0m[0m[38;5;10m+                             "Request queued: position {}, wait time: {:?}",[0m
+[0m[1m[38;5;14m438[0m[0m [0m[0m[38;5;10m+                             position,[0m
+[0m[1m[38;5;14m439[0m[0m [0m[0m[38;5;10m+                             estimated_wait[0m
+[0m[1m[38;5;14m440[0m[0m [0m[0m[38;5;10m~                         ))[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unneeded `return` statement[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\production_hardening.rs:443:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m443[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        return Err(anyhow!("Request rejected: {}", reason));[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_return[0m
+[0m[1m[38;5;14mhelp[0m[0m: remove `return`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m443[0m[0m [0m[0m[38;5;9m- [0m[0m                        [0m[0m[38;5;9mreturn Err(anyhow!("Request rejected: {}", reason));[0m
+[0m[1m[38;5;14m443[0m[0m [0m[0m[38;5;10m+ [0m[0m                        [0m[0m[38;5;10mErr(anyhow!("Request rejected: {}", reason))[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct pattern is not needed for a unit variant[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\tool_guard.rs:199:30[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m199[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            ActionStep::Block { .. } => "Block",[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: remove the struct pattern[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unneeded_struct_pattern[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unneeded_struct_pattern)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct pattern is not needed for a unit variant[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\tool_guard.rs:201:30[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m201[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            ActionStep::Parry { .. } => "Parry",[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: remove the struct pattern[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unneeded_struct_pattern[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: returning the result of a `let` binding from a block[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\plan_parser.rs:237:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m229[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m/[0m[0m [0m[0m    let cleaned = text[0m
+[0m[1m[38;5;14m230[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .replace(",\n  ]", "\n  ]")[0m
+[0m[1m[38;5;14m231[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .replace(", ]", "]")[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .replace(",]", "]")[0m
+[0m[1m[38;5;14m233[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .replace(",\n}", "\n}")[0m
+[0m[1m[38;5;14m234[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .replace(", }", "}")[0m
+[0m[1m[38;5;14m235[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .replace(",}", "}");[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|____________________________-[0m[0m [0m[0m[1m[38;5;14munnecessary `let` binding[0m
+[0m[1m[38;5;14m236[0m[0m [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m237[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m    cleaned[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m       [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#let_and_return[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::let_and_return)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: return the expression directly[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m229[0m[0m [0m[0m[38;5;10m~ [0m[0m    [0m
+[0m[1m[38;5;14m230[0m[0m [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m231[0m[0m [0m[0m[38;5;10m~ [0m[0m    [0m[0m[38;5;10mtext[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[38;5;10m+         .replace(",\n  ]", "\n  ]")[0m
+[0m[1m[38;5;14m233[0m[0m [0m[0m[38;5;10m+         .replace(", ]", "]")[0m
+[0m[1m[38;5;14m234[0m[0m [0m[0m[38;5;10m+         .replace(",]", "]")[0m
+[0m[1m[38;5;14m235[0m[0m [0m[0m[38;5;10m+         .replace(",\n}", "\n}")[0m
+[0m[1m[38;5;14m236[0m[0m [0m[0m[38;5;10m+         .replace(", }", "}")[0m
+[0m[1m[38;5;14m237[0m[0m [0m[0m[38;5;10m+         .replace(",}", "}")[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct pattern is not needed for a unit variant[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\plan_parser.rs:496:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m496[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        ActionStep::Block { .. } => "Block",[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: remove the struct pattern[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unneeded_struct_pattern[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: struct pattern is not needed for a unit variant[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\plan_parser.rs:498:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m498[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        ActionStep::Parry { .. } => "Parry",[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: remove the struct pattern[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unneeded_struct_pattern[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `PromptCompressor`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\compression.rs:28:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m28[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m29[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self[0m
+[0m[1m[38;5;14m30[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::new_without_default)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m26[0m[0m [0m[0m[38;5;10m+ impl Default for PromptCompressor {[0m
+[0m[1m[38;5;14m27[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m28[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m29[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m30[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `FewShotRegistry`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\few_shot.rs:32:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self { examples: Vec::new() }[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m31[0m[0m [0m[0m[38;5;10m+ impl Default for FewShotRegistry {[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m35[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you are using an explicit closure for cloning elements[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\few_shot.rs:128:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m128[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    EXAMPLE_REGISTRY[0m
+[0m[1m[38;5;14m129[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        .get(role)[0m
+[0m[1m[38;5;14m130[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        .map(|v| v.clone())[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|___________________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#map_clone[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::map_clone)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider calling the dedicated `cloned` method[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m128[0m[0m [0m[0m[38;5;10m~ [0m[0m    [0m[0m[38;5;10mEXAMPLE_REGISTRY[0m
+[0m[1m[38;5;14m129[0m[0m [0m[0m[38;5;10m+         .get(role).cloned()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: casting to the same type is unnecessary (`i32` -> `i32`)[0m
+[0m    [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm\src\lib.rs:1395:24[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m1395[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m            let dist = ((snap.me.pos.x - snap.player.pos.x).abs()[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m ________________________^[0m
+[0m[1m[38;5;14m1396[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                + (snap.me.pos.y - snap.player.pos.y).abs()) as i32;[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|___________________________________________________________________^[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_cast)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m1395[0m[0m [0m[0m[38;5;10m~ [0m[0m            let dist = [0m[0m[38;5;10m((snap.me.pos.x - snap.player.pos.x).abs()[0m
+[0m[1m[38;5;14m1396[0m[0m [0m[0m[38;5;10m~                 + (snap.me.pos.y - snap.player.pos.y).abs())[0m[0m;[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-llm` (lib) generated 14 warnings (run `cargo clippy --fix --lib -p astraweave-llm` to apply 13 suggestions)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: a `Vec` of `Range` that is only one element[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset\src\nanite_preprocess.rs:414:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut lod_ranges = vec![0..all_meshlets.len()];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#single_range_in_vec_init[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::single_range_in_vec_init)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: if you wanted a `Vec` that contains the entire range, try[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[38;5;9m- [0m[0m    let mut lod_ranges = [0m[0m[38;5;9mvec![0..all_meshlets.len()][0m[0m;[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[38;5;10m+ [0m[0m    let mut lod_ranges = [0m[0m[38;5;10m(0..all_meshlets.len()).collect::<std::vec::Vec<usize>>()[0m[0m;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: very complex type used. Consider factoring parts into `type` definitions[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset\src\nanite_preprocess.rs:524:6[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m524[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m) -> Result<(Vec<[f32; 3]>, Vec<[f32; 3]>, Vec<[f32; 4]>, Vec<[f32; 2]>, Vec<u32>)> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m      [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#type_complexity[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::type_complexity)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the loop variable `col` is used to index `matrix`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-asset\src\lib.rs:527:36[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m527[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        for col in 0..4 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                    [0m[0m[1m[38;5;11m^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_range_loop)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider using an iterator and enumerate()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m527[0m[0m [0m[0m[38;5;9m- [0m[0m                        for [0m[0m[38;5;9mcol[0m[0m in [0m[0m[38;5;9m0..4[0m[0m {[0m
+[0m[1m[38;5;14m527[0m[0m [0m[0m[38;5;10m+ [0m[0m                        for [0m[0m[38;5;10m(col, <item>)[0m[0m in [0m[0m[38;5;10mmatrix.iter_mut().enumerate()[0m[0m {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-asset` (lib) generated 3 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manual implementation of an assign operation[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-scene\src\lib.rs:427:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m427[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        animator.time = animator.time % clip_duration;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: replace it with: `animator.time %= clip_duration`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assign_op_pattern[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::assign_op_pattern)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-scene` (lib) generated 1 warning (run `cargo clippy --fix --lib -p astraweave-scene` to apply 1 suggestion)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `map_or` can be simplified[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ai\src\async_task.rs:232:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        self.handle.as_ref().map_or(true, |h| h.is_finished())[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_map_or[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_map_or)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: use is_none_or instead[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[38;5;9m- [0m[0m        self.handle.as_ref().[0m[0m[38;5;9mmap_or[0m[0m([0m[0m[38;5;9mtrue, [0m[0m|h| h.is_finished())[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[38;5;10m+ [0m[0m        self.handle.as_ref().[0m[0m[38;5;10mis_none_or[0m[0m(|h| h.is_finished())[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unnecessary closure used to substitute value for `Option::None`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ai\src\ai_arbiter.rs:317:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m317[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                    bt_plan.steps.first().cloned().unwrap_or_else(|| {[0m
+[0m[1m[38;5;14m318[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        // Ultimate fallback: Wait 1 second[0m
+[0m[1m[38;5;14m319[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        ActionStep::Wait { duration: 1.0 }[0m
+[0m[1m[38;5;14m320[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    })[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|______________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_lazy_evaluations[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_lazy_evaluations)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: use `unwrap_or` instead[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m317[0m[0m [0m[0m[38;5;10m~ [0m[0m                    bt_plan.steps.first().cloned().[0m[0m[38;5;10munwrap_or({[0m
+[0m[1m[38;5;14m318[0m[0m [0m[0m[38;5;10m+                         // Ultimate fallback: Wait 1 second[0m
+[0m[1m[38;5;14m319[0m[0m [0m[0m[38;5;10m+                         ActionStep::Wait { duration: 1.0 }[0m
+[0m[1m[38;5;14m320[0m[0m [0m[0m[38;5;10m+                     })[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unnecessary closure used to substitute value for `Option::None`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-ai\src\ai_arbiter.rs:370:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m370[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                bt_plan[0m
+[0m[1m[38;5;14m371[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    .steps[0m
+[0m[1m[38;5;14m372[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    .first()[0m
+[0m[1m[38;5;14m373[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    .cloned()[0m
+[0m[1m[38;5;14m374[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    .unwrap_or_else(|| ActionStep::Wait { duration: 1.0 })[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|__________________________________________________________________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_lazy_evaluations[0m
+[0m[1m[38;5;14mhelp[0m[0m: use `unwrap_or` instead[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m374[0m[0m [0m[0m[38;5;9m- [0m[0m                    .[0m[0m[38;5;9munwrap_or_else(|| ActionStep::Wait { duration: 1.0 })[0m
+[0m[1m[38;5;14m374[0m[0m [0m[0m[38;5;10m+ [0m[0m                    .[0m[0m[38;5;10munwrap_or(ActionStep::Wait { duration: 1.0 })[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-ai` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p astraweave-ai` to apply 3 suggestions)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: direct implementation of `ToString`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\context.rs:199:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m199[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mimpl ToString for ContextValue {[0m
+[0m[1m[38;5;14m200[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    fn to_string(&self) -> String {[0m
+[0m[1m[38;5;14m201[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        match self {[0m
+[0m[1m[38;5;14m202[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            ContextValue::String(s) => s.clone(),[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m225[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: prefer implementing `Display` instead[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#to_string_trait_impl[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::to_string_trait_impl)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `TemplateEngine`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\engine.rs:106:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m106[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        let mut engine = Self {[0m
+[0m[1m[38;5;14m108[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            inner: PromptEngine::new(EngineConfig::default()),[0m
+[0m[1m[38;5;14m109[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        };[0m
+[0m[1m[38;5;14m110[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        register_default_helpers(&mut engine);[0m
+[0m[1m[38;5;14m111[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        engine[0m
+[0m[1m[38;5;14m112[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::new_without_default)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m105[0m[0m [0m[0m[38;5;10m+ impl Default for TemplateEngine {[0m
+[0m[1m[38;5;14m106[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m108[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m109[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: calling `repeat(1)` on str[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\helpers.rs:284:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m284[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            "\t".repeat(1)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.to_string()` instead: `"\t".to_string()`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#repeat_once[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::repeat_once)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this loop could be written as a `for` loop[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\helpers.rs:396:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m396[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                while let Some(char) = chars.next() {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `for char in chars.by_ref()`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#while_let_on_iterator[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::while_let_on_iterator)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: clamp-like pattern without using clamp function[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\helpers.rs:427:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m427[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        score.max(0).min(100)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: replace with clamp: `score.clamp(0, 100)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: clamp will panic if max < min[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_clamp[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_clamp)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: `score` is never smaller than `0` and has therefore no effect[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\helpers.rs:427:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m427[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        score.max(0).min(100)[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `score`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_min_or_max[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_min_or_max)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `PromptLibrary`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\library.rs:32:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            templates: HashMap::new(),[0m
+[0m[1m[38;5;14m35[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        }[0m
+[0m[1m[38;5;14m36[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m30[0m[0m [0m[0m[38;5;10m+ impl Default for PromptLibrary {[0m
+[0m[1m[38;5;14m31[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m32[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m34[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: stripping a prefix manually[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\loader.rs:93:32[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m93[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            if let Some(end) = content[3..].find("+++") {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;11m^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: the prefix was tested here[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\loader.rs:92:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m92[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        if content.starts_with("+++") {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_strip[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_strip)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try using the `strip_prefix` method[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m92[0m[0m [0m[0m[38;5;10m~ [0m[0m        [0m[0m[38;5;10mif let Some(<stripped>) = content.strip_prefix("+++") [0m[0m{[0m
+[0m[1m[38;5;14m93[0m[0m [0m[0m[38;5;10m~ [0m[0m            if let Some(end) = [0m[0m[38;5;10m<stripped>[0m[0m.find("+++") {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `ABTestingEngine`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-prompts\src\optimization.rs:240:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m240[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m241[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m242[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            variants: HashMap::new(),[0m
+[0m[1m[38;5;14m243[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            metrics: HashMap::new(),[0m
+[0m[1m[38;5;14m244[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        }[0m
+[0m[1m[38;5;14m245[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m239[0m[0m [0m[0m[38;5;10m+ impl Default for ABTestingEngine {[0m
+[0m[1m[38;5;14m240[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m241[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m242[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m243[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\biome.rs:37:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m37[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn from_str(s: &str) -> Option<Self> {[0m
+[0m[1m[38;5;14m38[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        match s.to_lowercase().as_str() {[0m
+[0m[1m[38;5;14m39[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            "grassland" => Some(BiomeType::Grassland),[0m
+[0m[1m[38;5;14m40[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            "desert" => Some(BiomeType::Desert),[0m
+[0m[1m[38;5;14m...[0m[0m  [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m49[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::should_implement_trait)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: casting to the same type is unnecessary (`usize` -> `usize`)[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\chunk.rs:157:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m157[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let index = z as usize * self.heightmap.resolution() as usize + x as usize;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `z`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_cast)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: casting to the same type is unnecessary (`usize` -> `usize`)[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\chunk.rs:157:73[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m157[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let index = z as usize * self.heightmap.resolution() as usize + x as usize;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                                         [0m[0m[1m[38;5;11m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `x`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the loop variable `i` is only used to index `water`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\heightmap.rs:188:22[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m188[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            for i in 0..water.len() {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                      [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_range_loop)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider using an iterator[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m188[0m[0m [0m[0m[38;5;9m- [0m[0m            for [0m[0m[38;5;9mi[0m[0m in [0m[0m[38;5;9m0..water.len()[0m[0m {[0m
+[0m[1m[38;5;14m188[0m[0m [0m[0m[38;5;10m+ [0m[0m            for [0m[0m[38;5;10m<item>[0m[0m in [0m[0m[38;5;10m&mut water[0m[0m {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `ChunkLodCache`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\lod_manager.rs:153:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m153[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m154[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m155[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            l0_mesh: None,[0m
+[0m[1m[38;5;14m156[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            l1_mesh: None,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m160[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::new_without_default)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m151[0m[0m [0m[0m[38;5;10m+ impl Default for ChunkLodCache {[0m
+[0m[1m[38;5;14m152[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m153[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m154[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m155[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `map_or` can be simplified[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\meshing.rs:138:16[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m138[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            if corner.map_or(false, |v| v.is_solid()) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_map_or[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_map_or)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: use is_some_and instead[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m138[0m[0m [0m[0m[38;5;9m- [0m[0m            if corner.[0m[0m[38;5;9mmap_or[0m[0m([0m[0m[38;5;9mfalse, [0m[0m|v| v.is_solid()) {[0m
+[0m[1m[38;5;14m138[0m[0m [0m[0m[38;5;10m+ [0m[0m            if corner.[0m[0m[38;5;10mis_some_and[0m[0m(|v| v.is_solid()) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\noise_gen.rs:146:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m146[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        heightmap_config.resolution = resolution;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `heightmap::HeightmapConfig { resolution: resolution, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\noise_gen.rs:145:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m145[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut heightmap_config = HeightmapConfig::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::field_reassign_with_default)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: returning the result of a `let` binding from a block[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\noise_gen.rs:209:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m208[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let density = self.base_elevation.get([x * 0.01, y * 0.01, z * 0.01]) as f32;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;14m-----------------------------------------------------------------------------[0m[0m [0m[0m[1m[38;5;14munnecessary `let` binding[0m
+[0m[1m[38;5;14m209[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        density[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#let_and_return[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::let_and_return)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: return the expression directly[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m208[0m[0m [0m[0m[38;5;10m~ [0m[0m        [0m
+[0m[1m[38;5;14m209[0m[0m [0m[0m[38;5;10m~ [0m[0m        [0m[0m[38;5;10mself.base_elevation.get([x * 0.01, y * 0.01, z * 0.01]) as f32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\noise_simd.rs:27:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m27[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        heightmap_config.resolution = resolution;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `heightmap::HeightmapConfig { resolution: resolution, ..Default::default() }` and removing relevant reassignments[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\noise_simd.rs:26:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m26[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut heightmap_config = HeightmapConfig::default();[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: clamp-like pattern without using clamp function[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-terrain\src\scatter.rs:314:21[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m314[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let count = base_count.max(1).min(20); // Reasonable limits[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: replace with clamp: `base_count.clamp(1, 20)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: clamp will panic if max < min[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_clamp[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_clamp)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-prompts` (lib) generated 9 warnings (run `cargo clippy --fix --lib -p astraweave-prompts` to apply 6 suggestions)
+[1m[33mwarning[0m[1m:[0m `astraweave-terrain` (lib) generated 10 warnings (run `cargo clippy --fix --lib -p astraweave-terrain` to apply 5 suggestions)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: returning the result of a `let` binding from a block[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-context\src\history.rs:523:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m514[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m/[0m[0m [0m[0m        let history = Self {[0m
+[0m[1m[38;5;14m515[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            config: data.config,[0m
+[0m[1m[38;5;14m516[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            messages: Arc::new(RwLock::new(data.messages.into())),[0m
+[0m[1m[38;5;14m517[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            summary: Arc::new(RwLock::new(data.summary)),[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m520[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            llm_client,[0m
+[0m[1m[38;5;14m521[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        };[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;14m|__________-[0m[0m [0m[0m[1m[38;5;14munnecessary `let` binding[0m
+[0m[1m[38;5;14m522[0m[0m [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m523[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m        history[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#let_and_return[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::let_and_return)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: return the expression directly[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m514[0m[0m [0m[0m[38;5;10m~ [0m[0m        [0m
+[0m[1m[38;5;14m515[0m[0m [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m516[0m[0m [0m[0m[38;5;10m~ [0m[0m        [0m[0m[38;5;10mSelf {[0m
+[0m[1m[38;5;14m517[0m[0m [0m[0m[38;5;10m+             config: data.config,[0m
+[0m[1m[38;5;14m518[0m[0m [0m[0m[38;5;10m+             messages: Arc::new(RwLock::new(data.messages.into())),[0m
+[0m[1m[38;5;14m519[0m[0m [0m[0m[38;5;10m+             summary: Arc::new(RwLock::new(data.summary)),[0m
+[0m[1m[38;5;14m520[0m[0m [0m[0m[38;5;10m+             token_counter,[0m
+[0m[1m[38;5;14m521[0m[0m [0m[0m[38;5;10m+             metrics: Arc::new(RwLock::new(data.metrics)),[0m
+[0m[1m[38;5;14m522[0m[0m [0m[0m[38;5;10m+             llm_client,[0m
+[0m[1m[38;5;14m523[0m[0m [0m[0m[38;5;10m+         }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: using `map_err` over `inspect_err`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-context\src\summarizer.rs:175:68[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m175[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let summary_text = self.llm_client.complete(&prompt).await.map_err(|e| {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                                                    [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_inspect[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_inspect)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m175[0m[0m [0m[0m[38;5;10m~ [0m[0m        let summary_text = self.llm_client.complete(&prompt).await.[0m[0m[38;5;10minspect_err[0m[0m(|e| {[0m
+[0m[1m[38;5;14m176[0m[0m [0m[0m[38;5;10m~ [0m[0m            self.update_metrics_failed();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manual implementation of `ok`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-context\src\token_counter.rs:43:23[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m43[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m            Err(_) => match get_bpe_from_model("cl100k_base") {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m _______________________^[0m
+[0m[1m[38;5;14m44[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                Ok(enc2) => Some(enc2),[0m
+[0m[1m[38;5;14m45[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                Err(_) => {[0m
+[0m[1m[38;5;14m...[0m[0m  [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m50[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            },[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____________^[0m[0m [0m[0m[1m[38;5;11mhelp: replace with: `get_bpe_from_model("cl100k_base").ok()`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_ok_err[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_ok_err)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_asset_cli\src\texture_baker.rs:415:23[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m415[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let block_width = (width + 3) / 4;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `width.div_ceil(4)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_div_ceil)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_asset_cli\src\texture_baker.rs:416:24[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m416[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let block_height = (height + 3) / 4;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `height.div_ceil(4)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `if` has identical blocks[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_asset_cli\src\texture_baker.rs:548:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m548[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    {[0m
+[0m[1m[38;5;14m549[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        config.color_space = ColorSpace::Linear;[0m
+[0m[1m[38;5;14m550[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        config.compression = CompressionFormat::Bc7;[0m
+[0m[1m[38;5;14m551[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: same as this[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_asset_cli\src\texture_baker.rs:553:71[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m553[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m    else if filename.contains("ao") || filename.contains("occlusion") {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;10m _______________________________________________________________________^[0m
+[0m[1m[38;5;14m554[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;10m|[0m[0m [0m[0m        config.color_space = ColorSpace::Linear;[0m
+[0m[1m[38;5;14m555[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;10m|[0m[0m [0m[0m        config.compression = CompressionFormat::Bc7;[0m
+[0m[1m[38;5;14m556[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;10m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;10m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#if_same_then_else[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::if_same_then_else)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-context` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p astraweave-context` to apply 2 suggestions)
+[1m[33mwarning[0m[1m:[0m `aw_asset_cli` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p aw_asset_cli` to apply 2 suggestions)
+[1m[32m    Checking[0m astraweave-render v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-render)
+[1m[32m    Checking[0m astraweave-rag v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-rag)
+[1m[32m    Checking[0m astraweave-security v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-security)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `if` statement can be collapsed[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\systems\anchor_proximity_system.rs:78:9[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m78[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m        if entity[0m
+[0m[1m[38;5;14m79[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            .anchor[0m
+[0m[1m[38;5;14m80[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            .is_in_proximity(entity.position, (player_pos.x, player_pos.y, player_pos.z))[0m
+[0m[1m[38;5;14m...[0m[0m  [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m86[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_________^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#collapsible_if[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::collapsible_if)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: collapse nested if block[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m80[0m[0m [0m[0m[38;5;10m~ [0m[0m            .is_in_proximity(entity.position, (player_pos.x, player_pos.y, player_pos.z))[0m
+[0m[1m[38;5;14m81[0m[0m [0m[0m[38;5;10m~ [0m[0m            [0m[0m[38;5;10m&&[0m[0m distance < closest_distance {[0m
+[0m[1m[38;5;14m82[0m[0m [0m[0m[1m[38;5;14m|[0m[0m                 closest_distance = distance;[0m
+[0m[1m[38;5;14m83[0m[0m [0m[0m[1m[38;5;14m|[0m[0m                 closest_id = Some(entity.id);[0m
+[0m[1m[38;5;14m84[0m[0m [0m[0m[38;5;10m~ [0m[0m            }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `TransactionStats`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\systems\echo_transaction_system.rs:24:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m26[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            total_gained: 0,[0m
+[0m[1m[38;5;14m27[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            total_spent: 0,[0m
+[0m[1m[38;5;14m...[0m[0m  [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::new_without_default)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m22[0m[0m [0m[0m[38;5;10m+ impl Default for TransactionStats {[0m
+[0m[1m[38;5;14m23[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m24[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m25[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m26[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you seem to use `.enumerate()` and immediately discard the index[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\ui\quest_panel.rs:140:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m140[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            for (_idx, obj) in q.objectives.iter().enumerate() {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unused_enumerate_index[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unused_enumerate_index)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: remove the `.enumerate()` call[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m140[0m[0m [0m[0m[38;5;9m- [0m[0m            for [0m[0m[38;5;9m(_idx, obj)[0m[0m in [0m[0m[38;5;9mq.objectives.iter().enumerate()[0m[0m {[0m
+[0m[1m[38;5;14m140[0m[0m [0m[0m[38;5;10m+ [0m[0m            for [0m[0m[38;5;10mobj[0m[0m in [0m[0m[38;5;10mq.objectives.iter()[0m[0m {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: calling `push_str()` using a single-character string literal[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-weaving\src\ui\quest_panel.rs:195:13[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m195[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            output.push_str("\n");[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `push` with a character literal: `output.push('\n')`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#single_char_add_str[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::single_char_add_str)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-weaving` (lib) generated 4 warnings (run `cargo clippy --fix --lib -p astraweave-weaving` to apply 4 suggestions)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this operation has no effect[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\src\simd_movement.rs:95:43[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m95[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        positions[base + 0] += velocities[base + 0] * dt;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                           [0m[0m[1m[38;5;11m^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider reducing it to: `base`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#identity_op[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::identity_op)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this operation has no effect[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-math\src\simd_movement.rs:95:19[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m95[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        positions[base + 0] += velocities[base + 0] * dt;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;11m^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider reducing it to: `base`[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#identity_op[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-math` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p astraweave-math` to apply 2 suggestions)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: match expression looks like `matches!` macro[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm-eval\src\lib.rs:340:55[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m340[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m            let action_present = steps.iter().any(|s| match (expected_action.as_str(), s) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m _______________________________________________________^[0m
+[0m[1m[38;5;14m341[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                ("MoveTo", ActionStep::MoveTo { .. }) => true,[0m
+[0m[1m[38;5;14m342[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                ("Throw", ActionStep::Throw { .. }) => true,[0m
+[0m[1m[38;5;14m343[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                ("CoverFire", ActionStep::CoverFire { .. }) => true,[0m
+[0m[1m[38;5;14m344[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                ("Revive", ActionStep::Revive { .. }) => true,[0m
+[0m[1m[38;5;14m345[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                _ => false,[0m
+[0m[1m[38;5;14m346[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            });[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____________^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `matches!((expected_action.as_str(), s), ("MoveTo", ActionStep::MoveTo { .. }) | ("Throw", ActionStep::Throw { .. }) | ("CoverFire", ActionStep::CoverFire { .. }) | ("Revive", ActionStep::Revive { .. }))`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#match_like_matches_macro[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::match_like_matches_macro)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: match expression looks like `matches!` macro[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm-eval\src\lib.rs:368:42[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m368[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m                forbidden.iter().any(|f| match (f.as_str(), s) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m __________________________________________^[0m
+[0m[1m[38;5;14m369[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    ("MoveTo", ActionStep::MoveTo { .. }) => true,[0m
+[0m[1m[38;5;14m370[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    ("Throw", ActionStep::Throw { .. }) => true,[0m
+[0m[1m[38;5;14m371[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    ("CoverFire", ActionStep::CoverFire { .. }) => true,[0m
+[0m[1m[38;5;14m372[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    ("Revive", ActionStep::Revive { .. }) => true,[0m
+[0m[1m[38;5;14m373[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    _ => false,[0m
+[0m[1m[38;5;14m374[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                })[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_________________^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `matches!((f.as_str(), s), ("MoveTo", ActionStep::MoveTo { .. }) | ("Throw", ActionStep::Throw { .. }) | ("CoverFire", ActionStep::CoverFire { .. }) | ("Revive", ActionStep::Revive { .. }))`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#match_like_matches_macro[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: match expression looks like `matches!` macro[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-llm-eval\src\lib.rs:412:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m412[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m            let same_type = match (prev, curr) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m _____________________________^[0m
+[0m[1m[38;5;14m413[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                (ActionStep::MoveTo { .. }, ActionStep::MoveTo { .. }) => true,[0m
+[0m[1m[38;5;14m414[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                (ActionStep::Throw { .. }, ActionStep::Throw { .. }) => true,[0m
+[0m[1m[38;5;14m415[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                (ActionStep::CoverFire { .. }, ActionStep::CoverFire { .. }) => true,[0m
+[0m[1m[38;5;14m416[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                (ActionStep::Revive { .. }, ActionStep::Revive { .. }) => true,[0m
+[0m[1m[38;5;14m417[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                _ => false,[0m
+[0m[1m[38;5;14m418[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            };[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____________^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `matches!((prev, curr), (ActionStep::MoveTo { .. }, ActionStep::MoveTo { .. }) | (ActionStep::Throw { .. }, ActionStep::Throw { .. }) | (ActionStep::CoverFire { .. }, ActionStep::CoverFire { .. }) | (ActionStep::Revive { .. }, ActionStep::Revive { .. }))`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#match_like_matches_macro[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-llm-eval` (lib) generated 3 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manual implementation of `Iterator::find`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astraweave-persistence-player\src\save_slots.rs:216:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m216[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m        for slot_id in 0..self.max_slots {[0m
+[0m[1m[38;5;14m217[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            if !self.slot_exists(slot_id) {[0m
+[0m[1m[38;5;14m218[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                return Some(slot_id);[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m221[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        None[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|____________^[0m[0m [0m[0m[1m[38;5;11mhelp: replace with an iterator: `(0..self.max_slots).find(|&slot_id| !self.slot_exists(slot_id))`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_find[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_find)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `impl` can be derived[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astraweave-persistence-player\src\lib.rs:193:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m193[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mimpl Default for GameSettings {[0m
+[0m[1m[38;5;14m194[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    fn default() -> Self {[0m
+[0m[1m[38;5;14m195[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m196[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            graphics: GraphicsSettings::default(),[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m201[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::derivable_impls)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: replace the manual implementation with a derive attribute[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m71[0m[0m  [0m[0m[38;5;10m+ #[derive(Default)][0m
+[0m[1m[38;5;14m72[0m[0m  [0m[0m[38;5;10m~ [0m[0mpub struct GameSettings {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `impl` can be derived[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mcrates\astraweave-persistence-player\src\lib.rs:244:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m244[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mimpl Default for PlayerStats {[0m
+[0m[1m[38;5;14m245[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    fn default() -> Self {[0m
+[0m[1m[38;5;14m246[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m247[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            playtime_seconds: 0,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m253[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls[0m
+[0m[1m[38;5;14mhelp[0m[0m: replace the manual implementation with a derive attribute[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m136[0m[0m [0m[0m[38;5;10m+ #[derive(Default)][0m
+[0m[1m[38;5;14m137[0m[0m [0m[0m[38;5;10m~ [0m[0mpub struct PlayerStats {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `from_str` can be confused for the standard trait method `std::str::FromStr::from_str`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-secrets\src\backend.rs:11:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn from_str(s: &str) -> Self {[0m
+[0m[1m[38;5;14m12[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self(s.as_bytes().to_vec())[0m
+[0m[1m[38;5;14m13[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: consider implementing the trait `std::str::FromStr` or choosing a less ambiguous method name[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::should_implement_trait)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `KeyringBackend`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-secrets\src\keyring_backend.rs:9:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m9[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m10[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::new_without_default)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m8[0m[0m  [0m[0m[38;5;10m+ impl Default for KeyringBackend {[0m
+[0m[1m[38;5;14m9[0m[0m  [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m10[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m12[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-persistence-player` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p astraweave-persistence-player` to apply 3 suggestions)
+[1m[33mwarning[0m[1m:[0m `astraweave-secrets` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p astraweave-secrets` to apply 1 suggestion)
+[1m[32m    Checking[0m astraweave-ipc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ipc)
+[1m[32m    Checking[0m astraweave-npc v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-npc)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_headless\src\lib.rs:101:28[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m101[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let padded_row_bytes = ((row_bytes + align - 1) / align) * align;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                            [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `row_bytes.div_ceil(align)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_div_ceil)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: casting to the same type is unnecessary (`usize` -> `usize`)[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_headless\src\lib.rs:147:23[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m147[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let dst_off = y as usize * width as usize * 4;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                       [0m[0m[1m[38;5;11m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: try: `y`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#unnecessary_cast[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::unnecessary_cast)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: fields `head_pointers` and `next_pointers` are never read[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-fluids\src\lib.rs:41:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mpub struct FluidSystem {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;14m-----------[0m[0m [0m[0m[1m[38;5;14mfields in this struct[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m41[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    head_pointers: wgpu::Buffer,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m[1m[38;5;14m42[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    next_pointers: wgpu::Buffer,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(dead_code)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-fluids\src\lib.rs:334:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m334[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let grid_workgroups = (grid_size + 63) / 64;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `grid_size.div_ceil(64)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_div_ceil)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-fluids\src\lib.rs:335:35[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m335[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let particle_workgroups = (self.particle_count + 63) / 64;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                   [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `self.particle_count.div_ceil(64)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_headless` (lib) generated 2 warnings (run `cargo clippy --fix --lib -p aw_headless` to apply 2 suggestions)
+[1m[33mwarning[0m[1m:[0m `astraweave-fluids` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p astraweave-fluids` to apply 2 suggestions)
+[1m[32m    Checking[0m astraweave-sdk v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-sdk)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the variable `_moved_count` is used as a loop counter[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mexamples\profiling_demo\src\main.rs:399:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m399[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    for (_entity, pos, vel) in query {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using: `for (_moved_count, (_entity, pos, vel)) in query.enumerate()`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#explicit_counter_loop[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::explicit_counter_loop)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `profiling_demo` (bin "profiling_demo") generated 1 warning
+[1m[32m    Checking[0m aw_release v0.4.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\tools\aw_release)
+[1m[33mwarning[0m[1m:[0m `profiling_demo` (bin "profiling_demo" test) generated 1 warning (1 duplicate)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the borrowed expression implements the required traits[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_release\src\main.rs:90:15[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m90[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m        .args(&[[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m _______________^[0m
+[0m[1m[38;5;14m91[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            "tag",[0m
+[0m[1m[38;5;14m92[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            "-a",[0m
+[0m[1m[38;5;14m93[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            &format!("v{}", version),[0m
+[0m[1m[38;5;14m94[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            "-m",[0m
+[0m[1m[38;5;14m95[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            &format!("Release v{}", version),[0m
+[0m[1m[38;5;14m96[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        ])[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_________^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrows_for_generic_args[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_borrows_for_generic_args)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: change this to[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m90[0m[0m [0m[0m[38;5;10m~ [0m[0m        .args([0m[0m[38;5;10m[[0m
+[0m[1m[38;5;14m91[0m[0m [0m[0m[38;5;10m+             "tag",[0m
+[0m[1m[38;5;14m92[0m[0m [0m[0m[38;5;10m+             "-a",[0m
+[0m[1m[38;5;14m93[0m[0m [0m[0m[38;5;10m+             &format!("v{}", version),[0m
+[0m[1m[38;5;14m94[0m[0m [0m[0m[38;5;10m+             "-m",[0m
+[0m[1m[38;5;14m95[0m[0m [0m[0m[38;5;10m+             &format!("Release v{}", version),[0m
+[0m[1m[38;5;14m96[0m[0m [0m[0m[38;5;10m~         ][0m[0m)[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the borrowed expression implements the required traits[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mtools\aw_release\src\main.rs:110:15[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m110[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        .args(&["build", "--release"])[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m               [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: change this to: `["build", "--release"]`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrows_for_generic_args[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: this public function might dereference a raw pointer but is not marked `unsafe`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-sdk\src\lib.rs:74:55[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m74[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        std::ptr::copy_nonoverlapping(bytes.as_ptr(), buf, n);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                                       [0m[0m[1m[38;5;9m^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#not_unsafe_ptr_arg_deref[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[deny(clippy::not_unsafe_ptr_arg_deref)]` on by default[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: this public function might dereference a raw pointer but is not marked `unsafe`[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-sdk\src\lib.rs:75:10[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m75[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        *buf.add(n) = 0;[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m          [0m[0m[1m[38;5;9m^^^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#not_unsafe_ptr_arg_deref[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: this public function might dereference a raw pointer but is not marked `unsafe`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-sdk\src\lib.rs:322:24[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m322[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        CStr::from_ptr(intent_json).to_string_lossy().to_string()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#not_unsafe_ptr_arg_deref[0m
+
+[1m[33mwarning[0m[1m:[0m `aw_release` (bin "aw_release") generated 2 warnings (run `cargo clippy --fix --bin "aw_release"` to apply 2 suggestions)
+[1m[32m    Checking[0m aw-net-server v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\net\aw-net-server)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: method `default` can be confused for the standard trait method `std::default::Default::default`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-security\src\lib.rs:111:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m111[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn default() -> Self {[0m
+[0m[1m[38;5;14m112[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m113[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            config: SecurityConfig {[0m
+[0m[1m[38;5;14m114[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                enable_sandboxing: true,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m121[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: consider implementing the trait `std::default::Default` or choosing a less ambiguous method name[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#should_implement_trait[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::should_implement_trait)]` on by default[0m
+
+[1m[31merror[0m[1m:[0m could not compile `astraweave-sdk` (lib) due to 3 previous errors
+[1m[33mwarning[0m[1m:[0m build failed, waiting for other jobs to finish...
+[1m[33mwarning[0m[1m:[0m `aw_release` (bin "aw_release" test) generated 2 warnings (2 duplicates)
+[1m[33mwarning[0m[1m:[0m `astraweave-security` (lib) generated 1 warning
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-rag\src\forgetting.rs:129:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m129[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                        strength.protected =[0m
+[0m[1m[38;5;14m130[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            self.config.protected_categories.contains(&memory.category);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|________________________________________________________________________________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `forgetting::MemoryStrength { protected: self.config.protected_categories.contains(&memory.category), last_access: memory.timestamp as i64, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-rag\src\forgetting.rs:128:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m128[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        let mut strength = MemoryStrength::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::field_reassign_with_default)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: trait `VectorStoreInterface` has a `len` method but no (possibly inherited) `is_empty` method[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-rag\src\pipeline.rs:55:1[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m55[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mpub trait VectorStoreInterface: Send + Sync {[0m
+[0m[1m[38;5;14m56[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    async fn search(&self, query_vector: &[f32], k: usize) -> Result<Vec<SearchResult>>;[0m
+[0m[1m[38;5;14m57[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    async fn insert(&self, id: String, vector: Vec<f32>, text: String) -> Result<()>;[0m
+[0m[1m[38;5;14m58[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    async fn insert_memory(&self, memory: Memory, vector: Vec<f32>) -> Result<()>;[0m
+[0m[1m[38;5;14m...[0m[0m  [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m62[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    async fn get_all_memories(&self) -> Vec<Memory>;[0m
+[0m[1m[38;5;14m63[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#len_without_is_empty[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::len_without_is_empty)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: writing `&mut Vec` instead of `&mut [_]` involves a new object where a slice will do[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-rag\src\pipeline.rs:728:39[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m728[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    fn order_results(&self, memories: &mut Vec<RetrievedMemory>) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                       [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: change this to: `&mut [RetrievedMemory]`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#ptr_arg[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::ptr_arg)]` on by default[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-rag` (lib) generated 3 warnings
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: empty line after doc comment[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\graph.rs:169:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m169[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m/// --- Adapter nodes: integrate existing `Renderer` passes into the graph ---[0m
+[0m[1m[38;5;14m170[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m[1m[38;5;14m171[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m/// A node that clears a target view to a color, producing a named view resource.[0m
+[0m[1m[38;5;14m172[0m[0m [0m[0m[1m[38;5;14m|[0m[0m   [0m[0mpub struct ClearNode {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m   [0m[0m[1m[38;5;14m--------------------[0m[0m [0m[0m[1m[38;5;14mthe comment documents this struct[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#empty_line_after_doc_comments[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::empty_line_after_doc_comments)]` on by default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: [0m[0mif the empty line is unintentional, remove it[0m
+[0m[1m[38;5;14mhelp[0m[0m: if the documentation should include the empty line include it in the comment[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m170[0m[0m [0m[0m[1m[38;5;14m| [0m[0m[38;5;10m///[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: doc list item without indentation[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\clustered.rs:33:5[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m/// Returns: (counts, indices, offsets) where offsets is exclusive scan over counts[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;11m^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: if this is supposed to be its own paragraph, add a blank line[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#doc_lazy_continuation[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::doc_lazy_continuation)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: indent this line[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m33[0m[0m [0m[0m[1m[38;5;14m| [0m[0m/// [0m[0m[38;5;10m  [0m[0mReturns: (counts, indices, offsets) where offsets is exclusive scan over counts[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[38;5;10m++[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `if` statement can be collapsed[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\clustered_forward.rs:430:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m430[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                        if self.light_intersects_cluster([0m
+[0m[1m[38;5;14m431[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            light,[0m
+[0m[1m[38;5;14m432[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            &self.clusters[cluster_idx],[0m
+[0m[1m[38;5;14m433[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            view_matrix,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m441[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_________________________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#collapsible_if[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::collapsible_if)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: collapse nested if block[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m434[0m[0m [0m[0m[38;5;10m~ [0m[0m                        )[0m
+[0m[1m[38;5;14m435[0m[0m [0m[0m[38;5;10m~ [0m[0m                            [0m[0m[38;5;10m&&[0m[0m self.clusters[cluster_idx].light_count[0m
+[0m[1m[38;5;14m436[0m[0m [0m[0m[1m[38;5;14m|[0m[0m                                 < self.max_lights_per_cluster as u32[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m439[0m[0m [0m[0m[1m[38;5;14m|[0m[0m                                 self.clusters[cluster_idx].light_count += 1;[0m
+[0m[1m[38;5;14m440[0m[0m [0m[0m[38;5;10m~ [0m[0m                            }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this function has too many arguments (9/7)[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\clustered_megalights.rs:334:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m334[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn update_bind_groups([0m
+[0m[1m[38;5;14m335[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        &mut self,[0m
+[0m[1m[38;5;14m336[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        device: &wgpu::Device,[0m
+[0m[1m[38;5;14m337[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        light_buffer: &wgpu::Buffer,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m343[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        prefix_sum_params_buffer: &wgpu::Buffer,[0m
+[0m[1m[38;5;14m344[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    ) {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::too_many_arguments)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\clustered_megalights.rs:460:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m460[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            let workgroups_x = (self.cluster_dims.0 + 63) / 64;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `self.cluster_dims.0.div_ceil(64)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_div_ceil)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\clustered_megalights.rs:479:30[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m479[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            let workgroups = (total_clusters + 511) / 512;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `total_clusters.div_ceil(512)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\clustered_megalights.rs:494:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m494[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            let workgroups_x = (self.cluster_dims.0 + 63) / 64;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `self.cluster_dims.0.div_ceil(64)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manual `RangeInclusive::contains` implementation[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\environment.rs:141:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m141[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        sun_height >= -0.1 && sun_height <= 0.1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: use: `(-0.1..=0.1).contains(&sun_height)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_range_contains[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::manual_range_contains)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\gi\voxelization_pipeline.rs:361:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m361[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let dispatch_size = (self.config.voxel_resolution + workgroup_size - 1) / workgroup_size;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `self.config.voxel_resolution.div_ceil(workgroup_size)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\gi\voxelization_pipeline.rs:396:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m396[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let dispatch_size = (triangle_count + workgroup_size - 1) / workgroup_size;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `triangle_count.div_ceil(workgroup_size)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\gi\vxgi.rs:223:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m223[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let dispatch_size = (self.config.voxel_resolution + workgroup_size - 1) / workgroup_size;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                             [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `self.config.voxel_resolution.div_ceil(workgroup_size)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `MeshRegistry`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\mesh_registry.rs:171:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m171[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m172[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m173[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            next_id: 1,[0m
+[0m[1m[38;5;14m174[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            map: HashMap::new(),[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m177[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::new_without_default)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m170[0m[0m [0m[0m[38;5;10m+ impl Default for MeshRegistry {[0m
+[0m[1m[38;5;14m171[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m172[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m173[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m174[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you don't need to add `&` to all patterns[0m
+[0m    [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\renderer.rs:2331:21[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2331[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                    match e {[0m
+[0m[1m[38;5;14m2332[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        &awc::SequencerEvent::CameraKey(ref k) => Self::apply_camera_key(camera, k),[0m
+[0m[1m[38;5;14m2333[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        &awc::SequencerEvent::FxTrigger {[0m
+[0m[1m[38;5;14m2334[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            ref name,[0m
+[0m[1m[38;5;14m...[0m[0m    [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m2343[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        _ => {}[0m
+[0m[1m[38;5;14m2344[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                    }[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____________________^[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#match_ref_pats[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::match_ref_pats)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: instead of prefixing all patterns with `&`, you can dereference the expression[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2331[0m[0m [0m[0m[38;5;10m~ [0m[0m                    match [0m[0m[38;5;10m*[0m[0me {[0m
+[0m[1m[38;5;14m2332[0m[0m [0m[0m[38;5;10m~ [0m[0m                        [0m[0m[38;5;10mawc::SequencerEvent::CameraKey(ref k)[0m[0m => Self::apply_camera_key(camera, k),[0m
+[0m[1m[38;5;14m2333[0m[0m [0m[0m[38;5;10m~ [0m[0m                        [0m[0m[38;5;10mawc::SequencerEvent::FxTrigger {[0m
+[0m[1m[38;5;14m2334[0m[0m [0m[0m[38;5;10m+                             ref name,[0m
+[0m[1m[38;5;14m2335[0m[0m [0m[0m[38;5;10m+                             ref params,[0m
+[0m[1m[38;5;14m2336[0m[0m [0m[0m[38;5;10m~                         }[0m[0m => {[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: dereferencing a tuple pattern where every element takes a reference[0m
+[0m    [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\renderer.rs:2332:25[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2332[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                        &awc::SequencerEvent::CameraKey(ref k) => Self::apply_camera_key(camera, k),[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m                         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrowed_reference[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_borrowed_reference)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try removing the `&` and `ref` parts[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2332[0m[0m [0m[0m[38;5;9m- [0m[0m                        [0m[0m[38;5;9m&[0m[0mawc::SequencerEvent::CameraKey([0m[0m[38;5;9mref [0m[0mk) => Self::apply_camera_key(camera, k),[0m
+[0m[1m[38;5;14m2332[0m[0m [0m[0m[38;5;10m+ [0m[0m                        awc::SequencerEvent::CameraKey(k) => Self::apply_camera_key(camera, k),[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: dereferencing a struct pattern where every field's pattern takes a reference[0m
+[0m    [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\renderer.rs:2333:25[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2333[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m                        &awc::SequencerEvent::FxTrigger {[0m
+[0m[1m[38;5;14m2334[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            ref name,[0m
+[0m[1m[38;5;14m2335[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                            ref params,[0m
+[0m[1m[38;5;14m2336[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m                        } => {[0m
+[0m     [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_________________________^[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m     [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_borrowed_reference[0m
+[0m[1m[38;5;14mhelp[0m[0m: try removing the `&` and `ref` parts[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2333[0m[0m [0m[0m[38;5;10m~ [0m[0m                        awc::SequencerEvent::FxTrigger {[0m
+[0m[1m[38;5;14m2334[0m[0m [0m[0m[38;5;10m~ [0m[0m                            name,[0m
+[0m[1m[38;5;14m2335[0m[0m [0m[0m[38;5;10m~ [0m[0m                            params,[0m
+[0m     [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: the loop variable `i` is used to index `split_distances`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\shadow_csm.rs:470:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m470[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        for i in 1..CASCADE_COUNT {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#needless_range_loop[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::needless_range_loop)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider using an iterator and enumerate()[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m470[0m[0m [0m[0m[38;5;9m- [0m[0m        for [0m[0m[38;5;9mi[0m[0m in [0m[0m[38;5;9m1..CASCADE_COUNT[0m[0m {[0m
+[0m[1m[38;5;14m470[0m[0m [0m[0m[38;5;10m+ [0m[0m        for [0m[0m[38;5;10m(i, <item>)[0m[0m in [0m[0m[38;5;10msplit_distances.iter_mut().enumerate().take(CASCADE_COUNT).skip(1)[0m[0m {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this function has too many arguments (8/7)[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\types.rs:238:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m238[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mpub fn cluster_index([0m
+[0m[1m[38;5;14m239[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    px: u32,[0m
+[0m[1m[38;5;14m240[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    py: u32,[0m
+[0m[1m[38;5;14m241[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    width: u32,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m246[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    dims: ClusterDims,[0m
+[0m[1m[38;5;14m247[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m) -> u32 {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|________^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#too_many_arguments[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manual implementation of an assign operation[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\animation.rs:234:17[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m234[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m                self.time = self.time % clip_duration;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                 [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: replace it with: `self.time %= clip_duration`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#assign_op_pattern[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::assign_op_pattern)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\animation.rs:382:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m382[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        palette.joint_count = matrices.len().min(MAX_JOINTS) as u32;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `animation::JointPalette { joint_count: matrices.len().min(MAX_JOINTS) as u32, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\animation.rs:381:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m381[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut palette = Self::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::field_reassign_with_default)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `impl` can be derived[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\culling.rs:176:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m176[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mimpl Default for DrawIndirectCommand {[0m
+[0m[1m[38;5;14m177[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    fn default() -> Self {[0m
+[0m[1m[38;5;14m178[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m179[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            vertex_count: 0,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m185[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::derivable_impls)]` on by default[0m
+[0m[1m[38;5;14mhelp[0m[0m: replace the manual implementation with a derive attribute[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m152[0m[0m [0m[0m[38;5;10m+ #[derive(Default)][0m
+[0m[1m[38;5;14m153[0m[0m [0m[0m[38;5;10m~ [0m[0mpub struct DrawIndirectCommand {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\culling.rs:557:31[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m557[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let workgroup_count = (instance_count + 63) / 64;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                               [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `instance_count.div_ceil(64)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `impl` can be derived[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\graph.rs:253:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m253[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mimpl Default for RenderGraph {[0m
+[0m[1m[38;5;14m254[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    fn default() -> Self {[0m
+[0m[1m[38;5;14m255[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self { nodes: Vec::new() }[0m
+[0m[1m[38;5;14m256[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m[1m[38;5;14m257[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls[0m
+[0m[1m[38;5;14mhelp[0m[0m: replace the manual implementation with a derive attribute[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m165[0m[0m [0m[0m[38;5;10m+ #[derive(Default)][0m
+[0m[1m[38;5;14m166[0m[0m [0m[0m[38;5;10m~ [0m[0mpub struct RenderGraph {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: you should consider adding a `Default` implementation for `MaterialManager`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material.rs:147:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m147[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0m    pub fn new() -> Self {[0m
+[0m[1m[38;5;14m148[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        Self {[0m
+[0m[1m[38;5;14m149[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            _albedo_tex: None,[0m
+[0m[1m[38;5;14m150[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m            _normal_tex: None,[0m
+[0m[1m[38;5;14m...[0m[0m   [0m[0m[1m[38;5;11m|[0m
+[0m[1m[38;5;14m156[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_____^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#new_without_default[0m
+[0m[1m[38;5;14mhelp[0m[0m: try adding this[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m146[0m[0m [0m[0m[38;5;10m+ impl Default for MaterialManager {[0m
+[0m[1m[38;5;14m147[0m[0m [0m[0m[38;5;10m+     fn default() -> Self {[0m
+[0m[1m[38;5;14m148[0m[0m [0m[0m[38;5;10m+         Self::new()[0m
+[0m[1m[38;5;14m149[0m[0m [0m[0m[38;5;10m+     }[0m
+[0m[1m[38;5;14m150[0m[0m [0m[0m[38;5;10m+ }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:121:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m121[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `material_extended::MaterialGpuExtended { base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0], metallic_factor: metallic, roughness_factor: roughness, clearcoat_strength: 1.0, clearcoat_roughness: 0.05, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:120:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m120[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut mat = Self::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:133:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m133[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `material_extended::MaterialGpuExtended { base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0], metallic_factor: 1.0, roughness_factor: roughness, anisotropy_strength: anisotropy, anisotropy_rotation: rotation, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:132:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m132[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut mat = Self::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:145:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m145[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `material_extended::MaterialGpuExtended { base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0], metallic_factor: 0.0, roughness_factor: 0.5, subsurface_color: [subsurface_tint.x, subsurface_tint.y, subsurface_tint.z], subsurface_radius: radius, subsurface_scale: scale, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:144:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m144[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut mat = Self::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:158:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m158[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mat.base_color_factor = [base_color.x, base_color.y, base_color.z, 1.0];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `material_extended::MaterialGpuExtended { base_color_factor: [base_color.x, base_color.y, base_color.z, 1.0], metallic_factor: 0.0, roughness_factor: 0.8, sheen_color: [sheen_color.x, sheen_color.y, sheen_color.z], sheen_roughness: sheen_roughness, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:157:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m157[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut mat = Self::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: field assignment outside of initializer for an instance created with Default::default()[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:177:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m177[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        mat.base_color_factor = [tint.x, tint.y, tint.z, 1.0];[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: consider initializing the variable with `material_extended::MaterialGpuExtended { base_color_factor: [tint.x, tint.y, tint.z, 1.0], metallic_factor: 0.0, roughness_factor: roughness, transmission_factor: transmission, ior: ior, attenuation_color: [[0m
+[0m                  attenuation_color.x,[0m
+[0m                  attenuation_color.y,[0m
+[0m                  attenuation_color.z,[0m
+[0m              ], attenuation_distance: attenuation_dist, ..Default::default() }` and removing relevant reassignments[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_extended.rs:176:9[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m176[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let mut mat = Self::default();[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m         [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#field_reassign_with_default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: redundant closure[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\material_loader.rs:644:18[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m644[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m            .map(|idx| MaterialGpu::neutral(idx))[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: replace the closure with the function itself: `MaterialGpu::neutral`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#redundant_closure[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::redundant_closure)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: non-canonical implementation of `partial_cmp` on an `Ord` type[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\lod_generator.rs:137:1[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m137[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m  [0m[0mimpl PartialOrd for EdgeCollapse {[0m
+[0m[1m[38;5;14m138[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m  [0m[0m    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m[1m[38;5;14m _____________________________________________________________-[0m
+[0m[1m[38;5;14m139[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m[1m[38;5;14m|[0m[0m [0m[0m        // Min-heap: lower error = higher priority[0m
+[0m[1m[38;5;14m140[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m[1m[38;5;14m|[0m[0m [0m[0m        other.error.partial_cmp(&self.error)[0m
+[0m[1m[38;5;14m141[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m[1m[38;5;14m|[0m[0m [0m[0m    }[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m[1m[38;5;14m|_____-[0m[0m [0m[0m[1m[38;5;14mhelp: change this to: `{ Some(self.cmp(other)) }`[0m
+[0m[1m[38;5;14m142[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m  [0m[0m}[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|__^[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#non_canonical_partial_ord_impl[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(clippy::non_canonical_partial_ord_impl)]` on by default[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: manually reimplementing `div_ceil`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\gpu_particles.rs:271:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m271[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m        let workgroups = (self.max_particles + 63) / 64;[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;11mhelp: consider using `.div_ceil()`: `self.max_particles.div_ceil(64)`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m    [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#manual_div_ceil[0m
+
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: this `impl` can be derived[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-render\src\msaa.rs:48:1[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m48[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m/[0m[0m [0m[0mimpl Default for MsaaMode {[0m
+[0m[1m[38;5;14m49[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    fn default() -> Self {[0m
+[0m[1m[38;5;14m50[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m        MsaaMode::X4[0m
+[0m[1m[38;5;14m51[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m    }[0m
+[0m[1m[38;5;14m52[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|[0m[0m [0m[0m}[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;11m|_^[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m   [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mhelp[0m[0m: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#derivable_impls[0m
+[0m[1m[38;5;14mhelp[0m[0m: replace the manual implementation with a derive attribute and mark the default variant[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[38;5;10m+ #[derive(Default)][0m
+[0m[1m[38;5;14m12[0m[0m [0m[0m[38;5;10m~ [0m[0mpub enum MsaaMode {[0m
+[0m[1m[38;5;14m13[0m[0m [0m[0m[1m[38;5;14m|[0m[0m     /// No anti-aliasing[0m
+[0m[1m[38;5;14m...[0m
+[0m[1m[38;5;14m17[0m[0m [0m[0m[1m[38;5;14m|[0m[0m     /// 4x MSAA (recommended)[0m
+[0m[1m[38;5;14m18[0m[0m [0m[0m[38;5;10m~ [0m[0m    [0m[0m[38;5;10m#[default][0m
+[0m[1m[38;5;14m19[0m[0m [0m[0m[38;5;10m~     [0m[0mX4,[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+
+[1m[33mwarning[0m[1m:[0m `astraweave-render` (lib) generated 32 warnings (run `cargo clippy --fix --lib -p astraweave-render` to apply 20 suggestions)
+Exit
+code:
+0

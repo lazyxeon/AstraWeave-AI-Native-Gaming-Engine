@@ -1,16 +1,10 @@
-mod fluid_renderer;
-mod ocean_renderer;
-mod skybox_renderer;
-
-use fluid_renderer::FluidRenderer;
-use ocean_renderer::OceanRenderer;
-use skybox_renderer::SkyboxRenderer;
 use astraweave_fluids::FluidSystem;
 use astraweave_physics::PhysicsWorld;
 use winit::{
+    application::ApplicationHandler,
     event::*,
-    event_loop::EventLoop,
-    window::Window,
+    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    window::{Window, WindowId},
     keyboard::{PhysicalKey, KeyCode},
 };
 use glam::{Vec3, Mat4};
@@ -363,63 +357,78 @@ impl State {
     }
 }
 
+struct App {
+    state: Option<State>,
+}
+
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.state.is_none() {
+            let window = std::sync::Arc::new(
+                event_loop.create_window(Window::default_attributes()
+                    .with_title("AstraWeave Fluids Demo"))
+                .unwrap()
+            );
+            self.state = Some(pollster::block_on(State::new(window)));
+        }
+    }
+
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+        if let Some(state) = &mut self.state {
+            if window_id == state.window.id() {
+                match event {
+                    WindowEvent::CloseRequested
+                    | WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: ElementState::Pressed,
+                                physical_key: PhysicalKey::Code(KeyCode::Escape),
+                                ..
+                            },
+                        ..
+                    } => event_loop.exit(),
+                    WindowEvent::KeyboardInput {
+                        event:
+                            KeyEvent {
+                                state: ElementState::Pressed,
+                                physical_key: PhysicalKey::Code(KeyCode::Space),
+                                ..
+                            },
+                        ..
+                    } => {
+                        state.toggle_render_mode();
+                    }
+                    WindowEvent::Resized(physical_size) => {
+                        state.resize(physical_size);
+                    }
+                    WindowEvent::RedrawRequested => {
+                        state.update();
+                        match state.render() {
+                            Ok(_) => {}
+                            Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
+                            Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+                            Err(e) => eprintln!("{:?}", e),
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
+        if let Some(state) = &self.state {
+            state.window.request_redraw();
+        }
+    }
+}
+
 fn main() {
     env_logger::init();
 
     let event_loop = EventLoop::new().unwrap();
-    let window = std::sync::Arc::new(
-        event_loop.create_window(Window::default_attributes()
-            .with_title("AstraWeave Fluids Demo"))
-        .unwrap()
-    );
-
-    let mut state = pollster::block_on(State::new(window.clone()));
-
-    event_loop.run(move |event, elwt| {
-        match event {
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == state.window.id() => match event {
-                WindowEvent::CloseRequested
-                | WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Escape),
-                            ..
-                        },
-                    ..
-                } => elwt.exit(),
-                WindowEvent::KeyboardInput {
-                    event:
-                        KeyEvent {
-                            state: ElementState::Pressed,
-                            physical_key: PhysicalKey::Code(KeyCode::Space),
-                            ..
-                        },
-                    ..
-                } => {
-                    state.toggle_render_mode();
-                }
-                WindowEvent::Resized(physical_size) => {
-                    state.resize(*physical_size);
-                }
-                WindowEvent::RedrawRequested => {
-                    state.update();
-                    match state.render() {
-                        Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                        Err(wgpu::SurfaceError::OutOfMemory) => elwt.exit(),
-                        Err(e) => eprintln!("{:?}", e),
-                    }
-                }
-                _ => {}
-            },
-            Event::AboutToWait => {
-                state.window.request_redraw();
-            }
-            _ => {}
-        }
-    }).unwrap();
+    event_loop.set_control_flow(ControlFlow::Poll);
+    
+    let mut app = App { state: None };
+    event_loop.run_app(&mut app).unwrap();
 }

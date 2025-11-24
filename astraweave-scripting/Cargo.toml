@@ -20,6 +20,8 @@ astraweave-asset.workspace = true
 sha2.workspace = true
 hex.workspace = true
 glam.workspace = true
+rapier3d.workspace = true
+astraweave-nav.workspace = true
 
 [dev-dependencies]
 criterion.workspace = true

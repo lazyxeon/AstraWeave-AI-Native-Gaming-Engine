@@ -52,6 +52,7 @@ impl Default for WorldSnapshot {
             pois: vec![],
             obstacles: vec![],
             objective: None,
+            physics_context: None,
         }
     }
 }
@@ -82,6 +83,7 @@ pub struct WorldSnapshot {
     pub pois: Vec<Poi>,
     pub obstacles: Vec<IVec2>,
     pub objective: Option<String>,
+    pub physics_context: Option<PhysicsContext>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -113,6 +115,28 @@ pub struct EnemyState {
 pub struct Poi {
     pub k: String,
     pub pos: IVec2,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct PhysicsContext {
+    pub blocking_objects: Vec<BlockingObject>,
+    pub interactable_objects: Vec<InteractableObject>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BlockingObject {
+    pub id: Entity,
+    pub pos: IVec2,
+    pub object_type: String,
+    pub is_locked: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct InteractableObject {
+    pub id: Entity,
+    pub pos: IVec2,
+    pub object_type: String,
+    pub requires_item: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
@@ -444,6 +468,7 @@ mod tests {
         assert!(snapshot.pois.is_empty());
         assert!(snapshot.obstacles.is_empty());
         assert!(snapshot.objective.is_none());
+        assert!(snapshot.physics_context.is_none());
     }
 
     #[test]

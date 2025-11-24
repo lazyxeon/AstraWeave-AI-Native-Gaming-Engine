@@ -106,6 +106,7 @@ members = [
   "astraweave-scripting",
   "examples/ecs_ai_demo",
   "examples/ecs_ai_showcase",
+  "examples/scripting_advanced_demo",
   # Phase 3 demos
   "examples/core_loop_bt_demo",
   "examples/core_loop_goap_demo",

@@ -4,7 +4,7 @@
 //! Benchmark comparing naive vs SIMD movement implementations.
 
 use astraweave_math::simd_movement::{update_positions_naive, update_positions_simd};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use glam::Vec3;
 
 fn benchmark_movement(c: &mut Criterion) {
@@ -19,9 +19,9 @@ fn benchmark_movement(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("naive", count), count, |b, _count| {
             b.iter(|| {
                 update_positions_naive(
-                    black_box(&mut positions),
-                    black_box(&velocities),
-                    black_box(dt),
+                    std::hint::black_box(&mut positions),
+                    std::hint::black_box(&velocities),
+                    std::hint::black_box(dt),
                 )
             });
         });
@@ -29,9 +29,9 @@ fn benchmark_movement(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("simd", count), count, |b, _count| {
             b.iter(|| {
                 update_positions_simd(
-                    black_box(&mut positions),
-                    black_box(&velocities),
-                    black_box(dt),
+                    std::hint::black_box(&mut positions),
+                    std::hint::black_box(&velocities),
+                    std::hint::black_box(dt),
                 )
             });
         });
