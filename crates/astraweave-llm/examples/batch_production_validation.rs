@@ -140,6 +140,7 @@ fn create_test_snapshot(agent_id: AgentId) -> WorldSnapshot {
         player: PlayerState {
             pos: IVec2::new(10, 10),
             hp: 100,
+        physics_context: None,
         },
         me: CompanionState {
             pos: IVec2::new(agent_id as i32 * 2, agent_id as i32 * 2),

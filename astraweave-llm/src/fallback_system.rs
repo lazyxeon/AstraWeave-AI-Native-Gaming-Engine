@@ -875,6 +875,7 @@ mod tests {
             pois: vec![],
             obstacles: vec![],
             objective: Some("Scan area".to_string()),
+            physics_context: None,
         }
     }
 

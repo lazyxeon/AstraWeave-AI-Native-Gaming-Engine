@@ -29,6 +29,7 @@ fn test_goap_mode_basic_planning() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -79,6 +80,7 @@ fn test_goap_mode_deterministic_planning() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -126,6 +128,7 @@ fn test_goap_mode_goal_satisfaction() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -160,6 +163,7 @@ fn test_goap_mode_policy_variants() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -215,6 +219,7 @@ fn test_goap_mode_reproducibility() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -273,6 +278,7 @@ fn test_goap_mode_feature_gate() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {

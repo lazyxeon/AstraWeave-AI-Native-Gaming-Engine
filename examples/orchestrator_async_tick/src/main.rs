@@ -19,6 +19,7 @@ fn mk_snap_from_world(w: &World, me: Entity, player: Entity, enemy: Entity) -> W
             pos: player_pose,
             stance: "stand".into(),
             orders: vec![],
+        physics_context: None,
         },
         me: astraweave_core::CompanionState {
             ammo: w.ammo(me).unwrap().rounds,

@@ -430,6 +430,7 @@ mod tests {
             pois: vec![],
             obstacles: vec![],
             objective: Some("eliminate".to_string()),
+            physics_context: None,
         }
     }
 

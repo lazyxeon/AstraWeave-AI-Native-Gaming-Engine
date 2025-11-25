@@ -1,0 +1,264 @@
+
+running 10 tests
+test spatial_hash::tests::test_aabb_intersection ... ok
+test spatial_hash::tests::test_cell_size_calculation ... ok
+test spatial_hash::tests::test_multi_cell_spanning ... ok
+test spatial_hash::tests::test_spatial_hash_insertion ... ok
+test spatial_hash::tests::test_spatial_hash_clear ... ok
+test spatial_hash::tests::test_spatial_hash_query ... ok
+test spatial_hash::tests::test_stats ... ok
+test spatial_hash::tests::test_query_unique_deduplication ... ok
+test tests::character_position_updates ... ok
+test tests::character_moves_forward ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 19 tests
+test add_joint_between_same_body_does_not_crash ... ok
+test add_joint_with_invalid_body1_does_not_crash ... ok
+test add_both_fixed_and_revolute_joints ... ok
+test add_fixed_joint_between_two_bodies ... ok
+test add_joint_with_invalid_body2_does_not_crash ... ok
+test add_multiple_fixed_joints ... ok
+test add_revolute_joint_with_limits ... ok
+test add_revolute_joint_without_limits ... ok
+test add_revolute_joints_with_different_axes ... ok
+test enable_ccd_on_dynamic_body ... ok
+test enable_ccd_on_invalid_body_does_not_crash ... ok
+test enable_ccd_on_multiple_bodies ... ok
+test world_config_with_ccd_enabled ... ok
+test world_config_with_zero_gravity ... ok
+test world_creation_with_custom_config ... ok
+test world_creation_with_default_config ... ok
+test revolute_joint_allows_rotation ... ok
+test fixed_joint_bodies_remain_rigid ... ok
+test complete_phase1_integration_test ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+
+running 28 tests
+test body_transform_returns_valid_matrix ... ok
+test break_destructible_placeholder_does_not_crash ... ok
+test body_transform_for_invalid_id_returns_none ... ok
+test character_layer_exists ... ok
+test character_control_with_invalid_id_does_not_crash ... ok
+test create_dynamic_box ... ok
+test character_controller_stays_on_ground ... ok
+test create_ground_plane ... ok
+test create_character_controller ... ok
+test character_zero_velocity_does_not_move ... ok
+test create_static_trimesh ... ok
+test create_multiple_bodies ... ok
+test character_moves_horizontally ... ok
+test destructible_box_creates_dynamic_box ... ok
+test empty_world_step_does_not_crash ... ok
+test large_position_values ... ok
+test multiple_bodies_have_independent_transforms ... ok
+test set_wind_placeholder_does_not_crash ... ok
+test physics_step_executes_without_error ... ok
+test dynamic_box_falls_with_gravity ... ok
+test water_aabb_placeholder_does_not_crash ... ok
+test very_small_timestep_character_movement ... ok
+test static_ground_does_not_move ... ok
+test world_creation_with_custom_gravity ... ok
+test world_creation_with_gravity ... ok
+test world_creation_with_zero_gravity ... ok
+test multiple_characters_independent_movement ... ok
+test default_layer_bodies_collide ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 33 tests
+test test_aabb_center ... ok
+test test_aabb_from_sphere ... ok
+test test_aabb_half_extents ... ok
+test test_aabb_from_center_extents ... ok
+test test_aabb_intersection_3d ... ok
+test test_aabb_intersection_fully_contained ... ok
+test test_aabb_intersection_negative_coords ... ok
+test test_aabb_intersection_overlapping ... ok
+test test_aabb_intersection_separated ... ok
+test test_aabb_intersection_touching ... ok
+test test_add_character ... ok
+test test_body_transform_exists ... ok
+test test_body_transform_nonexistent ... ok
+test test_character_controller_properties ... ok
+test test_create_ground_plane ... ok
+test test_control_character_no_movement ... ok
+test test_multiple_characters ... ok
+test test_control_character_vertical_movement ... ok
+test test_spatial_hash_average_cell_density ... ok
+test test_spatial_hash_cell_boundary ... ok
+test test_spatial_hash_clear ... ok
+test test_spatial_hash_insert_multiple_different_cells ... ok
+test test_spatial_hash_insert_multiple_same_cell ... ok
+test test_spatial_hash_insert_single ... ok
+test test_spatial_hash_multi_cell_spanning ... ok
+test test_spatial_hash_negative_coordinates ... ok
+test test_spatial_hash_new ... ok
+test test_spatial_hash_query_empty ... ok
+test test_spatial_hash_new_invalid_cell_size - should panic ... ok
+test test_spatial_hash_query_finds_object ... ok
+test test_spatial_hash_query_spatial_filtering ... ok
+test test_spatial_hash_query_unique ... ok
+test test_spatial_hash_stats ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 4 tests
+test astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::new (line 139) ... FAILED
+test astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::query (line 217) ... FAILED
+test astraweave-physics\src\spatial_hash.rs - spatial_hash (line 19) ... FAILED
+test astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::insert (line 191) ... FAILED
+
+failures:
+
+---- astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::new (line 139) stdout ----
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of undeclared type `SpatialHash`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:140:12[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet grid = SpatialHash::<u32>::new(10.0);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `SpatialHash`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this struct[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2[0m[0m [0m[0m[38;5;10m+ use astraweave_physics::SpatialHash;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: aborting due to 1 previous error[0m
+
+[0m[1m[38;5;15mFor more information about this error, try `rustc --explain E0433`.[0m
+Couldn't compile the test.
+---- astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::query (line 217) stdout ----
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of undeclared type `AABB`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:218:18[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet query_aabb = AABB::from_sphere(pos, radius);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `AABB`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this struct[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2[0m[0m [0m[0m[38;5;10m+ use astraweave_physics::AABB;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `pos` in this scope[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:218:36[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet query_aabb = AABB::from_sphere(pos, radius);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                                    [0m[0m[1m[38;5;9m^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `radius` in this scope[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:218:41[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet query_aabb = AABB::from_sphere(pos, radius);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                                         [0m[0m[1m[38;5;9m^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `grid` in this scope[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:219:18[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m4[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet candidates = grid.query(query_aabb);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                  [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: aborting due to 4 previous errors[0m
+
+[0m[1m[38;5;15mSome errors have detailed explanations: E0425, E0433.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0425`.[0m
+Couldn't compile the test.
+---- astraweave-physics\src\spatial_hash.rs - spatial_hash (line 19) stdout ----
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `objects` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:27:19[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m11[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mfor (id, aabb) in objects {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;9m^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `aabb` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:32:29[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m16[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet candidates = grid.query(aabb);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                             [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `aabb` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:36:32[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m20[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    if detailed_collision_test(aabb, candidate_aabb) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `candidate_aabb` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:36:38[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m20[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    if detailed_collision_test(aabb, candidate_aabb) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m                                      [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mhelp: a local variable with a similar name exists: `candidate_id`[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find function `detailed_collision_test` in this scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:36:8[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m20[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    if detailed_collision_test(aabb, candidate_aabb) {[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m        [0m[0m[1m[38;5;9m^^^^^^^^^^^^^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: aborting due to 5 previous errors[0m
+
+[0m[1m[38;5;15mFor more information about this error, try `rustc --explain E0425`.[0m
+Couldn't compile the test.
+---- astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::insert (line 191) stdout ----
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of undeclared type `AABB`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:192:12[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet aabb = AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 1.0);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m            [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `AABB`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this struct[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2[0m[0m [0m[0m[38;5;10m+ use astraweave_physics::AABB;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0433][0m[0m[1m[38;5;15m: failed to resolve: use of undeclared type `Vec3`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:192:30[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mlet aabb = AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 1.0);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                              [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9muse of undeclared type `Vec3`[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: a struct with a similar name exists[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[38;5;9m- [0m[0mlet aabb = AABB::from_sphere([0m[0m[38;5;9mVec3[0m[0m::new(5.0, 0.0, 5.0), 1.0);[0m
+[0m[1m[38;5;14m3[0m[0m [0m[0m[38;5;10m+ [0m[0mlet aabb = AABB::from_sphere([0m[0m[38;5;10mVec[0m[0m::new(5.0, 0.0, 5.0), 1.0);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14mhelp[0m[0m: consider importing this struct[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m2[0m[0m [0m[0m[38;5;10m+ use glam::Vec3;[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `grid` in this scope[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:193:1[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m4[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mgrid.insert(entity_id, aabb);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m[1m[38;5;9m^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[E0425][0m[0m[1m[38;5;15m: cannot find value `entity_id` in this scope[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\src\spatial_hash.rs:193:13[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m4[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0mgrid.insert(entity_id, aabb);[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m             [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mnot found in this scope[0m
+
+[0m[1m[38;5;9merror[0m[0m[1m[38;5;15m: aborting due to 4 previous errors[0m
+
+[0m[1m[38;5;15mSome errors have detailed explanations: E0425, E0433.[0m
+[0m[1m[38;5;15mFor more information about an error, try `rustc --explain E0425`.[0m
+Couldn't compile the test.
+
+failures:
+    astraweave-physics\src\spatial_hash.rs - spatial_hash (line 19)
+    astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::insert (line 191)
+    astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::new (line 139)
+    astraweave-physics\src\spatial_hash.rs - spatial_hash::SpatialHash<T>::query (line 217)
+
+test result: FAILED. 0 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+

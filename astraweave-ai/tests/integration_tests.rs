@@ -21,6 +21,7 @@ fn create_combat_snapshot(frame: usize, agent_id: usize) -> WorldSnapshot {
             pos: IVec2 {
                 x: 20 + (i as i32) * 3,
                 y: 15 + ((frame + i) % 3) as i32,
+            physics_context: None,
             },
             hp: 50 + (i as i32) * 10,
             cover: if i % 2 == 0 { "low" } else { "high" }.to_string(),
@@ -37,6 +38,7 @@ fn create_combat_snapshot(frame: usize, agent_id: usize) -> WorldSnapshot {
             pos: IVec2 {
                 x: 10 + (agent_id % 5) as i32,
                 y: 10 + (agent_id / 5) as i32,
+            physics_context: None,
             },
         },
         player: PlayerState {

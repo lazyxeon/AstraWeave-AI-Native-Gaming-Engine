@@ -66,9 +66,10 @@ use gizmo::snapping::SnappingConfig;
 use gizmo::state::GizmoMode;
 use material_inspector::MaterialInspector;
 use panels::{
-    AdvancedWidgetsPanel, AnimationPanel, AssetBrowser, BuildManagerPanel, ChartsPanel, EntityPanel, GraphPanel,
-    HierarchyPanel, Panel, PerformancePanel, PrefabAction, ThemeManagerPanel, TransformPanel, WorldPanel,
+    AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel, ChartsPanel, EntityPanel, GraphPanel,
+    HierarchyPanel, Panel, PerformancePanel, PrefabAction, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
+use entity_manager::MaterialSlot;
 mod plugin;
 use prefab::PrefabManager;
 use recent_files::RecentFilesManager;
@@ -824,6 +825,177 @@ impl EditorApp {
                 self.console_logs
                     .push(format!("❌ Failed to instantiate prefab '{}': {}", prefab_name, err));
                 self.status = format!("Failed to spawn prefab: {}", prefab_name);
+            }
+        }
+    }
+
+    /// Handle asset actions from the asset browser
+    fn handle_asset_action(&mut self, action: AssetAction) {
+        match action {
+            AssetAction::ImportModel { path } => {
+                let model_name = path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("imported_model")
+                    .to_string();
+
+                if let Some(scene_state) = self.scene_state.as_mut() {
+                    // Create a new entity with the model
+                    let entity = scene_state.world_mut().spawn(
+                        &model_name,
+                        astraweave_core::IVec2 { x: 0, y: 0 },
+                        astraweave_core::Team { id: 0 },
+                        100,
+                        0,
+                    );
+                    scene_state.sync_entity(entity);
+
+                    // Get the editor entity and set its mesh
+                    if let Some(editor_entity) = scene_state.get_editor_entity_mut(entity) {
+                        editor_entity.set_mesh(path.display().to_string());
+                    }
+
+                    self.selected_entity = Some(entity as u64);
+                    info!("Imported model '{}' as entity #{}", model_name, entity);
+                    self.console_logs.push(format!("✅ Imported model '{}' as entity #{}", model_name, entity));
+                    self.status = format!("Imported: {}", model_name);
+                } else {
+                    warn!("No scene loaded - cannot import model");
+                    self.console_logs.push("⚠️ No scene loaded – cannot import model.".into());
+                }
+            }
+
+            AssetAction::ApplyTexture { path, texture_type } => {
+                // Convert TextureType to MaterialSlot
+                let slot = match texture_type {
+                    TextureType::Albedo => MaterialSlot::Albedo,
+                    TextureType::Normal => MaterialSlot::Normal,
+                    TextureType::ORM => MaterialSlot::ORM,
+                    TextureType::MRA => MaterialSlot::ORM, // Map MRA to ORM slot
+                    TextureType::Roughness => MaterialSlot::Roughness,
+                    TextureType::Metallic => MaterialSlot::Metallic,
+                    TextureType::AO => MaterialSlot::AO,
+                    TextureType::Emission => MaterialSlot::Emission,
+                    TextureType::Height => MaterialSlot::Height,
+                    TextureType::Unknown => MaterialSlot::Albedo, // Default to albedo
+                };
+
+                if let Some(selected_id) = self.selected_entity {
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        if let Some(editor_entity) = scene_state.get_editor_entity_mut(selected_id as astraweave_core::Entity) {
+                            editor_entity.set_texture(slot.clone(), path.clone());
+                            info!("Applied {:?} texture '{}' to entity #{}", slot, path.display(), selected_id);
+                            self.console_logs.push(format!(
+                                "✅ Applied {:?} texture '{}' to entity #{}",
+                                slot,
+                                path.file_name().unwrap_or_default().to_string_lossy(),
+                                selected_id
+                            ));
+                            self.status = format!("Applied texture: {}", path.file_name().unwrap_or_default().to_string_lossy());
+                        }
+                    }
+                } else {
+                    warn!("No entity selected - cannot apply texture");
+                    self.console_logs.push("⚠️ Select an entity first to apply textures.".into());
+                }
+            }
+
+            AssetAction::ApplyMaterial { path } => {
+                let material_name = path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("material")
+                    .to_string();
+
+                if let Some(selected_id) = self.selected_entity {
+                    if let Some(scene_state) = self.scene_state.as_mut() {
+                        if let Some(editor_entity) = scene_state.get_editor_entity_mut(selected_id as astraweave_core::Entity) {
+                            // Create a new material with the name from the path
+                            let mut material = entity_manager::EntityMaterial::new();
+                            material.name = material_name.clone();
+                            editor_entity.set_material(material);
+                            info!("Applied material '{}' to entity #{}", material_name, selected_id);
+                            self.console_logs.push(format!(
+                                "✅ Applied material '{}' to entity #{}",
+                                material_name, selected_id
+                            ));
+                            self.status = format!("Applied material: {}", material_name);
+                        }
+                    }
+                } else {
+                    warn!("No entity selected - cannot apply material");
+                    self.console_logs.push("⚠️ Select an entity first to apply materials.".into());
+                }
+            }
+
+            AssetAction::LoadScene { path } => {
+                let scene_name = path.file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("scene")
+                    .to_string();
+
+                match scene_serialization::load_scene(&path) {
+                    Ok(loaded_world) => {
+                        self.scene_state = Some(EditorSceneState::new(loaded_world));
+                        self.current_scene_path = Some(path.clone());
+                        info!("Loaded scene: {}", scene_name);
+                        self.console_logs.push(format!("✅ Loaded scene: {}", scene_name));
+                        self.status = format!("Loaded: {}", scene_name);
+                    }
+                    Err(err) => {
+                        error!("Failed to load scene '{}': {}", scene_name, err);
+                        self.console_logs.push(format!("❌ Failed to load scene '{}': {}", scene_name, err));
+                    }
+                }
+            }
+
+            AssetAction::SpawnPrefab { path } => {
+                self.spawn_prefab_from_drag(path, (0, 0));
+            }
+
+            AssetAction::OpenExternal { path } => {
+                // Use std::process::Command to open files with default application
+                #[cfg(target_os = "windows")]
+                {
+                    if let Err(err) = std::process::Command::new("cmd")
+                        .args(["/C", "start", "", &path.display().to_string()])
+                        .spawn()
+                    {
+                        error!("Failed to open external: {}", err);
+                        self.console_logs.push(format!("❌ Failed to open: {}", err));
+                    } else {
+                        info!("Opened external: {}", path.display());
+                    }
+                }
+                #[cfg(target_os = "macos")]
+                {
+                    if let Err(err) = std::process::Command::new("open")
+                        .arg(&path)
+                        .spawn()
+                    {
+                        error!("Failed to open external: {}", err);
+                        self.console_logs.push(format!("❌ Failed to open: {}", err));
+                    } else {
+                        info!("Opened external: {}", path.display());
+                    }
+                }
+                #[cfg(target_os = "linux")]
+                {
+                    if let Err(err) = std::process::Command::new("xdg-open")
+                        .arg(&path)
+                        .spawn()
+                    {
+                        error!("Failed to open external: {}", err);
+                        self.console_logs.push(format!("❌ Failed to open: {}", err));
+                    } else {
+                        info!("Opened external: {}", path.display());
+                    }
+                }
+            }
+
+            AssetAction::InspectAsset { path } => {
+                // Log for material inspector (future expansion)
+                info!("Inspecting asset: {}", path.display());
+                self.console_logs.push(format!("🔍 Inspecting: {}", path.display()));
+                self.status = format!("Inspecting: {}", path.file_name().unwrap_or_default().to_string_lossy());
             }
         }
     }
@@ -1828,6 +2000,12 @@ impl eframe::App for EditorApp {
                                 self.spawn_prefab_from_drag(dragged_path, spawn_pos);
                             }
                         });
+
+                        // Process asset actions outside the collapsing closure
+                        let actions = self.asset_browser.take_pending_actions();
+                        for action in actions {
+                            self.handle_asset_action(action);
+                        }
 
                         ui.add_space(10.0);
 

@@ -50,6 +50,7 @@ fn build_ai_snapshot(world: &World, companion_id: u32) -> WorldSnapshot {
         companion_id,
         &enemies,
         None,
+        physics_context: None,
         &PerceptionConfig { los_max: 15 },
     )
 }
@@ -170,6 +171,7 @@ fn test_rule_mode_no_enemies() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 7 },
         },
         player: PlayerState {

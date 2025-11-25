@@ -49,6 +49,7 @@ astraweave-dialogue = { path = "../../astraweave-dialogue" }
 astraweave-quests = { path = "../../astraweave-quests" }
 astraweave-nav = { path = "../../astraweave-nav" }
 astraweave-observability = { path = "../../astraweave-observability" }
+astraweave-physics = { path = "../../astraweave-physics" }
 astraweave-security = { path = "../../astraweave-security" }
 [dev-dependencies]
 approx = "0.5"

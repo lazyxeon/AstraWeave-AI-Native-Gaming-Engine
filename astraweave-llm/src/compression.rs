@@ -205,6 +205,7 @@ mod tests {
             }],
             obstacles: vec![],
             objective: Some("Eliminate enemy 99".to_string()),
+            physics_context: None,
         }
     }
 

@@ -17,6 +17,7 @@ fn main() -> anyhow::Result<()> {
             pos: w.pos_of(player).unwrap(),
             stance: "stand".into(),
             orders: vec![],
+        physics_context: None,
         },
         me: CompanionState {
             ammo: 30,

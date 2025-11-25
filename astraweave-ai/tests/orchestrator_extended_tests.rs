@@ -29,7 +29,8 @@ fn make_snapshot(
 ) -> WorldSnapshot {
     WorldSnapshot {
         t: time,
-        player: PlayerState {
+        player: PlayerState {,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             hp: player_hp,
             stance: "standing".to_string(),

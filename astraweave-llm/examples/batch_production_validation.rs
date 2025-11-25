@@ -190,6 +190,7 @@ fn create_test_snapshot(agent_id: AgentId) -> WorldSnapshot {
             hp: 100,
             stance: "stand".to_string(),
             orders: vec![],
+        physics_context: None,
         },
         me: CompanionState {
             pos: IVec2::new(agent_id as i32 * 2, agent_id as i32 * 2),

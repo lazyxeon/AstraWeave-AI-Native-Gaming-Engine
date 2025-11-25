@@ -12,6 +12,13 @@ pub mod async_scheduler;
 #[cfg(feature = "async-physics")]
 pub use async_scheduler::{AsyncPhysicsScheduler, PhysicsStepProfile};
 
+// ECS integration (feature-gated)
+#[cfg(feature = "ecs")]
+pub mod ecs;
+
+#[cfg(feature = "ecs")]
+pub use ecs::*;
+
 // Spatial hash grid for broad-phase collision optimization
 pub mod spatial_hash;
 pub use spatial_hash::{SpatialHash, SpatialHashStats, AABB};
@@ -24,6 +31,39 @@ pub enum ActorKind {
     Dynamic,
     Character,
     Other,
+}
+
+#[derive(Clone, Debug)]
+pub struct DebugLine {
+    pub start: [f32; 3],
+    pub end: [f32; 3],
+    pub color: [f32; 3],
+}
+
+struct LineCollector {
+    lines: Vec<DebugLine>,
+}
+
+impl LineCollector {
+    fn new() -> Self {
+        Self { lines: Vec::new() }
+    }
+}
+
+impl DebugRenderBackend for LineCollector {
+    fn draw_line(
+        &mut self,
+        _object: DebugRenderObject,
+        a: rapier3d::prelude::Point<Real>,
+        b: rapier3d::prelude::Point<Real>,
+        color: [f32; 4],
+    ) {
+        self.lines.push(DebugLine {
+            start: [a.x, a.y, a.z],
+            end: [b.x, b.y, b.z],
+            color: [color[0], color[1], color[2]],
+        });
+    }
 }
 
 bitflags::bitflags! {
@@ -47,6 +87,52 @@ pub struct CharacterController {
     pub max_step: f32,
 }
 
+#[derive(Clone, Debug)]
+pub struct PhysicsConfig {
+    pub gravity: Vec3,
+    pub ccd_enabled: bool,
+    pub max_ccd_substeps: usize,
+    pub time_step: f32,
+    pub water_level: f32,
+    pub fluid_density: f32,
+}
+
+impl Default for PhysicsConfig {
+    fn default() -> Self {
+        Self {
+            gravity: Vec3::new(0.0, -9.81, 0.0),
+            ccd_enabled: false,
+            max_ccd_substeps: 1,
+            time_step: 1.0 / 60.0,
+            water_level: f32::NEG_INFINITY,
+            fluid_density: 1000.0,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum JointType {
+    Fixed,
+    Revolute {
+        axis: Vec3,
+        limits: Option<(f32, f32)>,
+    },
+    Prismatic {
+        axis: Vec3,
+        limits: Option<(f32, f32)>,
+    },
+    Spherical,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct JointId(pub u64);
+
+#[derive(Clone, Copy, Debug)]
+pub struct BuoyancyData {
+    pub volume: f32,
+    pub drag: f32,
+}
+
 pub struct PhysicsWorld {
     pub bodies: RigidBodySet,
     pub colliders: ColliderSet,
@@ -67,6 +153,11 @@ pub struct PhysicsWorld {
     body_kinds: HashMap<RigidBodyHandle, ActorKind>,
     next_body_id: BodyId,
     pub char_map: HashMap<BodyId, CharacterController>,
+    next_joint_id: u64,
+    debug_render_pipeline: DebugRenderPipeline,
+    pub buoyancy_bodies: HashMap<BodyId, BuoyancyData>,
+    pub water_level: f32,
+    pub fluid_density: f32,
 
     /// Async physics scheduler (feature-gated)
     #[cfg(feature = "async-physics")]
@@ -99,6 +190,51 @@ impl PhysicsWorld {
             body_kinds: HashMap::new(),
             next_body_id: 1,
             char_map: HashMap::new(),
+            next_joint_id: 1,
+            debug_render_pipeline: DebugRenderPipeline::default(),
+            buoyancy_bodies: HashMap::new(),
+            water_level: f32::NEG_INFINITY,
+            fluid_density: 1000.0,
+            #[cfg(feature = "async-physics")]
+            async_scheduler: None,
+        }
+    }
+
+    pub fn from_config(config: PhysicsConfig) -> Self {
+        let (collision_send, collision_recv) = rapier3d::crossbeam::channel::unbounded();
+        let (contact_force_send, contact_force_recv) = rapier3d::crossbeam::channel::unbounded();
+        let event_handler = ChannelEventCollector::new(collision_send, contact_force_send);
+
+        let integration = IntegrationParameters {
+            dt: config.time_step,
+            ..Default::default()
+        };
+
+        Self {
+            bodies: RigidBodySet::new(),
+            colliders: ColliderSet::new(),
+            joints: ImpulseJointSet::new(),
+            multibody_joints: MultibodyJointSet::new(),
+            pipeline: PhysicsPipeline::new(),
+            gravity: vector![config.gravity.x, config.gravity.y, config.gravity.z],
+            integration,
+            island_mgr: IslandManager::new(),
+            broad_phase: DefaultBroadPhase::new(),
+            narrow_phase: NarrowPhase::new(),
+            query_pipeline: QueryPipeline::new(),
+            ccd: CCDSolver::new(),
+            event_handler,
+            collision_recv,
+            contact_force_recv,
+            body_ids: HashMap::new(),
+            body_kinds: HashMap::new(),
+            next_body_id: 1,
+            char_map: HashMap::new(),
+            next_joint_id: 1,
+            debug_render_pipeline: DebugRenderPipeline::default(),
+            buoyancy_bodies: HashMap::new(),
+            water_level: f32::NEG_INFINITY,
+            fluid_density: 1000.0,
             #[cfg(feature = "async-physics")]
             async_scheduler: None,
         }
@@ -172,6 +308,9 @@ impl PhysicsWorld {
             span!("Physics::Rapier::pipeline");
             plot!("Physics::collider_count", self.colliders.len() as u64);
         }
+
+        // Apply buoyancy forces before physics step
+        self.apply_buoyancy_forces();
 
         self.pipeline.step(
             &self.gravity,
@@ -415,6 +554,42 @@ impl PhysicsWorld {
         id
     }
 
+    pub fn add_buoyancy(&mut self, body: BodyId, volume: f32, drag: f32) {
+        self.buoyancy_bodies
+            .insert(body, BuoyancyData { volume, drag });
+    }
+
+    fn apply_buoyancy_forces(&mut self) {
+        for (body_id, buoyancy_data) in &self.buoyancy_bodies {
+            if let Some(handle) = self.handle_of(*body_id) {
+                if let Some(rb) = self.bodies.get_mut(handle) {
+                    let pos = rb.position();
+                    let body_y = pos.translation.y;
+
+                    // Only apply buoyancy if body is below water level
+                    if body_y < self.water_level {
+                        // Buoyancy force = volume * fluid_density * gravity (upward)
+                        let buoyancy_force = buoyancy_data.volume * self.fluid_density * 9.81;
+
+                        // Drag force = -velocity * drag coefficient
+                        let velocity = rb.linvel();
+                        let drag_force = vector![
+                            -velocity.x * buoyancy_data.drag,
+                            -velocity.y * buoyancy_data.drag,
+                            -velocity.z * buoyancy_data.drag
+                        ];
+
+                        // Total force (buoyancy up + drag)
+                        let total_force =
+                            vector![drag_force.x, buoyancy_force + drag_force.y, drag_force.z];
+
+                        rb.add_force(total_force, true);
+                    }
+                }
+            }
+        }
+    }
+
     pub fn add_water_aabb(&mut self, _min: Vec3, _max: Vec3, _density: f32, _linear_damp: f32) {}
     pub fn set_wind(&mut self, _dir: Vec3, _strength: f32) {}
     pub fn clear_water(&mut self) {}
@@ -439,6 +614,63 @@ impl PhysicsWorld {
                 rb.set_translation(vector![pos.x, pos.y, pos.z], true);
             }
         }
+    }
+
+    pub fn enable_ccd(&mut self, id: BodyId) {
+        if let Some(h) = self.handle_of(id) {
+            if let Some(rb) = self.bodies.get_mut(h) {
+                rb.enable_ccd(true);
+            }
+        }
+    }
+
+    pub fn add_joint(&mut self, body1: BodyId, body2: BodyId, joint_type: JointType) -> JointId {
+        let Some(handle1) = self.handle_of(body1) else {
+            return JointId(0);
+        };
+        let Some(handle2) = self.handle_of(body2) else {
+            return JointId(0);
+        };
+
+        let joint = match joint_type {
+            JointType::Fixed => GenericJointBuilder::new(JointAxesMask::LOCKED_FIXED_AXES).build(),
+            JointType::Revolute { axis, limits } => {
+                let local_axis = UnitVector::new_normalize(vector![axis.x, axis.y, axis.z]);
+                let mut builder = RevoluteJointBuilder::new(local_axis);
+                if let Some((min, max)) = limits {
+                    builder = builder.limits([min, max]);
+                }
+                builder.build().into()
+            }
+            JointType::Prismatic { axis, limits } => {
+                let local_axis = UnitVector::new_normalize(vector![axis.x, axis.y, axis.z]);
+                let mut builder = PrismaticJointBuilder::new(local_axis);
+                if let Some((min, max)) = limits {
+                    builder = builder.limits([min, max]);
+                }
+                builder.build().into()
+            }
+            JointType::Spherical => SphericalJointBuilder::new().build().into(),
+        };
+
+        self.joints.insert(handle1, handle2, joint, true);
+
+        let joint_id = self.next_joint_id;
+        self.next_joint_id += 1;
+        JointId(joint_id)
+    }
+
+    pub fn get_debug_lines(&mut self) -> Vec<DebugLine> {
+        let mut collector = LineCollector::new();
+        self.debug_render_pipeline.render(
+            &mut collector,
+            &self.bodies,
+            &self.colliders,
+            &self.joints,
+            &self.multibody_joints,
+            &self.narrow_phase,
+        );
+        collector.lines
     }
 }
 

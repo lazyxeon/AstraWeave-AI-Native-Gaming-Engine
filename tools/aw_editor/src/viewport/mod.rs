@@ -6,6 +6,7 @@
 //! - Entity rendering with selection
 //! - Visual gizmo manipulation
 //! - Grid overlay and debug visualization
+//! - Physics debug rendering (collider wireframes)
 //!
 //! # Architecture
 //!
@@ -16,7 +17,8 @@
 //!     ↓
 //! ├─ GridRenderer (floor grid + axes)
 //! ├─ EntityRenderer (world entities)
-//! └─ GizmoRenderer (transform handles)
+//! ├─ GizmoRenderer (transform handles)
+//! └─ PhysicsDebugRenderer (collider wireframes)
 //! ```
 //!
 //! # Usage
@@ -35,9 +37,11 @@ mod camera;
 mod entity_renderer;
 mod gizmo_renderer;
 mod grid_renderer;
+mod physics_renderer;
 mod renderer;
 mod skybox_renderer;
 mod toolbar;
 mod widget;
 
+pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
 pub use widget::ViewportWidget;

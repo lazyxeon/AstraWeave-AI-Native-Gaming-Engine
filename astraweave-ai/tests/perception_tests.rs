@@ -20,6 +20,7 @@ fn create_test_snapshot(time: f32, enemy_count: usize) -> WorldSnapshot {
             pos: IVec2 {
                 x: 20 + (i as i32) * 2,
                 y: 15 + (i as i32 % 3),
+            physics_context: None,
             },
             hp: 50 + (i as i32) * 5,
             cover: if i % 2 == 0 { "low" } else { "high" }.to_string(),
@@ -33,6 +34,7 @@ fn create_test_snapshot(time: f32, enemy_count: usize) -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -57,6 +59,7 @@ fn create_complex_snapshot(time: f32) -> WorldSnapshot {
             pos: IVec2 {
                 x: 20 + (i as i32) * 2,
                 y: 15 + (i as i32 % 3),
+            physics_context: None,
             },
             hp: 50 + (i as i32) * 5,
             cover: if i % 2 == 0 { "low" } else { "high" }.to_string(),
@@ -91,7 +94,8 @@ fn create_complex_snapshot(time: f32) -> WorldSnapshot {
                 let mut map = BTreeMap::new();
                 map.insert("grenade".to_string(), 2.5);
                 map.insert("heal".to_string(), 0.5);
-                map
+                map,
+            physics_context: None,
             },
             morale: 0.7,
             pos: IVec2 { x: 10, y: 12 },

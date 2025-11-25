@@ -1,0 +1,187 @@
+[1m[36m    Blocking[0m waiting for file lock on build directory
+[1m[32m   Compiling[0m astraweave-physics v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics)
+[0m[1m[38;5;11mwarning[0m[0m[1m[38;5;15m: unused import: `JointId`[0m
+[0m [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:9:26[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m9[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0muse astraweave_physics::{JointId, JointType, Layers, PhysicsConfig, PhysicsWorld};[0m
+[0m  [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;11m^^^^^^^[0m
+[0m  [0m[0m[1m[38;5;14m|[0m
+[0m  [0m[0m[1m[38;5;14m= [0m[0m[1m[38;5;15mnote[0m[0m: `#[warn(unused_imports)]` on by default[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no function or associated item named `from_config` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:17:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m17[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let _world = PhysicsWorld::from_config(config);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mfunction or associated item not found in `PhysicsWorld`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: if you're trying to build a new `PhysicsWorld`, consider using `PhysicsWorld::new` which returns `PhysicsWorld`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics\src\lib.rs:107:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(gravity: Vec3) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no function or associated item named `from_config` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:31:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m31[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let _world = PhysicsWorld::from_config(config);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mfunction or associated item not found in `PhysicsWorld`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: if you're trying to build a new `PhysicsWorld`, consider using `PhysicsWorld::new` which returns `PhysicsWorld`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics\src\lib.rs:107:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(gravity: Vec3) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no function or associated item named `from_config` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:45:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m45[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let _world = PhysicsWorld::from_config(config);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mfunction or associated item not found in `PhysicsWorld`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: if you're trying to build a new `PhysicsWorld`, consider using `PhysicsWorld::new` which returns `PhysicsWorld`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics\src\lib.rs:107:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(gravity: Vec3) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no function or associated item named `from_config` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:59:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m59[0m[0m  [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let _world = PhysicsWorld::from_config(config);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mfunction or associated item not found in `PhysicsWorld`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: if you're trying to build a new `PhysicsWorld`, consider using `PhysicsWorld::new` which returns `PhysicsWorld`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics\src\lib.rs:107:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(gravity: Vec3) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `enable_ccd` found for struct `PhysicsWorld` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:73:11[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m73[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    world.enable_ccd(box_id);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;9m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `enable_ccd` found for struct `PhysicsWorld` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:88:11[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m88[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    world.enable_ccd(box1);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;9m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `enable_ccd` found for struct `PhysicsWorld` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:89:11[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m89[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    world.enable_ccd(box2);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;9m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `enable_ccd` found for struct `PhysicsWorld` in the current scope[0m
+[0m  [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:90:11[0m
+[0m   [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m90[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    world.enable_ccd(box3);[0m
+[0m   [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;9m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `enable_ccd` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:104:11[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m104[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    world.enable_ccd(invalid_id);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m           [0m[0m[1m[38;5;9m^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:119:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m119[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_id = world.add_joint(box1, box2, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:134:24[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m134[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint1 = world.add_joint(box1, box2, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:135:24[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m135[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint2 = world.add_joint(box2, box3, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                        [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:153:27[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m153[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let _joint_id = world.add_joint(box1, box2, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                           [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:189:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m189[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_id = world.add_joint([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m------[0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:210:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m210[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_id = world.add_joint([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                    [0m[0m[1m[38;5;14m------[0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:232:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m232[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_x = world.add_joint([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;14m------[0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:242:25[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m242[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_z = world.add_joint([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                   [0m[0m[1m[38;5;14m------[0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:268:27[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m268[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let _joint_id = world.add_joint([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                     [0m[0m[1m[38;5;14m------[0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:297:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m297[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_id = world.add_joint(invalid_id, box2, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:311:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m311[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_id = world.add_joint(box1, invalid_id, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:324:26[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m324[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let joint_id = world.add_joint(box1, box1, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:342:29[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m342[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let fixed_joint = world.add_joint(box1, box2, JointType::Fixed);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                             [0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no method named `add_joint` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:345:32[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m345[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let revolute_joint = world.add_joint([0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                          [0m[0m[1m[38;5;14m------[0m[0m[1m[38;5;9m^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mmethod not found in `PhysicsWorld`[0m
+
+[0m[1m[38;5;9merror[E0599][0m[0m[1m[38;5;15m: no function or associated item named `from_config` found for struct `PhysicsWorld` in the current scope[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mastraweave-physics\tests\phase1_verification.rs:372:35[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m372[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    let mut world = PhysicsWorld::from_config(config);[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m                                   [0m[0m[1m[38;5;9m^^^^^^^^^^^[0m[0m [0m[0m[1m[38;5;9mfunction or associated item not found in `PhysicsWorld`[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;10mnote[0m[0m: if you're trying to build a new `PhysicsWorld`, consider using `PhysicsWorld::new` which returns `PhysicsWorld`[0m
+[0m   [0m[0m[1m[38;5;14m--> [0m[0mc:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-physics\src\lib.rs:107:5[0m
+[0m    [0m[0m[1m[38;5;14m|[0m
+[0m[1m[38;5;14m107[0m[0m [0m[0m[1m[38;5;14m|[0m[0m [0m[0m    pub fn new(gravity: Vec3) -> Self {[0m
+[0m    [0m[0m[1m[38;5;14m|[0m[0m     [0m[0m[1m[38;5;10m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[0m[1m[38;5;15mFor more information about this error, try `rustc --explain E0599`.[0m
+[1m[33mwarning[0m[1m:[0m `astraweave-physics` (test "phase1_verification") generated 1 warning
+[1m[31merror[0m[1m:[0m could not compile `astraweave-physics` (test "phase1_verification") due to 24 previous errors; 1 warning emitted

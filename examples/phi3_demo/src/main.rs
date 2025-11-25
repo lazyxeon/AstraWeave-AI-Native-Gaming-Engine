@@ -83,6 +83,7 @@ fn create_combat_scenario() -> WorldSnapshot {
         t: 45.0,
         player: PlayerState {
             hp: 75,
+            physics_context: None,
             pos: IVec2 { x: 10, y: 10 },
             stance: "crouch".to_string(),
             orders: vec!["hold position".to_string()],

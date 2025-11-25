@@ -24,6 +24,7 @@ fn create_test_snapshot(enemy_count: usize, distance: i32) -> WorldSnapshot {
             pos: IVec2 {
                 x: distance + (i as i32 * 2),
                 y: distance,
+            physics_context: None,
             },
             hp: 50,
             cover: "none".to_string(),
@@ -35,6 +36,7 @@ fn create_test_snapshot(enemy_count: usize, distance: i32) -> WorldSnapshot {
         t: 1.0,
         player: PlayerState {
             hp: 100,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".to_string(),
             orders: vec![],

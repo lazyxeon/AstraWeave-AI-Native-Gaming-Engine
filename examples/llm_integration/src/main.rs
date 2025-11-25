@@ -283,6 +283,7 @@ fn create_test_scenario() -> WorldSnapshot {
         t: 1.0,
         player: PlayerState {
             hp: 85,
+            physics_context: None,
             pos: IVec2 { x: 2, y: 3 },
             stance: "crouch".into(),
             orders: vec![],

@@ -181,6 +181,7 @@ mod tests {
             t: 1.0,
             player: PlayerState {
                 hp: 100,
+                physics_context: None,
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".to_string(),
                 orders: vec![],

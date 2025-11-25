@@ -1,0 +1,73 @@
+Found 911 Rust files
+Processing files...
+
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\ai_benchmarks.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\ai_core_loop.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\arbiter_bench.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\goap_bench.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\goap_vs_rule_bench.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\integration_pipeline.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\benches\multi_agent_pipeline.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\ai_arbiter.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\core_loop.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\llm_executor.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\orchestrator.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\tool_sandbox.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\veilweaver.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\goap\adapter.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\goap\orchestrator.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\src\goap\shadow_mode.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\ai_arbiter_implementation_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\arbiter_comprehensive_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\arbiter_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\core_loop_goap_integration.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\core_loop_policy_switch.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\core_loop_rule_integration.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\cross_module_integration.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\determinism_tests.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\ecs_integration_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\edge_case_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\goap_vs_rule_comparison.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\integration_tests.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\llm_fallback.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\orchestrator_additional_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\orchestrator_extended_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\orchestrator_tool_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\perception_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\planner_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\plan_snapshot.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\stress_tests.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ai\tests\tool_sandbox.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core\benches\full_game_loop.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core\src\perception.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core\tests\perception_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core\tests\schema_tests.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director\src\lib.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director\src\llm_director.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director\src\phase.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director\src\systems.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-director\src\veilweaver_warden.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ecs\src\lib.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-ipc\src\lib.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\examples\batch_production_validation.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\src\batch_executor.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\src\compression.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\src\fallback_system.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\src\lib.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\src\prompts.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\src\prompt_template.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\tests\integration_test.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\tests\integration_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-llm\tests\phase7_integration_tests.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\crates\astraweave-llm\examples\batch_production_validation.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\adaptive_boss\src\main.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion\src\main.rs
+[SKIP] No changes needed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\hello_companion\src\main_old.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\ipc_loopback\src\main.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_integration\src\main.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\llm_toolcall\src\main.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\orchestrator_async_tick\src\main.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\phase_director\src\main.rs
+[OK] Fixed: c:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\examples\phi3_demo\src\main.rs
+
+[DONE] Complete! Fixed 54 files.
