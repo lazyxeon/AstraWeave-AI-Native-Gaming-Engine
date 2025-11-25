@@ -34,7 +34,7 @@ pub mod world_panel;
 // Re-exports
 pub use advanced_widgets_panel::AdvancedWidgetsPanel;
 pub use animation::AnimationPanel;
-pub use asset_browser::AssetBrowser;
+pub use asset_browser::{AssetAction, AssetBrowser, TextureType};
 pub use build_manager::BuildManagerPanel;
 pub use charts_panel::ChartsPanel;
 pub use entity_panel::{EntityPanel, PrefabAction};

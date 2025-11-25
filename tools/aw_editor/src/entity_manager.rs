@@ -1,12 +1,101 @@
-use glam::{Quat, Vec3};
+use glam::{Quat, Vec3, Vec4};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 
 /// Unique identifier for entities in the editor
 pub type EntityId = u64;
 
+// ============================================================================
+// MATERIAL SYSTEM - PBR material slots for texture assignment
+// ============================================================================
+
+/// Material texture slots for PBR (Physically Based Rendering) workflow
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MaterialSlot {
+    /// Base color / albedo texture
+    Albedo,
+    /// Normal map (tangent space)
+    Normal,
+    /// Roughness texture
+    Roughness,
+    /// Metallic texture
+    Metallic,
+    /// Ambient occlusion
+    AO,
+    /// Combined ORM (Occlusion-Roughness-Metallic)
+    ORM,
+    /// Emissive/glow texture
+    Emission,
+    /// Height/displacement map
+    Height,
+}
+
+/// Material data for an entity with PBR textures and properties
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EntityMaterial {
+    /// Material name or path
+    pub name: String,
+    /// Texture paths assigned to each material slot
+    pub texture_slots: HashMap<MaterialSlot, PathBuf>,
+    /// Base color tint (multiplied with albedo texture)
+    pub base_color: Vec4,
+    /// Metallic factor (0.0 = dielectric, 1.0 = metal)
+    pub metallic: f32,
+    /// Roughness factor (0.0 = smooth, 1.0 = rough)
+    pub roughness: f32,
+    /// Emissive color (HDR capable)
+    pub emissive: Vec3,
+    /// Normal map strength
+    pub normal_strength: f32,
+}
+
+impl Default for EntityMaterial {
+    fn default() -> Self {
+        Self {
+            name: "Default".to_string(),
+            texture_slots: HashMap::new(),
+            base_color: Vec4::ONE,  // White
+            metallic: 0.0,          // Dielectric by default
+            roughness: 0.5,         // Medium roughness
+            emissive: Vec3::ZERO,   // No emission
+            normal_strength: 1.0,   // Full normal strength
+        }
+    }
+}
+
+impl EntityMaterial {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Set a texture for a specific material slot
+    pub fn set_texture(&mut self, slot: MaterialSlot, path: PathBuf) {
+        self.texture_slots.insert(slot, path);
+    }
+
+    /// Remove a texture from a slot
+    pub fn clear_texture(&mut self, slot: MaterialSlot) {
+        self.texture_slots.remove(&slot);
+    }
+
+    /// Get the texture path for a slot
+    pub fn get_texture(&self, slot: MaterialSlot) -> Option<&PathBuf> {
+        self.texture_slots.get(&slot)
+    }
+
+    /// Check if material has any textures assigned
+    pub fn has_textures(&self) -> bool {
+        !self.texture_slots.is_empty()
+    }
+}
+
+// ============================================================================
+// ENTITY - Core entity representation
+// ============================================================================
+
 /// Entity representation in the editor
-/// Stores transform, mesh reference, and arbitrary components
+/// Stores transform, mesh reference, material, and arbitrary components
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EditorEntity {
     pub id: EntityId,
@@ -15,6 +104,7 @@ pub struct EditorEntity {
     pub rotation: Quat,
     pub scale: Vec3,
     pub mesh: Option<String>,
+    pub material: EntityMaterial,
     pub components: HashMap<String, serde_json::Value>,
 }
 
@@ -28,6 +118,7 @@ impl EditorEntity {
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
             mesh: None,
+            material: EntityMaterial::new(),
             components: HashMap::new(),
         }
     }
@@ -42,6 +133,21 @@ impl EditorEntity {
         self.position = position;
         self.rotation = rotation;
         self.scale = scale;
+    }
+
+    /// Set a texture on the entity's material
+    pub fn set_texture(&mut self, slot: MaterialSlot, path: PathBuf) {
+        self.material.set_texture(slot, path);
+    }
+
+    /// Set the entire material
+    pub fn set_material(&mut self, material: EntityMaterial) {
+        self.material = material;
+    }
+
+    /// Set the mesh path
+    pub fn set_mesh(&mut self, mesh_path: String) {
+        self.mesh = Some(mesh_path);
     }
 
     /// Get axis-aligned bounding box (AABB) for picking

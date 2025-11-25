@@ -34,6 +34,7 @@ fn make_snap_with_enemy(
         t: 1.0,
         player: PlayerState {
             hp: 100,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "standing".into(),
             orders: vec![],
@@ -62,6 +63,7 @@ fn make_snap_no_enemies() -> WorldSnapshot {
         t: 1.0,
         player: PlayerState {
             hp: 100,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "standing".into(),
             orders: vec![],

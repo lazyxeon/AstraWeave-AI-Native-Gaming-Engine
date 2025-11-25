@@ -12,6 +12,7 @@ fn create_simple_snapshot() -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -28,7 +29,8 @@ fn create_simple_snapshot() -> WorldSnapshot {
 }
 
 /// Helper to create a moderate WorldSnapshot with some entities
-fn create_moderate_snapshot() -> WorldSnapshot {
+fn create_moderate_snapshot() -> WorldSnapshot {,
+    physics_context: None,
     use astraweave_core::{EnemyState, Poi};
 
     WorldSnapshot {
@@ -39,7 +41,8 @@ fn create_moderate_snapshot() -> WorldSnapshot {
                 let mut map = BTreeMap::new();
                 map.insert("grenade".to_string(), 2.5);
                 map.insert("heal".to_string(), 0.5);
-                map
+                map,
+            physics_context: None,
             },
             morale: 0.7,
             pos: IVec2 { x: 10, y: 12 },
@@ -86,7 +89,8 @@ fn create_moderate_snapshot() -> WorldSnapshot {
 }
 
 /// Helper to create a complex WorldSnapshot with many entities
-fn create_complex_snapshot() -> WorldSnapshot {
+fn create_complex_snapshot() -> WorldSnapshot {,
+    physics_context: None,
     use astraweave_core::{EnemyState, Poi};
 
     let mut enemies = vec![];
@@ -132,7 +136,8 @@ fn create_complex_snapshot() -> WorldSnapshot {
                 map.insert("heal".to_string(), 3.0);
                 map.insert("sprint".to_string(), 1.5);
                 map.insert("special_ability".to_string(), 10.0);
-                map
+                map,
+            physics_context: None,
             },
             morale: 0.4,
             pos: IVec2 { x: 15, y: 20 },

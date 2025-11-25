@@ -58,6 +58,12 @@ impl EditorSceneState {
         &mut self.world
     }
 
+    /// Get or create a cached EditorEntity for the given entity.
+    /// Returns a mutable reference if the entity exists in the world.
+    pub fn get_editor_entity_mut(&mut self, entity: Entity) -> Option<&mut EditorEntity> {
+        self.upsert_cache_entry(entity)
+    }
+
     /// Transform helper exposed to panels (position in 3D space).
     pub fn transform_for(&self, entity: Entity) -> Option<Transform> {
         self.world.pose(entity).map(pose_to_transform)
@@ -109,6 +115,7 @@ impl EditorSceneState {
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
             mesh: None,
+            material: crate::entity_manager::EntityMaterial::new(),
             components: HashMap::new(),
         });
 

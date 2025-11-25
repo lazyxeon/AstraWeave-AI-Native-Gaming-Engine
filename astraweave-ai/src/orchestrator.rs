@@ -459,6 +459,7 @@ mod tests {
             t: 1.234,
             player: PlayerState {
                 hp: 80,
+                physics_context: None,
                 pos: IVec2 { x: px, y: py },
                 stance: "stand".into(),
                 orders: vec![],
@@ -739,6 +740,7 @@ mod tests {
             t: 1.0,
             player: PlayerState {
                 hp: 100,
+                physics_context: None,
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -812,6 +814,7 @@ mod tests {
             t: 2.5,
             player: PlayerState {
                 hp: 100,
+                physics_context: None,
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -1000,6 +1003,7 @@ mod tests {
             t: 3.0,
             player: PlayerState {
                 hp: 100,
+                physics_context: None,
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],

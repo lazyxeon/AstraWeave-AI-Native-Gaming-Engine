@@ -18,6 +18,7 @@ fn create_test_snapshot(t: f32, has_enemies: bool) -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 7 },
         },
         player: PlayerState {
@@ -96,6 +97,7 @@ fn test_switch_rule_to_goap() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 7 },
         },
         player: PlayerState {
@@ -139,6 +141,7 @@ fn test_switch_goap_to_rule() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 7 },
         },
         player: PlayerState {
@@ -192,6 +195,7 @@ fn test_multi_switch_cycle() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 7 },
         },
         player: PlayerState {
@@ -252,6 +256,7 @@ fn test_switch_determinism() {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 7 },
         },
         player: PlayerState {

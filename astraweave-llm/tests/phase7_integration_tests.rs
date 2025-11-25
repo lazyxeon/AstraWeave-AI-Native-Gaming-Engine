@@ -389,7 +389,8 @@ async fn test_phase7_metrics_tracking() {
 fn create_simple_scenario() -> WorldSnapshot {
     WorldSnapshot {
         t: 0.0,
-        player: PlayerState {
+        player: PlayerState {,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             hp: 100,
             stance: "standing".to_string(),
@@ -411,7 +412,8 @@ fn create_simple_scenario() -> WorldSnapshot {
 fn create_combat_scenario() -> WorldSnapshot {
     WorldSnapshot {
         t: 0.0,
-        player: PlayerState {
+        player: PlayerState {,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             hp: 100,
             stance: "crouching".to_string(),

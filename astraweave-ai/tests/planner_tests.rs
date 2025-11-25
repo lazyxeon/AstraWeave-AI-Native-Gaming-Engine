@@ -21,6 +21,7 @@ fn create_tactical_snapshot() -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(), // No cooldowns
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 10, y: 10 },
         },
         player: PlayerState {
@@ -53,6 +54,7 @@ fn create_defensive_snapshot() -> WorldSnapshot {
             ammo: 10,
             cooldowns,
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 10, y: 10 },
         },
         player: PlayerState {
@@ -82,6 +84,7 @@ fn create_empty_snapshot() -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 10, y: 10 },
         },
         player: PlayerState {

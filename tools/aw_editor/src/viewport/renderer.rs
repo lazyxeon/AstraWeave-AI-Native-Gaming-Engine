@@ -27,6 +27,7 @@ use super::camera::OrbitCamera;
 use super::entity_renderer::EntityRenderer;
 use super::gizmo_renderer::GizmoRendererWgpu;
 use super::grid_renderer::GridRenderer;
+use super::physics_renderer::PhysicsDebugRenderer;
 use super::skybox_renderer::SkyboxRenderer;
 use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
@@ -53,6 +54,7 @@ pub struct ViewportRenderer {
     skybox_renderer: SkyboxRenderer,
     entity_renderer: EntityRenderer,
     gizmo_renderer: GizmoRendererWgpu,
+    physics_renderer: PhysicsDebugRenderer,
 
     /// Depth texture (shared across passes)
     depth_texture: Option<wgpu::Texture>,
@@ -86,6 +88,8 @@ impl ViewportRenderer {
             EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
         let gizmo_renderer = GizmoRendererWgpu::new(device.clone(), queue.clone(), 10000)
             .context("Failed to create gizmo renderer")?;
+        let physics_renderer = PhysicsDebugRenderer::new(device.clone(), queue.clone(), 50000)
+            .context("Failed to create physics debug renderer")?;
 
         Ok(Self {
             device,
@@ -94,6 +98,7 @@ impl ViewportRenderer {
             skybox_renderer,
             entity_renderer,
             gizmo_renderer,
+            physics_renderer,
             depth_texture: None,
             depth_view: None,
             size: (0, 0),
@@ -166,7 +171,8 @@ impl ViewportRenderer {
     /// 1. Skybox pass (clears depth and renders background gradient)
     /// 2. Grid pass (render floor grid)
     /// 3. Entity pass (render all world entities)
-    /// 4. Gizmo pass (render transform gizmos if entity selected)
+    /// 4. Physics debug pass (collider wireframes if enabled)
+    /// 5. Gizmo pass (render transform gizmos if entity selected)
     ///
     /// # Arguments
     ///
@@ -174,12 +180,16 @@ impl ViewportRenderer {
     /// * `camera` - Camera for view-projection
     /// * `world` - Entity world state
     /// * `gizmo_state` - Optional gizmo state (for transform operations)
+    /// * `hovered_axis` - Currently hovered axis for gizmo highlighting
+    /// * `physics_debug_lines` - Optional physics debug lines from PhysicsWorld
     pub fn render(
         &mut self,
         target: &wgpu::Texture,
         camera: &OrbitCamera,
         world: &World,
         gizmo_state: Option<&GizmoState>,
+        hovered_axis: Option<crate::gizmo::AxisConstraint>,
+        physics_debug_lines: Option<&[astraweave_physics::DebugLine]>,
     ) -> Result<()> {
         // Ensure depth buffer matches target size
         let target_size = target.size();
@@ -223,7 +233,14 @@ impl ViewportRenderer {
             )
             .context("Entity render failed")?;
 
-        // Pass 4: Gizmos (if entity selected and gizmo active)
+        // Pass 4: Physics debug (collider wireframes)
+        if let Some(debug_lines) = physics_debug_lines {
+            self.physics_renderer
+                .render(&mut encoder, &target_view, depth_view, camera, debug_lines)
+                .context("Physics debug render failed")?;
+        }
+
+        // Pass 5: Gizmos (if entity selected and gizmo active)
         if let (Some(selected), Some(gizmo)) = (self.selected_entity(), gizmo_state) {
             if gizmo.mode != crate::gizmo::GizmoMode::Inactive {
                 // DEBUG: Log gizmo mode and constraint
@@ -250,6 +267,7 @@ impl ViewportRenderer {
                             camera,
                             gizmo,
                             glam_pos,
+                            hovered_axis,
                             &self.queue,
                         )
                         .context("Gizmo render failed")?;
@@ -334,6 +352,21 @@ impl ViewportRenderer {
     /// Get all selected entities
     pub fn selected_entities(&self) -> &[Entity] {
         &self.selected_entities
+    }
+
+    /// Get physics debug options (mutable) for configuration
+    pub fn physics_debug_options_mut(&mut self) -> &mut super::physics_renderer::PhysicsDebugOptions {
+        &mut self.physics_renderer.options
+    }
+
+    /// Check if physics debug rendering is enabled
+    pub fn physics_debug_enabled(&self) -> bool {
+        self.physics_renderer.options.show_colliders
+    }
+
+    /// Enable/disable physics debug rendering
+    pub fn set_physics_debug_enabled(&mut self, enabled: bool) {
+        self.physics_renderer.options.show_colliders = enabled;
     }
 }
 

@@ -20,6 +20,7 @@ fn create_minimal_snapshot(num_enemies: usize, num_pois: usize) -> WorldSnapshot
             pos: IVec2 {
                 x: (i as i32) * 10,
                 y: 0,
+            physics_context: None,
             },
             hp: 50,
             cover: "none".to_string(),
@@ -39,7 +40,8 @@ fn create_minimal_snapshot(num_enemies: usize, num_pois: usize) -> WorldSnapshot
 
     WorldSnapshot {
         t: 1.0,
-        player: PlayerState {
+        player: PlayerState {,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             hp: 100,
             stance: "stand".to_string(),
@@ -65,7 +67,8 @@ fn create_complex_snapshot() -> WorldSnapshot {
 
     WorldSnapshot {
         t: 5.0,
-        player: PlayerState {
+        player: PlayerState {,
+            physics_context: None,
             pos: IVec2 { x: 10, y: 10 },
             hp: 75,
             stance: "crouch".to_string(),

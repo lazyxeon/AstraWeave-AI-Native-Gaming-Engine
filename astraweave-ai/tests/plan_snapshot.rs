@@ -10,6 +10,7 @@ fn fixture_world(smoke_cd: f32, enemy_pos: (i32, i32)) -> WorldSnapshot {
         t: 1.0,
         player: PlayerState {
             hp: 90,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],

@@ -316,6 +316,14 @@ impl OrbitCamera {
         self.projection_matrix() * self.view_matrix()
     }
 
+    /// Get inverse view-projection matrix
+    ///
+    /// Transforms from clip space back to world space.
+    /// Used for ray casting and unprojection.
+    pub fn inverse_view_projection_matrix(&self) -> Mat4 {
+        self.view_projection_matrix().inverse()
+    }
+
     /// Create ray from screen position (for picking)
     ///
     /// # Arguments

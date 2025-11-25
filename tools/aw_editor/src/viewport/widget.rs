@@ -42,7 +42,7 @@ use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
 use super::toolbar::ViewportToolbar;
 use crate::entity_manager::EntityManager;
-use crate::gizmo::{GizmoMode, GizmoState, TransformSnapshot};
+use crate::gizmo::{AxisConstraint, GizmoHandle, GizmoMode, GizmoPicker, GizmoState, TransformSnapshot};
 use astraweave_core::{Entity, Team, World};
 
 /// Camera bookmark for F1-F12 quick recall
@@ -95,6 +95,12 @@ pub struct ViewportWidget {
 
     /// Gizmo state (for transform manipulation)
     gizmo_state: GizmoState,
+
+    /// Gizmo picker for hover detection
+    gizmo_picker: GizmoPicker,
+
+    /// Currently hovered gizmo handle (for visual highlighting)
+    hovered_handle: Option<GizmoHandle>,
 
     /// Grid snap size (1.0 = snap to integer grid)
     grid_snap_size: f32,
@@ -158,6 +164,8 @@ impl ViewportWidget {
             last_frame_time: std::time::Instant::now(),
             frame_times: Vec::with_capacity(60),
             gizmo_state: GizmoState::new(),
+            gizmo_picker: GizmoPicker::default(),
+            hovered_handle: None,
             grid_snap_size: 1.0,
             angle_snap_increment: 15.0_f32.to_radians(),
             camera_bookmarks: [
@@ -263,13 +271,18 @@ impl ViewportWidget {
             }
         }
 
+        // Update gizmo hover state for visual highlighting
+        let hovered_axis = self.update_gizmo_hover(ui, &rect, world);
+
         // Render to texture (before displaying)
         if let Some(texture) = self.render_texture.clone() {
             // Render in separate scope to drop MutexGuard early
             {
                 if let Ok(mut renderer) = self.renderer.lock() {
+                    // Pass None for physics debug lines for now
+                    // (integration with actual physics world would require passing PhysicsWorld to viewport)
                     if let Err(e) =
-                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state))
+                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state), hovered_axis, None)
                     {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
@@ -437,6 +450,78 @@ impl ViewportWidget {
         }
 
         Ok(())
+    }
+
+    /// Update gizmo hover state by raycasting against gizmo handles
+    ///
+    /// This provides visual feedback when the cursor is over a gizmo axis,
+    /// highlighting the axis the user will interact with.
+    ///
+    /// # Arguments
+    ///
+    /// * `ui` - egui UI context for pointer position
+    /// * `rect` - Viewport rectangle in screen coordinates
+    /// * `world` - World to get entity positions from
+    ///
+    /// # Returns
+    ///
+    /// The currently hovered axis constraint (if any)
+    fn update_gizmo_hover(
+        &mut self,
+        ui: &egui::Ui,
+        rect: &egui::Rect,
+        world: &World,
+    ) -> Option<AxisConstraint> {
+        // Only process hover if gizmo is active and we have a selection
+        if self.gizmo_state.mode == GizmoMode::Inactive {
+            self.hovered_handle = None;
+            return None;
+        }
+
+        let selected = self.selected_entity()?;
+        let pose = world.pose(selected)?;
+        
+        // Get mouse position in viewport
+        let pointer_pos = ui.ctx().pointer_latest_pos()?;
+        
+        // Check if pointer is within viewport
+        if !rect.contains(pointer_pos) {
+            self.hovered_handle = None;
+            return None;
+        }
+
+        // Convert screen position to normalized device coordinates [-1, 1]
+        let viewport_size = rect.size();
+        let relative_pos = pointer_pos - rect.left_top();
+        let ndc_x = (relative_pos.x / viewport_size.x) * 2.0 - 1.0;
+        let ndc_y = 1.0 - (relative_pos.y / viewport_size.y) * 2.0; // Y is flipped
+        let ndc_pos = glam::Vec2::new(ndc_x, ndc_y);
+
+        // Get inverse view-projection matrix for ray casting
+        let inv_view_proj = self.camera.inverse_view_projection_matrix();
+        
+        // Gizmo position in 3D (Y=0 ground plane)
+        let gizmo_pos = glam::Vec3::new(pose.pos.x as f32, 0.0, pose.pos.y as f32);
+
+        // Update picker scale based on camera distance
+        let camera_distance = (self.camera.position() - gizmo_pos).length();
+        let gizmo_scale = (camera_distance * 0.08).max(0.1).min(10.0);
+        
+        // Create picker with appropriate scale
+        let mut picker = self.gizmo_picker.clone();
+        picker.gizmo_scale = gizmo_scale;
+        picker.tolerance = gizmo_scale * 0.25; // Tolerance scales with gizmo size
+
+        // Pick handle from screen coordinates
+        self.hovered_handle = picker.pick_handle(
+            ndc_pos,
+            inv_view_proj,
+            gizmo_pos,
+            self.gizmo_state.mode,
+        );
+
+        // Convert handle to axis constraint for rendering
+        self.hovered_handle.map(|h| h.to_constraint())
     }
 
     /// Handle mouse/keyboard input

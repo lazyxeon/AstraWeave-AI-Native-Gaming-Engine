@@ -1,68 +1,95 @@
-//! Gizmo Renderer (wgpu integration)
+//! Physics Debug Renderer
 //!
-//! Renders translate/rotate/scale gizmos using wgpu line rendering.
-//! Integrates with existing gizmo module for geometry generation.
+//! Renders physics debug information including:
+//! - Collider wireframes (from Rapier3D debug lines)
+//! - Rigid body bounds
+//! - Velocity vectors (optional)
+//! - Contact points (optional)
+//!
+//! Uses the same line rendering approach as GizmoRenderer for consistency.
 
 #![allow(dead_code)]
 
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
-use glam::{Quat, Vec3};
 use wgpu;
 
 use super::camera::OrbitCamera;
-use crate::gizmo::{
-    AxisConstraint, GizmoMode, GizmoRenderParams, GizmoRenderer as GizmoGeometry, GizmoState,
-};
 
-/// Gizmo renderer for viewport
-///
-/// Renders 3D gizmos (translate arrows, rotate circles, scale cubes)
-/// on top of selected entities using line rendering.
-pub struct GizmoRendererWgpu {
-    /// Line rendering pipeline
-    pipeline: wgpu::RenderPipeline,
-
-    /// Bind group layout
-    bind_group_layout: wgpu::BindGroupLayout,
-
-    /// Bind group (camera uniforms)
-    bind_group: wgpu::BindGroup,
-
-    /// Camera uniform buffer
-    uniform_buffer: wgpu::Buffer,
-
-    /// Vertex buffer (dynamic, updated per frame)
-    vertex_buffer: wgpu::Buffer,
-
-    /// Maximum vertices per frame
-    max_vertices: usize,
-
-    /// wgpu device reference (for dynamic buffer updates)
-    device: wgpu::Device,
-
-    /// wgpu queue reference
-    queue: wgpu::Queue,
+/// Physics debug visualization options
+#[derive(Debug, Clone, Copy)]
+pub struct PhysicsDebugOptions {
+    /// Show collider wireframes
+    pub show_colliders: bool,
+    /// Show rigid body bounds
+    pub show_bounds: bool,
+    /// Show velocity vectors
+    pub show_velocities: bool,
+    /// Show contact points
+    pub show_contacts: bool,
+    /// Collider wireframe color
+    pub collider_color: [f32; 3],
+    /// Kinematic body color
+    pub kinematic_color: [f32; 3],
+    /// Static body color
+    pub static_color: [f32; 3],
 }
 
-impl GizmoRendererWgpu {
-    /// Create new gizmo renderer
+impl Default for PhysicsDebugOptions {
+    fn default() -> Self {
+        Self {
+            show_colliders: true,
+            show_bounds: false,
+            show_velocities: false,
+            show_contacts: false,
+            collider_color: [0.0, 1.0, 0.5],      // Cyan-green for dynamic
+            kinematic_color: [1.0, 0.5, 0.0],     // Orange for kinematic
+            static_color: [0.5, 0.5, 0.5],        // Gray for static
+        }
+    }
+}
+
+/// Physics debug renderer
+///
+/// Renders physics debug lines (colliders, bounds, etc.) using line primitives.
+/// Designed to be efficient for large numbers of colliders.
+pub struct PhysicsDebugRenderer {
+    /// Line rendering pipeline
+    pipeline: wgpu::RenderPipeline,
+    /// Bind group layout
+    bind_group_layout: wgpu::BindGroupLayout,
+    /// Bind group (camera uniforms)
+    bind_group: wgpu::BindGroup,
+    /// Camera uniform buffer
+    uniform_buffer: wgpu::Buffer,
+    /// Vertex buffer (dynamic, updated per frame)
+    vertex_buffer: wgpu::Buffer,
+    /// Maximum vertices per frame
+    max_vertices: usize,
+    /// wgpu queue reference
+    queue: wgpu::Queue,
+    /// Debug visualization options
+    pub options: PhysicsDebugOptions,
+}
+
+impl PhysicsDebugRenderer {
+    /// Create new physics debug renderer
     ///
     /// # Arguments
     ///
     /// * `device` - wgpu device
     /// * `queue` - wgpu queue
-    /// * `max_vertices` - Maximum vertices per frame (default: 10000)
+    /// * `max_vertices` - Maximum vertices per frame (default: 50000 for large scenes)
     pub fn new(device: wgpu::Device, queue: wgpu::Queue, max_vertices: usize) -> Result<Self> {
-        // Load shader
+        // Load shader (reuse gizmo shader - same vertex format)
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Gizmo Shader"),
+            label: Some("Physics Debug Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/gizmo.wgsl").into()),
         });
 
         // Create bind group layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Gizmo Bind Group Layout"),
+            label: Some("Physics Debug Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX,
@@ -77,20 +104,20 @@ impl GizmoRendererWgpu {
 
         // Create pipeline layout
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Gizmo Pipeline Layout"),
+            label: Some("Physics Debug Pipeline Layout"),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
         // Create pipeline (line rendering)
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Gizmo Render Pipeline"),
+            label: Some("Physics Debug Render Pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: std::mem::size_of::<GizmoVertex>() as u64,
+                    array_stride: std::mem::size_of::<PhysicsDebugVertex>() as u64,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &[
                         wgpu::VertexAttribute {
@@ -118,8 +145,8 @@ impl GizmoRendererWgpu {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: false, // Don't write depth (always on top)
-                depth_compare: wgpu::CompareFunction::Always, // Always render
+                depth_write_enabled: false, // Don't write depth (render on top of scene)
+                depth_compare: wgpu::CompareFunction::LessEqual, // Render with depth test
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),
@@ -144,15 +171,15 @@ impl GizmoRendererWgpu {
 
         // Create uniform buffer
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Gizmo Uniform Buffer"),
-            size: std::mem::size_of::<GizmoUniforms>() as u64,
+            label: Some("Physics Debug Uniform Buffer"),
+            size: std::mem::size_of::<PhysicsDebugUniforms>() as u64,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Gizmo Bind Group"),
+            label: Some("Physics Debug Bind Group"),
             layout: &bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -162,8 +189,8 @@ impl GizmoRendererWgpu {
 
         // Create vertex buffer (dynamic)
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Gizmo Vertex Buffer"),
-            size: (std::mem::size_of::<GizmoVertex>() * max_vertices) as u64,
+            label: Some("Physics Debug Vertex Buffer"),
+            size: (std::mem::size_of::<PhysicsDebugVertex>() * max_vertices) as u64,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -175,12 +202,12 @@ impl GizmoRendererWgpu {
             uniform_buffer,
             vertex_buffer,
             max_vertices,
-            device,
             queue,
+            options: PhysicsDebugOptions::default(),
         })
     }
 
-    /// Render gizmo for selected entity
+    /// Render physics debug lines
     ///
     /// # Arguments
     ///
@@ -188,74 +215,41 @@ impl GizmoRendererWgpu {
     /// * `target` - Render target view
     /// * `depth` - Depth buffer view
     /// * `camera` - Camera for view-projection
-    /// * `gizmo_state` - Current gizmo state (mode, constraint, etc.)
-    /// * `entity_position` - 2D grid position of selected entity
-    /// * `hovered_axis` - Currently hovered axis for visual highlighting
-    /// * `queue` - wgpu queue
+    /// * `debug_lines` - Physics debug lines from PhysicsWorld::get_debug_lines()
     pub fn render(
         &self,
         encoder: &mut wgpu::CommandEncoder,
         target: &wgpu::TextureView,
         depth: &wgpu::TextureView,
         camera: &OrbitCamera,
-        gizmo_state: &GizmoState,
-        entity_position: glam::IVec2,
-        hovered_axis: Option<AxisConstraint>,
-        queue: &wgpu::Queue,
+        debug_lines: &[astraweave_physics::DebugLine],
     ) -> Result<()> {
-        // Early exit if no active gizmo
-        if gizmo_state.mode == GizmoMode::Inactive {
+        // Early exit if no lines or disabled
+        if debug_lines.is_empty() || !self.options.show_colliders {
             return Ok(());
         }
 
-        // Convert 2D grid position to 3D world position (Y=0 for ground plane)
-        let world_position = Vec3::new(entity_position.x as f32, 0.0, entity_position.y as f32);
-        let world_rotation = Quat::IDENTITY; // No rotation (top-down 2D game)
-
         // Update camera uniforms
         let view_proj = camera.view_projection_matrix();
-        let uniforms = GizmoUniforms {
+        let uniforms = PhysicsDebugUniforms {
             view_proj: view_proj.to_cols_array_2d(),
         };
 
-        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
+        self.queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniforms));
 
-        let camera_distance = (camera.position() - world_position).length();
-        let gizmo_scale = (camera_distance * 0.08).max(0.1).min(10.0);
+        // Convert debug lines to vertices
+        let mut vertices: Vec<PhysicsDebugVertex> = Vec::with_capacity(debug_lines.len() * 2);
 
-        // Extract constraint from mode
-        let constraint = match gizmo_state.mode {
-            GizmoMode::Translate { constraint } => constraint,
-            GizmoMode::Rotate { constraint } => constraint,
-            GizmoMode::Scale { constraint, .. } => constraint,
-            GizmoMode::Inactive => AxisConstraint::None,
-        };
-
-        // DEBUG: Log constraint for rotate mode
-        if matches!(gizmo_state.mode, GizmoMode::Rotate { .. }) {
-            println!("🎨 Gizmo Renderer: Rotate constraint = {:?}", constraint);
+        for line in debug_lines {
+            vertices.push(PhysicsDebugVertex {
+                position: line.start,
+                color: line.color,
+            });
+            vertices.push(PhysicsDebugVertex {
+                position: line.end,
+                color: line.color,
+            });
         }
-
-        let params = GizmoRenderParams {
-            position: world_position,
-            rotation: world_rotation,
-            scale: gizmo_scale,
-            camera_pos: camera.position(),
-            view_proj,
-            mode: gizmo_state.mode,
-            constraint,
-            hovered_axis, // Pass through for visual highlighting
-        };
-
-        let geometries = match gizmo_state.mode {
-            GizmoMode::Translate { .. } => GizmoGeometry::render_translation(&params),
-            GizmoMode::Rotate { .. } => GizmoGeometry::render_rotation(&params),
-            GizmoMode::Scale { .. } => GizmoGeometry::render_scale(&params),
-            GizmoMode::Inactive => return Ok(()),
-        };
-
-        // Convert geometries to vertices
-        let vertices = self.geometries_to_vertices(&geometries, world_position, world_rotation);
 
         if vertices.is_empty() {
             return Ok(());
@@ -272,7 +266,7 @@ impl GizmoRendererWgpu {
 
         // Render pass
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Gizmo Render Pass"),
+            label: Some("Physics Debug Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: target,
                 resolve_target: None,
@@ -284,7 +278,7 @@ impl GizmoRendererWgpu {
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: depth,
                 depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Load, // Use existing depth
+                    load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store,
                 }),
                 stencil_ops: None,
@@ -300,54 +294,19 @@ impl GizmoRendererWgpu {
 
         Ok(())
     }
-
-    /// Convert gizmo geometries to line vertices
-    ///
-    /// Takes geometry tuples (vertices, color, highlighted) and converts
-    /// to line segments for rendering.
-    fn geometries_to_vertices(
-        &self,
-        geometries: &[(Vec<Vec3>, [f32; 3], bool)],
-        position: Vec3,
-        rotation: Quat,
-    ) -> Vec<GizmoVertex> {
-        let mut vertices = Vec::new();
-
-        for (geom_vertices, color, _highlighted) in geometries {
-            // Transform vertices to world space
-            let world_vertices: Vec<Vec3> = geom_vertices
-                .iter()
-                .map(|&v| position + rotation * v)
-                .collect();
-
-            // Convert to line segments (consecutive pairs)
-            for i in 0..world_vertices.len().saturating_sub(1) {
-                vertices.push(GizmoVertex {
-                    position: world_vertices[i].to_array(),
-                    color: *color,
-                });
-                vertices.push(GizmoVertex {
-                    position: world_vertices[i + 1].to_array(),
-                    color: *color,
-                });
-            }
-        }
-
-        vertices
-    }
 }
 
-/// Gizmo vertex (position + color)
+/// Physics debug vertex (position + color)
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
-struct GizmoVertex {
+struct PhysicsDebugVertex {
     position: [f32; 3],
     color: [f32; 3],
 }
 
-/// Gizmo shader uniforms
+/// Physics debug shader uniforms
 #[repr(C)]
 #[derive(Copy, Clone, Pod, Zeroable)]
-struct GizmoUniforms {
+struct PhysicsDebugUniforms {
     view_proj: [[f32; 4]; 4],
 }

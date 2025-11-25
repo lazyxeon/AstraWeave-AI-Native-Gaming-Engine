@@ -142,6 +142,7 @@ fn create_test_snapshot(t: f32) -> WorldSnapshot {
         t,
         player: PlayerState {
             hp: 100,
+            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],

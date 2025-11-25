@@ -14,6 +14,7 @@ mod goap_comparison_tests {
             t: 1.0,
             player: PlayerState {
                 hp: player_hp,
+                physics_context: None,
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".to_string(),
                 orders: vec![],

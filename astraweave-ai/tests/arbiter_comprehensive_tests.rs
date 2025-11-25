@@ -26,6 +26,7 @@ fn create_test_snapshot(t: f32) -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
+            physics_context: None,
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {

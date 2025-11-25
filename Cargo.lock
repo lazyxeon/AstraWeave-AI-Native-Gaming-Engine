@@ -1038,7 +1038,9 @@ name = "astraweave-physics"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "astraweave-ecs",
  "astraweave-profiling",
+ "astraweave-scene",
  "bitflags 2.9.4",
  "criterion 0.7.0",
  "glam 0.30.8",
@@ -1851,6 +1853,7 @@ dependencies = [
  "astraweave-ecs",
  "astraweave-nav",
  "astraweave-observability",
+ "astraweave-physics",
  "astraweave-quests",
  "astraweave-render",
  "astraweave-security",
