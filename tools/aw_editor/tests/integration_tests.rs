@@ -302,7 +302,7 @@ fn test_duplicate_entities_command() {
 
 #[test]
 fn test_clipboard_operations() {
-    let mut world = create_test_world();
+    let world = create_test_world();
     let entities = world.entities();
 
     // Create clipboard from entities

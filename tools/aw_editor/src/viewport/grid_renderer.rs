@@ -151,6 +151,7 @@ impl GridRenderer {
     /// * `target` - Render target view
     /// * `depth` - Depth buffer view
     /// * `camera` - Camera for view-projection matrix
+    /// * `crosshair_mode` - If true, render only axis lines (crosshair), not full grid
     ///
     /// # Errors
     ///
@@ -162,10 +163,18 @@ impl GridRenderer {
         depth: &wgpu::TextureView,
         camera: &OrbitCamera,
         queue: &wgpu::Queue,
+        crosshair_mode: bool,
     ) -> Result<()> {
         // Update uniforms
         let view_proj = camera.view_projection_matrix();
         let inv_view_proj = view_proj.inverse();
+
+        // In crosshair mode, set grid colors to transparent so only axes show
+        let (grid_color, major_grid_color) = if crosshair_mode {
+            ([0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]) // Invisible grid lines
+        } else {
+            ([0.3, 0.3, 0.3, 0.3], [0.5, 0.5, 0.5, 0.6]) // Normal grid
+        };
 
         let uniforms = GridUniforms {
             view_proj: view_proj.to_cols_array_2d(),
@@ -178,10 +187,10 @@ impl GridRenderer {
             _padding1: 0.0,
             grid_size: 1.0,                         // 1 meter grid
             major_grid_every: 10.0,                 // Major grid every 10 lines
-            fade_distance: 50.0,                    // Start fading at 50m
-            max_distance: 100.0,                    // Completely fade by 100m
-            grid_color: [0.3, 0.3, 0.3, 0.3],       // Light gray, semi-transparent
-            major_grid_color: [0.5, 0.5, 0.5, 0.6], // Brighter gray for major lines
+            fade_distance: 200.0,                   // Start fading at 200m (increased from 50m)
+            max_distance: 500.0,                    // Completely fade by 500m (increased from 100m)
+            grid_color,
+            major_grid_color,
             x_axis_color: [1.0, 0.0, 0.0, 0.8],     // Red X axis
             z_axis_color: [0.0, 0.0, 1.0, 0.8],     // Blue Z axis
         };

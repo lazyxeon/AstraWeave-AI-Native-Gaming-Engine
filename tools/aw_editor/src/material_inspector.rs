@@ -1003,11 +1003,14 @@ impl MaterialInspector {
         ui.add_space(8.0);
 
         // Texture viewer
-        if let Some(img) = match self.display_mode {
+        if self.display_mode == DisplayMode::Split {
+            // Split view: show all textures side by side
+            self.show_split_texture_view(ui, ctx);
+        } else if let Some(img) = match self.display_mode {
             DisplayMode::Albedo => self.textures.albedo.as_ref(),
             DisplayMode::Normal => self.textures.normal.as_ref(),
             DisplayMode::Orm => self.textures.orm.as_ref(),
-            DisplayMode::Split => self.textures.albedo.as_ref(), // TODO: Split view
+            DisplayMode::Split => unreachable!(), // Handled above
         } {
             // Convert to ColorImage with channel filtering
             let color_image = self.to_color_image(img);
@@ -1138,6 +1141,99 @@ impl MaterialInspector {
             }
 
             self.brdf_preview.show(ui, ctx);
+        });
+    }
+    
+    /// Show split view with all textures side by side
+    fn show_split_texture_view(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        // Calculate size based on available width (divide by 3 for side-by-side)
+        let available_width = ui.available_width();
+        let panel_width = (available_width - 20.0) / 3.0; // 20.0 for spacing
+        let zoom = self.zoom_level;
+        let channel_filter = self.channel_filter;
+        
+        // Collect texture data first to avoid borrow conflicts
+        let albedo_data = self.textures.albedo.as_ref().map(|img| {
+            let aspect = img.height() as f32 / img.width() as f32;
+            let display_width = panel_width.min(img.width() as f32 * zoom);
+            let display_height = display_width * aspect;
+            let color_image = self.to_color_image(img);
+            let dimensions = format!("{}×{}", img.width(), img.height());
+            (color_image, display_width, display_height, dimensions)
+        });
+        
+        let normal_data = self.textures.normal.as_ref().map(|img| {
+            let aspect = img.height() as f32 / img.width() as f32;
+            let display_width = panel_width.min(img.width() as f32 * zoom);
+            let display_height = display_width * aspect;
+            let color_image = self.to_color_image(img);
+            let dimensions = format!("{}×{}", img.width(), img.height());
+            (color_image, display_width, display_height, dimensions)
+        });
+        
+        let orm_data = self.textures.orm.as_ref().map(|img| {
+            let aspect = img.height() as f32 / img.width() as f32;
+            let display_width = panel_width.min(img.width() as f32 * zoom);
+            let display_height = display_width * aspect;
+            let color_image = self.to_color_image(img);
+            let dimensions = format!("{}×{}", img.width(), img.height());
+            (color_image, display_width, display_height, dimensions)
+        });
+        
+        // Helper to render a texture panel
+        fn render_texture_panel(
+            ui: &mut egui::Ui,
+            ctx: &egui::Context,
+            label: &str,
+            data: Option<(egui::ColorImage, f32, f32, String)>,
+            handle: &mut Option<egui::TextureHandle>,
+            panel_width: f32,
+            channel_filter: crate::material_inspector::ChannelFilter,
+        ) {
+            ui.vertical(|ui| {
+                ui.label(egui::RichText::new(label).strong());
+                
+                if let Some((color_image, display_width, display_height, dimensions)) = data {
+                    // Get or create texture handle
+                    let tex_handle = handle.get_or_insert_with(|| {
+                        ctx.load_texture(
+                            format!("split_{}", label),
+                            color_image.clone(),
+                            Default::default(),
+                        )
+                    });
+                    
+                    // Update texture
+                    *tex_handle = ctx.load_texture(
+                        format!("split_{}_{:?}", label, channel_filter),
+                        color_image,
+                        Default::default(),
+                    );
+                    
+                    ui.image((tex_handle.id(), egui::vec2(display_width, display_height)));
+                    ui.label(dimensions);
+                } else {
+                    // Show placeholder for missing texture
+                    let placeholder_size = egui::vec2(panel_width, panel_width * 0.75);
+                    let (rect, _) = ui.allocate_exact_size(placeholder_size, egui::Sense::hover());
+                    ui.painter().rect_filled(rect, 4.0, egui::Color32::from_rgb(40, 40, 45));
+                    ui.painter().text(
+                        rect.center(),
+                        egui::Align2::CENTER_CENTER,
+                        "No texture",
+                        egui::FontId::proportional(12.0),
+                        egui::Color32::GRAY,
+                    );
+                }
+            });
+        }
+        
+        ui.horizontal(|ui| {
+            render_texture_panel(ui, ctx, "Albedo", albedo_data, &mut self.texture_handles.albedo, panel_width, channel_filter);
+            ui.add_space(5.0);
+            render_texture_panel(ui, ctx, "Normal", normal_data, &mut self.texture_handles.normal, panel_width, channel_filter);
+            ui.add_space(5.0);
+            render_texture_panel(ui, ctx, "ORM", orm_data, &mut self.texture_handles.orm, panel_width, channel_filter);
         });
     }
 }

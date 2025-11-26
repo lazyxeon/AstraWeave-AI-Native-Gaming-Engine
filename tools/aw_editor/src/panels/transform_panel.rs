@@ -249,8 +249,8 @@ impl TransformPanel {
         }
     }
 
-    // Simplified transform calculations (stub implementations)
-    // These would use the full TranslateGizmo, RotateGizmo, ScaleGizmo in production
+    // Transform calculations for numeric input
+    // These apply axis constraints to produce world-space vectors
 
     fn calculate_translation_numeric(
         value: f32,

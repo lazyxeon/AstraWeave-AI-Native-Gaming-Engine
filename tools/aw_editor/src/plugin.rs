@@ -705,7 +705,7 @@ mod tests {
 
     #[test]
     fn test_example_plugin() {
-        let mut plugin = ExamplePlugin::new();
+        let plugin = ExamplePlugin::new();
         assert_eq!(plugin.counter, 0);
 
         let meta = plugin.metadata();

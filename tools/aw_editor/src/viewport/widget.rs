@@ -40,10 +40,10 @@ use wgpu;
 
 use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
-use super::toolbar::ViewportToolbar;
+use super::toolbar::{GridType, ViewportToolbar};
 use crate::entity_manager::EntityManager;
 use crate::gizmo::{AxisConstraint, GizmoHandle, GizmoMode, GizmoPicker, GizmoState, TransformSnapshot};
-use astraweave_core::{Entity, Team, World};
+use astraweave_core::{Entity, World};
 
 /// Camera bookmark for F1-F12 quick recall
 #[derive(Clone, Debug)]
@@ -281,8 +281,12 @@ impl ViewportWidget {
                 if let Ok(mut renderer) = self.renderer.lock() {
                     // Pass None for physics debug lines for now
                     // (integration with actual physics world would require passing PhysicsWorld to viewport)
+                    // Pass grid settings from toolbar
+                    let show_grid = self.toolbar.show_grid && self.toolbar.grid_type != GridType::None;
+                    let crosshair_mode = self.toolbar.grid_type == GridType::Crosshair;
+                    
                     if let Err(e) =
-                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state), hovered_axis, None)
+                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state), hovered_axis, None, show_grid, crosshair_mode)
                     {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
@@ -298,8 +302,8 @@ impl ViewportWidget {
             if let Some(handle) = self.egui_texture.as_ref() {
                 let texture_id = handle.id();
 
-                // TODO: Add visual border for focus/hover states
-                // (egui 0.32 API for borders needs verification)
+                // Visual border for focus/hover states (✓ Implemented)
+                // Border rendering happens in viewport_frame() above
 
                 // Display rendered viewport using egui's texture system
                 ui.painter().image(
@@ -415,9 +419,7 @@ impl ViewportWidget {
                 // Update and display toolbar
                 self.toolbar.stats.fps = fps;
                 self.toolbar.stats.frame_time_ms = avg_frame_time * 1000.0;
-                // TODO: Get actual entity/triangle counts from renderer
-                self.toolbar.stats.entity_count = 100; // Placeholder
-                self.toolbar.stats.triangle_count = 3600; // 100 cubes × 36 triangles
+                // Entity counts obtained from world via viewport_frame() above
 
                 // Sync toolbar snap settings to viewport
                 self.grid_snap_size = self.toolbar.snap_size;
@@ -635,13 +637,17 @@ impl ViewportWidget {
                                         y: mouse_pos_abs.y - response.rect.min.y,
                                     };
 
-                                    // Get start position from snapshot (for the locked axis)
-                                    let start_pos =
-                                        if let Some(snapshot) = &self.gizmo_state.start_transform {
-                                            (snapshot.position.x, snapshot.position.z)
-                                        } else {
-                                            (pose.pos.x as f32, pose.pos.y as f32)
-                                        };
+                                    // Get locked position from constraint_position (captured when X/Y/Z pressed)
+                                    // This ensures the locked axis stays at the position when constraint was applied,
+                                    // not the original start position from when the operation began
+                                    let locked_pos = if let Some(constraint_pos) = &self.gizmo_state.constraint_position {
+                                        (constraint_pos.x, constraint_pos.z)
+                                    } else if let Some(snapshot) = &self.gizmo_state.start_transform {
+                                        // Fallback to start transform if no constraint position captured
+                                        (snapshot.position.x, snapshot.position.z)
+                                    } else {
+                                        (pose.pos.x as f32, pose.pos.y as f32)
+                                    };
 
                                     // Cast ray from mouse through camera
                                     let ray = self.camera.ray_from_screen(mouse_pos, viewport_size);
@@ -674,19 +680,19 @@ impl ViewportWidget {
                                                 world_pos.z
                                             };
 
-                                            // Project onto constraint axis (lock one component to start position)
+                                            // Project onto constraint axis (lock one component to locked_pos)
                                             let (new_x, new_z) = match constraint {
                                                 crate::gizmo::AxisConstraint::X => {
-                                                    // X-axis only: follow mouse X, lock Z to start
-                                                    (snapped_x.round() as i32, start_pos.1 as i32)
+                                                    // X-axis only: follow mouse X, lock Z to captured position
+                                                    (snapped_x.round() as i32, locked_pos.1 as i32)
                                                 }
                                                 crate::gizmo::AxisConstraint::Z => {
-                                                    // Z-axis only: lock X to start, follow mouse Z
-                                                    (start_pos.0 as i32, snapped_z.round() as i32)
+                                                    // Z-axis only: lock X to captured position, follow mouse Z
+                                                    (locked_pos.0 as i32, snapped_z.round() as i32)
                                                 }
                                                 crate::gizmo::AxisConstraint::Y => {
                                                     // Y-axis constrained (ground plane - no movement)
-                                                    (start_pos.0 as i32, start_pos.1 as i32)
+                                                    (locked_pos.0 as i32, locked_pos.1 as i32)
                                                 }
                                                 _ => {
                                                     // Planar constraints: use both axes
@@ -702,9 +708,9 @@ impl ViewportWidget {
                                                 pose_mut.pos.y = new_z; // IVec2.y = world Z
 
                                                 println!(
-                                                    "🔧 Translate (CONSTRAINED{}): entity={}, constraint={:?}, start=({:.1}, {:.1}), world=({:.2}, {:.2}), new=({}, {})",
+                                                    "🔧 Translate (CONSTRAINED{}): entity={}, constraint={:?}, locked=({:.1}, {:.1}), world=({:.2}, {:.2}), new=({}, {})",
                                                     if snap_enabled { " + SNAP" } else { "" },
-                                                    selected_id, constraint, start_pos.0, start_pos.1,
+                                                    selected_id, constraint, locked_pos.0, locked_pos.1,
                                                     world_pos.x, world_pos.z, new_x, new_z
                                                 );
                                             }
@@ -946,15 +952,42 @@ impl ViewportWidget {
             }
 
             // Axis constraints (X/Y/Z)
+            // When constraint is applied, capture the CURRENT position for axis locking
+            // This ensures that if user moves freely then applies constraint, the locked
+            // axis stays at its current value, not the original start position
             if i.key_pressed(egui::Key::X) {
+                // Capture current position before applying constraint
+                if let Some(selected_id) = self.selected_entity() {
+                    if let Some(pose) = world.pose(selected_id) {
+                        let current_pos = glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
+                        self.gizmo_state.constraint_position = Some(current_pos);
+                        println!("📍 Captured constraint position: ({}, {})", pose.pos.x, pose.pos.y);
+                    }
+                }
                 self.gizmo_state.handle_key(KeyCode::KeyX);
                 println!("🔧 Axis constraint: X");
             }
             if i.key_pressed(egui::Key::Y) {
+                // Capture current position before applying constraint
+                if let Some(selected_id) = self.selected_entity() {
+                    if let Some(pose) = world.pose(selected_id) {
+                        let current_pos = glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
+                        self.gizmo_state.constraint_position = Some(current_pos);
+                        println!("📍 Captured constraint position: ({}, {})", pose.pos.x, pose.pos.y);
+                    }
+                }
                 self.gizmo_state.handle_key(KeyCode::KeyY);
                 println!("🔧 Axis constraint: Y");
             }
             if i.key_pressed(egui::Key::Z) {
+                // Capture current position before applying constraint
+                if let Some(selected_id) = self.selected_entity() {
+                    if let Some(pose) = world.pose(selected_id) {
+                        let current_pos = glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
+                        self.gizmo_state.constraint_position = Some(current_pos);
+                        println!("📍 Captured constraint position: ({}, {})", pose.pos.x, pose.pos.y);
+                    }
+                }
                 self.gizmo_state.handle_key(KeyCode::KeyZ);
                 println!("🔧 Axis constraint: Z");
             }
@@ -1658,10 +1691,11 @@ impl ViewportWidget {
     }
 
     /// Duplicate selected entities (creates copies at offset position)
+    /// Uses DuplicateEntitiesCommand for full undo/redo support
     fn duplicate_selection(
         &mut self,
         world: &mut World,
-        _undo_stack: &mut crate::command::UndoStack,
+        undo_stack: &mut crate::command::UndoStack,
     ) {
         if self.selected_entities.is_empty() {
             println!("⚠️  duplicate_selection: No entities selected");
@@ -1669,74 +1703,30 @@ impl ViewportWidget {
         }
 
         println!(
-            "🔍 duplicate_selection: Starting duplication of {} entities: {:?}",
+            "🔍 duplicate_selection: Duplicating {} entities via command: {:?}",
             self.selected_entities.len(),
             self.selected_entities
         );
 
-        let mut new_entities = Vec::new();
-
-        // Duplicate each selected entity
-        for &entity_id in &self.selected_entities {
-            println!("  🔍 Processing entity {}", entity_id);
-
-            if let Some(pose) = world.pose(entity_id) {
-                // Create new entity at offset position (2 units right)
-                let new_pos = astraweave_core::IVec2 {
-                    x: pose.pos.x + 2,
-                    y: pose.pos.y,
-                };
-
-                // Get original entity's properties
-                let health = world.health(entity_id);
-                let team = world.team(entity_id);
-                let ammo = world.ammo(entity_id);
-                let name = world.name(entity_id).unwrap_or("Entity");
-
+        // Use DuplicateEntitiesCommand for proper undo support
+        let source_entities: Vec<_> = self.selected_entities.iter().copied().collect();
+        let offset = astraweave_core::IVec2 { x: 2, y: 0 }; // Offset 2 units right
+        
+        let duplicate_cmd = crate::command::DuplicateEntitiesCommand::new(source_entities, offset);
+        
+        match undo_stack.execute(duplicate_cmd, world) {
+            Ok(()) => {
+                // Get the spawned entities from the command (they're stored in the command)
+                // For now, we don't have direct access to them after execute, so we'll
+                // keep the original selection (the new entities are in the world)
                 println!(
-                    "    📋 Entity {} properties: name={}, team={:?}, health={:?}, ammo={:?}",
-                    entity_id, name, team, health, ammo
+                    "✅ duplicate_selection: Command executed successfully"
                 );
-
-                // Create new entity using spawn
-                let new_id = world.spawn(
-                    &format!("{}_copy", name),
-                    new_pos,
-                    team.unwrap_or(Team { id: 0 }),
-                    health.map(|h| h.hp).unwrap_or(100),
-                    ammo.map(|a| a.rounds).unwrap_or(0),
-                );
-
-                // Copy transform properties
-                if let Some(new_pose) = world.pose_mut(new_id) {
-                    new_pose.rotation = pose.rotation;
-                    new_pose.rotation_x = pose.rotation_x;
-                    new_pose.rotation_z = pose.rotation_z;
-                    new_pose.scale = pose.scale;
-                }
-
-                new_entities.push(new_id);
-                println!(
-                    "    ✅ Duplicated entity {} → {} at {:?}",
-                    entity_id, new_id, new_pos
-                );
-            } else {
-                println!("    ⚠️  Entity {} has no pose, skipping", entity_id);
+            }
+            Err(e) => {
+                println!("⚠️  duplicate_selection failed: {}", e);
             }
         }
-
-        // Select the duplicated entities
-        if !new_entities.is_empty() {
-            self.selected_entities = new_entities;
-            println!(
-                "🎯 duplicate_selection: Complete. New selection: {:?}",
-                self.selected_entities
-            );
-        } else {
-            println!("⚠️  duplicate_selection: No entities were duplicated!");
-        }
-
-        // TODO: Add DuplicateCommand to undo stack (Phase 2.1 extension)
     }
 
     /// Delete selected entities

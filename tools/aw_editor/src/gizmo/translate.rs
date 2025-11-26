@@ -11,6 +11,63 @@ impl TranslateGizmo {
     pub fn snap_position(position: Vec3, snapping: &SnappingConfig) -> Vec3 {
         snapping.snap_position(position)
     }
+    
+    /// Snap position to grid, respecting axis constraints.
+    /// 
+    /// When an axis is locked (not part of the constraint), that axis won't snap.
+    /// For example, with AxisConstraint::X, only the X axis is snapped.
+    /// 
+    /// # Arguments
+    /// * `position` - Current position to snap
+    /// * `original_position` - Position before translation started (for locked axes)
+    /// * `constraint` - Current axis constraint (determines which axes can move)
+    /// * `snapping` - Snapping configuration (grid size, enabled state)
+    /// 
+    /// # Returns
+    /// Position with moveable axes snapped and locked axes preserved from original
+    pub fn snap_position_constrained(
+        position: Vec3,
+        original_position: Vec3,
+        constraint: AxisConstraint,
+        snapping: &SnappingConfig,
+    ) -> Vec3 {
+        if !snapping.grid_enabled || snapping.grid_size <= 0.0 {
+            return position;
+        }
+        
+        let snap = |v: f32| (v / snapping.grid_size).round() * snapping.grid_size;
+        
+        match constraint {
+            AxisConstraint::None => {
+                // Free movement: snap all axes
+                Vec3::new(snap(position.x), snap(position.y), snap(position.z))
+            }
+            AxisConstraint::X => {
+                // Only X can move: snap X, preserve Y and Z from original
+                Vec3::new(snap(position.x), original_position.y, original_position.z)
+            }
+            AxisConstraint::Y => {
+                // Only Y can move: snap Y, preserve X and Z from original
+                Vec3::new(original_position.x, snap(position.y), original_position.z)
+            }
+            AxisConstraint::Z => {
+                // Only Z can move: snap Z, preserve X and Y from original
+                Vec3::new(original_position.x, original_position.y, snap(position.z))
+            }
+            AxisConstraint::XY => {
+                // XY plane: snap X and Y, preserve Z from original
+                Vec3::new(snap(position.x), snap(position.y), original_position.z)
+            }
+            AxisConstraint::XZ => {
+                // XZ plane: snap X and Z, preserve Y from original
+                Vec3::new(snap(position.x), original_position.y, snap(position.z))
+            }
+            AxisConstraint::YZ => {
+                // YZ plane: snap Y and Z, preserve X from original
+                Vec3::new(original_position.x, snap(position.y), snap(position.z))
+            }
+        }
+    }
 
     /// Calculate translation delta from mouse movement.
     ///

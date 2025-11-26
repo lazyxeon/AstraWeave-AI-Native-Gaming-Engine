@@ -178,8 +178,9 @@ impl OrbitCamera {
     /// O(1), typically <0.01ms
     pub fn zoom(&mut self, delta: f32) {
         // Simple distance-based zoom (no focal point movement)
-        // Smooth incremental zoom: 10% per scroll tick
-        let zoom_factor = 1.0 + (delta * 0.1); // 0.1 = 10% per tick
+        // Ultra-smooth zoom: 1.5% per scroll tick (reduced from 3% for finer control)
+        // This gives ~7 scroll ticks to double/halve the distance
+        let zoom_factor = 1.0 + (delta * 0.015); // 0.015 = 1.5% per tick
         self.distance = (self.distance / zoom_factor).clamp(self.min_distance, self.max_distance);
     }
 

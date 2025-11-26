@@ -140,6 +140,10 @@ pub struct BuildManagerPanel {
     build_logs: Vec<String>,
     log_receiver: Option<Receiver<BuildMessage>>,
     show_advanced: bool,
+    /// Flag to launch executable after successful build
+    run_after_build: bool,
+    /// Flag to signal build cancellation to the build thread
+    cancel_requested: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 
 impl Default for BuildManagerPanel {
@@ -156,11 +160,16 @@ impl BuildManagerPanel {
             build_logs: Vec::new(),
             log_receiver: None,
             show_advanced: false,
+            run_after_build: false,
+            cancel_requested: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         }
     }
 
     /// Start a build in a background thread
     pub fn start_build(&mut self) {
+        // Reset cancel flag
+        self.cancel_requested.store(false, std::sync::atomic::Ordering::SeqCst);
+        
         let (tx, rx) = channel::<BuildMessage>();
         self.log_receiver = Some(rx);
         self.build_logs.clear();
@@ -170,14 +179,45 @@ impl BuildManagerPanel {
         };
 
         let config = self.config.clone();
+        let cancel_flag = self.cancel_requested.clone();
 
         thread::spawn(move || {
-            Self::run_build(config, tx);
+            Self::run_build(config, tx, cancel_flag);
         });
+    }
+    
+    /// Cancel the current build
+    pub fn cancel_build(&mut self) {
+        self.cancel_requested.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.build_logs.push("⚠️ Build cancellation requested...".to_string());
+    }
+    
+    /// Launch the built executable
+    fn launch_executable(&mut self, output_path: &std::path::Path) {
+        let executable = if cfg!(target_os = "windows") {
+            output_path.join(format!("{}.exe", self.config.project_name))
+        } else {
+            output_path.join(&self.config.project_name)
+        };
+        
+        if executable.exists() {
+            self.build_logs.push(format!("🚀 Launching {}...", executable.display()));
+            
+            match Command::new(&executable).spawn() {
+                Ok(_) => {
+                    self.build_logs.push("✅ Application launched successfully".to_string());
+                }
+                Err(e) => {
+                    self.build_logs.push(format!("❌ Failed to launch: {}", e));
+                }
+            }
+        } else {
+            self.build_logs.push(format!("❌ Executable not found: {}", executable.display()));
+        }
     }
 
     /// Execute the build process
-    fn run_build(config: BuildConfig, tx: Sender<BuildMessage>) {
+    fn run_build(config: BuildConfig, tx: Sender<BuildMessage>, cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>) {
         let start_time = std::time::Instant::now();
 
         // Step 1: Validate configuration
@@ -228,18 +268,34 @@ impl BuildManagerPanel {
         cmd.stderr(Stdio::piped());
 
         // Simulate build progress for demo (real implementation would parse cargo output)
+        // Check for cancellation between steps
+        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            let _ = tx.send(BuildMessage::Failed { error: "Build cancelled by user".to_string() });
+            return;
+        }
+        
         let _ = tx.send(BuildMessage::Progress {
             percent: 0.30,
             step: "Compiling dependencies...".to_string(),
         });
         thread::sleep(std::time::Duration::from_millis(500));
 
+        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            let _ = tx.send(BuildMessage::Failed { error: "Build cancelled by user".to_string() });
+            return;
+        }
+        
         let _ = tx.send(BuildMessage::Progress {
             percent: 0.50,
             step: "Compiling game code...".to_string(),
         });
         thread::sleep(std::time::Duration::from_millis(500));
 
+        if cancel_flag.load(std::sync::atomic::Ordering::SeqCst) {
+            let _ = tx.send(BuildMessage::Failed { error: "Build cancelled by user".to_string() });
+            return;
+        }
+        
         let _ = tx.send(BuildMessage::Progress {
             percent: 0.70,
             step: "Linking...".to_string(),
@@ -456,6 +512,7 @@ impl Panel for BuildManagerPanel {
                 .add_enabled(!is_building, egui::Button::new("🔨 Build").min_size(egui::vec2(100.0, 30.0)))
                 .clicked()
             {
+                self.run_after_build = false;
                 self.start_build();
             }
 
@@ -463,16 +520,23 @@ impl Panel for BuildManagerPanel {
                 .add_enabled(!is_building, egui::Button::new("📦 Build & Run").min_size(egui::vec2(100.0, 30.0)))
                 .clicked()
             {
+                self.run_after_build = true;
                 self.start_build();
-                // TODO: Launch after build completes
             }
 
             if is_building && ui.button("❌ Cancel").clicked() {
-                // TODO: Implement build cancellation
-                self.status = BuildStatus::Idle;
-                self.log_receiver = None;
+                self.cancel_build();
             }
         });
+        
+        // Handle run after build completion
+        if let BuildStatus::Success { ref output_path, .. } = self.status {
+            if self.run_after_build {
+                let path = output_path.clone();
+                self.run_after_build = false; // Reset flag
+                self.launch_executable(&path);
+            }
+        }
 
         ui.add_space(8.0);
 

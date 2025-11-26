@@ -375,3 +375,349 @@ async fn test_no_llm_client() -> Result<()> {
     
     Ok(())
 }
+
+#[tokio::test]
+async fn test_empty_vector_store_retrieval() -> Result<()> {
+    let pipeline = create_test_pipeline().await;
+    
+    // Retrieve from empty store
+    let results = pipeline.retrieve("anything", 5).await?;
+    assert!(results.is_empty());
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_ordering_strategy_similarity_asc() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.injection.ordering_strategy = astraweave_rag::OrderingStrategy::SimilarityAsc;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    let llm_client = Arc::new(MockLlm);
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        Some(llm_client),
+        config,
+    );
+    
+    pipeline.add_memory("High match".to_string()).await?;
+    pipeline.add_memory("Low match".to_string()).await?;
+    
+    let results = pipeline.retrieve("High", 2).await?;
+    
+    // Should be sorted ascending by similarity (lowest first)
+    if results.len() >= 2 {
+        assert!(results[0].similarity_score <= results[1].similarity_score);
+    }
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_ordering_strategy_recency_desc() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.injection.ordering_strategy = astraweave_rag::OrderingStrategy::RecencyDesc;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    let old_memory = Memory {
+        id: "old".to_string(),
+        text: "Old memory".to_string(),
+        timestamp: astraweave_rag::current_timestamp() - 1000,
+        importance: 0.5,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    let new_memory = Memory {
+        id: "new".to_string(),
+        text: "New memory".to_string(),
+        timestamp: astraweave_rag::current_timestamp(),
+        importance: 0.5,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    pipeline.add_memory_obj(old_memory).await?;
+    pipeline.add_memory_obj(new_memory).await?;
+    
+    let results = pipeline.retrieve("memory", 2).await?;
+    
+    if results.len() >= 2 {
+        assert!(results[0].memory.timestamp >= results[1].memory.timestamp);
+    }
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_ordering_strategy_recency_asc() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.injection.ordering_strategy = astraweave_rag::OrderingStrategy::RecencyAsc;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    let old_memory = Memory {
+        id: "old".to_string(),
+        text: "Old memory".to_string(),
+        timestamp: astraweave_rag::current_timestamp() - 1000,
+        importance: 0.5,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    let new_memory = Memory {
+        id: "new".to_string(),
+        text: "New memory".to_string(),
+        timestamp: astraweave_rag::current_timestamp(),
+        importance: 0.5,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    pipeline.add_memory_obj(old_memory).await?;
+    pipeline.add_memory_obj(new_memory).await?;
+    
+    let results = pipeline.retrieve("memory", 2).await?;
+    
+    if results.len() >= 2 {
+        assert!(results[0].memory.timestamp <= results[1].memory.timestamp);
+    }
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_ordering_strategy_importance_asc() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.injection.ordering_strategy = astraweave_rag::OrderingStrategy::ImportanceAsc;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    let low_imp = Memory {
+        id: "low".to_string(),
+        text: "Low importance".to_string(),
+        timestamp: astraweave_rag::current_timestamp(),
+        importance: 0.1,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    let high_imp = Memory {
+        id: "high".to_string(),
+        text: "High importance".to_string(),
+        timestamp: astraweave_rag::current_timestamp(),
+        importance: 0.9,
+        valence: 0.0,
+        category: MemoryCategory::Gameplay,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    pipeline.add_memory_obj(low_imp).await?;
+    pipeline.add_memory_obj(high_imp).await?;
+    
+    let results = pipeline.retrieve("importance", 2).await?;
+    
+    if results.len() >= 2 {
+        assert!(results[0].memory.importance <= results[1].memory.importance);
+    }
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_ordering_strategy_mixed() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.injection.ordering_strategy = astraweave_rag::OrderingStrategy::Mixed;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    for i in 0..5 {
+        pipeline.add_memory(format!("Memory {}", i)).await?;
+    }
+    
+    let results = pipeline.retrieve("Memory", 5).await?;
+    
+    // With Mixed strategy, order is shuffled (non-deterministic)
+    // Just verify we got results
+    assert_eq!(results.len(), 5);
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_diversity_strategy_semantic() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.diversity.enabled = true;
+    config.diversity.strategy = astraweave_rag::DiversityStrategy::Semantic;
+    config.diversity.diversity_factor = 0.5;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    pipeline.add_memory("The cat is sleeping peacefully".to_string()).await?;
+    pipeline.add_memory("The cat is resting quietly".to_string()).await?; // Very similar
+    pipeline.add_memory("The dragon breathes fire".to_string()).await?; // Different
+    
+    let results = pipeline.retrieve("cat", 3).await?;
+    
+    // With diversity enabled, should get diverse results
+    assert!(!results.is_empty());
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_diversity_strategy_temporal() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.diversity.enabled = true;
+    config.diversity.strategy = astraweave_rag::DiversityStrategy::Temporal;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    pipeline.add_memory("Event 1".to_string()).await?;
+    pipeline.add_memory("Event 2".to_string()).await?;
+    pipeline.add_memory("Event 3".to_string()).await?;
+    
+    let results = pipeline.retrieve("Event", 3).await?;
+    
+    assert_eq!(results.len(), 3);
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_diversity_strategy_category() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.diversity.enabled = true;
+    config.diversity.strategy = astraweave_rag::DiversityStrategy::Category;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    let mem1 = Memory {
+        id: "1".to_string(),
+        text: "Combat event".to_string(),
+        timestamp: astraweave_rag::current_timestamp(),
+        importance: 0.5,
+        valence: 0.0,
+        category: MemoryCategory::Combat,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    let mem2 = Memory {
+        id: "2".to_string(),
+        text: "Social event".to_string(),
+        timestamp: astraweave_rag::current_timestamp(),
+        importance: 0.5,
+        valence: 0.0,
+        category: MemoryCategory::Social,
+        entities: vec![],
+        context: HashMap::new(),
+    };
+    
+    pipeline.add_memory_obj(mem1).await?;
+    pipeline.add_memory_obj(mem2).await?;
+    
+    let results = pipeline.retrieve("event", 2).await?;
+    
+    assert_eq!(results.len(), 2);
+    
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_diversity_strategy_combined() -> Result<()> {
+    let mut config = RagConfig::default();
+    config.diversity.enabled = true;
+    config.diversity.strategy = astraweave_rag::DiversityStrategy::Combined;
+    
+    let embedding_client = Arc::new(MockEmbeddingClient::new());
+    let vector_store = Arc::new(VectorStoreWrapper::new(VectorStore::new(384)));
+    
+    let mut pipeline = RagPipeline::new(
+        embedding_client,
+        vector_store,
+        None,
+        config,
+    );
+    
+    for i in 0..5 {
+        pipeline.add_memory(format!("Memory {}", i)).await?;
+    }
+    
+    let results = pipeline.retrieve("Memory", 5).await?;
+    
+    assert_eq!(results.len(), 5);
+    
+    Ok(())
+}

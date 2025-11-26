@@ -124,6 +124,13 @@ pub struct GizmoState {
 
     /// Transform before operation started (for undo/cancel).
     pub start_transform: Option<TransformSnapshot>,
+    
+    /// Position when axis constraint was first applied (for locking).
+    /// This captures the entity's position at the moment the user presses X/Y/Z,
+    /// not the start position of the operation. This ensures that if the user
+    /// moves freely and THEN applies a constraint, the locked axis stays at
+    /// its current value, not the original position.
+    pub constraint_position: Option<Vec3>,
 
     /// Mouse position when operation started.
     pub start_mouse: Option<Vec2>,
@@ -150,6 +157,7 @@ impl Default for GizmoState {
             mode: GizmoMode::Inactive,
             selected_entity: None,
             start_transform: None,
+            constraint_position: None,
             start_mouse: None,
             current_mouse: None,
             numeric_buffer: String::new(),
@@ -326,6 +334,7 @@ impl GizmoState {
         self.numeric_buffer.clear();
         self.confirmed = false;
         self.cancelled = false;
+        self.constraint_position = None; // Clear constraint position for fresh operation
     }
 
     /// Get constraint description for UI display.

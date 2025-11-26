@@ -1019,4 +1019,353 @@ mod tests {
         assert_eq!(metrics.total_interactions, 1);
         assert_eq!(metrics.successful_generations, 1);
     }
+
+    #[test]
+    fn test_response_style_variants() {
+        let styles = vec![
+            ResponseStyle::Conversational,
+            ResponseStyle::Formal,
+            ResponseStyle::Creative,
+            ResponseStyle::Technical,
+            ResponseStyle::Playful,
+            ResponseStyle::Mysterious,
+        ];
+        
+        for style in styles {
+            let _ = format!("{:?}", style);
+        }
+    }
+
+    #[test]
+    fn test_emotional_state_variants() {
+        let states = vec![
+            EmotionalState::Joyful,
+            EmotionalState::Excited,
+            EmotionalState::Calm,
+            EmotionalState::Neutral,
+            EmotionalState::Thoughtful,
+            EmotionalState::Concerned,
+            EmotionalState::Frustrated,
+            EmotionalState::Sad,
+            EmotionalState::Angry,
+            EmotionalState::Surprised,
+            EmotionalState::Curious,
+            EmotionalState::Confident,
+            EmotionalState::Anxious,
+        ];
+        
+        for state in states {
+            let _ = format!("{:?}", state);
+        }
+    }
+
+    #[test]
+    fn test_context_injection_strategy_variants() {
+        let strategies = vec![
+            ContextInjectionStrategy::Full,
+            ContextInjectionStrategy::Recent,
+            ContextInjectionStrategy::Contextual,
+            ContextInjectionStrategy::Minimal,
+        ];
+        
+        for strategy in strategies {
+            let _ = format!("{:?}", strategy);
+        }
+    }
+
+    #[test]
+    fn test_persona_llm_config_default() {
+        let config = PersonaLlmConfig::default();
+        
+        assert_eq!(config.temperature, 0.8);
+        assert_eq!(config.top_p, 0.9);
+        assert_eq!(config.max_tokens, 512);
+        assert_eq!(config.context_window_size, 2048);
+        assert!(matches!(config.response_style, ResponseStyle::Conversational));
+        
+        // Check default personality factors
+        assert_eq!(config.personality_factors.len(), 5);
+        assert_eq!(*config.personality_factors.get("creativity").unwrap(), 0.7);
+        assert_eq!(*config.personality_factors.get("empathy").unwrap(), 0.8);
+        assert_eq!(*config.personality_factors.get("assertiveness").unwrap(), 0.6);
+        assert_eq!(*config.personality_factors.get("curiosity").unwrap(), 0.7);
+        assert_eq!(*config.personality_factors.get("humor").unwrap(), 0.5);
+    }
+
+    #[test]
+    fn test_personality_state_default() {
+        let state = PersonalityState::default();
+        
+        assert_eq!(state.current_mood, 0.0);
+        assert_eq!(state.energy_level, 0.7);
+        assert_eq!(state.confidence, 0.6);
+        assert_eq!(state.trust_level, 0.5);
+        assert!(matches!(state.emotional_state, EmotionalState::Neutral));
+        assert!(state.personality_drift.is_empty());
+        assert!(state.recent_influences.is_empty());
+    }
+
+    #[test]
+    fn test_adaptation_data_default() {
+        let data = AdaptationData::default();
+        
+        assert_eq!(data.interaction_count, 0);
+        assert_eq!(data.successful_interactions, 0);
+        assert_eq!(data.learning_rate, 0.1);
+        assert!(data.preferred_topics.is_empty());
+        assert!(data.topics_to_avoid.is_empty());
+        assert!(data.adaptation_history.is_empty());
+    }
+
+    #[test]
+    fn test_player_patterns_default() {
+        let patterns = PlayerPatterns::default();
+        
+        assert!(patterns.communication_style.is_none());
+        assert!(patterns.interests.is_empty());
+        assert!(patterns.avg_session_length.is_none());
+        assert!(patterns.preferred_times.is_empty());
+        assert!(patterns.emotional_patterns.is_empty());
+    }
+
+    #[test]
+    fn test_prompt_settings_default() {
+        let settings = PromptSettings::default();
+        
+        assert!(settings.system_prompt_template.contains("{{persona.name}}"));
+        assert!(matches!(settings.context_injection, ContextInjectionStrategy::Contextual));
+        assert!(settings.few_shot_examples.is_empty());
+        assert!(settings.prompt_modifiers.is_empty());
+    }
+
+    #[test]
+    fn test_memory_retrieval_settings_default() {
+        let settings = MemoryRetrievalSettings::default();
+        
+        assert_eq!(settings.max_memories, 5);
+        assert_eq!(settings.min_similarity, 0.3);
+        assert_eq!(settings.recency_bonus, 0.1);
+        assert_eq!(settings.priority_categories.len(), 2);
+        assert!(settings.priority_categories.contains(&"Social".to_string()));
+        assert!(settings.priority_categories.contains(&"Dialogue".to_string()));
+    }
+
+    #[test]
+    fn test_memory_profile_default() {
+        let profile = MemoryProfile::default();
+        
+        assert!(profile.core_memories.is_empty());
+        assert!(profile.episodic_memories.is_empty());
+        assert!(profile.semantic_knowledge.is_empty());
+    }
+
+    #[test]
+    fn test_consolidation_preferences_default() {
+        let prefs = ConsolidationPreferences::default();
+        
+        assert_eq!(prefs.consolidation_frequency, 100);
+        assert_eq!(prefs.importance_threshold, 0.3);
+        assert_eq!(prefs.max_memories, 1000);
+    }
+
+    #[test]
+    fn test_forgetting_curve_default() {
+        let curve = ForgettingCurve::default();
+        
+        assert_eq!(curve.decay_rate, 0.1);
+        assert_eq!(curve.importance_multiplier, 2.0);
+        assert_eq!(curve.rehearsal_bonus, 0.5);
+    }
+
+    #[test]
+    fn test_persona_metrics_default() {
+        let metrics = PersonaMetrics::default();
+        
+        assert_eq!(metrics.total_interactions, 0);
+        assert_eq!(metrics.successful_generations, 0);
+        assert_eq!(metrics.failed_generations, 0);
+        assert_eq!(metrics.avg_response_time_ms, 0.0);
+        assert_eq!(metrics.personality_evolution_events, 0);
+        assert_eq!(metrics.memory_consolidations, 0);
+        assert_eq!(metrics.adaptation_learning_events, 0);
+    }
+
+    #[test]
+    fn test_llm_persona_serialization() {
+        let persona = LlmPersona {
+            base: BasePersona::default(),
+            llm_config: PersonaLlmConfig::default(),
+            personality_state: PersonalityState::default(),
+            adaptation: AdaptationData::default(),
+            prompt_settings: PromptSettings::default(),
+            memory_profile: MemoryProfile::default(),
+        };
+        
+        let serialized = serde_json::to_string(&persona).unwrap();
+        let deserialized: LlmPersona = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(persona.personality_state.current_mood, deserialized.personality_state.current_mood);
+        assert_eq!(persona.llm_config.temperature, deserialized.llm_config.temperature);
+    }
+
+    #[test]
+    fn test_personality_influence_serialization() {
+        let mut factor_changes = HashMap::new();
+        factor_changes.insert("test".to_string(), 0.5);
+        
+        let influence = PersonalityInfluence {
+            event: "Test event".to_string(),
+            factor_changes,
+            timestamp: 1234567890,
+            importance: 0.75,
+            decay_rate: 0.05,
+        };
+        
+        let serialized = serde_json::to_string(&influence).unwrap();
+        let deserialized: PersonalityInfluence = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(influence.event, deserialized.event);
+        assert_eq!(influence.importance, deserialized.importance);
+    }
+
+    #[test]
+    fn test_few_shot_example_serialization() {
+        let example = FewShotExample {
+            input: "Test input".to_string(),
+            output: "Test output".to_string(),
+            context: Some("Test context".to_string()),
+            tags: vec!["test".to_string(), "example".to_string()],
+        };
+        
+        let serialized = serde_json::to_string(&example).unwrap();
+        let deserialized: FewShotExample = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(example.input, deserialized.input);
+        assert_eq!(example.tags.len(), deserialized.tags.len());
+    }
+
+    #[test]
+    fn test_adaptation_event_serialization() {
+        let mut changes = HashMap::new();
+        changes.insert("confidence".to_string(), 0.1);
+        
+        let event = AdaptationEvent {
+            trigger: "Positive feedback".to_string(),
+            changes,
+            timestamp: 9876543210,
+            success_rating: Some(0.95),
+        };
+        
+        let serialized = serde_json::to_string(&event).unwrap();
+        let deserialized: AdaptationEvent = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(event.trigger, deserialized.trigger);
+        assert_eq!(event.success_rating, deserialized.success_rating);
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_high_mood_high_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(0.5, 0.8);
+        assert!(matches!(state, EmotionalState::Excited));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_high_mood_medium_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(0.5, 0.5);
+        assert!(matches!(state, EmotionalState::Joyful));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_high_mood_low_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(0.5, 0.2);
+        assert!(matches!(state, EmotionalState::Calm));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_low_mood_high_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.8);
+        assert!(matches!(state, EmotionalState::Angry));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_low_mood_medium_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.5);
+        assert!(matches!(state, EmotionalState::Frustrated));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_low_mood_low_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(-0.5, 0.2);
+        assert!(matches!(state, EmotionalState::Sad));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_neutral_mood_high_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.8);
+        assert!(matches!(state, EmotionalState::Curious));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_neutral_mood_low_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.2);
+        assert!(matches!(state, EmotionalState::Thoughtful));
+    }
+
+    #[test]
+    fn test_calculate_emotional_state_neutral_mood_medium_energy() {
+        let state = LlmPersonaManager::calculate_emotional_state(0.0, 0.5);
+        assert!(matches!(state, EmotionalState::Neutral));
+    }
+
+    #[test]
+    fn test_llm_persona_clone() {
+        let persona = LlmPersona {
+            base: BasePersona::default(),
+            llm_config: PersonaLlmConfig::default(),
+            personality_state: PersonalityState::default(),
+            adaptation: AdaptationData::default(),
+            prompt_settings: PromptSettings::default(),
+            memory_profile: MemoryProfile::default(),
+        };
+        
+        let cloned = persona.clone();
+        
+        assert_eq!(persona.personality_state.current_mood, cloned.personality_state.current_mood);
+        assert_eq!(persona.llm_config.temperature, cloned.llm_config.temperature);
+    }
+
+    #[test]
+    fn test_llm_persona_debug() {
+        let persona = LlmPersona {
+            base: BasePersona::default(),
+            llm_config: PersonaLlmConfig::default(),
+            personality_state: PersonalityState::default(),
+            adaptation: AdaptationData::default(),
+            prompt_settings: PromptSettings::default(),
+            memory_profile: MemoryProfile::default(),
+        };
+        
+        let debug_str = format!("{:?}", persona);
+        assert!(debug_str.contains("LlmPersona"));
+    }
+
+    #[test]
+    fn test_player_patterns_serialization() {
+        let mut emotional_patterns = HashMap::new();
+        emotional_patterns.insert("happiness".to_string(), 0.8);
+        
+        let patterns = PlayerPatterns {
+            communication_style: Some("formal".to_string()),
+            interests: vec!["science".to_string()],
+            avg_session_length: Some(60.0),
+            preferred_times: vec!["morning".to_string()],
+            emotional_patterns,
+        };
+        
+        let serialized = serde_json::to_string(&patterns).unwrap();
+        let deserialized: PlayerPatterns = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(patterns.communication_style, deserialized.communication_style);
+        assert_eq!(patterns.avg_session_length, deserialized.avg_session_length);
+    }
 }

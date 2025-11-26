@@ -1,3 +1,18 @@
+//! # AstraWeave Networking
+//!
+//! Snapshot-based networking for multiplayer games with delta compression.
+//!
+//! ## Core Concepts
+//! - **Snapshot**: Complete world state at a point in time
+//! - **Delta**: Minimal diff between snapshots for bandwidth efficiency
+//! - **Interest**: Filter entities sent to each client
+//!
+//! ## Features
+//! - Delta compression with `diff_snapshots()` / `apply_delta()`
+//! - Interest management: `FullInterest`, `RadiusTeamInterest`, `FovInterest`
+//! - Deterministic replay support
+//! - Built-in server with `GameServer`
+
 use anyhow::Result;
 use astraweave_core::*;
 use futures_util::{SinkExt, StreamExt};

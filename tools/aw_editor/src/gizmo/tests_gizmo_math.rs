@@ -38,9 +38,9 @@ fn test_ray_plane_intersection_logic() {
 fn test_ray_parallel_to_plane() {
     // Ray parallel to plane should not intersect
     // Plane normal +Z, Ray direction +X
-    let center = Vec3::ZERO;
+    let _center = Vec3::ZERO;
     let normal = Vec3::Z;
-    let ray_origin = Vec3::new(0.0, 0.0, 10.0);
+    let _ray_origin = Vec3::new(0.0, 0.0, 10.0);
     let ray_dir = Vec3::X;
     
     let denom = ray_dir.dot(normal);

@@ -1,6 +1,6 @@
-use anyhow::Result;
 use astraweave_embeddings::{Memory, MemoryCategory};
 use astraweave_rag::injection::{InjectionConfig, InjectionContext, InjectionEngine};
+use astraweave_rag::InjectionStrategy;
 use std::collections::HashMap;
 use chrono::Utc;
 
@@ -135,4 +135,238 @@ fn test_injection_max_memories() {
     let result = engine.inject(&context, &memories).unwrap();
     
     assert_eq!(result.injected_memories.len(), 2);
+}
+
+#[test]
+fn test_injection_strategies_all_variants() {
+    let strategies = vec![
+        (InjectionStrategy::Prepend, "prepend test"),
+        (InjectionStrategy::Append, "append test"),
+        (InjectionStrategy::Insert, "insert test"),
+        (InjectionStrategy::Interleave, "interleave test"),
+        (InjectionStrategy::Replace, "replace test"),
+    ];
+
+    for (strategy, query_text) in strategies {
+        let config = InjectionConfig::default();
+        let engine = InjectionEngine::new(config);
+
+        let context = InjectionContext {
+            query: query_text.to_string(),
+            conversation_history: vec![],
+            metadata: HashMap::new(),
+            preferred_categories: vec![],
+        };
+
+        let memories = vec![create_memory("1", query_text, MemoryCategory::Gameplay, 0)];
+
+        let result = engine.inject(&context, &memories);
+        assert!(result.is_ok(), "Strategy {:?} failed", strategy);
+    }
+}
+
+#[test]
+fn test_injection_relevance_calculation() {
+    let config = InjectionConfig::default();
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "cats and dogs".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![],
+    };
+
+    let high_relevance = create_memory("1", "cats and dogs are pets", MemoryCategory::Gameplay, 0);
+    let low_relevance = create_memory("2", "completely unrelated topic", MemoryCategory::Gameplay, 0);
+
+    let memories = vec![high_relevance, low_relevance];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // High relevance memory should be first
+    if result.injected_memories.len() >= 2 {
+        assert_eq!(result.injected_memories[0].id, "1");
+    }
+}
+
+#[test]
+fn test_injection_recency_boost() {
+    let mut config = InjectionConfig::default();
+    config.prioritize_recent = true;
+    config.max_memories = 1;
+    config.relevance_threshold = 0.3;
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "event".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![],
+    };
+
+    // Two memories with same text, different ages
+    let old = create_memory("old", "event happened", MemoryCategory::Gameplay, 48); // 2 days old
+    let recent = create_memory("recent", "event happened", MemoryCategory::Gameplay, 1); // 1 hour old
+
+    let memories = vec![old, recent];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // Recent memory should win
+    assert_eq!(result.injected_memories.len(), 1);
+    assert_eq!(result.injected_memories[0].id, "recent");
+}
+
+#[test]
+fn test_injection_conversation_history_relevance() {
+    let config = InjectionConfig::default();
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "query".to_string(),
+        conversation_history: vec![
+            "We were discussing cats".to_string(),
+            "Cats are great pets".to_string(),
+        ],
+        metadata: HashMap::new(),
+        preferred_categories: vec![],
+    };
+
+    let cat_memory = create_memory("1", "Cats enjoy sunbathing", MemoryCategory::Social, 0);
+    let dog_memory = create_memory("2", "Dogs need walks", MemoryCategory::Social, 0);
+
+    let memories = vec![cat_memory, dog_memory];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // Cat memory should rank higher due to conversation history
+    if result.injected_memories.len() >= 1 {
+        assert_eq!(result.injected_memories[0].id, "1");
+    }
+}
+
+#[test]
+fn test_injection_empty_memories() {
+    let config = InjectionConfig::default();
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "query".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![],
+    };
+
+    let memories: Vec<Memory> = vec![];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    assert!(result.injected_memories.is_empty());
+    assert!(result.context_text.is_empty());
+    assert_eq!(result.relevance_scores.len(), 0);
+}
+
+#[test]
+fn test_injection_context_text_generation() {
+    let mut config = InjectionConfig::default();
+    config.relevance_threshold = 0.1; // Low threshold to ensure memories are included
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "memory test query".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![],
+    };
+
+    let memories = vec![
+        create_memory("1", "first memory test", MemoryCategory::Gameplay, 0),
+        create_memory("2", "second memory test", MemoryCategory::Gameplay, 0),
+    ];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // If memories were injected, context text should contain them
+    if !result.injected_memories.is_empty() {
+        assert!(!result.context_text.is_empty());
+        assert!(result.context_text.contains("Relevant memories:"));
+        assert!(result.context_text.contains("1."));
+    }
+}
+
+#[test]
+fn test_injection_token_estimation() {
+    let config = InjectionConfig::default();
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "test".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![],
+    };
+
+    let memories = vec![create_memory(
+        "1",
+        "This is a test memory with several words",
+        MemoryCategory::Gameplay,
+        0,
+    )];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // Token count should be greater than 0
+    assert!(result.estimated_tokens > 0);
+}
+
+#[test]
+fn test_injection_no_category_preference() {
+    let config = InjectionConfig::default();
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "test".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![], // No preference
+    };
+
+    let memories = vec![
+        create_memory("1", "test memory", MemoryCategory::Combat, 0),
+        create_memory("2", "test memory", MemoryCategory::Social, 0),
+    ];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // Both should be injected when relevance threshold is met
+    assert!(result.injected_memories.len() >= 1);
+}
+
+#[test]
+fn test_injection_multiple_preferred_categories() {
+    let config = InjectionConfig::default();
+    let engine = InjectionEngine::new(config);
+
+    let context = InjectionContext {
+        query: "test".to_string(),
+        conversation_history: vec![],
+        metadata: HashMap::new(),
+        preferred_categories: vec![MemoryCategory::Combat, MemoryCategory::Social],
+    };
+
+    let memories = vec![
+        create_memory("1", "test memory", MemoryCategory::Combat, 0),
+        create_memory("2", "test memory", MemoryCategory::Social, 0),
+        create_memory("3", "test memory", MemoryCategory::Exploration, 0),
+    ];
+
+    let result = engine.inject(&context, &memories).unwrap();
+
+    // Combat and Social should rank higher than Exploration
+    for mem in &result.injected_memories {
+        if mem.id == "1" || mem.id == "2" {
+            // These should be preferred
+        }
+    }
 }

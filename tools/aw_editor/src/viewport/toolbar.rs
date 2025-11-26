@@ -6,12 +6,46 @@
 //! # Features
 //!
 //! - Shading mode toggle (wireframe/lit/unlit)
-//! - Grid visibility toggle
+//! - Grid visibility toggle with type selector (infinite/crosshair)
 //! - Snap-to-grid toggle and settings
 //! - Performance stats display
 //! - Camera bookmarks
 
 use egui;
+
+/// Grid display type for viewport
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum GridType {
+    /// Infinite ground plane grid with distance fading
+    #[default]
+    Infinite,
+    
+    /// Crosshair-style grid (XZ axis lines only, no full grid)
+    Crosshair,
+    
+    /// No grid (same as show_grid = false, but separate option)
+    None,
+}
+
+impl GridType {
+    /// Cycle to next grid type
+    pub fn cycle(&self) -> Self {
+        match self {
+            GridType::Infinite => GridType::Crosshair,
+            GridType::Crosshair => GridType::None,
+            GridType::None => GridType::Infinite,
+        }
+    }
+    
+    /// Display name for UI
+    pub fn name(&self) -> &'static str {
+        match self {
+            GridType::Infinite => "Infinite",
+            GridType::Crosshair => "Crosshair",
+            GridType::None => "None",
+        }
+    }
+}
 
 /// Viewport toolbar widget
 ///
@@ -23,6 +57,9 @@ pub struct ViewportToolbar {
 
     /// Grid visibility
     pub show_grid: bool,
+    
+    /// Grid display type (infinite plane vs crosshair)
+    pub grid_type: GridType,
 
     /// Snap to grid enabled
     pub snap_enabled: bool,
@@ -48,6 +85,7 @@ impl Default for ViewportToolbar {
         Self {
             shading_mode: ShadingMode::Lit,
             show_grid: true,
+            grid_type: GridType::Infinite,
             snap_enabled: false,
             snap_size: 1.0,
             angle_snap_enabled: true,
@@ -76,6 +114,17 @@ impl ViewportToolbar {
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
                             ui.checkbox(&mut self.show_grid, "Grid");
+                            
+                            // Grid type selector (only show when grid is visible)
+                            if self.show_grid {
+                                egui::ComboBox::from_id_salt("grid_type")
+                                    .selected_text(self.grid_type.name())
+                                    .width(80.0)
+                                    .show_ui(ui, |ui| {
+                                        ui.selectable_value(&mut self.grid_type, GridType::Infinite, "Infinite");
+                                        ui.selectable_value(&mut self.grid_type, GridType::Crosshair, "Crosshair");
+                                    });
+                            }
 
                             ui.separator();
 

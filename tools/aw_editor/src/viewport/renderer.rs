@@ -17,8 +17,9 @@
 //!
 //! ViewportRenderer delegates to specialized sub-renderers:
 //! - `GridRenderer`: Floor grid + axes
-//! - `EntityRenderer`: World entities (TODO: Phase 1.3)
-//! - `GizmoRenderer`: Transform handles (TODO: Phase 1.5)
+//! - `EntityRenderer`: World entities (instanced cube rendering)
+//! - `GizmoRenderer`: Transform handles (translate/rotate/scale)
+//! - `PhysicsDebugRenderer`: Collider wireframes
 
 use anyhow::{Context, Result};
 use wgpu;
@@ -182,6 +183,8 @@ impl ViewportRenderer {
     /// * `gizmo_state` - Optional gizmo state (for transform operations)
     /// * `hovered_axis` - Currently hovered axis for gizmo highlighting
     /// * `physics_debug_lines` - Optional physics debug lines from PhysicsWorld
+    /// * `show_grid` - Whether to render the grid at all
+    /// * `crosshair_mode` - If true, render only axis lines (crosshair), not full grid
     pub fn render(
         &mut self,
         target: &wgpu::Texture,
@@ -190,6 +193,8 @@ impl ViewportRenderer {
         gizmo_state: Option<&GizmoState>,
         hovered_axis: Option<crate::gizmo::AxisConstraint>,
         physics_debug_lines: Option<&[astraweave_physics::DebugLine]>,
+        show_grid: bool,
+        crosshair_mode: bool,
     ) -> Result<()> {
         // Ensure depth buffer matches target size
         let target_size = target.size();
@@ -215,10 +220,12 @@ impl ViewportRenderer {
             .render(&mut encoder, &target_view, depth_view, camera, &self.queue)
             .context("Skybox render failed")?;
 
-        // Pass 2: Grid
-        self.grid_renderer
-            .render(&mut encoder, &target_view, depth_view, camera, &self.queue)
-            .context("Grid render failed")?;
+        // Pass 2: Grid (only if enabled)
+        if show_grid {
+            self.grid_renderer
+                .render(&mut encoder, &target_view, depth_view, camera, &self.queue, crosshair_mode)
+                .context("Grid render failed")?;
+        }
 
         // Pass 3: Entities
         self.entity_renderer
@@ -372,8 +379,6 @@ impl ViewportRenderer {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     // NOTE: These tests require wgpu device, which needs a GPU or software renderer.
     // Run with: cargo test --features gpu-tests
 

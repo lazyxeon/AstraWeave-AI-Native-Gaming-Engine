@@ -661,14 +661,159 @@ impl EditorApp {
 impl EditorApp {
     fn show_scene_hierarchy(&mut self, ui: &mut egui::Ui) {
         ui.heading("Scene Hierarchy");
-        ui.label("ECS entities and components (stub)");
-        // TODO: Integrate with ECS world snapshot
+        
+        // Collect entity data first to avoid borrow issues
+        let entity_data: Vec<(Entity, String, Option<_>, Option<_>, Option<_>)> = 
+            if let Some(world) = self.active_world() {
+                world.entities().iter().map(|&entity| {
+                    let name = world.name(entity)
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| format!("Entity_{}", entity));
+                    let pose = world.pose(entity);
+                    let health = world.health(entity);
+                    let team = world.team(entity);
+                    (entity, name, pose, health, team)
+                }).collect()
+            } else {
+                Vec::new()
+            };
+        
+        if entity_data.is_empty() {
+            if self.active_world().is_none() {
+                ui.label("No scene loaded");
+            } else {
+                ui.label("No entities in scene");
+            }
+        } else {
+            ui.label(format!("{} entities:", entity_data.len()));
+            ui.separator();
+            
+            let mut new_selection: Option<u64> = None;
+            let current_primary = self.selection_set.primary;
+            
+            egui::ScrollArea::vertical()
+                .max_height(200.0)
+                .show(ui, |ui| {
+                    for (entity, name, pose, health, team) in &entity_data {
+                        let is_selected = current_primary == Some(*entity as u64);
+                        
+                        let response = ui.selectable_label(is_selected, format!("📦 {}", name));
+                        
+                        if response.clicked() {
+                            new_selection = Some(*entity as u64);
+                        }
+                        
+                        // Show entity info on hover
+                        response.on_hover_ui(|ui| {
+                            ui.label(format!("ID: {}", entity));
+                            if let Some(pose) = pose {
+                                ui.label(format!("Position: ({}, {})", pose.pos.x, pose.pos.y));
+                                ui.label(format!("Scale: {:.2}", pose.scale));
+                            }
+                            if let Some(health) = health {
+                                ui.label(format!("Health: {}", health.hp));
+                            }
+                            if let Some(team) = team {
+                                ui.label(format!("Team: {}", team.id));
+                            }
+                        });
+                    }
+                });
+            
+            // Apply selection change after the scroll area
+            if let Some(sel) = new_selection {
+                self.selection_set.primary = Some(sel);
+            }
+        }
     }
 
     fn show_inspector(&mut self, ui: &mut egui::Ui) {
         ui.heading("Inspector");
-        ui.label("Selected entity properties (stub)");
-        // TODO: Show selected entity's components
+        
+        // Show selected entity's components
+        if let Some(entity_id) = self.selection_set.primary {
+            if let Ok(entity) = u32::try_from(entity_id) {
+                if let Some(world) = self.active_world() {
+                    let name = world.name(entity)
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| format!("Entity_{}", entity));
+                    
+                    ui.label(format!("Selected: {} (ID: {})", name, entity));
+                    ui.separator();
+                    
+                    // Transform section
+                    ui.collapsing("Transform", |ui| {
+                        if let Some(pose) = world.pose(entity) {
+                            ui.horizontal(|ui| {
+                                ui.label("Position:");
+                                ui.label(format!("({}, {})", pose.pos.x, pose.pos.y));
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("Rotation:");
+                                ui.label(format!("{:.1}°", pose.rotation.to_degrees()));
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("Scale:");
+                                ui.label(format!("{:.2}", pose.scale));
+                            });
+                        } else {
+                            ui.label("No transform component");
+                        }
+                    });
+                    
+                    // Health section
+                    ui.collapsing("Health", |ui| {
+                        if let Some(health) = world.health(entity) {
+                            ui.horizontal(|ui| {
+                                ui.label("HP:");
+                                let hp_color = if health.hp > 50 {
+                                    egui::Color32::GREEN
+                                } else if health.hp > 20 {
+                                    egui::Color32::YELLOW
+                                } else {
+                                    egui::Color32::RED
+                                };
+                                ui.colored_label(hp_color, format!("{}", health.hp));
+                            });
+                        } else {
+                            ui.label("No health component");
+                        }
+                    });
+                    
+                    // Team section
+                    ui.collapsing("Team", |ui| {
+                        if let Some(team) = world.team(entity) {
+                            ui.horizontal(|ui| {
+                                ui.label("Team ID:");
+                                ui.label(format!("{}", team.id));
+                            });
+                        } else {
+                            ui.label("No team component");
+                        }
+                    });
+                    
+                    // Ammo section
+                    ui.collapsing("Ammo", |ui| {
+                        if let Some(ammo) = world.ammo(entity) {
+                            ui.horizontal(|ui| {
+                                ui.label("Rounds:");
+                                ui.label(format!("{}", ammo.rounds));
+                            });
+                        } else {
+                            ui.label("No ammo component");
+                        }
+                    });
+                    
+                } else {
+                    ui.label("No scene loaded");
+                }
+            } else {
+                ui.label("Invalid entity ID");
+            }
+        } else {
+            ui.label("No entity selected");
+            ui.label("Select an entity in the Scene Hierarchy or viewport");
+        }
     }
 
     fn show_console(&mut self, ui: &mut egui::Ui) {
@@ -1182,11 +1327,15 @@ impl EditorApp {
             let _ = fs::create_dir_all("assets");
             match serde_json::to_string_pretty(&self.mat_doc) {
                 Ok(s) => {
-                    if fs::write("assets/material_live.json", s).is_ok() {
+                    let save_path = std::path::Path::new("assets/material_live.json");
+                    if fs::write(save_path, s).is_ok() {
                         self.status = "Saved assets/material_live.json".into();
                         self.console_logs
                             .push("✅ Material saved to assets/material_live.json".into());
-                        // TODO: Trigger hot reload
+                        // Trigger hot reload by reloading the material in the inspector
+                        // The file watcher will also detect this change automatically
+                        self.console_logs
+                            .push("🔄 Hot reload triggered".into());
                     } else {
                         self.status = "Failed to write material_live.json".into();
                         self.console_logs

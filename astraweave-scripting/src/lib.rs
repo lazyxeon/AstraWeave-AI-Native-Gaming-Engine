@@ -1,3 +1,22 @@
+//! # AstraWeave Scripting
+//!
+//! Rhai-based scripting system for game logic, AI behavior, and gameplay customization.
+//!
+//! ## Features
+//! - Entity manipulation via `ScriptCommands`
+//! - Physics integration through `PhysicsProxy` and `RaycastHit`
+//! - Navigation mesh queries via `NavMeshProxy`
+//! - Event-driven communication with `ScriptEvent`
+//!
+//! ## Quick Start
+//! ```ignore
+//! let mut engine = Engine::new();
+//! register_api(&mut engine);
+//! let script = engine.compile(r#"
+//!     spawn_entity(prefab_sword);
+//! "#)?;
+//! ```
+
 use astraweave_ecs::{App, Plugin, SystemStage, World, Entity, Events};
 use astraweave_core::{CPos, IVec2, CHealth};
 use astraweave_physics::{PhysicsWorld, CollisionEvent, Layers};
@@ -368,6 +387,11 @@ pub fn script_system(world: &mut World) {
             }
             ScriptCommand::Despawn { entity } => {
                 let e = unsafe { Entity::from_raw(entity as u64) };
+                // Validate entity is alive before attempting despawn
+                if !world.is_alive(e) {
+                    println!("[ScriptSystem] Cannot despawn entity {} (already dead or invalid)", e);
+                    continue;
+                }
                 if world.despawn(e) {
                     println!("[ScriptSystem] Despawned entity {}", e);
                 } else {
@@ -376,6 +400,11 @@ pub fn script_system(world: &mut World) {
             }
             ScriptCommand::SetPosition { entity, position } => {
                 let e = unsafe { Entity::from_raw(entity as u64) };
+                // Validate entity is alive before attempting operations
+                if !world.is_alive(e) {
+                    println!("[ScriptSystem] Cannot set position for entity {} (dead or invalid)", e);
+                    continue;
+                }
                 if let Some(cpos) = world.get_mut::<CPos>(e) {
                     cpos.pos = IVec2::new(position.x as i32, position.z as i32);
                     println!("[ScriptSystem] Set position of {} to {}", e, position);
@@ -393,18 +422,53 @@ pub fn script_system(world: &mut World) {
             }
             ScriptCommand::ApplyDamage { entity, amount } => {
                 let e = unsafe { Entity::from_raw(entity as u64) };
+                // Validate entity is alive before attempting operations
+                if !world.is_alive(e) {
+                    println!("[ScriptSystem] Cannot apply damage to entity {} (dead or invalid)", e);
+                    continue;
+                }
                 if let Some(health) = world.get_mut::<CHealth>(e) {
                     health.hp = (health.hp as f32 - amount).max(0.0) as i32;
                     println!("[ScriptSystem] Applied {} damage to {} (Health: {})", amount, e, health.hp);
+                } else {
+                    println!("[ScriptSystem] Entity {} has no CHealth component", e);
                 }
             }
             ScriptCommand::PlaySound { path } => {
-                println!("[ScriptSystem] Playing sound: {}", path);
-                // TODO: Integrate with astraweave-audio
+                println!("[ScriptSystem] PlaySound requested: {}", path);
+                
+                // TODO(scripting-audio-integration): Integrate with astraweave-audio
+                // The AudioEngine exists in astraweave-audio::engine::AudioEngine with methods:
+                //   - play_sfx_file(path: &str) -> Result<()>
+                //   - play_sfx_3d_file(emitter: EmitterId, path: &str, pos: Vec3) -> Result<()>
+                // 
+                // Integration steps:
+                // 1. Add astraweave-audio to Cargo.toml dependencies (already added)
+                // 2. Create an ECS resource wrapper for AudioEngine
+                // 3. Get resource from world: world.get_resource_mut::<AudioEngineResource>()
+                // 4. Call audio.play_sfx_file(&path) or audio.play_sfx_3d_file(...)
+                // 
+                // For now, logging only to avoid silent failures.
             }
             ScriptCommand::SpawnParticle { effect, position } => {
-                println!("[ScriptSystem] Spawning particle '{}' at {}", effect, position);
-                // TODO: Integrate with astraweave-render
+                println!("[ScriptSystem] SpawnParticle requested: '{}' at {}", effect, position);
+                
+                // TODO(scripting-vfx-integration): Integrate with astraweave-render particle system
+                // The GPU particle system exists in astraweave-render::gpu_particles::GpuParticleSystem
+                // with EmitterParams for configuring particle emission.
+                //
+                // Integration steps:
+                // 1. Add astraweave-render to Cargo.toml dependencies
+                // 2. Create an ECS resource wrapper for GpuParticleSystem or effect registry
+                // 3. Get resource from world: world.get_resource_mut::<ParticleSystemResource>()
+                // 4. Queue particle emission with EmitterParams:
+                //    - position: [position.x, position.y, position.z, 0.0]
+                //    - Parse 'effect' string to determine particle type/config
+                //    - Call system.update() with appropriate params
+                //
+                // Alternative: Use environment::WeatherParticles for simple effects
+                // 
+                // For now, logging only to avoid silent failures.
             }
         }
     }
@@ -868,5 +932,41 @@ mod tests {
         // Run one tick
         // We expect runtime errors to be printed to stderr, but no crash.
         app.schedule.run(&mut app.world);
+    }
+
+    #[test]
+    fn test_stale_entity_validation() {
+        use astraweave_core::CHealth;
+
+        let mut app = App::new();
+        app = app.add_plugin(ScriptingPlugin);
+
+        // Spawn a victim entity and record its ID
+        let victim = app.world.spawn();
+        app.world.insert(victim, CHealth { hp: 100 });
+        let victim_id = victim.to_raw() as i64;
+
+        // Despawn the victim
+        app.world.despawn(victim);
+
+        // Create a script that tries to damage the now-dead entity
+        let e = app.world.spawn();
+        let script_source = format!(
+            r#"
+            // Try to damage entity {} which is already dead
+            commands.apply_damage({}, 50.0);
+            commands.set_position({}, vec3(10.0, 0.0, 10.0));
+        "#,
+            victim_id, victim_id, victim_id
+        );
+
+        let script = CScript::new("test_stale.rhai", &script_source);
+        app.world.insert(e, script);
+
+        // Run one tick - should not crash
+        // The system should detect the stale entity and skip operations
+        app.schedule.run(&mut app.world);
+
+        // Test passed if we get here without panic
     }
 }

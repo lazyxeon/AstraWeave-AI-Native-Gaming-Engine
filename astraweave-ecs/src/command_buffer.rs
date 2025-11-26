@@ -9,15 +9,19 @@
 //! # #[derive(Clone, Copy, Debug, PartialEq)]
 //! # struct Position { x: f32, y: f32 }
 //! # let mut world = World::new();
+//! # world.register_component::<Position>();
+//! # let e1 = world.spawn();
+//! # let e2 = world.spawn();
 //! let mut commands = CommandBuffer::new();
 //!
-//! // Queue operations during iteration (safe)
-//! for entity in world.entities() {
-//!     commands.insert(entity, Position { x: 10.0, y: 20.0 });
-//! }
+//! // Queue operations on entities (safe during iteration)
+//! commands.insert(e1, Position { x: 10.0, y: 20.0 });
+//! commands.insert(e2, Position { x: 30.0, y: 40.0 });
 //!
 //! // Apply all queued operations (batch update)
 //! commands.flush(&mut world);
+//!
+//! assert_eq!(world.get::<Position>(e1), Some(&Position { x: 10.0, y: 20.0 }));
 //! ```
 
 use crate::{Component, Entity, World};
@@ -329,7 +333,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "insert_boxed not fully implemented")]
     fn test_flush_insert_remove() {
         let mut world = World::new();
         world.register_component::<Position>();
@@ -339,7 +342,9 @@ mod tests {
         let entity = world.spawn();
 
         buffer.insert(entity, Position { x: 1.0, y: 2.0 });
-        buffer.flush(&mut world); // Will panic until full type registry dispatch is implemented
+        buffer.flush(&mut world);
+
+        assert_eq!(world.get::<Position>(entity), Some(&Position { x: 1.0, y: 2.0 }));
     }
 
     #[test]
@@ -369,7 +374,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "insert_boxed not fully implemented")]
     fn test_flush_spawn() {
         let mut world = World::new();
         world.register_component::<Position>();
@@ -383,7 +387,9 @@ mod tests {
             .with(Velocity { x: 1.0, y: 2.0 });
 
         assert_eq!(world.entity_count(), 0);
-        buffer.flush(&mut world); // Will panic
+        buffer.flush(&mut world);
+
+        assert_eq!(world.entity_count(), 1);
     }
 
     #[test]
@@ -402,7 +408,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "insert_boxed not fully implemented")]
     fn test_insert_during_iteration() {
         let mut world = World::new();
         world.register_component::<Position>();
@@ -413,12 +418,15 @@ mod tests {
 
         let mut buffer = CommandBuffer::new();
 
-        // Simulate iteration over entities, queuing inserts
         for entity in [e1, e2, e3] {
             buffer.insert(entity, Position { x: 1.0, y: 2.0 });
         }
 
-        buffer.flush(&mut world); // Will panic
+        buffer.flush(&mut world);
+
+        assert_eq!(world.get::<Position>(e1), Some(&Position { x: 1.0, y: 2.0 }));
+        assert_eq!(world.get::<Position>(e2), Some(&Position { x: 1.0, y: 2.0 }));
+        assert_eq!(world.get::<Position>(e3), Some(&Position { x: 1.0, y: 2.0 }));
     }
 
     #[test]
@@ -441,7 +449,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "insert_boxed not fully implemented")]
     fn test_command_ordering_preservation() {
         let mut world = World::new();
         world.register_component::<Position>();
@@ -450,11 +457,12 @@ mod tests {
 
         let e1 = world.spawn();
 
-        // Queue operations in specific order
         buffer.insert(e1, Position { x: 1.0, y: 1.0 });
         buffer.remove::<Position>(e1);
         buffer.insert(e1, Position { x: 2.0, y: 2.0 });
 
-        buffer.flush(&mut world); // Will panic
+        buffer.flush(&mut world);
+
+        assert_eq!(world.get::<Position>(e1), Some(&Position { x: 2.0, y: 2.0 }));
     }
 }

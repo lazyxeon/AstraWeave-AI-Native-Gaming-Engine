@@ -181,6 +181,86 @@ mod tests {
         assert_eq!(desc.pixels_per_point, 2.0);
     }
 
+    #[test]
+    fn test_screen_descriptor_zero_size() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [0, 0],
+            pixels_per_point: 1.0,
+        };
+        assert_eq!(desc.size_in_pixels, [0, 0]);
+        assert_eq!(desc.pixels_per_point, 1.0);
+    }
+
+    #[test]
+    fn test_screen_descriptor_ultra_high_dpi() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [3840, 2160],
+            pixels_per_point: 3.0,
+        };
+        assert_eq!(desc.size_in_pixels, [3840, 2160]);
+        assert_eq!(desc.pixels_per_point, 3.0);
+    }
+
+    #[test]
+    fn test_screen_descriptor_fractional_scale() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [1920, 1080],
+            pixels_per_point: 1.5,
+        };
+        assert_eq!(desc.size_in_pixels, [1920, 1080]);
+        assert_eq!(desc.pixels_per_point, 1.5);
+    }
+
+    #[test]
+    fn test_screen_descriptor_low_dpi() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [800, 600],
+            pixels_per_point: 0.75,
+        };
+        assert_eq!(desc.size_in_pixels, [800, 600]);
+        assert_eq!(desc.pixels_per_point, 0.75);
+    }
+
+    #[test]
+    fn test_screen_descriptor_odd_dimensions() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [1366, 768],
+            pixels_per_point: 1.0,
+        };
+        assert_eq!(desc.size_in_pixels, [1366, 768]);
+        assert_eq!(desc.pixels_per_point, 1.0);
+    }
+
+    #[test]
+    fn test_screen_descriptor_portrait_orientation() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [1080, 1920],
+            pixels_per_point: 2.0,
+        };
+        assert_eq!(desc.size_in_pixels, [1080, 1920]);
+        assert_eq!(desc.pixels_per_point, 2.0);
+    }
+
+    #[test]
+    fn test_screen_descriptor_square() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [1024, 1024],
+            pixels_per_point: 1.0,
+        };
+        assert_eq!(desc.size_in_pixels, [1024, 1024]);
+        assert_eq!(desc.pixels_per_point, 1.0);
+    }
+
+    #[test]
+    fn test_screen_descriptor_very_wide() {
+        let desc = ScreenDescriptor {
+            size_in_pixels: [3440, 1440],
+            pixels_per_point: 1.0,
+        };
+        assert_eq!(desc.size_in_pixels, [3440, 1440]);
+        assert_eq!(desc.pixels_per_point, 1.0);
+    }
+
     // Note: Full UiLayer tests require wgpu/winit context,
     // which is integration-test level. Unit tests above cover
     // the data structures used in the API.
