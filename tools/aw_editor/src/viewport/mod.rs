@@ -43,5 +43,7 @@ mod skybox_renderer;
 mod toolbar;
 mod widget;
 
+// Physics debug types are exported for external configuration
+#[allow(unused_imports)]
 pub use physics_renderer::{PhysicsDebugOptions, PhysicsDebugRenderer};
 pub use widget::ViewportWidget;

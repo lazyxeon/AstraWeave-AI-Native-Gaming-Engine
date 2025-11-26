@@ -1,13 +1,13 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use astraweave_scripting::{CScript, ScriptEngineResource, script_system};
-use astraweave_ecs::{App, World, SystemStage};
-use rhai::{Engine, Scope, AST};
+use astraweave_ecs::{App, SystemStage};
+use rhai::{Engine, Scope};
 use std::sync::Arc;
+use std::hint::black_box;
 
 fn bench_script_execution(c: &mut Criterion) {
     let mut group = c.benchmark_group("script_execution");
     
-    // Setup engine once
     let engine = Engine::new();
     let ast = engine.compile("let x = 10; let y = 20; x + y").unwrap();
     let ast_arc = Arc::new(ast);
@@ -19,21 +19,17 @@ fn bench_script_execution(c: &mut Criterion) {
         })
     });
     
-    // Setup ECS world with 1000 entities
-    let mut app = App::new();
-    app.insert_resource(ScriptEngineResource(Arc::new(engine)));
-    app.add_system(SystemStage::SIMULATION, script_system);
+    let ecs_engine = Engine::new();
+    let ecs_ast = ecs_engine.compile("let x = 10; let y = 20; x + y").unwrap();
+    let ecs_ast_arc = Arc::new(ecs_ast);
     
-    let script_source = "let x = 10; let y = 20; x + y";
-    // Pre-compile by running once manually or just setting cached_ast
-    // We can't easily set cached_ast from outside because fields are public but we need the engine to compile.
-    // Let's just use the system to compile on first run.
+    let mut app = App::new().insert_resource(ScriptEngineResource(Arc::new(ecs_engine)));
+    app.add_system(SystemStage::SIMULATION, script_system);
     
     for _ in 0..1000 {
         let e = app.world.spawn();
-        let mut script = CScript::new("bench.rhai", script_source);
-        // Pre-populate AST to benchmark execution only, not compilation
-        script.cached_ast = Some(ast_arc.clone());
+        let mut script = CScript::new("bench.rhai", "let x = 10; let y = 20; x + y");
+        script.cached_ast = Some(ecs_ast_arc.clone());
         app.world.insert(e, script);
     }
     

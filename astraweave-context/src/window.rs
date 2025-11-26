@@ -726,4 +726,154 @@ mod tests {
         assert!(formatted.contains("USER: Hello"));
         assert!(formatted.contains("ASSISTANT: Hi there"));
     }
+
+    #[test]
+    fn test_get_important_messages() {
+        let mut config = ContextWindowConfig::default();
+        config.window_type = WindowType::Attention;
+
+        let mut window = ContextWindow::new(config);
+
+        // Add messages with different importance
+        let mut important_msg = Message::new(Role::System, "Critical system message".to_string());
+        important_msg.preserve = true;
+
+        window.add_message(important_msg).unwrap();
+        window
+            .add_message(Message::new(Role::User, "Regular user message".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(
+                Role::Assistant,
+                "Regular assistant message".to_string(),
+            ))
+            .unwrap();
+
+        // Get important messages with threshold
+        let important = window.get_important_messages(0.5);
+
+        // Should have at least the preserved message
+        assert!(important.len() >= 1);
+
+        // The preserved message should have high attention
+        let has_preserved = important
+            .iter()
+            .any(|(msg, _weight)| msg.content.contains("Critical system message"));
+        assert!(has_preserved);
+    }
+
+    #[test]
+    fn test_calculate_attention_weight_recency() {
+        let mut config = ContextWindowConfig::default();
+        config.attention_config.recency_bias = 0.2;
+
+        let mut window = ContextWindow::new(config);
+
+        // Add older message
+        let old_msg = Message::new(Role::User, "Old message".to_string());
+        window.add_message(old_msg.clone()).unwrap();
+
+        // Add newer message
+        let new_msg = Message::new(Role::User, "New message".to_string());
+        window.add_message(new_msg.clone()).unwrap();
+
+        // Get attention weights
+        let old_weight = window.attention_weights.get(&old_msg.id).unwrap_or(&0.0);
+        let new_weight = window.attention_weights.get(&new_msg.id).unwrap_or(&0.0);
+
+        // Both should have positive weights
+        assert!(*old_weight > 0.0);
+        assert!(*new_weight > 0.0);
+    }
+
+    #[test]
+    fn test_is_full_conditions() {
+        let mut config = ContextWindowConfig::default();
+        config.max_tokens = 50;
+        config.max_messages = 3;
+
+        let max_messages = config.max_messages;
+        let mut window = ContextWindow::new(config);
+
+        assert!(!window.is_full());
+
+        // Add messages
+        window
+            .add_message(Message::new(Role::User, "Message 1".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 2".to_string()))
+            .unwrap();
+
+        // Should not be full yet
+        assert!(!window.is_full());
+
+        // Add one more to hit message limit
+        window
+            .add_message(Message::new(Role::User, "Message 3".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 4".to_string()))
+            .unwrap();
+
+        // Should be full or pruned
+        assert!(window.message_count() <= max_messages);
+    }
+
+    #[test]
+    fn test_utilization_calculation() {
+        let mut config = ContextWindowConfig::default();
+        config.max_tokens = 100;
+
+        let mut window = ContextWindow::new(config);
+
+        assert_eq!(window.utilization(), 0.0);
+
+        // Add a message
+        window
+            .add_message(Message::new(Role::User, "Test message".to_string()))
+            .unwrap();
+
+        let util = window.utilization();
+        assert!(util > 0.0);
+        assert!(util <= 1.0);
+
+        // Add more messages
+        for i in 0..5 {
+            window
+                .add_message(Message::new(Role::User, format!("Message {}", i)))
+                .unwrap();
+        }
+
+        let util_after = window.utilization();
+        assert!(util_after >= util);
+        assert!(util_after <= 1.0);
+    }
+
+    #[test]
+    fn test_clear_window() {
+        let config = ContextWindowConfig::default();
+        let mut window = ContextWindow::new(config);
+
+        // Add messages
+        window
+            .add_message(Message::new(Role::User, "Message 1".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 2".to_string()))
+            .unwrap();
+
+        assert!(window.message_count() > 0);
+        assert!(window.current_tokens() > 0);
+
+        // Clear
+        window.clear();
+
+        assert_eq!(window.message_count(), 0);
+        assert_eq!(window.current_tokens(), 0);
+        assert_eq!(window.utilization(), 0.0);
+
+        let stats = window.get_stats();
+        assert_eq!(stats.total_messages_added, 0);
+    }
 }

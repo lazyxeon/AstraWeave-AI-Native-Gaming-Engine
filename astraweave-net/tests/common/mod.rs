@@ -3,6 +3,7 @@
 use anyhow::Result;
 use astraweave_core::{IVec2, PlanIntent, Team, World};
 use astraweave_net::{build_snapshot, GameServer, Msg, Snapshot};
+use futures_util::stream::FusedStream;
 use futures_util::{SinkExt, StreamExt};
 use std::sync::Arc;
 use std::time::Duration;
@@ -78,7 +79,7 @@ impl TestClient {
     /// Send a message to server
     pub async fn send(&mut self, msg: &Msg) -> Result<()> {
         let json = serde_json::to_string(msg)?;
-        self.ws.send(Message::Text(json)).await?;
+        self.ws.send(Message::Text(json.into())).await?;
         Ok(())
     }
 

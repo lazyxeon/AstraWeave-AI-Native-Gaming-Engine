@@ -778,6 +778,143 @@ impl EditorCommand for DeleteEntitiesCommand {
 }
 
 // ============================================================================
+// Prefab Commands
+// ============================================================================
+
+use crate::prefab::{PrefabData, PrefabManager};
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
+
+/// Command to spawn a prefab with undo support
+#[derive(Debug)]
+pub struct PrefabSpawnCommand {
+    prefab_path: PathBuf,
+    prefab_manager: Arc<Mutex<PrefabManager>>,
+    spawn_pos: (i32, i32),
+    spawned_entity: Option<Entity>,
+}
+
+impl PrefabSpawnCommand {
+    pub fn new(
+        prefab_path: PathBuf, 
+        prefab_manager: Arc<Mutex<PrefabManager>>,
+        spawn_pos: (i32, i32),
+    ) -> Box<dyn EditorCommand> {
+        Box::new(Self {
+            prefab_path,
+            prefab_manager,
+            spawn_pos,
+            spawned_entity: None,
+        })
+    }
+}
+
+impl EditorCommand for PrefabSpawnCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        let mut manager = self.prefab_manager.lock()
+            .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+        
+        let entity = manager.instantiate_prefab(&self.prefab_path, world, self.spawn_pos)?;
+        self.spawned_entity = Some(entity);
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        if let Some(entity) = self.spawned_entity {
+            // Move entity out of view (soft delete) - same pattern as other commands
+            if let Some(pose) = world.pose_mut(entity) {
+                *pose = astraweave_core::Pose {
+                    pos: IVec2 { x: -10000, y: -10000 },
+                    rotation: 0.0,
+                    rotation_x: 0.0,
+                    rotation_z: 0.0,
+                    scale: 0.0,
+                };
+            }
+            
+            // Remove instance tracking
+            let mut manager = self.prefab_manager.lock()
+                .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+            manager.remove_instance(entity);
+        }
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        let name = self.prefab_path.file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("Unknown");
+        format!("Spawn prefab '{}'", name)
+    }
+}
+
+/// Command to apply overrides from an instance back to its prefab file
+#[derive(Debug)]
+pub struct PrefabApplyOverridesCommand {
+    entity: Entity,
+    prefab_manager: Arc<Mutex<PrefabManager>>,
+    original_prefab_data: Option<PrefabData>,
+}
+
+impl PrefabApplyOverridesCommand {
+    pub fn new(
+        entity: Entity,
+        prefab_manager: Arc<Mutex<PrefabManager>>,
+    ) -> Box<dyn EditorCommand> {
+        Box::new(Self {
+            entity,
+            prefab_manager,
+            original_prefab_data: None,
+        })
+    }
+}
+
+impl EditorCommand for PrefabApplyOverridesCommand {
+    fn execute(&mut self, world: &mut World) -> Result<()> {
+        let mut manager = self.prefab_manager.lock()
+            .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+        
+        // Find the prefab instance for this entity
+        let instance = manager.find_instance(self.entity)
+            .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", self.entity))?;
+        
+        let prefab_path = instance.source.clone();
+        
+        // Load and store original data for undo
+        self.original_prefab_data = Some(PrefabData::load_from_file(&prefab_path)?);
+        
+        // Apply overrides to prefab file
+        manager.apply_overrides_to_prefab(self.entity, world)?;
+        
+        Ok(())
+    }
+
+    fn undo(&mut self, world: &mut World) -> Result<()> {
+        if let Some(original_data) = &self.original_prefab_data {
+            let manager = self.prefab_manager.lock()
+                .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+            
+            // Find the prefab path
+            if let Some(instance) = manager.find_instance(self.entity) {
+                // Restore original prefab file
+                original_data.save_to_file(&instance.source)?;
+                
+                // Revert instance to prefab values
+                drop(manager); // Release lock before mutable world access
+                let mut manager = self.prefab_manager.lock()
+                    .map_err(|e| anyhow::anyhow!("Failed to lock prefab manager: {}", e))?;
+                manager.revert_instance_to_prefab(self.entity, world)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn describe(&self) -> String {
+        format!("Apply overrides to prefab (entity #{})", self.entity)
+    }
+}
+
+// ============================================================================
 // Tests
 // ============================================================================
 

@@ -1023,6 +1023,7 @@ mod tests {
             path: PathBuf::from("test.glb"),
             name: "test.glb".to_string(),
             asset_type: AssetType::Model,
+            texture_type: None,
             size: 1024,
         };
         assert_eq!(entry.format_size(), "1.0 KB");
@@ -1031,6 +1032,7 @@ mod tests {
             path: PathBuf::from("large.glb"),
             name: "large.glb".to_string(),
             asset_type: AssetType::Model,
+            texture_type: None,
             size: 1024 * 1024,
         };
         assert_eq!(entry_large.format_size(), "1.0 MB");

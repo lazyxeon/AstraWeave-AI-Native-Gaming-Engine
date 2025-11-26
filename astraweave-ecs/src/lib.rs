@@ -501,21 +501,25 @@ impl World {
         &mut self,
         entity: Entity,
         type_id: TypeId,
-        _component: Box<dyn std::any::Any + Send + Sync>,
+        component: Box<dyn std::any::Any + Send + Sync>,
     ) {
         if !self.is_alive(entity) {
             return; // Stale entity, silently ignore
         }
 
-        // TODO: Full type registry dispatch with closures requires refactoring to avoid
-        // borrow checker issues (self is borrowed immutably for registry lookup, but
-        // handler needs &mut self). For now, this is a stub that will be improved in
-        // a follow-up commit using interior mutability or a different architecture.
-        panic!(
-            "insert_boxed not fully implemented - type_id {:?}. \
-             This is a known limitation. See PR #2 implementation notes.",
-            type_id
-        );
+        let handler = self
+            .type_registry
+            .insert_handlers
+            .get(&type_id)
+            .cloned()
+            .unwrap_or_else(|| {
+                panic!(
+                    "insert_boxed: type {:?} not registered (call register_component::<T>() first)",
+                    type_id
+                )
+            });
+
+        handler(self, entity, component);
     }
 
     /// Remove a component by TypeId (used by CommandBuffer).
@@ -527,11 +531,19 @@ impl World {
             return; // Stale entity, silently ignore
         }
 
-        panic!(
-            "remove_by_type_id not fully implemented - type_id {:?}. \
-             See PR #2 implementation notes.",
-            type_id
-        );
+        let handler = self
+            .type_registry
+            .remove_handlers
+            .get(&type_id)
+            .cloned()
+            .unwrap_or_else(|| {
+                panic!(
+                    "remove_by_type_id: type {:?} not registered (call register_component::<T>() first)",
+                    type_id
+                )
+            });
+
+        handler(self, entity);
     }
 }
 

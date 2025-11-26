@@ -324,4 +324,230 @@ mod tests {
         engine.strengthen_memory("test_id", 0.1).unwrap();
         // Should not panic even if memory doesn't exist
     }
+
+    #[test]
+    fn test_memory_strength_tracking() {
+        let config = ForgettingConfig::default();
+        let mut engine = ForgettingEngine::new(config);
+
+        let memory = Memory {
+            id: "test1".to_string(),
+            text: "Test memory".to_string(),
+            category: MemoryCategory::Gameplay,
+            timestamp: chrono::Utc::now().timestamp() as u64,
+            importance: 0.5,
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let memories = vec![memory];
+        let (retained, _) = engine.process_forgetting(memories).unwrap();
+
+        // Memory should be retained
+        assert_eq!(retained.len(), 1);
+
+        // Check strength was tracked
+        let strength = engine.get_memory_strength("test1");
+        assert!(strength.is_some());
+        assert_eq!(strength.unwrap().current_strength, 1.0);
+    }
+
+    #[test]
+    fn test_protect_and_unprotect_memory() {
+        let config = ForgettingConfig::default();
+        let mut engine = ForgettingEngine::new(config);
+
+        let memory = Memory {
+            id: "protect_test".to_string(),
+            text: "Important memory".to_string(),
+            category: MemoryCategory::Gameplay,
+            timestamp: chrono::Utc::now().timestamp() as u64,
+            importance: 0.1, // Very low importance
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        // Process once to track the memory
+        let memories = vec![memory.clone()];
+        let (_, _) = engine.process_forgetting(memories).unwrap();
+
+        // Protect the memory
+        engine.protect_memory("protect_test").unwrap();
+
+        let strength = engine.get_memory_strength("protect_test");
+        assert!(strength.is_some());
+        assert!(strength.unwrap().protected);
+
+        // Unprotect the memory
+        engine.unprotect_memory("protect_test").unwrap();
+
+        let strength = engine.get_memory_strength("protect_test");
+        assert!(strength.is_some());
+        assert!(!strength.unwrap().protected);
+    }
+
+    #[test]
+    fn test_forgetting_statistics() {
+        let config = ForgettingConfig::default();
+        let mut engine = ForgettingEngine::new(config);
+
+        let memories = vec![
+            Memory {
+                id: "1".to_string(),
+                text: "Memory 1".to_string(),
+                category: MemoryCategory::Gameplay,
+                timestamp: chrono::Utc::now().timestamp() as u64,
+                importance: 0.5,
+                valence: 0.0,
+                entities: vec![],
+                context: HashMap::new(),
+            },
+            Memory {
+                id: "2".to_string(),
+                text: "Memory 2".to_string(),
+                category: MemoryCategory::Quest,
+                timestamp: chrono::Utc::now().timestamp() as u64,
+                importance: 0.8,
+                valence: 0.0,
+                entities: vec![],
+                context: HashMap::new(),
+            },
+        ];
+
+        let (_, _) = engine.process_forgetting(memories).unwrap();
+
+        let stats = engine.get_statistics();
+        assert_eq!(stats.total_memories, 2);
+        assert_eq!(stats.protected_memories, 1); // Quest category is protected by default
+        assert!(stats.average_strength > 0.0);
+    }
+
+    #[test]
+    fn test_decay_calculation() {
+        let mut config = ForgettingConfig::default();
+        config.base_decay_rate = 0.1;
+        config.importance_factor = 2.0;
+
+        let mut engine = ForgettingEngine::new(config);
+
+        let memory = Memory {
+            id: "decay_test".to_string(),
+            text: "Test decay".to_string(),
+            category: MemoryCategory::Gameplay,
+            timestamp: (chrono::Utc::now().timestamp() - 3600) as u64, // 1 hour old
+            importance: 0.5,
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let memories = vec![memory];
+        let (retained, result) = engine.process_forgetting(memories).unwrap();
+
+        // Memory should still be retained after 1 hour
+        assert_eq!(retained.len(), 1);
+        assert_eq!(result.forgotten_count, 0);
+
+        // Check that strength has decayed
+        let strength = engine.get_memory_strength("decay_test");
+        assert!(strength.is_some());
+        assert!(strength.unwrap().current_strength < 1.0);
+    }
+
+    #[test]
+    fn test_protected_category_never_forgotten() {
+        let mut config = ForgettingConfig::default();
+        config.min_importance_threshold = 0.9; // Very high threshold
+        config.max_memory_age = 1; // Very short max age
+
+        let mut engine = ForgettingEngine::new(config);
+
+        let quest_memory = Memory {
+            id: "quest1".to_string(),
+            text: "Important quest".to_string(),
+            category: MemoryCategory::Quest, // Protected category
+            timestamp: (chrono::Utc::now().timestamp() - 10000) as u64, // Very old
+            importance: 0.1, // Very low importance
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let memories = vec![quest_memory];
+        let (retained, result) = engine.process_forgetting(memories).unwrap();
+
+        // Protected memory should be retained despite low importance and old age
+        assert_eq!(retained.len(), 1);
+        assert_eq!(result.forgotten_count, 0);
+    }
+
+    #[test]
+    fn test_max_age_forgetting() {
+        let mut config = ForgettingConfig::default();
+        config.max_memory_age = 100; // 100 seconds max age
+
+        let mut engine = ForgettingEngine::new(config);
+
+        let old_memory = Memory {
+            id: "old1".to_string(),
+            text: "Very old memory".to_string(),
+            category: MemoryCategory::Gameplay,
+            timestamp: (chrono::Utc::now().timestamp() - 200) as u64, // 200 seconds old
+            importance: 0.9, // High importance
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let memories = vec![old_memory];
+        let (retained, result) = engine.process_forgetting(memories).unwrap();
+
+        // Memory should be forgotten due to age
+        assert_eq!(retained.len(), 0);
+        assert_eq!(result.forgotten_count, 1);
+    }
+
+    #[test]
+    fn test_importance_affects_decay() {
+        let mut config = ForgettingConfig::default();
+        config.base_decay_rate = 0.2;
+        config.importance_factor = 3.0;
+
+        let mut engine = ForgettingEngine::new(config);
+
+        let high_importance = Memory {
+            id: "high_imp".to_string(),
+            text: "High importance memory".to_string(),
+            category: MemoryCategory::Gameplay,
+            timestamp: (chrono::Utc::now().timestamp() - 7200) as u64, // 2 hours old
+            importance: 0.9,
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let low_importance = Memory {
+            id: "low_imp".to_string(),
+            text: "Low importance memory".to_string(),
+            category: MemoryCategory::Gameplay,
+            timestamp: (chrono::Utc::now().timestamp() - 7200) as u64, // 2 hours old
+            importance: 0.1,
+            valence: 0.0,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let memories = vec![high_importance, low_importance];
+        let (retained, _) = engine.process_forgetting(memories).unwrap();
+
+        // Both should be retained initially
+        assert_eq!(retained.len(), 2);
+
+        // High importance should have higher strength
+        let high_strength = engine.get_memory_strength("high_imp").unwrap();
+        let low_strength = engine.get_memory_strength("low_imp").unwrap();
+        assert!(high_strength.current_strength > low_strength.current_strength);
+    }
 }

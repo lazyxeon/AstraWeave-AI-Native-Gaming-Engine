@@ -57,7 +57,7 @@ fn test_play_preserves_scene() {
 #[test]
 fn test_stop_restores_edits() {
     let mut runtime = EditorRuntime::new();
-    let mut world = sample_world();
+    let world = sample_world();
     let baseline_hash = hash_world(&world);
 
     runtime.enter_play(&world).expect("enter play");

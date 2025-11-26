@@ -17,7 +17,6 @@ fn main() -> anyhow::Result<()> {
             pos: w.pos_of(player).unwrap(),
             stance: "stand".into(),
             orders: vec![],
-        physics_context: None,
         },
         me: CompanionState {
             ammo: 30,
@@ -35,6 +34,7 @@ fn main() -> anyhow::Result<()> {
         pois: vec![],
         obstacles: vec![],
         objective: Some("defeat_boss".into()),
+        physics_context: None,
     };
 
     let mut budget = DirectorBudget {

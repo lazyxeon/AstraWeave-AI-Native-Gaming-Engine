@@ -3116,4 +3116,332 @@ mod tests {
         assert!(tooltip.stats.is_empty());
         assert!(tooltip.flavor_text.is_none());
     }
+
+    // ===== NotificationQueue Edge Cases Tests =====
+
+    #[test]
+    fn test_notification_queue_empty() {
+        let queue = NotificationQueue::new();
+        assert!(!queue.has_active());
+        assert!(queue.active.is_none());
+        assert_eq!(queue.pending.len(), 0);
+    }
+
+    #[test]
+    fn test_notification_queue_push_single() {
+        let mut queue = NotificationQueue::new();
+        let notification = QuestNotification::new_quest(
+            "Test Quest".to_string(),
+            "A test quest".to_string(),
+        );
+
+        queue.push(notification);
+
+        assert!(queue.has_active());
+        assert!(queue.active.is_some());
+        assert_eq!(queue.pending.len(), 0);
+    }
+
+    #[test]
+    fn test_notification_queue_push_multiple() {
+        let mut queue = NotificationQueue::new();
+
+        // Push 3 notifications
+        for i in 1..=3 {
+            let notification = QuestNotification::new_quest(
+                format!("Quest {}", i),
+                format!("Description {}", i),
+            );
+            queue.push(notification);
+        }
+
+        assert!(queue.has_active());
+        assert_eq!(queue.pending.len(), 2);
+    }
+
+    #[test]
+    fn test_notification_queue_overflow_behavior() {
+        let mut queue = NotificationQueue::new();
+
+        // Push 100 notifications (stress test)
+        for i in 1..=100 {
+            let notification = QuestNotification::new_quest(
+                format!("Quest {}", i),
+                format!("Description {}", i),
+            );
+            queue.push(notification);
+        }
+
+        assert!(queue.has_active());
+        assert_eq!(queue.pending.len(), 99);
+    }
+
+    #[test]
+    fn test_notification_queue_expiration_timing() {
+        let mut queue = NotificationQueue::new();
+        let notification = QuestNotification::new_quest(
+            "Short Quest".to_string(),
+            "Quick notification".to_string(),
+        );
+
+        queue.push(notification);
+        assert!(queue.has_active());
+
+        // Update with total duration to expire notification
+        queue.update(2.0);
+
+        // Should auto-pop to next (which is none)
+        assert!(!queue.has_active());
+    }
+
+    #[test]
+    fn test_notification_queue_auto_pop_sequence() {
+        let mut queue = NotificationQueue::new();
+
+        // Push 3 notifications
+        for i in 1..=3 {
+            let notification = QuestNotification::new_quest(
+                format!("Quest {}", i),
+                format!("Description {}", i),
+            );
+            queue.push(notification);
+        }
+
+        assert!(queue.has_active());
+        assert_eq!(queue.pending.len(), 2);
+
+        // Expire first notification
+        queue.update(2.0);
+        assert!(queue.has_active());
+        assert_eq!(queue.pending.len(), 1);
+
+        // Expire second notification
+        queue.update(2.0);
+        assert!(queue.has_active());
+        assert_eq!(queue.pending.len(), 0);
+
+        // Expire third notification
+        queue.update(2.0);
+        assert!(!queue.has_active());
+    }
+
+    #[test]
+    fn test_notification_priority_ordering() {
+        let mut queue = NotificationQueue::new();
+
+        // Push notifications in order
+        queue.push(QuestNotification::new_quest(
+            "First".to_string(),
+            "First quest".to_string(),
+        ));
+        queue.push(QuestNotification::objective_complete("Objective 1".to_string()));
+        queue.push(QuestNotification::quest_complete(
+            "Completed Quest".to_string(),
+            vec!["Gold".to_string(), "XP".to_string()],
+        ));
+
+        // Should process in FIFO order
+        assert!(queue.has_active());
+        assert_eq!(queue.pending.len(), 2);
+    }
+
+    // ===== Quest System Tests =====
+
+    #[test]
+    fn test_quest_multi_objective_progress() {
+        let quest = Quest {
+            id: 1,
+            title: "Gather Resources".to_string(),
+            description: "Collect various resources".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "Collect 10 wood".to_string(),
+                    completed: true,
+                    progress: Some((10, 10)),
+                },
+                Objective {
+                    id: 2,
+                    description: "Collect 5 stone".to_string(),
+                    completed: false,
+                    progress: Some((3, 5)),
+                },
+                Objective {
+                    id: 3,
+                    description: "Find iron ore".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+            ],
+        };
+
+        assert_eq!(quest.completion(), 1.0 / 3.0);
+        assert!(!quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_completion_percentage() {
+        let mut quest = Quest {
+            id: 1,
+            title: "Four Objectives".to_string(),
+            description: "Complete all four".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "First".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Second".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+                Objective {
+                    id: 3,
+                    description: "Third".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+                Objective {
+                    id: 4,
+                    description: "Fourth".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+            ],
+        };
+
+        assert_eq!(quest.completion(), 0.5);
+
+        quest.objectives[2].completed = true;
+        assert_eq!(quest.completion(), 0.75);
+
+        quest.objectives[3].completed = true;
+        assert_eq!(quest.completion(), 1.0);
+        assert!(quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_optional_objective_handling() {
+        let quest = Quest {
+            id: 1,
+            title: "Main Quest".to_string(),
+            description: "With optional objectives".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "Required objective".to_string(),
+                    completed: true,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Optional objective".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+            ],
+        };
+
+        // Even with optional objectives incomplete, progress should be trackable
+        assert_eq!(quest.completion(), 0.5);
+        assert!(!quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_empty_objectives() {
+        let quest = Quest {
+            id: 1,
+            title: "Empty Quest".to_string(),
+            description: "No objectives".to_string(),
+            objectives: vec![],
+        };
+
+        assert_eq!(quest.completion(), 0.0);
+        assert!(!quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_single_objective() {
+        let mut quest = Quest {
+            id: 1,
+            title: "Simple Quest".to_string(),
+            description: "One objective".to_string(),
+            objectives: vec![Objective {
+                id: 1,
+                description: "Single objective".to_string(),
+                completed: false,
+                progress: None,
+            }],
+        };
+
+        assert_eq!(quest.completion(), 0.0);
+        assert!(!quest.is_complete());
+
+        quest.objectives[0].completed = true;
+        assert_eq!(quest.completion(), 1.0);
+        assert!(quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_all_objectives_incomplete() {
+        let quest = Quest {
+            id: 1,
+            title: "Fresh Quest".to_string(),
+            description: "Just started".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "First".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+                Objective {
+                    id: 2,
+                    description: "Second".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+                Objective {
+                    id: 3,
+                    description: "Third".to_string(),
+                    completed: false,
+                    progress: None,
+                },
+            ],
+        };
+
+        assert_eq!(quest.completion(), 0.0);
+        assert!(!quest.is_complete());
+    }
+
+    #[test]
+    fn test_quest_progress_tracking() {
+        let quest = Quest {
+            id: 1,
+            title: "Collection Quest".to_string(),
+            description: "Collect items".to_string(),
+            objectives: vec![
+                Objective {
+                    id: 1,
+                    description: "Collect 5 apples".to_string(),
+                    completed: false,
+                    progress: Some((2, 5)),
+                },
+                Objective {
+                    id: 2,
+                    description: "Collect 3 oranges".to_string(),
+                    completed: true,
+                    progress: Some((3, 3)),
+                },
+            ],
+        };
+
+        // One objective complete out of two
+        assert_eq!(quest.completion(), 0.5);
+        assert!(!quest.is_complete());
+    }
 }
+

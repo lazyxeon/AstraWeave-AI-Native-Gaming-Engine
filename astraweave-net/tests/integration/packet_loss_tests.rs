@@ -6,7 +6,7 @@
 #![cfg(test)]
 
 use astraweave_core::{ActionStep, IVec2, PlanIntent};
-use astraweave_net::{apply_delta, build_snapshot, diff_snapshots, FullInterest};
+use astraweave_net::{apply_delta, diff_snapshots, FullInterest};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -30,6 +30,7 @@ async fn test_zero_packet_loss_baseline() {
             plan_id: format!("move_{}", i),
             steps: vec![ActionStep::MoveTo { x: (i % 10) as i32,
                 y: 1,
+                speed: None,
             }],
         };
         server.execute_plan(id, plan).await.ok();
@@ -298,7 +299,7 @@ async fn test_20_percent_loss_no_data_corruption() {
     let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();
 
     // Create entities with known state
-    let ids: Vec<_> = (0..5)
+    let futures: Vec<_> = (0..5)
         .map(|i| {
             let server = server.server.clone();
             async move {
@@ -314,7 +315,7 @@ async fn test_20_percent_loss_no_data_corruption() {
         })
         .collect::<Vec<_>>();
 
-    let ids = futures_util::future::join_all(handles).await;
+    let ids = futures_util::future::join_all(futures).await;
 
     tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
@@ -663,7 +664,7 @@ async fn test_multiple_clients_with_packet_loss() {
     let server = spawn_test_server_with_packet_loss(0.20).await.unwrap();
 
     // Spawn entities for multiple "clients"
-    let client_ids: Vec<_> = (0..3)
+    let futures: Vec<_> = (0..3)
         .map(|i| {
             let server = server.server.clone();
             async move {
@@ -679,7 +680,7 @@ async fn test_multiple_clients_with_packet_loss() {
         })
         .collect::<Vec<_>>();
 
-    let ids = futures_util::future::join_all(handles).await;
+    let client_ids = futures_util::future::join_all(futures).await;
 
     // Wait for synchronization
     tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;

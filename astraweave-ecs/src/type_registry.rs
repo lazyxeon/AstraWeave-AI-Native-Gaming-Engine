@@ -6,13 +6,14 @@
 use crate::Component;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Handler for inserting type-erased components into World.
 type InsertHandler =
-    Box<dyn Fn(&mut crate::World, crate::Entity, Box<dyn Any + Send + Sync>) + Send + Sync>;
+    Arc<dyn Fn(&mut crate::World, crate::Entity, Box<dyn Any + Send + Sync>) + Send + Sync>;
 
 /// Handler for removing type-erased components from World.
-type RemoveHandler = Box<dyn Fn(&mut crate::World, crate::Entity) + Send + Sync>;
+type RemoveHandler = Arc<dyn Fn(&mut crate::World, crate::Entity) + Send + Sync>;
 
 /// Registry of component types and their handlers.
 ///
@@ -53,7 +54,7 @@ impl TypeRegistry {
         // Insert handler: Downcast Box<dyn Any> → T, then call World::insert
         self.insert_handlers.insert(
             type_id,
-            Box::new(
+            Arc::new(
                 |world: &mut crate::World,
                  entity: crate::Entity,
                  component: Box<dyn Any + Send + Sync>| {
@@ -72,7 +73,7 @@ impl TypeRegistry {
         // Remove handler: Call World::remove<T>
         self.remove_handlers.insert(
             type_id,
-            Box::new(|world: &mut crate::World, entity: crate::Entity| {
+            Arc::new(|world: &mut crate::World, entity: crate::Entity| {
                 world.remove::<T>(entity);
             }),
         );

@@ -429,6 +429,7 @@ impl PrefabInstance {
     }
 }
 
+#[derive(Debug)]
 pub struct PrefabManager {
     instances: Vec<PrefabInstance>,
     prefab_directory: PathBuf,
@@ -508,6 +509,71 @@ impl PrefabManager {
         }
 
         Ok(prefab_files)
+    }
+    
+    /// Remove a tracked prefab instance (for undo support)
+    pub fn remove_instance(&mut self, entity: Entity) {
+        self.instances.retain(|inst| {
+            inst.root_entity != entity && !inst.entity_mapping.values().any(|&e| e == entity)
+        });
+    }
+    
+    /// Apply overrides from an instance back to its prefab file
+    pub fn apply_overrides_to_prefab(&mut self, entity: Entity, world: &World) -> Result<()> {
+        let instance = self.find_instance(entity)
+            .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", entity))?;
+        
+        let prefab_path = instance.source.clone();
+        let mut prefab_data = PrefabData::load_from_file(&prefab_path)?;
+        
+        // Apply overrides from the instance to the prefab data
+        for (&inst_entity, overrides) in &instance.overrides {
+            // Find which prefab entity this corresponds to
+            for (&prefab_idx, &mapping_entity) in &instance.entity_mapping {
+                if mapping_entity == inst_entity {
+                    if let Some(prefab_entity_data) = prefab_data.entities.get_mut(prefab_idx) {
+                        if let Some(x) = overrides.pos_x {
+                            prefab_entity_data.pos_x = x;
+                        }
+                        if let Some(y) = overrides.pos_y {
+                            prefab_entity_data.pos_y = y;
+                        }
+                        if let Some(hp) = overrides.health {
+                            prefab_entity_data.health = hp;
+                        }
+                        if let Some(max_hp) = overrides.max_health {
+                            prefab_entity_data.max_health = max_hp;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Also capture current world state for root entity
+        if let Some(pose) = world.pose(entity) {
+            if let Some(prefab_entity_data) = prefab_data.entities.get_mut(0) {
+                prefab_entity_data.pos_x = pose.pos.x;
+                prefab_entity_data.pos_y = pose.pos.y;
+            }
+        }
+        
+        prefab_data.save_to_file(&prefab_path)?;
+        
+        // Clear overrides since they're now in the prefab
+        if let Some(instance) = self.find_instance_mut(entity) {
+            instance.overrides.clear();
+        }
+        
+        Ok(())
+    }
+    
+    /// Revert an instance to match its prefab file
+    pub fn revert_instance_to_prefab(&mut self, entity: Entity, world: &mut World) -> Result<()> {
+        let instance = self.find_instance_mut(entity)
+            .ok_or_else(|| anyhow::anyhow!("Entity {} is not a prefab instance", entity))?;
+        
+        instance.revert_to_prefab(world)?;
+        Ok(())
     }
 }
 

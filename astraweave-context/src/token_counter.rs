@@ -479,4 +479,64 @@ mod tests {
         let token_count = counter.count_tokens(prefix).unwrap();
         assert!(token_count <= 5);
     }
+
+    #[test]
+    fn test_count_tokens_batch() {
+        let counter = TokenCounter::new("cl100k_base");
+
+        let texts = vec![
+            "First message".to_string(),
+            "Second message".to_string(),
+            "Third message".to_string(),
+            "Fourth message with more content".to_string(),
+        ];
+
+        let counts = counter.count_tokens_batch(&texts).unwrap();
+
+        assert_eq!(counts.len(), texts.len());
+
+        // All counts should be positive
+        for count in &counts {
+            assert!(*count > 0);
+        }
+
+        // Verify batch results match individual calls
+        for (i, text) in texts.iter().enumerate() {
+            let individual_count = counter.count_tokens(text).unwrap();
+            assert_eq!(counts[i], individual_count);
+        }
+    }
+
+    #[test]
+    fn test_token_budget_reset() {
+        let mut budget = TokenBudget::new(1000);
+
+        budget.use_tokens(300).unwrap();
+        assert_eq!(budget.used_tokens(), 300);
+        assert_eq!(budget.available_tokens(), 700);
+
+        budget.reset();
+
+        assert_eq!(budget.used_tokens(), 0);
+        assert_eq!(budget.available_tokens(), 1000);
+        assert_eq!(budget.utilization(), 0.0);
+    }
+
+    #[test]
+    fn test_token_budget_clear_reservations() {
+        let mut budget = TokenBudget::new(1000);
+
+        budget.reserve("context", 200).unwrap();
+        budget.reserve("response", 300).unwrap();
+
+        assert_eq!(budget.available_tokens(), 500);
+
+        budget.clear_reservations();
+
+        assert_eq!(budget.available_tokens(), 1000);
+
+        // Should be able to use more tokens now
+        budget.use_tokens(800).unwrap();
+        assert_eq!(budget.used_tokens(), 800);
+    }
 }

@@ -49,48 +49,52 @@ fn sample_prefab() -> PrefabData {
 }
 
 // ============================================================================
-// Rotate Gizmo Smoke Tests (NEW - Missing Coverage)
+// Rotate Gizmo Smoke Tests
 // ============================================================================
 
 #[test]
-fn rotate_gizmo_smoke_placeholder() {
-    // TODO: Implement when rotate gizmo API stabilizes
-    // Current issue: GizmoHarness doesn't expose begin_rotate/drag_rotate methods
-    // Placeholder test to track coverage gap
+fn rotate_gizmo_smoke() {
+    let (world, entity) = spawn_test_world();
+    let mut harness = GizmoHarness::new(world);
     
-    let (world, _entity) = spawn_test_world();
-    let _harness = GizmoHarness::new(world);
+    // Select and begin rotate
+    harness.select(entity);
+    harness.begin_rotate().expect("begin_rotate should succeed");
     
-    // Expected workflow:
-    // harness.select(entity);
-    // harness.begin_rotate().unwrap();
-    // harness.drag_rotate(45.0).unwrap();  // Rotate 45 degrees
-    // harness.confirm().unwrap();
+    // Rotate 45 degrees (π/4 radians)
+    let angle = std::f32::consts::FRAC_PI_4;
+    harness.drag_rotate(angle).expect("drag_rotate should succeed");
+    harness.confirm().expect("confirm should succeed");
     
-    // For now, verify harness creation doesn't panic
-    assert!(true, "Rotate gizmo API needs implementation");
+    // Verify rotation was applied
+    let pose = harness.world().pose(entity).expect("entity should have pose");
+    assert!((pose.rotation - angle).abs() < 0.001, "Rotation should be ~45 degrees");
 }
 
 // ============================================================================
-// Scale Gizmo Smoke Tests (NEW - Missing Coverage)
+// Scale Gizmo Smoke Tests
 // ============================================================================
 
 #[test]
-fn scale_gizmo_smoke_placeholder() {
-    // TODO: Implement when scale gizmo API stabilizes
-    // Current issue: GizmoHarness doesn't expose begin_scale/drag_scale methods
-    // Placeholder test to track coverage gap
+fn scale_gizmo_smoke() {
+    let (world, entity) = spawn_test_world();
+    let mut harness = GizmoHarness::new(world);
     
-    let (world, _entity) = spawn_test_world();
-    let _harness = GizmoHarness::new(world);
+    // Get initial scale
+    let initial_scale = harness.world().pose(entity).expect("entity should have pose").scale;
     
-    // Expected workflow:
-    // harness.select(entity);
-    // harness.begin_scale().unwrap();
-    // harness.drag_scale(1.5).unwrap();  // Scale to 150%
-    // harness.confirm().unwrap();
+    // Select and begin scale
+    harness.select(entity);
+    harness.begin_scale().expect("begin_scale should succeed");
     
-    assert!(true, "Scale gizmo API needs implementation");
+    // Scale to 150%
+    harness.drag_scale(1.5).expect("drag_scale should succeed");
+    harness.confirm().expect("confirm should succeed");
+    
+    // Verify scale was applied
+    let pose = harness.world().pose(entity).expect("entity should have pose");
+    let expected_scale = initial_scale * 1.5;
+    assert!((pose.scale - expected_scale).abs() < 0.001, "Scale should be 150% of original");
 }
 
 // ============================================================================

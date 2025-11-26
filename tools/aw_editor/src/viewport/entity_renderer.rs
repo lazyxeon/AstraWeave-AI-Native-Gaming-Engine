@@ -342,12 +342,8 @@ impl EntityRenderer {
     fn collect_instances(&self, world: &World, selected_entities: &[Entity]) -> Vec<Instance> {
         let mut instances = Vec::new();
 
-        // Iterate over all entities (simplified - assumes entities have positions)
-        // TODO: Use proper ECS query for Position component
-        for entity_id in 1..100 {
-            // Placeholder: render up to 100 entities
-            let entity: Entity = entity_id;
-
+        // Iterate over all actual entities in the world
+        for entity in world.entities() {
             // Try to get position from World
             if let Some(pose) = world.pose(entity) {
                 let x = pose.pos.x as f32;
