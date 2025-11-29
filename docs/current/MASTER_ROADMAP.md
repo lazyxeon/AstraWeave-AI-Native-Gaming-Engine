@@ -49,6 +49,13 @@ This document is the **single authoritative source** for AstraWeave's strategic 
    - **Verification**: 8/8 tests passing, including event callbacks and command execution.
    - **Status**: Sprint 2 Complete, moving to Advanced API.
 
+- 🚀 **Physics Remediation (Phase 0 & 1) COMPLETE** (Nov 28, 2025)
+  - **Credibility**: 8/8 physics laws verified (Newton's Laws, Conservation).
+  - **Jumping**: Full implementation of gravity, jump buffering, coyote time.
+  - **Stubs Fixed**: `set_wind`, `break_destructible`, `control_character` fully implemented.
+  - **Verification**: 100% pass rate on new physics tests.
+  - **Documentation**: `PHYSICS_REMEDIATION_PLAN.md` and `PHYSICS_PHASE_0_1_COMPLETE.md` created.
+
 - **✨ NEW: Phase 2 Hardening COMPLETE** (Nov 22, 2025)
   - **GOAP Planner Hardened**: Fixed infinite loops (recursion limits, time budgets) and risk ignorance (cost caching).
   - **LLM Client Stabilized**: Fixed stateless client issue in `astraweave-llm` (added history tracking).
