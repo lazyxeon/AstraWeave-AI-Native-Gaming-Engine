@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["BoneJointType","BoneShape","RagdollState"],"struct":["BoneDef","Ragdoll","RagdollBuilder","RagdollConfig","RagdollPresets"],"type":["RagdollId"]};
