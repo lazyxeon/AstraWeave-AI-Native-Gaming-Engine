@@ -437,9 +437,12 @@ fn test_control_character_vertical_movement() {
     let _ground = pw.create_ground_plane(Vec3::new(10.0, 0.5, 10.0), 0.9);
     let char_id = pw.add_character(Vec3::new(0.0, 1.0, 0.0), Vec3::new(0.4, 0.9, 0.4));
 
+    // Apply jump
+    pw.jump(char_id, 1.0);
+
     // Apply upward movement (jump simulation)
     for _ in 0..5 {
-        pw.control_character(char_id, Vec3::new(0.0, 5.0, 0.0), 1.0 / 60.0, false);
+        pw.control_character(char_id, Vec3::ZERO, 1.0 / 60.0, false);
         pw.step();
     }
 

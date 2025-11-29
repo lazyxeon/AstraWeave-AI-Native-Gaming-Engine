@@ -501,6 +501,6 @@ fn break_destructible_placeholder_does_not_crash() {
     // Placeholder should not crash
     world.break_destructible(destructible_id);
 
-    // Body should still exist (placeholder doesn't actually break it)
-    assert!(world.body_transform(destructible_id).is_some());
+    // Body should be removed (implementation is no longer a placeholder)
+    assert!(world.body_transform(destructible_id).is_none());
 }

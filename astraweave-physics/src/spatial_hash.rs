@@ -18,22 +18,26 @@ from O(n²) to O(n log n) by only testing objects in nearby grid cells.
 ## Usage
 
 ```rust
-use astraweave_physics::SpatialHash;
+use astraweave_physics::{SpatialHash, AABB};
+use glam::Vec3;
 
 // Create grid with 10-unit cells (adjust based on object sizes)
-let mut grid = SpatialHash::new(10.0);
+let mut grid = SpatialHash::<u32>::new(10.0);
 
 // Insert objects
+let objects = vec![(1, AABB::from_sphere(Vec3::ZERO, 1.0))];
 for (id, aabb) in objects {
     grid.insert(id, aabb);
 }
 
 // Query potential collisions for an object
+let aabb = AABB::from_sphere(Vec3::ZERO, 1.0);
 let candidates = grid.query(aabb);
 
 // Only test narrow-phase collision against candidates (not all objects)
 for candidate_id in candidates {
-    if detailed_collision_test(aabb, candidate_aabb) {
+    let candidate_aabb = AABB::from_sphere(Vec3::ZERO, 1.0); // Mock
+    if aabb.intersects(&candidate_aabb) {
         // Handle collision
     }
 }
@@ -137,6 +141,7 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     ///
     /// # Example
     /// ```
+    /// use astraweave_physics::SpatialHash;
     /// let grid = SpatialHash::<u32>::new(10.0); // 10-unit cells
     /// ```
     pub fn new(cell_size: f32) -> Self {
@@ -189,6 +194,10 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     ///
     /// # Example
     /// ```
+    /// use astraweave_physics::{SpatialHash, AABB};
+    /// use glam::Vec3;
+    /// let mut grid = SpatialHash::<u32>::new(10.0);
+    /// let entity_id = 1;
     /// let aabb = AABB::from_sphere(Vec3::new(5.0, 0.0, 5.0), 1.0);
     /// grid.insert(entity_id, aabb);
     /// ```
@@ -215,6 +224,11 @@ impl<T: Copy + Eq + Ord> SpatialHash<T> {
     ///
     /// # Example
     /// ```
+    /// use astraweave_physics::{SpatialHash, AABB};
+    /// use glam::Vec3;
+    /// let mut grid = SpatialHash::<u32>::new(10.0);
+    /// let pos = Vec3::ZERO;
+    /// let radius = 1.0;
     /// let query_aabb = AABB::from_sphere(pos, radius);
     /// let candidates = grid.query(query_aabb);
     ///
