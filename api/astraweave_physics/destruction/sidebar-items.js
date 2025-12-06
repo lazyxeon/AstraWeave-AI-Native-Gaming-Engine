@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["DebrisShape","DestructibleState","DestructionTrigger"],"struct":["Debris","DebrisConfig","DebrisId","Destructible","DestructibleConfig","DestructibleId","DestructionEvent","DestructionManager","FracturePattern"]};
