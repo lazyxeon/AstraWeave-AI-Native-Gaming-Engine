@@ -206,7 +206,7 @@ cargo test -p astraweave-weaving --lib
 
 ## Future Enhancements
 
-- [ ] Persistent weave signals (events that span multiple ticks)
+- [x] Persistent weave signals (events that span multiple ticks) - `CWeaveSignal` component
 - [ ] Multi-tick intent chains (e.g., "spawn patrol, then ambush")
 - [ ] Pattern history tracking (detect trends, not just current state)
 - [ ] Weave configuration hot-reloading

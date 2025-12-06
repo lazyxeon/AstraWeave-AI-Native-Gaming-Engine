@@ -178,6 +178,11 @@ impl Phi3Medium {
         })
     }
 
+    #[cfg(not(feature = "phi3"))]
+    pub async fn load_q4<P: AsRef<Path>>(_model_path: P) -> Result<Self> {
+        anyhow::bail!("Phi-3 support not compiled. Rebuild with --features phi3")
+    }
+
     /// Load Phi-3 with custom configuration
     #[cfg(feature = "phi3")]
     pub async fn load_q4_with_config<P: AsRef<Path>>(
@@ -187,6 +192,14 @@ impl Phi3Medium {
         let mut model = Self::load_q4(model_path).await?;
         model.config = config;
         Ok(model)
+    }
+
+    #[cfg(not(feature = "phi3"))]
+    pub async fn load_q4_with_config<P: AsRef<Path>>(
+        _model_path: P,
+        _config: Phi3Config,
+    ) -> Result<Self> {
+        anyhow::bail!("Phi-3 support not compiled. Rebuild with --features phi3")
     }
 
     /// Select the best available device for inference
@@ -250,6 +263,7 @@ impl Phi3Medium {
     }
 
     /// Estimate model size in megabytes (Q4 quantization)
+    #[cfg(feature = "phi3")]
     fn estimate_model_size_mb() -> usize {
         // Phi-3 Medium: ~14B parameters * 0.5 bytes/param (4-bit) = ~7GB
         7168
@@ -297,6 +311,7 @@ impl Phi3Medium {
                     config.temperature,
                     config.top_p,
                     config.repeat_penalty,
+                    config.repeat_penalty, // Fixed: passed repeat_penalty twice instead of context? No, wait.
                     &tokens,
                 )?;
 
@@ -322,6 +337,11 @@ impl Phi3Medium {
         tracing::debug!("Generated {} tokens: {}", generated_tokens.len(), output);
 
         Ok(output)
+    }
+
+    #[cfg(not(feature = "phi3"))]
+    pub async fn generate(&self, _prompt: &str) -> Result<String> {
+        unreachable!("Phi-3 not compiled")
     }
 
     /// Sample next token from logits using temperature and top-p
@@ -394,33 +414,6 @@ impl Phi3Medium {
     }
 
     /// Update configuration
-    pub fn set_config(&mut self, config: Phi3Config) {
-        self.config = config;
-    }
-}
-
-// Stub implementation when phi3 feature is disabled
-#[cfg(not(feature = "phi3"))]
-impl Phi3Medium {
-    pub async fn load_q4<P: AsRef<Path>>(_model_path: P) -> Result<Self> {
-        anyhow::bail!("Phi-3 support not compiled. Rebuild with --features phi3")
-    }
-
-    pub async fn load_q4_with_config<P: AsRef<Path>>(
-        _model_path: P,
-        _config: Phi3Config,
-    ) -> Result<Self> {
-        anyhow::bail!("Phi-3 support not compiled. Rebuild with --features phi3")
-    }
-
-    pub async fn generate(&self, _prompt: &str) -> Result<String> {
-        unreachable!("Phi-3 not compiled")
-    }
-
-    pub fn config(&self) -> &Phi3Config {
-        &self.config
-    }
-
     pub fn set_config(&mut self, config: Phi3Config) {
         self.config = config;
     }

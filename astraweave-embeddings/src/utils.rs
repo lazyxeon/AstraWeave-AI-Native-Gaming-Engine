@@ -422,12 +422,72 @@ mod tests {
     }
 
     #[test]
+    fn test_text_preprocessing_long() {
+        let text = "a".repeat(10000);
+        let processed = TextPreprocessor::preprocess(&text);
+        assert_eq!(processed.len(), 8192);
+    }
+
+    #[test]
+    fn test_text_preprocessing_empty() {
+        let text = "";
+        let processed = TextPreprocessor::preprocess(text);
+        assert_eq!(processed, "");
+    }
+
+    #[test]
     fn test_text_chunking() {
         let text = "This is a long text that needs to be split into chunks";
         let chunks = TextPreprocessor::chunk_text(text, 20, 5);
 
         assert!(chunks.len() > 1);
         assert!(chunks[0].len() <= 20);
+    }
+
+    #[test]
+    fn test_text_chunking_short_text() {
+        let text = "Short";
+        let chunks = TextPreprocessor::chunk_text(text, 100, 10);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], "Short");
+    }
+
+    #[test]
+    fn test_text_chunking_exact_size() {
+        let text = "1234567890";
+        let chunks = TextPreprocessor::chunk_text(text, 10, 0);
+        assert_eq!(chunks.len(), 1);
+    }
+
+    #[test]
+    fn test_text_chunking_with_overlap() {
+        let text = "ABCDEFGHIJ"; // 10 chars
+        let chunks = TextPreprocessor::chunk_text(text, 5, 2);
+        // First chunk: ABCDE (0-5)
+        // Start at 5-2=3, next chunk: DEFGH (3-8)
+        // Start at 8-2=6, next chunk: GHIJ (6-10)
+        assert!(chunks.len() >= 2);
+    }
+
+    #[test]
+    fn test_extract_keyphrases() {
+        let text = "The quick brown fox jumps over the lazy dog";
+        let keyphrases = TextPreprocessor::extract_keyphrases(text);
+        
+        // Should filter words <= 3 chars
+        assert!(!keyphrases.contains(&"the".to_string()));
+        assert!(keyphrases.contains(&"quick".to_string()));
+        assert!(keyphrases.contains(&"brown".to_string()));
+        assert!(keyphrases.contains(&"jumps".to_string()));
+        assert!(keyphrases.contains(&"over".to_string()));
+        assert!(keyphrases.contains(&"lazy".to_string()));
+    }
+
+    #[test]
+    fn test_extract_keyphrases_empty() {
+        let text = "a b c"; // All words <= 3 chars
+        let keyphrases = TextPreprocessor::extract_keyphrases(text);
+        assert!(keyphrases.is_empty());
     }
 
     #[test]
@@ -442,6 +502,107 @@ mod tests {
         assert_eq!(memory.category, MemoryCategory::Combat);
         assert_eq!(memory.importance, 0.8);
         assert_eq!(memory.entities.len(), 2);
+        assert_eq!(memory.valence, 0.0);
+    }
+
+    #[test]
+    fn test_memory_creation_importance_clamping() {
+        let memory = MemoryUtils::create_memory(
+            "Test".to_string(),
+            MemoryCategory::Social,
+            1.5, // Over 1.0
+            vec![],
+        );
+        assert_eq!(memory.importance, 1.0);
+
+        let memory2 = MemoryUtils::create_memory(
+            "Test".to_string(),
+            MemoryCategory::Social,
+            -0.5, // Under 0.0
+            vec![],
+        );
+        assert_eq!(memory2.importance, 0.0);
+    }
+
+    #[test]
+    fn test_create_social_memory() {
+        let memory = MemoryUtils::create_social_memory(
+            "Met a new friend".to_string(),
+            vec!["npc_1".to_string()],
+            0.7,
+            0.5,
+        );
+
+        assert_eq!(memory.category, MemoryCategory::Social);
+        assert_eq!(memory.importance, 0.7);
+        assert_eq!(memory.valence, 0.5);
+    }
+
+    #[test]
+    fn test_create_social_memory_clamping() {
+        let memory = MemoryUtils::create_social_memory(
+            "Test".to_string(),
+            vec![],
+            2.0, // Over 1.0
+            2.0, // Over 1.0
+        );
+        assert_eq!(memory.importance, 1.0);
+        assert_eq!(memory.valence, 1.0);
+
+        let memory2 = MemoryUtils::create_social_memory(
+            "Test".to_string(),
+            vec![],
+            -1.0,
+            -2.0, // Under -1.0
+        );
+        assert_eq!(memory2.valence, -1.0);
+    }
+
+    #[test]
+    fn test_create_combat_memory_victory() {
+        let memory = MemoryUtils::create_combat_memory(
+            "Won battle".to_string(),
+            vec!["enemy".to_string()],
+            0.9,
+            CombatOutcome::Victory,
+        );
+
+        assert_eq!(memory.category, MemoryCategory::Combat);
+        assert_eq!(memory.valence, 0.5);
+        assert!(memory.context.contains_key("outcome"));
+    }
+
+    #[test]
+    fn test_create_combat_memory_defeat() {
+        let memory = MemoryUtils::create_combat_memory(
+            "Lost battle".to_string(),
+            vec![],
+            0.8,
+            CombatOutcome::Defeat,
+        );
+        assert_eq!(memory.valence, -0.5);
+    }
+
+    #[test]
+    fn test_create_combat_memory_draw() {
+        let memory = MemoryUtils::create_combat_memory(
+            "Draw".to_string(),
+            vec![],
+            0.5,
+            CombatOutcome::Draw,
+        );
+        assert_eq!(memory.valence, 0.0);
+    }
+
+    #[test]
+    fn test_create_combat_memory_retreat() {
+        let memory = MemoryUtils::create_combat_memory(
+            "Retreated".to_string(),
+            vec![],
+            0.6,
+            CombatOutcome::Retreat,
+        );
+        assert_eq!(memory.valence, -0.2);
     }
 
     #[test]
@@ -465,6 +626,151 @@ mod tests {
     }
 
     #[test]
+    fn test_memory_decay_no_time_passed() {
+        let memory = Memory {
+            id: "test".to_string(),
+            text: "test memory".to_string(),
+            timestamp: 1000,
+            importance: 0.5,
+            valence: 0.0,
+            category: MemoryCategory::Social,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let decay = MemoryUtils::calculate_decay(&memory, 1000);
+        assert!((decay - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_memory_decay_important_memories() {
+        let important = Memory {
+            id: "test".to_string(),
+            text: "important".to_string(),
+            timestamp: 1000,
+            importance: 1.0, // High importance
+            valence: 0.0,
+            category: MemoryCategory::Combat,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let normal = Memory {
+            id: "test2".to_string(),
+            text: "normal".to_string(),
+            timestamp: 1000,
+            importance: 0.0, // Low importance
+            valence: 0.0,
+            category: MemoryCategory::Social,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        let current_time = 1000 + 7 * 24 * 3600; // 1 week later
+        let important_decay = MemoryUtils::calculate_decay(&important, current_time);
+        let normal_decay = MemoryUtils::calculate_decay(&normal, current_time);
+
+        // Important memories should decay slower
+        assert!(important_decay > normal_decay);
+    }
+
+    #[test]
+    fn test_should_forget() {
+        let memory = Memory {
+            id: "test".to_string(),
+            text: "test".to_string(),
+            timestamp: 0,
+            importance: 0.1,
+            valence: 0.0,
+            category: MemoryCategory::Social,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        // Far in the future should trigger forgetting
+        let current_time = 365 * 24 * 3600; // 1 year later
+        let should_forget = MemoryUtils::should_forget(&memory, current_time, 0.5);
+        assert!(should_forget);
+    }
+
+    #[test]
+    fn test_should_not_forget_recent() {
+        let memory = Memory {
+            id: "test".to_string(),
+            text: "test".to_string(),
+            timestamp: 1000,
+            importance: 0.5,
+            valence: 0.0,
+            category: MemoryCategory::Combat,
+            entities: vec![],
+            context: HashMap::new(),
+        };
+
+        // Very recent memory should not be forgotten
+        let should_forget = MemoryUtils::should_forget(&memory, 1001, 0.5);
+        assert!(!should_forget);
+    }
+
+    #[test]
+    fn test_consolidate_memories_no_similar() {
+        let memories = vec![
+            Memory {
+                id: "1".to_string(),
+                text: "Apples are delicious".to_string(),
+                timestamp: 1000,
+                importance: 0.5,
+                valence: 0.5,
+                category: MemoryCategory::Social,
+                entities: vec![],
+                context: HashMap::new(),
+            },
+            Memory {
+                id: "2".to_string(),
+                text: "Completely different topic xyz".to_string(),
+                timestamp: 2000,
+                importance: 0.5,
+                valence: 0.0,
+                category: MemoryCategory::Combat,
+                entities: vec![],
+                context: HashMap::new(),
+            },
+        ];
+
+        let consolidated = MemoryUtils::consolidate_memories(memories, 0.9);
+        assert_eq!(consolidated.len(), 2);
+    }
+
+    #[test]
+    fn test_consolidate_memories_similar() {
+        let memories = vec![
+            Memory {
+                id: "1".to_string(),
+                text: "The quick brown fox jumps".to_string(),
+                timestamp: 1000,
+                importance: 0.8,
+                valence: 0.5,
+                category: MemoryCategory::Social,
+                entities: vec!["fox".to_string()],
+                context: HashMap::new(),
+            },
+            Memory {
+                id: "2".to_string(),
+                text: "The quick brown fox runs".to_string(),
+                timestamp: 2000,
+                importance: 0.6,
+                valence: 0.3,
+                category: MemoryCategory::Social,
+                entities: vec!["fox".to_string()],
+                context: HashMap::new(),
+            },
+        ];
+
+        let consolidated = MemoryUtils::consolidate_memories(memories, 0.5);
+        // Should merge due to high similarity
+        assert!(consolidated.len() <= 2);
+    }
+
+    #[test]
     fn test_cosine_similarity() {
         let a = vec![1.0, 0.0, 0.0];
         let b = vec![1.0, 0.0, 0.0];
@@ -475,6 +781,22 @@ mod tests {
 
         assert_eq!(sim_identical, 1.0);
         assert_eq!(sim_orthogonal, 0.0);
+    }
+
+    #[test]
+    fn test_cosine_similarity_different_lengths() {
+        let a = vec![1.0, 0.0];
+        let b = vec![1.0, 0.0, 0.0];
+        let sim = SimilarityMetrics::cosine_similarity(&a, &b);
+        assert_eq!(sim, 0.0);
+    }
+
+    #[test]
+    fn test_cosine_similarity_zero_vectors() {
+        let a = vec![0.0, 0.0, 0.0];
+        let b = vec![1.0, 1.0, 1.0];
+        let sim = SimilarityMetrics::cosine_similarity(&a, &b);
+        assert_eq!(sim, 0.0);
     }
 
     #[test]
@@ -491,11 +813,144 @@ mod tests {
     }
 
     #[test]
+    fn test_jaccard_similarity_partial() {
+        let a = vec!["a".to_string(), "b".to_string(), "c".to_string()];
+        let b = vec!["b".to_string(), "c".to_string(), "d".to_string()];
+        let sim = SimilarityMetrics::jaccard_similarity(&a, &b);
+        // Intersection: {b, c}, Union: {a, b, c, d}
+        // 2/4 = 0.5
+        assert!((sim - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_jaccard_similarity_empty() {
+        let a: Vec<String> = vec![];
+        let b: Vec<String> = vec![];
+        let sim = SimilarityMetrics::jaccard_similarity(&a, &b);
+        assert_eq!(sim, 0.0);
+    }
+
+    #[test]
+    fn test_euclidean_distance() {
+        let a = vec![0.0, 0.0, 0.0];
+        let b = vec![1.0, 0.0, 0.0];
+        let dist = SimilarityMetrics::euclidean_distance(&a, &b);
+        assert!((dist - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_euclidean_distance_same() {
+        let a = vec![1.0, 2.0, 3.0];
+        let dist = SimilarityMetrics::euclidean_distance(&a, &a);
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_euclidean_distance_different_lengths() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0, 2.0, 3.0];
+        let dist = SimilarityMetrics::euclidean_distance(&a, &b);
+        assert_eq!(dist, f32::MAX);
+    }
+
+    #[test]
+    fn test_manhattan_distance() {
+        let a = vec![0.0, 0.0, 0.0];
+        let b = vec![1.0, 2.0, 3.0];
+        let dist = SimilarityMetrics::manhattan_distance(&a, &b);
+        assert!((dist - 6.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_manhattan_distance_different_lengths() {
+        let a = vec![1.0];
+        let b = vec![1.0, 2.0];
+        let dist = SimilarityMetrics::manhattan_distance(&a, &b);
+        assert_eq!(dist, f32::MAX);
+    }
+
+    #[test]
+    fn test_dot_product() {
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![4.0, 5.0, 6.0];
+        let dot = SimilarityMetrics::dot_product(&a, &b);
+        // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
+        assert!((dot - 32.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_dot_product_different_lengths() {
+        let a = vec![1.0, 2.0];
+        let b = vec![1.0, 2.0, 3.0];
+        let dot = SimilarityMetrics::dot_product(&a, &b);
+        assert_eq!(dot, 0.0);
+    }
+
+    #[test]
+    fn test_normalize_vector() {
+        let mut v = vec![3.0, 4.0];
+        SimilarityMetrics::normalize_vector(&mut v);
+        // Magnitude should be 1
+        let magnitude: f32 = v.iter().map(|x| x * x).sum::<f32>().sqrt();
+        assert!((magnitude - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_normalize_zero_vector() {
+        let mut v = vec![0.0, 0.0, 0.0];
+        SimilarityMetrics::normalize_vector(&mut v);
+        // Should remain zero
+        assert_eq!(v, vec![0.0, 0.0, 0.0]);
+    }
+
+    #[test]
     fn test_performance_monitor() {
         let monitor = PerformanceMonitor::start();
         std::thread::sleep(std::time::Duration::from_millis(10));
         let elapsed = monitor.elapsed_ms();
 
         assert!(elapsed >= 10);
+    }
+
+    #[test]
+    fn test_performance_monitor_microseconds() {
+        let monitor = PerformanceMonitor::start();
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let elapsed_us = monitor.elapsed_us();
+        assert!(elapsed_us >= 1000); // At least 1000 microseconds = 1 ms
+    }
+
+    #[test]
+    fn test_current_timestamp() {
+        let ts1 = current_timestamp();
+        std::thread::sleep(std::time::Duration::from_millis(10));
+        let ts2 = current_timestamp();
+        assert!(ts2 >= ts1);
+    }
+
+    #[test]
+    fn test_text_similarity() {
+        let a = "the quick brown fox";
+        let b = "the quick brown dog";
+        let sim = text_similarity(a, b);
+        // 3/5 words in common
+        assert!(sim > 0.5);
+        assert!(sim < 1.0);
+    }
+
+    #[test]
+    fn test_combat_outcome_debug() {
+        // Test that CombatOutcome can be formatted
+        let outcome = CombatOutcome::Victory;
+        let formatted = format!("{:?}", outcome);
+        assert_eq!(formatted, "Victory");
+    }
+
+    #[test]
+    fn test_combat_outcome_serialization() {
+        let outcome = CombatOutcome::Defeat;
+        let json = serde_json::to_string(&outcome).unwrap();
+        let restored: CombatOutcome = serde_json::from_str(&json).unwrap();
+        assert!(matches!(restored, CombatOutcome::Defeat));
     }
 }

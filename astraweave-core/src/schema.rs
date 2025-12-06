@@ -52,7 +52,6 @@ impl Default for WorldSnapshot {
             pois: vec![],
             obstacles: vec![],
             objective: None,
-            physics_context: None,
         }
     }
 }
@@ -83,7 +82,6 @@ pub struct WorldSnapshot {
     pub pois: Vec<Poi>,
     pub obstacles: Vec<IVec2>,
     pub objective: Option<String>,
-    pub physics_context: Option<PhysicsContext>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -468,7 +466,7 @@ mod tests {
         assert!(snapshot.pois.is_empty());
         assert!(snapshot.obstacles.is_empty());
         assert!(snapshot.objective.is_none());
-        assert!(snapshot.physics_context.is_none());
+        assert!(snapshot.objective.is_none());
     }
 
     #[test]
@@ -608,7 +606,6 @@ mod tests {
             pois: vec![Poi::default()],
             obstacles: vec![IVec2 { x: 5, y: 5 }],
             objective: Some("Survive".to_string()),
-            physics_context: None,
         };
         assert_eq!(snapshot.t, 10.5);
         assert_eq!(snapshot.enemies.len(), 1);

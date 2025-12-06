@@ -104,3 +104,215 @@ impl PromptLoader {
         Ok((None, content.to_string()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_prompt_loader_new() {
+        let loader = PromptLoader::new();
+        assert!(loader.extensions.contains(&"hbs".to_string()));
+        assert!(loader.extensions.contains(&"prompt".to_string()));
+    }
+
+    #[test]
+    fn test_prompt_loader_default() {
+        let loader: PromptLoader = Default::default();
+        assert!(loader.extensions.contains(&"hbs".to_string()));
+    }
+
+    #[test]
+    fn test_prompt_loader_with_extensions() {
+        let loader = PromptLoader::new()
+            .with_extensions(vec!["txt".to_string(), "tpl".to_string()]);
+        
+        assert!(loader.extensions.contains(&"txt".to_string()));
+        assert!(loader.extensions.contains(&"tpl".to_string()));
+        assert!(!loader.extensions.contains(&"hbs".to_string()));
+    }
+
+    #[test]
+    fn test_load_from_nonexistent_dir() {
+        let loader = PromptLoader::new();
+        let result = loader.load_from_dir("/nonexistent/path/xyz123");
+        
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_load_from_empty_dir() {
+        let dir = tempdir().unwrap();
+        let loader = PromptLoader::new();
+        
+        let result = loader.load_from_dir(dir.path());
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_load_file_simple() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("test.hbs");
+        
+        let mut file = std::fs::File::create(&file_path).unwrap();
+        writeln!(file, "Hello {{{{name}}}}!").unwrap();
+        
+        let loader = PromptLoader::new();
+        let result = loader.load_file(&file_path);
+        
+        assert!(result.is_ok());
+        let template = result.unwrap();
+        assert_eq!(template.id, "test");
+        assert!(template.template.contains("Hello"));
+    }
+
+    #[test]
+    fn test_load_file_with_frontmatter() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("greeting.hbs");
+        
+        let content = r#"+++
+name = "greeting"
+description = "A greeting template"
+version = "1.0"
++++
+Hello {{name}}!"#;
+        
+        std::fs::write(&file_path, content).unwrap();
+        
+        let loader = PromptLoader::new();
+        let result = loader.load_file(&file_path);
+        
+        assert!(result.is_ok());
+        let template = result.unwrap();
+        assert_eq!(template.id, "greeting");
+        assert!(template.metadata.is_some());
+    }
+
+    #[test]
+    fn test_load_from_dir_with_files() {
+        let dir = tempdir().unwrap();
+        
+        // Create some template files
+        std::fs::write(dir.path().join("template1.hbs"), "Template 1 content").unwrap();
+        std::fs::write(dir.path().join("template2.hbs"), "Template 2 content").unwrap();
+        std::fs::write(dir.path().join("ignored.txt"), "This should be ignored").unwrap();
+        
+        let loader = PromptLoader::new();
+        let result = loader.load_from_dir(dir.path());
+        
+        assert!(result.is_ok());
+        let templates = result.unwrap();
+        assert_eq!(templates.len(), 2); // Only .hbs files
+    }
+
+    #[test]
+    fn test_load_from_dir_recursive() {
+        let dir = tempdir().unwrap();
+        let subdir = dir.path().join("subdir");
+        std::fs::create_dir(&subdir).unwrap();
+        
+        std::fs::write(dir.path().join("root.hbs"), "Root template").unwrap();
+        std::fs::write(subdir.join("nested.hbs"), "Nested template").unwrap();
+        
+        let loader = PromptLoader::new();
+        let result = loader.load_from_dir(dir.path());
+        
+        assert!(result.is_ok());
+        let templates = result.unwrap();
+        assert_eq!(templates.len(), 2); // Both root and nested
+    }
+
+    #[test]
+    fn test_load_file_nonexistent() {
+        let loader = PromptLoader::new();
+        let result = loader.load_file("/nonexistent/file.hbs");
+        
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_frontmatter_no_frontmatter() {
+        let loader = PromptLoader::new();
+        let content = "Just plain content";
+        
+        let result = loader.parse_frontmatter(content);
+        assert!(result.is_ok());
+        let (meta, body) = result.unwrap();
+        assert!(meta.is_none());
+        assert_eq!(body, content);
+    }
+
+    #[test]
+    fn test_parse_frontmatter_with_frontmatter() {
+        let loader = PromptLoader::new();
+        let content = r#"+++
+name = "test"
+description = "Test template"
+version = "1.0"
++++
+Body content here"#;
+        
+        let result = loader.parse_frontmatter(content);
+        assert!(result.is_ok());
+        let (meta, body) = result.unwrap();
+        assert!(meta.is_some());
+        let meta = meta.unwrap();
+        assert_eq!(meta.name, "test");
+        assert_eq!(body, "Body content here");
+    }
+
+    #[test]
+    fn test_parse_frontmatter_incomplete() {
+        let loader = PromptLoader::new();
+        // Missing closing +++
+        let content = r#"+++
+name = "test"
+Body without closing delimiter"#;
+        
+        let result = loader.parse_frontmatter(content);
+        assert!(result.is_ok());
+        let (meta, body) = result.unwrap();
+        // Should treat as no frontmatter
+        assert!(meta.is_none());
+        assert_eq!(body, content);
+    }
+
+    #[test]
+    fn test_load_prompt_extension() {
+        let dir = tempdir().unwrap();
+        let file_path = dir.path().join("custom.prompt");
+        
+        std::fs::write(&file_path, "Custom prompt content").unwrap();
+        
+        let loader = PromptLoader::new();
+        let result = loader.load_from_dir(dir.path());
+        
+        assert!(result.is_ok());
+        let templates = result.unwrap();
+        assert_eq!(templates.len(), 1);
+    }
+
+    #[test]
+    fn test_custom_extensions() {
+        let dir = tempdir().unwrap();
+        
+        std::fs::write(dir.path().join("file.txt"), "TXT content").unwrap();
+        std::fs::write(dir.path().join("file.hbs"), "HBS content").unwrap();
+        
+        let loader = PromptLoader::new()
+            .with_extensions(vec!["txt".to_string()]);
+        
+        let result = loader.load_from_dir(dir.path());
+        assert!(result.is_ok());
+        let templates = result.unwrap();
+        
+        // Only .txt files
+        assert_eq!(templates.len(), 1);
+        assert!(templates[0].template.contains("TXT"));
+    }
+}

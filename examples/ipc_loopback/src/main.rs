@@ -33,7 +33,6 @@ async fn main() -> anyhow::Result<()> {
         pois: vec![],
         obstacles: vec![],
         objective: Some("extract".into()),
-        physics_context: None,
     };
 
     let plan = ws_client_roundtrip("ws://127.0.0.1:8088", &snap).await?;

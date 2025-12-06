@@ -80,7 +80,7 @@ use crate::async_task::AsyncTask;
 use crate::llm_executor::LlmExecutor;
 use crate::orchestrator::Orchestrator;
 use anyhow::Result;
-use astraweave_core::{ActionStep, PlanIntent, WorldSnapshot};
+use astraweave_core::{metrics, ActionStep, PlanIntent, WorldSnapshot};
 use tracing::{debug, info, warn};
 
 /// AI control mode for the arbiter.
@@ -284,6 +284,8 @@ impl AIArbiter {
     /// # }
     /// ```
     pub fn update(&mut self, snap: &WorldSnapshot) -> ActionStep {
+        let start = std::time::Instant::now();
+
         // Poll for LLM completion (non-blocking, <10 µs)
         if let Some(plan_result) = self.poll_llm_result() {
             match plan_result {
@@ -375,6 +377,10 @@ impl AIArbiter {
             }
         };
 
+        metrics::histogram(
+            "ai.arbiter.update_latency",
+            start.elapsed().as_secs_f64() * 1000.0,
+        );
         action
     }
 
@@ -396,6 +402,7 @@ impl AIArbiter {
         self.mode = AIControlMode::ExecutingLLM { step_index: 0 };
         self.mode_transitions += 1;
         self.llm_successes += 1;
+        metrics::increment("ai.mode.transition.llm");
         info!("Mode transition: GOAP → ExecutingLLM ({} steps)", steps);
     }
 
@@ -410,6 +417,7 @@ impl AIArbiter {
             self.mode = AIControlMode::GOAP;
             self.current_plan = None;
             self.mode_transitions += 1;
+            metrics::increment("ai.mode.transition.goap");
             info!("Mode transition: {} → GOAP", self.mode);
         }
     }
@@ -426,6 +434,7 @@ impl AIArbiter {
             self.current_plan = None;
             self.current_llm_task = None;
             self.mode_transitions += 1;
+            metrics::increment("ai.mode.transition.bt");
             warn!("Mode transition: {} → BehaviorTree (emergency)", self.mode);
         }
     }

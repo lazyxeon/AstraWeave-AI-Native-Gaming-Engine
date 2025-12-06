@@ -537,3 +537,321 @@ pub mod ecs {
 pub mod ecs {
     // Stub when ECS not enabled
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use glam::{Mat4, Quat, Vec3};
+    use std::f32::consts::PI;
+
+    // ===== Transform Tests =====
+
+    #[test]
+    fn test_transform_default() {
+        let t = Transform::default();
+        assert_eq!(t.translation, Vec3::ZERO);
+        assert_eq!(t.rotation, Quat::IDENTITY);
+        assert_eq!(t.scale, Vec3::ONE);
+    }
+
+    #[test]
+    fn test_transform_matrix_identity() {
+        let t = Transform::default();
+        let m = t.matrix();
+        
+        // Identity transform should produce identity matrix
+        assert!((m - Mat4::IDENTITY).abs_diff_eq(Mat4::ZERO, 0.0001));
+    }
+
+    #[test]
+    fn test_transform_matrix_translation() {
+        let t = Transform {
+            translation: Vec3::new(10.0, 20.0, 30.0),
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        };
+        let m = t.matrix();
+        
+        // Extract translation from matrix
+        let (_, _, extracted_translation) = m.to_scale_rotation_translation();
+        assert!((extracted_translation - t.translation).length() < 0.0001);
+    }
+
+    #[test]
+    fn test_transform_matrix_rotation() {
+        let rotation = Quat::from_rotation_y(PI / 2.0); // 90 degrees around Y
+        let t = Transform {
+            translation: Vec3::ZERO,
+            rotation,
+            scale: Vec3::ONE,
+        };
+        let m = t.matrix();
+        
+        // Extract rotation from matrix
+        let (_, extracted_rotation, _) = m.to_scale_rotation_translation();
+        
+        // Quaternions can have equivalent forms (q and -q represent same rotation)
+        let dot = extracted_rotation.dot(rotation).abs();
+        assert!(dot > 0.9999, "Rotations should be equivalent");
+    }
+
+    #[test]
+    fn test_transform_matrix_scale() {
+        let t = Transform {
+            translation: Vec3::ZERO,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::new(2.0, 3.0, 4.0),
+        };
+        let m = t.matrix();
+        
+        // Extract scale from matrix
+        let (extracted_scale, _, _) = m.to_scale_rotation_translation();
+        assert!((extracted_scale - t.scale).length() < 0.0001);
+    }
+
+    #[test]
+    fn test_transform_matrix_combined() {
+        let t = Transform {
+            translation: Vec3::new(5.0, 10.0, 15.0),
+            rotation: Quat::from_rotation_z(PI / 4.0), // 45 degrees around Z
+            scale: Vec3::new(2.0, 2.0, 2.0),
+        };
+        let m = t.matrix();
+        
+        // Transform a point
+        let point = Vec3::new(1.0, 0.0, 0.0);
+        let transformed = m.transform_point3(point);
+        
+        // Expected: scale (2.0), rotate 45° around Z, translate
+        // Scaled: (2.0, 0.0, 0.0)
+        // Rotated 45°: (sqrt(2), sqrt(2), 0)
+        // Translated: (5 + sqrt(2), 10 + sqrt(2), 15)
+        let sqrt2 = 2.0_f32.sqrt();
+        let expected = Vec3::new(5.0 + sqrt2, 10.0 + sqrt2, 15.0);
+        assert!((transformed - expected).length() < 0.0001);
+    }
+
+    #[test]
+    fn test_transform_serialization() {
+        let t = Transform {
+            translation: Vec3::new(1.0, 2.0, 3.0),
+            rotation: Quat::from_rotation_x(PI / 6.0),
+            scale: Vec3::new(1.5, 2.5, 3.5),
+        };
+        
+        let json = serde_json::to_string(&t).unwrap();
+        let deserialized: Transform = serde_json::from_str(&json).unwrap();
+        
+        assert!((deserialized.translation - t.translation).length() < 0.0001);
+        assert!((deserialized.scale - t.scale).length() < 0.0001);
+    }
+
+    // ===== Node Tests =====
+
+    #[test]
+    fn test_node_new() {
+        let node = Node::new("test_node");
+        assert_eq!(node.name, "test_node");
+        assert!(node.children.is_empty());
+    }
+
+    #[test]
+    fn test_node_new_string() {
+        let node = Node::new(String::from("string_node"));
+        assert_eq!(node.name, "string_node");
+    }
+
+    #[test]
+    fn test_node_default() {
+        let node = Node::default();
+        assert!(node.name.is_empty());
+        assert!(node.children.is_empty());
+    }
+
+    #[test]
+    fn test_node_with_children() {
+        let mut parent = Node::new("parent");
+        parent.children.push(Node::new("child1"));
+        parent.children.push(Node::new("child2"));
+        
+        assert_eq!(parent.children.len(), 2);
+        assert_eq!(parent.children[0].name, "child1");
+        assert_eq!(parent.children[1].name, "child2");
+    }
+
+    #[test]
+    fn test_node_with_transform() {
+        let mut node = Node::new("transformed");
+        node.transform.translation = Vec3::new(10.0, 0.0, 0.0);
+        node.transform.scale = Vec3::new(2.0, 2.0, 2.0);
+        
+        assert_eq!(node.transform.translation, Vec3::new(10.0, 0.0, 0.0));
+        assert_eq!(node.transform.scale, Vec3::new(2.0, 2.0, 2.0));
+    }
+
+    #[test]
+    fn test_node_serialization() {
+        let mut node = Node::new("serialized");
+        node.transform.translation = Vec3::new(1.0, 2.0, 3.0);
+        node.children.push(Node::new("child"));
+        
+        let json = serde_json::to_string(&node).unwrap();
+        let deserialized: Node = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(deserialized.name, "serialized");
+        assert_eq!(deserialized.children.len(), 1);
+        assert_eq!(deserialized.children[0].name, "child");
+    }
+
+    // ===== Scene Tests =====
+
+    #[test]
+    fn test_scene_new() {
+        let scene = Scene::new();
+        assert_eq!(scene.root.name, "root");
+        assert!(scene.root.children.is_empty());
+    }
+
+    #[test]
+    fn test_scene_default() {
+        let scene = Scene::default();
+        assert!(scene.root.name.is_empty());
+    }
+
+    #[test]
+    fn test_scene_traverse_single_node() {
+        let scene = Scene::new();
+        let mut count = 0;
+        
+        scene.traverse(&mut |node, _matrix| {
+            count += 1;
+            assert_eq!(node.name, "root");
+        });
+        
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_scene_traverse_hierarchy() {
+        let mut scene = Scene::new();
+        scene.root.children.push(Node::new("child1"));
+        scene.root.children.push(Node::new("child2"));
+        scene.root.children[0].children.push(Node::new("grandchild"));
+        
+        let mut names = Vec::new();
+        scene.traverse(&mut |node, _matrix| {
+            names.push(node.name.clone());
+        });
+        
+        // Should visit all 4 nodes: root, child1, grandchild, child2
+        assert_eq!(names.len(), 4);
+        assert_eq!(names[0], "root");
+        assert!(names.contains(&"child1".to_string()));
+        assert!(names.contains(&"child2".to_string()));
+        assert!(names.contains(&"grandchild".to_string()));
+    }
+
+    #[test]
+    fn test_scene_traverse_world_matrix_propagation() {
+        let mut scene = Scene::new();
+        scene.root.transform.translation = Vec3::new(10.0, 0.0, 0.0);
+        
+        let mut child = Node::new("child");
+        child.transform.translation = Vec3::new(5.0, 0.0, 0.0);
+        scene.root.children.push(child);
+        
+        let mut world_translations = Vec::new();
+        scene.traverse(&mut |node, matrix| {
+            let (_, _, translation) = matrix.to_scale_rotation_translation();
+            world_translations.push((node.name.clone(), translation));
+        });
+        
+        // Root should be at (10, 0, 0)
+        // Child should be at (15, 0, 0) = parent + local
+        assert_eq!(world_translations.len(), 2);
+        
+        let root_trans = world_translations.iter().find(|(n, _)| n == "root").unwrap().1;
+        let child_trans = world_translations.iter().find(|(n, _)| n == "child").unwrap().1;
+        
+        assert!((root_trans - Vec3::new(10.0, 0.0, 0.0)).length() < 0.0001);
+        assert!((child_trans - Vec3::new(15.0, 0.0, 0.0)).length() < 0.0001);
+    }
+
+    #[test]
+    fn test_scene_traverse_scale_inheritance() {
+        let mut scene = Scene::new();
+        scene.root.transform.scale = Vec3::new(2.0, 2.0, 2.0);
+        
+        let mut child = Node::new("child");
+        child.transform.scale = Vec3::new(2.0, 2.0, 2.0);
+        scene.root.children.push(child);
+        
+        let mut world_scales = Vec::new();
+        scene.traverse(&mut |node, matrix| {
+            let (scale, _, _) = matrix.to_scale_rotation_translation();
+            world_scales.push((node.name.clone(), scale));
+        });
+        
+        // Root scale: 2.0
+        // Child world scale: 2.0 * 2.0 = 4.0
+        let root_scale = world_scales.iter().find(|(n, _)| n == "root").unwrap().1;
+        let child_scale = world_scales.iter().find(|(n, _)| n == "child").unwrap().1;
+        
+        assert!((root_scale - Vec3::new(2.0, 2.0, 2.0)).length() < 0.0001);
+        assert!((child_scale - Vec3::new(4.0, 4.0, 4.0)).length() < 0.0001);
+    }
+
+    #[test]
+    fn test_scene_serialization() {
+        let mut scene = Scene::new();
+        scene.root.transform.translation = Vec3::new(1.0, 2.0, 3.0);
+        scene.root.children.push(Node::new("child"));
+        
+        let json = serde_json::to_string(&scene).unwrap();
+        let deserialized: Scene = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(deserialized.root.children.len(), 1);
+    }
+
+    #[test]
+    fn test_scene_deep_hierarchy() {
+        let mut scene = Scene::new();
+        
+        // Create a deep hierarchy: root -> level1 -> level2 -> level3 -> level4
+        let mut current = &mut scene.root;
+        for i in 1..=4 {
+            current.children.push(Node::new(format!("level{}", i)));
+            current = &mut current.children[0];
+        }
+        
+        let mut depth = 0;
+        scene.traverse(&mut |_node, _matrix| {
+            depth += 1;
+        });
+        
+        assert_eq!(depth, 5); // root + 4 levels
+    }
+
+    #[test]
+    fn test_scene_traverse_rotation_propagation() {
+        let mut scene = Scene::new();
+        scene.root.transform.rotation = Quat::from_rotation_y(PI / 2.0); // 90° around Y
+        
+        let mut child = Node::new("child");
+        child.transform.translation = Vec3::new(10.0, 0.0, 0.0); // 10 units in X
+        scene.root.children.push(child);
+        
+        let mut child_world_pos = Vec3::ZERO;
+        scene.traverse(&mut |node, matrix| {
+            if node.name == "child" {
+                let (_, _, translation) = matrix.to_scale_rotation_translation();
+                child_world_pos = translation;
+            }
+        });
+        
+        // After 90° rotation around Y, X becomes Z
+        // Child at local (10, 0, 0) should be at world (0, 0, -10)
+        assert!((child_world_pos - Vec3::new(0.0, 0.0, -10.0)).length() < 0.001);
+    }
+}
+

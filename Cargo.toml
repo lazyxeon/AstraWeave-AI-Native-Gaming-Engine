@@ -32,7 +32,7 @@ members = [
   "examples/coop_server",     
   "examples/coop_client",    
   "astraweave-render",
-  "astraweave-render-bevy",
+  # astraweave-render-bevy archived - consolidated to astraweave-render
   "astraweave-materials",
   "astraweave-asset",
   "astraweave-asset-pipeline",
@@ -123,7 +123,7 @@ members = [
   # Renderer demos (Phase 2)
   "examples/shadow_csm_demo",
   "examples/renderer_integration_test",
-  "examples/bevy_shadow_demo",
+  # examples/bevy_shadow_demo archived - used deprecated renderer
   # Greybox generation tools
   "examples/greybox_generator",
   "astraweave-fluids",

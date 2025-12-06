@@ -661,6 +661,230 @@ pub struct ProductionStatus {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_hardening_config_default() {
+        let config = HardeningConfig::default();
+        assert_eq!(config.graceful_shutdown_timeout, Duration::from_secs(30));
+    }
+
+    #[test]
+    fn test_health_check_config_default() {
+        let config = HealthCheckConfig::default();
+        assert_eq!(config.check_interval, Duration::from_secs(30));
+        assert_eq!(config.check_timeout, Duration::from_secs(5));
+        assert_eq!(config.unhealthy_threshold, 3);
+        assert_eq!(config.healthy_threshold, 2);
+    }
+
+    #[test]
+    fn test_health_check_config_clone() {
+        let config = HealthCheckConfig {
+            check_interval: Duration::from_secs(60),
+            check_timeout: Duration::from_secs(10),
+            unhealthy_threshold: 5,
+            healthy_threshold: 3,
+        };
+        let cloned = config.clone();
+        assert_eq!(config.check_interval, cloned.check_interval);
+        assert_eq!(config.unhealthy_threshold, cloned.unhealthy_threshold);
+    }
+
+    #[test]
+    fn test_hardened_request_creation() {
+        let request = HardenedRequest {
+            user_id: Some("user123".to_string()),
+            session_id: Some("session456".to_string()),
+            model: "gpt-4".to_string(),
+            prompt: "Hello world".to_string(),
+            estimated_tokens: 100,
+            priority: Priority::High,
+            timeout: Some(Duration::from_secs(30)),
+            metadata: HashMap::new(),
+        };
+
+        assert_eq!(request.user_id, Some("user123".to_string()));
+        assert_eq!(request.model, "gpt-4");
+        assert_eq!(request.estimated_tokens, 100);
+    }
+
+    #[test]
+    fn test_hardened_request_with_metadata() {
+        let mut metadata = HashMap::new();
+        metadata.insert("key1".to_string(), "value1".to_string());
+        metadata.insert("key2".to_string(), "value2".to_string());
+
+        let request = HardenedRequest {
+            user_id: None,
+            session_id: None,
+            model: "gpt-3.5".to_string(),
+            prompt: "Test".to_string(),
+            estimated_tokens: 50,
+            priority: Priority::Normal,
+            timeout: None,
+            metadata,
+        };
+
+        assert!(request.user_id.is_none());
+        assert_eq!(request.metadata.len(), 2);
+        assert_eq!(request.metadata.get("key1"), Some(&"value1".to_string()));
+    }
+
+    #[test]
+    fn test_health_status_equality() {
+        assert_eq!(HealthStatus::Healthy, HealthStatus::Healthy);
+        assert_eq!(HealthStatus::Degraded, HealthStatus::Degraded);
+        assert_eq!(HealthStatus::Unhealthy, HealthStatus::Unhealthy);
+        assert_ne!(HealthStatus::Healthy, HealthStatus::Degraded);
+    }
+
+    #[test]
+    fn test_component_health_creation() {
+        let health = ComponentHealth {
+            status: HealthStatus::Healthy,
+            last_check: "2025-01-01T00:00:00Z".to_string(),
+            consecutive_failures: 0,
+            last_error: None,
+            response_time_ms: Some(15),
+        };
+
+        assert_eq!(health.status, HealthStatus::Healthy);
+        assert_eq!(health.consecutive_failures, 0);
+        assert!(health.last_error.is_none());
+        assert_eq!(health.response_time_ms, Some(15));
+    }
+
+    #[test]
+    fn test_component_health_with_error() {
+        let health = ComponentHealth {
+            status: HealthStatus::Unhealthy,
+            last_check: "2025-01-01T00:00:00Z".to_string(),
+            consecutive_failures: 5,
+            last_error: Some("Connection timeout".to_string()),
+            response_time_ms: None,
+        };
+
+        assert_eq!(health.status, HealthStatus::Unhealthy);
+        assert_eq!(health.consecutive_failures, 5);
+        assert_eq!(health.last_error, Some("Connection timeout".to_string()));
+    }
+
+    #[test]
+    fn test_system_health_creation() {
+        let mut components = HashMap::new();
+        components.insert(
+            "test_component".to_string(),
+            ComponentHealth {
+                status: HealthStatus::Healthy,
+                last_check: "2025-01-01T00:00:00Z".to_string(),
+                consecutive_failures: 0,
+                last_error: None,
+                response_time_ms: Some(10),
+            },
+        );
+
+        let health = SystemHealth {
+            overall_status: HealthStatus::Healthy,
+            components,
+            last_check: "2025-01-01T00:00:00Z".to_string(),
+            uptime_seconds: 3600,
+        };
+
+        assert_eq!(health.overall_status, HealthStatus::Healthy);
+        assert_eq!(health.components.len(), 1);
+        assert_eq!(health.uptime_seconds, 3600);
+    }
+
+    #[test]
+    fn test_health_checker_new() {
+        let config = HealthCheckConfig::default();
+        let checker = HealthChecker::new(config);
+
+        // Should initialize with all 5 components
+        assert_eq!(checker.components.len(), 5);
+        assert!(checker.components.contains_key("rate_limiter"));
+        assert!(checker.components.contains_key("circuit_breaker"));
+        assert!(checker.components.contains_key("backpressure"));
+        assert!(checker.components.contains_key("telemetry"));
+        assert!(checker.components.contains_key("ab_testing"));
+    }
+
+    #[test]
+    fn test_health_checker_initial_status() {
+        let config = HealthCheckConfig::default();
+        let checker = HealthChecker::new(config);
+
+        for (_, health) in &checker.components {
+            assert_eq!(health.status, HealthStatus::Healthy);
+            assert_eq!(health.consecutive_failures, 0);
+            assert!(health.last_error.is_none());
+        }
+    }
+
+    #[test]
+    fn test_health_checker_get_overall_health() {
+        let config = HealthCheckConfig::default();
+        let checker = HealthChecker::new(config);
+        let overall = checker.get_overall_health();
+
+        assert_eq!(overall.overall_status, HealthStatus::Healthy);
+        assert_eq!(overall.components.len(), 5);
+        assert!(overall.uptime_seconds < 1); // Just created
+    }
+
+    #[test]
+    fn test_hardening_result_variants() {
+        // Test Success variant
+        let success: HardeningResult<String> = HardeningResult::Success("OK".to_string());
+        assert!(matches!(success, HardeningResult::Success(_)));
+
+        // Test RateLimited variant
+        let rate_limited: HardeningResult<String> = HardeningResult::RateLimited {
+            retry_after: Duration::from_secs(60),
+            reason: "Too many requests".to_string(),
+        };
+        assert!(matches!(rate_limited, HardeningResult::RateLimited { .. }));
+
+        // Test CircuitOpen variant
+        let circuit_open: HardeningResult<String> = HardeningResult::CircuitOpen {
+            model: "gpt-4".to_string(),
+            retry_after: Duration::from_secs(30),
+        };
+        assert!(matches!(circuit_open, HardeningResult::CircuitOpen { .. }));
+
+        // Test Queued variant
+        let queued: HardeningResult<String> = HardeningResult::Queued {
+            position: 5,
+            estimated_wait: Duration::from_secs(10),
+        };
+        assert!(matches!(queued, HardeningResult::Queued { .. }));
+
+        // Test Rejected variant
+        let rejected: HardeningResult<String> = HardeningResult::Rejected {
+            reason: "System overload".to_string(),
+            retry_after: Some(Duration::from_secs(120)),
+        };
+        assert!(matches!(rejected, HardeningResult::Rejected { .. }));
+    }
+
+    #[test]
+    fn test_priority_usage() {
+        let priorities = [Priority::Low, Priority::Normal, Priority::High, Priority::Critical];
+        for priority in priorities {
+            let request = HardenedRequest {
+                user_id: None,
+                session_id: None,
+                model: "test".to_string(),
+                prompt: "test".to_string(),
+                estimated_tokens: 10,
+                priority,
+                timeout: None,
+                metadata: HashMap::new(),
+            };
+            // Just ensure we can create requests with all priority levels
+            assert!(!request.model.is_empty());
+        }
+    }
+
     #[tokio::test]
     async fn test_production_hardening_layer_creation() {
         let config = HardeningConfig::default();
@@ -711,5 +935,45 @@ mod tests {
         }
 
         layer.shutdown().await.unwrap();
+    }
+
+    #[test]
+    fn test_system_health_serialization() {
+        let health = SystemHealth {
+            overall_status: HealthStatus::Healthy,
+            components: HashMap::new(),
+            last_check: "2025-01-01T00:00:00Z".to_string(),
+            uptime_seconds: 1000,
+        };
+
+        let json = serde_json::to_string(&health).unwrap();
+        assert!(json.contains("Healthy"));
+        assert!(json.contains("1000"));
+    }
+
+    #[test]
+    fn test_component_health_serialization() {
+        let health = ComponentHealth {
+            status: HealthStatus::Degraded,
+            last_check: "2025-01-01T00:00:00Z".to_string(),
+            consecutive_failures: 2,
+            last_error: Some("Test error".to_string()),
+            response_time_ms: Some(100),
+        };
+
+        let json = serde_json::to_string(&health).unwrap();
+        assert!(json.contains("Degraded"));
+        assert!(json.contains("Test error"));
+    }
+
+    #[test]
+    fn test_health_status_serialization() {
+        let healthy = HealthStatus::Healthy;
+        let degraded = HealthStatus::Degraded;
+        let unhealthy = HealthStatus::Unhealthy;
+
+        assert_eq!(serde_json::to_string(&healthy).unwrap(), "\"Healthy\"");
+        assert_eq!(serde_json::to_string(&degraded).unwrap(), "\"Degraded\"");
+        assert_eq!(serde_json::to_string(&unhealthy).unwrap(), "\"Unhealthy\"");
     }
 }

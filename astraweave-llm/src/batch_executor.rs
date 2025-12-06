@@ -401,16 +401,10 @@ mod tests {
     use super::*;
     use astraweave_core::{CompanionState, EnemyState, IVec2, PlayerState};
     use std::collections::BTreeMap;
-
     fn create_test_snapshot(agent_x: i32, agent_y: i32) -> WorldSnapshot {
         WorldSnapshot {
             t: 0.0,
-            player: PlayerState {
-                pos: IVec2 { x: 0, y: 0 },
-                hp: 100,
-                stance: "stand".to_string(),
-                orders: vec![],
-            },
+            player: PlayerState::default(),
             me: CompanionState {
                 pos: IVec2 {
                     x: agent_x,
@@ -430,7 +424,6 @@ mod tests {
             pois: vec![],
             obstacles: vec![],
             objective: Some("eliminate".to_string()),
-            physics_context: None,
         }
     }
 

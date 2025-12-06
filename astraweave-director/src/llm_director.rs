@@ -562,7 +562,7 @@ mod tests {
             t: 0.0,
             player: astraweave_core::PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 5, y: 5 },
                 stance: "stand".to_string(),
                 orders: vec![],

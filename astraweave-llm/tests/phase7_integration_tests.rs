@@ -384,36 +384,11 @@ async fn test_phase7_metrics_tracking() {
 
 // ============================================================================
 // Helper Functions
-// ============================================================================
-
-fn create_simple_scenario() -> WorldSnapshot {
-    WorldSnapshot {
-        t: 0.0,
-        player: PlayerState {,
-            physics_context: None,
-            pos: IVec2 { x: 0, y: 0 },
-            hp: 100,
-            stance: "standing".to_string(),
-            orders: vec![],
-        },
-        me: CompanionState {
-            pos: IVec2 { x: 5, y: 5 },
-            ammo: 30,
-            morale: 80.0,
-            cooldowns: BTreeMap::new(),
-        },
-        enemies: vec![],
-        pois: vec![],
-        obstacles: vec![],
-        objective: Some("Patrol area".to_string()),
-    }
-}
 
 fn create_combat_scenario() -> WorldSnapshot {
     WorldSnapshot {
         t: 0.0,
-        player: PlayerState {,
-            physics_context: None,
+        player: PlayerState {
             pos: IVec2 { x: 0, y: 0 },
             hp: 100,
             stance: "crouching".to_string(),
@@ -444,6 +419,28 @@ fn create_combat_scenario() -> WorldSnapshot {
         pois: vec![],
         obstacles: vec![IVec2 { x: 12, y: 10 }, IVec2 { x: 13, y: 10 }],
         objective: Some("Eliminate hostiles".to_string()),
+    }
+}
+
+fn create_simple_scenario() -> WorldSnapshot {
+    WorldSnapshot {
+        t: 0.0,
+        player: PlayerState {
+            pos: IVec2 { x: 0, y: 0 },
+            hp: 100,
+            stance: "standing".to_string(),
+            orders: vec![],
+        },
+        me: CompanionState {
+            pos: IVec2 { x: 5, y: 5 },
+            ammo: 10,
+            morale: 100.0,
+            cooldowns: BTreeMap::new(),
+        },
+        enemies: vec![],
+        pois: vec![],
+        obstacles: vec![],
+        objective: None,
     }
 }
 

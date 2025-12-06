@@ -475,7 +475,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn chunk_priority_ordering() {
+    fn test_chunk_priority_ordering() {
         let p1 = ChunkPriority {
             distance: 10.0,
             in_frustum: true,
@@ -493,7 +493,7 @@ mod tests {
     }
 
     #[test]
-    fn frustum_priority_higher() {
+    fn test_frustum_priority_higher() {
         let p1 = ChunkPriority {
             distance: 10.0,
             in_frustum: false,
@@ -511,9 +511,627 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn streaming_config_default() {
+    async fn test_streaming_config_default() {
         let config = StreamingConfig::default();
         assert_eq!(config.max_loaded_chunks, 256);
         assert_eq!(config.view_distance, 8);
+        assert_eq!(config.prefetch_distance, 4);
+        assert_eq!(config.max_concurrent_loads, 8);
+        assert_eq!(config.chunk_size, 256.0);
+        assert_eq!(config.adaptive_throttle_threshold_ms, 10.0);
+        assert_eq!(config.throttled_concurrent_loads, 2);
+    }
+
+    #[test]
+    fn test_chunk_priority_equal_distance_timestamp() {
+        let p1 = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        let p2 = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 2,
+        };
+
+        // Same distance and frustum, later timestamp has higher priority
+        assert!(p2 > p1);
+    }
+
+    #[test]
+    fn test_chunk_priority_eq_trait() {
+        let p1 = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        let p2 = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        assert_eq!(p1, p2);
+    }
+
+    #[test]
+    fn test_chunk_priority_partial_ord() {
+        let p1 = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        let p2 = ChunkPriority {
+            distance: 5.0,
+            in_frustum: true,
+            timestamp: 2,
+        };
+
+        assert!(p1.partial_cmp(&p2).is_some());
+    }
+
+    #[test]
+    fn test_chunk_load_request_eq() {
+        let r1 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(0, 0),
+            priority: ChunkPriority {
+                distance: 10.0,
+                in_frustum: true,
+                timestamp: 1,
+            },
+        };
+
+        let r2 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(0, 0),
+            priority: ChunkPriority {
+                distance: 5.0, // Different priority
+                in_frustum: false,
+                timestamp: 2,
+            },
+        };
+
+        // Same chunk ID means equal, regardless of priority
+        assert_eq!(r1, r2);
+    }
+
+    #[test]
+    fn test_chunk_load_request_ord() {
+        let r1 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(0, 0),
+            priority: ChunkPriority {
+                distance: 10.0,
+                in_frustum: true,
+                timestamp: 1,
+            },
+        };
+
+        let r2 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(1, 1),
+            priority: ChunkPriority {
+                distance: 5.0,
+                in_frustum: true,
+                timestamp: 2,
+            },
+        };
+
+        // r2 should be greater (higher priority) due to lower distance
+        assert!(r2 > r1);
+    }
+
+    #[test]
+    fn test_loader_status_eq() {
+        assert_eq!(LoaderStatus::Idle, LoaderStatus::Idle);
+        assert_eq!(LoaderStatus::Loading, LoaderStatus::Loading);
+        assert_eq!(LoaderStatus::Unloading, LoaderStatus::Unloading);
+        assert_ne!(LoaderStatus::Idle, LoaderStatus::Loading);
+    }
+
+    #[test]
+    fn test_streaming_stats_default() {
+        let stats = StreamingStats::default();
+        assert_eq!(stats.loaded_chunk_count, 0);
+        assert_eq!(stats.pending_load_count, 0);
+        assert_eq!(stats.active_load_count, 0);
+        assert_eq!(stats.memory_usage_mb, 0.0);
+        assert_eq!(stats.chunks_loaded_this_frame, 0);
+        assert_eq!(stats.chunks_unloaded_this_frame, 0);
+    }
+
+    #[test]
+    fn test_streaming_stats_serialization() {
+        let stats = StreamingStats {
+            loaded_chunk_count: 10,
+            pending_load_count: 5,
+            active_load_count: 2,
+            memory_usage_mb: 64.5,
+            chunks_loaded_this_frame: 3,
+            chunks_unloaded_this_frame: 1,
+        };
+
+        let json = serde_json::to_string(&stats).unwrap();
+        let deserialized: StreamingStats = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(stats.loaded_chunk_count, deserialized.loaded_chunk_count);
+        assert_eq!(stats.pending_load_count, deserialized.pending_load_count);
+        assert_eq!(stats.active_load_count, deserialized.active_load_count);
+        assert!((stats.memory_usage_mb - deserialized.memory_usage_mb).abs() < 0.001);
+        assert_eq!(stats.chunks_loaded_this_frame, deserialized.chunks_loaded_this_frame);
+        assert_eq!(stats.chunks_unloaded_this_frame, deserialized.chunks_unloaded_this_frame);
+    }
+
+    #[test]
+    fn test_chunk_priority_cmp_nan_distance() {
+        // Test edge case with NaN distance (should fallback to timestamp)
+        let p1 = ChunkPriority {
+            distance: f32::NAN,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        let p2 = ChunkPriority {
+            distance: f32::NAN,
+            in_frustum: true,
+            timestamp: 2,
+        };
+
+        // Should still compare by timestamp when distances are NaN
+        assert!(p2 > p1);
+    }
+
+    #[test]
+    fn test_streaming_config_custom() {
+        let config = StreamingConfig {
+            max_loaded_chunks: 512,
+            view_distance: 16,
+            prefetch_distance: 8,
+            max_concurrent_loads: 16,
+            chunk_size: 128.0,
+            adaptive_throttle_threshold_ms: 5.0,
+            throttled_concurrent_loads: 4,
+        };
+
+        assert_eq!(config.max_loaded_chunks, 512);
+        assert_eq!(config.view_distance, 16);
+        assert_eq!(config.prefetch_distance, 8);
+        assert_eq!(config.max_concurrent_loads, 16);
+        assert_eq!(config.chunk_size, 128.0);
+        assert_eq!(config.adaptive_throttle_threshold_ms, 5.0);
+        assert_eq!(config.throttled_concurrent_loads, 4);
+    }
+
+    #[test]
+    fn test_chunk_load_request_partial_cmp() {
+        let r1 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(0, 0),
+            priority: ChunkPriority {
+                distance: 10.0,
+                in_frustum: true,
+                timestamp: 1,
+            },
+        };
+
+        let r2 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(1, 1),
+            priority: ChunkPriority {
+                distance: 5.0,
+                in_frustum: true,
+                timestamp: 2,
+            },
+        };
+
+        assert!(r1.partial_cmp(&r2).is_some());
+        assert_eq!(r1.partial_cmp(&r2), Some(std::cmp::Ordering::Less));
+    }
+
+    #[test]
+    fn test_chunk_priority_distance_only_comparison() {
+        // Both in frustum, different distances
+        let near = ChunkPriority {
+            distance: 5.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        let far = ChunkPriority {
+            distance: 20.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        // Near should have higher priority (lower distance)
+        assert!(near > far);
+    }
+
+    #[test]
+    fn test_chunk_priority_frustum_beats_distance() {
+        // Test that frustum flag always beats distance
+        let near_out_of_frustum = ChunkPriority {
+            distance: 1.0,
+            in_frustum: false,
+            timestamp: 1,
+        };
+
+        let far_in_frustum = ChunkPriority {
+            distance: 100.0,
+            in_frustum: true,
+            timestamp: 1,
+        };
+
+        // In-frustum should win even with larger distance
+        assert!(far_in_frustum > near_out_of_frustum);
+    }
+
+    #[test]
+    fn test_chunk_priority_timestamp_tiebreaker() {
+        // Same distance and frustum, different timestamps
+        let earlier = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 100,
+        };
+
+        let later = ChunkPriority {
+            distance: 10.0,
+            in_frustum: true,
+            timestamp: 200,
+        };
+
+        // Later timestamp should have higher priority
+        assert!(later > earlier);
+    }
+
+    #[test]
+    fn test_chunk_load_request_different_chunks_same_priority() {
+        let r1 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(0, 0),
+            priority: ChunkPriority {
+                distance: 10.0,
+                in_frustum: true,
+                timestamp: 1,
+            },
+        };
+
+        let r2 = ChunkLoadRequest {
+            chunk_id: ChunkId::new(5, 5),
+            priority: ChunkPriority {
+                distance: 10.0,
+                in_frustum: true,
+                timestamp: 1,
+            },
+        };
+
+        // Different chunks with same priority should not be equal
+        assert_ne!(r1, r2);
+    }
+
+    #[test]
+    fn test_loader_status_all_variants() {
+        let statuses = [LoaderStatus::Idle, LoaderStatus::Loading, LoaderStatus::Unloading];
+        
+        // All variants should be distinguishable
+        for (i, s1) in statuses.iter().enumerate() {
+            for (j, s2) in statuses.iter().enumerate() {
+                if i == j {
+                    assert_eq!(s1, s2);
+                } else {
+                    assert_ne!(s1, s2);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_streaming_stats_clone() {
+        let stats = StreamingStats {
+            loaded_chunk_count: 100,
+            pending_load_count: 50,
+            active_load_count: 8,
+            memory_usage_mb: 128.0,
+            chunks_loaded_this_frame: 4,
+            chunks_unloaded_this_frame: 2,
+        };
+
+        let cloned = stats.clone();
+        assert_eq!(stats.loaded_chunk_count, cloned.loaded_chunk_count);
+        assert_eq!(stats.pending_load_count, cloned.pending_load_count);
+        assert_eq!(stats.active_load_count, cloned.active_load_count);
+        assert_eq!(stats.memory_usage_mb, cloned.memory_usage_mb);
+    }
+
+    #[test]
+    fn test_streaming_config_clone() {
+        let config = StreamingConfig {
+            max_loaded_chunks: 1024,
+            view_distance: 12,
+            prefetch_distance: 6,
+            max_concurrent_loads: 4,
+            chunk_size: 64.0,
+            adaptive_throttle_threshold_ms: 8.0,
+            throttled_concurrent_loads: 1,
+        };
+
+        let cloned = config.clone();
+        assert_eq!(config.max_loaded_chunks, cloned.max_loaded_chunks);
+        assert_eq!(config.view_distance, cloned.view_distance);
+        assert_eq!(config.chunk_size, cloned.chunk_size);
+    }
+
+    // Async tests for BackgroundChunkLoader
+    mod async_tests {
+        use super::*;
+        use crate::{WorldConfig, WorldGenerator};
+
+        fn create_test_loader() -> BackgroundChunkLoader {
+            let config = StreamingConfig::default();
+            let world_config = WorldConfig::default();
+            let world_gen = Arc::new(RwLock::new(WorldGenerator::new(world_config)));
+            BackgroundChunkLoader::new(config, world_gen)
+        }
+
+        #[tokio::test]
+        async fn test_background_loader_creation() {
+            let loader = create_test_loader();
+            
+            // Verify initial state
+            let stats = loader.get_stats().await;
+            assert_eq!(stats.loaded_chunk_count, 0);
+            assert_eq!(stats.pending_load_count, 0);
+            assert_eq!(stats.active_load_count, 0);
+        }
+
+        #[tokio::test]
+        async fn test_set_frame_time() {
+            let loader = create_test_loader();
+            
+            // Set frame time
+            loader.set_frame_time(16.67).await;
+            
+            // Set another frame time to test smoothing
+            loader.set_frame_time(20.0).await;
+            loader.set_frame_time(15.0).await;
+            
+            // Just verify no panic - internal state is private
+        }
+
+        #[tokio::test]
+        async fn test_update_camera() {
+            let loader = create_test_loader();
+            
+            // Update camera position and direction
+            let pos = Vec3::new(100.0, 50.0, 100.0);
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            
+            loader.update_camera(pos, dir).await;
+            
+            // Move camera to test velocity calculation
+            let new_pos = Vec3::new(110.0, 50.0, 100.0);
+            loader.update_camera(new_pos, dir).await;
+        }
+
+        #[tokio::test]
+        async fn test_get_predicted_position_stationary() {
+            let loader = create_test_loader();
+            
+            // Set initial camera position
+            let pos = Vec3::new(0.0, 0.0, 0.0);
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            loader.update_camera(pos, dir).await;
+            
+            // Get predicted position (cold start - should use direction)
+            let predicted = loader.get_predicted_position(1.0).await;
+            
+            // With zero velocity, should use direction * assumed speed (10.0)
+            // So predicted = pos + direction * 10.0 * 1.0
+            assert!(predicted.x > pos.x, "Predicted position should be ahead in camera direction");
+        }
+
+        #[tokio::test]
+        async fn test_get_predicted_position_moving() {
+            let loader = create_test_loader();
+            
+            // Set initial position
+            let pos1 = Vec3::new(0.0, 0.0, 0.0);
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            loader.update_camera(pos1, dir).await;
+            
+            // Move camera (creates velocity)
+            let pos2 = Vec3::new(10.0, 0.0, 0.0);
+            loader.update_camera(pos2, dir).await;
+            
+            // Predict 1 second ahead
+            let predicted = loader.get_predicted_position(1.0).await;
+            
+            // Should be ahead of current position
+            assert!(predicted.x > pos2.x);
+        }
+
+        #[tokio::test]
+        async fn test_get_predicted_position_teleport_detection() {
+            let loader = create_test_loader();
+            
+            // Set initial position
+            let pos1 = Vec3::new(0.0, 0.0, 0.0);
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            loader.update_camera(pos1, dir).await;
+            
+            // Teleport (>100 m/s threshold)
+            let pos2 = Vec3::new(1000.0, 0.0, 0.0);
+            loader.update_camera(pos2, dir).await;
+            
+            // Should return current position (no prediction on teleport)
+            let predicted = loader.get_predicted_position(1.0).await;
+            assert_eq!(predicted, pos2);
+        }
+
+        #[tokio::test]
+        async fn test_is_loaded_empty() {
+            let loader = create_test_loader();
+            
+            // Nothing should be loaded initially
+            let chunk_id = ChunkId::new(0, 0);
+            assert!(!loader.is_loaded(chunk_id).await);
+        }
+
+        #[tokio::test]
+        async fn test_is_loading_empty() {
+            let loader = create_test_loader();
+            
+            // Nothing should be loading initially
+            let chunk_id = ChunkId::new(0, 0);
+            assert!(!loader.is_loading(chunk_id).await);
+        }
+
+        #[tokio::test]
+        async fn test_get_chunk_empty() {
+            let loader = create_test_loader();
+            
+            // Should return None for non-existent chunk
+            let chunk_id = ChunkId::new(0, 0);
+            assert!(loader.get_chunk(chunk_id).await.is_none());
+        }
+
+        #[tokio::test]
+        async fn test_get_loaded_chunk_ids_empty() {
+            let loader = create_test_loader();
+            
+            // Should return empty vec initially
+            let ids = loader.get_loaded_chunk_ids().await;
+            assert!(ids.is_empty());
+        }
+
+        #[tokio::test]
+        async fn test_collect_completed_chunks_empty() {
+            let loader = create_test_loader();
+            
+            // Should return 0 when no chunks completed
+            let count = loader.collect_completed_chunks().await;
+            assert_eq!(count, 0);
+        }
+
+        #[tokio::test]
+        async fn test_unload_distant_chunks_under_budget() {
+            let loader = create_test_loader();
+            
+            // With no chunks loaded, unload should do nothing
+            let camera_pos = Vec3::ZERO;
+            let unloaded = loader.unload_distant_chunks(camera_pos).await;
+            assert_eq!(unloaded, 0);
+        }
+
+        #[tokio::test]
+        async fn test_get_stats_initial() {
+            let loader = create_test_loader();
+            
+            let stats = loader.get_stats().await;
+            
+            assert_eq!(stats.loaded_chunk_count, 0);
+            assert_eq!(stats.pending_load_count, 0);
+            assert_eq!(stats.active_load_count, 0);
+            assert_eq!(stats.memory_usage_mb, 0.0);
+        }
+
+        #[tokio::test]
+        async fn test_get_adaptive_concurrent_limit() {
+            let loader = create_test_loader();
+            
+            // Should return max_concurrent_loads (adaptive throttling disabled)
+            let limit = loader.get_adaptive_concurrent_limit().await;
+            assert_eq!(limit, loader.config.max_concurrent_loads);
+        }
+
+        #[tokio::test]
+        async fn test_request_chunks_around_camera() {
+            let loader = create_test_loader();
+            
+            // Set camera position
+            let pos = Vec3::new(0.0, 0.0, 0.0);
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            loader.update_camera(pos, dir).await;
+            
+            // Request chunks - this should populate the load queue
+            loader.request_chunks_around_camera().await;
+            
+            // Verify queue has entries
+            let stats = loader.get_stats().await;
+            assert!(stats.pending_load_count > 0, "Should have pending chunks to load");
+        }
+
+        #[tokio::test]
+        async fn test_process_load_queue_empty() {
+            let loader = create_test_loader();
+            
+            // Process empty queue should not panic
+            loader.process_load_queue().await;
+            
+            let stats = loader.get_stats().await;
+            assert_eq!(stats.active_load_count, 0);
+        }
+
+        #[tokio::test]
+        async fn test_full_loading_cycle() {
+            let loader = create_test_loader();
+            
+            // Set camera position
+            let pos = Vec3::new(0.0, 0.0, 0.0);
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            loader.update_camera(pos, dir).await;
+            
+            // Request chunks
+            loader.request_chunks_around_camera().await;
+            
+            // Process load queue
+            loader.process_load_queue().await;
+            
+            // Give spawned tasks time to complete
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+            
+            // Collect completed chunks
+            let completed = loader.collect_completed_chunks().await;
+            
+            // Should have loaded some chunks
+            let stats = loader.get_stats().await;
+            assert!(completed > 0 || stats.loaded_chunk_count > 0 || stats.active_load_count > 0,
+                "Should have made progress loading chunks");
+        }
+
+        #[tokio::test]
+        async fn test_frame_time_smoothing() {
+            let loader = create_test_loader();
+            
+            // Set multiple frame times to test exponential moving average
+            for frame_time in [16.67, 20.0, 15.0, 18.0, 12.0] {
+                loader.set_frame_time(frame_time).await;
+            }
+            
+            // The smoothed value should be somewhere between min and max
+            // (Internal state is private, but we verify no panics)
+        }
+
+        #[tokio::test]
+        async fn test_camera_velocity_calculation() {
+            let loader = create_test_loader();
+            
+            // Set sequence of positions to test velocity tracking
+            let positions = [
+                Vec3::new(0.0, 0.0, 0.0),
+                Vec3::new(1.0, 0.0, 0.0),
+                Vec3::new(2.0, 0.0, 0.0),
+                Vec3::new(3.0, 0.0, 0.0),
+            ];
+            
+            let dir = Vec3::new(1.0, 0.0, 0.0);
+            
+            for pos in positions {
+                loader.update_camera(pos, dir).await;
+            }
+            
+            // Predicted position should account for velocity
+            let predicted = loader.get_predicted_position(1.0).await;
+            assert!(predicted.x > 3.0, "Should predict ahead based on velocity");
+        }
     }
 }

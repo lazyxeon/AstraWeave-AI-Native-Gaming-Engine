@@ -445,7 +445,7 @@ pub struct CircuitBreakerMetrics {
 #[macro_export]
 macro_rules! circuit_breaker_execute {
     ($breaker:expr, $model:expr, $operation:expr) => {
-        $breaker.execute($model, || async { $operation }).await
+        $breaker.execute($model, || async move { $operation }).await
     };
 }
 

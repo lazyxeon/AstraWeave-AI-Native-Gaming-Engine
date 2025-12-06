@@ -267,3 +267,371 @@ impl MaterialPackage {
         Ok(Self { wgsl, bindings })
     }
 }
+
+// ============================================================================
+// Material Baking Pipeline
+// ============================================================================
+
+/// Material baking configuration
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct BakeConfig {
+    /// Output texture resolution
+    pub resolution: u32,
+    /// Number of samples for quality
+    pub samples: u32,
+    /// Enable mipmap generation
+    pub generate_mipmaps: bool,
+    /// Compress output (BC7)
+    pub compress: bool,
+}
+
+impl Default for BakeConfig {
+    fn default() -> Self {
+        Self {
+            resolution: 1024,
+            samples: 16,
+            generate_mipmaps: true,
+            compress: false,
+        }
+    }
+}
+
+/// Baked material output
+#[derive(Clone, Debug)]
+pub struct BakedMaterial {
+    /// Base color texture (RGB)
+    pub base_color: Vec<[f32; 4]>,
+    /// Metallic-roughness texture (RG)
+    pub metallic_roughness: Vec<[f32; 4]>,
+    /// Normal map (RGB)
+    pub normal: Vec<[f32; 4]>,
+    /// Resolution
+    pub resolution: u32,
+    /// Shader code
+    pub wgsl: String,
+}
+
+/// Material baker for offline processing
+pub struct MaterialBaker {
+    config: BakeConfig,
+}
+
+impl MaterialBaker {
+    pub fn new(config: BakeConfig) -> Self {
+        Self { config }
+    }
+
+    /// Bake a material graph to textures
+    pub fn bake(&self, graph: &Graph) -> Result<BakedMaterial> {
+        let res = self.config.resolution;
+        let total_pixels = (res * res) as usize;
+
+        // Compile shader
+        let (wgsl, _bindings) = compile_to_wgsl(graph)?;
+
+        // Initialize textures with default values
+        // These are filled by evaluating constant nodes from the graph
+        let mut base_color = vec![[0.8f32, 0.8, 0.8, 1.0]; total_pixels];
+        let mut metallic_roughness = vec![[0.0f32, 0.5, 0.0, 1.0]; total_pixels];
+        let mut normal = vec![[0.5f32, 0.5, 1.0, 1.0]; total_pixels];
+
+        // Sample the material at each UV coordinate
+        for y in 0..res {
+            for x in 0..res {
+                let _u = x as f32 / (res - 1) as f32;
+                let _v = y as f32 / (res - 1) as f32;
+                let idx = (y * res + x) as usize;
+
+                // Evaluate constant nodes from graph
+                for (id, node) in &graph.nodes {
+                    if *id == graph.base_color {
+                        if let Node::Constant3 { value } = node {
+                            base_color[idx] = [value[0], value[1], value[2], 1.0];
+                        }
+                    }
+                }
+
+                // Default normal (up)
+                normal[idx] = [0.5, 0.5, 1.0, 1.0];
+            }
+        }
+
+        Ok(BakedMaterial {
+            base_color,
+            metallic_roughness,
+            normal,
+            resolution: res,
+            wgsl,
+        })
+    }
+
+    /// Validate baked material meets quality thresholds
+    pub fn validate(&self, baked: &BakedMaterial) -> Vec<String> {
+        let mut warnings = Vec::new();
+
+        // Check for extreme values
+        for (i, pixel) in baked.base_color.iter().enumerate() {
+            if pixel.iter().any(|&v| v < 0.0 || v > 1.0) {
+                warnings.push(format!("Base color pixel {} out of range", i));
+                break;
+            }
+        }
+
+        // Check normal map validity (normals are in [0,1] range, need to convert to [-1,1])
+        for (i, pixel) in baked.normal.iter().enumerate() {
+            // Convert from [0,1] range to [-1,1] range
+            let nx = pixel[0] * 2.0 - 1.0;
+            let ny = pixel[1] * 2.0 - 1.0;
+            let nz = pixel[2] * 2.0 - 1.0;
+            let len = (nx * nx + ny * ny + nz * nz).sqrt();
+            if (len - 1.0).abs() > 0.1 {
+                warnings.push(format!(
+                    "Normal map pixel {} not normalized (len={})",
+                    i, len
+                ));
+                break;
+            }
+        }
+
+        warnings
+    }
+}
+
+// ============================================================================
+// BRDF Validation
+// ============================================================================
+
+/// BRDF validation results
+#[derive(Debug, Clone)]
+pub struct BrdfValidation {
+    pub energy_conservation: bool,
+    pub reciprocity: bool,
+    pub positivity: bool,
+    pub max_energy_ratio: f32,
+}
+
+/// Validate BRDF properties for physically-based rendering
+pub fn validate_brdf(metallic: f32, roughness: f32, base_color: [f32; 3]) -> BrdfValidation {
+    // Clamp inputs
+    let metallic = metallic.clamp(0.0, 1.0);
+    let roughness = roughness.clamp(0.04, 1.0);
+
+    // Fresnel at normal incidence (F0)
+    let f0_dielectric = 0.04f32;
+    let f0 = [
+        f0_dielectric * (1.0 - metallic) + base_color[0] * metallic,
+        f0_dielectric * (1.0 - metallic) + base_color[1] * metallic,
+        f0_dielectric * (1.0 - metallic) + base_color[2] * metallic,
+    ];
+
+    // Energy conservation: F0 + diffuse should not exceed 1
+    let diffuse_factor = 1.0 - metallic;
+    let max_energy = f0
+        .iter()
+        .map(|&f| f + diffuse_factor * 0.96)
+        .fold(0.0f32, f32::max);
+    let energy_conservation = max_energy <= 1.05; // Allow 5% tolerance
+
+    // Reciprocity: BRDF(l,v) = BRDF(v,l) - always true for isotropic BRDFs
+    let reciprocity = true;
+
+    // Positivity: BRDF should never be negative
+    let positivity = f0.iter().all(|&f| f >= 0.0) && roughness >= 0.0;
+
+    BrdfValidation {
+        energy_conservation,
+        reciprocity,
+        positivity,
+        max_energy_ratio: max_energy,
+    }
+}
+
+// ============================================================================
+// IBL LUT Generation
+// ============================================================================
+
+/// Pre-integrated BRDF LUT for IBL
+/// Stores (scale, bias) for split-sum approximation
+pub struct BrdfLut {
+    pub data: Vec<[f32; 2]>,
+    pub resolution: u32,
+}
+
+impl BrdfLut {
+    /// Generate BRDF integration LUT
+    /// X-axis: NdotV (0 to 1)
+    /// Y-axis: roughness (0 to 1)
+    pub fn generate(resolution: u32) -> Self {
+        let mut data = Vec::with_capacity((resolution * resolution) as usize);
+
+        for y in 0..resolution {
+            let roughness = (y as f32 + 0.5) / resolution as f32;
+            let a = roughness * roughness;
+
+            for x in 0..resolution {
+                let n_dot_v = (x as f32 + 0.5) / resolution as f32;
+                let n_dot_v = n_dot_v.max(0.001);
+
+                // Integrate BRDF
+                let (scale, bias) = Self::integrate_brdf(n_dot_v, a, 64);
+                data.push([scale, bias]);
+            }
+        }
+
+        Self { data, resolution }
+    }
+
+    /// Importance sample GGX to integrate BRDF
+    fn integrate_brdf(n_dot_v: f32, roughness: f32, samples: u32) -> (f32, f32) {
+        use std::f32::consts::PI;
+
+        let v = [(1.0 - n_dot_v * n_dot_v).sqrt(), 0.0, n_dot_v];
+
+        let mut a = 0.0f32;
+        let mut b = 0.0f32;
+
+        for i in 0..samples {
+            // Hammersley sequence
+            let xi = Self::hammersley(i, samples);
+
+            // Importance sample GGX
+            let h = Self::importance_sample_ggx(xi, roughness);
+
+            // Reflect V around H
+            let v_dot_h = v[0] * h[0] + v[1] * h[1] + v[2] * h[2];
+            let l = [
+                2.0 * v_dot_h * h[0] - v[0],
+                2.0 * v_dot_h * h[1] - v[1],
+                2.0 * v_dot_h * h[2] - v[2],
+            ];
+
+            let n_dot_l = l[2].max(0.0);
+            let n_dot_h = h[2].max(0.0);
+            let v_dot_h = v_dot_h.max(0.0);
+
+            if n_dot_l > 0.0 {
+                let g = Self::geometry_smith(n_dot_v, n_dot_l, roughness);
+                let g_vis = g * v_dot_h / (n_dot_h * n_dot_v);
+                let fc = (1.0 - v_dot_h).powi(5);
+
+                a += (1.0 - fc) * g_vis;
+                b += fc * g_vis;
+            }
+        }
+
+        (a / samples as f32, b / samples as f32)
+    }
+
+    fn hammersley(i: u32, n: u32) -> [f32; 2] {
+        let mut bits = i;
+        bits = (bits << 16) | (bits >> 16);
+        bits = ((bits & 0x55555555) << 1) | ((bits & 0xAAAAAAAA) >> 1);
+        bits = ((bits & 0x33333333) << 2) | ((bits & 0xCCCCCCCC) >> 2);
+        bits = ((bits & 0x0F0F0F0F) << 4) | ((bits & 0xF0F0F0F0) >> 4);
+        bits = ((bits & 0x00FF00FF) << 8) | ((bits & 0xFF00FF00) >> 8);
+
+        [i as f32 / n as f32, bits as f32 * 2.3283064365386963e-10]
+    }
+
+    fn importance_sample_ggx(xi: [f32; 2], roughness: f32) -> [f32; 3] {
+        use std::f32::consts::PI;
+
+        let a = roughness * roughness;
+        let phi = 2.0 * PI * xi[0];
+        let cos_theta = ((1.0 - xi[1]) / (1.0 + (a * a - 1.0) * xi[1])).sqrt();
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
+
+        [phi.cos() * sin_theta, phi.sin() * sin_theta, cos_theta]
+    }
+
+    fn geometry_smith(n_dot_v: f32, n_dot_l: f32, roughness: f32) -> f32 {
+        let r = roughness + 1.0;
+        let k = (r * r) / 8.0;
+
+        let ggx_v = n_dot_v / (n_dot_v * (1.0 - k) + k);
+        let ggx_l = n_dot_l / (n_dot_l * (1.0 - k) + k);
+
+        ggx_v * ggx_l
+    }
+
+    /// Export LUT as raw bytes (R32G32 float format)
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.data.len() * 8);
+        for [scale, bias] in &self.data {
+            bytes.extend_from_slice(&scale.to_le_bytes());
+            bytes.extend_from_slice(&bias.to_le_bytes());
+        }
+        bytes
+    }
+}
+
+#[cfg(test)]
+mod baking_tests {
+    use super::*;
+
+    #[test]
+    fn test_material_baker() {
+        let mut nodes = std::collections::BTreeMap::new();
+        nodes.insert(
+            "c".into(),
+            Node::Constant3 {
+                value: [0.8, 0.2, 0.1],
+            },
+        );
+        let g = Graph {
+            nodes,
+            base_color: "c".into(),
+            mr: None,
+            normal: None,
+            clearcoat: None,
+            anisotropy: None,
+            transmission: None,
+        };
+
+        let baker = MaterialBaker::new(BakeConfig {
+            resolution: 64,
+            ..Default::default()
+        });
+        let baked = baker.bake(&g).unwrap();
+
+        assert_eq!(baked.resolution, 64);
+        assert_eq!(baked.base_color.len(), 64 * 64);
+
+        let warnings = baker.validate(&baked);
+        assert!(warnings.is_empty(), "Warnings: {:?}", warnings);
+    }
+
+    #[test]
+    fn test_brdf_validation() {
+        // Dielectric material
+        let result = validate_brdf(0.0, 0.5, [0.8, 0.2, 0.1]);
+        assert!(result.energy_conservation);
+        assert!(result.reciprocity);
+        assert!(result.positivity);
+
+        // Metal material
+        let result = validate_brdf(1.0, 0.3, [1.0, 0.86, 0.57]); // Gold
+        assert!(result.positivity);
+    }
+
+    #[test]
+    fn test_brdf_lut_generation() {
+        let lut = BrdfLut::generate(32);
+        assert_eq!(lut.resolution, 32);
+        assert_eq!(lut.data.len(), 32 * 32);
+
+        // Values should be in reasonable range
+        for [scale, bias] in &lut.data {
+            assert!(
+                *scale >= 0.0 && *scale <= 1.0,
+                "Scale out of range: {}",
+                scale
+            );
+            assert!(*bias >= 0.0 && *bias <= 1.0, "Bias out of range: {}", bias);
+        }
+
+        // Export should work
+        let bytes = lut.to_bytes();
+        assert_eq!(bytes.len(), 32 * 32 * 8);
+    }
+}

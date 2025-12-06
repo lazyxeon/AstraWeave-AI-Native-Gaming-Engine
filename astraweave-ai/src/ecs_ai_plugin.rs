@@ -204,7 +204,6 @@ fn sys_ai_planning(world: &mut ecs::World) {
             pois: vec![],
             obstacles: vec![],
             objective: None,
-            physics_context: None,
         };
         let plan = orch.propose_plan(&snap);
         if let Some(ActionStep::MoveTo { x, y, .. }) = plan.steps.iter().find_map(|s| {
@@ -602,7 +601,7 @@ mod tests {
             t: 0.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -659,7 +658,7 @@ mod tests {
             t: 0.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -724,7 +723,7 @@ mod tests {
             t: 0.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -761,7 +760,7 @@ mod tests {
             t: 0.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -832,7 +831,7 @@ mod tests {
             t: 0.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -897,7 +896,7 @@ mod tests {
             t: 0.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],

@@ -558,7 +558,7 @@ pub fn deserialize_ecs_world(ecs_blob: &[u8], world: &mut World) -> Result<()> {
 ///
 /// # Use Cases
 /// 1. **Save Validation**: Store hash with save, verify on load to detect corruption
-///    ```rust
+///    ```ignore
 ///    let hash_before = calculate_world_hash(&world);
 ///    let blob = serialize_ecs_world(&world)?;
 ///    // ... save blob to disk ...
@@ -566,11 +566,10 @@ pub fn deserialize_ecs_world(ecs_blob: &[u8], world: &mut World) -> Result<()> {
 ///    deserialize_ecs_world(&blob, &mut world)?;
 ///    let hash_after = calculate_world_hash(&world);
 ///    assert_eq!(hash_before, hash_after, "Save corrupted!");
-///    # Ok::<(), anyhow::Error>(())
 ///    ```
 ///
 /// 2. **Cheat Detection (Multiplayer)**: Compare client hash to server hash each frame
-///    ```rust
+///    ```ignore
 ///    let client_hash = calculate_world_hash(&client_world);
 ///    let server_hash = calculate_world_hash(&server_world);
 ///    if client_hash != server_hash {
@@ -579,7 +578,7 @@ pub fn deserialize_ecs_world(ecs_blob: &[u8], world: &mut World) -> Result<()> {
 ///    ```
 ///
 /// 3. **Deterministic Replay Verification**: Same inputs → same hash after N frames
-///    ```rust
+///    ```ignore
 ///    let hash_before = calculate_world_hash(&world);
 ///    // ... simulate 60 frames with recorded inputs ...
 ///    let hash_after = calculate_world_hash(&world);

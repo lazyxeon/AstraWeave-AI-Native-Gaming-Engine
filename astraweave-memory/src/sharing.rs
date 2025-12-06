@@ -423,6 +423,25 @@ impl SharingEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{MemoryContent, SpatialTemporalContext};
+
+    // Helper function to create a Working memory (no public constructor exists)
+    fn create_working_memory(text: &str) -> Memory {
+        let content = MemoryContent {
+            text: text.to_string(),
+            data: serde_json::json!({}),
+            sensory_data: None,
+            emotional_context: None,
+            context: SpatialTemporalContext {
+                location: None,
+                time_period: None,
+                duration: None,
+                participants: vec![],
+                related_events: vec![],
+            },
+        };
+        Memory::new(MemoryType::Working, content)
+    }
 
     #[test]
     fn test_sharing_engine_creation() {
@@ -511,5 +530,661 @@ mod tests {
         let audit_entries = engine.get_audit_log(&memory.id);
         assert_eq!(audit_entries.len(), 1);
         assert!(audit_entries[0].success);
+    }
+
+    // ======================= NEW TESTS =======================
+
+    // --- SharingConfig Tests ---
+    #[test]
+    fn test_sharing_config_default_values() {
+        let config = SharingConfig::default();
+        assert_eq!(config.default_sharing_type, SharingType::Restricted);
+        assert_eq!(config.default_privacy_level, PrivacyLevel::Personal);
+        assert!(!config.auto_sharing_enabled);
+        assert_eq!(config.max_authorized_entities, 10);
+    }
+
+    #[test]
+    fn test_sharing_config_custom_values() {
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Summary,
+            default_privacy_level: PrivacyLevel::Group,
+            auto_sharing_enabled: true,
+            max_authorized_entities: 50,
+        };
+        assert_eq!(config.default_sharing_type, SharingType::Summary);
+        assert_eq!(config.default_privacy_level, PrivacyLevel::Group);
+        assert!(config.auto_sharing_enabled);
+        assert_eq!(config.max_authorized_entities, 50);
+    }
+
+    // --- validate_sharing_request Tests ---
+    #[test]
+    fn test_validate_not_shareable() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: false,
+            authorized_entities: vec!["owner".to_string()],
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Public,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "other".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not shareable"));
+    }
+
+    #[test]
+    fn test_validate_secret_privacy() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string()],
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Secret,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "other".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("secret"));
+    }
+
+    #[test]
+    fn test_validate_personal_unauthorized() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string()],
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Personal,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "other".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        // Unauthorized entity trying to share
+        let result = engine.validate_sharing_request(&request, &metadata, "unauthorized");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not authorized"));
+    }
+
+    #[test]
+    fn test_validate_group_both_authorized() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string(), "target".to_string()],
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Group,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "target".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_group_target_not_authorized() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string()], // target not in group
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Group,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "outside_target".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not in authorized group"));
+    }
+
+    #[test]
+    fn test_validate_public_allows_anyone() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec![], // No one specifically authorized
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Public,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "anyone".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "random_entity");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_validate_restricted_sharing_type() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string()],
+            sharing_type: SharingType::Restricted,
+            privacy_level: PrivacyLevel::Personal,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "other".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("restricted"));
+    }
+
+    #[test]
+    fn test_validate_metadata_only_rejects_full() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string()],
+            sharing_type: SharingType::Metadata,
+            privacy_level: PrivacyLevel::Personal,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "other".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("only allows metadata"));
+    }
+
+    #[test]
+    fn test_validate_summary_only_rejects_full() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["owner".to_string()],
+            sharing_type: SharingType::Summary,
+            privacy_level: PrivacyLevel::Personal,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "other".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "owner");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("only allows summary"));
+    }
+
+    #[test]
+    fn test_validate_max_entities_limit() {
+        let config = SharingConfig {
+            max_authorized_entities: 2,
+            ..Default::default()
+        };
+        let engine = SharingEngine::new(config);
+        let metadata = SharingMetadata {
+            shareable: true,
+            authorized_entities: vec!["a".to_string(), "b".to_string()], // Already at limit
+            sharing_type: SharingType::Full,
+            privacy_level: PrivacyLevel::Public,
+            sharing_conditions: Vec::new(),
+        };
+
+        let request = ShareRequest {
+            memory_id: "test".to_string(),
+            target_entity: "c".to_string(), // Trying to add a third
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.validate_sharing_request(&request, &metadata, "a");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("limit reached"));
+    }
+
+    // --- generate_shared_content Tests ---
+    #[test]
+    fn test_generate_content_full_sharing() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let memory = Memory::episodic(
+            "Full content here".to_string(),
+            vec!["Alice".to_string()],
+            None,
+        );
+
+        let content = engine.generate_shared_content(&memory, &SharingType::Full).unwrap();
+        
+        assert_eq!(content.content, "Full content here");
+        assert!(content.entities.contains(&"Alice".to_string()));
+    }
+
+    #[test]
+    fn test_generate_content_summary_truncates() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let long_text = "word ".repeat(100); // 100 words
+        let memory = create_working_memory(&long_text);
+
+        let content = engine.generate_shared_content(&memory, &SharingType::Summary).unwrap();
+        
+        // Summary should be shorter and end with [...]
+        assert!(content.content.len() < long_text.len());
+        assert!(content.content.contains("[...]"));
+    }
+
+    #[test]
+    fn test_generate_content_summary_short_text_unchanged() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let short_text = "This is a short memory".to_string();
+        let memory = create_working_memory(&short_text);
+
+        let content = engine.generate_shared_content(&memory, &SharingType::Summary).unwrap();
+        
+        assert_eq!(content.content, short_text);
+    }
+
+    #[test]
+    fn test_generate_content_metadata_only() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let memory = Memory::semantic("Secret knowledge".to_string(), "facts".to_string());
+
+        let content = engine.generate_shared_content(&memory, &SharingType::Metadata).unwrap();
+        
+        // Should NOT contain the actual content
+        assert!(!content.content.contains("Secret knowledge"));
+        // Should contain type and date info
+        assert!(content.content.contains("Semantic"));
+    }
+
+    #[test]
+    fn test_generate_content_restricted_fails() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let memory = create_working_memory("Test");
+
+        let result = engine.generate_shared_content(&memory, &SharingType::Restricted);
+        
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_generate_content_filters_private_entities() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let memory = Memory::episodic(
+            "Meeting".to_string(),
+            vec!["Alice".to_string(), "private:Bob".to_string()],
+            None,
+        );
+
+        let content = engine.generate_shared_content(&memory, &SharingType::Summary).unwrap();
+        
+        assert!(content.entities.contains(&"Alice".to_string()));
+        assert!(!content.entities.iter().any(|e| e.starts_with("private:")));
+    }
+
+    // --- share_memory Tests ---
+    #[test]
+    fn test_share_memory_success_updates_metadata() {
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Full,
+            default_privacy_level: PrivacyLevel::Personal,
+            ..Default::default()
+        };
+        let mut engine = SharingEngine::new(config);
+        let memory = create_working_memory("Test content");
+
+        let request = ShareRequest {
+            memory_id: memory.id.clone(),
+            target_entity: "new_entity".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "Sharing for test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.share_memory(&request, &memory, "owner").unwrap();
+        
+        assert!(result.success);
+        assert!(result.sharing_metadata.authorized_entities.contains(&"new_entity".to_string()));
+    }
+
+    #[test]
+    fn test_share_memory_failure_logs_error() {
+        let mut engine = SharingEngine::new(SharingConfig::default()); // Default is Restricted
+        let memory = create_working_memory("Test");
+
+        let request = ShareRequest {
+            memory_id: memory.id.clone(),
+            target_entity: "target".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "Should fail".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.share_memory(&request, &memory, "owner").unwrap();
+        
+        assert!(!result.success);
+        assert!(result.error_message.is_some());
+        
+        // Check audit log recorded the failure
+        let audit = engine.get_audit_log(&memory.id);
+        assert!(!audit.is_empty());
+        assert!(!audit[0].success);
+    }
+
+    #[test]
+    fn test_share_memory_returns_shared_content() {
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Full,
+            default_privacy_level: PrivacyLevel::Personal,
+            ..Default::default()
+        };
+        let mut engine = SharingEngine::new(config);
+        let memory = create_working_memory("Actual content");
+
+        let request = ShareRequest {
+            memory_id: memory.id.clone(),
+            target_entity: "target".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let result = engine.share_memory(&request, &memory, "owner").unwrap();
+        
+        let content = result.shared_content.unwrap();
+        assert_eq!(content.content, "Actual content");
+    }
+
+    // --- get_audit_log Tests ---
+    #[test]
+    fn test_get_audit_log_empty() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let audit = engine.get_audit_log("nonexistent");
+        assert!(audit.is_empty());
+    }
+
+    #[test]
+    fn test_get_audit_log_filters_by_memory_id() {
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Full,
+            default_privacy_level: PrivacyLevel::Personal,
+            ..Default::default()
+        };
+        let mut engine = SharingEngine::new(config);
+        
+        let memory1 = create_working_memory("Mem1");
+        let memory2 = create_working_memory("Mem2");
+
+        // Share both memories
+        for mem in [&memory1, &memory2] {
+            let request = ShareRequest {
+                memory_id: mem.id.clone(),
+                target_entity: "target".to_string(),
+                sharing_type: SharingType::Full,
+                reason: "test".to_string(),
+                conditions: Vec::new(),
+            };
+            engine.share_memory(&request, mem, "owner").unwrap();
+        }
+
+        let audit1 = engine.get_audit_log(&memory1.id);
+        let audit2 = engine.get_audit_log(&memory2.id);
+        
+        assert_eq!(audit1.len(), 1);
+        assert_eq!(audit2.len(), 1);
+        assert_eq!(audit1[0].memory_id, memory1.id);
+        assert_eq!(audit2[0].memory_id, memory2.id);
+    }
+
+    // --- get_accessible_memories Tests ---
+    #[test]
+    fn test_get_accessible_memories_public() {
+        let config = SharingConfig {
+            default_privacy_level: PrivacyLevel::Public,
+            ..Default::default()
+        };
+        let engine = SharingEngine::new(config);
+        
+        let memories = vec![
+            create_working_memory("Mem1"),
+            create_working_memory("Mem2"),
+        ];
+
+        let accessible = engine.get_accessible_memories("anyone", &memories);
+        
+        // Public memories should be accessible to anyone
+        assert_eq!(accessible.len(), 2);
+    }
+
+    #[test]
+    fn test_get_accessible_memories_personal_authorized() {
+        let config = SharingConfig {
+            default_privacy_level: PrivacyLevel::Personal,
+            ..Default::default()
+        };
+        let engine = SharingEngine::new(config);
+        
+        let memories = vec![create_working_memory("Test")];
+
+        // "owner" is in default authorized list
+        let accessible = engine.get_accessible_memories("owner", &memories);
+        assert_eq!(accessible.len(), 1);
+    }
+
+    #[test]
+    fn test_get_accessible_memories_personal_unauthorized() {
+        let config = SharingConfig {
+            default_privacy_level: PrivacyLevel::Personal,
+            ..Default::default()
+        };
+        let engine = SharingEngine::new(config);
+        
+        let memories = vec![create_working_memory("Test")];
+
+        // "stranger" is not in default authorized list
+        let accessible = engine.get_accessible_memories("stranger", &memories);
+        assert!(accessible.is_empty());
+    }
+
+    // --- create_shared_cluster Tests ---
+    #[test]
+    fn test_create_shared_cluster_basic() {
+        let mut engine = SharingEngine::new(SharingConfig::default());
+        
+        let cluster = engine.create_shared_cluster(
+            "Test Cluster".to_string(),
+            vec!["mem1".to_string(), "mem2".to_string()],
+            vec!["user1".to_string()],
+            PrivacyLevel::Group,
+        ).unwrap();
+        
+        assert_eq!(cluster.name, "Test Cluster");
+        assert!(cluster.memory_ids.contains(&"mem1".to_string()));
+        assert!(cluster.memory_ids.contains(&"mem2".to_string()));
+    }
+
+    #[test]
+    fn test_create_shared_cluster_importance() {
+        let mut engine = SharingEngine::new(SharingConfig::default());
+        
+        let cluster = engine.create_shared_cluster(
+            "Important Cluster".to_string(),
+            vec!["mem1".to_string()],
+            vec!["user1".to_string()],
+            PrivacyLevel::Public,
+        ).unwrap();
+        
+        assert!((cluster.importance - 0.7).abs() < 0.001);
+    }
+
+    // --- revoke_access Tests ---
+    #[test]
+    fn test_revoke_access_logs_event() {
+        let mut engine = SharingEngine::new(SharingConfig::default());
+        
+        engine.revoke_access("mem123", "target_user", "admin").unwrap();
+        
+        let audit = engine.get_audit_log("mem123");
+        assert_eq!(audit.len(), 1);
+        assert!(audit[0].success);
+        assert_eq!(audit[0].target_entity, "target_user");
+        assert_eq!(audit[0].source_entity, "admin");
+        assert_eq!(audit[0].reason, "Access revoked");
+    }
+
+    #[test]
+    fn test_revoke_access_multiple() {
+        let mut engine = SharingEngine::new(SharingConfig::default());
+        
+        engine.revoke_access("mem123", "user1", "admin").unwrap();
+        engine.revoke_access("mem123", "user2", "admin").unwrap();
+        engine.revoke_access("mem456", "user1", "admin").unwrap();
+        
+        let audit123 = engine.get_audit_log("mem123");
+        let audit456 = engine.get_audit_log("mem456");
+        
+        assert_eq!(audit123.len(), 2);
+        assert_eq!(audit456.len(), 1);
+    }
+
+    // --- ShareRequest Tests ---
+    #[test]
+    fn test_share_request_with_conditions() {
+        let request = ShareRequest {
+            memory_id: "mem1".to_string(),
+            target_entity: "target".to_string(),
+            sharing_type: SharingType::Summary,
+            reason: "Testing".to_string(),
+            conditions: vec!["NDA signed".to_string(), "Time limited".to_string()],
+        };
+        
+        assert_eq!(request.conditions.len(), 2);
+        assert!(request.conditions.contains(&"NDA signed".to_string()));
+    }
+
+    // --- SharedMemoryContent Tests ---
+    #[test]
+    fn test_shared_memory_content_preserves_metadata() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let mut memory = create_working_memory("Content");
+        memory.metadata.importance = 0.95;
+
+        let content = engine.generate_shared_content(&memory, &SharingType::Full).unwrap();
+        
+        assert!((content.importance - 0.95).abs() < 0.001);
+        assert_eq!(content.memory_type, MemoryType::Working);
+    }
+
+    // --- SharingAuditEntry Tests ---
+    #[test]
+    fn test_audit_entry_has_timestamp() {
+        let config = SharingConfig {
+            default_sharing_type: SharingType::Full,
+            default_privacy_level: PrivacyLevel::Personal,
+            ..Default::default()
+        };
+        let mut engine = SharingEngine::new(config);
+        let memory = create_working_memory("Test");
+
+        let request = ShareRequest {
+            memory_id: memory.id.clone(),
+            target_entity: "target".to_string(),
+            sharing_type: SharingType::Full,
+            reason: "test".to_string(),
+            conditions: Vec::new(),
+        };
+
+        let before = chrono::Utc::now();
+        engine.share_memory(&request, &memory, "owner").unwrap();
+        let after = chrono::Utc::now();
+
+        let audit = engine.get_audit_log(&memory.id);
+        assert!(audit[0].timestamp >= before);
+        assert!(audit[0].timestamp <= after);
+    }
+
+    // --- generate_summary Tests ---
+    #[test]
+    fn test_generate_summary_very_short() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let short = "Hi";
+        let summary = engine.generate_summary(short);
+        assert_eq!(summary, "Hi");
+    }
+
+    #[test]
+    fn test_generate_summary_exactly_20_words() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let text = "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty";
+        let summary = engine.generate_summary(text);
+        assert_eq!(summary, text); // 20 words, unchanged
+    }
+
+    #[test]
+    fn test_generate_summary_truncates_long() {
+        let engine = SharingEngine::new(SharingConfig::default());
+        let long = "word ".repeat(60); // 60 words
+        let summary = engine.generate_summary(&long);
+        
+        assert!(summary.contains("[...]"));
+        assert!(summary.split_whitespace().count() < 60);
     }
 }

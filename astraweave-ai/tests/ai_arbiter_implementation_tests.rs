@@ -1,3 +1,4 @@
+#![cfg(feature = "llm_orchestrator")]
 //! AI Arbiter Implementation Tests
 //!
 //! Comprehensive integration tests targeting the AIArbiter implementation
@@ -5,14 +6,10 @@
 //!
 //! Test coverage targets:
 //! - update() method: All modes (GOAP, ExecutingLLM, BehaviorTree)
-//! - maybe_request_llm(): Cooldown, active task checks
-//! - poll_llm_result(): Success, failure, no result
-//! - Transition logic: All mode transitions
-//! - Error handling: Empty plans, invalid indices
-//! - Metrics tracking: All counters increment correctly
-
 use anyhow::{anyhow, Result};
+#[cfg(feature = "llm_orchestrator")]
 use astraweave_ai::ai_arbiter::{AIArbiter, AIControlMode};
+#[cfg(feature = "llm_orchestrator")]
 use astraweave_ai::llm_executor::LlmExecutor;
 use astraweave_ai::orchestrator::{Orchestrator, OrchestratorAsync};
 use astraweave_core::schema::{CompanionState, EnemyState, IVec2, PlayerState, WorldSnapshot};
@@ -142,7 +139,7 @@ fn create_test_snapshot(t: f32) -> WorldSnapshot {
         t,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],

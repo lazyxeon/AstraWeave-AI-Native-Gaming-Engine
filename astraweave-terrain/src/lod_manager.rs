@@ -448,7 +448,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn lod_level_skip_factors() {
+    fn test_lod_level_skip_factors() {
         assert_eq!(LodLevel::Full.skip_factor(), 1);
         assert_eq!(LodLevel::Half.skip_factor(), 2);
         assert_eq!(LodLevel::Quarter.skip_factor(), 4);
@@ -456,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn lod_level_transitions() {
+    fn test_lod_level_transitions() {
         assert_eq!(LodLevel::Full.lower(), Some(LodLevel::Half));
         assert_eq!(LodLevel::Half.lower(), Some(LodLevel::Quarter));
         assert_eq!(LodLevel::Quarter.lower(), Some(LodLevel::Skybox));
@@ -469,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn hysteresis_margins() {
+    fn test_hysteresis_margins() {
         let config = LodConfig::default();
 
         // Increasing detail (moving closer)
@@ -485,7 +485,7 @@ mod tests {
     }
 
     #[test]
-    fn lod_manager_basic() {
+    fn test_lod_manager_basic() {
         let config = LodConfig {
             distance_thresholds: [256.0, 512.0, 1024.0],
             hysteresis_margin: 0.1,
@@ -505,5 +505,274 @@ mod tests {
         manager.update_chunk_lod(chunk_id, far_pos);
         // Distance is 300, threshold for downgrade is 256 * 1.1 = 281.6
         assert_eq!(manager.get_chunk_lod(chunk_id), Some(LodLevel::Half));
+    }
+
+    #[test]
+    fn test_lod_level_eq_hash() {
+        use std::collections::HashSet;
+        
+        let mut set = HashSet::new();
+        set.insert(LodLevel::Full);
+        set.insert(LodLevel::Half);
+        set.insert(LodLevel::Full); // Duplicate
+        
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&LodLevel::Full));
+        assert!(set.contains(&LodLevel::Half));
+    }
+
+    #[test]
+    fn test_lod_level_serialization() {
+        let level = LodLevel::Quarter;
+        let json = serde_json::to_string(&level).unwrap();
+        let deserialized: LodLevel = serde_json::from_str(&json).unwrap();
+        assert_eq!(level, deserialized);
+    }
+
+    #[test]
+    fn test_lod_config_default() {
+        let config = LodConfig::default();
+        assert_eq!(config.distance_thresholds[0], 256.0);
+        assert_eq!(config.distance_thresholds[1], 512.0);
+        assert_eq!(config.distance_thresholds[2], 1024.0);
+        assert_eq!(config.hysteresis_margin, 0.1);
+        assert_eq!(config.blend_zone_size, 32.0);
+        assert!(config.enable_blending);
+    }
+
+    #[test]
+    fn test_lod_config_serialization() {
+        let config = LodConfig::default();
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: LodConfig = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(config.distance_thresholds, deserialized.distance_thresholds);
+        assert_eq!(config.hysteresis_margin, deserialized.hysteresis_margin);
+        assert_eq!(config.blend_zone_size, deserialized.blend_zone_size);
+        assert_eq!(config.enable_blending, deserialized.enable_blending);
+    }
+
+    #[test]
+    fn test_lod_config_invalid_transition() {
+        let config = LodConfig::default();
+        
+        // Full to Skybox is not a valid single-step transition
+        let threshold = config.get_threshold(LodLevel::Full, LodLevel::Skybox, true);
+        assert_eq!(threshold, f32::MAX);
+    }
+
+    #[test]
+    fn test_chunk_lod_cache_new() {
+        let cache = ChunkLodCache::new();
+        assert!(cache.l0_mesh.is_none());
+        assert!(cache.l1_mesh.is_none());
+        assert!(cache.l2_mesh.is_none());
+        assert!(cache.l3_mesh.is_none());
+    }
+
+    #[test]
+    fn test_chunk_lod_cache_has_mesh() {
+        let cache = ChunkLodCache::new();
+        assert!(!cache.has_mesh(LodLevel::Full));
+        assert!(!cache.has_mesh(LodLevel::Half));
+        assert!(!cache.has_mesh(LodLevel::Quarter));
+        assert!(!cache.has_mesh(LodLevel::Skybox));
+    }
+
+    #[test]
+    fn test_chunk_lod_state_clone() {
+        let state = ChunkLodState {
+            current_lod: LodLevel::Half,
+            target_lod: Some(LodLevel::Full),
+            blend_factor: 0.5,
+            distance: 300.0,
+        };
+        
+        let cloned = state.clone();
+        assert_eq!(cloned.current_lod, LodLevel::Half);
+        assert_eq!(cloned.target_lod, Some(LodLevel::Full));
+        assert_eq!(cloned.blend_factor, 0.5);
+        assert_eq!(cloned.distance, 300.0);
+    }
+
+    #[test]
+    fn test_lod_manager_cache_operations() {
+        let config = LodConfig::default();
+        let mut manager = LodManager::new(config, 256.0);
+        let chunk_id = ChunkId::new(1, 1);
+
+        // Initially no cached mesh
+        assert!(manager.get_cached_mesh(chunk_id, LodLevel::Full).is_none());
+
+        // Cache miss should be recorded
+        // Note: cache_misses would increment, but we can't check internal state directly
+    }
+
+    #[test]
+    fn test_lod_manager_cache_hit_rate_zero() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        
+        // No operations = 0% hit rate (0/0 case returns 0.0)
+        assert_eq!(manager.cache_hit_rate(), 0.0);
+    }
+
+    #[test]
+    fn test_lod_manager_cache_memory_empty() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        
+        assert_eq!(manager.cache_memory_usage(), 0);
+    }
+
+    #[test]
+    fn test_lod_manager_get_chunk_state_none() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        let chunk_id = ChunkId::new(999, 999);
+
+        assert!(manager.get_chunk_state(chunk_id).is_none());
+    }
+
+    #[test]
+    fn test_lod_manager_get_chunk_lod_none() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        let chunk_id = ChunkId::new(999, 999);
+
+        assert!(manager.get_chunk_lod(chunk_id).is_none());
+    }
+
+    #[test]
+    fn test_lod_manager_is_transitioning_false() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        let chunk_id = ChunkId::new(999, 999);
+
+        assert!(!manager.is_transitioning(chunk_id));
+    }
+
+    #[test]
+    fn test_lod_manager_get_blend_factor_default() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        let chunk_id = ChunkId::new(999, 999);
+
+        assert_eq!(manager.get_blend_factor(chunk_id), 0.0);
+    }
+
+    #[test]
+    fn test_lod_stats_default() {
+        let stats = LodStats::default();
+        assert_eq!(stats.total_chunks, 0);
+        assert_eq!(stats.full_count, 0);
+        assert_eq!(stats.half_count, 0);
+        assert_eq!(stats.quarter_count, 0);
+        assert_eq!(stats.skybox_count, 0);
+        assert_eq!(stats.transitioning_count, 0);
+    }
+
+    #[test]
+    fn test_lod_manager_get_stats_empty() {
+        let config = LodConfig::default();
+        let manager = LodManager::new(config, 256.0);
+        
+        let stats = manager.get_stats();
+        assert_eq!(stats.total_chunks, 0);
+        assert_eq!(stats.full_count, 0);
+    }
+
+    #[test]
+    fn test_lod_manager_update_all_chunks_empty() {
+        let config = LodConfig::default();
+        let mut manager = LodManager::new(config, 256.0);
+        
+        let changed = manager.update_all_chunks(&[], Vec3::ZERO);
+        assert_eq!(changed, 0);
+    }
+
+    #[test]
+    fn test_lod_manager_update_all_chunks_multiple() {
+        let config = LodConfig {
+            distance_thresholds: [256.0, 512.0, 1024.0],
+            hysteresis_margin: 0.1,
+            blend_zone_size: 32.0,
+            enable_blending: false,
+        };
+        let mut manager = LodManager::new(config, 256.0);
+        
+        let chunks = vec![ChunkId::new(0, 0), ChunkId::new(1, 0), ChunkId::new(2, 0)];
+        
+        // First update - all chunks get initialized
+        manager.update_all_chunks(&chunks, Vec3::ZERO);
+        
+        let stats = manager.get_stats();
+        assert_eq!(stats.total_chunks, 3);
+    }
+
+    #[test]
+    fn test_lod_manager_evict_distant_cache() {
+        let config = LodConfig::default();
+        let mut manager = LodManager::new(config, 256.0);
+        
+        // Evicting with empty cache should return 0
+        let evicted = manager.evict_distant_cache(Vec3::ZERO, 1000.0);
+        assert_eq!(evicted, 0);
+    }
+
+    #[test]
+    fn test_lod_config_threshold_half_to_quarter() {
+        let config = LodConfig::default();
+        
+        let threshold_down = config.get_threshold(LodLevel::Half, LodLevel::Quarter, false);
+        let threshold_up = config.get_threshold(LodLevel::Quarter, LodLevel::Half, true);
+        
+        // Should be different due to hysteresis
+        assert!(threshold_down > threshold_up);
+    }
+
+    #[test]
+    fn test_lod_config_threshold_quarter_to_skybox() {
+        let config = LodConfig::default();
+        
+        let threshold_down = config.get_threshold(LodLevel::Quarter, LodLevel::Skybox, false);
+        let threshold_up = config.get_threshold(LodLevel::Skybox, LodLevel::Quarter, true);
+        
+        assert!(threshold_down > threshold_up);
+    }
+
+    #[test]
+    fn test_lod_manager_with_blending() {
+        let config = LodConfig {
+            distance_thresholds: [256.0, 512.0, 1024.0],
+            hysteresis_margin: 0.1,
+            blend_zone_size: 32.0,
+            enable_blending: true,
+        };
+        let mut manager = LodManager::new(config, 256.0);
+        let chunk_id = ChunkId::new(0, 0);
+
+        // Initialize chunk at center
+        let chunk_center = chunk_id.to_center_pos(256.0);
+        manager.update_chunk_lod(chunk_id, chunk_center);
+        
+        // Verify it starts in Full LOD
+        assert_eq!(manager.get_chunk_lod(chunk_id), Some(LodLevel::Full));
+    }
+
+    #[test]
+    fn test_lod_stats_clone() {
+        let stats = LodStats {
+            total_chunks: 10,
+            full_count: 4,
+            half_count: 3,
+            quarter_count: 2,
+            skybox_count: 1,
+            transitioning_count: 2,
+        };
+        
+        let cloned = stats.clone();
+        assert_eq!(stats.total_chunks, cloned.total_chunks);
+        assert_eq!(stats.full_count, cloned.full_count);
     }
 }

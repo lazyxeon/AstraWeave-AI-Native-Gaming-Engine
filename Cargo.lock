@@ -492,6 +492,7 @@ dependencies = [
  "rapier3d",
  "serde",
  "serde_json",
+ "serial_test",
  "tempfile",
  "tokio",
  "toml 0.8.23",
@@ -602,6 +603,7 @@ dependencies = [
  "astraweave-ecs",
  "astraweave-profiling",
  "criterion 0.7.0",
+ "rand 0.9.2",
  "serde",
  "serde_json",
  "tracy-client",
@@ -739,7 +741,7 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -771,7 +773,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "criterion 0.7.0",
- "gilrs",
+ "gilrs 0.10.10",
  "glam 0.30.8",
  "serde",
  "serde_json",
@@ -812,6 +814,7 @@ dependencies = [
  "futures-util",
  "hf-hub",
  "lazy_static",
+ "mockito",
  "rand 0.9.2",
  "reqwest",
  "serde",
@@ -897,11 +900,15 @@ dependencies = [
  "astraweave-core",
  "futures-util",
  "rand 0.9.2",
+ "rustls 0.23.32",
+ "rustls-pemfile",
  "serde",
  "serde_json",
  "tokio",
+ "tokio-rustls 0.26.4",
  "tokio-tungstenite",
  "tungstenite",
+ "webpki-roots 0.26.11",
 ]
 
 [[package]]
@@ -1155,7 +1162,7 @@ dependencies = [
  "log",
  "naga",
  "png",
- "pollster 0.4.0",
+ "pollster",
  "rand 0.9.2",
  "serde",
  "serde_json",
@@ -1170,28 +1177,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "astraweave-render-bevy"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "astraweave-ecs",
- "bytemuck",
- "encase",
- "env_logger",
- "futures-lite",
- "glam 0.29.3",
- "hashbrown 0.15.5",
- "naga",
- "pollster 0.3.0",
- "serde",
- "smallvec 1.15.1",
- "thiserror 2.0.17",
- "toml 0.8.23",
- "tracing",
- "wgpu",
-]
-
-[[package]]
 name = "astraweave-scene"
 version = "0.1.0"
 dependencies = [
@@ -1201,6 +1186,7 @@ dependencies = [
  "astraweave-render",
  "glam 0.30.8",
  "serde",
+ "serde_json",
  "tokio",
  "wgpu",
 ]
@@ -1310,6 +1296,7 @@ dependencies = [
  "rand 0.9.2",
  "rayon",
  "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -1326,6 +1313,7 @@ dependencies = [
  "egui 0.32.3",
  "egui-wgpu",
  "egui-winit",
+ "gilrs 0.11.0",
  "glam 0.30.8",
  "log",
  "serde",
@@ -1651,7 +1639,7 @@ dependencies = [
  "astraweave-audio",
  "astraweave-render",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "winit",
 ]
 
@@ -1893,7 +1881,7 @@ dependencies = [
  "bytemuck",
  "image",
  "naga",
- "pollster 0.4.0",
+ "pollster",
  "serde",
  "serde_json",
  "wgpu",
@@ -2151,21 +2139,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_shadow_demo"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "astraweave-ecs",
- "astraweave-render-bevy",
- "bytemuck",
- "env_logger",
- "glam 0.29.3",
- "pollster 0.4.0",
- "wgpu",
- "winit",
-]
-
-[[package]]
 name = "bevy_tasks"
 version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2252,7 +2225,7 @@ dependencies = [
  "bytemuck",
  "clap",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "serde_json",
  "wgpu",
  "winit",
@@ -2875,15 +2848,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "const_panic"
-version = "0.2.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e262cdaac42494e3ae34c43969f9cdeb7da178bdb4b66fa6a1ea2edb4c8ae652"
-dependencies = [
- "typewit",
-]
-
-[[package]]
 name = "constant_time_eq"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3290,7 +3254,7 @@ dependencies = [
  "astraweave-gameplay",
  "astraweave-render",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -3408,7 +3372,7 @@ dependencies = [
  "egui-winit",
  "glam 0.30.8",
  "notify",
- "pollster 0.4.0",
+ "pollster",
  "rand 0.9.2",
  "wgpu",
  "winit",
@@ -3805,7 +3769,7 @@ dependencies = [
  "objc2-foundation 0.2.2",
  "parking_lot 0.12.5",
  "percent-encoding",
- "pollster 0.4.0",
+ "pollster",
  "profiling",
  "raw-window-handle",
  "static_assertions",
@@ -4006,37 +3970,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d248bdd43ce613d87415282f69b9bb99d947d290b10962dd6c56233312c2ad5"
 dependencies = [
  "log",
-]
-
-[[package]]
-name = "encase"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0a05902cf601ed11d564128448097b98ebe3c6574bd7b6a653a3d56d54aa020"
-dependencies = [
- "const_panic",
- "encase_derive",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "encase_derive"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "181d475b694e2dd56ae919ce7699d344d1fd259292d590c723a50d1189a2ea85"
-dependencies = [
- "encase_derive_impl",
-]
-
-[[package]]
-name = "encase_derive_impl"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f97b51c5cc57ef7c5f7a0c57c250251c49ee4c28f819f87ac32f4aceabc36792"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.106",
 ]
 
 [[package]]
@@ -4429,7 +4362,7 @@ dependencies = [
  "image",
  "log",
  "noise",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -4967,7 +4900,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a556964c6d62458084356ce9770676f5104bd667e12e9a795691076e8a17c5cf"
 dependencies = [
  "fnv",
- "gilrs-core",
+ "gilrs-core 0.5.15",
+ "log",
+ "uuid",
+ "vec_map",
+]
+
+[[package]]
+name = "gilrs"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbb2c998745a3c1ac90f64f4f7b3a54219fd3612d7705e7798212935641ed18f"
+dependencies = [
+ "fnv",
+ "gilrs-core 0.6.6",
  "log",
  "uuid",
  "vec_map",
@@ -4992,6 +4938,27 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "windows 0.58.0",
+]
+
+[[package]]
+name = "gilrs-core"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be11a71ac3564f6965839e2ed275bf4fcf5ce16d80d396e1dfdb7b2d80bd587e"
+dependencies = [
+ "core-foundation 0.10.1",
+ "inotify 0.11.0",
+ "io-kit-sys",
+ "js-sys",
+ "libc",
+ "libudev-sys",
+ "log",
+ "nix 0.30.1",
+ "uuid",
+ "vec_map",
+ "wasm-bindgen",
+ "web-sys",
+ "windows 0.61.3",
 ]
 
 [[package]]
@@ -6772,7 +6739,7 @@ dependencies = [
  "astraweave-nav",
  "astraweave-render",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -6978,7 +6945,7 @@ dependencies = [
  "astraweave-render",
  "bytemuck",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -7926,7 +7893,7 @@ dependencies = [
  "astraweave-physics",
  "astraweave-render",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -8044,12 +8011,6 @@ dependencies = [
  "rustix 1.1.2",
  "windows-sys 0.61.2",
 ]
-
-[[package]]
-name = "pollster"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
 
 [[package]]
 name = "pollster"
@@ -8804,7 +8765,7 @@ dependencies = [
  "env_logger",
  "glam 0.30.8",
  "log",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -9188,6 +9149,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "scc"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46e6f046b7fef48e2660c57ed794263155d713de679057f2d0c169bfc6e756cc"
+dependencies = [
+ "sdd",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9234,6 +9204,12 @@ dependencies = [
  "smithay-client-toolkit",
  "tiny-skia",
 ]
+
+[[package]]
+name = "sdd"
+version = "3.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490dcfcbfef26be6800d11870ff2df8774fa6e86d047e3e8c8a76b25655e41ca"
 
 [[package]]
 name = "security-framework"
@@ -9385,6 +9361,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "serial_test"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b258109f244e1d6891bf1053a55d63a5cd4f8f4c30cf9a1280989f80e7a1fa9"
+dependencies = [
+ "futures",
+ "log",
+ "once_cell",
+ "parking_lot 0.12.5",
+ "scc",
+ "serial_test_derive",
+]
+
+[[package]]
+name = "serial_test_derive"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d69265a08751de7844521fd15003ae0a888e035773ba05695c5c759a6f89eef"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
+]
+
+[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9415,7 +9416,7 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -9495,7 +9496,7 @@ dependencies = [
  "astraweave-asset",
  "astraweave-render",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "winit",
 ]
 
@@ -10665,12 +10666,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
-name = "typewit"
-version = "1.14.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8c1ae7cc0fdb8b842d65d127cb981574b0d2b249b74d1c7a2986863dc134f71"
-
-[[package]]
 name = "ucd-trie"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10722,7 +10717,7 @@ dependencies = [
  "egui-wgpu",
  "egui-winit",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -10737,7 +10732,7 @@ dependencies = [
  "env_logger",
  "glam 0.30.8",
  "log",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -10798,7 +10793,6 @@ name = "unified_showcase"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "astraweave-render-bevy",
  "bytemuck",
  "env_logger",
  "glam 0.30.8",
@@ -10806,7 +10800,7 @@ dependencies = [
  "half",
  "image",
  "log",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]
@@ -10994,7 +10988,7 @@ dependencies = [
  "astraweave-render",
  "bytemuck",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "serde",
  "serde_json",
  "tokio",
@@ -11071,7 +11065,7 @@ dependencies = [
  "egui-winit",
  "glam 0.30.8",
  "image",
- "pollster 0.4.0",
+ "pollster",
  "serde",
  "serde_json",
  "wgpu",
@@ -11351,7 +11345,7 @@ dependencies = [
  "astraweave-render",
  "astraweave-terrain",
  "glam 0.30.8",
- "pollster 0.4.0",
+ "pollster",
  "wgpu",
  "winit",
 ]

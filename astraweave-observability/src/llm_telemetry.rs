@@ -1010,11 +1010,16 @@ impl RequestTracker {
         let end_time = Utc::now();
         let latency = self.start_time.elapsed();
 
-        let active_request = self
-            .telemetry
-            .active_requests
-            .get(&self.request_id)
-            .ok_or_else(|| anyhow!("Active request not found"))?;
+        // Extract prompt_tokens and drop the DashMap guard BEFORE any .await
+        // to avoid holding the lock across async yield points (which can cause deadlock)
+        let prompt_tokens = {
+            let active_request = self
+                .telemetry
+                .active_requests
+                .get(&self.request_id)
+                .ok_or_else(|| anyhow!("Active request not found"))?;
+            active_request.prompt_tokens
+        }; // Guard dropped here
 
         let trace = LlmTrace {
             request_id: self.request_id.clone(),
@@ -1027,9 +1032,9 @@ impl RequestTracker {
             start_time: end_time - chrono::Duration::from_std(latency).unwrap(),
             end_time,
             latency_ms: latency.as_millis() as u64,
-            tokens_prompt: active_request.prompt_tokens,
+            tokens_prompt: prompt_tokens,
             tokens_response,
-            total_tokens: active_request.prompt_tokens + tokens_response,
+            total_tokens: prompt_tokens + tokens_response,
             cost_usd,
             success,
             error_message,

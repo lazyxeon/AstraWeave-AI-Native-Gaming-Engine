@@ -17,7 +17,6 @@ fn create_test_snapshot(agent_pos: IVec2, enemy_count: usize, poi_count: usize) 
             pos: IVec2 {
                 x: (i * 10) as i32,
                 y: 0,
-            physics_context: None,
             },
             hp: 100,
             cover: if i % 2 == 0 {
@@ -46,7 +45,7 @@ fn create_test_snapshot(agent_pos: IVec2, enemy_count: usize, poi_count: usize) 
         t: 0.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],
@@ -76,7 +75,7 @@ fn edge_empty_snapshot_all_arrays() {
         t: 0.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],

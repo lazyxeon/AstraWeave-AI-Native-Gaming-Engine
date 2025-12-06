@@ -70,6 +70,11 @@ pub mod msaa; // MSAA anti-aliasing resources
 pub mod overlay; // NEW (for cutscene fades/letterbox later)
 pub mod transparency; // Transparency depth sorting and render pass // Advanced post-processing (TAA, motion blur, DOF, color grading)
 
+// GPU memory management and SSAO
+pub mod gpu_memory; // GPU memory budget tracking and enforcement
+#[cfg(feature = "ssao")]
+pub mod ssao; // Screen-space ambient occlusion
+
 pub use advanced_post::{
     AdvancedPostFx, ColorGradingConfig, DofConfig, MotionBlurConfig, TaaConfig,
 };

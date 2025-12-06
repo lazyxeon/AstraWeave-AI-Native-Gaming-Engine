@@ -5,13 +5,15 @@
 #[cfg(feature = "profiling")]
 use astraweave_profiling::span;
 
+use crate::interner::intern;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap, VecDeque};
+use std::rc::Rc;
 
 /// Symbolic world state represented as a deterministic map
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct WorldState {
-    pub facts: BTreeMap<String, bool>,
+    pub facts: BTreeMap<u32, bool>,
 }
 
 impl WorldState {
@@ -30,17 +32,16 @@ impl WorldState {
     }
 
     pub fn set(&mut self, key: &str, value: bool) {
-        self.facts.insert(key.to_string(), value);
+        self.facts.insert(intern(key), value);
     }
 
     pub fn get(&self, key: &str) -> Option<bool> {
-        self.facts.get(key).copied()
+        self.facts.get(&intern(key)).copied()
     }
 
-    /// Check if this state satisfies the given state (all required facts match)
     pub fn satisfies(&self, other: &WorldState) -> bool {
         for (key, &value) in &other.facts {
-            if self.get(key) != Some(value) {
+            if self.facts.get(key).copied() != Some(value) {
                 return false;
             }
         }
@@ -49,8 +50,8 @@ impl WorldState {
 
     /// Apply effects of an action to this state
     pub fn apply(&mut self, effects: &WorldState) {
-        for (key, &value) in &effects.facts {
-            self.set(key, value);
+        for (&key, &value) in &effects.facts {
+            self.facts.insert(key, value);
         }
     }
 
@@ -58,7 +59,7 @@ impl WorldState {
     pub fn distance_to(&self, goal: &WorldState) -> usize {
         goal.facts
             .iter()
-            .filter(|(key, &value)| self.get(key) != Some(value))
+            .filter(|(key, &value)| self.facts.get(key).copied() != Some(value))
             .count()
     }
 }
@@ -148,9 +149,11 @@ impl GoapGoal {
 #[derive(Debug, Clone)]
 struct PlanNode {
     state: WorldState,
-    actions: Vec<GoapAction>,
-    g_cost: f32, // Actual cost from start
-    h_cost: f32, // Heuristic cost to goal
+    parent: Option<Rc<PlanNode>>,
+    action: Option<GoapAction>,
+    g_cost: f32,
+    h_cost: f32,
+    depth: usize,
 }
 
 impl PlanNode {
@@ -181,9 +184,9 @@ impl Ord for PlanNode {
             .partial_cmp(&self.f_cost())
             .unwrap_or(Ordering::Equal)
             // Deterministic tie-breaking: fewer actions first
-            .then_with(|| other.actions.len().cmp(&self.actions.len()))
+            .then_with(|| other.depth.cmp(&self.depth))
             // Then by last action name (lexicographic) - comparing other to self for correct min-heap order
-            .then_with(|| match (other.actions.last(), self.actions.last()) {
+            .then_with(|| match (&other.action, &self.action) {
                 (Some(a), Some(b)) => a.name.cmp(&b.name),
                 (Some(_), None) => Ordering::Less,
                 (None, Some(_)) => Ordering::Greater,
@@ -229,12 +232,14 @@ impl GoapPlanner {
         let mut closed_set = BTreeSet::new();
 
         // Start node
-        let start_node = PlanNode {
+        let start_node = Rc::new(PlanNode {
             state: current_state.clone(),
-            actions: Vec::new(),
+            parent: None,
+            action: None,
             g_cost: 0.0,
             h_cost: current_state.distance_to(&goal.desired_state) as f32,
-        };
+            depth: 0,
+        });
 
         open_set.push(start_node);
 
@@ -248,7 +253,19 @@ impl GoapPlanner {
 
             // Goal check
             if goal.is_satisfied(&current.state) {
-                return Some(current.actions);
+                // Reconstruct path
+                let mut path = Vec::new();
+                let mut curr = current;
+                while let Some(action) = &curr.action {
+                    path.push(action.clone());
+                    if let Some(parent) = &curr.parent {
+                        curr = parent.clone();
+                    } else {
+                        break;
+                    }
+                }
+                path.reverse();
+                return Some(path);
             }
 
             // Skip if already explored
@@ -267,18 +284,17 @@ impl GoapPlanner {
                         continue;
                     }
 
-                    let mut new_actions = current.actions.clone();
-                    new_actions.push(action.clone());
-
                     let new_g_cost = current.g_cost + action.cost;
                     let new_h_cost = new_state.distance_to(&goal.desired_state) as f32;
 
-                    let new_node = PlanNode {
+                    let new_node = Rc::new(PlanNode {
                         state: new_state,
-                        actions: new_actions,
+                        parent: Some(current.clone()),
+                        action: Some(action.clone()),
                         g_cost: new_g_cost,
                         h_cost: new_h_cost,
-                    };
+                        depth: current.depth + 1,
+                    });
 
                     open_set.push(new_node);
                 }
@@ -501,5 +517,28 @@ mod tests {
         plan.advance();
         assert!(plan.is_complete());
         assert_eq!(plan.completed.len(), 3);
+    }
+    #[test]
+    fn test_max_iterations_limit() {
+        // Create a large chain of actions
+        let actions: Vec<GoapAction> = (0..100)
+            .map(|i| {
+                GoapAction::new(format!("step_{}", i))
+                    .with_precondition(&format!("state_{}", i), true)
+                    .with_effect(&format!("state_{}", i + 1), true)
+            })
+            .collect();
+
+        let mut current_state = WorldState::new();
+        current_state.set("state_0", true);
+
+        let goal = GoapGoal::new("reach_end", WorldState::from_facts(&[("state_100", true)]));
+
+        // Set a low iteration limit
+        let planner = GoapPlanner::new().with_max_iterations(10);
+        let plan = planner.plan(&current_state, &goal, &actions);
+
+        // Should fail due to iteration limit
+        assert!(plan.is_none());
     }
 }

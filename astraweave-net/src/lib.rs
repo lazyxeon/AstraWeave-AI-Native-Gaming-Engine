@@ -12,6 +12,10 @@
 //! - Interest management: `FullInterest`, `RadiusTeamInterest`, `FovInterest`
 //! - Deterministic replay support
 //! - Built-in server with `GameServer`
+//! - **TLS/SSL support** (enable with `tls` feature)
+
+#[cfg(feature = "tls")]
+pub mod tls;
 
 use anyhow::Result;
 use astraweave_core::*;

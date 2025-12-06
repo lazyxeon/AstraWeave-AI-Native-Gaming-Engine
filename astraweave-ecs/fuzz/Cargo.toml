@@ -44,6 +44,13 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "fuzz_cross_platform_determinism"
+path = "fuzz_targets/fuzz_cross_platform_determinism.rs"
+test = false
+doc = false
+bench = false
+
 # Uncomment if event system API is exposed in World
 # [[bin]]
 # name = "fuzz_event_system"
@@ -51,3 +58,4 @@ bench = false
 # test = false
 # doc = false
 # bench = false
+

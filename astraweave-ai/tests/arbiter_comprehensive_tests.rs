@@ -1,3 +1,4 @@
+#![cfg(feature = "llm_orchestrator")]
 //! Comprehensive integration tests for AIArbiter
 //!
 //! These tests achieve 80%+ coverage of ai_arbiter.rs by testing:
@@ -9,6 +10,7 @@
 //! - Metrics tracking
 
 use astraweave_ai::orchestrator::Orchestrator;
+#[cfg(feature = "llm_orchestrator")]
 use astraweave_ai::{AIArbiter, AIControlMode, LlmExecutor};
 use astraweave_core::{
     ActionStep, CompanionState, EnemyState, IVec2, PlanIntent, PlayerState, WorldSnapshot,
@@ -26,7 +28,7 @@ fn create_test_snapshot(t: f32) -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
-            physics_context: None,
+
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -84,15 +86,6 @@ impl Orchestrator for MockLlmOrch {
     fn propose_plan(&self, _snap: &WorldSnapshot) -> PlanIntent {
         // Synchronous version - not used by LlmExecutor
         self.plan.clone()
-    }
-}
-
-#[async_trait::async_trait]
-impl astraweave_ai::orchestrator::OrchestratorAsync for MockLlmOrch {
-    async fn plan(&self, _snap: WorldSnapshot, _budget_ms: u32) -> anyhow::Result<PlanIntent> {
-        // Simulate LLM delay
-        sleep(Duration::from_millis(self.delay_ms)).await;
-        Ok(self.plan.clone())
     }
 }
 

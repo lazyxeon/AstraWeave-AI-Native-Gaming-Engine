@@ -856,4 +856,209 @@ mod tests {
             .any(|m| m.content.contains("Message 9") || m.content.contains("Message 8"));
         assert!(has_recent);
     }
+
+    #[tokio::test]
+    async fn test_clear_history() {
+        let config = ContextConfig::default();
+        let history = ConversationHistory::new(config);
+
+        history
+            .add_message(Role::User, "Message 1".to_string())
+            .await
+            .unwrap();
+        history
+            .add_message(Role::User, "Message 2".to_string())
+            .await
+            .unwrap();
+
+        assert!(history.get_recent_messages(10).len() > 0);
+        
+        history.clear();
+        
+        assert_eq!(history.get_recent_messages(10).len(), 0);
+        assert_eq!(history.get_total_tokens(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_get_metrics() {
+        let config = ContextConfig::default();
+        let history = ConversationHistory::new(config);
+
+        let initial_metrics = history.get_metrics();
+        assert_eq!(initial_metrics.total_messages, 0);
+
+        history
+            .add_message(Role::User, "Hello".to_string())
+            .await
+            .unwrap();
+
+        let metrics = history.get_metrics();
+        assert_eq!(metrics.total_messages, 1);
+    }
+
+    #[tokio::test]
+    async fn test_context_config_default() {
+        let config = ContextConfig::default();
+        assert!(config.max_tokens > 0);
+        assert!(config.sliding_window_size > 0);
+        assert!(!config.encoding_model.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_context_config_serialization() {
+        let config = ContextConfig::default();
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: ContextConfig = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(config.max_tokens, deserialized.max_tokens);
+        assert_eq!(config.sliding_window_size, deserialized.sliding_window_size);
+    }
+
+    #[tokio::test]
+    async fn test_overflow_strategy_variants() {
+        // Test that all variants are accessible
+        let strategies = vec![
+            OverflowStrategy::SlidingWindow,
+            OverflowStrategy::Summarization,
+            OverflowStrategy::Hybrid,
+            OverflowStrategy::TruncateStart,
+            OverflowStrategy::TruncateMiddle,
+        ];
+        
+        for strategy in strategies {
+            let mut config = ContextConfig::default();
+            config.overflow_strategy = strategy;
+            let history = ConversationHistory::new(config);
+            assert_eq!(history.get_recent_messages(10).len(), 0);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_build_context_with_summary() {
+        let mut config = ContextConfig::default();
+        config.max_tokens = 1000;
+        
+        let history = ConversationHistory::new(config);
+
+        // Manually set a summary
+        {
+            let mut summary = history.summary.write();
+            *summary = Some("Previous conversation summary".to_string());
+        }
+
+        history
+            .add_message(Role::User, "New message".to_string())
+            .await
+            .unwrap();
+
+        let context = history.get_context(1000).await.unwrap();
+        assert!(context.contains("SUMMARY:") || context.contains("New message"));
+    }
+
+    #[tokio::test]
+    async fn test_message_preserve_flag() {
+        let config = ContextConfig::default();
+        let history = ConversationHistory::new(config);
+
+        let mut preserved_msg = Message::new(Role::System, "Preserved message".to_string());
+        preserved_msg.preserve = true;
+        
+        {
+            let mut messages = history.messages.write();
+            messages.push_back(preserved_msg);
+        }
+
+        let messages = history.get_recent_messages(10);
+        assert!(messages.iter().any(|m| m.preserve));
+    }
+
+    #[tokio::test]
+    async fn test_export_with_summary() {
+        let config = ContextConfig::default();
+        let history = ConversationHistory::new(config);
+
+        history
+            .add_message(Role::User, "Hello".to_string())
+            .await
+            .unwrap();
+
+        // Set summary
+        {
+            let mut summary = history.summary.write();
+            *summary = Some("Test summary".to_string());
+        }
+
+        let exported = history.export();
+        assert_eq!(exported.messages.len(), 1);
+        assert_eq!(exported.summary, Some("Test summary".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_update_metrics_helper() {
+        let config = ContextConfig::default();
+        let history = ConversationHistory::new(config);
+
+        for i in 0..5 {
+            history
+                .add_message(Role::User, format!("Message {}", i))
+                .await
+                .unwrap();
+        }
+
+        let metrics = history.get_metrics();
+        assert_eq!(metrics.total_messages, 5);
+        assert!(metrics.processing_time_ms > 0 || metrics.total_messages > 0);
+    }
+
+    #[tokio::test]
+    async fn test_context_metrics_default() {
+        let metrics = ContextMetrics::default();
+        assert_eq!(metrics.total_messages, 0);
+        assert_eq!(metrics.current_tokens, 0);
+        assert_eq!(metrics.prune_count, 0);
+    }
+
+    #[tokio::test]
+    async fn test_context_metrics_clone() {
+        let metrics = ContextMetrics {
+            total_messages: 10,
+            current_tokens: 500,
+            max_tokens: 4096,
+            utilization: 0.12,
+            prune_count: 2,
+            summarized_messages: 1,
+            avg_message_tokens: 50.0,
+            processing_time_ms: 100,
+        };
+        
+        let cloned = metrics.clone();
+        assert_eq!(metrics.total_messages, cloned.total_messages);
+        assert_eq!(metrics.prune_count, cloned.prune_count);
+        assert_eq!(metrics.current_tokens, cloned.current_tokens);
+    }
+
+    #[tokio::test]
+    async fn test_empty_time_range() {
+        let config = ContextConfig::default();
+        let history = ConversationHistory::new(config);
+
+        history
+            .add_message(Role::User, "Message".to_string())
+            .await
+            .unwrap();
+
+        // Query with impossible time range (end before start)
+        let messages = history.get_messages_by_time_range(u64::MAX, 0);
+        assert!(messages.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_role_enum_values() {
+        let roles = vec![Role::User, Role::Assistant, Role::System, Role::Function];
+        
+        for role in roles {
+            let message = Message::new(role.clone(), "Test".to_string());
+            assert_eq!(message.role, role);
+        }
+    }
 }

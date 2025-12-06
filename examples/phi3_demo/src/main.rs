@@ -125,7 +125,6 @@ fn create_combat_scenario() -> WorldSnapshot {
             IVec2 { x: 18, y: 14 },
         ],
         objective: Some("Eliminate all hostiles".to_string()),
-        physics_context: None,
     }
 }
 

@@ -219,7 +219,7 @@ struct MyLlmClient;
 impl LlmClient for MyLlmClient {
     async fn complete(&self, prompt: &str) -> Result<String> {
         // Your implementation here
-        todo!()
+        Ok("Your LLM response".to_string()) // Replace with actual API call
     }
 }
 ```

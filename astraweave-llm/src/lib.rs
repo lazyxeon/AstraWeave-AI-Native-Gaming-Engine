@@ -1,8 +1,42 @@
 use anyhow::{bail, Result};
 use astraweave_core::{ActionStep, PlanIntent, ToolRegistry, WorldSnapshot};
+use tracing::{debug, info};
 
+// --- Core modules (always available) ---
+pub mod ab_testing;
+pub mod backpressure;
+pub mod batch_executor;
+pub mod circuit_breaker;
+pub mod compression;
+pub mod fallback_system;
+pub mod few_shot;
+pub mod heuristics;
+pub mod llm_adapter;
+pub mod plan_parser;
+pub mod production_hardening;
+pub mod prompt_template;
+pub mod prompts;
+pub mod rate_limiter;
+pub mod retry;
+pub mod scheduler;
+pub mod schema;
+pub mod streaming_parser;
+pub mod telemetry;
+pub mod tool_guard;
+
+// --- Optional LLM cache (always available by default) ---
 #[cfg(feature = "llm_cache")]
 pub mod cache;
+
+// --- Phi-3 local model (optional, requires heavy GPU/CPU dependencies) ---
+#[cfg(feature = "phi3")]
+pub mod phi3;
+
+// --- Ollama-based models (optional, requires reqwest) ---
+#[cfg(feature = "ollama")]
+pub mod hermes2pro_ollama;
+#[cfg(feature = "ollama")]
+pub mod phi3_ollama;
 
 #[cfg(feature = "llm_cache")]
 use cache::{CachedPlan, PromptCache, PromptKey};
@@ -341,7 +375,7 @@ impl LlmClient for OllamaChatClient {
 
         let mut non_stream_ok = false;
         let mut attempt = 0u32;
-        while attempt < max_nonstream_attempts && !non_stream_ok {
+        while attempt < max_nonstream_attempts && !non_stream_ok && !self.low_latency {
             attempt += 1;
             let backoff = std::time::Duration::from_millis(250 * (1 << (attempt - 1)));
             println!(
@@ -607,10 +641,10 @@ impl LlmClient for OllamaChatClient {
                                             "target/ollama_assistant_acc.txt",
                                             &assistant_acc,
                                         ) {
-                                            println!("[ollama][debug] partial write failed: {}", e);
+                                            debug!("[ollama] partial write failed: {}", e);
                                         } else {
                                             last_flush = assistant_acc.len();
-                                            println!("[ollama][debug] flushed {} bytes of assistant_acc to disk", last_flush);
+                                            debug!("[ollama] flushed {} bytes of assistant_acc to disk", last_flush);
                                         }
                                     }
                                 }
@@ -624,7 +658,7 @@ impl LlmClient for OllamaChatClient {
                                     .map(|ft| ft.duration_since(start).as_millis())
                                     .unwrap_or(0);
                                 let total_ms = start.elapsed().as_millis();
-                                println!(
+                                debug!(
                                     "[ollama] timing stream: ttfb={}ms, total={}ms (early-exit)",
                                     ttfb_ms, total_ms
                                 );
@@ -670,46 +704,43 @@ impl LlmClient for OllamaChatClient {
                     }
 
                     // Debug: persist the assembled assistant output to a file for offline inspection
-                    println!(
-                        "[ollama][debug] assembled assistant_acc length = {}",
+                    debug!(
+                        "[ollama] assembled assistant_acc length = {}",
                         candidate.len()
                     );
                     if candidate.len() > 500 {
-                        println!(
-                            "[ollama][debug] assembled snippet (start): {}",
+                        debug!(
+                            "[ollama] assembled snippet (start): {}",
                             &candidate[..200.min(candidate.len())]
                         );
-                        println!(
-                            "[ollama][debug] assembled snippet (end): {}",
+                        debug!(
+                            "[ollama] assembled snippet (end): {}",
                             &candidate[candidate.len().saturating_sub(200)..]
                         );
                     } else {
-                        println!("[ollama][debug] assembled content: {}", candidate);
+                        debug!("[ollama] assembled content: {}", candidate);
                     }
                     #[cfg(feature = "debug_io")]
                     {
                         if let Err(e) =
                             std::fs::write("target/ollama_assistant_acc.txt", &candidate)
                         {
-                            println!(
-                                "[ollama][debug] failed to write assistant_acc to file: {}",
-                                e
-                            );
+                            debug!("[ollama] failed to write assistant_acc to file: {}", e);
                         } else {
-                            println!("[ollama][debug] wrote assembled assistant_acc to target/ollama_assistant_acc.txt");
+                            debug!("[ollama] wrote assembled assistant_acc to target/ollama_assistant_acc.txt");
                         }
                     }
 
                     if let Some(obj) = extract_last_json_object(&candidate)
                         .or_else(|| extract_json_object(&candidate))
                     {
-                        println!("[ollama][debug] extracted JSON object (len={})", obj.len());
+                        debug!("[ollama] extracted JSON object (len={})", obj.len());
                         if self.early_exit_on_json {
                             let ttfb_ms = first_token_at
                                 .map(|ft| ft.duration_since(start).as_millis())
                                 .unwrap_or(0);
                             let total_ms = start.elapsed().as_millis();
-                            println!("[ollama] timing stream: ttfb={}ms, total={}ms (early-exit salvage)", ttfb_ms, total_ms);
+                            debug!("[ollama] timing stream: ttfb={}ms, total={}ms (early-exit salvage)", ttfb_ms, total_ms);
                             return Ok(obj);
                         }
                         text = obj;
@@ -723,7 +754,7 @@ impl LlmClient for OllamaChatClient {
                                 .map(|ft| ft.duration_since(start).as_millis())
                                 .unwrap_or(0);
                             let total_ms = start.elapsed().as_millis();
-                            println!(
+                            debug!(
                                 "[ollama] timing stream: ttfb={}ms, total={}ms (early-exit buffer)",
                                 ttfb_ms, total_ms
                             );
@@ -741,7 +772,7 @@ impl LlmClient for OllamaChatClient {
                 .map(|ft| ft.duration_since(start).as_millis())
                 .unwrap_or(0);
             let total_ms = start.elapsed().as_millis();
-            println!(
+            debug!(
                 "[ollama] timing stream: ttfb={}ms, total={}ms",
                 ttfb_ms, total_ms
             );
@@ -1170,26 +1201,42 @@ pub fn sanitize_plan(
 }
 
 /// Attempt to extract the first JSON object from a text blob by finding a balanced
-/// '{' ... '}' region. Returns `Some(String)` if a balanced JSON-like block is found.
+/// '{' ... '}' region, respecting string literals and escapes.
 fn extract_json_object(s: &str) -> Option<String> {
-    let bytes = s.as_bytes();
+    let mut depth = 0;
+    let mut in_string = false;
+    let mut escape = false;
     let mut start = None;
-    let mut depth: i32 = 0;
-    for (i, &b) in bytes.iter().enumerate() {
-        if b == b'{' {
-            if start.is_none() {
-                start = Some(i);
+
+    for (i, c) in s.char_indices() {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
             }
-            depth += 1;
-        } else if b == b'}' && depth > 0 {
-            depth -= 1;
-            if depth == 0 {
-                if let Some(s_idx) = start {
-                    // safe to slice because indices are on byte boundaries for UTF-8 ASCII braces
-                    if let Ok(sub) = std::str::from_utf8(&bytes[s_idx..=i]) {
-                        return Some(sub.to_string());
+        } else {
+            match c {
+                '{' => {
+                    if depth == 0 {
+                        start = Some(i);
+                    }
+                    depth += 1;
+                }
+                '}' => {
+                    if depth > 0 {
+                        depth -= 1;
+                        if depth == 0 {
+                            if let Some(start_idx) = start {
+                                return Some(s[start_idx..=i].to_string());
+                            }
+                        }
                     }
                 }
+                '"' => in_string = true,
+                _ => {}
             }
         }
     }
@@ -1198,33 +1245,47 @@ fn extract_json_object(s: &str) -> Option<String> {
 
 /// Extract the last balanced JSON object in a string, if any.
 fn extract_last_json_object(s: &str) -> Option<String> {
-    let bytes = s.as_bytes();
-    let mut start: Option<usize> = None;
-    let mut depth: i32 = 0;
-    let mut last_range: Option<(usize, usize)> = None;
-    for (i, &b) in bytes.iter().enumerate() {
-        if b == b'{' {
-            if start.is_none() {
-                start = Some(i);
+    let mut depth = 0;
+    let mut in_string = false;
+    let mut escape = false;
+    let mut start = None;
+    let mut last_match = None;
+
+    for (i, c) in s.char_indices() {
+        if in_string {
+            if escape {
+                escape = false;
+            } else if c == '\\' {
+                escape = true;
+            } else if c == '"' {
+                in_string = false;
             }
-            depth += 1;
-        } else if b == b'}' && depth > 0 {
-            depth -= 1;
-            if depth == 0 {
-                if let Some(s_idx) = start {
-                    last_range = Some((s_idx, i));
-                    // continue scanning to prefer the last complete object
-                    start = None;
+        } else {
+            match c {
+                '{' => {
+                    if depth == 0 {
+                        start = Some(i);
+                    }
+                    depth += 1;
                 }
+                '}' => {
+                    if depth > 0 {
+                        depth -= 1;
+                        if depth == 0 {
+                            if let Some(start_idx) = start {
+                                last_match = Some(s[start_idx..=i].to_string());
+                                // Reset start to find next object
+                                start = None;
+                            }
+                        }
+                    }
+                }
+                '"' => in_string = true,
+                _ => {}
             }
         }
     }
-    if let Some((s_idx, e_idx)) = last_range {
-        if let Ok(sub) = std::str::from_utf8(&bytes[s_idx..=e_idx]) {
-            return Some(sub.to_string());
-        }
-    }
-    None
+    last_match
 }
 
 /// Find JSON inside fenced code blocks (```json ... ``` or ``` ... ```) and return inner content
@@ -1245,47 +1306,6 @@ fn extract_json_from_fenced(s: &str) -> Option<String> {
     }
     None
 }
-
-pub mod ab_testing;
-pub mod backpressure;
-pub mod circuit_breaker;
-pub mod production_hardening;
-pub mod rate_limiter;
-pub mod retry;
-pub mod scheduler;
-pub mod telemetry;
-pub mod tool_guard;
-
-// Phi-3 Medium Q4 integration (optional, requires --features phi3)
-// DEPRECATED: Migrated to Hermes 2 Pro (October 2025)
-#[cfg(feature = "phi3")]
-pub mod phi3;
-
-// Phi-3 via Ollama (DEPRECATED - use hermes2pro_ollama instead)
-#[cfg(feature = "ollama")]
-pub mod phi3_ollama;
-
-// Hermes 2 Pro via Ollama (RECOMMENDED - 75-85% success rate vs 40-50% Phi-3)
-#[cfg(feature = "ollama")]
-pub mod hermes2pro_ollama;
-
-// Prompt engineering for game AI
-pub mod prompts;
-
-// Phase 7: Enhanced prompt templates with tool vocabulary
-pub mod prompt_template;
-
-// Phase 7: Enhanced plan parser with hallucination detection
-pub mod plan_parser;
-
-// Phase 7: Multi-tier fallback system
-pub mod batch_executor;
-pub mod fallback_system;
-pub mod streaming_parser;
-
-// Prompt compression utilities (Week 5 Action 22)
-pub mod compression;
-pub mod few_shot;
 
 /// Generate a plan using LLM with Phase 7 multi-tier fallback system
 ///
@@ -1315,8 +1335,7 @@ pub async fn plan_from_llm(
 
         // Check cache first
         if let Some((cached_plan, _decision)) = GLOBAL_CACHE.get(&cache_key) {
-            #[cfg(feature = "debug_io")]
-            eprintln!(
+            debug!(
                 "[plan_from_llm] Cache HIT - returning cached plan: {}",
                 cached_plan.plan.plan_id
             );
@@ -1324,8 +1343,7 @@ pub async fn plan_from_llm(
             return PlanSource::Llm(cached_plan.plan);
         }
 
-        #[cfg(feature = "debug_io")]
-        eprintln!("[plan_from_llm] Cache MISS - calling fallback orchestrator");
+        debug!("[plan_from_llm] Cache MISS - calling fallback orchestrator");
     }
 
     // Cache miss or disabled - use Phase 7 multi-tier fallback
@@ -1334,8 +1352,7 @@ pub async fn plan_from_llm(
     let orchestrator = FallbackOrchestrator::new();
     let result = orchestrator.plan_with_fallback(client, snap, reg).await;
 
-    #[cfg(feature = "debug_io")]
-    eprintln!(
+    info!(
         "[plan_from_llm] Fallback orchestrator succeeded at tier {} after {} attempts ({} ms)",
         result.tier.as_str(),
         result.attempts.len(),
@@ -1356,8 +1373,7 @@ pub async fn plan_from_llm(
             };
             GLOBAL_CACHE.put(cache_key, cached_plan);
 
-            #[cfg(feature = "debug_io")]
-            eprintln!("[plan_from_llm] Cached new plan: {}", result.plan.plan_id);
+            debug!("[plan_from_llm] Cached new plan: {}", result.plan.plan_id);
         }
     }
 
@@ -1496,7 +1512,6 @@ mod tests {
             t: 1.0,
             player: PlayerState {
                 hp: 100,
-                physics_context: None,
                 pos: IVec2 { x: 2, y: 2 },
                 stance: "stand".into(),
                 orders: vec![],
@@ -1505,6 +1520,7 @@ mod tests {
                 ammo: 30,
                 cooldowns: Default::default(),
                 morale: 0.9,
+
                 pos: IVec2 { x: 3, y: 2 },
             },
             enemies: vec![EnemyState {
@@ -1629,6 +1645,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_plan_from_llm_invalid_response() {
+        #[cfg(feature = "llm_cache")]
+        super::clear_global_cache();
+
         let snap = create_test_world_snapshot();
         let reg = create_test_registry();
         let client = TestLlmClient {
@@ -1653,6 +1672,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_plan_from_llm_disallowed_tool() {
+        #[cfg(feature = "llm_cache")]
+        super::clear_global_cache();
+
         let snap = create_test_world_snapshot();
         let mut reg = create_test_registry();
         // Remove all tools

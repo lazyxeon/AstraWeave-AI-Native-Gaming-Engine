@@ -227,6 +227,12 @@ impl Archetype {
 /// - BTreeMap operations are O(log n) vs HashMap O(1)
 /// - With ~100 archetypes typical, log₂(100) ≈ 7 operations (negligible)
 /// - Entity queries iterate archetypes (O(archetypes)), so iteration order matters more than lookup
+///
+/// # Zero-Allocation Hot Path
+///
+/// **CRITICAL**: Entity-to-archetype mapping uses `Vec<Option<ArchetypeId>>` indexed by entity ID
+/// instead of HashMap to ensure zero heap allocations during component access hot paths.
+/// HashMap uses RandomState hasher which can allocate thread-local state on first access.
 #[derive(Default)]
 pub struct ArchetypeStorage {
     next_id: u64,
@@ -234,8 +240,9 @@ pub struct ArchetypeStorage {
     signature_to_id: HashMap<ArchetypeSignature, ArchetypeId>,
     /// All archetypes (BTreeMap for deterministic iteration by ID)
     archetypes: BTreeMap<ArchetypeId, Archetype>,
-    /// Entity to archetype mapping
-    entity_to_archetype: HashMap<Entity, ArchetypeId>,
+    /// Entity to archetype mapping (sparse array indexed by entity ID for zero-alloc lookup)
+    /// Uses Vec<Option<ArchetypeId>> instead of HashMap for zero-alloc hot path.
+    entity_to_archetype: Vec<Option<ArchetypeId>>,
 }
 
 impl ArchetypeStorage {
@@ -244,7 +251,7 @@ impl ArchetypeStorage {
             next_id: 0,
             signature_to_id: HashMap::new(),
             archetypes: BTreeMap::new(),
-            entity_to_archetype: HashMap::new(),
+            entity_to_archetype: Vec::new(),
         }
     }
 
@@ -272,16 +279,32 @@ impl ArchetypeStorage {
         self.archetypes.get_mut(&id)
     }
 
+    /// Get archetype for an entity (zero-alloc O(1) lookup)
+    #[inline]
     pub fn get_entity_archetype(&self, entity: Entity) -> Option<ArchetypeId> {
-        self.entity_to_archetype.get(&entity).copied()
+        let id = entity.id() as usize;
+        self.entity_to_archetype.get(id).copied().flatten()
     }
 
+    /// Set archetype for an entity (may allocate if entity ID is larger than current capacity)
     pub fn set_entity_archetype(&mut self, entity: Entity, archetype: ArchetypeId) {
-        self.entity_to_archetype.insert(entity, archetype);
+        let id = entity.id() as usize;
+        // Grow the sparse array if needed (only allocates during warmup/setup)
+        if id >= self.entity_to_archetype.len() {
+            self.entity_to_archetype.resize(id + 1, None);
+        }
+        self.entity_to_archetype[id] = Some(archetype);
     }
 
+    /// Remove archetype mapping for an entity (zero-alloc)
+    #[inline]
     pub fn remove_entity(&mut self, entity: Entity) -> Option<ArchetypeId> {
-        self.entity_to_archetype.remove(&entity)
+        let id = entity.id() as usize;
+        if id < self.entity_to_archetype.len() {
+            self.entity_to_archetype[id].take()
+        } else {
+            None
+        }
     }
 
     /// Iterate over all archetypes

@@ -1,0 +1,2 @@
+off
+"powershell -Command \"$file = 'examples\\unified_showcase\\src\\main.rs'; $content = [System.IO.File]::ReadAllText($file); $newContent = $content.Replace('        for mesh_data in loaded {', '        for mesh_data in loaded {' + [char]13 + [char]10 + '            println!(\\\"DEBUG: mesh_data.material_name = {:?}\\\", mesh_data.material_name);'); [System.IO.File]::WriteAllText($file, $newContent)\""  

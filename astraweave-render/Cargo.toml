@@ -21,6 +21,7 @@ gpu-particles = []  # GPU compute-based particle system
 decals = []  # Screen-space decal system
 deferred = []  # Deferred rendering pipeline
 advanced-post = []  # Advanced post-processing (TAA, motion blur, DOF)
+ssao = []  # Screen-space ambient occlusion
 gltf-assets = ["gltf", "assets"]
 obj-assets = ["tobj", "assets"]
 profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]

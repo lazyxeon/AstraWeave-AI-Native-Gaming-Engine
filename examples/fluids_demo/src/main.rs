@@ -1,14 +1,22 @@
 use astraweave_fluids::FluidSystem;
 use astraweave_physics::PhysicsWorld;
+use glam::{Mat4, Vec3};
+use std::time::Instant;
 use winit::{
     application::ApplicationHandler,
     event::*,
     event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    keyboard::{KeyCode, PhysicalKey},
     window::{Window, WindowId},
-    keyboard::{PhysicalKey, KeyCode},
 };
-use glam::{Vec3, Mat4};
-use std::time::Instant;
+
+mod fluid_renderer;
+mod ocean_renderer;
+mod skybox_renderer;
+
+use fluid_renderer::FluidRenderer;
+use ocean_renderer::OceanRenderer;
+use skybox_renderer::SkyboxRenderer;
 
 struct Camera {
     eye: Vec3,
@@ -40,19 +48,19 @@ struct State {
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     window: std::sync::Arc<winit::window::Window>,
-    
+
     physics_world: PhysicsWorld,
     fluid_system: FluidSystem,
     fluid_renderer: FluidRenderer,
     ocean_renderer: OceanRenderer,
     skybox_renderer: SkyboxRenderer,
-    
+
     render_mode: RenderMode,
-    
+
     camera: Camera,
     depth_texture: wgpu::Texture,
     depth_view: wgpu::TextureView,
-    
+
     last_update: Instant,
 }
 
@@ -69,7 +77,7 @@ impl State {
             }
         };
     }
-    
+
     async fn new(window: std::sync::Arc<winit::window::Window>) -> Self {
         let size = window.inner_size();
 
@@ -90,15 +98,13 @@ impl State {
             .unwrap();
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: None,
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: wgpu::Trace::Off,
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            })
             .await
             .unwrap();
 
@@ -145,7 +151,7 @@ impl State {
         // Initialize fluid system with 20000 particles
         let particle_count = 20000;
         let mut fluid_system = FluidSystem::new(&device, particle_count);
-        
+
         // The fluid system parameters are public fields, so we can set them directly
         fluid_system.smoothing_radius = 0.5;
         fluid_system.target_density = 1.0;
@@ -165,16 +171,19 @@ impl State {
         let skybox_path = if std::path::Path::new(skybox_path).exists() {
             skybox_path
         } else {
-            log::warn!("HDR file not found at {}, trying alternative...", skybox_path);
+            log::warn!(
+                "HDR file not found at {}, trying alternative...",
+                skybox_path
+            );
             "assets/hdri/polyhaven/kloppenheim/kloppenheim_06_puresky_2k.hdr"
         };
-        
+
         let skybox_renderer = SkyboxRenderer::new(&device, &queue, surface_format, skybox_path);
 
         // Initialize fluid renderer
         let max_particles = particle_count;
         let fluid_renderer = FluidRenderer::init(&device, surface_format, max_particles);
-        
+
         // Initialize ocean renderer
         let ocean_renderer = OceanRenderer::new(&device, &queue, surface_format);
 
@@ -215,7 +224,7 @@ impl State {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            
+
             // Recreate depth texture
             self.depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Depth Texture"),
@@ -228,11 +237,14 @@ impl State {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 format: wgpu::TextureFormat::Depth32Float,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
                 view_formats: &[],
             });
-            self.depth_view = self.depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
-            
+            self.depth_view = self
+                .depth_texture
+                .create_view(&wgpu::TextureViewDescriptor::default());
+
             self.camera.aspect = new_size.width as f32 / new_size.height as f32;
         }
     }
@@ -248,17 +260,23 @@ impl State {
         match self.render_mode {
             RenderMode::ParticleFluid => {
                 // Create encoder for fluid simulation
-                let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Fluid Update Encoder"),
-                });
+                let mut encoder =
+                    self.device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Fluid Update Encoder"),
+                        });
 
                 // Update fluid simulation
                 self.fluid_system.step(&mut encoder, &self.queue, dt);
-                
+
                 // Submit encoder
                 self.queue.submit(std::iter::once(encoder.finish()));
-                
-                log::debug!("Frame time: {:.3}ms, Particles: {}", dt * 1000.0, self.fluid_system.particle_count);
+
+                log::debug!(
+                    "Frame time: {:.3}ms, Particles: {}",
+                    dt * 1000.0,
+                    self.fluid_system.particle_count
+                );
             }
             RenderMode::InfiniteOcean => {
                 // Update ocean
@@ -312,7 +330,7 @@ impl State {
 
         // Render based on mode
         let view_proj = self.camera.build_view_projection_matrix();
-        
+
         // Render skybox
         self.skybox_renderer.render(
             &mut encoder,
@@ -322,11 +340,11 @@ impl State {
             view_proj,
             self.camera.eye,
         );
-        
+
         match self.render_mode {
             RenderMode::ParticleFluid => {
                 let particle_buffer = self.fluid_system.get_particle_buffer();
-                
+
                 self.fluid_renderer.render(
                     &mut encoder,
                     &view,
@@ -365,15 +383,22 @@ impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.state.is_none() {
             let window = std::sync::Arc::new(
-                event_loop.create_window(Window::default_attributes()
-                    .with_title("AstraWeave Fluids Demo"))
-                .unwrap()
+                event_loop
+                    .create_window(
+                        Window::default_attributes().with_title("AstraWeave Fluids Demo"),
+                    )
+                    .unwrap(),
             );
             self.state = Some(pollster::block_on(State::new(window)));
         }
     }
 
-    fn window_event(&mut self, event_loop: &ActiveEventLoop, window_id: WindowId, event: WindowEvent) {
+    fn window_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        window_id: WindowId,
+        event: WindowEvent,
+    ) {
         if let Some(state) = &mut self.state {
             if window_id == state.window.id() {
                 match event {
@@ -428,7 +453,7 @@ fn main() {
 
     let event_loop = EventLoop::new().unwrap();
     event_loop.set_control_flow(ControlFlow::Poll);
-    
+
     let mut app = App { state: None };
     event_loop.run_app(&mut app).unwrap();
 }

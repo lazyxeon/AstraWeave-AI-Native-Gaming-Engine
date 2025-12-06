@@ -320,15 +320,15 @@ mod tests {
         WorldSnapshot {
             t: 0.0,
             player: PlayerState {
-                pos: IVec2 { x: 5, y: 5 },
                 hp: 100,
-                stance: "normal".to_string(),
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".to_string(),
                 orders: vec![],
             },
             me: CompanionState {
-                pos: IVec2 { x: 3, y: 3 },
-                morale: 80.0,
-                ammo: 50,
+                pos: IVec2 { x: 5, y: 5 },
+                ammo: 10,
+                morale: 1.0,
                 cooldowns: BTreeMap::new(),
             },
             enemies: vec![EnemyState {
@@ -341,7 +341,6 @@ mod tests {
             pois: vec![],
             obstacles: vec![],
             objective: Some("Eliminate enemy 99".to_string()),
-            physics_context: None,
         }
     }
 

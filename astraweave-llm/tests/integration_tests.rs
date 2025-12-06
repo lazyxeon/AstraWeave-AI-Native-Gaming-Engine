@@ -56,7 +56,6 @@ fn create_test_world_snapshot() -> WorldSnapshot {
         t: 1.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
             pos: IVec2 { x: 2, y: 2 },
             stance: "stand".into(),
             orders: vec![],

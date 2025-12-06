@@ -51,6 +51,28 @@ pub use vehicle::{
     VehicleId, VehicleInput, VehicleManager, WheelConfig, WheelPosition, WheelState,
 };
 
+// Environmental physics (wind, water)
+pub mod environment;
+pub use environment::{
+    EnvironmentManager, GustEvent, WaterVolume, WaterVolumeId, WindType, WindZone,
+    WindZoneConfig, WindZoneId, WindZoneShape,
+};
+
+// Destruction system
+pub mod destruction;
+pub use destruction::{
+    Debris, DebrisConfig, DebrisId, DebrisShape, Destructible, DestructibleConfig,
+    DestructibleId, DestructibleState, DestructionEvent, DestructionManager,
+    DestructionTrigger, FracturePattern,
+};
+
+// Cloth simulation
+pub mod cloth;
+pub use cloth::{
+    Cloth, ClothCollider, ClothConfig, ClothId, ClothManager, ClothParticle,
+    DistanceConstraint,
+};
+
 pub type BodyId = u64;
 
 #[derive(Clone, Copy, Debug)]

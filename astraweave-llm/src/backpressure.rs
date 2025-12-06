@@ -594,7 +594,179 @@ impl Drop for BackpressureManager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::time::{sleep, timeout};
+
+    #[test]
+    fn test_backpressure_config_default() {
+        let config = BackpressureConfig::default();
+        assert_eq!(config.max_concurrent_requests, 100);
+        assert_eq!(config.max_queue_size, 1000);
+        assert_eq!(config.request_timeout, Duration::from_secs(30));
+        assert_eq!(config.target_latency_ms, 1000);
+        assert!(config.adaptive_concurrency);
+        assert!(config.enable_graceful_degradation);
+    }
+
+    #[test]
+    fn test_backpressure_config_custom() {
+        let config = BackpressureConfig {
+            max_concurrent_requests: 50,
+            max_queue_size: 500,
+            request_timeout: Duration::from_secs(60),
+            processing_interval: Duration::from_millis(20),
+            adaptive_concurrency: false,
+            target_latency_ms: 500,
+            load_shedding_threshold: 0.8,
+            enable_graceful_degradation: false,
+        };
+        assert_eq!(config.max_concurrent_requests, 50);
+        assert_eq!(config.max_queue_size, 500);
+        assert!(!config.adaptive_concurrency);
+    }
+
+    #[test]
+    fn test_priority_ordering() {
+        assert!(Priority::Critical < Priority::High);
+        assert!(Priority::High < Priority::Normal);
+        assert!(Priority::Normal < Priority::Low);
+        assert!(Priority::Low < Priority::Background);
+    }
+
+    #[test]
+    fn test_priority_all() {
+        let all = Priority::all();
+        assert_eq!(all.len(), 5);
+        assert_eq!(all[0], Priority::Critical);
+        assert_eq!(all[4], Priority::Background);
+    }
+
+    #[test]
+    fn test_priority_equality() {
+        assert_eq!(Priority::Normal, Priority::Normal);
+        assert_ne!(Priority::High, Priority::Low);
+    }
+
+    #[test]
+    fn test_request_metadata_creation() {
+        let metadata = RequestMetadata {
+            user_id: Some("user123".to_string()),
+            model: "gpt-4".to_string(),
+            estimated_tokens: 1000,
+            estimated_cost: 0.05,
+            tags: HashMap::new(),
+        };
+        assert_eq!(metadata.user_id, Some("user123".to_string()));
+        assert_eq!(metadata.model, "gpt-4");
+        assert_eq!(metadata.estimated_tokens, 1000);
+    }
+
+    #[test]
+    fn test_request_metadata_with_tags() {
+        let mut tags = HashMap::new();
+        tags.insert("env".to_string(), "production".to_string());
+        tags.insert("team".to_string(), "backend".to_string());
+
+        let metadata = RequestMetadata {
+            user_id: None,
+            model: "gpt-3.5-turbo".to_string(),
+            estimated_tokens: 500,
+            estimated_cost: 0.001,
+            tags,
+        };
+        assert!(metadata.user_id.is_none());
+        assert_eq!(metadata.tags.len(), 2);
+        assert_eq!(metadata.tags.get("env"), Some(&"production".to_string()));
+    }
+
+    #[test]
+    fn test_backpressure_metrics_default() {
+        let metrics = BackpressureMetrics::default();
+        assert_eq!(metrics.total_requests, 0);
+        assert_eq!(metrics.accepted_requests, 0);
+        assert_eq!(metrics.queued_requests, 0);
+        assert_eq!(metrics.rejected_requests, 0);
+        assert_eq!(metrics.current_queue_size, 0);
+    }
+
+    #[test]
+    fn test_backpressure_metrics_clone() {
+        let metrics = BackpressureMetrics {
+            total_requests: 100,
+            accepted_requests: 80,
+            queued_requests: 15,
+            rejected_requests: 5,
+            degraded_requests: 2,
+            expired_requests: 1,
+            current_queue_size: 10,
+            current_active_requests: 20,
+            average_queue_time_ms: 50.5,
+            average_processing_time_ms: 200.0,
+            queue_sizes_by_priority: HashMap::new(),
+            load_factor: 0.75,
+            adaptive_concurrency_limit: 100,
+            last_updated: "2025-01-01T00:00:00Z".to_string(),
+        };
+        let cloned = metrics.clone();
+        assert_eq!(metrics.total_requests, cloned.total_requests);
+        assert_eq!(metrics.load_factor, cloned.load_factor);
+    }
+
+    #[test]
+    fn test_backpressure_metrics_serialization() {
+        let metrics = BackpressureMetrics {
+            total_requests: 50,
+            accepted_requests: 45,
+            rejected_requests: 5,
+            load_factor: 0.5,
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&metrics).unwrap();
+        assert!(json.contains("50"));
+        assert!(json.contains("0.5"));
+    }
+
+    #[test]
+    fn test_priority_queues_new() {
+        let queues = PriorityQueues::new();
+        assert_eq!(queues.total_queued(), 0);
+        for priority in Priority::all() {
+            assert_eq!(queues.queued_by_priority(priority), 0);
+        }
+    }
+
+    #[test]
+    fn test_backpressure_result_variants() {
+        // Test Accepted
+        let accepted = BackpressureResult::Accepted;
+        assert!(matches!(accepted, BackpressureResult::Accepted));
+
+        // Test Queued
+        let queued = BackpressureResult::Queued {
+            position: 5,
+            estimated_wait: Duration::from_secs(10),
+        };
+        if let BackpressureResult::Queued { position, estimated_wait } = queued {
+            assert_eq!(position, 5);
+            assert_eq!(estimated_wait, Duration::from_secs(10));
+        }
+
+        // Test Rejected
+        let rejected = BackpressureResult::Rejected {
+            reason: "System overload".to_string(),
+            retry_after: Some(Duration::from_secs(60)),
+        };
+        if let BackpressureResult::Rejected { reason, retry_after } = rejected {
+            assert_eq!(reason, "System overload");
+            assert_eq!(retry_after, Some(Duration::from_secs(60)));
+        }
+
+        // Test Degraded
+        let degraded = BackpressureResult::Degraded {
+            reason: "High load".to_string(),
+        };
+        if let BackpressureResult::Degraded { reason } = degraded {
+            assert_eq!(reason, "High load");
+        }
+    }
 
     #[tokio::test]
     async fn test_backpressure_manager_creation() {
@@ -682,7 +854,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_priority_ordering() {
+    async fn test_priority_order_in_manager() {
         let config = BackpressureConfig {
             max_concurrent_requests: 0, // Force all requests to queue
             ..Default::default()
@@ -714,6 +886,31 @@ mod tests {
 
         let metrics = manager.get_metrics().await;
         assert_eq!(metrics.current_queue_size, 3);
+
+        manager.stop().await;
+    }
+
+    #[tokio::test]
+    async fn test_metrics_tracking() {
+        let mut manager = BackpressureManager::new(BackpressureConfig::default());
+        manager.start().await.unwrap();
+
+        let metadata = RequestMetadata {
+            user_id: Some("test_user".to_string()),
+            model: "gpt-3.5-turbo".to_string(),
+            estimated_tokens: 100,
+            estimated_cost: 0.01,
+            tags: HashMap::new(),
+        };
+
+        // Submit a request
+        let _ = manager
+            .submit_request(Priority::Normal, None, metadata)
+            .await
+            .unwrap();
+
+        let metrics = manager.get_metrics().await;
+        assert!(metrics.total_requests > 0);
 
         manager.stop().await;
     }

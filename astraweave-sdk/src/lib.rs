@@ -424,4 +424,153 @@ mod tests {
         assert!(s.contains("parse error"));
         aw_world_destroy(w);
     }
+
+    // ===== Additional SDK Tests =====
+
+    #[test]
+    fn test_aw_version_string() {
+        let mut buf = [0u8; 64];
+        let n = aw_version_string(buf.as_mut_ptr(), buf.len());
+        assert!(n > 0);
+        let s = std::ffi::CStr::from_bytes_until_nul(&buf)
+            .unwrap()
+            .to_string_lossy();
+        assert!(s.starts_with("0.4")); // Version 0.4.x
+    }
+
+    #[test]
+    fn test_aw_version_string_null_buffer() {
+        let n = aw_version_string(std::ptr::null_mut(), 0);
+        // Should return required size including NUL
+        assert!(n > 0);
+    }
+
+    #[test]
+    fn test_aw_version_string_small_buffer() {
+        let mut buf = [0u8; 3]; // Very small buffer
+        let _n = aw_version_string(buf.as_mut_ptr(), buf.len());
+        // Should truncate but still be valid
+        assert_eq!(buf[2], 0); // NUL terminated
+    }
+
+    #[test]
+    fn test_aw_world_create_and_destroy() {
+        let w = aw_world_create();
+        assert!(!w.0.is_null());
+        aw_world_destroy(w);
+        // After destroy, world should not crash on subsequent destroy (but shouldn't be called)
+    }
+
+    #[test]
+    fn test_aw_world_tick() {
+        let w = aw_world_create();
+        aw_world_tick(w, 0.016);
+        aw_world_tick(w, 0.016);
+        aw_world_tick(w, 0.016);
+        // Multiple ticks should work
+        aw_world_destroy(w);
+    }
+
+    #[test]
+    fn test_aw_world_snapshot_json() {
+        let w = aw_world_create();
+        let mut buf = [0u8; 4096];
+        let n = aw_world_snapshot_json(w, buf.as_mut_ptr(), buf.len());
+        assert!(n > 0);
+        
+        // Snapshot should be valid JSON
+        let s = std::ffi::CStr::from_bytes_until_nul(&buf)
+            .unwrap()
+            .to_string_lossy();
+        let parsed: Result<serde_json::Value, _> = serde_json::from_str(&s);
+        assert!(parsed.is_ok());
+        
+        aw_world_destroy(w);
+    }
+
+    #[test]
+    fn test_aw_world_submit_intent_json_null_world() {
+        let null_world = AWWorld(std::ptr::null_mut());
+        let rc = aw_world_submit_intent_json(
+            null_world,
+            1,
+            std::ffi::CString::new("{}").unwrap().as_ptr(),
+            None,
+        );
+        assert_eq!(rc, AW_ERR_NULL);
+    }
+
+    #[test]
+    fn test_aw_world_submit_intent_json_null_json() {
+        let w = aw_world_create();
+        let rc = aw_world_submit_intent_json(w, 1, std::ptr::null(), None);
+        assert_eq!(rc, AW_ERR_PARAM);
+        aw_world_destroy(w);
+    }
+
+    #[test]
+    fn test_version_struct() {
+        let v = Version {
+            major: 1,
+            minor: 2,
+            patch: 3,
+        };
+        assert_eq!(v.major, 1);
+        assert_eq!(v.minor, 2);
+        assert_eq!(v.patch, 3);
+        
+        // Test serialization
+        let json = serde_json::to_string(&v).unwrap();
+        let parsed: Version = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.major, v.major);
+        assert_eq!(parsed.minor, v.minor);
+        assert_eq!(parsed.patch, v.patch);
+    }
+
+    #[test]
+    fn test_aw_version_copy() {
+        let v1 = aw_version();
+        let v2 = v1; // Copy
+        assert_eq!(v1.major, v2.major);
+        assert_eq!(v1.minor, v2.minor);
+        assert_eq!(v1.patch, v2.patch);
+    }
+
+    #[test]
+    fn test_error_codes() {
+        assert_eq!(AW_OK, 0);
+        assert!(AW_ERR_NULL < 0);
+        assert!(AW_ERR_PARAM < 0);
+        assert!(AW_ERR_PARSE < 0);
+        assert!(AW_ERR_EXEC < 0);
+        
+        // All error codes should be unique
+        let codes = [AW_ERR_NULL, AW_ERR_PARAM, AW_ERR_PARSE, AW_ERR_EXEC];
+        for i in 0..codes.len() {
+            for j in (i + 1)..codes.len() {
+                assert_ne!(codes[i], codes[j]);
+            }
+        }
+    }
+
+    #[test]
+    fn test_sdk_error_display() {
+        let err_schema = SdkError::Schema("test schema error".to_string());
+        assert!(format!("{}", err_schema).contains("schema"));
+        
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file not found");
+        let err_io = SdkError::Io(io_err);
+        assert!(format!("{}", err_io).contains("io"));
+    }
+
+    #[test]
+    fn test_aw_last_error_string_empty() {
+        // Clear last error
+        set_last_error("");
+        
+        let mut buf = [0u8; 128];
+        let n = aw_last_error_string(buf.as_mut_ptr(), buf.len());
+        // Empty string should still work
+        assert!(n >= 1); // At least the NUL terminator
+    }
 }

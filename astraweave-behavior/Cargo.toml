@@ -19,6 +19,7 @@ profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/ena
 
 [dev-dependencies]
 criterion = { workspace = true }
+rand = { workspace = true }
 
 [[bench]]
 name = "goap_planning"

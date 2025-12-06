@@ -25,7 +25,6 @@ fn create_deterministic_snapshot(seed: u64) -> WorldSnapshot {
             pos: IVec2 {
                 x: (seed % 100) as i32,
                 y: ((seed / 100) % 100) as i32,
-            physics_context: None,
             },
         },
         player: PlayerState {
@@ -326,7 +325,7 @@ fn create_empty_snapshot() -> WorldSnapshot {
             ammo: 0,
             cooldowns: BTreeMap::new(),
             morale: 0.5,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
         },
         player: PlayerState {

@@ -1309,11 +1309,432 @@ mod tests {
     }
 
     #[test]
+    fn test_guid_different_paths() {
+        let a = guid_for_path("path/to/asset1.png");
+        let b = guid_for_path("path/to/asset2.png");
+        assert_ne!(a, b);
+    }
+
+    #[test]
+    fn test_guid_empty_path() {
+        let guid = guid_for_path("");
+        assert_eq!(guid.len(), 32);
+    }
+
+    #[test]
     fn cache_inserts_and_retrieves() {
         let mut c = AssetCache::<i32>::default();
         let id = c.insert("assets/tex.png", 7);
         assert_eq!(c.get(&id), Some(&7));
         assert_eq!(c.len(), 1);
+    }
+
+    #[test]
+    fn test_cache_multiple_items() {
+        let mut cache = AssetCache::<String>::default();
+        
+        let id1 = cache.insert("path1.png", "Asset1".to_string());
+        let id2 = cache.insert("path2.png", "Asset2".to_string());
+        let id3 = cache.insert("path3.png", "Asset3".to_string());
+        
+        assert_eq!(cache.len(), 3);
+        assert_eq!(cache.get(&id1), Some(&"Asset1".to_string()));
+        assert_eq!(cache.get(&id2), Some(&"Asset2".to_string()));
+        assert_eq!(cache.get(&id3), Some(&"Asset3".to_string()));
+    }
+
+    #[test]
+    fn test_cache_get_nonexistent() {
+        let cache = AssetCache::<i32>::default();
+        let fake_id = "nonexistent_guid_12345";
+        assert!(cache.get(fake_id).is_none());
+    }
+
+    #[test]
+    fn test_cache_overwrite_same_path() {
+        let mut cache = AssetCache::<i32>::default();
+        let id1 = cache.insert("asset.png", 10);
+        let id2 = cache.insert("asset.png", 20);
+        
+        // Same path produces same GUID
+        assert_eq!(id1, id2);
+        // Second insert overwrites first
+        assert_eq!(cache.get(&id1), Some(&20));
+        assert_eq!(cache.len(), 1);
+    }
+
+    #[test]
+    fn test_cache_is_empty() {
+        let cache = AssetCache::<i32>::default();
+        assert!(cache.is_empty());
+        
+        let mut cache2 = AssetCache::<i32>::default();
+        cache2.insert("a.png", 1);
+        assert!(!cache2.is_empty());
+    }
+
+    #[test]
+    fn test_guid_consistency() {
+        // Test that the same path always produces the same GUID
+        let path = "assets/textures/hero.png";
+        let guid1 = guid_for_path(path);
+        let guid2 = guid_for_path(path);
+        let guid3 = guid_for_path(path);
+        
+        assert_eq!(guid1, guid2);
+        assert_eq!(guid2, guid3);
+    }
+
+    #[test]
+    fn test_guid_special_characters() {
+        // Test paths with special characters
+        let guid1 = guid_for_path("path/to/file with spaces.png");
+        let guid2 = guid_for_path("path-to-file.png");
+        let guid3 = guid_for_path("path_to_file.png");
+        
+        // All should produce valid 32-char hex GUIDs
+        assert_eq!(guid1.len(), 32);
+        assert_eq!(guid2.len(), 32);
+        assert_eq!(guid3.len(), 32);
+        
+        // All should be different
+        assert_ne!(guid1, guid2);
+        assert_ne!(guid2, guid3);
+        assert_ne!(guid1, guid3);
+    }
+
+    // ===== AssetKind Tests =====
+
+    #[test]
+    fn test_asset_kind_equality() {
+        assert_eq!(AssetKind::Mesh, AssetKind::Mesh);
+        assert_ne!(AssetKind::Mesh, AssetKind::Texture);
+        assert_ne!(AssetKind::Audio, AssetKind::Animation);
+    }
+
+    #[test]
+    fn test_asset_kind_serialization() {
+        let kinds = vec![
+            AssetKind::Mesh,
+            AssetKind::Texture,
+            AssetKind::Audio,
+            AssetKind::Dialogue,
+            AssetKind::Material,
+            AssetKind::Animation,
+            AssetKind::Script,
+            AssetKind::Other,
+        ];
+        
+        for kind in kinds {
+            let json = serde_json::to_string(&kind).unwrap();
+            let deserialized: AssetKind = serde_json::from_str(&json).unwrap();
+            assert_eq!(kind, deserialized);
+        }
+    }
+
+    // ===== AssetMetadata Tests =====
+
+    #[test]
+    fn test_asset_metadata_serialization() {
+        let meta = AssetMetadata {
+            guid: "abc123".to_string(),
+            path: "assets/mesh.glb".to_string(),
+            kind: AssetKind::Mesh,
+            hash: "deadbeef".to_string(),
+            dependencies: vec!["dep1".to_string(), "dep2".to_string()],
+            last_modified: 1234567890,
+            size_bytes: 1024,
+        };
+        
+        let json = serde_json::to_string(&meta).unwrap();
+        let deserialized: AssetMetadata = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(meta.guid, deserialized.guid);
+        assert_eq!(meta.path, deserialized.path);
+        assert_eq!(meta.kind, deserialized.kind);
+        assert_eq!(meta.dependencies.len(), deserialized.dependencies.len());
+    }
+
+    // ===== AssetDatabase Tests =====
+
+    #[test]
+    fn test_asset_database_new() {
+        let db = AssetDatabase::new();
+        assert!(db.assets.is_empty());
+        assert!(db.path_to_guid.is_empty());
+        assert!(db.dependency_graph.is_empty());
+    }
+
+    #[test]
+    fn test_asset_database_default() {
+        let db = AssetDatabase::default();
+        assert!(db.assets.is_empty());
+    }
+
+    #[test]
+    fn test_asset_database_get_asset_nonexistent() {
+        let db = AssetDatabase::new();
+        assert!(db.get_asset("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_asset_database_get_guid_by_path_nonexistent() {
+        let db = AssetDatabase::new();
+        assert!(db.get_guid_by_path(Path::new("nonexistent.png")).is_none());
+    }
+
+    #[test]
+    fn test_asset_database_get_dependents_nonexistent() {
+        let db = AssetDatabase::new();
+        assert!(db.get_dependents("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_asset_database_get_dependencies_nonexistent() {
+        let db = AssetDatabase::new();
+        assert!(db.get_dependencies("nonexistent").is_none());
+    }
+
+    // ===== HotReloadManager Tests =====
+
+    #[test]
+    fn test_hot_reload_manager_new() {
+        let manager = HotReloadManager::new(100);
+        assert_eq!(manager.pending_count(), 0);
+    }
+
+    #[test]
+    fn test_hot_reload_manager_add_event() {
+        let mut manager = HotReloadManager::new(100);
+        manager.add_event("guid1".to_string());
+        assert_eq!(manager.pending_count(), 1);
+    }
+
+    #[test]
+    fn test_hot_reload_manager_deduplication() {
+        let mut manager = HotReloadManager::new(0); // No debounce for test
+        manager.add_event("guid1".to_string());
+        manager.add_event("guid1".to_string()); // Duplicate
+        manager.add_event("guid2".to_string());
+        
+        // guid1 should be in queue only once, guid2 once = 2 total
+        assert_eq!(manager.pending_count(), 2);
+    }
+
+    #[test]
+    fn test_hot_reload_manager_process_next() {
+        let mut manager = HotReloadManager::new(0);
+        manager.add_event("guid1".to_string());
+        manager.add_event("guid2".to_string());
+        
+        assert_eq!(manager.process_next(), Some("guid1".to_string()));
+        assert_eq!(manager.process_next(), Some("guid2".to_string()));
+        assert_eq!(manager.process_next(), None);
+    }
+
+    #[test]
+    fn test_hot_reload_manager_fifo_order() {
+        let mut manager = HotReloadManager::new(0);
+        manager.add_event("first".to_string());
+        manager.add_event("second".to_string());
+        manager.add_event("third".to_string());
+        
+        assert_eq!(manager.process_next(), Some("first".to_string()));
+        assert_eq!(manager.process_next(), Some("second".to_string()));
+        assert_eq!(manager.process_next(), Some("third".to_string()));
+    }
+
+    // ===== HotReloadStats Tests =====
+
+    #[test]
+    fn test_hot_reload_stats_clone() {
+        let stats = HotReloadStats { pending_count: 5 };
+        let cloned = stats.clone();
+        assert_eq!(cloned.pending_count, 5);
+    }
+
+    // ===== infer_asset_kind Tests =====
+
+    #[test]
+    fn test_infer_asset_kind_mesh() {
+        use std::path::Path;
+        assert_eq!(infer_asset_kind(Path::new("model.gltf")), AssetKind::Mesh);
+        assert_eq!(infer_asset_kind(Path::new("model.glb")), AssetKind::Mesh);
+        assert_eq!(infer_asset_kind(Path::new("model.obj")), AssetKind::Mesh);
+    }
+
+    #[test]
+    fn test_infer_asset_kind_texture() {
+        use std::path::Path;
+        assert_eq!(infer_asset_kind(Path::new("tex.png")), AssetKind::Texture);
+        assert_eq!(infer_asset_kind(Path::new("tex.jpg")), AssetKind::Texture);
+        assert_eq!(infer_asset_kind(Path::new("tex.jpeg")), AssetKind::Texture);
+        assert_eq!(infer_asset_kind(Path::new("tex.ktx2")), AssetKind::Texture);
+        assert_eq!(infer_asset_kind(Path::new("tex.dds")), AssetKind::Texture);
+    }
+
+    #[test]
+    fn test_infer_asset_kind_audio() {
+        use std::path::Path;
+        assert_eq!(infer_asset_kind(Path::new("sound.wav")), AssetKind::Audio);
+        assert_eq!(infer_asset_kind(Path::new("sound.ogg")), AssetKind::Audio);
+        assert_eq!(infer_asset_kind(Path::new("sound.mp3")), AssetKind::Audio);
+    }
+
+    #[test]
+    fn test_infer_asset_kind_script() {
+        use std::path::Path;
+        assert_eq!(infer_asset_kind(Path::new("script.rhai")), AssetKind::Script);
+    }
+
+    #[test]
+    fn test_infer_asset_kind_other() {
+        use std::path::Path;
+        assert_eq!(infer_asset_kind(Path::new("file.xyz")), AssetKind::Other);
+        assert_eq!(infer_asset_kind(Path::new("noextension")), AssetKind::Other);
+        assert_eq!(infer_asset_kind(Path::new("file.txt")), AssetKind::Other);
+    }
+
+    #[test]
+    fn test_infer_asset_kind_with_path() {
+        use std::path::Path;
+        assert_eq!(infer_asset_kind(Path::new("assets/models/hero.gltf")), AssetKind::Mesh);
+        assert_eq!(infer_asset_kind(Path::new("textures/albedo.png")), AssetKind::Texture);
+    }
+
+    // ===== AssetManifest Tests =====
+
+    #[test]
+    fn test_asset_manifest_validate() {
+        // AssetManifest::validate() should succeed in Phase 0
+        let result = AssetManifest::validate();
+        assert!(result.is_ok());
+    }
+
+    // ===== Additional GUID Tests =====
+
+    #[test]
+    fn test_guid_unicode_path() {
+        // Test Unicode path handling
+        let guid = guid_for_path("assets/日本語/texture.png");
+        assert_eq!(guid.len(), 32);
+        
+        // Different Unicode should produce different GUIDs
+        let guid2 = guid_for_path("assets/中文/texture.png");
+        assert_ne!(guid, guid2);
+    }
+
+    #[test]
+    fn test_guid_long_path() {
+        // Test very long path
+        let long_path = "a/".repeat(100) + "file.png";
+        let guid = guid_for_path(&long_path);
+        assert_eq!(guid.len(), 32);
+    }
+
+    // ===== Additional Cache Tests =====
+
+    #[test]
+    fn test_cache_type_string() {
+        let mut cache = AssetCache::<String>::default();
+        let id = cache.insert("path.txt", "content".to_string());
+        assert_eq!(cache.get(&id), Some(&"content".to_string()));
+    }
+
+    #[test]
+    fn test_cache_type_vec() {
+        let mut cache = AssetCache::<Vec<u8>>::default();
+        let data = vec![1, 2, 3, 4, 5];
+        let id = cache.insert("data.bin", data.clone());
+        assert_eq!(cache.get(&id), Some(&data));
+    }
+
+    #[test]
+    fn test_cache_type_struct() {
+        #[derive(Debug, PartialEq)]
+        struct TestAsset {
+            name: String,
+            value: i32,
+        }
+        
+        let mut cache: AssetCache<TestAsset> = AssetCache { map: HashMap::new() };
+        let asset = TestAsset { name: "test".to_string(), value: 42 };
+        let id = cache.insert("asset.dat", TestAsset { name: "test".to_string(), value: 42 });
+        assert_eq!(cache.get(&id).unwrap().name, asset.name);
+        assert_eq!(cache.get(&id).unwrap().value, asset.value);
+    }
+
+    // ===== Additional AssetDatabase Tests =====
+
+    #[test]
+    fn test_asset_database_hot_reload_channel() {
+        let db = AssetDatabase::new();
+        
+        // The hot reload channel should be set up
+        let mut rx = db.hot_reload_rx.clone();
+        
+        // Initial state should not have pending messages
+        assert!(!rx.has_changed().unwrap_or(true));
+    }
+
+    #[test]
+    fn test_asset_database_invalidate_empty() {
+        let mut db = AssetDatabase::new();
+        
+        // Invalidating a nonexistent asset should succeed (no-op)
+        let result = db.invalidate_asset("nonexistent_guid");
+        assert!(result.is_ok());
+    }
+
+    // ===== Additional AssetMetadata Tests =====
+
+    #[test]
+    fn test_asset_metadata_all_kinds() {
+        let kinds = [
+            AssetKind::Mesh,
+            AssetKind::Texture,
+            AssetKind::Audio,
+            AssetKind::Dialogue,
+            AssetKind::Material,
+            AssetKind::Animation,
+            AssetKind::Script,
+            AssetKind::Other,
+        ];
+        
+        for kind in kinds {
+            let meta = AssetMetadata {
+                guid: "test".to_string(),
+                path: "test.asset".to_string(),
+                kind: kind.clone(),
+                hash: "hash".to_string(),
+                dependencies: vec![],
+                last_modified: 0,
+                size_bytes: 0,
+            };
+            
+            // Verify round-trip through JSON
+            let json = serde_json::to_string(&meta).unwrap();
+            let parsed: AssetMetadata = serde_json::from_str(&json).unwrap();
+            assert_eq!(parsed.kind, kind);
+        }
+    }
+
+    #[test]
+    fn test_asset_metadata_with_dependencies() {
+        let meta = AssetMetadata {
+            guid: "main_asset".to_string(),
+            path: "assets/main.glb".to_string(),
+            kind: AssetKind::Mesh,
+            hash: "abc123".to_string(),
+            dependencies: vec!["dep1".to_string(), "dep2".to_string(), "dep3".to_string()],
+            last_modified: 1234567890,
+            size_bytes: 2048,
+        };
+        
+        assert_eq!(meta.dependencies.len(), 3);
+        assert!(meta.dependencies.contains(&"dep1".to_string()));
+        assert!(meta.dependencies.contains(&"dep2".to_string()));
+        assert!(meta.dependencies.contains(&"dep3".to_string()));
     }
 
     // Phase 2 Task 5: Skeletal Animation Tests
@@ -1407,6 +1828,171 @@ mod tests {
         assert!(skeleton.joints[0].parent_index.is_none());
         assert_eq!(skeleton.joints[1].parent_index, Some(0));
         assert_eq!(skeleton.joints[2].parent_index, Some(0));
+    }
+
+    // ===== gltf_loader Tests (when feature is enabled) =====
+
+    #[cfg(feature = "gltf")]
+    mod gltf_tests {
+        use super::*;
+
+        #[test]
+        fn test_mesh_data_default_values() {
+            let mesh = gltf_loader::MeshData {
+                positions: vec![[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
+                normals: vec![[0.0, 0.0, 1.0]; 3],
+                tangents: vec![[1.0, 0.0, 0.0, 1.0]; 3],
+                texcoords: vec![[0.0, 0.0]; 3],
+                indices: vec![0, 1, 2],
+            };
+            
+            assert_eq!(mesh.positions.len(), 3);
+            assert_eq!(mesh.normals.len(), 3);
+            assert_eq!(mesh.indices.len(), 3);
+        }
+
+        #[test]
+        fn test_image_data_structure() {
+            let img = gltf_loader::ImageData {
+                width: 512,
+                height: 512,
+                rgba8: vec![255; 512 * 512 * 4],
+            };
+            
+            assert_eq!(img.width, 512);
+            assert_eq!(img.height, 512);
+            assert_eq!(img.rgba8.len(), 512 * 512 * 4);
+        }
+
+        #[test]
+        fn test_material_data_default() {
+            let mat = gltf_loader::MaterialData::default();
+            
+            assert_eq!(mat.base_color_factor, [0.0, 0.0, 0.0, 0.0]);
+            assert_eq!(mat.metallic_factor, 0.0);
+            assert_eq!(mat.roughness_factor, 0.0);
+            assert!(mat.base_color_texture.is_none());
+            assert!(mat.normal_texture.is_none());
+        }
+
+        #[test]
+        fn test_transform_default() {
+            let t = gltf_loader::Transform::default();
+            assert_eq!(t.translation, [0.0, 0.0, 0.0]);
+            assert_eq!(t.rotation, [0.0, 0.0, 0.0, 1.0]);
+            assert_eq!(t.scale, [1.0, 1.0, 1.0]);
+        }
+
+        #[test]
+        fn test_interpolation_equality() {
+            use gltf_loader::Interpolation;
+            
+            assert_eq!(Interpolation::Linear, Interpolation::Linear);
+            assert_ne!(Interpolation::Step, Interpolation::Linear);
+            assert_ne!(Interpolation::CubicSpline, Interpolation::Step);
+        }
+
+        #[test]
+        fn test_channel_data_variants() {
+            use gltf_loader::ChannelData;
+            
+            let translation = ChannelData::Translation(vec![[1.0, 2.0, 3.0]]);
+            let rotation = ChannelData::Rotation(vec![[0.0, 0.0, 0.0, 1.0]]);
+            let scale = ChannelData::Scale(vec![[1.0, 1.0, 1.0]]);
+            
+            match translation {
+                ChannelData::Translation(data) => assert_eq!(data.len(), 1),
+                _ => panic!("Expected translation"),
+            }
+            
+            match rotation {
+                ChannelData::Rotation(data) => assert_eq!(data.len(), 1),
+                _ => panic!("Expected rotation"),
+            }
+            
+            match scale {
+                ChannelData::Scale(data) => assert_eq!(data.len(), 1),
+                _ => panic!("Expected scale"),
+            }
+        }
+
+        #[test]
+        fn test_animation_clip_structure() {
+            use gltf_loader::{AnimationChannel, AnimationClip, ChannelData, Interpolation};
+            
+            let clip = AnimationClip {
+                name: "walk".to_string(),
+                channels: vec![
+                    AnimationChannel {
+                        target_joint_index: 0,
+                        times: vec![0.0, 0.5, 1.0],
+                        data: ChannelData::Translation(vec![[0.0, 0.0, 0.0]; 3]),
+                        interpolation: Interpolation::Linear,
+                    },
+                ],
+                duration: 1.0,
+            };
+            
+            assert_eq!(clip.name, "walk");
+            assert_eq!(clip.channels.len(), 1);
+            assert_eq!(clip.duration, 1.0);
+        }
+
+        #[test]
+        fn test_skinned_vertex_lite() {
+            let vertex = gltf_loader::SkinnedVertexLite {
+                position: [1.0, 2.0, 3.0],
+                normal: [0.0, 1.0, 0.0],
+                tangent: [1.0, 0.0, 0.0, 1.0],
+                uv: [0.5, 0.5],
+                joints: [0, 1, 2, 3],
+                weights: [0.5, 0.3, 0.1, 0.1],
+            };
+            
+            assert_eq!(vertex.position, [1.0, 2.0, 3.0]);
+            assert_eq!(vertex.joints, [0, 1, 2, 3]);
+            
+            // Weights should sum to approximately 1.0
+            let weight_sum: f32 = vertex.weights.iter().sum();
+            assert!((weight_sum - 1.0).abs() < 0.001);
+        }
+
+        #[test]
+        fn test_skinned_mesh_data() {
+            let mesh = gltf_loader::SkinnedMeshData {
+                vertices: vec![],
+                indices: vec![0, 1, 2],
+                joint_count: 10,
+            };
+            
+            assert!(mesh.vertices.is_empty());
+            assert_eq!(mesh.indices.len(), 3);
+            assert_eq!(mesh.joint_count, 10);
+        }
+
+        #[test]
+        fn test_load_gltf_bytes_invalid() {
+            // Empty bytes should fail
+            let result = gltf_loader::load_gltf_bytes(&[]);
+            assert!(result.is_err());
+            
+            // Random bytes should fail
+            let result = gltf_loader::load_gltf_bytes(&[1, 2, 3, 4, 5]);
+            assert!(result.is_err());
+        }
+
+        #[test]
+        fn test_load_gltf_bytes_valid_header() {
+            // Valid GLB header: magic "glTF", version 2, length 20
+            let glb_header = [
+                0x67, 0x6C, 0x54, 0x46, // "glTF"
+                0x02, 0x00, 0x00, 0x00, // version 2
+                0x14, 0x00, 0x00, 0x00, // length 20
+            ];
+            
+            let result = gltf_loader::load_gltf_bytes(&glb_header);
+            assert!(result.is_ok());
+        }
     }
 }
 

@@ -259,7 +259,6 @@ fn perception_stage(world: &World, ai_agents: &[u32]) -> Vec<WorldSnapshot> {
                     cooldowns: BTreeMap::new(),
                     morale: (agent_health as f32) / 100.0,
                     pos: agent_pose.pos,
-                physics_context: None,
                 },
                 player: PlayerState {
                     hp: 100,

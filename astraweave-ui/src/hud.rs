@@ -3443,5 +3443,744 @@ mod tests {
         assert_eq!(quest.completion(), 0.5);
         assert!(!quest.is_complete());
     }
+
+    // ===== ComboTracker Tests =====
+
+    #[test]
+    fn test_combo_tracker_new() {
+        let tracker = ComboTracker::new();
+        assert_eq!(tracker.get_combo_count(0.0), 0);
+        assert_eq!(tracker.get_combo_damage(0.0), 0);
+    }
+
+    #[test]
+    fn test_combo_tracker_default() {
+        let tracker = ComboTracker::default();
+        assert_eq!(tracker.get_combo_count(0.0), 0);
+    }
+
+    #[test]
+    fn test_combo_tracker_single_hit() {
+        let mut tracker = ComboTracker::new();
+        tracker.record_hit(1.0, 50);
+        assert_eq!(tracker.get_combo_count(1.0), 1);
+        assert_eq!(tracker.get_combo_damage(1.0), 50);
+    }
+
+    #[test]
+    fn test_combo_tracker_multiple_hits() {
+        let mut tracker = ComboTracker::new();
+        tracker.record_hit(0.0, 50);
+        tracker.record_hit(0.2, 75);
+        tracker.record_hit(0.5, 100);
+        
+        assert_eq!(tracker.get_combo_count(0.5), 3);
+        assert_eq!(tracker.get_combo_damage(0.5), 225);
+    }
+
+    #[test]
+    fn test_combo_tracker_window_expiration() {
+        let mut tracker = ComboTracker::new();
+        tracker.record_hit(0.0, 50);
+        tracker.record_hit(0.3, 75);
+        
+        // Both hits within 1s window at time 0.5
+        assert_eq!(tracker.get_combo_count(0.5), 2);
+        
+        // At time 1.1, first hit (at 0.0) is outside 1s window (1.1 - 0.0 = 1.1 > 1.0)
+        // But second hit (at 0.3) is still in window (1.1 - 0.3 = 0.8 <= 1.0)
+        assert_eq!(tracker.get_combo_count(1.1), 1);
+        assert_eq!(tracker.get_combo_damage(1.1), 75);
+        
+        // At time 1.5, second hit (at 0.3) is also outside window (1.5 - 0.3 = 1.2 > 1.0)
+        assert_eq!(tracker.get_combo_count(1.5), 0);
+    }
+
+    #[test]
+    fn test_combo_tracker_cleanup() {
+        let mut tracker = ComboTracker::new();
+        tracker.record_hit(0.0, 50);
+        tracker.record_hit(0.5, 75);
+        tracker.record_hit(1.2, 100);
+        
+        // Before cleanup at 1.2s, first hit should have expired
+        tracker.cleanup(1.2);
+        assert_eq!(tracker.get_combo_count(1.2), 2); // Only 0.5 and 1.2 hits
+        assert_eq!(tracker.get_combo_damage(1.2), 175);
+    }
+
+    #[test]
+    fn test_combo_tracker_rapid_hits() {
+        let mut tracker = ComboTracker::new();
+        for i in 0..10 {
+            tracker.record_hit(i as f32 * 0.05, 10); // 10 hits in 0.5s
+        }
+        assert_eq!(tracker.get_combo_count(0.5), 10);
+        assert_eq!(tracker.get_combo_damage(0.5), 100);
+    }
+
+    // ===== DamageNumber Arc Motion and Shake Tests =====
+
+    #[test]
+    fn test_damage_number_calculate_offset_initial() {
+        let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        let (x, y) = dmg.calculate_offset(0.0);
+        assert_eq!(x, 0.0);
+        assert_eq!(y, 0.0);
+    }
+
+    #[test]
+    fn test_damage_number_calculate_offset_motion() {
+        let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        let (x, y) = dmg.calculate_offset(0.5);
+        
+        // After 0.5s with gravity, y should have moved (starts negative = up, then gravity pulls down)
+        // At t=0.5: y = vy*t + 0.5*g*t² = -80*0.5 + 0.5*150*0.25 = -40 + 18.75 = -21.25
+        assert!((y - (-21.25)).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_damage_number_calculate_offset_parabolic() {
+        let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        
+        // Test parabolic arc (goes up then down)
+        let (_, y0) = dmg.calculate_offset(0.0);
+        let (_, y1) = dmg.calculate_offset(0.25);
+        let (_, y2) = dmg.calculate_offset(0.5);
+        let (_, y3) = dmg.calculate_offset(1.0);
+        
+        // Initial position
+        assert_eq!(y0, 0.0);
+        // Should go up (negative y) initially
+        assert!(y1 < y0, "Should move up initially");
+        // Then gravity pulls down
+        assert!(y3 > y2, "Gravity should pull down eventually");
+    }
+
+    #[test]
+    fn test_damage_number_calculate_shake_initial() {
+        let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        let shake = dmg.calculate_shake(0.0);
+        assert_eq!(shake, 0.0);
+    }
+
+    #[test]
+    fn test_damage_number_calculate_shake_damped() {
+        let dmg = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        
+        // Shake should be damped over time
+        let shake_early = dmg.calculate_shake(0.1).abs();
+        let shake_late = dmg.calculate_shake(0.5).abs();
+        
+        // Later shake should be smaller due to damping
+        assert!(shake_late < shake_early, "Shake should decay over time");
+    }
+
+    #[test]
+    fn test_damage_number_critical_shake_amplitude() {
+        let normal = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        let critical = DamageNumber::new(50, 0.0, (0.0, 0.0, 0.0), DamageType::Critical);
+        
+        // Critical has larger shake amplitude
+        assert!(critical.shake_amplitude > normal.shake_amplitude);
+        assert!((critical.shake_amplitude - 0.175).abs() < 0.01); // ±10 degrees
+        assert!((normal.shake_amplitude - 0.087).abs() < 0.01);   // ±5 degrees
+    }
+
+    #[test]
+    fn test_damage_number_velocity_determinism() {
+        // Same spawn_time should produce same velocity
+        let dmg1 = DamageNumber::new(50, 1.234, (0.0, 0.0, 0.0), DamageType::Normal);
+        let dmg2 = DamageNumber::new(50, 1.234, (0.0, 0.0, 0.0), DamageType::Normal);
+        
+        assert_eq!(dmg1.velocity_x, dmg2.velocity_x);
+        assert_eq!(dmg1.velocity_y, dmg2.velocity_y);
+    }
+
+    #[test]
+    fn test_damage_number_velocity_variation() {
+        // Different spawn_times should produce different velocities
+        let dmg1 = DamageNumber::new(50, 1.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        let dmg2 = DamageNumber::new(50, 2.0, (0.0, 0.0, 0.0), DamageType::Normal);
+        
+        // Velocities should differ (pseudo-random based on spawn_time)
+        assert_ne!(dmg1.velocity_x, dmg2.velocity_x);
+    }
+
+    // ===== QuestNotification Animation Tests =====
+
+    #[test]
+    fn test_notification_new_quest() {
+        let notif = QuestNotification::new_quest(
+            "New Quest".to_string(),
+            "Test description".to_string(),
+        );
+        assert_eq!(notif.title, "New Quest");
+        assert_eq!(notif.description, "Test description");
+        assert_eq!(notif.animation_time, 0.0);
+        assert_eq!(notif.total_duration, 2.0);
+        assert!(matches!(notif.notification_type, NotificationType::NewQuest));
+    }
+
+    #[test]
+    fn test_notification_objective_complete() {
+        let notif = QuestNotification::objective_complete("Collect 5 items".to_string());
+        assert_eq!(notif.title, "Objective Complete!");
+        assert_eq!(notif.description, "Collect 5 items");
+        assert!(matches!(notif.notification_type, NotificationType::ObjectiveComplete { .. }));
+    }
+
+    #[test]
+    fn test_notification_quest_complete() {
+        let notif = QuestNotification::quest_complete(
+            "Main Quest".to_string(),
+            vec!["Gold".to_string(), "XP".to_string()],
+        );
+        assert_eq!(notif.title, "Main Quest");
+        assert_eq!(notif.description, "Quest Complete!");
+        assert_eq!(notif.total_duration, 2.8); // Longer duration for rewards
+        assert!(matches!(notif.notification_type, NotificationType::QuestComplete { .. }));
+    }
+
+    #[test]
+    fn test_notification_update() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // Not finished yet
+        assert!(!notif.update(1.0));
+        assert_eq!(notif.animation_time, 1.0);
+        
+        // Finished
+        assert!(notif.update(1.5)); // Total 2.5s > 2.0s duration
+    }
+
+    #[test]
+    fn test_notification_slide_offset_ease_in() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // At start, should be off-screen (negative offset)
+        let offset_start = notif.calculate_slide_offset();
+        assert!(offset_start < 0.0);
+        
+        // During ease-in
+        notif.animation_time = 0.15; // Mid ease-in
+        let offset_mid = notif.calculate_slide_offset();
+        assert!(offset_mid < 0.0);
+        assert!(offset_mid > offset_start);
+    }
+
+    #[test]
+    fn test_notification_slide_offset_hold() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // During hold phase
+        notif.animation_time = 1.0; // Middle of hold
+        let offset = notif.calculate_slide_offset();
+        assert_eq!(offset, 0.0);
+    }
+
+    #[test]
+    fn test_notification_slide_offset_ease_out() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // During ease-out
+        notif.animation_time = 1.85; // During ease-out
+        let offset = notif.calculate_slide_offset();
+        assert!(offset < 0.0); // Moving off-screen
+    }
+
+    #[test]
+    fn test_notification_alpha_fade_in() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // At start, alpha should be low
+        let alpha_start = notif.calculate_alpha();
+        assert_eq!(alpha_start, 0);
+        
+        // During fade-in
+        notif.animation_time = 0.1; // Half of 0.2s fade-in
+        let alpha_mid = notif.calculate_alpha();
+        assert!(alpha_mid > 0);
+        assert!(alpha_mid < 255);
+    }
+
+    #[test]
+    fn test_notification_alpha_full() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // During hold phase, fully visible
+        notif.animation_time = 1.0;
+        let alpha = notif.calculate_alpha();
+        assert_eq!(alpha, 255);
+    }
+
+    #[test]
+    fn test_notification_alpha_fade_out() {
+        let mut notif = QuestNotification::new_quest("Test".to_string(), "Desc".to_string());
+        
+        // During fade-out (last 0.3s)
+        notif.animation_time = 1.85; // Within fade-out
+        let alpha = notif.calculate_alpha();
+        assert!(alpha < 255);
+    }
+
+    // ===== PingMarker Tests =====
+
+    #[test]
+    fn test_ping_marker_new() {
+        let ping = PingMarker::new((100.0, 200.0), 5.0);
+        assert_eq!(ping.world_pos, (100.0, 200.0));
+        assert_eq!(ping.spawn_time, 5.0);
+        assert_eq!(ping.duration, 3.0);
+    }
+
+    #[test]
+    fn test_ping_marker_is_active() {
+        let ping = PingMarker::new((0.0, 0.0), 10.0);
+        
+        assert!(ping.is_active(10.0)); // Just spawned
+        assert!(ping.is_active(11.0)); // 1s after
+        assert!(ping.is_active(12.9)); // Just before expiration
+        assert!(!ping.is_active(13.0)); // Exactly at expiration
+        assert!(!ping.is_active(15.0)); // Well past expiration
+    }
+
+    #[test]
+    fn test_ping_marker_age_normalized() {
+        let ping = PingMarker::new((0.0, 0.0), 10.0);
+        
+        assert_eq!(ping.age_normalized(10.0), 0.0); // Just spawned
+        assert!((ping.age_normalized(11.5) - 0.5).abs() < 0.01); // Halfway
+        assert_eq!(ping.age_normalized(13.0), 1.0); // Full duration
+        assert_eq!(ping.age_normalized(15.0), 1.0); // Clamped at 1.0
+    }
+
+    // ===== HudManager Method Tests =====
+
+    #[test]
+    fn test_hud_manager_toggle_quest_tracker() {
+        let mut hud = HudManager::new();
+        assert!(hud.state().show_objectives);
+        
+        hud.toggle_quest_tracker();
+        assert!(!hud.state().show_objectives);
+        
+        hud.toggle_quest_tracker();
+        assert!(hud.state().show_objectives);
+    }
+
+    #[test]
+    fn test_hud_manager_toggle_quest_collapse() {
+        let mut hud = HudManager::new();
+        assert!(!hud.state().quest_tracker_collapsed);
+        
+        hud.toggle_quest_collapse();
+        assert!(hud.state().quest_tracker_collapsed);
+        
+        hud.toggle_quest_collapse();
+        assert!(!hud.state().quest_tracker_collapsed);
+    }
+
+    #[test]
+    fn test_hud_manager_toggle_minimap() {
+        let mut hud = HudManager::new();
+        assert!(hud.state().show_minimap);
+        
+        hud.toggle_minimap();
+        assert!(!hud.state().show_minimap);
+        
+        hud.toggle_minimap();
+        assert!(hud.state().show_minimap);
+    }
+
+    #[test]
+    fn test_hud_manager_toggle_minimap_rotation() {
+        let mut hud = HudManager::new();
+        assert!(!hud.state().minimap_rotation);
+        
+        hud.toggle_minimap_rotation();
+        assert!(hud.state().minimap_rotation);
+        
+        hud.toggle_minimap_rotation();
+        assert!(!hud.state().minimap_rotation);
+    }
+
+    #[test]
+    fn test_hud_manager_set_minimap_zoom() {
+        let mut hud = HudManager::new();
+        assert_eq!(hud.minimap_zoom(), 1.0);
+        
+        hud.set_minimap_zoom(2.0);
+        assert_eq!(hud.minimap_zoom(), 2.0);
+        
+        // Test clamping
+        hud.set_minimap_zoom(0.1); // Below min
+        assert_eq!(hud.minimap_zoom(), 0.5);
+        
+        hud.set_minimap_zoom(5.0); // Above max
+        assert_eq!(hud.minimap_zoom(), 3.0);
+    }
+
+    #[test]
+    fn test_hud_manager_start_end_dialogue() {
+        let mut hud = HudManager::new();
+        assert!(!hud.state().show_dialogue);
+        assert!(hud.active_dialogue.is_none());
+        
+        let dialogue = DialogueNode {
+            id: 1,
+            speaker_name: "NPC".to_string(),
+            text: "Hello!".to_string(),
+            portrait_id: None,
+            choices: vec![],
+        };
+        
+        hud.start_dialogue(dialogue);
+        assert!(hud.state().show_dialogue);
+        assert!(hud.active_dialogue.is_some());
+        
+        hud.end_dialogue();
+        assert!(!hud.state().show_dialogue);
+        assert!(hud.active_dialogue.is_none());
+    }
+
+    #[test]
+    fn test_hud_manager_select_dialogue_choice() {
+        let mut hud = HudManager::new();
+        
+        let dialogue = DialogueNode {
+            id: 1,
+            speaker_name: "NPC".to_string(),
+            text: "Choose!".to_string(),
+            portrait_id: None,
+            choices: vec![
+                DialogueChoice {
+                    id: 1,
+                    text: "Choice A".to_string(),
+                    next_node: Some(10),
+                },
+                DialogueChoice {
+                    id: 2,
+                    text: "Choice B".to_string(),
+                    next_node: None,
+                },
+            ],
+        };
+        
+        hud.start_dialogue(dialogue);
+        
+        assert_eq!(hud.select_dialogue_choice(1), Some(10));
+        assert_eq!(hud.select_dialogue_choice(2), None);
+        assert_eq!(hud.select_dialogue_choice(99), None); // Invalid choice
+    }
+
+    #[test]
+    fn test_hud_manager_show_hide_tooltip() {
+        let mut hud = HudManager::new();
+        assert!(hud.hovered_tooltip.is_none());
+        
+        let tooltip = TooltipData {
+            title: "Item".to_string(),
+            description: "Description".to_string(),
+            stats: vec![],
+            flavor_text: None,
+        };
+        
+        hud.show_tooltip(tooltip, (100.0, 200.0));
+        assert!(hud.hovered_tooltip.is_some());
+        assert_eq!(hud.tooltip_position, (100.0, 200.0));
+        
+        hud.hide_tooltip();
+        assert!(hud.hovered_tooltip.is_none());
+    }
+
+    #[test]
+    fn test_hud_manager_spawn_damage() {
+        let mut hud = HudManager::new();
+        assert!(hud.damage_numbers.is_empty());
+        
+        hud.spawn_damage(50, (10.0, 5.0, 20.0), DamageType::Normal);
+        assert_eq!(hud.damage_numbers.len(), 1);
+        assert_eq!(hud.damage_numbers[0].value, 50);
+        
+        // Combo tracker should also have recorded the hit
+        assert_eq!(hud.combo_tracker.get_combo_count(0.0), 1);
+    }
+
+    #[test]
+    fn test_hud_manager_spawn_ping() {
+        let mut hud = HudManager::new();
+        assert!(hud.ping_markers.is_empty());
+        
+        hud.spawn_ping((50.0, 100.0));
+        assert_eq!(hud.ping_markers.len(), 1);
+        assert_eq!(hud.ping_markers[0].world_pos, (50.0, 100.0));
+    }
+
+    #[test]
+    fn test_hud_manager_update_expires_damage_numbers() {
+        let mut hud = HudManager::new();
+        hud.spawn_damage(50, (0.0, 0.0, 0.0), DamageType::Normal);
+        assert_eq!(hud.damage_numbers.len(), 1);
+        
+        // After 1.5s, damage numbers should expire
+        hud.update(2.0);
+        assert!(hud.damage_numbers.is_empty());
+    }
+
+    #[test]
+    fn test_hud_manager_update_expires_pings() {
+        let mut hud = HudManager::new();
+        hud.spawn_ping((0.0, 0.0));
+        assert_eq!(hud.ping_markers.len(), 1);
+        
+        // After 3s, ping should expire
+        hud.update(4.0);
+        assert!(hud.ping_markers.is_empty());
+    }
+
+    #[test]
+    fn test_hud_manager_update_health_animation() {
+        let mut hud = HudManager::new();
+        hud.player_stats.health = 50.0; // Set actual health
+        
+        // Visual health should still be at 100 before update
+        assert_eq!(hud.player_stats.health_animation.visual_health(), 100.0);
+        
+        // After update, visual health should animate toward target
+        hud.update(0.5);
+        let visual = hud.player_stats.health_animation.visual_health();
+        assert!(visual < 100.0 && visual >= 50.0, "Visual health should be animating");
+    }
+
+    #[test]
+    fn test_hud_manager_update_enemy_health_animation() {
+        let mut hud = HudManager::new();
+        hud.enemies.push(EnemyData::new(1, (0.0, 0.0, 0.0), 100.0, EnemyFaction::Hostile));
+        hud.enemies[0].health = 50.0;
+        
+        hud.update(0.5);
+        let visual = hud.enemies[0].health_animation.visual_health();
+        assert!(visual < 100.0 && visual >= 50.0);
+    }
+
+    #[test]
+    fn test_hud_manager_update_notification_queue() {
+        let mut hud = HudManager::new();
+        hud.notification_queue.push(QuestNotification::new_quest(
+            "Test".to_string(),
+            "Desc".to_string(),
+        ));
+        assert!(hud.notification_queue.has_active());
+        
+        // After duration, notification should expire
+        hud.update(3.0);
+        assert!(!hud.notification_queue.has_active());
+    }
+
+    // ===== HudState Tests =====
+
+    #[test]
+    fn test_hud_state_default() {
+        let state = HudState::default();
+        assert!(state.visible);
+        assert!(state.show_health_bars);
+        assert!(state.show_objectives);
+        assert!(state.show_minimap);
+        assert!(state.show_subtitles);
+        assert!(!state.quest_tracker_collapsed);
+        assert!(!state.minimap_rotation);
+        assert_eq!(state.minimap_zoom, 1.0);
+        assert!(!state.show_dialogue);
+        assert!(!state.debug_mode);
+    }
+
+    #[test]
+    fn test_hud_state_serialize_deserialize() {
+        let state = HudState {
+            visible: false,
+            show_health_bars: false,
+            show_objectives: true,
+            show_minimap: false,
+            show_subtitles: true,
+            quest_tracker_collapsed: true,
+            minimap_rotation: true,
+            minimap_zoom: 2.0,
+            show_dialogue: true,
+            debug_mode: true,
+        };
+        
+        // Serialize and deserialize (round-trip test)
+        let json = serde_json::to_string(&state).unwrap();
+        let deserialized: HudState = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(deserialized.visible, state.visible);
+        assert_eq!(deserialized.show_health_bars, state.show_health_bars);
+        assert_eq!(deserialized.minimap_zoom, state.minimap_zoom);
+        assert_eq!(deserialized.debug_mode, state.debug_mode);
+    }
+
+    // ===== EnemyData Tests =====
+
+    #[test]
+    fn test_enemy_data_new_with_animation() {
+        let enemy = EnemyData::new(42, (10.0, 5.0, 20.0), 100.0, EnemyFaction::Hostile);
+        
+        assert_eq!(enemy.id, 42);
+        assert_eq!(enemy.health, 100.0);
+        assert_eq!(enemy.max_health, 100.0);
+        assert_eq!(enemy.health_animation.visual_health(), 100.0);
+    }
+
+    #[test]
+    fn test_enemy_faction_variants_debug() {
+        let hostile = format!("{:?}", EnemyFaction::Hostile);
+        let neutral = format!("{:?}", EnemyFaction::Neutral);
+        let friendly = format!("{:?}", EnemyFaction::Friendly);
+        
+        assert_eq!(hostile, "Hostile");
+        assert_eq!(neutral, "Neutral");
+        assert_eq!(friendly, "Friendly");
+    }
+
+    // ===== PoiType Additional Tests =====
+
+    #[test]
+    fn test_poi_type_colors() {
+        use egui::Color32;
+        
+        assert_eq!(PoiType::Objective.color(), Color32::YELLOW);
+        assert_eq!(PoiType::Waypoint.color(), Color32::LIGHT_BLUE);
+        assert_eq!(PoiType::Vendor.color(), Color32::GREEN);
+        assert_eq!(PoiType::Danger.color(), Color32::RED);
+    }
+
+    // ===== Easing Function Edge Case Tests =====
+
+    #[test]
+    fn test_easing_ease_out_cubic_midpoints() {
+        let quarter = easing::ease_out_cubic(0.25);
+        let three_quarter = easing::ease_out_cubic(0.75);
+        
+        // ease_out_cubic should accelerate fast then slow
+        assert!(quarter > 0.25, "Should be ahead of linear at 0.25");
+        assert!(three_quarter > 0.75, "Should be ahead of linear at 0.75");
+    }
+
+    #[test]
+    fn test_easing_ease_in_out_quad_symmetry() {
+        let quarter = easing::ease_in_out_quad(0.25);
+        let three_quarter = easing::ease_in_out_quad(0.75);
+        
+        // ease_in_out_quad should be symmetric around 0.5
+        assert!((quarter + three_quarter - 1.0).abs() < 0.01, "Should be symmetric");
+    }
+
+    #[test]
+    fn test_easing_ease_in_out_quad_midpoint() {
+        let mid = easing::ease_in_out_quad(0.5);
+        assert!((mid - 0.5).abs() < 0.01, "Midpoint should be 0.5");
+    }
+
+    // ===== Objective Tests =====
+
+    #[test]
+    fn test_objective_with_progress() {
+        let obj = Objective {
+            id: 1,
+            description: "Kill 10 enemies".to_string(),
+            completed: false,
+            progress: Some((7, 10)),
+        };
+        
+        assert_eq!(obj.id, 1);
+        assert!(!obj.completed);
+        assert_eq!(obj.progress, Some((7, 10)));
+    }
+
+    #[test]
+    fn test_objective_without_progress() {
+        let obj = Objective {
+            id: 1,
+            description: "Find the treasure".to_string(),
+            completed: true,
+            progress: None,
+        };
+        
+        assert!(obj.completed);
+        assert!(obj.progress.is_none());
+    }
+
+    // ===== DamageType Debug Tests =====
+
+    #[test]
+    fn test_damage_type_debug() {
+        assert_eq!(format!("{:?}", DamageType::Normal), "Normal");
+        assert_eq!(format!("{:?}", DamageType::Critical), "Critical");
+        assert_eq!(format!("{:?}", DamageType::SelfDamage), "SelfDamage");
+    }
+
+    // ===== NotificationType Tests =====
+
+    #[test]
+    fn test_notification_type_debug() {
+        let new_quest = NotificationType::NewQuest;
+        let obj_complete = NotificationType::ObjectiveComplete {
+            objective_text: "Test".to_string(),
+        };
+        let quest_complete = NotificationType::QuestComplete {
+            rewards: vec!["Gold".to_string()],
+        };
+        
+        assert!(format!("{:?}", new_quest).contains("NewQuest"));
+        assert!(format!("{:?}", obj_complete).contains("ObjectiveComplete"));
+        assert!(format!("{:?}", quest_complete).contains("QuestComplete"));
+    }
+
+    // ===== Audio Callback Tests =====
+
+    #[test]
+    fn test_hud_manager_set_minimap_click_callback() {
+        let mut hud = HudManager::new();
+        assert!(hud.on_minimap_click.is_none());
+        
+        let called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called_clone = called.clone();
+        
+        hud.set_minimap_click_callback(move |_dist| {
+            called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+        
+        assert!(hud.on_minimap_click.is_some());
+        
+        // Call the callback
+        if let Some(callback) = &hud.on_minimap_click {
+            callback(0.5);
+        }
+        
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+    }
+
+    #[test]
+    fn test_hud_manager_set_ping_spawn_callback() {
+        let mut hud = HudManager::new();
+        assert!(hud.on_ping_spawn.is_none());
+        
+        let called = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let called_clone = called.clone();
+        
+        hud.set_ping_spawn_callback(move |_pos| {
+            called_clone.store(true, std::sync::atomic::Ordering::SeqCst);
+        });
+        
+        assert!(hud.on_ping_spawn.is_some());
+        
+        // Call the callback
+        if let Some(callback) = &hud.on_ping_spawn {
+            callback((10.0, 20.0));
+        }
+        
+        assert!(called.load(std::sync::atomic::Ordering::SeqCst));
+    }
 }
 

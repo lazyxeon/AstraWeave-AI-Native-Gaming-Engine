@@ -31,21 +31,25 @@ impl PromptCompressor {
 
     /// Generic text compression (removes extra whitespace, newlines, and common stop words)
     pub fn compress(&self, text: &str) -> String {
-        let stop_words = ["a", "an", "the", "is", "are", "was", "were", "that", "this", "of", "to", "in", "on", "at", "by", "for", "with"];
+        let stop_words = [
+            "a", "an", "the", "is", "are", "was", "were", "that", "this", "of", "to", "in", "on",
+            "at", "by", "for", "with",
+        ];
 
         // 1. Remove stop words and join with single space
-        let mut compressed = text.split_whitespace()
+        let mut compressed = text
+            .split_whitespace()
             .filter(|word| !stop_words.contains(&word.to_lowercase().as_str()))
             .collect::<Vec<_>>()
             .join(" ");
-        
+
         // 2. Remove spaces around punctuation (simple heuristic)
         compressed = compressed.replace(" ,", ",");
         compressed = compressed.replace(" .", ".");
         compressed = compressed.replace(" :", ":");
         compressed = compressed.replace(" (", "(");
         compressed = compressed.replace(") ", ")");
-        
+
         compressed
     }
 
@@ -181,15 +185,15 @@ mod tests {
         WorldSnapshot {
             t: 0.0,
             player: PlayerState {
-                pos: IVec2 { x: 5, y: 5 },
                 hp: 100,
-                stance: "normal".to_string(),
+                pos: IVec2 { x: 5, y: 5 },
+                stance: "stand".to_string(),
                 orders: vec![],
             },
             me: CompanionState {
-                pos: IVec2 { x: 3, y: 3 },
-                morale: 80.0,
-                ammo: 50,
+                pos: IVec2 { x: 5, y: 5 },
+                ammo: 10,
+                morale: 1.0,
                 cooldowns: BTreeMap::new(),
             },
             enemies: vec![EnemyState {
@@ -205,7 +209,6 @@ mod tests {
             }],
             obstacles: vec![],
             objective: Some("Eliminate enemy 99".to_string()),
-            physics_context: None,
         }
     }
 
