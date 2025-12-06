@@ -31,19 +31,15 @@
 //! let client = Hermes2ProOllama::new("http://localhost:11434", "adrienbrault/nous-hermes2pro:Q4_K_M");
 //! let response = client.complete("You are a game AI. Plan your next action.").await?;
 //! # Ok(())
-//! # }
 //! ```
 
+use crate::LlmClient;
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-
-use crate::LlmClient;
 
 /// Message in a chat conversation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,7 +77,7 @@ impl ChatSession {
     /// Send a message and get response (updates history)
     pub async fn send(&self, message: &str) -> Result<String> {
         let mut history = self.history.lock().await;
-        
+
         // Add user message
         history.push(ChatMessage {
             role: "user".to_string(),
@@ -581,13 +577,13 @@ impl LlmClient for Hermes2ProOllama {
                 buffer.extend_from_slice(&chunk);
 
                 let mut results = Vec::new();
-                
+
                 // Find the last newline character
                 // We only process up to the last newline to ensure we have complete JSON objects
                 if let Some(last_newline_pos) = buffer.iter().rposition(|&b| b == b'\n') {
                     // Extract complete lines from buffer
                     let complete_lines: Vec<u8> = buffer.drain(..=last_newline_pos).collect();
-                    
+
                     // Parse extracted lines
                     if let Ok(text) = String::from_utf8(complete_lines) {
                         for line in text.lines() {
@@ -617,7 +613,11 @@ impl LlmClient for Hermes2ProOllama {
                                     }
                                 }
                                 Err(e) => {
-                                    tracing::warn!("Failed to parse NDJSON line: {} | Line: {}", e, line);
+                                    tracing::warn!(
+                                        "Failed to parse NDJSON line: {} | Line: {}",
+                                        e,
+                                        line
+                                    );
                                 }
                             }
                         }

@@ -7,6 +7,7 @@
 //! Run locally with: `cargo test -p astraweave-render --tests --features skinning-gpu -- --ignored`
 
 use astraweave_render::animation::*;
+#[cfg(feature = "skinning-gpu")]
 use astraweave_render::skinning_gpu::{JointPaletteManager, SKINNING_GPU_SHADER};
 use glam::{Mat4, Quat, Vec3};
 use wgpu::util::DeviceExt;
@@ -357,7 +358,8 @@ async fn run_gpu_skinning(
     });
 
     // 6. Dispatch
-    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    let mut encoder =
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     {
         let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
             label: Some("Skinning Pass"),
@@ -493,15 +495,13 @@ fn test_parity_rest_pose() {
             .expect("Failed to find adapter");
 
         adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("Parity Test Device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: wgpu::Trace::Off,
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("Parity Test Device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            })
             .await
             .expect("Failed to create device")
     }
@@ -543,15 +543,13 @@ fn test_parity_animated_frame() {
             .expect("Failed to find adapter");
 
         adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("Parity Test Device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: wgpu::Trace::Off,
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("Parity Test Device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            })
             .await
             .expect("Failed to create device")
     }
@@ -600,15 +598,13 @@ fn test_parity_weighted_blending() {
             .expect("Failed to find adapter");
 
         adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("Parity Test Device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                    memory_hints: wgpu::MemoryHints::default(),
-                    trace: wgpu::Trace::Off,
-                },
-            )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("Parity Test Device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: wgpu::MemoryHints::default(),
+                trace: wgpu::Trace::Off,
+            })
             .await
             .expect("Failed to create device")
     }

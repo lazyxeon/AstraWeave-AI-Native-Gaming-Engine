@@ -1,3 +1,5 @@
+pub mod accessibility;
+pub mod gamepad;
 pub mod hud;
 pub mod layer;
 pub mod menu;
@@ -32,6 +34,13 @@ pub use menu::{
 pub use panels::draw_ui;
 pub use persistence::{get_config_path, load_settings, save_settings};
 pub use state::{Accessibility, UiData, UiFlags};
+
+// Week 5: Controller and Accessibility exports
+pub use accessibility::{
+    colors, get_health_colors, to_egui_color, transform_color, AccessibilitySettings,
+    ColorblindMode,
+};
+pub use gamepad::{GamepadAction, GamepadBindings, GamepadManager};
 
 // Re-export egui for external use
 pub use egui;

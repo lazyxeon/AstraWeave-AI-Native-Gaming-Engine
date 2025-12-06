@@ -1,8 +1,0 @@
-Start-Process : Parameter cannot be processed because the parameter name 'p' is ambiguous. Possible matches include: 
--PassThru -PipelineVariable -FilePath.
-At line:1 char:70
-+ ... ParameterValues['*:Encoding'] = 'utf8'; start /B cargo run -p unified ...
-+                                                                ~~
-    + CategoryInfo          : InvalidArgument: (:) [Start-Process], ParameterBindingException
-    + FullyQualifiedErrorId : AmbiguousParameter,Microsoft.PowerShell.Commands.StartProcessCommand
- 

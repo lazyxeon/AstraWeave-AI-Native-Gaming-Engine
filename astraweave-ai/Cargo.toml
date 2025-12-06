@@ -47,6 +47,7 @@ futures-executor = "0.3"
 criterion = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync", "time", "macros"] }
 tempfile = "3.8"
+serial_test = "3"
 
 [[bench]]
 name = "ai_core_loop"

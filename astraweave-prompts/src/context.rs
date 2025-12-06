@@ -270,3 +270,342 @@ impl From<Vec<&str>> for ContextValue {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // PromptContext tests
+    #[test]
+    fn test_context_new() {
+        let ctx = PromptContext::new();
+        assert!(ctx.variables.is_empty());
+        assert!(ctx.scopes.is_empty());
+    }
+
+    #[test]
+    fn test_context_set_get() {
+        let mut ctx = PromptContext::new();
+        ctx.set("name".to_string(), ContextValue::String("Alice".to_string()));
+        
+        let value = ctx.get("name").unwrap();
+        assert!(matches!(value, ContextValue::String(s) if s == "Alice"));
+    }
+
+    #[test]
+    fn test_context_get_nonexistent() {
+        let ctx = PromptContext::new();
+        assert!(ctx.get("missing").is_none());
+    }
+
+    #[test]
+    fn test_context_push_pop_scope() {
+        let mut ctx = PromptContext::new();
+        ctx.set("outer".to_string(), ContextValue::String("outer_value".to_string()));
+        
+        ctx.push_scope();
+        ctx.set("inner".to_string(), ContextValue::String("inner_value".to_string()));
+        
+        // Both should be accessible
+        assert!(ctx.get("inner").is_some());
+        assert!(ctx.get("outer").is_some());
+        
+        // Pop scope
+        let popped = ctx.pop_scope();
+        assert!(popped.is_some());
+        
+        // Inner should no longer be accessible directly, outer should be back
+        assert!(ctx.get("outer").is_some());
+    }
+
+    #[test]
+    fn test_context_scope_shadowing() {
+        let mut ctx = PromptContext::new();
+        ctx.set("x".to_string(), ContextValue::Number(1.0));
+        
+        ctx.push_scope();
+        ctx.set("x".to_string(), ContextValue::Number(2.0));
+        
+        // Should get inner scope value
+        let value = ctx.get("x").unwrap();
+        assert!(matches!(value, ContextValue::Number(n) if *n == 2.0));
+    }
+
+    #[test]
+    fn test_context_pop_empty() {
+        let mut ctx = PromptContext::new();
+        assert!(ctx.pop_scope().is_none());
+    }
+
+    #[test]
+    fn test_context_set_path_simple() {
+        let mut ctx = PromptContext::new();
+        ctx.set_path("name", ContextValue::String("Bob".to_string()));
+        
+        assert!(ctx.get("name").is_some());
+    }
+
+    #[test]
+    fn test_context_set_path_nested() {
+        let mut ctx = PromptContext::new();
+        ctx.set_path("user.name", ContextValue::String("Charlie".to_string()));
+        ctx.set_path("user.age", ContextValue::Number(30.0));
+        
+        let user = ctx.get("user").unwrap();
+        assert!(matches!(user, ContextValue::Object(_)));
+    }
+
+    #[test]
+    fn test_context_set_path_empty() {
+        let mut ctx = PromptContext::new();
+        ctx.set_path("", ContextValue::String("value".to_string()));
+        // Should not crash, just do nothing
+    }
+
+    #[test]
+    fn test_context_merge() {
+        let mut ctx1 = PromptContext::new();
+        ctx1.set("a".to_string(), ContextValue::String("1".to_string()));
+        
+        let mut ctx2 = PromptContext::new();
+        ctx2.set("b".to_string(), ContextValue::String("2".to_string()));
+        
+        ctx1.merge(ctx2);
+        
+        assert!(ctx1.get("a").is_some());
+        assert!(ctx1.get("b").is_some());
+    }
+
+    #[test]
+    fn test_context_to_string_map() {
+        let mut ctx = PromptContext::new();
+        ctx.set("name".to_string(), ContextValue::String("Test".to_string()));
+        ctx.set("count".to_string(), ContextValue::Number(42.0));
+        
+        let map = ctx.to_string_map();
+        assert_eq!(map.get("name").unwrap(), "Test");
+        assert_eq!(map.get("count").unwrap(), "42");
+    }
+
+    #[test]
+    fn test_context_to_json() {
+        let mut ctx = PromptContext::new();
+        ctx.set("name".to_string(), ContextValue::String("Test".to_string()));
+        ctx.set("active".to_string(), ContextValue::Boolean(true));
+        
+        let json = ctx.to_json();
+        assert!(json.is_object());
+        assert_eq!(json["name"], "Test");
+        assert_eq!(json["active"], true);
+    }
+
+    // ContextValue tests
+    #[test]
+    fn test_context_value_string() {
+        let value = ContextValue::String("hello".to_string());
+        assert_eq!(value.to_string(), "hello");
+    }
+
+    #[test]
+    fn test_context_value_number() {
+        let value = ContextValue::Number(3.14);
+        assert!(value.to_string().contains("3.14"));
+    }
+
+    #[test]
+    fn test_context_value_boolean() {
+        let true_val = ContextValue::Boolean(true);
+        let false_val = ContextValue::Boolean(false);
+        
+        assert_eq!(true_val.to_string(), "true");
+        assert_eq!(false_val.to_string(), "false");
+    }
+
+    #[test]
+    fn test_context_value_array() {
+        let value = ContextValue::Array(vec![
+            ContextValue::String("a".to_string()),
+            ContextValue::String("b".to_string()),
+        ]);
+        
+        let s = value.to_string();
+        assert!(s.contains("a"));
+        assert!(s.contains("b"));
+    }
+
+    #[test]
+    fn test_context_value_object() {
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), ContextValue::String("value".to_string()));
+        let value = ContextValue::Object(map);
+        
+        let s = value.to_string();
+        assert!(s.contains("key"));
+        assert!(s.contains("value"));
+    }
+
+    #[test]
+    fn test_context_value_to_json_string() {
+        let value = ContextValue::String("test".to_string());
+        let json = value.to_json();
+        assert_eq!(json, serde_json::Value::String("test".to_string()));
+    }
+
+    #[test]
+    fn test_context_value_to_json_number() {
+        let value = ContextValue::Number(42.0);
+        let json = value.to_json();
+        assert!(json.is_number());
+    }
+
+    #[test]
+    fn test_context_value_to_json_boolean() {
+        let value = ContextValue::Boolean(true);
+        let json = value.to_json();
+        assert_eq!(json, serde_json::Value::Bool(true));
+    }
+
+    #[test]
+    fn test_context_value_to_json_array() {
+        let value = ContextValue::Array(vec![ContextValue::Number(1.0)]);
+        let json = value.to_json();
+        assert!(json.is_array());
+    }
+
+    #[test]
+    fn test_context_value_to_json_object() {
+        let mut map = HashMap::new();
+        map.insert("x".to_string(), ContextValue::Number(10.0));
+        let value = ContextValue::Object(map);
+        let json = value.to_json();
+        assert!(json.is_object());
+    }
+
+    #[test]
+    fn test_context_value_insert_path_single() {
+        let mut value = ContextValue::Object(HashMap::new());
+        value.insert_path(&["key"], ContextValue::String("val".to_string()));
+        
+        if let ContextValue::Object(map) = value {
+            assert!(map.contains_key("key"));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_context_value_insert_path_nested() {
+        let mut value = ContextValue::Object(HashMap::new());
+        value.insert_path(&["a", "b", "c"], ContextValue::Number(123.0));
+        
+        if let ContextValue::Object(map) = &value {
+            assert!(map.contains_key("a"));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_context_value_insert_path_overwrite_non_object() {
+        let mut value = ContextValue::String("old".to_string());
+        value.insert_path(&["new", "path"], ContextValue::Boolean(true));
+        
+        // Should have been converted to object
+        assert!(matches!(value, ContextValue::Object(_)));
+    }
+
+    #[test]
+    fn test_context_value_insert_path_empty() {
+        let mut value = ContextValue::String("old".to_string());
+        value.insert_path(&[], ContextValue::String("new".to_string()));
+        
+        // Empty path should overwrite the value
+        assert!(matches!(value, ContextValue::String(s) if s == "new"));
+    }
+
+    // From trait tests
+    #[test]
+    fn test_from_string() {
+        let value: ContextValue = "hello".to_string().into();
+        assert!(matches!(value, ContextValue::String(s) if s == "hello"));
+    }
+
+    #[test]
+    fn test_from_str() {
+        let value: ContextValue = "world".into();
+        assert!(matches!(value, ContextValue::String(s) if s == "world"));
+    }
+
+    #[test]
+    fn test_from_f64() {
+        let value: ContextValue = 3.14f64.into();
+        assert!(matches!(value, ContextValue::Number(n) if (n - 3.14).abs() < 0.01));
+    }
+
+    #[test]
+    fn test_from_bool() {
+        let value: ContextValue = true.into();
+        assert!(matches!(value, ContextValue::Boolean(true)));
+    }
+
+    #[test]
+    fn test_from_vec_context_value() {
+        let vec = vec![ContextValue::Number(1.0), ContextValue::Number(2.0)];
+        let value: ContextValue = vec.into();
+        
+        if let ContextValue::Array(arr) = value {
+            assert_eq!(arr.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_from_vec_string() {
+        let vec = vec!["a".to_string(), "b".to_string()];
+        let value: ContextValue = vec.into();
+        
+        if let ContextValue::Array(arr) = value {
+            assert_eq!(arr.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_from_vec_str() {
+        let vec = vec!["x", "y", "z"];
+        let value: ContextValue = vec.into();
+        
+        if let ContextValue::Array(arr) = value {
+            assert_eq!(arr.len(), 3);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    // Serialization tests
+    #[test]
+    fn test_context_value_serialization() {
+        let value = ContextValue::String("test".to_string());
+        let serialized = serde_json::to_string(&value).unwrap();
+        let deserialized: ContextValue = serde_json::from_str(&serialized).unwrap();
+        
+        assert!(matches!(deserialized, ContextValue::String(s) if s == "test"));
+    }
+
+    #[test]
+    fn test_context_value_complex_serialization() {
+        let mut map = HashMap::new();
+        map.insert("items".to_string(), ContextValue::Array(vec![
+            ContextValue::Number(1.0),
+            ContextValue::Number(2.0),
+        ]));
+        let value = ContextValue::Object(map);
+        
+        let serialized = serde_json::to_string(&value).unwrap();
+        let deserialized: ContextValue = serde_json::from_str(&serialized).unwrap();
+        
+        assert!(matches!(deserialized, ContextValue::Object(_)));
+    }
+}

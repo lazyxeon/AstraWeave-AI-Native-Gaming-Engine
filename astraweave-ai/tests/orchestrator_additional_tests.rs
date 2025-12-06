@@ -21,7 +21,7 @@ fn make_empty_snap() -> WorldSnapshot {
         t: 1.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
             stance: "standing".into(),
             orders: vec![],
@@ -44,7 +44,7 @@ fn make_snap_with_enemy(enemy_pos: IVec2, cooldowns: BTreeMap<String, f32>) -> W
         t: 1.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
             stance: "standing".into(),
             orders: vec![],

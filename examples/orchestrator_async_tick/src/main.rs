@@ -36,7 +36,6 @@ fn mk_snap_from_world(w: &World, me: Entity, player: Entity, enemy: Entity) -> W
         pois: vec![],
         obstacles: vec![],
         objective: None,
-        physics_context: None,
     }
 }
 

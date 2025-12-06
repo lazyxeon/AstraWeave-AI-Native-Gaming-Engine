@@ -449,3 +449,319 @@ impl PromptAnalyzer {
         stats
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // PromptValidator tests
+    #[test]
+    fn test_validate_valid_prompt() {
+        let prompt = "This is a valid prompt with {variable}.";
+        let mut rules = ValidationRules::default();
+        rules.required_variables.push("variable".to_string());
+        
+        assert!(PromptValidator::validate(prompt, &rules).is_ok());
+    }
+
+    #[test]
+    fn test_validate_prompt_too_long() {
+        let prompt = "a".repeat(10000);
+        let rules = ValidationRules {
+            max_length: 1000,
+            ..Default::default()
+        };
+        
+        let result = PromptValidator::validate(&prompt, &rules);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too long"));
+    }
+
+    #[test]
+    fn test_validate_prompt_too_short() {
+        let prompt = "Hi";
+        let rules = ValidationRules {
+            min_length: 10,
+            ..Default::default()
+        };
+        
+        let result = PromptValidator::validate(prompt, &rules);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too short"));
+    }
+
+    #[test]
+    fn test_validate_missing_required_variable() {
+        let prompt = "This prompt has no variables.";
+        let rules = ValidationRules {
+            required_variables: vec!["name".to_string()],
+            ..Default::default()
+        };
+        
+        let result = PromptValidator::validate(prompt, &rules);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("name"));
+    }
+
+    #[test]
+    fn test_validate_forbidden_pattern() {
+        let prompt = "This prompt contains FORBIDDEN text.";
+        let rules = ValidationRules {
+            forbidden_patterns: vec!["FORBIDDEN".to_string()],
+            ..Default::default()
+        };
+        
+        let result = PromptValidator::validate(prompt, &rules);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("FORBIDDEN"));
+    }
+
+    #[test]
+    fn test_is_well_formed_balanced() {
+        assert!(PromptValidator::is_well_formed("Hello {world}!"));
+        assert!(PromptValidator::is_well_formed("{a}{b}{c}"));
+        assert!(PromptValidator::is_well_formed("No braces here"));
+    }
+
+    #[test]
+    fn test_is_well_formed_unbalanced() {
+        assert!(!PromptValidator::is_well_formed("Hello {world"));
+        assert!(!PromptValidator::is_well_formed("Hello world}"));
+        assert!(!PromptValidator::is_well_formed("{{}"));
+    }
+
+    // PromptFormatter tests
+    #[test]
+    fn test_format_with_spaces() {
+        let prompt = "Line 1\n  Indented line\nLine 3";
+        let options = FormattingOptions::default();
+        let formatted = PromptFormatter::format(prompt, &options);
+        
+        assert!(formatted.contains("Line 1"));
+        assert!(formatted.contains("Line 3"));
+    }
+
+    #[test]
+    fn test_format_with_tabs() {
+        let prompt = "Line 1\n  Indented";
+        let options = FormattingOptions {
+            use_tabs: true,
+            ..Default::default()
+        };
+        let formatted = PromptFormatter::format(prompt, &options);
+        
+        assert!(formatted.contains("Line 1"));
+    }
+
+    #[test]
+    fn test_minify() {
+        let prompt = "Line 1\n  \n  Line 2  \n\nLine 3";
+        let minified = PromptFormatter::minify(prompt);
+        
+        assert_eq!(minified, "Line 1 Line 2 Line 3");
+    }
+
+    #[test]
+    fn test_pretty_print() {
+        let prompt = "Hello {name}, welcome to {place}!";
+        let pretty = PromptFormatter::pretty_print(prompt);
+        
+        assert!(pretty.contains("**{name}**"));
+        assert!(pretty.contains("**{place}**"));
+    }
+
+    // PromptAnalyzer tests
+    #[test]
+    fn test_estimate_tokens() {
+        let text = "This is a test sentence with eight words here.";
+        let tokens = PromptAnalyzer::estimate_tokens(text);
+        
+        // 10 words * 0.75 ≈ 7
+        assert!(tokens > 0);
+        assert!(tokens < text.split_whitespace().count());
+    }
+
+    #[test]
+    fn test_extract_variables() {
+        let prompt = "Hello {name}! Your {item} is ready at {location}.";
+        let vars = PromptAnalyzer::extract_variables(prompt);
+        
+        assert_eq!(vars.len(), 3);
+        assert!(vars.contains(&"name".to_string()));
+        assert!(vars.contains(&"item".to_string()));
+        assert!(vars.contains(&"location".to_string()));
+    }
+
+    #[test]
+    fn test_extract_variables_no_duplicates() {
+        let prompt = "{name} likes {name}";
+        let vars = PromptAnalyzer::extract_variables(prompt);
+        
+        assert_eq!(vars.len(), 1);
+    }
+
+    #[test]
+    fn test_extract_variables_empty() {
+        let prompt = "No variables here";
+        let vars = PromptAnalyzer::extract_variables(prompt);
+        
+        assert!(vars.is_empty());
+    }
+
+    #[test]
+    fn test_calculate_complexity_short() {
+        let prompt = "Simple prompt.";
+        let score = PromptAnalyzer::calculate_complexity(prompt);
+        
+        assert!(score < 50);
+    }
+
+    #[test]
+    fn test_calculate_complexity_long() {
+        let prompt = "a ".repeat(500) + &"{var}".repeat(10);
+        let score = PromptAnalyzer::calculate_complexity(&prompt);
+        
+        // Long prompts should have some complexity score
+        assert!(score > 0);
+    }
+
+    #[test]
+    fn test_calculate_readability() {
+        let prompt = "Short. Sentences. Are. Easy.";
+        let score = PromptAnalyzer::calculate_readability(prompt);
+        
+        // Short sentences = high readability
+        assert!(score > 50);
+    }
+
+    #[test]
+    fn test_analyze() {
+        let prompt = "Hello {name}! Welcome to {place}. This is a test.";
+        let result = PromptAnalyzer::analyze(prompt);
+        
+        assert!(result.estimated_tokens > 0);
+        assert!(result.complexity_score <= 100);
+        assert_eq!(result.variables.len(), 2);
+        assert!(result.readability_score <= 100);
+    }
+
+    #[test]
+    fn test_generate_stats() {
+        let prompt = "Hello {name}!\nLine two.";
+        let stats = PromptAnalyzer::generate_stats(prompt);
+        
+        assert!(stats.contains_key("character_count"));
+        assert!(stats.contains_key("word_count"));
+        assert!(stats.contains_key("line_count"));
+        assert!(stats.contains_key("variable_count"));
+        assert!(stats.contains_key("estimated_tokens"));
+        
+        assert_eq!(stats.get("line_count").unwrap(), "2");
+        assert_eq!(stats.get("variable_count").unwrap(), "1");
+    }
+
+    // ValidationRules tests
+    #[test]
+    fn test_validation_rules_default() {
+        let rules = ValidationRules::default();
+        
+        assert_eq!(rules.max_length, 8000);
+        assert_eq!(rules.min_length, 10);
+        assert!(rules.required_variables.is_empty());
+        assert!(rules.forbidden_patterns.is_empty());
+    }
+
+    #[test]
+    fn test_validation_rules_serialization() {
+        let rules = ValidationRules {
+            max_length: 5000,
+            min_length: 50,
+            required_variables: vec!["name".to_string()],
+            forbidden_patterns: vec!["bad".to_string()],
+        };
+        
+        let serialized = serde_json::to_string(&rules).unwrap();
+        let deserialized: ValidationRules = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(rules.max_length, deserialized.max_length);
+        assert_eq!(rules.required_variables, deserialized.required_variables);
+    }
+
+    // FormattingOptions tests
+    #[test]
+    fn test_formatting_options_default() {
+        let options = FormattingOptions::default();
+        
+        assert_eq!(options.indent_size, 2);
+        assert!(!options.use_tabs);
+        assert_eq!(options.max_line_length, 80);
+    }
+
+    #[test]
+    fn test_formatting_options_serialization() {
+        let options = FormattingOptions {
+            indent_size: 4,
+            use_tabs: true,
+            max_line_length: 120,
+        };
+        
+        let serialized = serde_json::to_string(&options).unwrap();
+        let deserialized: FormattingOptions = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(options.indent_size, deserialized.indent_size);
+        assert_eq!(options.use_tabs, deserialized.use_tabs);
+    }
+
+    // AnalysisResult tests
+    #[test]
+    fn test_analysis_result_serialization() {
+        let result = AnalysisResult {
+            estimated_tokens: 100,
+            complexity_score: 50,
+            variables: vec!["name".to_string()],
+            readability_score: 75,
+        };
+        
+        let serialized = serde_json::to_string(&result).unwrap();
+        let deserialized: AnalysisResult = serde_json::from_str(&serialized).unwrap();
+        
+        assert_eq!(result.estimated_tokens, deserialized.estimated_tokens);
+        assert_eq!(result.variables, deserialized.variables);
+    }
+
+    // Edge cases
+    #[test]
+    fn test_empty_prompt_analyze() {
+        let prompt = "";
+        let result = PromptAnalyzer::analyze(prompt);
+        
+        assert_eq!(result.estimated_tokens, 0);
+        assert!(result.variables.is_empty());
+    }
+
+    #[test]
+    fn test_nested_braces() {
+        let prompt = "{{nested}}";
+        let vars = PromptAnalyzer::extract_variables(prompt);
+        
+        // Should handle nested braces by extracting inner variable
+        assert!(!vars.is_empty());
+    }
+
+    #[test]
+    fn test_minify_empty_lines() {
+        let prompt = "\n\n\n";
+        let minified = PromptFormatter::minify(prompt);
+        
+        assert!(minified.is_empty());
+    }
+
+    #[test]
+    fn test_format_empty_lines_preserved() {
+        let prompt = "Line 1\n\nLine 3";
+        let options = FormattingOptions::default();
+        let formatted = PromptFormatter::format(prompt, &options);
+        
+        assert!(formatted.contains("\n"));
+    }
+}

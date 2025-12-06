@@ -38,7 +38,6 @@ async fn main() -> anyhow::Result<()> {
         pois: vec![],
         obstacles: vec![],
         objective: Some("extract".into()),
-        physics_context: None,
     };
     let reg = ToolRegistry {
         tools: vec![

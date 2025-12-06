@@ -305,7 +305,7 @@ mod tests {
                 ammo: 10,
                 cooldowns: BTreeMap::new(),
                 morale: 1.0,
-                physics_context: None,
+
                 pos: IVec2 { x: 5, y: 5 },
             },
             player: PlayerState {
@@ -457,7 +457,7 @@ mod tests {
                 ammo: 10,
                 cooldowns: BTreeMap::new(),
                 morale: 1.0,
-                physics_context: None,
+
                 pos: IVec2 { x: 5, y: 5 },
             },
             player: PlayerState {

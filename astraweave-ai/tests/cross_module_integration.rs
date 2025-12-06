@@ -105,7 +105,6 @@ fn extract_snapshot(world: &World, agent: Entity, enemies: &[Entity]) -> WorldSn
                     pos: IVec2 {
                         x: enemy_pos.x as i32,
                         y: enemy_pos.z as i32,
-                    physics_context: None,
                     },
                     hp: enemy_health.current,
                     cover: "none".to_string(),
@@ -124,7 +123,6 @@ fn extract_snapshot(world: &World, agent: Entity, enemies: &[Entity]) -> WorldSn
             pos: IVec2 {
                 x: agent_pos.x as i32,
                 y: agent_pos.z as i32,
-            physics_context: None,
             },
         },
         player: PlayerState {

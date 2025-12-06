@@ -57,6 +57,9 @@ pub mod sparse_set;
 mod system_param;
 pub mod type_registry;
 
+#[cfg(feature = "alloc-counter")]
+pub mod counting_alloc;
+
 #[cfg(test)]
 mod determinism_tests;
 

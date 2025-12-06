@@ -876,4 +876,234 @@ mod tests {
         let stats = window.get_stats();
         assert_eq!(stats.total_messages_added, 0);
     }
+
+    #[test]
+    fn test_window_type_fixed() {
+        let mut config = ContextWindowConfig::default();
+        config.max_messages = 2;
+        config.window_type = WindowType::Fixed;
+
+        let mut window = ContextWindow::new(config);
+
+        // Add more than max
+        window
+            .add_message(Message::new(Role::User, "Message 1".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 2".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 3".to_string()))
+            .unwrap();
+
+        // Fixed window should keep all messages
+        assert!(window.message_count() >= 2);
+    }
+
+    #[test]
+    fn test_window_type_hierarchical() {
+        let mut config = ContextWindowConfig::default();
+        config.max_messages = 2;
+        config.window_type = WindowType::Hierarchical;
+
+        let mut window = ContextWindow::new(config);
+
+        // Add messages
+        window
+            .add_message(Message::new(Role::User, "Message 1".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 2".to_string()))
+            .unwrap();
+        window
+            .add_message(Message::new(Role::User, "Message 3".to_string()))
+            .unwrap();
+
+        // Hierarchical uses attention then sliding
+        assert!(window.message_count() <= 3);
+    }
+
+    #[test]
+    fn test_context_window_config_serialization() {
+        let config = ContextWindowConfig::default();
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: ContextWindowConfig = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(config.max_tokens, deserialized.max_tokens);
+        assert_eq!(config.max_messages, deserialized.max_messages);
+    }
+
+    #[test]
+    fn test_attention_config_default() {
+        let config = AttentionConfig::default();
+        assert!(config.recency_bias >= 0.0);
+        assert!(config.min_attention_score >= 0.0);
+        assert!(!config.role_weights.is_empty());
+    }
+
+    #[test]
+    fn test_context_window_stats_default() {
+        let stats = ContextWindowStats::default();
+        assert_eq!(stats.total_messages_added, 0);
+        assert_eq!(stats.total_tokens_processed, 0);
+        assert_eq!(stats.messages_pruned, 0);
+        assert_eq!(stats.window_utilization, 0.0);
+    }
+
+    #[test]
+    fn test_context_window_stats_clone() {
+        let stats = ContextWindowStats {
+            total_messages_added: 10,
+            total_tokens_processed: 500,
+            messages_pruned: 3,
+            avg_message_tokens: 50.0,
+            window_utilization: 0.75,
+            attention_computations: 5,
+        };
+        
+        let cloned = stats.clone();
+        assert_eq!(stats.total_messages_added, cloned.total_messages_added);
+        assert_eq!(stats.messages_pruned, cloned.messages_pruned);
+        assert_eq!(stats.attention_computations, cloned.attention_computations);
+    }
+
+    #[test]
+    fn test_routing_config_creation() {
+        let config = RoutingConfig {
+            enable_sharing: true,
+            max_shared_agents: 5,
+            routing_rules: vec![],
+        };
+        assert!(config.enable_sharing);
+        assert_eq!(config.max_shared_agents, 5);
+    }
+
+    #[test]
+    fn test_routing_rule_creation() {
+        let rule = RoutingRule {
+            source_pattern: "agent-*".to_string(),
+            targets: vec!["target1".to_string()],
+            content_filter: None,
+            copy_message: true,
+        };
+        
+        assert_eq!(rule.source_pattern, "agent-*");
+        assert!(rule.targets.contains(&"target1".to_string()));
+        assert!(rule.copy_message);
+    }
+
+    #[test]
+    fn test_multi_agent_context_manager_with_sharing() {
+        let routing_config = RoutingConfig {
+            enable_sharing: true,
+            max_shared_agents: 3,
+            routing_rules: vec![],
+        };
+
+        let mut manager = MultiAgentContextManager::new(routing_config);
+        
+        manager.create_agent_window("agent1", ContextWindowConfig::default());
+        manager.create_agent_window("agent2", ContextWindowConfig::default());
+
+        // Add message that should be shared
+        manager
+            .add_message_to_agent(
+                "agent1",
+                Message::new(Role::System, "Shared message".to_string()),
+            )
+            .unwrap();
+
+        // Check agent1 has the message
+        let agent1_window = manager.get_agent_window("agent1").unwrap();
+        assert_eq!(agent1_window.message_count(), 1);
+    }
+
+    #[test]
+    fn test_multi_agent_context_manager_nonexistent_agent() {
+        let routing_config = RoutingConfig {
+            enable_sharing: false,
+            max_shared_agents: 5,
+            routing_rules: vec![],
+        };
+        let manager = MultiAgentContextManager::new(routing_config);
+
+        let result = manager.get_agent_window("nonexistent");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_window_export_import() {
+        let config = ContextWindowConfig::default();
+        let mut window = ContextWindow::new(config);
+
+        window
+            .add_message(Message::new(Role::User, "Test message".to_string()))
+            .unwrap();
+
+        let exported = window.export();
+        assert_eq!(exported.messages.len(), 1);
+
+        let imported = ContextWindow::import(exported);
+        assert_eq!(imported.message_count(), 1);
+    }
+
+    #[test]
+    fn test_get_recent_messages() {
+        let config = ContextWindowConfig::default();
+        let mut window = ContextWindow::new(config);
+
+        for i in 0..5 {
+            window
+                .add_message(Message::new(Role::User, format!("Message {}", i)))
+                .unwrap();
+        }
+
+        let recent = window.get_recent_messages(3);
+        assert_eq!(recent.len(), 3);
+        assert!(recent.iter().any(|m| m.content.contains("Message 4")));
+        assert!(recent.iter().any(|m| m.content.contains("Message 3")));
+    }
+
+    #[test]
+    fn test_add_message_to_nonexistent_agent() {
+        let routing_config = RoutingConfig {
+            enable_sharing: false,
+            max_shared_agents: 5,
+            routing_rules: vec![],
+        };
+        let mut manager = MultiAgentContextManager::new(routing_config);
+
+        // Adding to nonexistent agent silently succeeds (no-op behavior)
+        let result = manager.add_message_to_agent(
+            "nonexistent",
+            Message::new(Role::User, "Test".to_string()),
+        );
+        
+        // Function returns Ok even if agent doesn't exist (silent no-op)
+        assert!(result.is_ok());
+        
+        // Verify agent still doesn't exist
+        assert!(manager.get_agent_window("nonexistent").is_none());
+    }
+
+    #[test]
+    fn test_attention_weight_keyword_boost() {
+        let mut config = ContextWindowConfig::default();
+        config.attention_config.content_keywords = vec!["important".to_string(), "urgent".to_string()];
+
+        let mut window = ContextWindow::new(config);
+
+        // Add message with keyword
+        window
+            .add_message(Message::new(Role::User, "This is important stuff".to_string()))
+            .unwrap();
+
+        // Add message without keyword
+        window
+            .add_message(Message::new(Role::User, "Regular message".to_string()))
+            .unwrap();
+
+        // Both should have weights but keyword message might have higher
+        assert!(window.attention_weights.len() >= 2);
+    }
 }

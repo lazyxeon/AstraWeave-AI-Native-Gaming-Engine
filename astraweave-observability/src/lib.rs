@@ -83,6 +83,9 @@ impl Plugin for ObservabilityPlugin {
 
 /// Initialize tracing with JSON output and filtering
 fn init_tracing(config: &ObservabilityConfig) -> Result<()> {
+    use std::sync::Once;
+    static TRACING_INIT: Once = Once::new();
+
     let level = match config.tracing_level.as_str() {
         "TRACE" => Level::TRACE,
         "DEBUG" => Level::DEBUG,
@@ -92,18 +95,25 @@ fn init_tracing(config: &ObservabilityConfig) -> Result<()> {
         _ => Level::INFO,
     };
 
-    let subscriber = tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::from_default_env().add_directive(level.into()))
-        .with(
-            tracing_subscriber::fmt::layer()
-                .json()
-                .with_target(false)
-                .with_thread_ids(true)
-                .with_thread_names(true),
-        );
+    let config_level = config.tracing_level.clone();
 
-    subscriber.init();
-    info!("Tracing initialized with level: {}", config.tracing_level);
+    // Only initialize once per process (safe for tests and repeated calls)
+    TRACING_INIT.call_once(|| {
+        let subscriber = tracing_subscriber::registry()
+            .with(tracing_subscriber::EnvFilter::from_default_env().add_directive(level.into()))
+            .with(
+                tracing_subscriber::fmt::layer()
+                    .json()
+                    .with_target(false)
+                    .with_thread_ids(true)
+                    .with_thread_names(true),
+            );
+
+        // Use try_init to avoid panic if already initialized
+        let _ = subscriber.try_init();
+    });
+
+    info!("Tracing initialized with level: {}", config_level);
     Ok(())
 }
 
@@ -117,13 +127,18 @@ fn init_metrics(_config: &ObservabilityConfig) -> Result<()> {
 
 /// Initialize basic crash reporting (logs panics)
 fn init_crash_reporting() {
-    std::panic::set_hook(Box::new(|panic_info| {
-        let backtrace = std::backtrace::Backtrace::capture();
-        error!("Panic occurred: {}\nBacktrace:\n{}", panic_info, backtrace);
+    use std::sync::Once;
+    static CRASH_INIT: Once = Once::new();
 
-        // In a real implementation, this would send to a crash reporting service
-        // like Sentry, but for now we just log it
-    }));
+    CRASH_INIT.call_once(|| {
+        std::panic::set_hook(Box::new(|panic_info| {
+            let backtrace = std::backtrace::Backtrace::capture();
+            error!("Panic occurred: {}\nBacktrace:\n{}", panic_info, backtrace);
+
+            // In a real implementation, this would send to a crash reporting service
+            // like Sentry, but for now we just log it
+        }));
+    });
 
     info!("Crash reporting initialized");
 }

@@ -1,0 +1,144 @@
+   Compiling astraweave-core v0.1.0 (C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-core)
+warning: unused variable: `cds`
+   --> astraweave-core\tests\perception_tests.rs:128:17
+    |
+128 |     if let Some(cds) = w.cooldowns(companion) {
+    |                 ^^^ help: if this is intentional, prefix it with an underscore: `_cds`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+error[E0559]: variant `BehaviorNode::Action` has no field named `name`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:134:9
+    |
+134 |         name: "test".to_string(),
+    |         ^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:16:5
+    |
+16  |     Action(String),
+    |     ------ `BehaviorNode::Action` defined here
+    |
+help: `BehaviorNode::Action` is a tuple variant, use the appropriate syntax
+    |
+133 -     let node = BehaviorNode::Action {
+134 -         name: "test".to_string(),
+135 -     };
+133 +     let node = BehaviorNode::Action(/* std::string::String */);
+    |
+
+error[E0559]: variant `BehaviorNode::Action` has no field named `name`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:150:9
+    |
+150 |         name: "a".to_string(),
+    |         ^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:16:5
+    |
+16  |     Action(String),
+    |     ------ `BehaviorNode::Action` defined here
+    |
+help: `BehaviorNode::Action` is a tuple variant, use the appropriate syntax
+    |
+149 -     let _ = BehaviorNode::Action {
+150 -         name: "a".to_string(),
+151 -     };
+149 +     let _ = BehaviorNode::Action(/* std::string::String */);
+    |
+
+error[E0559]: variant `BehaviorNode::Condition` has no field named `name`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:153:9
+    |
+153 |         name: "c".to_string(),
+    |         ^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:17:5
+    |
+17  |     Condition(String),
+    |     --------- `BehaviorNode::Condition` defined here
+    |
+help: `BehaviorNode::Condition` is a tuple variant, use the appropriate syntax
+    |
+152 -     let _ = BehaviorNode::Condition {
+153 -         name: "c".to_string(),
+154 -     };
+152 +     let _ = BehaviorNode::Condition(/* std::string::String */);
+    |
+
+error[E0559]: variant `BehaviorNode::Sequence` has no field named `children`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:155:38
+    |
+155 |     let _ = BehaviorNode::Sequence { children: vec![] };
+    |                                      ^^^^^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:14:5
+    |
+14  |     Sequence(Vec<BehaviorNode>),
+    |     -------- `BehaviorNode::Sequence` defined here
+    |
+help: `BehaviorNode::Sequence` is a tuple variant, use the appropriate syntax
+    |
+155 -     let _ = BehaviorNode::Sequence { children: vec![] };
+155 +     let _ = BehaviorNode::Sequence(/* Vec<BehaviorNode> */);
+    |
+
+error[E0559]: variant `BehaviorNode::Selector` has no field named `children`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:156:38
+    |
+156 |     let _ = BehaviorNode::Selector { children: vec![] };
+    |                                      ^^^^^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:15:5
+    |
+15  |     Selector(Vec<BehaviorNode>),
+    |     -------- `BehaviorNode::Selector` defined here
+    |
+help: `BehaviorNode::Selector` is a tuple variant, use the appropriate syntax
+    |
+156 -     let _ = BehaviorNode::Selector { children: vec![] };
+156 +     let _ = BehaviorNode::Selector(/* Vec<BehaviorNode> */);
+    |
+
+error[E0559]: variant `BehaviorNode::Parallel` has no field named `children`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:158:9
+    |
+158 |         children: vec![],
+    |         ^^^^^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:19:5
+    |
+19  |     Parallel(Vec<BehaviorNode>, usize), // children, success threshold
+    |     -------- `BehaviorNode::Parallel` defined here
+    |
+help: `BehaviorNode::Parallel` is a tuple variant, use the appropriate syntax
+    |
+157 -     let _ = BehaviorNode::Parallel {
+158 -         children: vec![],
+159 -         success_threshold: 1,
+160 -     };
+157 +     let _ = BehaviorNode::Parallel(/* Vec<BehaviorNode> */, /* usize */);
+    |
+
+error[E0559]: variant `BehaviorNode::Parallel` has no field named `success_threshold`
+   --> astraweave-core\tests\cross_crate_stability_tests.rs:159:9
+    |
+159 |         success_threshold: 1,
+    |         ^^^^^^^^^^^^^^^^^ field does not exist
+    |
+   ::: C:\Users\pv2br\AstraWeave-AI-Native-Gaming-Engine\astraweave-behavior\src\lib.rs:19:5
+    |
+19  |     Parallel(Vec<BehaviorNode>, usize), // children, success threshold
+    |     -------- `BehaviorNode::Parallel` defined here
+    |
+help: `BehaviorNode::Parallel` is a tuple variant, use the appropriate syntax
+    |
+157 -     let _ = BehaviorNode::Parallel {
+158 -         children: vec![],
+159 -         success_threshold: 1,
+160 -     };
+157 +     let _ = BehaviorNode::Parallel(/* Vec<BehaviorNode> */, /* usize */);
+    |
+
+For more information about this error, try `rustc --explain E0559`.
+error: could not compile `astraweave-core` (test "cross_crate_stability_tests") due to 7 previous errors
+warning: build failed, waiting for other jobs to finish...
+warning: `astraweave-core` (test "perception_tests") generated 1 warning

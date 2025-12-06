@@ -11,7 +11,7 @@ fn create_test_snapshot(enemy_dist: i32) -> WorldSnapshot {
         t: 1.234,
         player: PlayerState {
             hp: 80,
-            physics_context: None,
+
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],

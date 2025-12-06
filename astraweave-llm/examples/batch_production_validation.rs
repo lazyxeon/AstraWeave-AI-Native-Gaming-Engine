@@ -8,9 +8,9 @@
 //! - Compression validation (Ollama logs)
 
 use astraweave_core::{
-    CompanionState, EnemyState, Entity, IVec2, PlayerState, Poi, ToolRegistry, WorldSnapshot,
+    CompanionState, EnemyState, IVec2, PlayerState, Poi, ToolRegistry, WorldSnapshot,
 };
-use astraweave_llm::{batch_executor::AgentId, fallback_system::FallbackSystem};
+use astraweave_llm::{batch_executor::AgentId, fallback_system::FallbackOrchestrator};
 use std::collections::BTreeMap;
 use std::time::Instant;
 
@@ -33,8 +33,8 @@ async fn main() -> anyhow::Result<()> {
         );
 
         // Initialize tool registry and fallback system
-        let reg = ToolRegistry::default();
-        let fallback = FallbackSystem::new();
+        let reg = astraweave_core::default_tool_registry();
+        let fallback = FallbackOrchestrator::new();
 
         println!("\n✅ Connected to Ollama with Hermes 2 Pro model");
         println!("   Model: adrienbrault/nous-hermes2pro:Q4_K_M (4.4 GB)");
@@ -56,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
 async fn run_validation_tests(
     client: &OllamaChatClient,
     reg: &ToolRegistry,
-    fallback: &FallbackSystem,
+    fallback: &FallbackOrchestrator,
 ) -> anyhow::Result<()> {
     // Test 1: Single agent baseline
     println!("\n\n");
@@ -68,7 +68,7 @@ async fn run_validation_tests(
 
     let start = Instant::now();
     let results1 = fallback
-        .plan_batch_with_fallback(&client, agents1, &reg)
+        .plan_batch_with_fallback(client, agents1, &reg)
         .await;
     let elapsed1 = start.elapsed();
 
@@ -89,7 +89,7 @@ async fn run_validation_tests(
 
     let start = Instant::now();
     let results5 = fallback
-        .plan_batch_with_fallback(&client, agents5.clone(), &reg)
+        .plan_batch_with_fallback(client, agents5.clone(), &reg)
         .await;
     let elapsed5 = start.elapsed();
 
@@ -114,7 +114,7 @@ async fn run_validation_tests(
 
     let start = Instant::now();
     let results10 = fallback
-        .plan_batch_with_fallback(&client, agents10.clone(), &reg)
+        .plan_batch_with_fallback(client, agents10.clone(), &reg)
         .await;
     let elapsed10 = start.elapsed();
 
@@ -139,7 +139,7 @@ async fn run_validation_tests(
     for run in 1..=3 {
         println!("Run {}/3...", run);
         let results = fallback
-            .plan_batch_with_fallback(&client, agents5.clone(), &reg)
+            .plan_batch_with_fallback(client, agents5.clone(), &reg)
             .await;
         let agent_ids: Vec<_> = results.keys().copied().collect();
         run_results.push(agent_ids);
@@ -190,7 +190,6 @@ fn create_test_snapshot(agent_id: AgentId) -> WorldSnapshot {
             hp: 100,
             stance: "stand".to_string(),
             orders: vec![],
-        physics_context: None,
         },
         me: CompanionState {
             pos: IVec2::new(agent_id as i32 * 2, agent_id as i32 * 2),
@@ -199,7 +198,7 @@ fn create_test_snapshot(agent_id: AgentId) -> WorldSnapshot {
             morale: 1.0,
         },
         enemies: vec![EnemyState {
-            id: Entity::from_raw(20),
+            id: 20,
             pos: IVec2::new(20, 20),
             hp: 50,
             cover: "low".to_string(),

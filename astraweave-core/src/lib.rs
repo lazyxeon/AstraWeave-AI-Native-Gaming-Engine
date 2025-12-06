@@ -4,6 +4,7 @@ pub mod ecs_adapter;
 pub mod ecs_bridge;
 pub mod ecs_components;
 pub mod ecs_events;
+pub mod metrics;
 pub mod perception;
 pub mod schema;
 pub mod sim;

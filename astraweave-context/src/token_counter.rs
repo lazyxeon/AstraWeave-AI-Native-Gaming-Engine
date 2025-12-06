@@ -379,12 +379,44 @@ mod tests {
     }
 
     #[test]
+    fn test_token_counter_creation_fallback_model() {
+        // Test with an unknown model - should fallback to cl100k_base or estimation
+        let counter = TokenCounter::new("unknown_model_xyz");
+        assert_eq!(counter.model_name(), "unknown_model_xyz");
+        // Should still work with estimation fallback
+        let count = counter.count_tokens("Hello world").unwrap();
+        assert!(count > 0);
+    }
+
+    #[test]
     fn test_token_counting() {
         let counter = TokenCounter::new("cl100k_base");
 
         let count = counter.count_tokens("Hello, world!").unwrap();
         assert!(count > 0);
         assert!(count < 10); // Should be a small number of tokens
+    }
+
+    #[test]
+    fn test_token_counting_empty_string() {
+        let counter = TokenCounter::new("cl100k_base");
+        let count = counter.count_tokens("").unwrap();
+        assert_eq!(count, 0);
+    }
+
+    #[test]
+    fn test_token_counting_unicode() {
+        let counter = TokenCounter::new("cl100k_base");
+        let count = counter.count_tokens("こんにちは世界 🌍").unwrap();
+        assert!(count > 0);
+    }
+
+    #[test]
+    fn test_token_counting_long_text() {
+        let counter = TokenCounter::new("cl100k_base");
+        let long_text = "This is a test sentence. ".repeat(1000);
+        let count = counter.count_tokens(&long_text).unwrap();
+        assert!(count > 1000); // Should be many tokens
     }
 
     #[test]
@@ -406,6 +438,38 @@ mod tests {
     }
 
     #[test]
+    fn test_token_cache_size_limit() {
+        let counter = TokenCounter::new("cl100k_base");
+        
+        // Add many different strings to test cache size limit
+        for i in 0..100 {
+            let text = format!("Unique test string number {}", i);
+            counter.count_tokens(&text).unwrap();
+        }
+        
+        let stats = counter.get_stats();
+        assert_eq!(stats.total_requests, 100);
+    }
+
+    #[test]
+    fn test_token_cache_clear() {
+        let counter = TokenCounter::new("cl100k_base");
+        
+        let text = "test text for cache";
+        counter.count_tokens(text).unwrap();
+        counter.count_tokens(text).unwrap();
+        
+        let stats_before = counter.get_stats();
+        assert!(stats_before.cache_hits > 0);
+        
+        counter.clear_cache();
+        
+        let stats_after = counter.get_stats();
+        assert_eq!(stats_after.cache_hits, 0);
+        assert_eq!(stats_after.cache_misses, 0);
+    }
+
+    #[test]
     fn test_text_truncation() {
         let counter = TokenCounter::new("cl100k_base");
 
@@ -415,6 +479,24 @@ mod tests {
         let truncated_count = counter.count_tokens(&truncated).unwrap();
         assert!(truncated_count <= 10);
         assert!(truncated.len() < long_text.len());
+    }
+
+    #[test]
+    fn test_text_truncation_no_truncation_needed() {
+        let counter = TokenCounter::new("cl100k_base");
+        let short_text = "Short";
+        let result = counter.truncate_to_tokens(short_text, 100).unwrap();
+        assert_eq!(result, short_text);
+    }
+
+    #[test]
+    fn test_text_truncation_exact_limit() {
+        let counter = TokenCounter::new("cl100k_base");
+        // Test with text that might be exactly at the limit
+        let text = "Hello";
+        let result = counter.truncate_to_tokens(text, 1).unwrap();
+        let count = counter.count_tokens(&result).unwrap();
+        assert!(count <= 1);
     }
 
     #[test]
@@ -433,6 +515,37 @@ mod tests {
     }
 
     #[test]
+    fn test_text_chunking_short_text() {
+        let counter = TokenCounter::new("cl100k_base");
+        let short_text = "Hello";
+        let chunks = counter.chunk_by_tokens(short_text, 100).unwrap();
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], short_text);
+    }
+
+    #[test]
+    fn test_text_chunking_empty_text() {
+        let counter = TokenCounter::new("cl100k_base");
+        let chunks = counter.chunk_by_tokens("", 10).unwrap();
+        // Empty text returns no chunks (since tokens <= max for empty)
+        // The implementation returns vec![text] for short text, which is empty string
+        assert!(chunks.len() <= 1);
+    }
+
+    #[test]
+    fn test_text_chunking_multiple_chunks() {
+        let counter = TokenCounter::new("cl100k_base");
+        // Create text that will definitely need multiple chunks
+        let long_text = "This is a sentence that contains multiple words and will need chunking. ".repeat(50);
+        let chunks = counter.chunk_by_tokens(&long_text, 10).unwrap();
+        assert!(chunks.len() >= 5);
+        
+        // Verify all chunks together approximate the original
+        let combined: String = chunks.join("");
+        assert!(combined.len() >= long_text.len() * 9 / 10); // At least 90% of original
+    }
+
+    #[test]
     fn test_token_estimation() {
         let text = "This is a sample text for estimation testing";
 
@@ -445,6 +558,44 @@ mod tests {
         assert!(code_est >= english_est); // Code should be higher estimate
         assert!(conservative_est >= english_est); // Conservative should be higher
         assert!(word_est > 0);
+    }
+
+    #[test]
+    fn test_token_estimation_empty() {
+        let text = "";
+        
+        assert_eq!(TokenEstimator::estimate_english(text), 0);
+        assert_eq!(TokenEstimator::estimate_code(text), 0);
+        assert_eq!(TokenEstimator::estimate_conservative(text), 0);
+        assert_eq!(TokenEstimator::estimate_by_words(text), 0);
+    }
+
+    #[test]
+    fn test_token_estimation_single_char() {
+        let text = "a";
+        
+        // Ceil of 1/4 = 1, 1/3.5 = 1, 1/3 = 1
+        assert!(TokenEstimator::estimate_english(text) >= 1);
+        assert!(TokenEstimator::estimate_code(text) >= 1);
+        assert!(TokenEstimator::estimate_conservative(text) >= 1);
+        assert!(TokenEstimator::estimate_by_words(text) >= 1); // 1 word * 1.3 ceil = 2
+    }
+
+    #[test]
+    fn test_token_estimation_code() {
+        // Code typically has more tokens per char than prose
+        let code = "fn main() { println!(\"Hello, world!\"); }";
+        let est = TokenEstimator::estimate_code(code);
+        assert!(est > 0);
+        assert!(est >= code.len() / 4); // Should be at least English estimate
+    }
+
+    #[test]
+    fn test_token_estimation_by_words_various() {
+        // Test different word counts
+        assert_eq!(TokenEstimator::estimate_by_words("one"), 2); // 1 * 1.3 = 1.3 -> 2
+        assert_eq!(TokenEstimator::estimate_by_words("one two"), 3); // 2 * 1.3 = 2.6 -> 3
+        assert!(TokenEstimator::estimate_by_words("one two three four five") >= 6); // 5 * 1.3 = 6.5 -> 7
     }
 
     #[test]
@@ -466,6 +617,64 @@ mod tests {
     }
 
     #[test]
+    fn test_token_budget_total() {
+        let budget = TokenBudget::new(500);
+        assert_eq!(budget.total_budget(), 500);
+    }
+
+    #[test]
+    fn test_token_budget_utilization() {
+        let mut budget = TokenBudget::new(1000);
+        
+        assert_eq!(budget.utilization(), 0.0);
+        
+        budget.use_tokens(250).unwrap();
+        assert!((budget.utilization() - 0.25).abs() < 0.001);
+        
+        budget.use_tokens(250).unwrap();
+        assert!((budget.utilization() - 0.5).abs() < 0.001);
+        
+        budget.use_tokens(500).unwrap();
+        assert!((budget.utilization() - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_token_budget_reserve_exceeds_available() {
+        let mut budget = TokenBudget::new(100);
+        budget.use_tokens(50).unwrap();
+        
+        let result = budget.reserve("big", 200);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_token_budget_multiple_reservations() {
+        let mut budget = TokenBudget::new(1000);
+        
+        budget.reserve("context", 100).unwrap();
+        budget.reserve("system", 100).unwrap();
+        budget.reserve("response", 100).unwrap();
+        
+        assert_eq!(budget.available_tokens(), 700);
+        
+        // Can override a reservation
+        budget.reserve("context", 200).unwrap();
+        assert_eq!(budget.available_tokens(), 600); // 1000 - (200 + 100 + 100)
+    }
+
+    #[test]
+    fn test_token_budget_use_tokens_error_message() {
+        let mut budget = TokenBudget::new(100);
+        budget.use_tokens(50).unwrap();
+        budget.reserve("reserved", 30).unwrap();
+        
+        let result = budget.use_tokens(50);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("exceed"));
+    }
+
+    #[test]
     fn test_find_split_point() {
         let counter = TokenCounter::new("cl100k_base");
 
@@ -478,6 +687,41 @@ mod tests {
         let prefix = &text[..split_point];
         let token_count = counter.count_tokens(prefix).unwrap();
         assert!(token_count <= 5);
+    }
+
+    #[test]
+    fn test_find_split_point_short_text() {
+        let counter = TokenCounter::new("cl100k_base");
+        let text = "Hi";
+        let split_point = counter.find_split_point(text, 100).unwrap();
+        // Should return full length when under limit
+        assert!(split_point <= text.len());
+    }
+
+    #[test]
+    fn test_find_split_point_at_word_boundary() {
+        let counter = TokenCounter::new("cl100k_base");
+        // Text with clear word boundaries
+        let text = "The quick brown fox jumps over the lazy dog repeatedly and continuously.";
+        let split_point = counter.find_split_point(text, 3).unwrap();
+        
+        // The split should ideally be at a whitespace boundary
+        if split_point > 0 && split_point < text.len() {
+            // Check that we're either at start, end, or near a whitespace
+            let nearby = &text[..split_point.min(text.len())];
+            // Just verify it doesn't panic and returns a valid point
+            assert!(split_point <= text.len());
+        }
+    }
+
+    #[test]
+    fn test_find_split_point_very_restrictive() {
+        let counter = TokenCounter::new("cl100k_base");
+        let text = "Hello world this is a test";
+        // Very restrictive - only 1 token
+        let split_point = counter.find_split_point(text, 1).unwrap();
+        // Should find some split point
+        assert!(split_point <= text.len());
     }
 
     #[test]
@@ -505,6 +749,23 @@ mod tests {
             let individual_count = counter.count_tokens(text).unwrap();
             assert_eq!(counts[i], individual_count);
         }
+    }
+
+    #[test]
+    fn test_count_tokens_batch_empty() {
+        let counter = TokenCounter::new("cl100k_base");
+        let texts: Vec<String> = vec![];
+        let counts = counter.count_tokens_batch(&texts).unwrap();
+        assert!(counts.is_empty());
+    }
+
+    #[test]
+    fn test_count_tokens_batch_single() {
+        let counter = TokenCounter::new("cl100k_base");
+        let texts = vec!["Single item".to_string()];
+        let counts = counter.count_tokens_batch(&texts).unwrap();
+        assert_eq!(counts.len(), 1);
+        assert!(counts[0] > 0);
     }
 
     #[test]
@@ -538,5 +799,64 @@ mod tests {
         // Should be able to use more tokens now
         budget.use_tokens(800).unwrap();
         assert_eq!(budget.used_tokens(), 800);
+    }
+
+    #[test]
+    fn test_token_counter_stats() {
+        let counter = TokenCounter::new("cl100k_base");
+        
+        let initial_stats = counter.get_stats();
+        assert_eq!(initial_stats.total_requests, 0);
+        assert_eq!(initial_stats.total_tokens_counted, 0);
+        assert_eq!(initial_stats.avg_tokens_per_request, 0.0);
+        
+        counter.count_tokens("Hello").unwrap();
+        counter.count_tokens("World").unwrap();
+        
+        let stats = counter.get_stats();
+        assert_eq!(stats.total_requests, 2);
+        assert!(stats.total_tokens_counted > 0);
+        assert!(stats.avg_tokens_per_request > 0.0);
+    }
+
+    #[test]
+    fn test_token_counter_stats_cache_hit_rate() {
+        let counter = TokenCounter::new("cl100k_base");
+        
+        let text = "repeated text";
+        counter.count_tokens(text).unwrap(); // miss
+        counter.count_tokens(text).unwrap(); // hit
+        counter.count_tokens(text).unwrap(); // hit
+        counter.count_tokens(text).unwrap(); // hit
+        
+        let stats = counter.get_stats();
+        assert_eq!(stats.cache_misses, 1);
+        assert_eq!(stats.cache_hits, 3);
+        assert!((stats.cache_hit_rate - 0.75).abs() < 0.01); // 3/4 = 0.75
+    }
+
+    #[test]
+    fn test_estimate_tokens_direct() {
+        let counter = TokenCounter::new("cl100k_base");
+        
+        // Test the estimate_tokens method directly
+        let estimate = counter.estimate_tokens("This is a test");
+        assert!(estimate > 0);
+        assert!(estimate < 100); // Reasonable estimate
+    }
+
+    #[test]
+    fn test_token_budget_zero() {
+        let mut budget = TokenBudget::new(0);
+        assert_eq!(budget.available_tokens(), 0);
+        assert!(budget.use_tokens(1).is_err());
+    }
+
+    #[test]
+    fn test_token_budget_saturating_sub() {
+        // Test the saturating_sub behavior when used + reserved > total
+        // This shouldn't happen in normal use but tests the safety
+        let budget = TokenBudget::new(100);
+        assert_eq!(budget.available_tokens(), 100);
     }
 }

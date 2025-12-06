@@ -11,6 +11,7 @@
 //! - Task abortion scenarios
 //! - is_finished() state checks
 
+#![cfg(feature = "llm_orchestrator")]
 use astraweave_ai::AsyncTask;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

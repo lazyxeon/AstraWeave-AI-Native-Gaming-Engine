@@ -52,15 +52,16 @@ impl PlanCacheKey {
 
     /// Hash world state with bucketing for similar states
     ///
-    /// Strategy: Only hash fact names (keys), not values, for "structure-based" caching.
-    /// This means states with same facts but different values share cache entries.
-    /// Works well for planning where action sequences often depend on fact structure,
-    /// not exact values (e.g., "has_weapon" matters more than "health = 95 vs 97").
+    /// Strategy: Hash both keys and values to ensure correctness.
+    /// Previously, this only hashed keys ("bucketing"), which led to invalid plans
+    /// being returned for states with the same variables but different values.
+    /// Now we enforce exact state matching for cache hits.
     fn hash_world_state_bucketed(state: &WorldState) -> u64 {
         let mut hasher = DefaultHasher::new();
-        // Only hash keys, not values (aggressive bucketing)
-        for key in state.facts.keys() {
+        // Hash both keys and values for exact matching
+        for (key, value) in &state.facts {
             key.hash(&mut hasher);
+            value.hash(&mut hasher);
         }
         hasher.finish()
     }

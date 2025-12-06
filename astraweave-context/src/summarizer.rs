@@ -726,6 +726,23 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn test_summarize_too_short() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default(); // min_conversation_length = 10
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        // Only 2 messages - should fail
+        let messages = vec![
+            Message::new(Role::User, "Hello".to_string()),
+            Message::new(Role::Assistant, "Hi".to_string()),
+        ];
+
+        let result = summarizer.summarize(&messages).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("too short"));
+    }
+
     #[test]
     fn test_topic_extraction() {
         let messages = vec![
@@ -775,11 +792,459 @@ mod tests {
     }
 
     #[test]
+    fn test_importance_calculation_empty() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let importance = summarizer.calculate_importance(&messages);
+        assert_eq!(importance, 0.5); // Default when weight_sum is 0
+    }
+
+    #[test]
+    fn test_importance_calculation_all_roles() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages = vec![
+            Message::new(Role::System, "System message".to_string()),
+            Message::new(Role::User, "User message".to_string()),
+            Message::new(Role::Assistant, "Assistant message".to_string()),
+            Message::new(Role::Function, "Function result".to_string()),
+            Message::new(Role::Agent(1), "Agent message".to_string()),
+        ];
+
+        let importance = summarizer.calculate_importance(&messages);
+        assert!(importance > 0.0);
+        assert!(importance <= 1.0);
+    }
+
+    #[test]
+    fn test_importance_calculation_preserved_message() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        // Test with preserved vs non-preserved messages
+        let preserved_msgs = vec![
+            Message::new_preserved(Role::User, "Critical info".to_string()),
+        ];
+        let normal_msgs = vec![
+            Message::new(Role::User, "Regular info".to_string()),
+        ];
+
+        let preserved_importance = summarizer.calculate_importance(&preserved_msgs);
+        let normal_importance = summarizer.calculate_importance(&normal_msgs);
+        
+        // Preserved messages should have higher importance
+        assert!(preserved_importance >= normal_importance);
+    }
+
+    #[test]
+    fn test_importance_calculation_long_content() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let short_msg = vec![Message::new(Role::User, "Short".to_string())];
+        let long_msg = vec![Message::new(Role::User, "A".repeat(2000))]; // 2000 chars
+
+        let short_importance = summarizer.calculate_importance(&short_msg);
+        let long_importance = summarizer.calculate_importance(&long_msg);
+
+        // Longer content should have higher importance (up to a point)
+        assert!(long_importance >= short_importance);
+    }
+
+    #[test]
     fn test_common_word_detection() {
         assert!(is_common_word("the"));
         assert!(is_common_word("and"));
         assert!(is_common_word("for"));
         assert!(!is_common_word("artificial"));
         assert!(!is_common_word("intelligence"));
+    }
+
+    #[test]
+    fn test_common_word_detection_all_words() {
+        // Test a sampling of common words from the list
+        let common_words = [
+            "the", "and", "for", "are", "but", "not", "you", "all", "can", "had",
+            "her", "was", "one", "our", "out", "day", "get", "has", "him", "his",
+            "how", "its", "may", "new", "now", "old", "see", "two", "way", "who",
+            "boy", "did", "she", "use", "your", "said", "each", "make", "most",
+            "over", "some", "time", "very", "when", "come", "here", "just", "like",
+            "long", "many", "such", "take", "than", "them", "well", "were", "will",
+            "with", "have", "this", "that", "from", "they", "know", "want", "been",
+            "good", "much", "work", "life", "only", "think", "also", "back", "after",
+            "first", "year", "where",
+        ];
+
+        for word in common_words {
+            assert!(is_common_word(word), "Expected '{}' to be common", word);
+        }
+    }
+
+    #[test]
+    fn test_clean_summary() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let dirty = "  Line 1  \n\n  Line 2  \n  Line 3  ";
+        let cleaned = summarizer.clean_summary(dirty);
+        assert_eq!(cleaned, "Line 1 Line 2 Line 3");
+    }
+
+    #[test]
+    fn test_clean_summary_empty_lines() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let with_empty = "First\n\n\n\nSecond";
+        let cleaned = summarizer.clean_summary(with_empty);
+        assert_eq!(cleaned, "First Second");
+    }
+
+    #[test]
+    fn test_clean_summary_whitespace_only() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let whitespace = "   \n   \n   ";
+        let cleaned = summarizer.clean_summary(whitespace);
+        assert_eq!(cleaned, "");
+    }
+
+    #[test]
+    fn test_calculate_metadata() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let mut messages = vec![
+            Message::new(Role::User, "First message".to_string()),
+            Message::new(Role::Assistant, "Second message".to_string()),
+        ];
+        // Set token counts
+        messages[0].token_count = 10;
+        messages[1].token_count = 15;
+        messages[0].timestamp = 1000;
+        messages[1].timestamp = 2000;
+
+        let metadata = summarizer.calculate_metadata(&messages, 5);
+
+        assert_eq!(metadata.original_message_count, 2);
+        assert_eq!(metadata.original_token_count, 25);
+        assert_eq!(metadata.time_range, (1000, 2000));
+        assert!(metadata.participants.contains(&Role::User));
+        assert!(metadata.participants.contains(&Role::Assistant));
+        assert!((metadata.compression_ratio - 5.0).abs() < 0.01); // 25/5 = 5.0
+    }
+
+    #[test]
+    fn test_calculate_metadata_empty_messages() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let metadata = summarizer.calculate_metadata(&messages, 10);
+
+        assert_eq!(metadata.original_message_count, 0);
+        assert_eq!(metadata.original_token_count, 0);
+        assert_eq!(metadata.time_range, (0, 0));
+        assert!(metadata.participants.is_empty());
+    }
+
+    #[test]
+    fn test_calculate_metadata_zero_summary_tokens() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let mut messages = vec![Message::new(Role::User, "Test".to_string())];
+        messages[0].token_count = 10;
+
+        let metadata = summarizer.calculate_metadata(&messages, 0);
+        assert_eq!(metadata.compression_ratio, 1.0); // Fallback to 1.0 when summary_tokens = 0
+    }
+
+    #[test]
+    fn test_extract_simple_topics_empty() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let topics = summarizer.extract_simple_topics(&messages);
+        assert!(topics.is_empty());
+    }
+
+    #[test]
+    fn test_extract_simple_topics_short_words_filtered() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages = vec![
+            Message::new(Role::User, "I am a AI".to_string()), // "I", "am", "a", "AI" all <= 3 chars
+        ];
+        let topics = summarizer.extract_simple_topics(&messages);
+        // Should not include short words
+        assert!(!topics.contains(&"i".to_string()));
+        assert!(!topics.contains(&"am".to_string()));
+        assert!(!topics.contains(&"a".to_string()));
+    }
+
+    #[test]
+    fn test_extract_simple_topics_frequency() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages = vec![
+            Message::new(Role::User, "programming programming programming coding".to_string()),
+            Message::new(Role::Assistant, "programming is great for coding".to_string()),
+        ];
+        let topics = summarizer.extract_simple_topics(&messages);
+        
+        // "programming" appears 4 times, should be first
+        if !topics.is_empty() {
+            // Most frequent word should be near the top
+            assert!(topics.iter().any(|t| t == "programming" || t == "coding"));
+        }
+    }
+
+    #[test]
+    fn test_summarizer_config_default() {
+        let config = SummarizerConfig::default();
+        assert_eq!(config.max_input_tokens, 8192);
+        assert_eq!(config.target_summary_tokens, 512);
+        assert!(matches!(config.strategy, SummaryStrategy::Comprehensive));
+        assert!(config.custom_prompt.is_none());
+        assert!(config.preserve_important);
+        assert_eq!(config.min_conversation_length, 10);
+        assert!((config.temperature - 0.3).abs() < 0.01);
+        assert_eq!(config.encoding_model, "cl100k_base");
+    }
+
+    #[test]
+    fn test_build_summary_prompt_key_points() {
+        let llm_client = Arc::new(MockLlm);
+        let mut config = SummarizerConfig::default();
+        config.strategy = SummaryStrategy::KeyPoints;
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let prompt = summarizer.build_summary_prompt("test conversation", &messages).unwrap();
+        assert!(prompt.contains("key points"));
+        assert!(prompt.contains("test conversation"));
+    }
+
+    #[test]
+    fn test_build_summary_prompt_narrative() {
+        let llm_client = Arc::new(MockLlm);
+        let mut config = SummarizerConfig::default();
+        config.strategy = SummaryStrategy::Narrative;
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let prompt = summarizer.build_summary_prompt("test", &messages).unwrap();
+        assert!(prompt.contains("narrative"));
+    }
+
+    #[test]
+    fn test_build_summary_prompt_dialogue() {
+        let llm_client = Arc::new(MockLlm);
+        let mut config = SummarizerConfig::default();
+        config.strategy = SummaryStrategy::Dialogue;
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let prompt = summarizer.build_summary_prompt("test", &messages).unwrap();
+        assert!(prompt.contains("dialogue"));
+    }
+
+    #[test]
+    fn test_build_summary_prompt_custom() {
+        let llm_client = Arc::new(MockLlm);
+        let mut config = SummarizerConfig::default();
+        config.custom_prompt = Some("Custom instruction here".to_string());
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let prompt = summarizer.build_summary_prompt("conversation text", &messages).unwrap();
+        assert!(prompt.contains("Custom instruction here"));
+        assert!(prompt.contains("conversation text"));
+    }
+
+    #[test]
+    fn test_build_summary_prompt_preserve_important() {
+        let llm_client = Arc::new(MockLlm);
+        let mut config = SummarizerConfig::default();
+        config.preserve_important = true;
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let prompt = summarizer.build_summary_prompt("test", &messages).unwrap();
+        assert!(prompt.contains("Preserve"));
+    }
+
+    #[test]
+    fn test_build_summary_prompt_no_preserve() {
+        let llm_client = Arc::new(MockLlm);
+        let mut config = SummarizerConfig::default();
+        config.preserve_important = false;
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages: Vec<Message> = vec![];
+        let prompt = summarizer.build_summary_prompt("test", &messages).unwrap();
+        // Should not contain preserve instruction when disabled
+        assert!(!prompt.contains("Preserve any critical"));
+    }
+
+    #[test]
+    fn test_build_conversation_text() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages = vec![
+            Message::new(Role::User, "Hello".to_string()),
+            Message::new(Role::Assistant, "Hi there".to_string()),
+        ];
+
+        let text = summarizer.build_conversation_text(&messages).unwrap();
+        assert!(text.contains("Hello"));
+        assert!(text.contains("Hi there"));
+    }
+
+    #[test]
+    fn test_metrics_initial() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let metrics = summarizer.get_metrics();
+        assert_eq!(metrics.total_summarizations, 0);
+        assert_eq!(metrics.total_input_tokens, 0);
+        assert_eq!(metrics.total_output_tokens, 0);
+        assert_eq!(metrics.avg_compression_ratio, 0.0);
+        assert_eq!(metrics.avg_summarization_time_ms, 0.0);
+        assert_eq!(metrics.successful_summarizations, 0);
+        assert_eq!(metrics.failed_summarizations, 0);
+    }
+
+    #[test]
+    fn test_update_metrics_failed() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        // Call the update_metrics_failed method
+        summarizer.update_metrics_failed();
+
+        let metrics = summarizer.get_metrics();
+        assert_eq!(metrics.total_summarizations, 1);
+        assert_eq!(metrics.failed_summarizations, 1);
+        assert_eq!(metrics.successful_summarizations, 0);
+    }
+
+    #[test]
+    fn test_summary_strategy_variants() {
+        // Just ensure all variants exist and can be matched
+        let strategies = [
+            SummaryStrategy::KeyPoints,
+            SummaryStrategy::Narrative,
+            SummaryStrategy::Comprehensive,
+            SummaryStrategy::Dialogue,
+            SummaryStrategy::Custom,
+        ];
+
+        for strategy in strategies {
+            match strategy {
+                SummaryStrategy::KeyPoints => {}
+                SummaryStrategy::Narrative => {}
+                SummaryStrategy::Comprehensive => {}
+                SummaryStrategy::Dialogue => {}
+                SummaryStrategy::Custom => {}
+            }
+        }
+    }
+
+    #[test]
+    fn test_conversation_summary_struct() {
+        let summary = ConversationSummary {
+            id: "test-id".to_string(),
+            summary: "Test summary".to_string(),
+            metadata: SummaryMetadata {
+                original_message_count: 10,
+                original_token_count: 100,
+                time_range: (0, 1000),
+                participants: vec![Role::User, Role::Assistant],
+                topics: vec!["topic1".to_string()],
+                compression_ratio: 2.5,
+            },
+            token_count: 40,
+            created_at: 12345,
+            importance: 0.8,
+        };
+
+        assert_eq!(summary.id, "test-id");
+        assert_eq!(summary.summary, "Test summary");
+        assert_eq!(summary.token_count, 40);
+        assert_eq!(summary.created_at, 12345);
+        assert!((summary.importance - 0.8).abs() < 0.01);
+        assert_eq!(summary.metadata.original_message_count, 10);
+    }
+
+    #[test]
+    fn test_summarizer_metrics_struct() {
+        let metrics = SummarizerMetrics {
+            total_summarizations: 100,
+            total_input_tokens: 50000,
+            total_output_tokens: 5000,
+            avg_compression_ratio: 10.0,
+            avg_summarization_time_ms: 150.0,
+            successful_summarizations: 95,
+            failed_summarizations: 5,
+        };
+
+        assert_eq!(metrics.total_summarizations, 100);
+        assert_eq!(metrics.total_input_tokens, 50000);
+        assert_eq!(metrics.total_output_tokens, 5000);
+        assert!((metrics.avg_compression_ratio - 10.0).abs() < 0.01);
+        assert!((metrics.avg_summarization_time_ms - 150.0).abs() < 0.01);
+        assert_eq!(metrics.successful_summarizations, 95);
+        assert_eq!(metrics.failed_summarizations, 5);
+    }
+
+    #[tokio::test]
+    async fn test_extract_topics_async() {
+        let llm_client = Arc::new(MockLlm);
+        let config = SummarizerConfig::default();
+        let summarizer = ConversationSummarizer::new(llm_client, config);
+
+        let messages = vec![
+            Message::new(Role::User, "Let's discuss programming".to_string()),
+        ];
+
+        // This will use the MockLlm which returns a simple response
+        let result = summarizer.extract_topics(&messages).await;
+        // The result depends on MockLlm output - just check it doesn't panic
+        match result {
+            Ok(topics) => {
+                // Topics should be a vec (possibly empty if parsing fails)
+                println!("Extracted topics: {:?}", topics);
+            }
+            Err(e) => {
+                println!("Topic extraction error (may be expected): {}", e);
+            }
+        }
     }
 }

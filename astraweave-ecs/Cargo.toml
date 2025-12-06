@@ -16,6 +16,7 @@ tracy-client = { version = "0.18", optional = true }
 [features]
 profiling = ["astraweave-profiling/profiling", "tracy-client", "tracy-client/enable"]
 loom = []
+alloc-counter = []
 
 [dev-dependencies]
 serde = { workspace = true, features = ["derive"] }

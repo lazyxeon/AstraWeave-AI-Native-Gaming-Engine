@@ -1,6 +1,8 @@
 use astraweave_llm::compression::PromptCompressor;
 use astraweave_llm::few_shot::{FewShotExample, FewShotRegistry};
+#[cfg(feature = "ollama")]
 use astraweave_llm::hermes2pro_ollama::Hermes2ProOllama;
+#[cfg(feature = "ollama")]
 use astraweave_llm::phi3_ollama::Phi3Ollama;
 
 #[test]
@@ -53,8 +55,10 @@ fn test_few_shot_token_budgeting() {
     });
 
     registry.add_example(FewShotExample {
-        input: "Very long prompt with a lot of details and context that takes up many tokens".to_string(),
-        output: "Very long response with a lot of details and context that takes up many tokens".to_string(),
+        input: "Very long prompt with a lot of details and context that takes up many tokens"
+            .to_string(),
+        output: "Very long response with a lot of details and context that takes up many tokens"
+            .to_string(),
         reasoning: "Long reasoning".to_string(),
         tags: vec!["long".to_string()],
     });
@@ -75,6 +79,7 @@ fn test_few_shot_token_budgeting() {
 }
 
 #[test]
+#[cfg(feature = "ollama")]
 fn test_phi3_variants() {
     // Test Fast variant
     let fast = Phi3Ollama::fast();
@@ -90,6 +95,7 @@ fn test_phi3_variants() {
 }
 
 #[test]
+#[cfg(feature = "ollama")]
 fn test_hermes2pro_variants() {
     // Test Fast variant
     let fast = Hermes2ProOllama::fast();

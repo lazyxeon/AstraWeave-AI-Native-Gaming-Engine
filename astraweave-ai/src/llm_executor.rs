@@ -172,24 +172,20 @@ impl LlmExecutor {
     pub fn generate_plan_async(&self, snap: WorldSnapshot) -> AsyncTask<Result<PlanIntent>> {
         let orchestrator = Arc::clone(&self.orchestrator);
 
-        // Spawn blocking task (LLM inference is CPU-bound, not I/O-bound)
-        let handle = self.runtime.spawn_blocking(move || {
-            // Create a nested runtime for the async orchestrator
-            // This is safe because we're in spawn_blocking (dedicated thread)
-            let rt = tokio::runtime::Runtime::new()
-                .expect("Failed to create nested runtime for LLM inference");
+        // Spawn async task directly on the runtime
+        // NOTE: We assume the orchestrator is primarily I/O bound (waiting for LLM API)
+        // or properly yields if CPU bound. This avoids the overhead of creating a new
+        // Runtime for every request.
+        let handle = self.runtime.spawn(async move {
+            // Call the orchestrator with default budget (60s from env or config)
+            // Budget is handled internally by orchestrator (Phase 7 timeout logic)
+            let budget_ms = std::env::var("LLM_TIMEOUT_MS")
+                .ok()
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(60_000); // Default 60s
 
-            rt.block_on(async move {
-                // Call the orchestrator with default budget (60s from env or config)
-                // Budget is handled internally by orchestrator (Phase 7 timeout logic)
-                let budget_ms = std::env::var("LLM_TIMEOUT_MS")
-                    .ok()
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or(60_000); // Default 60s
-
-                // Convert Result to PlanIntent directly (propagate error via AsyncTask)
-                orchestrator.plan(snap, budget_ms).await
-            })
+            // Convert Result to PlanIntent directly (propagate error via AsyncTask)
+            orchestrator.plan(snap, budget_ms).await
         });
 
         // Map JoinHandle<Result<PlanIntent>> to AsyncTask<PlanIntent>

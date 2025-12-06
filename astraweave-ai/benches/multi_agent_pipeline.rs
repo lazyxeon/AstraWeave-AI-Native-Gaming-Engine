@@ -36,7 +36,6 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
             pos: IVec2 {
                 x: 50 + (i as i32) * 5,
                 y: 50 + (i as i32) * 5,
-            physics_context: None,
             },
             hp: 80,
             cover: "none".to_string(),
@@ -51,7 +50,6 @@ fn create_agent_snapshot(agent_id: usize, agent_pos: IVec2, enemy_count: usize) 
             cooldowns: BTreeMap::new(),
             morale: 1.0,
             pos: agent_pos,
-        physics_context: None,
         },
         player: PlayerState {
             hp: 100,

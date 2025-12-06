@@ -25,7 +25,6 @@ fn create_scalable_snapshot(enemy_count: usize) -> WorldSnapshot {
             pos: IVec2 {
                 x: 60 + (i % 10) as i32,
                 y: 60 + (i / 10) as i32,
-            physics_context: None,
             },
             hp: 100,
             cover: if i % 2 == 0 { "low" } else { "high" }.to_string(),
@@ -56,7 +55,7 @@ fn create_scalable_snapshot(enemy_count: usize) -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
-            physics_context: None,
+
             pos: IVec2 { x: 50, y: 50 },
         },
         player: PlayerState {
@@ -80,7 +79,7 @@ fn create_simple_snapshot() -> WorldSnapshot {
             ammo: 10,
             cooldowns: BTreeMap::new(),
             morale: 1.0,
-            physics_context: None,
+
             pos: IVec2 { x: 5, y: 5 },
         },
         player: PlayerState {
@@ -97,8 +96,7 @@ fn create_simple_snapshot() -> WorldSnapshot {
 }
 
 /// Helper to create a moderate WorldSnapshot with some entities
-fn create_moderate_snapshot() -> WorldSnapshot {,
-    physics_context: None,
+fn create_moderate_snapshot() -> WorldSnapshot {
     use astraweave_core::{EnemyState, Poi};
 
     WorldSnapshot {
@@ -109,8 +107,7 @@ fn create_moderate_snapshot() -> WorldSnapshot {,
                 let mut map = BTreeMap::new();
                 map.insert("grenade".to_string(), 2.5);
                 map.insert("heal".to_string(), 0.5);
-                map,
-            physics_context: None,
+                map
             },
             morale: 0.7,
             pos: IVec2 { x: 10, y: 12 },
@@ -157,8 +154,7 @@ fn create_moderate_snapshot() -> WorldSnapshot {,
 }
 
 /// Helper to create a complex WorldSnapshot with many entities
-fn create_complex_snapshot() -> WorldSnapshot {,
-    physics_context: None,
+fn create_complex_snapshot() -> WorldSnapshot {
     use astraweave_core::{EnemyState, Poi};
 
     let mut enemies = vec![];
@@ -204,8 +200,7 @@ fn create_complex_snapshot() -> WorldSnapshot {,
                 map.insert("heal".to_string(), 3.0);
                 map.insert("sprint".to_string(), 1.5);
                 map.insert("special_ability".to_string(), 10.0);
-                map,
-            physics_context: None,
+                map
             },
             morale: 0.4,
             pos: IVec2 { x: 15, y: 20 },

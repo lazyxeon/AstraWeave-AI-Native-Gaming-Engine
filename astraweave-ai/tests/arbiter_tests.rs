@@ -109,7 +109,7 @@ mod arbiter_integration_tests {
             t: 1.234,
             player: PlayerState {
                 hp: 80,
-                physics_context: None,
+
                 pos: IVec2 { x: 0, y: 0 },
                 stance: "stand".into(),
                 orders: vec![],

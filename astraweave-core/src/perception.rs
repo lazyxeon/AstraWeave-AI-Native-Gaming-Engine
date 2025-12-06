@@ -76,7 +76,6 @@ pub fn build_snapshot(
         }],
         obstacles: w.obstacles.iter().map(|&(x, y)| IVec2 { x, y }).collect(),
         objective,
-        physics_context: None,
     }
 }
 

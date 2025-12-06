@@ -452,4 +452,635 @@ mod tests {
         let results = engine.find_similar(&target_memory, &all_memories).unwrap();
         assert!(!results.is_empty());
     }
+
+    // ==================== NEW COMPREHENSIVE TESTS ====================
+
+    #[test]
+    fn test_retrieval_config_default_values() {
+        let config = RetrievalConfig::default();
+        
+        assert_eq!(config.max_results, 10);
+        assert_eq!(config.relevance_threshold, 0.3);
+        assert_eq!(config.semantic_weight, 0.6);
+        assert_eq!(config.temporal_weight, 0.2);
+        assert_eq!(config.associative_weight, 0.2);
+        assert!(config.recency_boost);
+        assert!(config.follow_associations);
+    }
+
+    #[test]
+    fn test_retrieval_config_custom() {
+        let config = RetrievalConfig {
+            max_results: 20,
+            relevance_threshold: 0.5,
+            semantic_weight: 0.8,
+            temporal_weight: 0.1,
+            associative_weight: 0.1,
+            recency_boost: false,
+            follow_associations: false,
+        };
+        
+        let engine = RetrievalEngine::new(config);
+        assert_eq!(engine.config.max_results, 20);
+        assert_eq!(engine.config.relevance_threshold, 0.5);
+        assert!(!engine.config.recency_boost);
+    }
+
+    #[test]
+    fn test_retrieval_config_serialization() {
+        let config = RetrievalConfig::default();
+        let json = serde_json::to_string(&config).unwrap();
+        let deserialized: RetrievalConfig = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(config.max_results, deserialized.max_results);
+        assert_eq!(config.semantic_weight, deserialized.semantic_weight);
+    }
+
+    #[test]
+    fn test_retrieval_result_serialization() {
+        let memory = Memory::sensory("Test".to_string(), None);
+        let result = RetrievalResult {
+            memory,
+            relevance_score: 0.8,
+            score_breakdown: ScoreBreakdown {
+                semantic_score: 0.9,
+                temporal_score: 0.5,
+                associative_score: 0.3,
+                importance_score: 0.7,
+                recency_score: 0.6,
+            },
+            retrieval_path: RetrievalPath::Direct,
+        };
+        
+        let json = serde_json::to_string(&result).unwrap();
+        let deserialized: RetrievalResult = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(result.relevance_score, deserialized.relevance_score);
+        assert_eq!(result.score_breakdown.semantic_score, deserialized.score_breakdown.semantic_score);
+    }
+
+    #[test]
+    fn test_score_breakdown_serialization() {
+        let breakdown = ScoreBreakdown {
+            semantic_score: 0.9,
+            temporal_score: 0.5,
+            associative_score: 0.3,
+            importance_score: 0.7,
+            recency_score: 0.6,
+        };
+        
+        let json = serde_json::to_string(&breakdown).unwrap();
+        let deserialized: ScoreBreakdown = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(breakdown.semantic_score, deserialized.semantic_score);
+        assert_eq!(breakdown.temporal_score, deserialized.temporal_score);
+        assert_eq!(breakdown.associative_score, deserialized.associative_score);
+        assert_eq!(breakdown.importance_score, deserialized.importance_score);
+        assert_eq!(breakdown.recency_score, deserialized.recency_score);
+    }
+
+    #[test]
+    fn test_retrieval_path_direct() {
+        let path = RetrievalPath::Direct;
+        let json = serde_json::to_string(&path).unwrap();
+        let deserialized: RetrievalPath = serde_json::from_str(&json).unwrap();
+        assert!(matches!(deserialized, RetrievalPath::Direct));
+    }
+
+    #[test]
+    fn test_retrieval_path_associative() {
+        let path = RetrievalPath::Associative {
+            source_memory_id: "memory_123".to_string(),
+        };
+        let json = serde_json::to_string(&path).unwrap();
+        let deserialized: RetrievalPath = serde_json::from_str(&json).unwrap();
+        
+        if let RetrievalPath::Associative { source_memory_id } = deserialized {
+            assert_eq!(source_memory_id, "memory_123");
+        } else {
+            panic!("Expected Associative path");
+        }
+    }
+
+    #[test]
+    fn test_retrieval_path_temporal() {
+        let time = chrono::Utc::now();
+        let path = RetrievalPath::Temporal { reference_time: time };
+        let json = serde_json::to_string(&path).unwrap();
+        let deserialized: RetrievalPath = serde_json::from_str(&json).unwrap();
+        
+        if let RetrievalPath::Temporal { reference_time } = deserialized {
+            assert_eq!(reference_time, time);
+        } else {
+            panic!("Expected Temporal path");
+        }
+    }
+
+    #[test]
+    fn test_retrieval_path_cluster() {
+        let path = RetrievalPath::Cluster {
+            cluster_id: "cluster_456".to_string(),
+        };
+        let json = serde_json::to_string(&path).unwrap();
+        let deserialized: RetrievalPath = serde_json::from_str(&json).unwrap();
+        
+        if let RetrievalPath::Cluster { cluster_id } = deserialized {
+            assert_eq!(cluster_id, "cluster_456");
+        } else {
+            panic!("Expected Cluster path");
+        }
+    }
+
+    #[test]
+    fn test_semantic_similarity_exact_match() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let similarity = engine.calculate_semantic_similarity("hello world", "hello world");
+        assert_eq!(similarity, 1.0);
+    }
+
+    #[test]
+    fn test_semantic_similarity_no_match() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let similarity = engine.calculate_semantic_similarity("apple banana", "cat dog");
+        assert_eq!(similarity, 0.0);
+    }
+
+    #[test]
+    fn test_semantic_similarity_partial_match() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let similarity = engine.calculate_semantic_similarity("hello world", "hello there");
+        assert!(similarity > 0.0 && similarity < 1.0);
+    }
+
+    #[test]
+    fn test_semantic_similarity_empty_query() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let similarity = engine.calculate_semantic_similarity("", "hello world");
+        assert_eq!(similarity, 0.0);
+    }
+
+    #[test]
+    fn test_semantic_similarity_empty_content() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let similarity = engine.calculate_semantic_similarity("hello world", "");
+        assert_eq!(similarity, 0.0);
+    }
+
+    #[test]
+    fn test_semantic_similarity_case_insensitive() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let similarity = engine.calculate_semantic_similarity("HELLO WORLD", "hello world");
+        assert_eq!(similarity, 1.0);
+    }
+
+    #[test]
+    fn test_recency_score_calculation() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        // Recent memory should have higher score
+        let recent_memory = Memory::sensory("Recent".to_string(), None);
+        let recency_score = engine.calculate_recency_score(&recent_memory);
+        
+        // Score should be close to 1.0 for very recent memories
+        assert!(recency_score > 0.5);
+    }
+
+    #[test]
+    fn test_temporal_score_no_time_window() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let memory = Memory::sensory("Test".to_string(), None);
+        
+        let context = RetrievalContext {
+            query: "test".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let score = engine.calculate_temporal_score(&context, &memory);
+        assert_eq!(score, 0.5); // Neutral score when no time window
+    }
+
+    #[test]
+    fn test_temporal_score_within_window() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let memory = Memory::sensory("Test".to_string(), None);
+        
+        let now = chrono::Utc::now();
+        let context = RetrievalContext {
+            query: "test".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: Some(TimeWindow {
+                start: now - chrono::Duration::days(1),
+                end: now + chrono::Duration::days(1),
+            }),
+            limit: 10,
+        };
+        
+        let score = engine.calculate_temporal_score(&context, &memory);
+        assert_eq!(score, 1.0); // Perfect score when within window
+    }
+
+    #[test]
+    fn test_associative_score_no_associations() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let memory = Memory::sensory("Test".to_string(), None);
+        
+        let context = RetrievalContext {
+            query: "test".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec!["other_memory".to_string()],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let score = engine.calculate_associative_score(&context, &memory);
+        assert_eq!(score, 0.0);
+    }
+
+    #[test]
+    fn test_associative_score_with_associations() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        let mut memory = Memory::sensory("Test".to_string(), None);
+        memory.add_association(
+            "recent_memory".to_string(),
+            AssociationType::Conceptual,
+            0.8,
+        );
+        
+        let context = RetrievalContext {
+            query: "test".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec!["recent_memory".to_string()],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let score = engine.calculate_associative_score(&context, &memory);
+        assert_eq!(score, 0.8);
+    }
+
+    #[test]
+    fn test_calculate_relevance() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let memory = Memory::episodic(
+            "Went to the park".to_string(),
+            vec![],
+            Some("park".to_string()),
+        );
+        
+        let context = RetrievalContext {
+            query: "park visit".to_string(),
+            emotional_state: None,
+            location: Some("park".to_string()),
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let relevance = engine.calculate_relevance(&context, &memory).unwrap();
+        assert!(relevance >= 0.0 && relevance <= 1.0);
+    }
+
+    #[test]
+    fn test_calculate_score_breakdown() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let memory = Memory::sensory("Hello world".to_string(), None);
+        
+        let context = RetrievalContext {
+            query: "hello world".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let breakdown = engine.calculate_score_breakdown(&context, &memory).unwrap();
+        
+        assert_eq!(breakdown.semantic_score, 1.0); // Exact match
+        assert!(breakdown.recency_score >= 0.0 && breakdown.recency_score <= 1.0);
+        assert!(breakdown.importance_score >= 0.0 && breakdown.importance_score <= 1.0);
+    }
+
+    #[test]
+    fn test_retrieval_respects_limit() {
+        let config = RetrievalConfig {
+            max_results: 2,
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let memories: Vec<Memory> = (0..10)
+            .map(|i| Memory::episodic(format!("Event {} happened", i), vec![], None))
+            .collect();
+        
+        let context = RetrievalContext {
+            query: "event happened".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 5, // Higher than config max_results
+        };
+        
+        let results = engine.retrieve(&context, &memories).unwrap();
+        assert!(results.len() <= 2); // Should respect config.max_results
+    }
+
+    #[test]
+    fn test_retrieval_empty_memories() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        let memories: Vec<Memory> = vec![];
+        
+        let context = RetrievalContext {
+            query: "anything".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let results = engine.retrieve(&context, &memories).unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_retrieval_below_threshold() {
+        let config = RetrievalConfig {
+            relevance_threshold: 0.99, // Very high threshold
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let memories = vec![
+            Memory::semantic("Cats are animals".to_string(), "biology".to_string()),
+        ];
+        
+        let context = RetrievalContext {
+            query: "completely unrelated query xyz".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let results = engine.retrieve(&context, &memories).unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_retrieval_sorted_by_relevance() {
+        let config = RetrievalConfig {
+            relevance_threshold: 0.0, // Accept everything
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let memories = vec![
+            Memory::episodic("event".to_string(), vec![], None), // Less relevant (1 word)
+            Memory::episodic("event event event".to_string(), vec![], None), // More word matches
+        ];
+        
+        let context = RetrievalContext {
+            query: "event".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![MemoryType::Episodic],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let results = engine.retrieve(&context, &memories).unwrap();
+        
+        // Results should be sorted by relevance (descending)
+        for i in 1..results.len() {
+            assert!(results[i - 1].relevance_score >= results[i].relevance_score);
+        }
+    }
+
+    #[test]
+    fn test_find_similar_excludes_target() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        let target = Memory::episodic("Target memory".to_string(), vec![], None);
+        let target_clone = target.clone();
+        
+        let all_memories = vec![
+            target.clone(),
+            Memory::episodic("Similar memory".to_string(), vec![], None),
+        ];
+        
+        let results = engine.find_similar(&target_clone, &all_memories).unwrap();
+        
+        // Target memory should not be in results
+        assert!(!results.iter().any(|r| r.memory.id == target_clone.id));
+    }
+
+    #[test]
+    fn test_calculate_memory_similarity_same_type() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        let memory1 = Memory::episodic("Test content".to_string(), vec![], None);
+        let memory2 = Memory::episodic("Test content".to_string(), vec![], None);
+        
+        let similarity = engine.calculate_memory_similarity(&memory1, &memory2).unwrap();
+        
+        // Should have bonus for same type
+        assert!(similarity >= 0.5); // At least text + type bonus
+    }
+
+    #[test]
+    fn test_calculate_memory_similarity_same_location() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        let memory1 = Memory::episodic("Event 1".to_string(), vec![], Some("park".to_string()));
+        let memory2 = Memory::episodic("Event 2".to_string(), vec![], Some("park".to_string()));
+        
+        let similarity = engine.calculate_memory_similarity(&memory1, &memory2).unwrap();
+        
+        // Should have bonus for same location
+        assert!(similarity > 0.0);
+    }
+
+    #[test]
+    fn test_calculate_memory_similarity_shared_participants() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        let memory1 = Memory::episodic(
+            "Event with Alice".to_string(),
+            vec!["Alice".to_string(), "Bob".to_string()],
+            None,
+        );
+        let memory2 = Memory::episodic(
+            "Event with Alice".to_string(),
+            vec!["Alice".to_string(), "Charlie".to_string()],
+            None,
+        );
+        
+        let similarity = engine.calculate_memory_similarity(&memory1, &memory2).unwrap();
+        
+        // Should have bonus for shared participants
+        assert!(similarity > 0.0);
+    }
+
+    #[test]
+    fn test_calculate_memory_similarity_caps_at_one() {
+        let engine = RetrievalEngine::new(RetrievalConfig::default());
+        
+        // Create memories that would score very high
+        let memory1 = Memory::episodic(
+            "same content".to_string(),
+            vec!["Alice".to_string()],
+            Some("park".to_string()),
+        );
+        let memory2 = Memory::episodic(
+            "same content".to_string(),
+            vec!["Alice".to_string()],
+            Some("park".to_string()),
+        );
+        
+        let similarity = engine.calculate_memory_similarity(&memory1, &memory2).unwrap();
+        
+        assert!(similarity <= 1.0);
+    }
+
+    #[test]
+    fn test_retrieval_with_associations_disabled() {
+        let config = RetrievalConfig {
+            follow_associations: false,
+            relevance_threshold: 0.0,
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let mut memory1 = Memory::episodic("First event".to_string(), vec![], None);
+        let mut memory2 = Memory::episodic("Second event".to_string(), vec![], None);
+        
+        // Create bidirectional association
+        memory1.add_association(
+            memory2.id.clone(),
+            AssociationType::Conceptual,
+            0.9,
+        );
+        memory2.add_association(
+            memory1.id.clone(),
+            AssociationType::Conceptual,
+            0.9,
+        );
+        
+        let memories = vec![memory1, memory2];
+        
+        let context = RetrievalContext {
+            query: "first".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![MemoryType::Episodic],
+            time_window: None,
+            limit: 10,
+        };
+        
+        let results = engine.retrieve(&context, &memories).unwrap();
+        
+        // With associations disabled, should only get direct matches
+        // All results should have Direct retrieval path
+        for result in &results {
+            assert!(matches!(result.retrieval_path, RetrievalPath::Direct));
+        }
+    }
+
+    #[test]
+    fn test_retrieval_with_recency_boost_disabled() {
+        let config = RetrievalConfig {
+            recency_boost: false,
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let memory = Memory::sensory("Test".to_string(), None);
+        let context = RetrievalContext {
+            query: "test".to_string(),
+            emotional_state: None,
+            location: None,
+            recent_memory_ids: vec![],
+            preferred_types: vec![],
+            time_window: None,
+            limit: 10,
+        };
+        
+        // Should still calculate relevance, just without recency boost
+        let relevance = engine.calculate_relevance(&context, &memory).unwrap();
+        assert!(relevance >= 0.0);
+    }
+
+    #[test]
+    fn test_find_similar_respects_max_results() {
+        let config = RetrievalConfig {
+            max_results: 3,
+            relevance_threshold: 0.0, // Accept everything
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let target = Memory::episodic("Target".to_string(), vec![], None);
+        let all_memories: Vec<Memory> = (0..10)
+            .map(|i| Memory::episodic(format!("Memory {}", i), vec![], None))
+            .collect();
+        
+        let results = engine.find_similar(&target, &all_memories).unwrap();
+        assert!(results.len() <= 3);
+    }
+
+    #[test]
+    fn test_find_similar_sorted_by_similarity() {
+        let config = RetrievalConfig {
+            relevance_threshold: 0.0,
+            ..Default::default()
+        };
+        let engine = RetrievalEngine::new(config);
+        
+        let target = Memory::episodic(
+            "Meeting at the park".to_string(),
+            vec!["Alice".to_string()],
+            Some("park".to_string()),
+        );
+        
+        let all_memories = vec![
+            Memory::episodic("Random event".to_string(), vec![], None),
+            Memory::episodic(
+                "Meeting at the park".to_string(),
+                vec!["Alice".to_string()],
+                Some("park".to_string()),
+            ),
+            Memory::semantic("Facts".to_string(), "category".to_string()),
+        ];
+        
+        let results = engine.find_similar(&target, &all_memories).unwrap();
+        
+        // Results should be sorted by relevance (descending)
+        for i in 1..results.len() {
+            assert!(results[i - 1].relevance_score >= results[i].relevance_score);
+        }
+    }
 }
+

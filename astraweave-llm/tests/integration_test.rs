@@ -183,7 +183,6 @@ fn create_complex_scenario() -> WorldSnapshot {
         t: 42.5,
         player: PlayerState {
             hp: 85,
-            physics_context: None,
             pos: IVec2 { x: 10, y: 15 },
             stance: "crouch".into(),
             orders: vec!["hold_position".into(), "watch_six".into()],
@@ -380,7 +379,6 @@ fn create_scenario_with_single_obstacle() -> WorldSnapshot {
         t: 10.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],
@@ -409,7 +407,6 @@ fn create_scenario_with_multiple_obstacles() -> WorldSnapshot {
         t: 15.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],
@@ -444,7 +441,6 @@ fn create_scenario_with_surrounding_obstacles() -> WorldSnapshot {
         t: 20.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
             pos: IVec2 { x: 10, y: 10 },
             stance: "stand".into(),
             orders: vec![],
@@ -480,7 +476,6 @@ fn create_scenario_with_edge_obstacles() -> WorldSnapshot {
         t: 25.0,
         player: PlayerState {
             hp: 100,
-            physics_context: None,
             pos: IVec2 { x: 0, y: 0 },
             stance: "stand".into(),
             orders: vec![],

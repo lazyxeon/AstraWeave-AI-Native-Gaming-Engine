@@ -204,3 +204,269 @@ impl TemplateCollection {
         self.templates.remove(name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_prompt_library_new() {
+        let lib = PromptLibrary::new();
+        assert!(lib.list_templates().is_empty());
+    }
+
+    #[test]
+    fn test_prompt_library_add_and_get() {
+        let mut lib = PromptLibrary::new();
+        let template = crate::template::PromptTemplate::new("test".to_string(), "Hello {{name}}".to_string());
+        
+        lib.add_template("greeting", template);
+        
+        let result = lib.get_template("greeting");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_prompt_library_get_nonexistent() {
+        let lib = PromptLibrary::new();
+        let result = lib.get_template("nonexistent");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_prompt_library_delete_template() {
+        let mut lib = PromptLibrary::new();
+        let template = crate::template::PromptTemplate::new("test".to_string(), "content".to_string());
+        
+        lib.add_template("test", template);
+        assert!(!lib.list_templates().is_empty());
+        
+        let deleted = lib.delete_template("test");
+        assert!(deleted.is_some());
+        assert!(lib.list_templates().is_empty());
+    }
+
+    #[test]
+    fn test_prompt_library_delete_nonexistent() {
+        let mut lib = PromptLibrary::new();
+        let deleted = lib.delete_template("nonexistent");
+        assert!(deleted.is_none());
+    }
+
+    #[test]
+    fn test_prompt_library_list_templates() {
+        let mut lib = PromptLibrary::new();
+        
+        lib.add_template("a", crate::template::PromptTemplate::new("a".to_string(), "A".to_string()));
+        lib.add_template("b", crate::template::PromptTemplate::new("b".to_string(), "B".to_string()));
+        lib.add_template("c", crate::template::PromptTemplate::new("c".to_string(), "C".to_string()));
+        
+        let list = lib.list_templates();
+        assert_eq!(list.len(), 3);
+        assert!(list.contains(&"a".to_string()));
+        assert!(list.contains(&"b".to_string()));
+        assert!(list.contains(&"c".to_string()));
+    }
+
+    #[test]
+    fn test_template_collection_new() {
+        let meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            tags: vec!["test".to_string()],
+        };
+        let collection = TemplateCollection::new("test_collection".to_string(), meta);
+        assert!(collection.list_templates().is_empty());
+    }
+
+    #[test]
+    fn test_template_collection_add_and_get() {
+        let meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            tags: vec![],
+        };
+        let mut collection = TemplateCollection::new("test".to_string(), meta);
+        
+        collection.add_template("greeting".to_string(), "Hello {{name}}".to_string());
+        
+        let result = collection.get_template("greeting");
+        assert_eq!(result, Some(&"Hello {{name}}".to_string()));
+    }
+
+    #[test]
+    fn test_template_collection_get_nonexistent() {
+        let meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            tags: vec![],
+        };
+        let collection = TemplateCollection::new("test".to_string(), meta);
+        
+        let result = collection.get_template("nonexistent");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_template_collection_remove() {
+        let meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            tags: vec![],
+        };
+        let mut collection = TemplateCollection::new("test".to_string(), meta);
+        
+        collection.add_template("greeting".to_string(), "Hello".to_string());
+        
+        let removed = collection.remove_template("greeting");
+        assert_eq!(removed, Some("Hello".to_string()));
+        assert!(collection.get_template("greeting").is_none());
+    }
+
+    #[test]
+    fn test_template_collection_list() {
+        let meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            tags: vec![],
+        };
+        let mut collection = TemplateCollection::new("test".to_string(), meta);
+        
+        collection.add_template("a".to_string(), "A".to_string());
+        collection.add_template("b".to_string(), "B".to_string());
+        
+        let list = collection.list_templates();
+        assert_eq!(list.len(), 2);
+    }
+
+    #[test]
+    fn test_template_library_new() {
+        let meta = LibraryMetadata {
+            version: "1.0".to_string(),
+            description: "Test library".to_string(),
+            author: "Test".to_string(),
+            created_at: "2025-01-01".to_string(),
+        };
+        let library = TemplateLibrary::new("test_lib".to_string(), meta);
+        assert!(library.list_collections().is_empty());
+    }
+
+    #[test]
+    fn test_template_library_add_and_get_collection() {
+        let lib_meta = LibraryMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            author: "Test".to_string(),
+            created_at: "2025-01-01".to_string(),
+        };
+        let mut library = TemplateLibrary::new("lib".to_string(), lib_meta);
+        
+        let col_meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Coll".to_string(),
+            tags: vec![],
+        };
+        let collection = TemplateCollection::new("my_collection".to_string(), col_meta);
+        
+        library.add_collection(collection);
+        
+        let result = library.get_collection("my_collection");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_template_library_get_nonexistent_collection() {
+        let meta = LibraryMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            author: "Test".to_string(),
+            created_at: "2025-01-01".to_string(),
+        };
+        let library = TemplateLibrary::new("lib".to_string(), meta);
+        
+        let result = library.get_collection("nonexistent");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_template_library_list_collections() {
+        let lib_meta = LibraryMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            author: "Test".to_string(),
+            created_at: "2025-01-01".to_string(),
+        };
+        let mut library = TemplateLibrary::new("lib".to_string(), lib_meta);
+        
+        let col_meta1 = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "A".to_string(),
+            tags: vec![],
+        };
+        let col_meta2 = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "B".to_string(),
+            tags: vec![],
+        };
+        
+        library.add_collection(TemplateCollection::new("col1".to_string(), col_meta1));
+        library.add_collection(TemplateCollection::new("col2".to_string(), col_meta2));
+        
+        let list = library.list_collections();
+        assert_eq!(list.len(), 2);
+    }
+
+    #[test]
+    fn test_template_library_save_stub() {
+        let meta = LibraryMetadata {
+            version: "1.0".to_string(),
+            description: "Test".to_string(),
+            author: "Test".to_string(),
+            created_at: "2025-01-01".to_string(),
+        };
+        let library = TemplateLibrary::new("lib".to_string(), meta);
+        
+        // Stub should succeed
+        let result = library.save_to_directory(std::path::PathBuf::from("/tmp/test"));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_library_metadata_serialization() {
+        let meta = LibraryMetadata {
+            version: "2.0.0".to_string(),
+            description: "My library".to_string(),
+            author: "Developer".to_string(),
+            created_at: "2025-06-15".to_string(),
+        };
+        
+        let json = serde_json::to_string(&meta).unwrap();
+        let restored: LibraryMetadata = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(restored.version, "2.0.0");
+        assert_eq!(restored.author, "Developer");
+    }
+
+    #[test]
+    fn test_collection_metadata_serialization() {
+        let meta = CollectionMetadata {
+            version: "1.0".to_string(),
+            description: "Test collection".to_string(),
+            tags: vec!["ai".to_string(), "prompts".to_string()],
+        };
+        
+        let json = serde_json::to_string(&meta).unwrap();
+        let restored: CollectionMetadata = serde_json::from_str(&json).unwrap();
+        
+        assert_eq!(restored.tags.len(), 2);
+        assert!(restored.tags.contains(&"ai".to_string()));
+    }
+
+    #[test]
+    fn test_template_library_load_from_nonexistent_directory() {
+        let path = std::path::PathBuf::from("/nonexistent/path/xyz123");
+        let result = TemplateLibrary::load_from_directory(path);
+        // Should succeed with empty default collection
+        assert!(result.is_ok());
+    }
+}

@@ -13,10 +13,14 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 use crate::batch_executor::{AgentId, BatchInferenceExecutor};
+use crate::circuit_breaker::{CircuitBreakerConfig, CircuitBreakerManager};
+use crate::circuit_breaker_execute;
 use crate::compression::PromptCompressor;
+use crate::heuristics::HeuristicConfig;
 use crate::plan_parser::parse_llm_response;
 use crate::prompt_template::{build_enhanced_prompt, PromptConfig};
 use crate::LlmClient;
+use astraweave_core::metrics;
 
 /// Fallback tier levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -79,12 +83,15 @@ pub struct FallbackMetrics {
 pub struct FallbackOrchestrator {
     metrics: Arc<RwLock<FallbackMetrics>>,
     simplified_tools: Vec<String>, // Top 10 most common tools
+    heuristic_config: HeuristicConfig,
+    circuit_breaker: Arc<CircuitBreakerManager>,
 }
 
 impl FallbackOrchestrator {
     pub fn new() -> Self {
         Self {
             metrics: Arc::new(RwLock::new(FallbackMetrics::default())),
+            heuristic_config: HeuristicConfig::default(),
             // Simplified tier uses most common tools (grouped by parameter pattern)
             // NOTE: Tool names must match EXACTLY with registry (case-sensitive)
             simplified_tools: vec![
@@ -107,6 +114,7 @@ impl FallbackOrchestrator {
                 "Block".to_string(),
                 "Heal".to_string(),
             ],
+            circuit_breaker: Arc::new(CircuitBreakerManager::new(CircuitBreakerConfig::default())),
         }
     }
 
@@ -434,10 +442,14 @@ impl FallbackOrchestrator {
         };
 
         let prompt = build_enhanced_prompt(snap, reg, &config);
-        let response = client
-            .complete(&prompt)
-            .await
-            .context("LLM request failed")?;
+
+        let response = circuit_breaker_execute!(
+            self.circuit_breaker,
+            "full_llm",
+            client.complete(&prompt).await
+        )
+        .result
+        .context("LLM request failed (circuit breaker)")?;
 
         let parse_result =
             parse_llm_response(&response, reg).context("Failed to parse LLM response")?;
@@ -478,10 +490,14 @@ impl FallbackOrchestrator {
         // };
         // let prompt = build_simplified_prompt(snap, &simplified_reg);
 
-        let response = client
-            .complete(&prompt)
-            .await
-            .context("Simplified LLM request failed")?;
+        let prompt_len = prompt.len();
+        let response = circuit_breaker_execute!(
+            self.circuit_breaker,
+            "simplified_llm",
+            client.complete(&prompt).await
+        )
+        .result
+        .context("Simplified LLM request failed (circuit breaker)")?;
 
         let parse_result = parse_llm_response(&response, &simplified_reg)
             .context("Failed to parse simplified LLM response")?;
@@ -489,7 +505,7 @@ impl FallbackOrchestrator {
         debug!(
             "Simplified LLM succeeded: {} steps (compressed prompt: {} chars)",
             parse_result.plan.steps.len(),
-            prompt.len()
+            prompt_len
         );
 
         Ok(parse_result.plan)
@@ -499,61 +515,18 @@ impl FallbackOrchestrator {
     fn try_heuristic(&self, snap: &WorldSnapshot, reg: &ToolRegistry) -> PlanIntent {
         let mut steps = Vec::new();
 
-        // Heuristic 1: Low morale → Heal
-        if snap.me.morale < 30.0 && reg.tools.iter().any(|t| t.name == "heal") {
-            steps.push(ActionStep::Heal {
-                target_id: Some(0), // Self-heal
-            });
-        }
-
-        // Heuristic 2: No ammo → Reload
-        if snap.me.ammo == 0 && reg.tools.iter().any(|t| t.name == "reload") {
-            steps.push(ActionStep::Reload);
-        }
-
-        // Heuristic 3: Enemy nearby → Attack or Take Cover
-        if !snap.enemies.is_empty() {
-            let enemy = &snap.enemies[0];
-            let dx = (snap.me.pos.x - enemy.pos.x).abs();
-            let dy = (snap.me.pos.y - enemy.pos.y).abs();
-            let distance = dx.max(dy);
-
-            if distance <= 3 && reg.tools.iter().any(|t| t.name == "attack") {
-                steps.push(ActionStep::Attack {
-                    target_id: enemy.id,
-                });
-            } else if reg.tools.iter().any(|t| t.name == "take_cover") {
-                // Move 2 units away from enemy
-                let cover_x = if snap.me.pos.x > enemy.pos.x {
-                    snap.me.pos.x + 2
-                } else {
-                    snap.me.pos.x - 2
-                };
-                steps.push(ActionStep::TakeCover {
-                    position: Some(astraweave_core::IVec2 {
-                        x: cover_x,
-                        y: snap.me.pos.y,
-                    }),
-                });
+        // Evaluate rules from config
+        for rule in &self.heuristic_config.rules {
+            if let Some(action) = rule.evaluate(snap, reg) {
+                steps.push(action);
+                // For now, we only take the first matching rule to keep it simple
+                // In a more complex system, we might chain them
+                break;
             }
         }
 
-        // Heuristic 4: Objective exists → Move towards it
-        if let Some(obj_text) = &snap.objective {
-            if obj_text.contains("extract") || obj_text.contains("reach") {
-                if let Some(poi) = snap.pois.first() {
-                    if reg.tools.iter().any(|t| t.name == "move_to") {
-                        steps.push(ActionStep::MoveTo {
-                            x: poi.pos.x,
-                            y: poi.pos.y,
-                            speed: None,
-                        });
-                    }
-                }
-            }
-        }
-
-        // Heuristic 5: Nothing urgent → Scan area
+        // If no rules matched, ensure we don't return an empty plan (which might cause issues)
+        // The default config usually has a "Scan" fallback, but just in case:
         if steps.is_empty() && reg.tools.iter().any(|t| t.name == "scan") {
             steps.push(ActionStep::Scan { radius: 10.0 });
         }
@@ -625,6 +598,11 @@ impl FallbackOrchestrator {
             (metrics.average_attempts * (total - 1.0) + attempts.len() as f32) / total;
         metrics.average_duration_ms =
             (metrics.average_duration_ms * (total - 1.0) + duration_ms as f32) / total;
+
+        // Report to centralized metrics
+        metrics::increment("llm.plan.success");
+        metrics::increment(&format!("llm.plan.tier.{}.success", tier.as_str()));
+        metrics::histogram("llm.plan.duration", duration_ms as f64);
     }
 
     /// Get current metrics
@@ -833,7 +811,7 @@ Be concise. Use 1-3 steps maximum."#,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use astraweave_core::{CompanionState, Constraints, PlayerState, ToolSpec};
+    use astraweave_core::{CompanionState, Constraints, IVec2, PlayerState, ToolSpec};
     use async_trait::async_trait;
     use std::collections::BTreeMap;
 
@@ -856,17 +834,20 @@ mod tests {
         }
     }
 
-    fn create_test_snapshot() -> WorldSnapshot {
+    fn create_test_snapshot(agent_id: AgentId) -> WorldSnapshot {
         WorldSnapshot {
             t: 0.0,
             player: PlayerState {
-                pos: astraweave_core::IVec2 { x: 0, y: 0 },
                 hp: 100,
-                stance: "standing".to_string(),
+                pos: IVec2 { x: 2, y: 2 },
+                stance: "stand".into(),
                 orders: vec![],
             },
             me: CompanionState {
-                pos: astraweave_core::IVec2 { x: 1, y: 1 },
+                pos: IVec2 {
+                    x: agent_id as i32 * 2,
+                    y: agent_id as i32 * 2,
+                },
                 ammo: 10,
                 morale: 75.0,
                 cooldowns: BTreeMap::new(),
@@ -875,7 +856,6 @@ mod tests {
             pois: vec![],
             obstacles: vec![],
             objective: Some("Scan area".to_string()),
-            physics_context: None,
         }
     }
 
@@ -929,7 +909,7 @@ mod tests {
         };
 
         let orchestrator = FallbackOrchestrator::new();
-        let snap = create_test_snapshot();
+        let snap = create_test_snapshot(1);
         let reg = create_test_registry();
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
@@ -950,7 +930,7 @@ mod tests {
         };
 
         let orchestrator = FallbackOrchestrator::new();
-        let snap = create_test_snapshot();
+        let snap = create_test_snapshot(1);
         let reg = create_test_registry();
 
         let result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;
@@ -965,7 +945,7 @@ mod tests {
     #[tokio::test]
     async fn test_heuristic_low_morale() {
         let orchestrator = FallbackOrchestrator::new();
-        let mut snap = create_test_snapshot();
+        let mut snap = create_test_snapshot(1);
         snap.me.morale = 20.0; // Low morale
         let reg = create_test_registry();
 
@@ -981,7 +961,7 @@ mod tests {
     #[tokio::test]
     async fn test_heuristic_no_ammo() {
         let orchestrator = FallbackOrchestrator::new();
-        let mut snap = create_test_snapshot();
+        let mut snap = create_test_snapshot(1);
         snap.me.ammo = 0;
         let reg = create_test_registry();
 
@@ -994,7 +974,7 @@ mod tests {
     #[tokio::test]
     async fn test_emergency_always_succeeds() {
         let orchestrator = FallbackOrchestrator::new();
-        let snap = create_test_snapshot();
+        let snap = create_test_snapshot(1);
 
         let plan = orchestrator.emergency_plan(&snap);
 
@@ -1011,7 +991,7 @@ mod tests {
         };
 
         let orchestrator = FallbackOrchestrator::new();
-        let snap = create_test_snapshot();
+        let snap = create_test_snapshot(1);
         let reg = create_test_registry();
 
         orchestrator.plan_with_fallback(&client, &snap, &reg).await;
@@ -1083,9 +1063,9 @@ mod tests {
         let reg = create_test_registry();
 
         let agents = vec![
-            (1, create_test_snapshot()),
-            (2, create_test_snapshot()),
-            (3, create_test_snapshot()),
+            (1, create_test_snapshot(1)),
+            (2, create_test_snapshot(1)),
+            (3, create_test_snapshot(1)),
         ];
 
         let results = orchestrator
@@ -1115,9 +1095,9 @@ mod tests {
 
         for _ in 0..3 {
             let agents = vec![
-                (3, create_test_snapshot()),
-                (1, create_test_snapshot()),
-                (2, create_test_snapshot()),
+                (3, create_test_snapshot(1)),
+                (1, create_test_snapshot(1)),
+                (2, create_test_snapshot(1)),
             ];
 
             let results = orchestrator
@@ -1172,7 +1152,7 @@ mod tests {
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
 
-        let agents = vec![(1, create_test_snapshot()), (2, create_test_snapshot())];
+        let agents = vec![(1, create_test_snapshot(1)), (2, create_test_snapshot(1))];
 
         let results = orchestrator
             .plan_batch_with_fallback(&client, agents, &reg)
@@ -1192,7 +1172,7 @@ mod tests {
         let client = MockBatchLlm::for_agents(1);
         let orchestrator = FallbackOrchestrator::new();
         let reg = create_test_registry();
-        let snap = create_test_snapshot();
+        let snap = create_test_snapshot(1);
 
         // Run single-agent planning
         let single_result = orchestrator.plan_with_fallback(&client, &snap, &reg).await;

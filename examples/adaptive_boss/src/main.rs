@@ -34,7 +34,6 @@ fn main() -> anyhow::Result<()> {
         pois: vec![],
         obstacles: vec![],
         objective: Some("defeat_boss".into()),
-        physics_context: None,
     };
 
     let mut budget = DirectorBudget {

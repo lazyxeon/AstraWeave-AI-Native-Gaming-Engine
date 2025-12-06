@@ -321,7 +321,6 @@ fn create_test_scenario() -> WorldSnapshot {
         ],
         obstacles: vec![],
         objective: Some("Reach extraction point while providing cover".into()),
-        physics_context: None,
     }
 }
 

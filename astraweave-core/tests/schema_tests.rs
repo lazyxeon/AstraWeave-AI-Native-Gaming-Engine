@@ -94,7 +94,6 @@ fn test_worldsnapshot_with_data() {
         pois,
         obstacles,
         objective: Some("secure_area".to_string()),
-    physics_context: None,
     };
 
     // Validate field access
@@ -124,7 +123,6 @@ fn test_worldsnapshot_empty_collections() {
         pois: vec![],
         obstacles: vec![],
         objective: None,
-    physics_context: None,
     };
 
     assert!(snap.enemies.is_empty());
