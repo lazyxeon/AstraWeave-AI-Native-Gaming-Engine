@@ -37,7 +37,7 @@ jobs:
         components: rustfmt, clippy
         
     - name: Cache Cargo Registry
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.cargo/bin/
@@ -49,7 +49,7 @@ jobs:
           ${{ runner.os }}-cargo-
           
     - name: Cache Target Directory
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: target
         key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}
