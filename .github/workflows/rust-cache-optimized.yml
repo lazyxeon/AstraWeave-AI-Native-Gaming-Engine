@@ -207,7 +207,7 @@ jobs:
       # ---- Performance artifacts (release builds only) ----
       - name: Upload release artifacts
         if: matrix.build-type == 'release' && matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: astraweave-binaries-${{ matrix.rust }}
           path: |
@@ -296,7 +296,7 @@ jobs:
           timeout 10s cargo run --release -p hello_companion || echo "Demo completed or timed out as expected"
 
       - name: Upload demo artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: hello_companion-demo
           path: target/release/hello_companion

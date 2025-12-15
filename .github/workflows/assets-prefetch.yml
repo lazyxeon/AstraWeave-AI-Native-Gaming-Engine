@@ -65,7 +65,7 @@ jobs:
           fi
       
       - name: Upload Asset Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: polyhaven-assets
           path: assets/_downloaded
@@ -73,7 +73,7 @@ jobs:
           compression-level: 6  # Balance between speed and size
       
       - name: Upload Attribution
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: polyhaven-attribution
           path: assets/_downloaded/ATTRIBUTION.txt

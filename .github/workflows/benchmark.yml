@@ -79,7 +79,7 @@ jobs:
           ./.github/scripts/benchmark-runner.sh
       
       - name: Upload benchmark artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark-results-${{ github.sha }}
           path: benchmark_results/
