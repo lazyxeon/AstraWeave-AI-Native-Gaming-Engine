@@ -351,6 +351,10 @@ impl OrbitCamera {
             direction: (far_point - near_point).normalize(),
         }
     }
+
+    pub fn extract_frustum(&self) -> Frustum {
+        Frustum::from_view_projection(self.view_projection_matrix())
+    }
 }
 
 /// Ray for picking (origin + direction)
@@ -380,6 +384,69 @@ impl Ray {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct FrustumPlane {
+    pub normal: Vec3,
+    pub distance: f32,
+}
+
+impl FrustumPlane {
+    pub fn new(normal: Vec3, distance: f32) -> Self {
+        Self { normal, distance }
+    }
+
+    pub fn distance_to_point(&self, point: Vec3) -> f32 {
+        self.normal.dot(point) + self.distance
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Frustum {
+    pub planes: [FrustumPlane; 6],
+}
+
+impl Frustum {
+    pub fn from_view_projection(vp: Mat4) -> Self {
+        let m = vp.to_cols_array_2d();
+        let planes = [
+            Self::extract_plane(m, 0, true),
+            Self::extract_plane(m, 0, false),
+            Self::extract_plane(m, 1, true),
+            Self::extract_plane(m, 1, false),
+            Self::extract_plane(m, 2, true),
+            Self::extract_plane(m, 2, false),
+        ];
+        Self { planes }
+    }
+
+    fn extract_plane(m: [[f32; 4]; 4], row: usize, negative: bool) -> FrustumPlane {
+        let sign = if negative { 1.0 } else { -1.0 };
+        let a = m[0][3] + sign * m[0][row];
+        let b = m[1][3] + sign * m[1][row];
+        let c = m[2][3] + sign * m[2][row];
+        let d = m[3][3] + sign * m[3][row];
+        let len = (a * a + b * b + c * c).sqrt();
+        if len > 1e-6 {
+            FrustumPlane::new(Vec3::new(a / len, b / len, c / len), d / len)
+        } else {
+            FrustumPlane::new(Vec3::ZERO, 0.0)
+        }
+    }
+
+    pub fn contains_sphere(&self, center: Vec3, radius: f32) -> bool {
+        for plane in &self.planes {
+            if plane.distance_to_point(center) < -radius {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub fn contains_point(&self, point: Vec3) -> bool {
+        self.contains_sphere(point, 0.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -390,7 +457,7 @@ mod tests {
         let camera = OrbitCamera::default();
         assert_eq!(camera.focal_point, Vec3::ZERO);
         assert_eq!(camera.distance, 25.0); // Default is 25.0 for better initial view
-        // Default pitch is PI/6 (30°) for shallower angle to see more horizon/sky
+                                           // Default pitch is PI/6 (30°) for shallower angle to see more horizon/sky
         assert_relative_eq!(camera.pitch, std::f32::consts::PI / 6.0);
     }
 
@@ -411,12 +478,18 @@ mod tests {
 
         // Zoom in (positive delta = closer)
         camera.zoom(5.0); // zoom_factor = 1.5, distance = 25/1.5 = 16.67
-        assert!(camera.distance < initial_dist, "Zoom in should decrease distance");
+        assert!(
+            camera.distance < initial_dist,
+            "Zoom in should decrease distance"
+        );
         let after_zoom_in = camera.distance;
 
         // Zoom out (small negative delta to stay positive)
         camera.zoom(-3.0); // zoom_factor = 0.7, distance = 16.67/0.7 = 23.8
-        assert!(camera.distance > after_zoom_in, "Zoom out should increase distance");
+        assert!(
+            camera.distance > after_zoom_in,
+            "Zoom out should increase distance"
+        );
     }
 
     #[test]
