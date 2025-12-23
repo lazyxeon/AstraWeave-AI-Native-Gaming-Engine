@@ -341,7 +341,7 @@ impl EntityRenderer {
     /// Selected entity is highlighted with orange color.
     fn collect_instances(&self, world: &World, selected_entities: &[Entity], frustum: &Frustum) -> Vec<Instance> {
         let mut instances = Vec::new();
-        const ENTITY_RADIUS: f32 = 1.0;
+        const ENTITY_RADIUS: f32 = 0.866;
 
         for entity in world.entities() {
             if let Some(pose) = world.pose(entity) {

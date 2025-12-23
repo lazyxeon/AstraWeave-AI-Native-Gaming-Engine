@@ -149,7 +149,8 @@ impl FileWatcher {
 
             if file_name.ends_with(".prefab.ron") {
                 let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path));
+                state.buffer.insert(path.clone(), ReloadEvent::Prefab(path.clone()));
+                state.last_event_time.insert(path, Instant::now());
             } else if let Some(ext) = path.extension() {
                 let ext_str = ext.to_string_lossy().to_lowercase();
 
@@ -158,7 +159,8 @@ impl FileWatcher {
                     let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                     state
                         .buffer
-                        .insert(path.clone(), ReloadEvent::Material(path));
+                        .insert(path.clone(), ReloadEvent::Material(path.clone()));
+                    state.last_event_time.insert(path, Instant::now());
                 }
                 // Texture files
                 else if matches!(
@@ -168,12 +170,14 @@ impl FileWatcher {
                     let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
                     state
                         .buffer
-                        .insert(path.clone(), ReloadEvent::Texture(path));
+                        .insert(path.clone(), ReloadEvent::Texture(path.clone()));
+                    state.last_event_time.insert(path, Instant::now());
                 }
                 // Model files
                 else if matches!(ext_str.as_str(), "glb" | "gltf") {
                     let mut state = debounce_state.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                    state.buffer.insert(path.clone(), ReloadEvent::Model(path));
+                    state.buffer.insert(path.clone(), ReloadEvent::Model(path.clone()));
+                    state.last_event_time.insert(path, Instant::now());
                 }
             }
         }
@@ -210,13 +214,6 @@ impl FileWatcher {
                     let _ = tx.send(event);
                     state.last_event_time.remove(&path);
                 }
-            }
-
-            // Update last event times for remaining buffered events
-            let now = Instant::now();
-            let remaining_paths: Vec<PathBuf> = state.buffer.keys().cloned().collect();
-            for path in remaining_paths {
-                state.last_event_time.entry(path).or_insert(now);
             }
         }
     }
