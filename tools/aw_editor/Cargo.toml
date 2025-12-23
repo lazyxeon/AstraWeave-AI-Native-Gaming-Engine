@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 
+[lints.clippy]
+unwrap_used = "warn"
+
 [features]
 default = ["editor-core"]
 editor-core = []
@@ -13,6 +16,7 @@ editor-terrain = ["editor-core"]
 editor-nav = ["editor-core"]
 editor-sim = ["editor-core"]
 editor-full = ["editor-graphs", "editor-materials", "editor-terrain", "editor-nav", "editor-sim"]
+profiling = ["astraweave-profiling/profiling"]
 
 [dependencies]
 eframe = { workspace = true, features = ["wgpu"] }
@@ -40,7 +44,8 @@ rand = "0.8"
 tracing = { workspace = true }
 astract = { path = "../../crates/astract" }
 astraweave-core = { path = "../../astraweave-core" }
-astraweave-ecs = { path = "../../astraweave-ecs", optional = true }
+astraweave-ecs = { path = "../../astraweave-ecs" }
+astraweave-profiling = { path = "../../astraweave-profiling" }
 astraweave-render = { path = "../../astraweave-render", optional = true }
 astraweave-author = { path = "../../astraweave-author" }
 astraweave-asset = { path = "../../astraweave-asset" }

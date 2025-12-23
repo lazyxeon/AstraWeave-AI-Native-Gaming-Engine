@@ -42,7 +42,9 @@ use super::camera::OrbitCamera;
 use super::renderer::ViewportRenderer;
 use super::toolbar::{GridType, ViewportToolbar};
 use crate::entity_manager::EntityManager;
-use crate::gizmo::{AxisConstraint, GizmoHandle, GizmoMode, GizmoPicker, GizmoState, TransformSnapshot};
+use crate::gizmo::{
+    AxisConstraint, GizmoHandle, GizmoMode, GizmoPicker, GizmoState, TransformSnapshot,
+};
 use astraweave_core::{Entity, World};
 
 /// Camera bookmark for F1-F12 quick recall
@@ -110,7 +112,7 @@ pub struct ViewportWidget {
 
     /// Camera bookmarks (F1-F12)
     camera_bookmarks: [Option<CameraBookmark>; 12],
-    
+
     /// Clipboard for copy/paste operations
     clipboard: Option<crate::clipboard::ClipboardData>,
 }
@@ -247,7 +249,14 @@ impl ViewportWidget {
         }
 
         // Handle input (mouse/keyboard) - always process, but camera only moves if focused
-        self.handle_input(&response, ui.ctx(), world, entity_manager, undo_stack, opt_prefab_mgr)?;
+        self.handle_input(
+            &response,
+            ui.ctx(),
+            world,
+            entity_manager,
+            undo_stack,
+            opt_prefab_mgr,
+        )?;
 
         // Request continuous repaint to update viewport every frame
         ui.ctx().request_repaint();
@@ -282,12 +291,20 @@ impl ViewportWidget {
                     // Pass None for physics debug lines for now
                     // (integration with actual physics world would require passing PhysicsWorld to viewport)
                     // Pass grid settings from toolbar
-                    let show_grid = self.toolbar.show_grid && self.toolbar.grid_type != GridType::None;
+                    let show_grid =
+                        self.toolbar.show_grid && self.toolbar.grid_type != GridType::None;
                     let crosshair_mode = self.toolbar.grid_type == GridType::Crosshair;
-                    
-                    if let Err(e) =
-                        renderer.render(&texture, &self.camera, world, Some(&self.gizmo_state), hovered_axis, None, show_grid, crosshair_mode)
-                    {
+
+                    if let Err(e) = renderer.render(
+                        &texture,
+                        &self.camera,
+                        world,
+                        Some(&self.gizmo_state),
+                        hovered_axis,
+                        None,
+                        show_grid,
+                        crosshair_mode,
+                    ) {
                         eprintln!("❌ Viewport render failed: {}", e);
                     }
                 }
@@ -482,10 +499,10 @@ impl ViewportWidget {
 
         let selected = self.selected_entity()?;
         let pose = world.pose(selected)?;
-        
+
         // Get mouse position in viewport
         let pointer_pos = ui.ctx().pointer_latest_pos()?;
-        
+
         // Check if pointer is within viewport
         if !rect.contains(pointer_pos) {
             self.hovered_handle = None;
@@ -501,26 +518,22 @@ impl ViewportWidget {
 
         // Get inverse view-projection matrix for ray casting
         let inv_view_proj = self.camera.inverse_view_projection_matrix();
-        
+
         // Gizmo position in 3D (Y=0 ground plane)
         let gizmo_pos = glam::Vec3::new(pose.pos.x as f32, 0.0, pose.pos.y as f32);
 
         // Update picker scale based on camera distance
         let camera_distance = (self.camera.position() - gizmo_pos).length();
         let gizmo_scale = (camera_distance * 0.08).max(0.1).min(10.0);
-        
+
         // Create picker with appropriate scale
         let mut picker = self.gizmo_picker.clone();
         picker.gizmo_scale = gizmo_scale;
         picker.tolerance = gizmo_scale * 0.25; // Tolerance scales with gizmo size
 
         // Pick handle from screen coordinates
-        self.hovered_handle = picker.pick_handle(
-            ndc_pos,
-            inv_view_proj,
-            gizmo_pos,
-            self.gizmo_state.mode,
-        );
+        self.hovered_handle =
+            picker.pick_handle(ndc_pos, inv_view_proj, gizmo_pos, self.gizmo_state.mode);
 
         // Convert handle to axis constraint for rendering
         self.hovered_handle.map(|h| h.to_constraint())
@@ -640,9 +653,12 @@ impl ViewportWidget {
                                     // Get locked position from constraint_position (captured when X/Y/Z pressed)
                                     // This ensures the locked axis stays at the position when constraint was applied,
                                     // not the original start position from when the operation began
-                                    let locked_pos = if let Some(constraint_pos) = &self.gizmo_state.constraint_position {
+                                    let locked_pos = if let Some(constraint_pos) =
+                                        &self.gizmo_state.constraint_position
+                                    {
                                         (constraint_pos.x, constraint_pos.z)
-                                    } else if let Some(snapshot) = &self.gizmo_state.start_transform {
+                                    } else if let Some(snapshot) = &self.gizmo_state.start_transform
+                                    {
                                         // Fallback to start transform if no constraint position captured
                                         (snapshot.position.x, snapshot.position.z)
                                     } else {
@@ -959,9 +975,13 @@ impl ViewportWidget {
                 // Capture current position before applying constraint
                 if let Some(selected_id) = self.selected_entity() {
                     if let Some(pose) = world.pose(selected_id) {
-                        let current_pos = glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
+                        let current_pos =
+                            glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
-                        println!("📍 Captured constraint position: ({}, {})", pose.pos.x, pose.pos.y);
+                        println!(
+                            "📍 Captured constraint position: ({}, {})",
+                            pose.pos.x, pose.pos.y
+                        );
                     }
                 }
                 self.gizmo_state.handle_key(KeyCode::KeyX);
@@ -971,9 +991,13 @@ impl ViewportWidget {
                 // Capture current position before applying constraint
                 if let Some(selected_id) = self.selected_entity() {
                     if let Some(pose) = world.pose(selected_id) {
-                        let current_pos = glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
+                        let current_pos =
+                            glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
-                        println!("📍 Captured constraint position: ({}, {})", pose.pos.x, pose.pos.y);
+                        println!(
+                            "📍 Captured constraint position: ({}, {})",
+                            pose.pos.x, pose.pos.y
+                        );
                     }
                 }
                 self.gizmo_state.handle_key(KeyCode::KeyY);
@@ -983,9 +1007,13 @@ impl ViewportWidget {
                 // Capture current position before applying constraint
                 if let Some(selected_id) = self.selected_entity() {
                     if let Some(pose) = world.pose(selected_id) {
-                        let current_pos = glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
+                        let current_pos =
+                            glam::Vec3::new(pose.pos.x as f32, 1.0, pose.pos.y as f32);
                         self.gizmo_state.constraint_position = Some(current_pos);
-                        println!("📍 Captured constraint position: ({}, {})", pose.pos.x, pose.pos.y);
+                        println!(
+                            "📍 Captured constraint position: ({}, {})",
+                            pose.pos.x, pose.pos.y
+                        );
                     }
                 }
                 self.gizmo_state.handle_key(KeyCode::KeyZ);
@@ -1217,8 +1245,7 @@ impl ViewportWidget {
         }
 
         // Check for click (press and release at same location without drag)
-        let clicked = if mouse_released && self.mouse_pressed_pos.is_some() {
-            let press_pos = self.mouse_pressed_pos.unwrap();
+        let clicked = if let (true, Some(press_pos)) = (mouse_released, self.mouse_pressed_pos) {
             let release_pos = current_pos.unwrap_or(press_pos);
             let drag_distance = (release_pos - press_pos).length();
             let is_click = drag_distance < 5.0; // 5 pixel threshold
@@ -1401,10 +1428,10 @@ impl ViewportWidget {
             }));
         }
 
-        if self.staging_buffer.is_none() {
-            return Err(anyhow::anyhow!("Staging buffer not initialized"));
-        }
-        let staging_buffer = self.staging_buffer.as_ref().unwrap();
+        let staging_buffer = match self.staging_buffer.as_ref() {
+            Some(buf) => buf,
+            None => return Err(anyhow::anyhow!("Staging buffer not initialized")),
+        };
 
         // Create command encoder for texture copy
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -1666,7 +1693,9 @@ impl ViewportWidget {
         }
 
         let entities: Vec<_> = self.selected_entities.iter().copied().collect();
-        self.clipboard = Some(crate::clipboard::ClipboardData::from_entities(world, &entities));
+        self.clipboard = Some(crate::clipboard::ClipboardData::from_entities(
+            world, &entities,
+        ));
         println!("📋 Copied {} entities to clipboard", entities.len());
     }
 
@@ -1674,7 +1703,7 @@ impl ViewportWidget {
     fn paste_selection(&mut self, world: &mut World, _undo_stack: &mut crate::command::UndoStack) {
         if let Some(clipboard) = &self.clipboard {
             let offset = astraweave_core::IVec2::new(2, 2);
-            
+
             match clipboard.spawn_entities(world, offset) {
                 Ok(spawned) => {
                     let count = spawned.len();
@@ -1711,17 +1740,15 @@ impl ViewportWidget {
         // Use DuplicateEntitiesCommand for proper undo support
         let source_entities: Vec<_> = self.selected_entities.iter().copied().collect();
         let offset = astraweave_core::IVec2 { x: 2, y: 0 }; // Offset 2 units right
-        
+
         let duplicate_cmd = crate::command::DuplicateEntitiesCommand::new(source_entities, offset);
-        
+
         match undo_stack.execute(duplicate_cmd, world) {
             Ok(()) => {
                 // Get the spawned entities from the command (they're stored in the command)
                 // For now, we don't have direct access to them after execute, so we'll
                 // keep the original selection (the new entities are in the world)
-                println!(
-                    "✅ duplicate_selection: Command executed successfully"
-                );
+                println!("✅ duplicate_selection: Command executed successfully");
             }
             Err(e) => {
                 println!("⚠️  duplicate_selection failed: {}", e);
@@ -1730,17 +1757,13 @@ impl ViewportWidget {
     }
 
     /// Delete selected entities
-    fn delete_selection(
-        &mut self,
-        world: &mut World,
-        undo_stack: &mut crate::command::UndoStack,
-    ) {
+    fn delete_selection(&mut self, world: &mut World, undo_stack: &mut crate::command::UndoStack) {
         if self.selected_entities.is_empty() {
             return;
         }
 
         let entities_to_delete: Vec<_> = self.selected_entities.iter().copied().collect();
-        
+
         let delete_cmd = crate::command::DeleteEntitiesCommand::new(entities_to_delete);
         if let Err(e) = undo_stack.execute(delete_cmd, world) {
             println!("⚠️  Delete failed: {}", e);
