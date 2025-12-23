@@ -61,15 +61,16 @@ use astraweave_quests::Quest;
 use behavior_graph::{BehaviorGraphDocument, BehaviorGraphEditorUi};
 use editor_mode::EditorMode;
 use eframe::egui;
+use entity_manager::MaterialSlot;
 use entity_manager::{EntityManager, SelectionSet};
 use gizmo::snapping::SnappingConfig;
 use gizmo::state::GizmoMode;
 use material_inspector::MaterialInspector;
 use panels::{
-    AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel, ChartsPanel, EntityPanel, GraphPanel,
-    HierarchyPanel, Panel, PerformancePanel, PrefabAction, TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
+    AdvancedWidgetsPanel, AnimationPanel, AssetAction, AssetBrowser, BuildManagerPanel,
+    ChartsPanel, EntityPanel, GraphPanel, HierarchyPanel, Panel, PerformancePanel, PrefabAction,
+    TextureType, ThemeManagerPanel, TransformPanel, WorldPanel,
 };
-use entity_manager::MaterialSlot;
 mod plugin;
 use prefab::PrefabManager;
 use recent_files::RecentFilesManager;
@@ -77,7 +78,7 @@ use runtime::{EditorRuntime, RuntimeState};
 use scene_state::{EditorSceneState, TransformableScene};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
-use tracing::{debug, info, warn, error, span, Level};
+use tracing::{debug, error, info, span, warn, Level};
 use ui::StatusBar;
 use uuid::Uuid;
 use viewport::ViewportWidget; // Phase 1.1
@@ -340,11 +341,7 @@ impl Default for EditorApp {
             runtime: EditorRuntime::new(),
             terrain_grid: vec![vec!["grass".into(); 10]; 10],
             selected_biome: "grass".into(),
-            nav_mesh: NavMesh {
-                tris: vec![],
-                max_step: 0.4,
-                max_slope_deg: 60.0,
-            },
+            nav_mesh: NavMesh::bake(&[], 0.4, 60.0),
             nav_max_step: 0.4,
             nav_max_slope_deg: 60.0,
             scene_state: Some(EditorSceneState::new(Self::create_default_world())), // Initialize with sample entities
@@ -471,7 +468,7 @@ impl EditorApp {
 
     fn request_play(&mut self) {
         let _span = span!(Level::INFO, "request_play", mode = ?self.editor_mode).entered();
-        
+
         if self.editor_mode.is_editing() {
             if let Some(scene_state) = self.scene_state.as_ref() {
                 match self.runtime.enter_play(scene_state.world()) {
@@ -505,12 +502,15 @@ impl EditorApp {
 
     fn request_pause(&mut self) {
         let _span = span!(Level::INFO, "request_pause").entered();
-        
+
         if self.editor_mode.is_playing() {
             self.runtime.pause();
             self.editor_mode = EditorMode::Paused;
             self.status = "⏸️ Paused".into();
-            info!("Paused simulation at tick {}", self.runtime.stats().tick_count);
+            info!(
+                "Paused simulation at tick {}",
+                self.runtime.stats().tick_count
+            );
             self.console_logs
                 .push("⏸️ Paused (F5 to resume, F7 to stop)".into());
         }
@@ -518,7 +518,7 @@ impl EditorApp {
 
     fn request_stop(&mut self) {
         let _span = span!(Level::INFO, "request_stop").entered();
-        
+
         if !self.editor_mode.is_editing() {
             let final_tick = self.runtime.stats().tick_count;
             match self.runtime.exit_play() {
@@ -528,7 +528,10 @@ impl EditorApp {
                     }
                     self.editor_mode = EditorMode::Edit;
                     self.status = "⏹️ Stopped (world restored)".into();
-                    info!("Stopped simulation after {} ticks - snapshot restored", final_tick);
+                    info!(
+                        "Stopped simulation after {} ticks - snapshot restored",
+                        final_tick
+                    );
                     self.console_logs
                         .push("⏹️ Stopped play mode (world restored to snapshot)".into());
                     self.performance_panel.clear_runtime_stats();
@@ -545,7 +548,7 @@ impl EditorApp {
 
     fn request_step(&mut self) {
         let _span = span!(Level::DEBUG, "request_step").entered();
-        
+
         if !self.editor_mode.is_editing() {
             if let Err(e) = self.runtime.step_frame() {
                 error!("Step frame failed: {}", e);
@@ -553,7 +556,10 @@ impl EditorApp {
             } else {
                 self.editor_mode = EditorMode::Paused;
                 self.status = "⏭️ Stepped one frame".into();
-                debug!("Stepped one frame to tick {}", self.runtime.stats().tick_count);
+                debug!(
+                    "Stepped one frame to tick {}",
+                    self.runtime.stats().tick_count
+                );
                 self.console_logs.push("⏭️ Advanced one frame".into());
             }
         }
@@ -661,23 +667,28 @@ impl EditorApp {
 impl EditorApp {
     fn show_scene_hierarchy(&mut self, ui: &mut egui::Ui) {
         ui.heading("Scene Hierarchy");
-        
+
         // Collect entity data first to avoid borrow issues
-        let entity_data: Vec<(Entity, String, Option<_>, Option<_>, Option<_>)> = 
+        let entity_data: Vec<(Entity, String, Option<_>, Option<_>, Option<_>)> =
             if let Some(world) = self.active_world() {
-                world.entities().iter().map(|&entity| {
-                    let name = world.name(entity)
-                        .map(|s| s.to_string())
-                        .unwrap_or_else(|| format!("Entity_{}", entity));
-                    let pose = world.pose(entity);
-                    let health = world.health(entity);
-                    let team = world.team(entity);
-                    (entity, name, pose, health, team)
-                }).collect()
+                world
+                    .entities()
+                    .iter()
+                    .map(|&entity| {
+                        let name = world
+                            .name(entity)
+                            .map(|s| s.to_string())
+                            .unwrap_or_else(|| format!("Entity_{}", entity));
+                        let pose = world.pose(entity);
+                        let health = world.health(entity);
+                        let team = world.team(entity);
+                        (entity, name, pose, health, team)
+                    })
+                    .collect()
             } else {
                 Vec::new()
             };
-        
+
         if entity_data.is_empty() {
             if self.active_world().is_none() {
                 ui.label("No scene loaded");
@@ -687,22 +698,22 @@ impl EditorApp {
         } else {
             ui.label(format!("{} entities:", entity_data.len()));
             ui.separator();
-            
+
             let mut new_selection: Option<u64> = None;
             let current_primary = self.selection_set.primary;
-            
+
             egui::ScrollArea::vertical()
                 .max_height(200.0)
                 .show(ui, |ui| {
                     for (entity, name, pose, health, team) in &entity_data {
                         let is_selected = current_primary == Some(*entity as u64);
-                        
+
                         let response = ui.selectable_label(is_selected, format!("📦 {}", name));
-                        
+
                         if response.clicked() {
                             new_selection = Some(*entity as u64);
                         }
-                        
+
                         // Show entity info on hover
                         response.on_hover_ui(|ui| {
                             ui.label(format!("ID: {}", entity));
@@ -719,7 +730,7 @@ impl EditorApp {
                         });
                     }
                 });
-            
+
             // Apply selection change after the scroll area
             if let Some(sel) = new_selection {
                 self.selection_set.primary = Some(sel);
@@ -729,18 +740,19 @@ impl EditorApp {
 
     fn show_inspector(&mut self, ui: &mut egui::Ui) {
         ui.heading("Inspector");
-        
+
         // Show selected entity's components
         if let Some(entity_id) = self.selection_set.primary {
             if let Ok(entity) = u32::try_from(entity_id) {
                 if let Some(world) = self.active_world() {
-                    let name = world.name(entity)
+                    let name = world
+                        .name(entity)
                         .map(|s| s.to_string())
                         .unwrap_or_else(|| format!("Entity_{}", entity));
-                    
+
                     ui.label(format!("Selected: {} (ID: {})", name, entity));
                     ui.separator();
-                    
+
                     // Transform section
                     ui.collapsing("Transform", |ui| {
                         if let Some(pose) = world.pose(entity) {
@@ -760,7 +772,7 @@ impl EditorApp {
                             ui.label("No transform component");
                         }
                     });
-                    
+
                     // Health section
                     ui.collapsing("Health", |ui| {
                         if let Some(health) = world.health(entity) {
@@ -779,7 +791,7 @@ impl EditorApp {
                             ui.label("No health component");
                         }
                     });
-                    
+
                     // Team section
                     ui.collapsing("Team", |ui| {
                         if let Some(team) = world.team(entity) {
@@ -791,7 +803,7 @@ impl EditorApp {
                             ui.label("No team component");
                         }
                     });
-                    
+
                     // Ammo section
                     ui.collapsing("Ammo", |ui| {
                         if let Some(ammo) = world.ammo(entity) {
@@ -803,7 +815,6 @@ impl EditorApp {
                             ui.label("No ammo component");
                         }
                     });
-                    
                 } else {
                     ui.label("No scene loaded");
                 }
@@ -927,8 +938,7 @@ impl EditorApp {
             .world_mut()
             .set_behavior_graph(entity, runtime_graph);
         scene_state.sync_entity(entity);
-        self.behavior_graph_binding =
-            Some(BehaviorGraphBinding::new(entity, entity_name.clone()));
+        self.behavior_graph_binding = Some(BehaviorGraphBinding::new(entity, entity_name.clone()));
         self.console_logs.push(format!(
             "✅ Applied behavior graph to {} (#{}) and synced the scene state.",
             entity_name, entity
@@ -937,7 +947,7 @@ impl EditorApp {
 
     fn spawn_prefab_from_drag(&mut self, prefab_path: PathBuf, spawn_pos: (i32, i32)) {
         let _span = span!(Level::INFO, "spawn_prefab", path = %prefab_path.display(), pos = ?(spawn_pos.0, spawn_pos.1)).entered();
-        
+
         let Some(scene_state) = self.scene_state.as_mut() else {
             warn!("No scene loaded - cannot instantiate prefabs");
             self.console_logs
@@ -950,15 +960,18 @@ impl EditorApp {
             .and_then(|s| s.to_str())
             .unwrap_or("Unknown");
 
-        match self
-            .prefab_manager
-            .instantiate_prefab(&prefab_path, scene_state.world_mut(), spawn_pos)
-        {
+        match self.prefab_manager.instantiate_prefab(
+            &prefab_path,
+            scene_state.world_mut(),
+            spawn_pos,
+        ) {
             Ok(root_entity) => {
                 scene_state.sync_entity(root_entity);
                 self.selected_entity = Some(root_entity as u64);
-                info!("Instantiated prefab '{}' at ({}, {}) - root entity #{}", 
-                    prefab_name, spawn_pos.0, spawn_pos.1, root_entity);
+                info!(
+                    "Instantiated prefab '{}' at ({}, {}) - root entity #{}",
+                    prefab_name, spawn_pos.0, spawn_pos.1, root_entity
+                );
                 self.console_logs.push(format!(
                     "✅ Instantiated prefab '{}' at ({}, {}). Root entity: #{}",
                     prefab_name, spawn_pos.0, spawn_pos.1, root_entity
@@ -967,8 +980,10 @@ impl EditorApp {
             }
             Err(err) => {
                 error!("Failed to instantiate prefab '{}': {}", prefab_name, err);
-                self.console_logs
-                    .push(format!("❌ Failed to instantiate prefab '{}': {}", prefab_name, err));
+                self.console_logs.push(format!(
+                    "❌ Failed to instantiate prefab '{}': {}",
+                    prefab_name, err
+                ));
                 self.status = format!("Failed to spawn prefab: {}", prefab_name);
             }
         }
@@ -978,7 +993,8 @@ impl EditorApp {
     fn handle_asset_action(&mut self, action: AssetAction) {
         match action {
             AssetAction::ImportModel { path } => {
-                let model_name = path.file_stem()
+                let model_name = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("imported_model")
                     .to_string();
@@ -1001,11 +1017,15 @@ impl EditorApp {
 
                     self.selected_entity = Some(entity as u64);
                     info!("Imported model '{}' as entity #{}", model_name, entity);
-                    self.console_logs.push(format!("✅ Imported model '{}' as entity #{}", model_name, entity));
+                    self.console_logs.push(format!(
+                        "✅ Imported model '{}' as entity #{}",
+                        model_name, entity
+                    ));
                     self.status = format!("Imported: {}", model_name);
                 } else {
                     warn!("No scene loaded - cannot import model");
-                    self.console_logs.push("⚠️ No scene loaded – cannot import model.".into());
+                    self.console_logs
+                        .push("⚠️ No scene loaded – cannot import model.".into());
                 }
             }
 
@@ -1026,38 +1046,55 @@ impl EditorApp {
 
                 if let Some(selected_id) = self.selected_entity {
                     if let Some(scene_state) = self.scene_state.as_mut() {
-                        if let Some(editor_entity) = scene_state.get_editor_entity_mut(selected_id as astraweave_core::Entity) {
+                        if let Some(editor_entity) = scene_state
+                            .get_editor_entity_mut(selected_id as astraweave_core::Entity)
+                        {
                             editor_entity.set_texture(slot.clone(), path.clone());
-                            info!("Applied {:?} texture '{}' to entity #{}", slot, path.display(), selected_id);
+                            info!(
+                                "Applied {:?} texture '{}' to entity #{}",
+                                slot,
+                                path.display(),
+                                selected_id
+                            );
                             self.console_logs.push(format!(
                                 "✅ Applied {:?} texture '{}' to entity #{}",
                                 slot,
                                 path.file_name().unwrap_or_default().to_string_lossy(),
                                 selected_id
                             ));
-                            self.status = format!("Applied texture: {}", path.file_name().unwrap_or_default().to_string_lossy());
+                            self.status = format!(
+                                "Applied texture: {}",
+                                path.file_name().unwrap_or_default().to_string_lossy()
+                            );
                         }
                     }
                 } else {
                     warn!("No entity selected - cannot apply texture");
-                    self.console_logs.push("⚠️ Select an entity first to apply textures.".into());
+                    self.console_logs
+                        .push("⚠️ Select an entity first to apply textures.".into());
                 }
             }
 
             AssetAction::ApplyMaterial { path } => {
-                let material_name = path.file_stem()
+                let material_name = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("material")
                     .to_string();
 
                 if let Some(selected_id) = self.selected_entity {
                     if let Some(scene_state) = self.scene_state.as_mut() {
-                        if let Some(editor_entity) = scene_state.get_editor_entity_mut(selected_id as astraweave_core::Entity) {
+                        if let Some(editor_entity) = scene_state
+                            .get_editor_entity_mut(selected_id as astraweave_core::Entity)
+                        {
                             // Create a new material with the name from the path
                             let mut material = entity_manager::EntityMaterial::new();
                             material.name = material_name.clone();
                             editor_entity.set_material(material);
-                            info!("Applied material '{}' to entity #{}", material_name, selected_id);
+                            info!(
+                                "Applied material '{}' to entity #{}",
+                                material_name, selected_id
+                            );
                             self.console_logs.push(format!(
                                 "✅ Applied material '{}' to entity #{}",
                                 material_name, selected_id
@@ -1067,12 +1104,14 @@ impl EditorApp {
                     }
                 } else {
                     warn!("No entity selected - cannot apply material");
-                    self.console_logs.push("⚠️ Select an entity first to apply materials.".into());
+                    self.console_logs
+                        .push("⚠️ Select an entity first to apply materials.".into());
                 }
             }
 
             AssetAction::LoadScene { path } => {
-                let scene_name = path.file_stem()
+                let scene_name = path
+                    .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or("scene")
                     .to_string();
@@ -1082,12 +1121,14 @@ impl EditorApp {
                         self.scene_state = Some(EditorSceneState::new(loaded_world));
                         self.current_scene_path = Some(path.clone());
                         info!("Loaded scene: {}", scene_name);
-                        self.console_logs.push(format!("✅ Loaded scene: {}", scene_name));
+                        self.console_logs
+                            .push(format!("✅ Loaded scene: {}", scene_name));
                         self.status = format!("Loaded: {}", scene_name);
                     }
                     Err(err) => {
                         error!("Failed to load scene '{}': {}", scene_name, err);
-                        self.console_logs.push(format!("❌ Failed to load scene '{}': {}", scene_name, err));
+                        self.console_logs
+                            .push(format!("❌ Failed to load scene '{}': {}", scene_name, err));
                     }
                 }
             }
@@ -1105,31 +1146,28 @@ impl EditorApp {
                         .spawn()
                     {
                         error!("Failed to open external: {}", err);
-                        self.console_logs.push(format!("❌ Failed to open: {}", err));
+                        self.console_logs
+                            .push(format!("❌ Failed to open: {}", err));
                     } else {
                         info!("Opened external: {}", path.display());
                     }
                 }
                 #[cfg(target_os = "macos")]
                 {
-                    if let Err(err) = std::process::Command::new("open")
-                        .arg(&path)
-                        .spawn()
-                    {
+                    if let Err(err) = std::process::Command::new("open").arg(&path).spawn() {
                         error!("Failed to open external: {}", err);
-                        self.console_logs.push(format!("❌ Failed to open: {}", err));
+                        self.console_logs
+                            .push(format!("❌ Failed to open: {}", err));
                     } else {
                         info!("Opened external: {}", path.display());
                     }
                 }
                 #[cfg(target_os = "linux")]
                 {
-                    if let Err(err) = std::process::Command::new("xdg-open")
-                        .arg(&path)
-                        .spawn()
-                    {
+                    if let Err(err) = std::process::Command::new("xdg-open").arg(&path).spawn() {
                         error!("Failed to open external: {}", err);
-                        self.console_logs.push(format!("❌ Failed to open: {}", err));
+                        self.console_logs
+                            .push(format!("❌ Failed to open: {}", err));
                     } else {
                         info!("Opened external: {}", path.display());
                     }
@@ -1139,8 +1177,12 @@ impl EditorApp {
             AssetAction::InspectAsset { path } => {
                 // Log for material inspector (future expansion)
                 info!("Inspecting asset: {}", path.display());
-                self.console_logs.push(format!("🔍 Inspecting: {}", path.display()));
-                self.status = format!("Inspecting: {}", path.file_name().unwrap_or_default().to_string_lossy());
+                self.console_logs
+                    .push(format!("🔍 Inspecting: {}", path.display()));
+                self.status = format!(
+                    "Inspecting: {}",
+                    path.file_name().unwrap_or_default().to_string_lossy()
+                );
             }
         }
     }
@@ -1149,18 +1191,13 @@ impl EditorApp {
         ui.heading("Behavior Graph Editor");
         let selected_entity = self.selected_entity_handle();
 
-        ui.horizontal(|ui| {
-            match (selected_entity, self.scene_state.as_ref()) {
-                (Some(entity), Some(state)) => {
-                    let label = state
-                        .world()
-                        .name(entity)
-                        .unwrap_or("Unnamed");
-                    ui.label(format!("Selected entity: {} (#{})", label, entity));
-                }
-                _ => {
-                    ui.label("Select an entity to load/apply behavior graphs.");
-                }
+        ui.horizontal(|ui| match (selected_entity, self.scene_state.as_ref()) {
+            (Some(entity), Some(state)) => {
+                let label = state.world().name(entity).unwrap_or("Unnamed");
+                ui.label(format!("Selected entity: {} (#{})", label, entity));
+            }
+            _ => {
+                ui.label("Select an entity to load/apply behavior graphs.");
             }
         });
 
@@ -1179,7 +1216,10 @@ impl EditorApp {
                 self.apply_behavior_graph_to_selection();
             }
             if ui
-                .add_enabled(self.behavior_graph_binding.is_some(), egui::Button::new("Detach"))
+                .add_enabled(
+                    self.behavior_graph_binding.is_some(),
+                    egui::Button::new("Detach"),
+                )
                 .clicked()
             {
                 self.behavior_graph_binding = None;
@@ -1334,8 +1374,7 @@ impl EditorApp {
                             .push("✅ Material saved to assets/material_live.json".into());
                         // Trigger hot reload by reloading the material in the inspector
                         // The file watcher will also detect this change automatically
-                        self.console_logs
-                            .push("🔄 Hot reload triggered".into());
+                        self.console_logs.push("🔄 Hot reload triggered".into());
                     } else {
                         self.status = "Failed to write material_live.json".into();
                         self.console_logs
@@ -1812,7 +1851,7 @@ impl eframe::App for EditorApp {
                 let _ = fs::create_dir_all(&autosave_dir);
                 let timestamp = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
+                    .unwrap_or_default()
                     .as_secs();
                 let autosave_path = autosave_dir.join(format!("autosave_{}.scene.ron", timestamp));
 
@@ -2531,9 +2570,7 @@ impl eframe::App for EditorApp {
 
                     let mut edited_world = false;
                     let world_to_render = if runtime_state == RuntimeState::Editing {
-                        self.scene_state
-                            .as_mut()
-                            .map(|state| state.world_mut())
+                        self.scene_state.as_mut().map(|state| state.world_mut())
                     } else {
                         self.runtime.sim_world_mut()
                     };

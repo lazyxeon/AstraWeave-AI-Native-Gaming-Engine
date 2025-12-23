@@ -1298,8 +1298,8 @@ impl ViewportWidget {
                         if let Some(distance) =
                             Self::ray_intersects_aabb(ray.origin, ray.direction, aabb_min, aabb_max)
                         {
-                            // Found intersection - keep closest
-                            if closest_entity.is_none() || distance < closest_entity.unwrap().1 {
+                            let is_closer = closest_entity.map_or(true, |(_, d)| distance < d);
+                            if is_closer {
                                 closest_entity = Some((entity, distance));
                             }
                         }
