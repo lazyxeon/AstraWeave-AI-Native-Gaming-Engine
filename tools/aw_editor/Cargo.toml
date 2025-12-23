@@ -9,7 +9,7 @@ unwrap_used = "warn"
 
 [features]
 default = ["editor-core"]
-editor-core = []
+editor-core = ["astraweave-render"]
 editor-graphs = ["editor-core"]
 editor-materials = ["editor-core"]
 editor-terrain = ["editor-core"]

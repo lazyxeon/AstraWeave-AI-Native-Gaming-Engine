@@ -355,6 +355,19 @@ impl OrbitCamera {
     pub fn extract_frustum(&self) -> Frustum {
         Frustum::from_view_projection(self.view_projection_matrix())
     }
+
+    #[cfg(feature = "astraweave-render")]
+    pub fn to_engine_camera(&self) -> astraweave_render::camera::Camera {
+        astraweave_render::camera::Camera {
+            position: self.position(),
+            yaw: self.yaw,
+            pitch: self.pitch,
+            fovy: self.fov.to_radians(),
+            aspect: self.aspect,
+            znear: self.near,
+            zfar: self.far,
+        }
+    }
 }
 
 /// Ray for picking (origin + direction)

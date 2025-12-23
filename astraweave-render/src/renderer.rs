@@ -1,7 +1,7 @@
 #[cfg(feature = "postfx")]
 use crate::post::{WGSL_SSAO, WGSL_SSGI, WGSL_SSR};
-use anyhow::Result;
 use anyhow::Context;
+use anyhow::Result;
 use glam::Vec4Swizzles;
 use glam::{vec3, Mat4};
 use std::borrow::Cow;
@@ -186,6 +186,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             }
             shadow = sum / 9.0;
         }
+        // DEBUG: Force shadows off to fix dark terrain
+        shadow = 1.0;
+
         // Optional debug visualization: use uMaterial._pad.x > 0.5 to tint by cascade
         if (uMaterial._pad.x > 0.5) {
             var tint: vec3<f32>;
@@ -193,7 +196,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             base_color = mix(base_color, tint, 0.35);
         }
     // Add a modest ambient lift to avoid overly dark scene when sun is low
-    var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.08;
+    var lit_color = (diffuse + specular) * radiance * NdotL * shadow + base_color * 0.2;
         // Clustered point lights accumulation (Lambert + simple attenuation)
     // Clustered lighting disabled for this example build; use lit_color directly
     return vec4<f32>(lit_color, uMaterial.base_color.a * input.color.a);
@@ -281,8 +284,18 @@ struct CameraUBO {
     light_dir_pad: [f32; 4],
 }
 
+/// A named model with its mesh and instance data for multi-model rendering.
+pub struct RenderModel {
+    /// The GPU mesh (vertex/index buffers).
+    pub mesh: Mesh,
+    /// Instance buffer for this model.
+    pub instance_buf: wgpu::Buffer,
+    /// Number of instances.
+    pub instance_count: u32,
+}
+
 pub struct Renderer {
-    surface: wgpu::Surface<'static>,
+    surface: Option<wgpu::Surface<'static>>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     config: wgpu::SurfaceConfiguration,
@@ -349,12 +362,17 @@ pub struct Renderer {
     camera_ubo: CameraUBO,
     camera_buf: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+    // Cached matrices for skybox (manual translation removal)
+    cached_view: glam::Mat4,
+    cached_proj: glam::Mat4,
 
     #[allow(dead_code)]
     mesh_cube: Mesh,
     mesh_sphere: Mesh,
     mesh_plane: Mesh,
     mesh_external: Option<Mesh>,
+    /// Named models for multi-model rendering (terrain, trees, rocks, etc.)
+    models: std::collections::HashMap<String, RenderModel>,
 
     instances: Vec<Instance>,
     instance_buf: wgpu::Buffer,
@@ -372,6 +390,7 @@ pub struct Renderer {
     #[allow(dead_code)]
     skin_bg: wgpu::BindGroup,
     skin_palette_buf: wgpu::Buffer,
+    #[allow(dead_code)]
     skinned_pipeline: wgpu::RenderPipeline,
     skinned_mesh: Option<(wgpu::Buffer, wgpu::Buffer, u32)>, // (vbuf, ibuf, index_count)
 
@@ -405,6 +424,14 @@ pub struct Renderer {
     // Persistent instance buffers
     pub plane_inst_buf: wgpu::Buffer,
     pub ext_inst_buf: Option<wgpu::Buffer>,
+    pub ext_inst_count: u32,
+
+    // IBL
+    pub ibl: crate::ibl::IblManager,
+    pub ibl_resources: Option<crate::ibl::IblResources>,
+
+    // Water rendering
+    water_renderer: Option<crate::water::WaterRenderer>,
 }
 
 impl Renderer {
@@ -438,7 +465,6 @@ impl Renderer {
             })
     }
     pub async fn new(window: std::sync::Arc<winit::window::Window>) -> Result<Self> {
-        // WGPU init
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
         let surface = instance.create_surface(window.clone())?;
         let adapter = instance
@@ -451,24 +477,25 @@ impl Renderer {
             .context("No adapter")?;
 
         let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("device"),
-                    required_features: {
-                        let f = wgpu::Features::empty();
-                        #[cfg(feature = "gpu-tests")]
-                        {
-                            wgpu::Features::TIMESTAMP_QUERY
-                        }
-                        #[cfg(not(feature = "gpu-tests"))]
-                        {
-                            f
-                        }
-                    },
-                    required_limits: wgpu::Limits::default(), memory_hints: Default::default(), trace: Default::default(), }, )
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("device"),
+                required_features: {
+                    let f = wgpu::Features::empty();
+                    #[cfg(feature = "gpu-tests")]
+                    {
+                        wgpu::Features::TIMESTAMP_QUERY
+                    }
+                    #[cfg(not(feature = "gpu-tests"))]
+                    {
+                        f
+                    }
+                },
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            })
             .await?;
 
-        // Surface config
         let caps = surface.get_capabilities(&adapter);
         let format = caps
             .formats
@@ -489,6 +516,50 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
+        Self::new_from_device(device, queue, Some(surface), config).await
+    }
+
+    pub async fn new_headless(width: u32, height: u32) -> Result<Self> {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: None,
+                force_fallback_adapter: false,
+            })
+            .await
+            .context("No adapter")?;
+
+        let (device, queue) = adapter
+            .request_device(&wgpu::DeviceDescriptor {
+                label: Some("headless device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            })
+            .await?;
+
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            width,
+            height,
+            present_mode: wgpu::PresentMode::Fifo,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+
+        Self::new_from_device(device, queue, None, config).await
+    }
+
+    pub async fn new_from_device(
+        device: wgpu::Device,
+        queue: wgpu::Queue,
+        surface: Option<wgpu::Surface<'static>>,
+        config: wgpu::SurfaceConfiguration,
+    ) -> Result<Self> {
         #[cfg(feature = "gpu-tests")]
         let timestamp_query_set = device.create_query_set(&wgpu::QuerySetDescriptor {
             label: Some("timestamps"),
@@ -761,10 +832,14 @@ impl Renderer {
                 },
             ],
         });
-                // Create a placeholder normal view for postfx initialization to avoid use-before-def
+        // Create a placeholder normal view for postfx initialization to avoid use-before-def
         let placeholder_normal_tex = device.create_texture(&wgpu::TextureDescriptor {
             label: Some("placeholder normal"),
-            size: wgpu::Extent3d { width: 1, height: 1, depth_or_array_layers: 1 },
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -772,7 +847,8 @@ impl Renderer {
             usage: wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         });
-        let normal_view = placeholder_normal_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let normal_view =
+            placeholder_normal_tex.create_view(&wgpu::TextureViewDescriptor::default());
 
         #[cfg(feature = "postfx")]
         let ssr_pl = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -781,7 +857,8 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _post_pipeline_ssr = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline_ssr = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("ssr pipeline"),
             layout: Some(&ssr_pl),
             vertex: wgpu::VertexState {
@@ -856,7 +933,8 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _post_pipeline_ssao = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline_ssao = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("ssao pipeline"),
             layout: Some(&ssao_pl),
             vertex: wgpu::VertexState {
@@ -945,7 +1023,8 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _post_pipeline_ssgi = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline_ssgi = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("ssgi pipeline"),
             layout: Some(&ssgi_pl),
             vertex: wgpu::VertexState {
@@ -1048,7 +1127,8 @@ impl Renderer {
             push_constant_ranges: &[],
         });
         #[cfg(feature = "postfx")]
-        let _post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let _post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("post fx pipeline"),
             layout: Some(&post_fx_pl),
             vertex: wgpu::VertexState {
@@ -1061,7 +1141,7 @@ impl Renderer {
                 module: &post_fx_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format,
+                    format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -1200,7 +1280,8 @@ impl Renderer {
             push_constant_ranges: &[],
         });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
@@ -1251,7 +1332,8 @@ impl Renderer {
             bind_group_layouts: &[&post_bgl],
             push_constant_ranges: &[],
         });
-        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let post_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("post pipeline"),
             layout: Some(&post_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -1264,7 +1346,7 @@ impl Renderer {
                 module: &post_shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format,
+                    format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -1293,7 +1375,8 @@ impl Renderer {
             view_formats: &[],
         });
         // Array view for sampling
-        let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor { usage: None,
+        let shadow_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("shadow array view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2Array),
@@ -1304,7 +1387,8 @@ impl Renderer {
             array_layer_count: None,
         });
         // Per-layer views for rendering
-        let shadow_layer0_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor { usage: None,
+        let shadow_layer0_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("shadow layer0 view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -1314,7 +1398,8 @@ impl Renderer {
             base_array_layer: 0,
             array_layer_count: Some(1),
         });
-        let shadow_layer1_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor { usage: None,
+        let shadow_layer1_view = shadow_tex.create_view(&wgpu::TextureViewDescriptor {
+            usage: None,
             label: Some("shadow layer1 view"),
             format: Some(wgpu::TextureFormat::Depth32Float),
             dimension: Some(wgpu::TextureViewDimension::D2),
@@ -1419,7 +1504,8 @@ fn vs(input: VSIn) -> VSOut {
                 bind_group_layouts: &[&shadow_bgl_light],
                 push_constant_ranges: &[],
             });
-        let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let shadow_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("shadow pipeline"),
             layout: Some(&shadow_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -1469,9 +1555,9 @@ fn vs(input: VSIn) -> VSOut {
         let albedo_view = albedo_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let albedo_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             label: Some("albedo sampler"),
-            address_mode_u: wgpu::AddressMode::ClampToEdge,
-            address_mode_v: wgpu::AddressMode::ClampToEdge,
-            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Nearest,
@@ -1822,7 +1908,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 }
 "#)),
         });
-        let skinned_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+        let skinned_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            cache: None,
             label: Some("skinned pipeline"),
             layout: Some(&skinned_pipeline_layout),
             vertex: wgpu::VertexState {
@@ -2007,7 +2094,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let instance_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("dummy instance_buf"),
             size: 256,
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false,
         });
         let clustered_dims = ClusterDims { x: 8, y: 4, z: 8 };
@@ -2132,7 +2221,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             push_constant_ranges: &[],
         });
         let clustered_comp_pipeline =
-            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor { cache: None,
+            device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                cache: None,
                 label: Some("clustered comp pipeline"),
                 layout: Some(&clustered_comp_pl),
                 module: &clustered_comp_shader,
@@ -2179,7 +2269,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             * glam::Mat4::from_scale(glam::vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
             transform: plane_xform,
-            color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
+            color: [0.1, 0.12, 0.14, 1.0],
+            material_id: 0,
         }
         .raw();
         let plane_inst_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -2189,6 +2280,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         });
 
         let ext_inst_buf = None;
+
+        let ibl = crate::ibl::IblManager::new(&device, crate::ibl::IblQuality::Medium)
+            .expect("Failed to init IBL");
 
         Ok(Self {
             surface,
@@ -2248,6 +2342,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             mesh_sphere,
             mesh_plane,
             mesh_external: None,
+            models: std::collections::HashMap::new(),
             instances: Vec::new(),
             instance_buf,
             overlay,
@@ -2280,6 +2375,12 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             cin_playing: false,
             plane_inst_buf,
             ext_inst_buf,
+            cached_view: glam::Mat4::IDENTITY,
+            cached_proj: glam::Mat4::IDENTITY,
+            ext_inst_count: 0,
+            ibl,
+            ibl_resources: None,
+            water_renderer: None,
         })
     }
 
@@ -2349,13 +2450,27 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         out
     }
 
+    pub fn ibl_mut(&mut self) -> &mut crate::ibl::IblManager {
+        &mut self.ibl
+    }
+
+    pub fn bake_environment(&mut self, quality: crate::ibl::IblQuality) -> Result<()> {
+        let resources = self
+            .ibl
+            .bake_environment(&self.device, &self.queue, quality)?;
+        self.ibl_resources = Some(resources);
+        Ok(())
+    }
+
     pub fn resize(&mut self, new_w: u32, new_h: u32) {
         if new_w == 0 || new_h == 0 {
             return;
         }
         self.config.width = new_w;
         self.config.height = new_h;
-        self.surface.configure(&self.device, &self.config);
+        if let Some(surface) = &self.surface {
+            surface.configure(&self.device, &self.config);
+        }
         self.depth = crate::depth::Depth::create(&self.device, &self.config);
 
         // Recreate HDR target and refresh the post-processing bind group.
@@ -2413,6 +2528,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     }
 
     pub fn update_camera(&mut self, camera: &Camera) {
+        self.cached_view = camera.view_matrix();
+        self.cached_proj = camera.proj_matrix();
         self.camera_ubo.view_proj = camera.vp().to_cols_array_2d();
         // Update light dir from time-of-day system (simple linkage for Phase 0)
         let light_dir = self.sky.time_of_day().get_light_direction();
@@ -2609,12 +2726,52 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             self.instance_buf = self.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("instance buf (resized)"),
                 size: size.next_power_of_two(),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::COPY_SRC,
                 mapped_at_creation: false,
             });
         }
         self.queue
             .write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&raws));
+    }
+
+    /// Reads back the instance buffer from the GPU.
+    /// This is intended for testing and validation.
+    #[cfg(test)]
+    pub async fn read_instance_buffer(&self) -> Vec<crate::types::InstanceRaw> {
+        let size = self.instance_buf.size();
+        let staging = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("instance staging"),
+            size,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("instance read encoder"),
+            });
+        encoder.copy_buffer_to_buffer(&self.instance_buf, 0, &staging, 0, size);
+        self.queue.submit(Some(encoder.finish()));
+
+        let buffer_slice = staging.slice(..);
+        let (tx, rx) = std::sync::mpsc::channel();
+        buffer_slice.map_async(wgpu::MapMode::Read, move |res| {
+            tx.send(res).unwrap();
+        });
+        let _ = self.device.poll(wgpu::MaintainBase::Wait);
+        rx.recv().unwrap().unwrap();
+
+        let data = buffer_slice.get_mapped_range();
+        // We only want the part that contains actual instances
+        let count = self.instances.len();
+        let byte_len = count * std::mem::size_of::<crate::types::InstanceRaw>();
+        let result = bytemuck::cast_slice(&data[..byte_len]).to_vec();
+        drop(data);
+        staging.unmap();
+        result
     }
 
     pub fn set_weather(&mut self, kind: crate::effects::WeatherKind) {
@@ -2642,11 +2799,29 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.sky.set_config(cfg);
     }
 
+    /// Set the water renderer for ocean rendering
+    pub fn set_water_renderer(&mut self, water: crate::water::WaterRenderer) {
+        self.water_renderer = Some(water);
+    }
+
+    /// Update water renderer state (call each frame before render)
+    pub fn update_water(&mut self, view_proj: glam::Mat4, camera_pos: glam::Vec3, time: f32) {
+        if let Some(ref mut water) = self.water_renderer {
+            water.update(&self.queue, view_proj, camera_pos, time);
+        }
+    }
+
     pub fn render(&mut self) -> Result<()> {
-        let frame = match self.surface.get_current_texture() {
+        let surface = if let Some(s) = &self.surface {
+            s
+        } else {
+            return Ok(());
+        };
+
+        let frame = match surface.get_current_texture() {
             Ok(frame) => frame,
             Err(wgpu::SurfaceError::Lost) => {
-                self.surface.configure(&self.device, &self.config);
+                surface.configure(&self.device, &self.config);
                 return Ok(());
             }
             Err(wgpu::SurfaceError::OutOfMemory) => {
@@ -2664,15 +2839,19 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 label: Some("encoder"),
             });
 
-        // Update plane buffer
+        // Update plane buffer (DISABLE to fix interference with TerrainSystem)
+        /*
         let plane_xform = glam::Mat4::from_translation(glam::vec3(0.0, -0.2, 0.0))
             * glam::Mat4::from_scale(glam::vec3(50.0, 1.0, 50.0));
         let plane_inst = Instance {
             transform: plane_xform,
-            color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
+            color: [0.1, 0.12, 0.14, 1.0],
+            material_id: 0,
         }
         .raw();
-        self.queue.write_buffer(&self.plane_inst_buf, 0, bytemuck::bytes_of(&plane_inst));
+        self.queue
+            .write_buffer(&self.plane_inst_buf, 0, bytemuck::bytes_of(&plane_inst));
+        */
 
         // Render sky first into HDR
         // TODO: Replace with the correct color target view for sky rendering (e.g., main color target or postprocess output)
@@ -2756,7 +2935,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         if let Some(buf) = &self.ext_inst_buf {
             let inst = Instance {
                 transform: glam::Mat4::IDENTITY,
-                color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
+                color: [1.0, 1.0, 1.0, 1.0],
+                material_id: 0,
             }
             .raw();
             self.queue.write_buffer(buf, 0, bytemuck::bytes_of(&inst));
@@ -2841,11 +3021,14 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
 
         // Render sky first into HDR target so we can layer geometry on top
         self.sky.render(
+            &self.device,
             &mut enc,
             &self.hdr_view,
             &self.depth.view,
             Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
             &self.queue,
+            None,
+            None,
         )?;
 
         {
@@ -2879,7 +3062,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             rp.set_bind_group(2, &self.light_bg, &[]);
             rp.set_bind_group(3, &self.tex_bg, &[]);
 
-            // Ground plane (scaled)
+            // Ground plane (scaled) - DISABLED (Interferes with Terrain)
+            /*
             rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
             rp.set_index_buffer(
                 self.mesh_plane.index_buf.slice(..),
@@ -2887,6 +3071,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             );
             rp.set_vertex_buffer(1, self.plane_inst_buf.slice(..));
             rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
+            */
 
             // Tokens as lit spheres (instances)
             rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
@@ -2906,6 +3091,11 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
                 rp.set_vertex_buffer(1, ibuf.slice(..));
                 rp.draw_indexed(0..mesh.index_count, 0, 0..1);
+            }
+
+            // Render water (transparent, after all opaque objects)
+            if let Some(ref water) = self.water_renderer {
+                water.render(&mut rp);
             }
         }
 
@@ -3009,52 +3199,9 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         view: &wgpu::TextureView,
         enc: &mut wgpu::CommandEncoder,
     ) -> Result<()> {
-        // Render sky into HDR target first
-        self.sky.render(
-            enc,
-            &self.hdr_view,
-            &self.depth.view,
-            Mat4::from_cols_array_2d(&self.camera_ubo.view_proj),
-            &self.queue,
-        )?;
+        // DEBUG: Binary search - Test 3: adding clustered lighting
 
-        // Plane instance buffer
-        let plane_xform = glam::Mat4::from_translation(vec3(0.0, -0.2, 0.0))
-            * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
-        let plane_inst = Instance {
-            transform: plane_xform,
-            color: [0.1, 0.12, 0.14, 1.0], material_id: 0,
-        }
-        .raw();
-        let plane_buf = self
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("plane inst"),
-                contents: bytemuck::bytes_of(&plane_inst),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
-
-        // Main pass (load color written by sky)
-        // Prepare external mesh instance buffer if needed
-        let ext_ibuf: Option<wgpu::Buffer> = if self.mesh_external.is_some() {
-            let inst = Instance {
-                transform: Mat4::IDENTITY,
-                color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
-            }
-            .raw();
-            Some(
-                self.device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("ext inst"),
-                        contents: bytemuck::bytes_of(&inst),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    }),
-            )
-        } else {
-            None
-        };
-
-        // Prepare clustered lighting for this frame (same as render())
+        // Clustered lighting setup
         if self.point_lights.is_empty() {
             self.point_lights.push(CpuLight {
                 pos: glam::Vec3::new(2.0, 2.0, 3.0),
@@ -3115,14 +3262,31 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             cpass.dispatch_workgroups(glights.len() as u32, 1, 1);
         }
 
-        // Frustum cull
+        // Plane instance buffer
+        let plane_xform = glam::Mat4::from_translation(vec3(0.0, -0.2, 0.0))
+            * glam::Mat4::from_scale(vec3(50.0, 1.0, 50.0));
+        let plane_inst = Instance {
+            transform: plane_xform,
+            color: [0.1, 0.12, 0.14, 1.0],
+            material_id: 0,
+        }
+        .raw();
+        let plane_buf = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("plane inst"),
+                contents: bytemuck::bytes_of(&plane_inst),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        // Frustum cull - TEST 4
         let (vis_raws, vis_count) = self.build_visible_instances();
         if vis_count > 0 {
             self.queue
                 .write_buffer(&self.instance_buf, 0, bytemuck::cast_slice(&vis_raws));
         }
 
-        // Shadow passes (depth only) - one per cascade layer
+        // Shadow passes - TEST 5 (suspected crash source!)
         for (idx, layer_view) in [&self.shadow_layer0_view, &self.shadow_layer1_view]
             .iter()
             .enumerate()
@@ -3150,7 +3314,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 occlusion_query_set: None,
             });
             sp.set_pipeline(&self.shadow_pipeline);
-            // Use the shadow-only bind group here as well for external draw_into path
             sp.set_bind_group(0, &self.light_bg_shadow, &[]);
             sp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
             sp.set_index_buffer(
@@ -3159,24 +3322,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             );
             sp.set_vertex_buffer(1, self.plane_inst_buf.slice(..));
             sp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
-            sp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
-            sp.set_index_buffer(
-                self.mesh_sphere.index_buf.slice(..),
-                wgpu::IndexFormat::Uint32,
-            );
-            sp.set_vertex_buffer(1, self.instance_buf.slice(..));
-            let inst_count = vis_count as u32;
-            if inst_count > 0 {
-                sp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
-            }
-            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, ext_ibuf.as_ref()) {
-                sp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
-                sp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
-                sp.set_vertex_buffer(1, ibuf.slice(..));
-                sp.draw_indexed(0..mesh.index_count, 0, 0..1);
-            }
         }
-        // Restore full light buffer for main pass
+        // Restore light buffer for main pass
         {
             let mut data: Vec<f32> = Vec::with_capacity(36);
             data.extend_from_slice(&self.cascade0.to_cols_array());
@@ -3189,153 +3336,104 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 .write_buffer(&self.light_buf, 0, bytemuck::cast_slice(&data));
         }
 
-        // Prepare a temporary instance buffer for skinned mesh if needed
-        let sk_inst_buf: Option<wgpu::Buffer> = if self.skinned_mesh.is_some() {
-            let inst = Instance {
-                transform: Mat4::IDENTITY,
-                color: [1.0, 1.0, 1.0, 1.0], material_id: 0,
-            }
-            .raw();
-            Some(
-                self.device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some("skinned inst"),
-                        contents: bytemuck::bytes_of(&inst),
-                        usage: wgpu::BufferUsages::VERTEX,
-                    }),
+        // Render procedural skybox (time-of-day gradient)
+        // Use view-only matrix (no translation) constructed on CPU for reliability
+        // Sky pass (using rotation-only view-projection)
+        // Note: Construct logic handles translation ensuring skybox center = camera
+        let mut vp_sky = self.cached_view;
+        vp_sky.w_axis.x = 0.0;
+        vp_sky.w_axis.y = 0.0;
+        vp_sky.w_axis.z = 0.0;
+        vp_sky = self.cached_proj * vp_sky;
+
+        let sky_tex = self.ibl_resources.as_ref().map(|r| &r.env_cube);
+
+        self.sky
+            .render(
+                &self.device,
+                enc,
+                &self
+                    .hdr_tex
+                    .create_view(&wgpu::TextureViewDescriptor::default()),
+                &self.depth.view, // Sky renders to depth buffer (read-only or clears?) Environment.rs clears it.
+                vp_sky,
+                &self.queue,
+                sky_tex,
+                self.ibl_resources
+                    .as_ref()
+                    .and_then(|r| r.hdr_equirect.as_ref()),
             )
-        } else {
-            None
-        };
+            .unwrap();
 
-        let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("main pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &self.hdr_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &self.depth.view,
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(1.0),
-                    store: wgpu::StoreOp::Store,
-                }),
-                stencil_ops: None,
-            }),
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-
-        rp.set_pipeline(&self.pipeline);
-        rp.set_bind_group(0, &self.camera_bind_group, &[]);
-        rp.set_bind_group(1, &self.material_bg, &[]);
-        rp.set_bind_group(2, &self.light_bg, &[]);
-        rp.set_bind_group(3, &self.tex_bg, &[]);
-        // Ground plane
-        rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
-        rp.set_index_buffer(
-            self.mesh_plane.index_buf.slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
-        rp.set_vertex_buffer(1, plane_buf.slice(..));
-        rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
-        // Tokens as spheres
-        rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
-        rp.set_index_buffer(
-            self.mesh_sphere.index_buf.slice(..),
-            wgpu::IndexFormat::Uint32,
-        );
-        rp.set_vertex_buffer(1, self.instance_buf.slice(..));
-        let inst_count = vis_count as u32;
-        if inst_count > 0 {
-            rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
-        }
-
-        // External mesh
-        if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, ext_ibuf.as_ref()) {
-            rp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
-            rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
-            rp.set_vertex_buffer(1, ibuf.slice(..));
-            rp.draw_indexed(0..mesh.index_count, 0, 0..1);
-        }
-        // Skinned mesh (if present)
-        if let (Some((vbuf, ibuf, index_count)), Some(sk_inst)) =
-            (&self.skinned_mesh, sk_inst_buf.as_ref())
         {
-            rp.set_pipeline(&self.skinned_pipeline);
+            let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("main render pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.hdr_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Load, // Load sky result
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth.view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Load, // Load sky depth (should be far plane)
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            rp.set_pipeline(&self.pipeline);
             rp.set_bind_group(0, &self.camera_bind_group, &[]);
             rp.set_bind_group(1, &self.material_bg, &[]);
             rp.set_bind_group(2, &self.light_bg, &[]);
-            // Combined textures + skin palette live in group 3
             rp.set_bind_group(3, &self.tex_bg, &[]);
-            rp.set_vertex_buffer(0, vbuf.slice(..));
-            rp.set_index_buffer(ibuf.slice(..), wgpu::IndexFormat::Uint32);
-            rp.set_vertex_buffer(1, sk_inst.slice(..));
-            rp.draw_indexed(0..*index_count, 0, 0..1);
-        }
-        drop(rp);
 
-        // Optional postfx chain
-        #[cfg(feature = "postfx")]
-        {
-            let mut ssp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("ssr pass (external)"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            ssp.set_pipeline(&self.post_pipeline);
-            ssp.set_bind_group(0, &self.post_bind_group, &[]);
-            ssp.draw(0..3, 0..1);
-            drop(ssp);
-            let mut ao = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("ssao pass (external)"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            ao.set_pipeline(&self.post_pipeline);
-            ao.set_bind_group(0, &self.post_bind_group, &[]);
-            ao.draw(0..3, 0..1);
-            drop(ao);
-            let mut gi = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("ssgi pass (external)"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            });
-            gi.set_pipeline(&self.post_pipeline);
-            gi.set_bind_group(0, &self.post_bind_group, &[]);
-            gi.draw(0..3, 0..1);
-            drop(gi);
+            // Ground plane
+            rp.set_vertex_buffer(0, self.mesh_plane.vertex_buf.slice(..));
+            rp.set_index_buffer(
+                self.mesh_plane.index_buf.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            rp.set_vertex_buffer(1, plane_buf.slice(..));
+            rp.draw_indexed(0..self.mesh_plane.index_count, 0, 0..1);
+
+            // Tokens as spheres - TEST 6
+            rp.set_vertex_buffer(0, self.mesh_sphere.vertex_buf.slice(..));
+            rp.set_index_buffer(
+                self.mesh_sphere.index_buf.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            rp.set_vertex_buffer(1, self.instance_buf.slice(..));
+            let inst_count = vis_count as u32;
+            if inst_count > 0 {
+                rp.draw_indexed(0..self.mesh_sphere.index_count, 0, 0..inst_count);
+            }
+
+            // External mesh if present (e.g., GLB models)
+            if let (Some(mesh), Some(ibuf)) = (&self.mesh_external, &self.ext_inst_buf) {
+                rp.set_vertex_buffer(0, mesh.vertex_buf.slice(..));
+                rp.set_index_buffer(mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                rp.set_vertex_buffer(1, ibuf.slice(..));
+                if self.ext_inst_count > 0 {
+                    rp.draw_indexed(0..mesh.index_count, 0, 0..self.ext_inst_count);
+                }
+            }
+
+            // Render all named models (terrain, trees, rocks, etc.)
+            for model in self.models.values() {
+                if model.instance_count > 0 {
+                    rp.set_vertex_buffer(0, model.mesh.vertex_buf.slice(..));
+                    rp.set_index_buffer(model.mesh.index_buf.slice(..), wgpu::IndexFormat::Uint32);
+                    rp.set_vertex_buffer(1, model.instance_buf.slice(..));
+                    rp.draw_indexed(0..model.mesh.index_count, 0, 0..model.instance_count);
+                }
+            }
         }
 
         // Post to surface view provided
@@ -3353,16 +3451,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        #[cfg(feature = "postfx")]
-        {
-            pp.set_pipeline(&self.post_pipeline);
-            pp.set_bind_group(0, &self.post_bind_group, &[]);
-        }
-        #[cfg(not(feature = "postfx"))]
-        {
-            pp.set_pipeline(&self.post_pipeline);
-            pp.set_bind_group(0, &self.post_bind_group, &[]);
-        }
+        pp.set_pipeline(&self.post_pipeline);
+        pp.set_bind_group(0, &self.post_bind_group, &[]);
         pp.draw(0..3, 0..1);
 
         Ok(())
@@ -3372,7 +3462,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         (self.config.width, self.config.height)
     }
 
-        pub fn device(&self) -> &wgpu::Device {
+    pub fn device(&self) -> &wgpu::Device {
         &self.device
     }
 
@@ -3380,8 +3470,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         &self.queue
     }
 
-    pub fn surface(&self) -> &wgpu::Surface<'_> {
-        &self.surface
+    pub fn surface(&self) -> Option<&wgpu::Surface<'static>> {
+        self.surface.as_ref()
     }
 
     pub fn config(&self) -> &wgpu::SurfaceConfiguration {
@@ -3402,7 +3492,12 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
             (u32, u32),
         ),
     {
-        let frame = self.surface.get_current_texture()?;
+        let surface = if let Some(s) = &self.surface {
+            s
+        } else {
+            return Ok(());
+        };
+        let frame = surface.get_current_texture()?;
         let view = frame
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -3416,6 +3511,65 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.draw_into(&view, &mut enc)?;
 
         // Then allow caller to composite additional passes (e.g., egui)
+        f(
+            &view,
+            &mut enc,
+            &self.device,
+            &self.queue,
+            self.surface_size(),
+        );
+
+        self.queue.submit(std::iter::once(enc.finish()));
+        frame.present();
+        Ok(())
+    }
+
+    /// Render with callback for overlay-only use (skips 3D scene rendering).
+    /// Clears to black and allows caller to render overlays like egui.
+    pub fn render_with_simple<F>(&mut self, f: F) -> Result<()>
+    where
+        F: FnOnce(
+            &wgpu::TextureView,
+            &mut wgpu::CommandEncoder,
+            &wgpu::Device,
+            &wgpu::Queue,
+            (u32, u32),
+        ),
+    {
+        let surface = if let Some(s) = &self.surface {
+            s
+        } else {
+            return Ok(());
+        };
+        let frame = surface.get_current_texture()?;
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut enc = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("simple encoder"),
+            });
+
+        // Just clear to black - no 3D rendering
+        {
+            let _clear_pass = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Clear Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+        }
+
+        // Allow caller to composite overlays
         f(
             &view,
             &mut enc,
@@ -3476,7 +3630,8 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                 push_constant_ranges: &[],
             });
         self.device
-            .create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
+            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                cache: None,
                 label: Some("material preview pipeline"),
                 layout: Some(&layout),
                 vertex: wgpu::VertexState {
@@ -3546,9 +3701,28 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         #[cfg(feature = "textures")]
         {
             use image::GenericImageView;
-            let img = image::open(path).expect("Failed to load smoke test texture");
-            let rgba = img.to_rgba8();
-            let (width, height) = img.dimensions();
+            use std::path::Path;
+            let path_ref = Path::new(path);
+
+            let rgba = if path_ref.extension().and_then(|s| s.to_str()) == Some("ktx2") {
+                match crate::material_loader::material_loader_impl::load_ktx2_to_rgba(path_ref) {
+                    Ok(img) => img,
+                    Err(e) => {
+                        log::warn!("Failed to load KTX2 texture '{}': {}. Falling back to standard image loading.", path, e);
+                        // Fallback: manually read and guess format because image::open fails on .ktx2 extensions it doesn't know
+                        let bytes = std::fs::read(path).expect("Failed to read fallback file");
+                        image::load_from_memory(&bytes)
+                            .expect("Failed to decode fallback texture (unknown format)")
+                            .to_rgba8()
+                    }
+                }
+            } else {
+                image::open(path)
+                    .expect("Failed to load smoke test texture")
+                    .to_rgba8()
+            };
+
+            let (width, height) = (rgba.width(), rgba.height());
             self.set_albedo_from_rgba8(width, height, &rgba);
         }
         #[cfg(not(feature = "textures"))]
@@ -3812,6 +3986,68 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         self.queue
             .write_buffer(&self.skin_palette_buf, 0, bytemuck::cast_slice(&data));
     }
+
+    // --- External Mesh API (additional helpers) ---
+    /// Clear the external mesh, reverting to default sphere rendering.
+    pub fn clear_external_mesh(&mut self) {
+        self.mesh_external = None;
+        self.ext_inst_buf = None;
+    }
+
+    /// Set instances for external mesh rendering.
+    /// Each instance requires a transform and color.
+    pub fn set_external_instances(&mut self, instances: &[Instance]) {
+        if instances.is_empty() {
+            self.ext_inst_buf = None;
+            self.ext_inst_count = 0;
+            return;
+        }
+
+        let raw: Vec<_> = instances.iter().map(|i| i.raw()).collect();
+        let buf = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("ext-inst-buf"),
+                contents: bytemuck::cast_slice(&raw),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+        self.ext_inst_buf = Some(buf);
+        self.ext_inst_count = instances.len() as u32;
+    }
+
+    /// Check if an external mesh is currently set.
+    pub fn has_external_mesh(&self) -> bool {
+        self.mesh_external.is_some()
+    }
+
+    // --- Multi-Model API ---
+    /// Add or replace a named model with the given mesh and instances.
+    pub fn add_model(&mut self, name: impl Into<String>, mesh: Mesh, instances: &[Instance]) {
+        let raw: Vec<_> = instances.iter().map(|i| i.raw()).collect();
+        let instance_buf = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("model-inst-buf"),
+                contents: bytemuck::cast_slice(&raw),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+        let model = RenderModel {
+            mesh,
+            instance_buf,
+            instance_count: instances.len() as u32,
+        };
+        self.models.insert(name.into(), model);
+    }
+
+    /// Remove a named model.
+    pub fn clear_model(&mut self, name: &str) {
+        self.models.remove(name);
+    }
+
+    /// Check if a named model exists.
+    pub fn has_model(&self, name: &str) -> bool {
+        self.models.contains_key(name)
+    }
 }
 
 #[cfg(test)]
@@ -3926,5 +4162,67 @@ fn aabb_in_view_space(view: &glam::Mat4, corners_ws: &[glam::Vec3; 8]) -> (glam:
     (min, max)
 }
 
-// End of file
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use glam::{vec3, Mat4, Vec3};
 
+    #[test]
+    fn test_inside_frustum_sphere() {
+        let planes = vec![
+            (vec3(1.0, 0.0, 0.0), 1.0),  // x + 1 = 0 -> x = -1
+            (vec3(-1.0, 0.0, 0.0), 1.0), // -x + 1 = 0 -> x = 1
+        ];
+
+        // Inside
+        assert!(inside_frustum_sphere(vec3(0.0, 0.0, 0.0), 0.5, &planes));
+        // Outside
+        assert!(!inside_frustum_sphere(vec3(2.0, 0.0, 0.0), 0.5, &planes));
+        // Intersecting
+        assert!(inside_frustum_sphere(vec3(1.2, 0.0, 0.0), 0.5, &planes));
+    }
+
+    #[test]
+    fn test_frustum_corners_ws() {
+        let mut cam = crate::camera::Camera {
+            position: Vec3::ZERO,
+            yaw: 0.0,
+            pitch: 0.0,
+            fovy: 90.0f32.to_radians(),
+            aspect: 1.0,
+            znear: 0.1,
+            zfar: 100.0,
+        };
+
+        let corners = frustum_corners_ws(&cam, 1.0, 10.0);
+        assert_eq!(corners.len(), 8);
+
+        // Center of corners should be along the forward axis (X+)
+        let center = frustum_center(&corners);
+        assert!(center.x > 0.0);
+        assert!(center.y.abs() < 0.001);
+        assert!(center.z.abs() < 0.001);
+    }
+
+    #[test]
+    fn test_aabb_in_view_space() {
+        let view = Mat4::look_at_rh(Vec3::ZERO, Vec3::Z, Vec3::Y);
+        let corners = [
+            vec3(-1.0, -1.0, 1.0),
+            vec3(1.0, -1.0, 1.0),
+            vec3(-1.0, 1.0, 1.0),
+            vec3(1.0, 1.0, 1.0),
+            vec3(-1.0, -1.0, 2.0),
+            vec3(1.0, -1.0, 2.0),
+            vec3(-1.0, 1.0, 2.0),
+            vec3(1.0, 1.0, 2.0),
+        ];
+
+        let (min, max) = aabb_in_view_space(&view, &corners);
+        assert!(min.x < max.x);
+        assert!(min.y < max.y);
+        assert!(min.z < max.z);
+    }
+}
+
+// End of file
