@@ -46,7 +46,7 @@ astract = { path = "../../crates/astract" }
 astraweave-core = { path = "../../astraweave-core" }
 astraweave-ecs = { path = "../../astraweave-ecs" }
 astraweave-profiling = { path = "../../astraweave-profiling" }
-astraweave-render = { path = "../../astraweave-render", optional = true }
+astraweave-render = { path = "../../astraweave-render", optional = true, features = ["gltf-assets", "textures"] }
 astraweave-author = { path = "../../astraweave-author" }
 astraweave-asset = { path = "../../astraweave-asset" }
 astraweave-behavior = { path = "../../astraweave-behavior" }
