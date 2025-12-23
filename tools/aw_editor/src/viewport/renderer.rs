@@ -22,6 +22,7 @@
 //! - `PhysicsDebugRenderer`: Collider wireframes
 
 use anyhow::{Context, Result};
+use std::sync::Arc;
 use wgpu;
 
 use super::camera::OrbitCamera;
@@ -32,6 +33,9 @@ use super::physics_renderer::PhysicsDebugRenderer;
 use super::skybox_renderer::SkyboxRenderer;
 use crate::gizmo::GizmoState;
 use astraweave_core::{Entity, World};
+
+#[cfg(feature = "astraweave-render")]
+use super::engine_adapter::EngineRenderAdapter;
 
 /// Viewport rendering coordinator
 ///
@@ -45,10 +49,10 @@ use astraweave_core::{Entity, World};
 /// 4. Automatically cleaned up on drop (RAII)
 pub struct ViewportRenderer {
     /// wgpu device (GPU interface)
-    device: wgpu::Device,
+    device: Arc<wgpu::Device>,
 
     /// wgpu queue (command submission)
-    queue: wgpu::Queue,
+    queue: Arc<wgpu::Queue>,
 
     /// Sub-renderers
     grid_renderer: GridRenderer,
@@ -56,6 +60,13 @@ pub struct ViewportRenderer {
     entity_renderer: EntityRenderer,
     gizmo_renderer: GizmoRendererWgpu,
     physics_renderer: PhysicsDebugRenderer,
+
+    /// Engine renderer adapter for PBR mesh rendering (feature-gated)
+    #[cfg(feature = "astraweave-render")]
+    engine_adapter: Option<EngineRenderAdapter>,
+
+    /// Enable engine rendering (PBR meshes) vs cube rendering
+    use_engine_rendering: bool,
 
     /// Depth texture (shared across passes)
     depth_texture: Option<wgpu::Texture>,
@@ -81,16 +92,19 @@ impl ViewportRenderer {
     /// # Errors
     ///
     /// Returns error if sub-renderer creation fails.
-    pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Result<Self> {
-        let grid_renderer = GridRenderer::new(&device).context("Failed to create grid renderer")?;
+    pub fn new(device: Arc<wgpu::Device>, queue: Arc<wgpu::Queue>) -> Result<Self> {
+        let grid_renderer =
+            GridRenderer::new(&device).context("Failed to create grid renderer")?;
         let skybox_renderer =
             SkyboxRenderer::new(&device).context("Failed to create skybox renderer")?;
         let entity_renderer =
             EntityRenderer::new(&device, 10000).context("Failed to create entity renderer")?;
-        let gizmo_renderer = GizmoRendererWgpu::new(device.clone(), queue.clone(), 10000)
-            .context("Failed to create gizmo renderer")?;
-        let physics_renderer = PhysicsDebugRenderer::new(device.clone(), queue.clone(), 50000)
-            .context("Failed to create physics debug renderer")?;
+        let gizmo_renderer =
+            GizmoRendererWgpu::new((*device).clone(), (*queue).clone(), 10000)
+                .context("Failed to create gizmo renderer")?;
+        let physics_renderer =
+            PhysicsDebugRenderer::new((*device).clone(), (*queue).clone(), 50000)
+                .context("Failed to create physics debug renderer")?;
 
         Ok(Self {
             device,
@@ -100,6 +114,9 @@ impl ViewportRenderer {
             entity_renderer,
             gizmo_renderer,
             physics_renderer,
+            #[cfg(feature = "astraweave-render")]
+            engine_adapter: None,
+            use_engine_rendering: false,
             depth_texture: None,
             depth_view: None,
             size: (0, 0),
@@ -117,7 +134,9 @@ impl ViewportRenderer {
     ///
     /// Returns error if render state is invalid or sub-renderer creation fails.
     pub fn from_eframe(render_state: &eframe::egui_wgpu::RenderState) -> Result<Self> {
-        Self::new(render_state.device.clone(), render_state.queue.clone())
+        let device = Arc::new(render_state.device.clone());
+        let queue = Arc::new(render_state.queue.clone());
+        Self::new(device, queue)
     }
 
     /// Resize viewport (recreates depth buffer)
@@ -223,22 +242,67 @@ impl ViewportRenderer {
         // Pass 2: Grid (only if enabled)
         if show_grid {
             self.grid_renderer
-                .render(&mut encoder, &target_view, depth_view, camera, &self.queue, crosshair_mode)
+                .render(
+                    &mut encoder,
+                    &target_view,
+                    depth_view,
+                    camera,
+                    &self.queue,
+                    crosshair_mode,
+                )
                 .context("Grid render failed")?;
         }
 
-        // Pass 3: Entities
-        self.entity_renderer
-            .render(
-                &mut encoder,
-                &target_view,
-                depth_view,
-                camera,
-                world,
-                &self.selected_entities,
-                &self.queue,
-            )
-            .context("Entity render failed")?;
+        // Pass 3: Entities (engine renderer or cube fallback)
+        #[cfg(feature = "astraweave-render")]
+        {
+            if self.use_engine_rendering {
+                if let Some(adapter) = &mut self.engine_adapter {
+                    adapter.update_camera(camera);
+                    adapter
+                        .render_to_texture(&target_view, &mut encoder)
+                        .context("Engine render failed")?;
+                } else {
+                    self.entity_renderer
+                        .render(
+                            &mut encoder,
+                            &target_view,
+                            depth_view,
+                            camera,
+                            world,
+                            &self.selected_entities,
+                            &self.queue,
+                        )
+                        .context("Entity render failed")?;
+                }
+            } else {
+                self.entity_renderer
+                    .render(
+                        &mut encoder,
+                        &target_view,
+                        depth_view,
+                        camera,
+                        world,
+                        &self.selected_entities,
+                        &self.queue,
+                    )
+                    .context("Entity render failed")?;
+            }
+        }
+        #[cfg(not(feature = "astraweave-render"))]
+        {
+            self.entity_renderer
+                .render(
+                    &mut encoder,
+                    &target_view,
+                    depth_view,
+                    camera,
+                    world,
+                    &self.selected_entities,
+                    &self.queue,
+                )
+                .context("Entity render failed")?;
+        }
 
         // Pass 4: Physics debug (collider wireframes)
         if let Some(debug_lines) = physics_debug_lines {
@@ -362,7 +426,9 @@ impl ViewportRenderer {
     }
 
     /// Get physics debug options (mutable) for configuration
-    pub fn physics_debug_options_mut(&mut self) -> &mut super::physics_renderer::PhysicsDebugOptions {
+    pub fn physics_debug_options_mut(
+        &mut self,
+    ) -> &mut super::physics_renderer::PhysicsDebugOptions {
         &mut self.physics_renderer.options
     }
 
@@ -374,6 +440,57 @@ impl ViewportRenderer {
     /// Enable/disable physics debug rendering
     pub fn set_physics_debug_enabled(&mut self, enabled: bool) {
         self.physics_renderer.options.show_colliders = enabled;
+    }
+
+    /// Check if engine rendering (PBR meshes) is enabled
+    pub fn use_engine_rendering(&self) -> bool {
+        self.use_engine_rendering
+    }
+
+    /// Enable/disable engine rendering (PBR meshes vs cubes)
+    pub fn set_use_engine_rendering(&mut self, enabled: bool) {
+        self.use_engine_rendering = enabled;
+    }
+
+    /// Initialize the engine renderer adapter (async, call once)
+    ///
+    /// Must be called before engine rendering can be used.
+    /// Uses the viewport's current size for initialization.
+    #[cfg(feature = "astraweave-render")]
+    pub async fn init_engine_adapter(&mut self) -> Result<()> {
+        if self.engine_adapter.is_some() {
+            return Ok(());
+        }
+
+        let (width, height) = if self.size.0 > 0 && self.size.1 > 0 {
+            self.size
+        } else {
+            (1920, 1080)
+        };
+
+        let adapter = EngineRenderAdapter::new(
+            self.device.clone(),
+            self.queue.clone(),
+            width,
+            height,
+        )
+        .await
+        .context("Failed to initialize engine render adapter")?;
+
+        self.engine_adapter = Some(adapter);
+        Ok(())
+    }
+
+    /// Check if engine adapter is initialized
+    #[cfg(feature = "astraweave-render")]
+    pub fn engine_adapter_initialized(&self) -> bool {
+        self.engine_adapter.is_some()
+    }
+
+    /// Get mutable reference to engine adapter (if initialized)
+    #[cfg(feature = "astraweave-render")]
+    pub fn engine_adapter_mut(&mut self) -> Option<&mut EngineRenderAdapter> {
+        self.engine_adapter.as_mut()
     }
 }
 
