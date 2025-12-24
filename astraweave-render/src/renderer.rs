@@ -2282,7 +2282,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
         let ext_inst_buf = None;
 
         let ibl = crate::ibl::IblManager::new(&device, crate::ibl::IblQuality::Medium)
-            .expect("Failed to init IBL");
+            .context("Failed to init IBL")?;
 
         Ok(Self {
             surface,
@@ -3363,7 +3363,7 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
                     .as_ref()
                     .and_then(|r| r.hdr_equirect.as_ref()),
             )
-            .unwrap();
+            .context("Sky render failed")?;
 
         {
             let mut rp = enc.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -3700,7 +3700,6 @@ fn fs(input: VSOut) -> @location(0) vec4<f32> {
     pub fn set_smoke_test_texture(&mut self, path: &str) {
         #[cfg(feature = "textures")]
         {
-            use image::GenericImageView;
             use std::path::Path;
             let path_ref = Path::new(path);
 
